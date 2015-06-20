@@ -1,0 +1,118 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\WaveLang\source\common\asserts.cpp" />
+    <ClCompile Include="..\WaveLang\source\compiler\ast.cpp" />
+    <ClCompile Include="..\WaveLang\source\compiler\ast_builder.cpp" />
+    <ClCompile Include="..\WaveLang\source\compiler\ast_validator.cpp" />
+    <ClCompile Include="..\WaveLang\source\compiler\compiler.cpp" />
+    <ClCompile Include="..\WaveLang\source\compiler\compiler_main.cpp" />
+    <ClCompile Include="..\WaveLang\source\compiler\compiler_utility.cpp" />
+    <ClCompile Include="..\WaveLang\source\compiler\execution_graph_builder.cpp" />
+    <ClCompile Include="..\WaveLang\source\compiler\execution_graph_optimizer.cpp" />
+    <ClCompile Include="..\WaveLang\source\compiler\lexer.cpp" />
+    <ClCompile Include="..\WaveLang\source\compiler\lr_parser.cpp" />
+    <ClCompile Include="..\WaveLang\source\compiler\parser.cpp" />
+    <ClCompile Include="..\WaveLang\source\compiler\preprocessor.cpp" />
+    <ClCompile Include="..\WaveLang\source\execution_graph\execution_graph.cpp" />
+    <ClCompile Include="..\WaveLang\source\execution_graph\native_modules.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\WaveLang\source\common\asserts.h" />
+    <ClInclude Include="..\WaveLang\source\common\common.h" />
+    <ClInclude Include="..\WaveLang\source\common\types.h" />
+    <ClInclude Include="..\WaveLang\source\compiler\ast.h" />
+    <ClInclude Include="..\WaveLang\source\compiler\ast_builder.h" />
+    <ClInclude Include="..\WaveLang\source\compiler\ast_validator.h" />
+    <ClInclude Include="..\WaveLang\source\compiler\compiler.h" />
+    <ClInclude Include="..\WaveLang\source\compiler\compiler_utility.h" />
+    <ClInclude Include="..\WaveLang\source\compiler\execution_graph_builder.h" />
+    <ClInclude Include="..\WaveLang\source\compiler\execution_graph_optimizer.h" />
+    <ClInclude Include="..\WaveLang\source\compiler\lexer.h" />
+    <ClInclude Include="..\WaveLang\source\compiler\lr_parser.h" />
+    <ClInclude Include="..\WaveLang\source\compiler\parser.h" />
+    <ClInclude Include="..\WaveLang\source\compiler\preprocessor.h" />
+    <ClInclude Include="..\WaveLang\source\execution_graph\execution_graph.h" />
+    <ClInclude Include="..\WaveLang\source\execution_graph\native_modules.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\WaveLang\source\compiler\compiler_utility.inl" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\WaveLang\source\compiler\execution_graph_optimization_rules.txt" />
+    <Text Include="..\WaveLang\source\compiler\parser_rules.txt" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{CDBE9BE2-E656-4E44-A412-49588039EE58}</ProjectGuid>
+    <RootNamespace>WaveLangCompiler</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(SolutionDir)bin\</OutDir>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)WaveLang\source\;</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(SolutionDir)bin\</OutDir>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)WaveLang\source\;</IncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -1,0 +1,105 @@
+PROD(NS(start),
+	NS(global_scope))
+
+PROD(NS(global_scope))
+PROD(NS(global_scope),
+	NS(global_scope), NS(global_scope_item))
+
+PROD(NS(global_scope_item),
+	NS(module_declaration))
+
+PROD(NS(module_declaration),
+	TS(keyword_module), NS(module_declaration_return), TS(identifier), TS(left_parenthesis), NS(module_declaration_arguments), TS(right_parenthesis), TS(left_brace), NS(module_body_item_list), TS(right_brace))
+
+PROD(NS(module_declaration_return))
+PROD(NS(module_declaration_return),
+	TS(keyword_out))
+
+PROD(NS(module_declaration_arguments))
+PROD(NS(module_declaration_arguments),
+	NS(module_declaration_argument_list))
+
+PROD(NS(module_declaration_argument_list),
+	NS(module_declaration_argument))
+PROD(NS(module_declaration_argument_list),
+	NS(module_declaration_argument_list), TS(comma), NS(module_declaration_argument))
+
+PROD(NS(module_declaration_argument),
+	NS(module_declaration_argument_qualifier), TS(keyword_val), TS(identifier))
+
+PROD(NS(module_declaration_argument_qualifier),
+	TS(keyword_in))
+PROD(NS(module_declaration_argument_qualifier),
+	TS(keyword_out))
+
+PROD(NS(module_body_item_list))
+PROD(NS(module_body_item_list),
+	NS(module_body_item_list), NS(module_body_item))
+
+PROD(NS(module_body_item),
+	NS(named_value_declaration), TS(semicolon))
+PROD(NS(module_body_item),
+	NS(named_value_assignment), TS(semicolon))
+PROD(NS(module_body_item),
+	NS(expression), TS(semicolon))
+PROD(NS(module_body_item),
+	NS(module_return_statement), TS(semicolon))
+
+PROD(NS(module_return_statement),
+	TS(keyword_return), NS(expression))
+
+PROD(NS(named_value_declaration),
+	TS(keyword_val), TS(identifier))
+PROD(NS(named_value_declaration),
+	TS(keyword_val), TS(identifier), NS(expression_assignment))
+
+PROD(NS(named_value_assignment),
+	TS(identifier), NS(expression_assignment))
+
+PROD(NS(expression),
+	NS(expr_1))
+
+PROD(NS(expression_assignment),
+	TS(operator_assignment), NS(expression))
+
+PROD(NS(expr_1),
+	NS(expr_1), TS(operator_addition), NS(expr_2))
+PROD(NS(expr_1),
+	NS(expr_1), TS(operator_subtraction), NS(expr_2))
+PROD(NS(expr_1),
+	NS(expr_2))
+
+PROD(NS(expr_2),
+	NS(expr_2), TS(operator_multiplication), NS(expr_3))
+PROD(NS(expr_2),
+	NS(expr_2), TS(operator_division), NS(expr_3))
+PROD(NS(expr_2),
+	NS(expr_2), TS(operator_modulo), NS(expr_3))
+PROD(NS(expr_2),
+	NS(expr_3))
+
+PROD(NS(expr_3),
+	TS(operator_addition), NS(expr_4))
+PROD(NS(expr_3),
+	TS(operator_subtraction), NS(expr_4))
+PROD(NS(expr_3),
+	NS(expr_4))
+
+PROD(NS(expr_4),
+	TS(left_parenthesis), NS(expression), TS(right_parenthesis))
+PROD(NS(expr_4),
+	TS(identifier))
+PROD(NS(expr_4),
+	NS(module_call))
+PROD(NS(expr_4),
+	TS(constant))
+
+PROD(NS(module_call),
+	TS(identifier), TS(left_parenthesis), TS(right_parenthesis))
+PROD(NS(module_call),
+	TS(identifier), TS(left_parenthesis), NS(module_call_argument_list), TS(right_parenthesis))
+
+PROD(NS(module_call_argument_list),
+	NS(expression))
+PROD(NS(module_call_argument_list),
+	NS(module_call_argument_list), TS(comma), NS(expression))

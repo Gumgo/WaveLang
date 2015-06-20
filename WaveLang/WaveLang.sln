@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WaveLang", "WaveLang\WaveLang.vcxproj", "{3C91230B-D007-4E4B-97BC-E410271F1B7D}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WaveLangCompiler", "WaveLangCompiler\WaveLangCompiler.vcxproj", "{CDBE9BE2-E656-4E44-A412-49588039EE58}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WaveLangRuntime", "WaveLangRuntime\WaveLangRuntime.vcxproj", "{BCB49640-D34B-4416-A162-E299747C2153}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3C91230B-D007-4E4B-97BC-E410271F1B7D}.Debug|Win32.ActiveCfg = Debug|Win32
+		{3C91230B-D007-4E4B-97BC-E410271F1B7D}.Release|Win32.ActiveCfg = Release|Win32
+		{CDBE9BE2-E656-4E44-A412-49588039EE58}.Debug|Win32.ActiveCfg = Debug|Win32
+		{CDBE9BE2-E656-4E44-A412-49588039EE58}.Debug|Win32.Build.0 = Debug|Win32
+		{CDBE9BE2-E656-4E44-A412-49588039EE58}.Release|Win32.ActiveCfg = Release|Win32
+		{CDBE9BE2-E656-4E44-A412-49588039EE58}.Release|Win32.Build.0 = Release|Win32
+		{BCB49640-D34B-4416-A162-E299747C2153}.Debug|Win32.ActiveCfg = Debug|Win32
+		{BCB49640-D34B-4416-A162-E299747C2153}.Debug|Win32.Build.0 = Debug|Win32
+		{BCB49640-D34B-4416-A162-E299747C2153}.Release|Win32.ActiveCfg = Release|Win32
+		{BCB49640-D34B-4416-A162-E299747C2153}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
