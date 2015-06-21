@@ -1,8 +1,8 @@
 #ifndef WAVELANG_PREPROCESSOR_H__
 #define WAVELANG_PREPROCESSOR_H__
 
-#include "common\common.h"
-#include "compiler\compiler_utility.h"
+#include "common/common.h"
+#include "compiler/compiler_utility.h"
 #include <vector>
 
 struct c_preprocessor_output {

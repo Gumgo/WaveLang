@@ -12,6 +12,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\common\asserts.cpp" />
+    <ClCompile Include="source\common\threading\lock_free.cpp" />
+    <ClCompile Include="source\common\threading\lock_free_pool.cpp" />
     <ClCompile Include="source\compiler\ast.cpp" />
     <ClCompile Include="source\compiler\ast_builder.cpp" />
     <ClCompile Include="source\compiler\ast_validator.cpp" />
@@ -25,6 +27,7 @@
     <ClCompile Include="source\compiler\parser.cpp" />
     <ClCompile Include="source\compiler\preprocessor.cpp" />
     <ClCompile Include="source\driver\driver_interface.cpp" />
+    <ClCompile Include="source\engine\predecessor_resolver.cpp" />
     <ClCompile Include="source\engine\task_functions.cpp" />
     <ClCompile Include="source\engine\task_graph.cpp" />
     <ClCompile Include="source\execution_graph\execution_graph.cpp" />
@@ -33,7 +36,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\common\asserts.h" />
+    <ClInclude Include="source\common\threading\atomics.h" />
     <ClInclude Include="source\common\common.h" />
+    <ClInclude Include="source\common\platform.h" />
+    <ClInclude Include="source\common\threading\lock_free.h" />
+    <ClInclude Include="source\common\threading\lock_free_pool.h" />
     <ClInclude Include="source\common\types.h" />
     <ClInclude Include="source\compiler\ast.h" />
     <ClInclude Include="source\compiler\ast_builder.h" />
@@ -47,6 +54,7 @@
     <ClInclude Include="source\compiler\parser.h" />
     <ClInclude Include="source\compiler\preprocessor.h" />
     <ClInclude Include="source\driver\driver_interface.h" />
+    <ClInclude Include="source\engine\predecessor_resolver.h" />
     <ClInclude Include="source\engine\task_functions.h" />
     <ClInclude Include="source\engine\task_graph.h" />
     <ClInclude Include="source\execution_graph\execution_graph.h" />
@@ -54,6 +62,7 @@
     <ClInclude Include="source\runtime\runtime_context.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="source\common\threading\atomics.inl" />
     <None Include="source\compiler\compiler_utility.inl" />
   </ItemGroup>
   <ItemGroup>

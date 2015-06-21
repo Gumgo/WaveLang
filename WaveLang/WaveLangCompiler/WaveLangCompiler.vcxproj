@@ -12,6 +12,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\WaveLang\source\common\asserts.cpp" />
+    <ClCompile Include="..\WaveLang\source\common\threading\lock_free.cpp" />
+    <ClCompile Include="..\WaveLang\source\common\threading\lock_free_pool.cpp" />
     <ClCompile Include="..\WaveLang\source\compiler\ast.cpp" />
     <ClCompile Include="..\WaveLang\source\compiler\ast_builder.cpp" />
     <ClCompile Include="..\WaveLang\source\compiler\ast_validator.cpp" />
@@ -30,6 +32,10 @@
   <ItemGroup>
     <ClInclude Include="..\WaveLang\source\common\asserts.h" />
     <ClInclude Include="..\WaveLang\source\common\common.h" />
+    <ClInclude Include="..\WaveLang\source\common\platform.h" />
+    <ClInclude Include="..\WaveLang\source\common\threading\atomics.h" />
+    <ClInclude Include="..\WaveLang\source\common\threading\lock_free.h" />
+    <ClInclude Include="..\WaveLang\source\common\threading\lock_free_pool.h" />
     <ClInclude Include="..\WaveLang\source\common\types.h" />
     <ClInclude Include="..\WaveLang\source\compiler\ast.h" />
     <ClInclude Include="..\WaveLang\source\compiler\ast_builder.h" />
@@ -46,6 +52,7 @@
     <ClInclude Include="..\WaveLang\source\execution_graph\native_modules.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\WaveLang\source\common\threading\atomics.inl" />
     <None Include="..\WaveLang\source\compiler\compiler_utility.inl" />
   </ItemGroup>
   <ItemGroup>

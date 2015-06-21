@@ -1,5 +1,5 @@
-#include "compiler\execution_graph_optimizer.h"
-#include "execution_graph\native_modules.h"
+#include "compiler/execution_graph_optimizer.h"
+#include "execution_graph/native_modules.h"
 #include <stack>
 #include <array>
 

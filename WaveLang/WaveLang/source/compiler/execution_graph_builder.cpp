@@ -1,7 +1,7 @@
-#include "compiler\execution_graph_builder.h"
-#include "compiler\ast.h"
-#include "execution_graph\execution_graph.h"
-#include "execution_graph\native_modules.h"
+#include "compiler/execution_graph_builder.h"
+#include "compiler/ast.h"
+#include "execution_graph/execution_graph.h"
+#include "execution_graph/native_modules.h"
 #include <map>
 #include <deque>
 #include <stack>
@@ -349,7 +349,7 @@ void c_execution_graph_builder::build_execution_graph(const c_ast_node *ast, c_e
 		wl_assert(entry_point_module->get_argument(arg)->get_qualifier() ==
 			c_ast_node_named_value_declaration::k_qualifier_out);
 
-		uint32 output_node_index = out_execution_graph->add_output_node();
+		uint32 output_node_index = out_execution_graph->add_output_node(static_cast<uint32>(arg));
 		uint32 intermediate_value_node_index = out_execution_graph->add_intermediate_value_node();
 		out_execution_graph->add_edge(intermediate_value_node_index, output_node_index);
 		builder.m_input_output_node_indices.push_back(intermediate_value_node_index);

@@ -1,6 +1,6 @@
-#include "common\common.h"
-#include "compiler\compiler.h"
-#include "execution_graph\execution_graph.h"
+#include "common/common.h"
+#include "compiler/compiler.h"
+#include "execution_graph/execution_graph.h"
 #include <iostream>
 
 // $TODO move somewhere better?

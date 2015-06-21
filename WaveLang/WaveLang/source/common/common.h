@@ -1,9 +1,13 @@
 #ifndef WAVELANG_COMMON_H__
 #define WAVELANG_COMMON_H__
 
-#include "common\types.h"
-#include "common\asserts.h"
+#include "common/platform.h"
+#include "common/types.h"
+#include "common/asserts.h"
 #include <cctype>
+
+#define alignof __alignof
+#define alignas(x) __declspec(align(x))
 
 // Causes an error if x is used before it has been defined
 #define PREDEFINED(x) (1 / defined x## && x)
@@ -28,78 +32,78 @@ inline bool string_compare_case_insensitive(const char *str_a, const char *str_b
 	}
 }
 
-template<typename T>
+template<typename t_element>
 class c_wrapped_array_const {
 public:
-	c_wrapped_array_const(const T *pointer, size_t count)
+	c_wrapped_array_const(const t_element *pointer, size_t count)
 		: m_pointer(pointer)
 		, m_count(count) {
 	}
 
 	template<size_t c>
-	static c_wrapped_array_const<T> construct(const T (&arr)[c]) {
-		return c_wrapped_array_const<T>(arr, c);
+	static c_wrapped_array_const<t_element> construct(const t_element(&arr)[c]) {
+		return c_wrapped_array_const<t_element>(arr, c);
 	}
 
 	size_t get_count() const {
 		return m_count;
 	}
 
-	const T *get_pointer() const {
+	const t_element *get_pointer() const {
 		return m_pointer;
 	}
 
-	const T &operator[](size_t index) const {
+	const t_element &operator[](size_t index) const {
 		wl_assert(VALID_INDEX(index, m_count));
 		return m_pointer[index];
 	}
 
 private:
-	const T *m_pointer;
+	const t_element *m_pointer;
 	size_t m_count;
 };
 
-template<typename T>
+template<typename t_element>
 class c_wrapped_array {
 public:
-	c_wrapped_array(T *pointer, size_t count)
+	c_wrapped_array(t_element *pointer, size_t count)
 		: m_pointer(pointer)
 		, m_count(count) {
 	}
 
 	template<size_t c>
-	static c_wrapped_array<T> construct(T (&arr)[c]) {
-		return c_wrapped_array<T>(arr, c);
+	static c_wrapped_array<t_element> construct(t_element (&arr)[c]) {
+		return c_wrapped_array<t_element>(arr, c);
 	}
 
 	size_t get_count() const {
-		return m_count
-	};
+		return m_count;
+	}
 
-	T *get_pointer() {
+	t_element *get_pointer() {
 		return m_pointer;
 	}
 
-	const T *get_pointer() const {
+	const t_element *get_pointer() const {
 		return m_pointer;
 	}
 
-	T &operator[](size_t index) {
+	t_element &operator[](size_t index) {
 		wl_assert(VALID_INDEX(index, m_count));
 		return m_pointer[index];
 	}
 
-	const T &operator[](size_t index) const {
+	const t_element &operator[](size_t index) const {
 		wl_assert(VALID_INDEX(index, m_count));
 		return m_pointer[index];
 	}
 
-	operator c_wrapped_array_const<T>() const {
-		return c_wrapped_array_const<T>(m_pointer, m_count);
+	operator c_wrapped_array_const<t_element>() const {
+		return c_wrapped_array_const<t_element>(m_pointer, m_count);
 	}
 
 private:
-	T *m_pointer;
+	t_element *m_pointer;
 	size_t m_count;
 };
 

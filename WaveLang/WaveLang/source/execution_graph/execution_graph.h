@@ -1,7 +1,7 @@
 #ifndef WAVELANG_EXECUTION_GRAPH_H__
 #define WAVELANG_EXECUTION_GRAPH_H__
 
-#include "common\common.h"
+#include "common/common.h"
 #include <vector>
 
 #define EXECUTION_GRAPH_OUTPUT_ENABLED 1
@@ -59,7 +59,7 @@ public:
 
 	uint32 add_constant_node(real32 constant_value);
 	uint32 add_native_module_call_node(uint32 native_module_index);
-	uint32 add_output_node();
+	uint32 add_output_node(uint32 output_index);
 	uint32 add_intermediate_value_node();
 	void remove_node(uint32 node_index);
 
@@ -70,6 +70,7 @@ public:
 	e_execution_graph_node_type get_node_type(uint32 node_index) const;
 	real32 get_constant_node_value(uint32 node_index) const;
 	uint32 get_native_module_call_native_module_index(uint32 node_index) const;
+	uint32 get_output_node_output_index(uint32 node_index) const;
 	size_t get_node_incoming_edge_count(uint32 node_index) const;
 	uint32 get_node_incoming_edge_index(uint32 node_index, size_t edge) const;
 	size_t get_node_outgoing_edge_count(uint32 node_index) const;
@@ -100,6 +101,7 @@ private:
 
 			uint32 native_module_index;
 			real32 constant_value;
+			uint32 output_index;
 		};
 
 		std::vector<uint32> incoming_edge_indices;

@@ -72,6 +72,15 @@
     <ClCompile Include="source\engine\task_functions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\engine\predecessor_resolver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\common\threading\lock_free.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\common\threading\lock_free_pool.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\common\asserts.h">
@@ -134,9 +143,27 @@
     <ClInclude Include="source\engine\task_functions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\engine\predecessor_resolver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\common\platform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\common\threading\atomics.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\common\threading\lock_free.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\common\threading\lock_free_pool.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="source\compiler\compiler_utility.inl">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="source\common\threading\atomics.inl">
       <Filter>Header Files</Filter>
     </None>
   </ItemGroup>

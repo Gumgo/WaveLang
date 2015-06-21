@@ -1,7 +1,7 @@
 #ifndef WAVELANG_LR_PARSER_H__
 #define WAVELANG_LR_PARSER_H__
 
-#include "common\common.h"
+#include "common/common.h"
 #include <vector>
 
 const uint32 k_max_production_rhs_symbol_count = 10;

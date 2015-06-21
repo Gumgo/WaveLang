@@ -1,4 +1,4 @@
-#include "compiler\compiler_utility.h"
+#include "compiler/compiler_utility.h"
 
 bool compiler_utility::is_whitespace(char c) {
 	return c == ' ' || c == '\n' || c == '\t';

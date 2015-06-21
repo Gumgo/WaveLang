@@ -1,4 +1,4 @@
-#include "compiler\lr_parser.h"
+#include "compiler/lr_parser.h"
 #include <stack>
 
 c_lr_symbol::c_lr_symbol() {

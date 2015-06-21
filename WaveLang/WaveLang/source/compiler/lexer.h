@@ -1,8 +1,8 @@
 #ifndef WAVELANG_LEXER_H__
 #define WAVELANG_LEXER_H__
 
-#include "common\common.h"
-#include "compiler\compiler_utility.h"
+#include "common/common.h"
+#include "compiler/compiler_utility.h"
 #include <vector>
 
 enum e_token_type {

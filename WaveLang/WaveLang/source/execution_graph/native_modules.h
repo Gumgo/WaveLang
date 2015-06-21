@@ -1,7 +1,7 @@
 #ifndef WAVELANG_NATIVE_MODULES_H__
 #define WAVELANG_NATIVE_MODULES_H__
 
-#include "common\common.h"
+#include "common/common.h"
 #include <vector>
 
 // Defines the registry of native modules

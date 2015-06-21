@@ -1,4 +1,4 @@
-#include "compiler\ast.h"
+#include "compiler/ast.h"
 
 const char *k_entry_point_name = "main";
 

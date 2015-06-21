@@ -1,7 +1,7 @@
 #ifndef WAVELANG_EXECUTION_GRAPH_BUILDER_H__
 #define WAVELANG_EXECUTION_GRAPH_BUILDER_H__
 
-#include "common\common.h"
+#include "common/common.h"
 
 class c_ast_node;
 class c_execution_graph;

@@ -1,5 +1,5 @@
-#include "compiler\parser.h"
-#include "compiler\lexer.h"
+#include "compiler/parser.h"
+#include "compiler/lexer.h"
 
 #define OUTPUT_PARSE_TREE_ENABLED 0
 

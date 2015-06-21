@@ -1,5 +1,5 @@
-#include "execution_graph\execution_graph.h"
-#include "execution_graph\native_modules.h"
+#include "execution_graph/execution_graph.h"
+#include "execution_graph/native_modules.h"
 #include <string>
 
 #if PREDEFINED(EXECUTION_GRAPH_OUTPUT_ENABLED)
@@ -13,11 +13,11 @@ c_execution_graph::c_execution_graph() {
 
 // $TODO do we care about being endian-correct?
 
-template<typename T> void write(std::ofstream &out, T value) {
+template<typename t_value> void write(std::ofstream &out, t_value value) {
 	out.write(reinterpret_cast<const char *>(&value), sizeof(value));
 }
 
-template<typename T> bool read(std::ifstream &in, T &value) {
+template<typename t_value> bool read(std::ifstream &in, t_value &value) {
 	in.read(reinterpret_cast<char *>(&value), sizeof(value));
 	return !in.fail();
 }
@@ -199,8 +199,14 @@ e_execution_graph_result c_execution_graph::load(const char *fname) {
 }
 
 bool c_execution_graph::validate() const {
+	size_t output_node_count = 0;
+
 	// Validate each node, validate each edge, check for cycles
-	for (size_t index = 0; index < m_nodes.size(); index++) {
+	for (uint32 index = 0; index < get_node_count(); index++) {
+		if (get_node_type(index) == k_execution_graph_node_type_output) {
+			output_node_count++;
+		}
+
 		if (!validate_node(index)) {
 			return false;
 		}
@@ -212,6 +218,33 @@ bool c_execution_graph::validate() const {
 			}
 		}
 	}
+
+	// Output indices for the n output nodes should be unique and map to the range [0,n-1]
+	std::vector<bool> output_nodes_found(output_node_count, false);
+	for (uint32 index = 0; index < get_node_count(); index++) {
+		if (get_node_type(index) == k_execution_graph_node_type_output) {
+			uint32 output_index = get_output_node_output_index(index);
+
+			if (!VALID_INDEX(output_index, output_node_count)) {
+				// Not in the range [0,n-1]
+				return false;
+			}
+
+			if (output_nodes_found[output_index]) {
+				// Duplicate output index
+				return false;
+			}
+
+			output_nodes_found[output_index] = true;
+		}
+	}
+
+	// We should have found exactly n unique outputs
+#if PREDEFINED(ASSERTS_ENABLED)
+	for (size_t index = 0; index < output_nodes_found.size(); index++) {
+		wl_assert(output_nodes_found[index]);
+	}
+#endif // PREDEFINED(ASSERTS_ENABLED)
 
 	// Check for cycles
 	std::vector<bool> nodes_visited(m_nodes.size());
@@ -280,11 +313,11 @@ uint32 c_execution_graph::add_native_module_call_node(uint32 native_module_index
 	return index;
 }
 
-uint32 c_execution_graph::add_output_node() {
+uint32 c_execution_graph::add_output_node(uint32 output_index) {
 	uint32 index = allocate_node();
 	s_node &node = m_nodes[index];
 	node.type = k_execution_graph_node_type_output;
-	node.data = 0;
+	node.output_index = output_index;
 	return index;
 }
 
@@ -584,6 +617,12 @@ uint32 c_execution_graph::get_native_module_call_native_module_index(uint32 node
 	const s_node &node = m_nodes[node_index];
 	wl_assert(node.type == k_execution_graph_node_type_native_module_call);
 	return node.native_module_index;
+}
+
+uint32 c_execution_graph::get_output_node_output_index(uint32 node_index) const {
+	const s_node &node = m_nodes[node_index];
+	wl_assert(node.type == k_execution_graph_node_type_output);
+	return node.output_index;
 }
 
 size_t c_execution_graph::get_node_incoming_edge_count(uint32 node_index) const {
