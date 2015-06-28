@@ -1,9 +1,27 @@
 #include "engine/predecessor_resolver.h"
 
+#define OUTPUT_PREDECESSOR_RESOLUTION 1
+
+#if PREDEFINED(OUTPUT_PREDECESSOR_RESOLUTION)
+#include <fstream>
+#endif // PREDEFINED(OUTPUT_PREDECESSOR_RESOLUTION)
+
 void c_predecessor_resolver::resolve() {
 	if (m_node_count == 0) {
 		return;
 	}
+
+#if PREDEFINED(OUTPUT_PREDECESSOR_RESOLUTION)
+	std::ofstream out("predecessor_resolution.txt");
+	for (uint32 b = 0; b < m_node_count; b++) {
+		for (uint32 a = 0; a < m_node_count; a++) {
+			out << (does_a_precede_b(a, b) ? "x " : ". ");
+		}
+
+		out << "\n";
+	}
+	out << "\n";
+#endif // PREDEFINED(OUTPUT_PREDECESSOR_RESOLUTION)
 
 	// Keep looping until nothing changes
 	bool done;
@@ -66,4 +84,14 @@ void c_predecessor_resolver::resolve() {
 		// Swap over to the next update set
 		last_columns_updated.swap(next_columns_to_update);
 	} while (!done);
+
+#if PREDEFINED(OUTPUT_PREDECESSOR_RESOLUTION)
+	for (uint32 b = 0; b < m_node_count; b++) {
+		for (uint32 a = 0; a < m_node_count; a++) {
+			out << (does_a_precede_b(a, b) ? "x " : ". ");
+		}
+
+		out << "\n";
+	}
+#endif PREDEFINED(OUTPUT_PREDECESSOR_RESOLUTION)
 }

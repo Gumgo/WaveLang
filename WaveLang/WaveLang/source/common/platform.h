@@ -1,6 +1,8 @@
 #ifndef WAVELANG_PLATFORM_H__
 #define WAVELANG_PLATFORM_H__
 
+#include "common/macros.h"
+
 // Exactly one of these is set for the platform
 #define PLATFORM_WINDOWS			0
 #define PLATFORM_APPLE				0
@@ -48,10 +50,10 @@
 #error Unknown compiler
 #endif // COMPILER
 
-#if PLATFORM_WINDOWS
+#if PREDEFINED(PLATFORM_WINDOWS)
 #undef ENDIANNESS_LITTLE
 #define ENDIANNESS_LITTLE 1
-#elif COMPILER_GCC
+#elif PREDEFINED(COMPILER_GCC)
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 #undef ENDIANNESS_LITTLE
 #define ENDIANNESS_LITTLE 1

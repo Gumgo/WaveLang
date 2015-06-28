@@ -12,8 +12,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\WaveLang\source\common\asserts.cpp" />
+    <ClCompile Include="..\WaveLang\source\common\threading\condition_variable.cpp" />
     <ClCompile Include="..\WaveLang\source\common\threading\lock_free.cpp" />
     <ClCompile Include="..\WaveLang\source\common\threading\lock_free_pool.cpp" />
+    <ClCompile Include="..\WaveLang\source\common\threading\mutex.cpp" />
+    <ClCompile Include="..\WaveLang\source\common\threading\semaphore.cpp" />
+    <ClCompile Include="..\WaveLang\source\common\threading\thread.cpp" />
     <ClCompile Include="..\WaveLang\source\compiler\ast.cpp" />
     <ClCompile Include="..\WaveLang\source\compiler\ast_builder.cpp" />
     <ClCompile Include="..\WaveLang\source\compiler\ast_validator.cpp" />
@@ -26,6 +30,7 @@
     <ClCompile Include="..\WaveLang\source\compiler\lr_parser.cpp" />
     <ClCompile Include="..\WaveLang\source\compiler\parser.cpp" />
     <ClCompile Include="..\WaveLang\source\compiler\preprocessor.cpp" />
+    <ClCompile Include="..\WaveLang\source\engine\thread_pool.cpp" />
     <ClCompile Include="..\WaveLang\source\execution_graph\execution_graph.cpp" />
     <ClCompile Include="..\WaveLang\source\execution_graph\native_modules.cpp" />
   </ItemGroup>
@@ -34,8 +39,12 @@
     <ClInclude Include="..\WaveLang\source\common\common.h" />
     <ClInclude Include="..\WaveLang\source\common\platform.h" />
     <ClInclude Include="..\WaveLang\source\common\threading\atomics.h" />
+    <ClInclude Include="..\WaveLang\source\common\threading\condition_variable.h" />
     <ClInclude Include="..\WaveLang\source\common\threading\lock_free.h" />
     <ClInclude Include="..\WaveLang\source\common\threading\lock_free_pool.h" />
+    <ClInclude Include="..\WaveLang\source\common\threading\lock_free_queue.h" />
+    <ClInclude Include="..\WaveLang\source\common\threading\mutex.h" />
+    <ClInclude Include="..\WaveLang\source\common\threading\semaphore.h" />
     <ClInclude Include="..\WaveLang\source\common\types.h" />
     <ClInclude Include="..\WaveLang\source\compiler\ast.h" />
     <ClInclude Include="..\WaveLang\source\compiler\ast_builder.h" />
@@ -48,11 +57,13 @@
     <ClInclude Include="..\WaveLang\source\compiler\lr_parser.h" />
     <ClInclude Include="..\WaveLang\source\compiler\parser.h" />
     <ClInclude Include="..\WaveLang\source\compiler\preprocessor.h" />
+    <ClInclude Include="..\WaveLang\source\engine\thread_pool.h" />
     <ClInclude Include="..\WaveLang\source\execution_graph\execution_graph.h" />
     <ClInclude Include="..\WaveLang\source\execution_graph\native_modules.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\WaveLang\source\common\threading\atomics.inl" />
+    <None Include="..\WaveLang\source\common\threading\lock_free_queue.inl" />
     <None Include="..\WaveLang\source\compiler\compiler_utility.inl" />
   </ItemGroup>
   <ItemGroup>

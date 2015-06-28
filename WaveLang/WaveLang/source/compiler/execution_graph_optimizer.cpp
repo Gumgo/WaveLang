@@ -455,6 +455,15 @@ static bool try_to_apply_optimization_rule(c_execution_graph *execution_graph, u
 				if (root_module_node_index == c_execution_graph::k_invalid_index) {
 					wl_assert(match_state_stack.empty());
 					root_module_node_index = node_index;
+				} else {
+					s_match_state &current_state = match_state_stack.top();
+					wl_assert(current_state.has_more_inputs(execution_graph));
+
+					uint32 input_node_index = execution_graph->get_node_incoming_edge_index(
+						current_state.current_node_index, current_state.next_input_index);
+					uint32 output_node_index = execution_graph->get_node_outgoing_edge_index(node_index, 0);
+					execution_graph->add_edge(output_node_index, input_node_index);
+					current_state.next_input_index++;
 				}
 
 				s_match_state new_state;

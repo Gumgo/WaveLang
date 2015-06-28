@@ -10,6 +10,8 @@ class c_execution_graph;
 
 class c_task_graph {
 public:
+	static const uint32 k_invalid_buffer = static_cast<uint32>(-1);
+
 	c_task_graph();
 	~c_task_graph();
 
@@ -80,9 +82,18 @@ private:
 	uint32 m_buffer_count;
 	uint32 m_max_buffer_concurrency;
 
+	// List of initial tasks
+	size_t m_initial_tasks_start;
+	size_t m_initial_tasks_count;
+
 	// List of final output buffers
 	size_t m_output_buffers_start;
 	size_t m_output_buffers_count;
+
+	// It is possible that an output is linked up to a constant instead of a buffer. In this case, a constant will be
+	// stored at the appropriate index in this list, and in the output buffer list, k_invalid_buffer will be stored.
+	size_t m_output_constants_start;
+	size_t m_output_constants_count;
 };
 
 #endif // WAVELANG_TASK_GRAPH_H__

@@ -94,6 +94,7 @@ public:
 
 	s_driver_result start_stream(const s_driver_settings &settings);
 	void stop_stream();
+	bool is_stream_running() const;
 
 private:
 	static int stream_callback_internal(

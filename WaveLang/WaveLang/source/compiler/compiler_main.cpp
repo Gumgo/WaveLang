@@ -33,6 +33,11 @@ int main(int argc, char **argv) {
 			out_fname += k_wavelang_synth_extension;
 
 			std::cout << "Compiled '" << argv[arg] << "' successfully, saving result to '" << out_fname << "'\n";
+
+			e_execution_graph_result save_result = execution_graph.save(out_fname.c_str());
+			if (save_result != k_execution_graph_result_success) {
+				std::cout << "Failed to save '" << out_fname << "' (result code " << save_result << ")\n";
+			}
 		}
 	}
 

@@ -1,22 +1,11 @@
 #ifndef WAVELANG_COMMON_H__
 #define WAVELANG_COMMON_H__
 
+#include "common/macros.h"
 #include "common/platform.h"
 #include "common/types.h"
 #include "common/asserts.h"
 #include <cctype>
-
-#define alignof __alignof
-#define alignas(x) __declspec(align(x))
-
-// Causes an error if x is used before it has been defined
-#define PREDEFINED(x) (1 / defined x## && x)
-
-#define NUMBEROF(x) (sizeof(x) / (sizeof(x[0])))
-
-#define VALID_INDEX(i, c) ((i) >= 0 && (i) < (c))
-
-#define ZERO_STRUCT(s) memset(s, 0, sizeof(*s))
 
 // Some utility functions... if this list gets too big, move these somewhere better
 inline bool string_compare_case_insensitive(const char *str_a, const char *str_b) {
@@ -31,6 +20,16 @@ inline bool string_compare_case_insensitive(const char *str_a, const char *str_b
 		}
 	}
 }
+
+class c_uncopyable {
+public:
+	c_uncopyable() {}
+
+private:
+	// Not implemented
+	c_uncopyable(const c_uncopyable &other);
+	c_uncopyable &operator=(const c_uncopyable &other);
+};
 
 template<typename t_element>
 class c_wrapped_array_const {

@@ -1,5 +1,6 @@
 #include "common/common.h"
 #include "runtime/runtime_context.h"
+#include "execution_graph/execution_graph.h"
 
 #include <iostream>
 #include <string>
@@ -28,6 +29,7 @@ private:
 	static bool is_whitespace(char c);
 
 	void process_command_init_stream(const s_command &command);
+	void process_command_load_synth(const s_command &command);
 
 	s_runtime_context runtime_context;
 };
@@ -57,6 +59,9 @@ int c_command_line_interface::main_function() {
 		}
 	}
 
+	// None active initially
+	runtime_context.active_task_graph = -1;
+
 	bool done = false;
 	while (!done) {
 		s_command command = process_command();
@@ -67,6 +72,10 @@ int c_command_line_interface::main_function() {
 			done = true;
 		} else if (command.command == "init_stream") {
 			process_command_init_stream(command);
+		} else if (command.command == "load_synth") {
+			process_command_load_synth(command);
+		} else {
+			std::cout << "Invalid command\n";
 		}
 	}
 
@@ -236,6 +245,45 @@ void c_command_line_interface::process_command_init_stream(const s_command &comm
 		s_driver_result result = runtime_context.driver_interface.start_stream(settings);
 		if (result.result != k_driver_result_success) {
 			std::cout << result.message << "\n";
+		}
+
+		return;
+	}
+
+	std::cout << "Invalid command\n";
+}
+
+void c_command_line_interface::process_command_load_synth(const s_command &command) {
+	if (command.arguments.size() == 1) {
+		// Try to load the execution graph
+		c_execution_graph execution_graph;
+
+		// First argument is the path to load
+		e_execution_graph_result load_result = execution_graph.load(command.arguments[0].c_str());
+		if (load_result != k_execution_graph_result_success) {
+			std::cout << "Failed to load '" << command.arguments[0] << "' (result code " << load_result << ")\n";
+			return;
+		}
+
+		// Load into the inactive task graph
+		int32 loading_task_graph;
+		if (runtime_context.active_task_graph == -1) {
+			loading_task_graph = 0;
+		} else {
+			loading_task_graph = (runtime_context.active_task_graph == 0) ? 1 : 0;
+		}
+
+		c_task_graph &task_graph = runtime_context.task_graphs[loading_task_graph];
+		if (!task_graph.build(execution_graph)) {
+			std::cout << "Failed to build task graph\n";
+			return;
+		}
+
+		if (runtime_context.driver_interface.is_stream_running()) {
+			// $TODO we need to atomically swap out the active graph
+		} else {
+			// No stream running, so we can just switch the active task graph here
+			runtime_context.active_task_graph = loading_task_graph;
 		}
 
 		return;

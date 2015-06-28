@@ -191,6 +191,10 @@ void c_driver_interface::stop_stream() {
 	m_stream = nullptr;
 }
 
+bool c_driver_interface::is_stream_running() const {
+	return m_stream != nullptr;
+}
+
 int c_driver_interface::stream_callback_internal(
 	const void *input, void *output, unsigned long frame_count,
 	const PaStreamCallbackTimeInfo *time_info, PaStreamCallbackFlags status_flags, void *user_data) {

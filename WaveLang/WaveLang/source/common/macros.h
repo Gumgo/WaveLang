@@ -1,0 +1,18 @@
+#ifndef WAVELANG_MACROS_H__
+#define WAVELANG_MACROS_H__
+
+// Annoyingly, despite NOT being implemented, some header files prevent us from defining alignof and alignas! So we must
+// instead use all-caps versions.
+#define ALIGNOF __alignof
+#define ALIGNAS(x) __declspec(align(x))
+
+// Causes an error if x is used before it has been defined
+#define PREDEFINED(x) (1 / defined x## && x)
+
+#define NUMBEROF(x) (sizeof(x) / (sizeof(x[0])))
+
+#define VALID_INDEX(i, c) ((i) >= 0 && (i) < (c))
+
+#define ZERO_STRUCT(s) memset(s, 0, sizeof(*s))
+
+#endif // WAVELANG_MACROS_H__

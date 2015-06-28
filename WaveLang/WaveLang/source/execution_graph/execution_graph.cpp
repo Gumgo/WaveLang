@@ -39,7 +39,9 @@ e_execution_graph_result c_execution_graph::save(const char *fname) const {
 	}
 
 	// Write identifier at the beginning
-	write(out, k_format_identifier);
+	for (size_t ch = 0; ch < NUMBEROF(k_format_identifier); ch++) {
+		write(out, k_format_identifier[ch]);
+	}
 	write(out, k_execution_graph_format_version);
 
 	// Write the node count, and also count up all edges
@@ -71,7 +73,10 @@ e_execution_graph_result c_execution_graph::save(const char *fname) const {
 
 		case k_execution_graph_node_type_native_module_input:
 		case k_execution_graph_node_type_native_module_output:
+			break;
+
 		case k_execution_graph_node_type_output:
+			write(out, node.output_index);
 			break;
 
 		default:
@@ -112,9 +117,14 @@ e_execution_graph_result c_execution_graph::load(const char *fname) {
 
 	// Read the identifiers at the beginning of the file
 	char format_identifier_buffer[NUMBEROF(k_format_identifier)];
+	for (size_t ch = 0; ch < NUMBEROF(k_format_identifier); ch++) {
+		if (!read(in, format_identifier_buffer[ch])) {
+			return in.eof() ? k_execution_graph_result_invalid_header : k_execution_graph_result_failed_to_read;
+		}
+	}
+
 	uint32 format_version;
-	if (!read(in, format_identifier_buffer) ||
-		!read(in, format_version)) {
+	if (!read(in, format_version)) {
 		return in.eof() ? k_execution_graph_result_invalid_header : k_execution_graph_result_failed_to_read;
 	}
 
@@ -163,7 +173,12 @@ e_execution_graph_result c_execution_graph::load(const char *fname) {
 
 		case k_execution_graph_node_type_native_module_input:
 		case k_execution_graph_node_type_native_module_output:
+			break;
+
 		case k_execution_graph_node_type_output:
+			if (!read(in, node.output_index)) {
+				return in.eof() ? k_execution_graph_result_invalid_graph : k_execution_graph_result_failed_to_read;
+			}
 			break;
 
 		default:
