@@ -2,6 +2,18 @@
 
 const char *k_entry_point_name = "main";
 
+static const char *k_data_type_strings[] = {
+	"void",
+	"value"
+};
+
+static_assert(NUMBEROF(k_data_type_strings) == k_data_type_count, "Data type string mismatch");
+
+const char *get_data_type_string(e_data_type data_type) {
+	wl_assert(VALID_INDEX(data_type, k_data_type_count));
+	return k_data_type_strings[data_type];
+}
+
 c_ast_node::c_ast_node(e_ast_node_type type)
 	: m_type(type) {
 	m_source_location.clear();
@@ -75,18 +87,14 @@ c_ast_node_module_declaration::c_ast_node_module_declaration()
 }
 
 c_ast_node_module_declaration::~c_ast_node_module_declaration() {
-	for (size_t index = 0; index < m_arguments.size(); index++) {
-		delete m_arguments[index];
-	}
+	// Don't delete arguments, as they are owned by the body scope
 
 	delete m_scope;
 }
 
 void c_ast_node_module_declaration::iterate(c_ast_node_visitor *visitor) {
 	if (visitor->begin_visit(this)) {
-		for (size_t index = 0; index < m_arguments.size(); index++) {
-			m_arguments[index]->iterate(visitor);
-		}
+		// Don't iterate the arguments, because they will be iterated inside the body scope
 
 		if (m_is_native) {
 			wl_assert(m_scope == nullptr);
@@ -101,12 +109,14 @@ void c_ast_node_module_declaration::iterate(c_ast_node_visitor *visitor) {
 
 void c_ast_node_module_declaration::iterate(c_ast_node_const_visitor *visitor) const {
 	if (visitor->begin_visit(this)) {
-		for (size_t index = 0; index < m_arguments.size(); index++) {
-			m_arguments[index]->iterate(visitor);
-		}
+		// Don't iterate the arguments, because they will be iterated inside the body scope
 
-		wl_assert(m_scope != nullptr);
-		m_scope->iterate(visitor);
+		if (m_is_native) {
+			wl_assert(m_scope == nullptr);
+		} else {
+			wl_assert(m_scope != nullptr);
+			m_scope->iterate(visitor);
+		}
 
 		visitor->end_visit(this);
 	}

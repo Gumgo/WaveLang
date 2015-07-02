@@ -7,10 +7,10 @@
 static const char *k_wavelang_synth_extension = "wls";
 
 int main(int argc, char **argv) {
-	for (int arg = 0; arg < argc; arg++) {
+	for (int arg = 1; arg < argc; arg++) {
 		std::cout << "Compiling '" << argv[arg] << "'\n";
 		c_execution_graph execution_graph;
-		s_compiler_result result = c_compiler::compile(".\\", "synth_1.txt", &execution_graph);
+		s_compiler_result result = c_compiler::compile(".\\", argv[arg], &execution_graph);
 
 		if (result.result == k_compiler_result_success) {
 			std::string out_fname = argv[arg];

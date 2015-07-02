@@ -7,6 +7,18 @@
 
 extern const char *k_entry_point_name;
 
+// List of types
+// $TODO void, real, bool, string, module
+// $TODO add type system to everything (arguments, nodes, return value, etc.)
+enum e_data_type {
+	k_data_type_void,
+	k_data_type_value,
+
+	k_data_type_count
+};
+
+const char *get_data_type_string(e_data_type data_type);
+
 // List of all AST nodes
 enum e_ast_node_type {
 	k_ast_node_type_scope,						// A list of expressions

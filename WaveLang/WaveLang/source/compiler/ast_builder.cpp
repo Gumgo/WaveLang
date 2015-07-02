@@ -246,6 +246,11 @@ static c_ast_node_module_declaration *build_module_declaration(const c_lr_parse_
 	module_declaration->set_has_return_value(has_return);
 	module_declaration->set_name(tokens.tokens[module_name_node.get_token_index()].token_string.to_std_string());
 
+	// Create the module body scope before we read the arguments. This is because the arguments get included as body
+	// scope items.
+	c_ast_node_scope *module_body_scope = new c_ast_node_scope();
+	module_declaration->set_scope(module_body_scope);
+
 	// Read the arguments, if they exist
 	if (module_declaration_arguments_node.has_child()) {
 		const c_lr_parse_tree_node &module_declaration_argument_list_node =
@@ -322,12 +327,11 @@ static c_ast_node_module_declaration *build_module_declaration(const c_lr_parse_
 				tokens.tokens[argument_name_node.get_token_index()].token_string.to_std_string());
 
 			module_declaration->add_argument(argument_declaration);
+			module_body_scope->add_child(argument_declaration);
 		}
 	}
 
 	// Iterate through the items in the module body and add each one to the module's scope
-	c_ast_node_scope *module_body_scope = new c_ast_node_scope();
-	module_declaration->set_scope(module_body_scope);
 
 	// Due to the left-recursive rule, we end up visiting the actual items themselves in reverse, so accumulate and flip
 	// the order
