@@ -5,7 +5,7 @@ inline c_compiler_string::c_compiler_string()
 inline c_compiler_string::c_compiler_string(const char *str, size_t length)
 	: m_str(str)
 	, m_length(length) {
-	wl_assert(length == 0 || str != nullptr);
+	wl_assert(length == 0 || str);
 }
 
 inline const char *c_compiler_string::get_str() const {
@@ -27,7 +27,7 @@ inline bool c_compiler_string::operator==(const c_compiler_string &other) const 
 
 inline bool c_compiler_string::operator==(const char *other) const {
 	// $TODO Could improve implementation to avoid strlen call
-	wl_assert(other != nullptr);
+	wl_assert(other);
 	c_compiler_string other_str(other, strlen(other));
 	return *this == other_str;
 }

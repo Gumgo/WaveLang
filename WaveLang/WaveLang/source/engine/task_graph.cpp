@@ -17,12 +17,90 @@ static bool does_native_module_call_input_branch(const c_execution_graph &execut
 
 c_task_graph::c_task_graph() {
 	m_buffer_count = 0;
+	m_max_task_concurrency = 0;
 	m_max_buffer_concurrency = 0;
 	m_output_buffers_start = 0;
 	m_output_buffers_count = 0;
+
+	ZERO_STRUCT(&m_globals);
 }
 
 c_task_graph::~c_task_graph() {
+}
+
+uint32 c_task_graph::get_task_count() const {
+	return static_cast<uint32>(m_tasks.size());
+}
+
+uint32 c_task_graph::get_max_task_concurrency() const {
+	return m_max_task_concurrency;
+}
+
+e_task_function c_task_graph::get_task_function(uint32 task_index) const {
+	return m_tasks[task_index].task_function;
+}
+
+real32 c_task_graph::get_task_in_constant(uint32 task_index, size_t index) const {
+	const s_task &task = m_tasks[task_index];
+	wl_assert(VALID_INDEX(index,
+		c_task_function_registry::get_task_function_description(task.task_function).in_constant_count));
+	return m_constant_lists[task.in_constants_start + index];
+}
+
+uint32 c_task_graph::get_task_in_buffer(uint32 task_index, size_t index) const {
+	const s_task &task = m_tasks[task_index];
+	wl_assert(VALID_INDEX(index,
+		c_task_function_registry::get_task_function_description(task.task_function).in_buffer_count));
+	return m_buffer_lists[task.in_buffers_start + index];
+}
+
+uint32 c_task_graph::get_task_out_buffer(uint32 task_index, size_t index) const {
+	const s_task &task = m_tasks[task_index];
+	wl_assert(VALID_INDEX(index,
+		c_task_function_registry::get_task_function_description(task.task_function).out_buffer_count));
+	return m_buffer_lists[task.out_buffers_start + index];
+}
+
+uint32 c_task_graph::get_task_inout_buffer(uint32 task_index, size_t index) const {
+	const s_task &task = m_tasks[task_index];
+	wl_assert(VALID_INDEX(index,
+		c_task_function_registry::get_task_function_description(task.task_function).inout_buffer_count));
+	return m_buffer_lists[task.inout_buffers_start + index];
+}
+
+size_t c_task_graph::get_task_predecessor_count(uint32 task_index) const {
+	return m_tasks[task_index].predecessor_count;
+}
+
+size_t c_task_graph::get_task_successors_count(uint32 task_index) const {
+	return m_tasks[task_index].successors_count;
+}
+
+uint32 c_task_graph::get_task_successor(uint32 task_index, size_t index) const {
+	const s_task &task = m_tasks[task_index];
+	wl_assert(VALID_INDEX(index, task.successors_count));
+	return m_task_lists[task.successors_start + index];
+}
+
+size_t c_task_graph::get_initial_tasks_count() const {
+	return m_initial_tasks_count;
+}
+
+uint32 c_task_graph::get_initial_task(size_t index) const {
+	wl_assert(VALID_INDEX(index, m_initial_tasks_count));
+	return m_task_lists[m_initial_tasks_start + index];
+}
+
+uint32 c_task_graph::get_buffer_count() const {
+	return m_buffer_count;
+}
+
+uint32 c_task_graph::get_max_buffer_concurrency() const {
+	return m_max_buffer_concurrency;
+}
+
+const s_task_graph_globals &c_task_graph::get_globals() const {
+	return m_globals;
 }
 
 bool c_task_graph::build(const c_execution_graph &execution_graph) {
@@ -31,6 +109,7 @@ bool c_task_graph::build(const c_execution_graph &execution_graph) {
 	m_buffer_lists.clear();
 	m_task_lists.clear();
 	m_buffer_count = 0;
+	m_max_task_concurrency = 0;
 	m_max_buffer_concurrency = 0;
 	m_output_buffers_start = 0;
 	m_output_buffers_count = 0;
@@ -56,7 +135,10 @@ bool c_task_graph::build(const c_execution_graph &execution_graph) {
 	if (success) {
 		build_task_successor_lists(execution_graph, nodes_to_tasks);
 		allocate_buffers(execution_graph);
-		calculate_max_buffer_concurrency();
+		calculate_max_concurrency();
+
+		const s_execution_graph_globals &execution_graph_globals = execution_graph.get_globals();
+		m_globals.max_voices = execution_graph_globals.max_voices;
 	}
 
 	if (!success) {
@@ -65,6 +147,7 @@ bool c_task_graph::build(const c_execution_graph &execution_graph) {
 		m_buffer_lists.clear();
 		m_task_lists.clear();
 		m_buffer_count = 0;
+		m_max_task_concurrency = 0;
 		m_max_buffer_concurrency = 0;
 		m_output_buffers_start = 0;
 		m_output_buffers_count = 0;
@@ -76,7 +159,7 @@ bool c_task_graph::build(const c_execution_graph &execution_graph) {
 static bool do_native_module_call_inputs_match(const c_execution_graph &execution_graph, uint32 node_index,
 	const char *in_args) {
 	wl_assert(execution_graph.get_node_type(node_index) == k_execution_graph_node_type_native_module_call);
-	wl_assert(in_args != nullptr);
+	wl_assert(in_args);
 
 	size_t incoming_edge_count = execution_graph.get_node_incoming_edge_count(node_index);
 
@@ -149,8 +232,7 @@ bool c_task_graph::add_task_for_node(const c_execution_graph &execution_graph, u
 	uint32 native_module_index = execution_graph.get_native_module_call_native_module_index(node_index);
 	switch (native_module_index) {
 	case k_native_module_noop:
-		// We don't allow no-ops at this point
-		wl_halt();
+		wl_vhalt("We don't allow no-ops at this point");
 		return false;
 
 	case k_native_module_negation:
@@ -411,7 +493,7 @@ bool c_task_graph::add_task_for_node(const c_execution_graph &execution_graph, u
 		}
 
 	default:
-		wl_halt();
+		wl_unreachable();
 		return false;
 	}
 }
@@ -499,8 +581,7 @@ void c_task_graph::setup_task(const c_execution_graph &execution_graph, uint32 n
 				c_execution_graph::k_invalid_index);
 			m_buffer_lists[task.inout_buffers_start + task_mapping.index * 2] = input_node_index;
 		} else {
-			// Can't map inputs to outputs
-			wl_halt();
+			wl_vhalt("Can't map inputs to outputs");
 		}
 
 		task_mapping_index++;
@@ -531,8 +612,7 @@ void c_task_graph::setup_task(const c_execution_graph &execution_graph, uint32 n
 				c_execution_graph::k_invalid_index);
 			m_buffer_lists[task.inout_buffers_start + task_mapping.index * 2 + 1] = output_node_index;
 		} else {
-			// Can't map inputs to outputs
-			wl_halt();
+			wl_vhalt("Can't map outputs to inputs");
 		}
 
 		task_mapping_index++;
@@ -831,7 +911,7 @@ void c_task_graph::assign_buffer_to_related_nodes(const c_execution_graph &execu
 		// No recursive work to do here
 	} else {
 		// We should never hit any other node types
-		wl_halt();
+		wl_unreachable();
 	}
 
 	if (inout_connections[node_index] != c_execution_graph::k_invalid_index) {
@@ -841,7 +921,7 @@ void c_task_graph::assign_buffer_to_related_nodes(const c_execution_graph &execu
 	}
 }
 
-void c_task_graph::calculate_max_buffer_concurrency() {
+void c_task_graph::calculate_max_concurrency() {
 	// In this function we calculate the worst case for the number of buffers which must be in memory concurrently. This
 	// number may be much less than m_buffer_count because in many cases, buffer B can only ever be created once buffer
 	// A is no longer needed.
@@ -877,6 +957,19 @@ void c_task_graph::calculate_max_buffer_concurrency() {
 	}
 
 	predecessor_resolver.resolve();
+
+	{
+		// At this point it is convenient to calculate task concurrency
+		std::vector<bool> task_concurrency(m_tasks.size() * m_tasks.size());
+		for (uint32 task_b = 0; task_b < m_tasks.size(); task_b++) {
+			for (uint32 task_a = 0; task_a < m_tasks.size(); task_a++) {
+				task_concurrency[task_b * m_tasks.size() + task_a] =
+					predecessor_resolver.are_a_b_concurrent(task_a, task_b);
+			}
+		}
+
+		m_max_task_concurrency = estimate_max_concurrency(static_cast<uint32>(m_tasks.size()), task_concurrency);
+	}
 
 	// 2) Determine which buffers are concurrent. This means that it is possible or necessary for the buffers to exist
 	// at the same time.
@@ -1006,43 +1099,48 @@ void c_task_graph::calculate_max_buffer_concurrency() {
 
 	// 3) Merge buffers which are not concurrent. To merge buffer x with buffers S=(a,b,c,...), buffer x must not be
 	// concurrent with any buffers in S.
+	m_max_buffer_concurrency = estimate_max_concurrency(m_buffer_count, buffer_concurrency);
+}
+
+uint32 c_task_graph::estimate_max_concurrency(uint32 node_count, const std::vector<bool> &concurrency_matrix) const {
+	wl_assert(node_count * node_count == concurrency_matrix.size());
 
 	static const size_t k_none = static_cast<size_t>(-1);
-	struct s_merged_buffer {
-		uint32 buffer_index;
+	struct s_merged_node_group {
+		uint32 node_index;
 		size_t next;
 
 	};
 
-	std::vector<s_merged_buffer> merge_group_lists;
+	std::vector<s_merged_node_group> merge_group_lists;
 	std::vector<size_t> merge_group_heads;
 
-	// Attempt to merge each buffer with the first possible merge group we encounter. If no merge is successful, make a
+	// Attempt to merge each node with the first possible merge group we encounter. If no merge is successful, make a
 	// new merge group.
-	for (uint32 buffer_index = 0; buffer_index < m_buffer_count; buffer_index++) {
+	for (uint32 node_index_a = 0; node_index_a < node_count; node_index_a++) {
 		bool merged = false;
 		for (size_t merge_group_index = 0;
 			 !merged && merge_group_index < merge_group_heads.size();
 			 merge_group_index++) {
 			bool can_merge = true;
-			size_t node_index = merge_group_heads[merge_group_index];
-			while (node_index != k_none && can_merge) {
-				s_merged_buffer merged_buffer = merge_group_lists[node_index];
-				if (buffer_concurrency[buffer_index * m_buffer_count + merged_buffer.buffer_index]) {
-					// These two buffers are concurrent, so we can't merge them
+			size_t node_index_b = merge_group_heads[merge_group_index];
+			while (node_index_b != k_none && can_merge) {
+				s_merged_node_group merged_node_group = merge_group_lists[node_index_b];
+				if (concurrency_matrix[node_index_a * node_count + merged_node_group.node_index]) {
+					// These two nodes are concurrent, so we can't merge them
 					can_merge = false;
 				}
 
-				node_index = merged_buffer.next;
+				node_index_b = merged_node_group.next;
 			}
 
 			if (can_merge) {
 				merge_group_heads[merge_group_index] = merge_group_lists.size();
 
-				s_merged_buffer merged_buffer;
-				merged_buffer.buffer_index = buffer_index;
-				merged_buffer.next = merge_group_heads[merge_group_index];
-				merge_group_lists.push_back(merged_buffer);
+				s_merged_node_group merged_node_group;
+				merged_node_group.node_index = node_index_a;
+				merged_node_group.next = merge_group_heads[merge_group_index];
+				merge_group_lists.push_back(merged_node_group);
 
 				merged = true;
 			}
@@ -1052,14 +1150,14 @@ void c_task_graph::calculate_max_buffer_concurrency() {
 			// No valid merges, add a new merge group
 			merge_group_heads.push_back(merge_group_lists.size());
 
-			s_merged_buffer merged_buffer;
-			merged_buffer.buffer_index = buffer_index;
-			merged_buffer.next = k_none;
-			merge_group_lists.push_back(merged_buffer);
+			s_merged_node_group merged_node_group;
+			merged_node_group.node_index = node_index_a;
+			merged_node_group.next = k_none;
+			merge_group_lists.push_back(merged_node_group);
 		}
 	}
 
-	// The number of merge groups we end up with is the max buffer concurrency. It is an overestimate, meaning we will
-	// reserve more memory than necessary.
-	m_max_buffer_concurrency = static_cast<uint32>(merge_group_heads.size());
+	// The number of merge groups we end up with is the max concurrency. It is an overestimate, meaning we will reserve
+	// more memory than necessary.
+	return static_cast<uint32>(merge_group_heads.size());
 }

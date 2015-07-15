@@ -2,19 +2,19 @@
 #include <memory>
 
 bool allocate_lock_free_aligned_memory(size_t size, void **out_base_pointer, void **out_aligned_pointer) {
-	wl_assert(out_base_pointer != nullptr);
-	wl_assert(out_aligned_pointer != nullptr);
+	wl_assert(out_base_pointer);
+	wl_assert(out_aligned_pointer);
 
-	size_t aligned_size = size + LOCK_FREE_ALIGNMENT - 1;
+	size_t aligned_size = size + k_lock_free_alignment - 1;
 	*out_base_pointer = *out_aligned_pointer = malloc(aligned_size);
 	if (!(*out_base_pointer)) {
 		return false;
 	}
 
-	IF_ASSERTS_ENABLED(void *result =) std::align(
-		LOCK_FREE_ALIGNMENT, aligned_size, *out_aligned_pointer, aligned_size);
+	IF_ASSERTS_ENABLED(void *result = ) std::align(
+		k_lock_free_alignment, aligned_size, *out_aligned_pointer, aligned_size);
 	wl_assert(aligned_size >= size);
-	wl_assert(result != nullptr);
+	wl_assert(result);
 
 	return true;
 }

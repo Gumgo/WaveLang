@@ -8,6 +8,10 @@
 
 class c_execution_graph;
 
+struct s_task_graph_globals {
+	uint32 max_voices;
+};
+
 class c_task_graph {
 public:
 	static const uint32 k_invalid_buffer = static_cast<uint32>(-1);
@@ -16,6 +20,29 @@ public:
 	~c_task_graph();
 
 	bool build(const c_execution_graph &execution_graph);
+
+	uint32 get_task_count() const;
+	uint32 get_max_task_concurrency() const;
+
+	e_task_function get_task_function(uint32 task_index) const;
+
+	real32 get_task_in_constant(uint32 task_index, size_t index) const;
+	uint32 get_task_in_buffer(uint32 task_index, size_t index) const;
+	uint32 get_task_out_buffer(uint32 task_index, size_t index) const;
+	uint32 get_task_inout_buffer(uint32 task_index, size_t index) const;
+
+	size_t get_task_predecessor_count(uint32 task_index) const;
+
+	size_t get_task_successors_count(uint32 task_index) const;
+	uint32 get_task_successor(uint32 task_index, size_t index) const;
+
+	size_t get_initial_tasks_count() const;
+	uint32 get_initial_task(size_t index) const;
+
+	uint32 get_buffer_count() const;
+	uint32 get_max_buffer_concurrency() const;
+
+	const s_task_graph_globals &get_globals() const;
 
 private:
 	struct s_task {
@@ -71,7 +98,8 @@ private:
 	void allocate_buffers(const c_execution_graph &execution_graph);
 	void assign_buffer_to_related_nodes(const c_execution_graph &execution_graph, uint32 node_index,
 		const std::vector<uint32> &inout_connections, std::vector<uint32> &nodes_to_buffers, uint32 buffer_index);
-	void calculate_max_buffer_concurrency();
+	void calculate_max_concurrency();
+	uint32 estimate_max_concurrency(uint32 node_count, const std::vector<bool> &concurrency_matrix) const;
 
 	std::vector<s_task> m_tasks;
 
@@ -79,7 +107,11 @@ private:
 	std::vector<uint32> m_buffer_lists;
 	std::vector<uint32> m_task_lists;
 
+	// Total number of unique buffers required
 	uint32 m_buffer_count;
+
+	// Max amount of concurrency that can exist at any given time during execution
+	uint32 m_max_task_concurrency;
 	uint32 m_max_buffer_concurrency;
 
 	// List of initial tasks
@@ -94,6 +126,8 @@ private:
 	// stored at the appropriate index in this list, and in the output buffer list, k_invalid_buffer will be stored.
 	size_t m_output_constants_start;
 	size_t m_output_constants_count;
+
+	s_task_graph_globals m_globals;
 };
 
 #endif // WAVELANG_TASK_GRAPH_H__

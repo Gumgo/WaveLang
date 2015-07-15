@@ -32,6 +32,9 @@
     <ClCompile Include="source\compiler\parser.cpp" />
     <ClCompile Include="source\compiler\preprocessor.cpp" />
     <ClCompile Include="source\driver\driver_interface.cpp" />
+    <ClCompile Include="source\driver\sample_format.cpp" />
+    <ClCompile Include="source\engine\buffer_allocator.cpp" />
+    <ClCompile Include="source\engine\executor.cpp" />
     <ClCompile Include="source\engine\predecessor_resolver.cpp" />
     <ClCompile Include="source\engine\task_functions.cpp" />
     <ClCompile Include="source\engine\task_graph.cpp" />
@@ -39,6 +42,7 @@
     <ClCompile Include="source\execution_graph\execution_graph.cpp" />
     <ClCompile Include="source\execution_graph\native_modules.cpp" />
     <ClCompile Include="source\runtime\command_line_interface.cpp" />
+    <ClCompile Include="source\runtime\runtime_context.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\common\asserts.h" />
@@ -66,6 +70,9 @@
     <ClInclude Include="source\compiler\parser.h" />
     <ClInclude Include="source\compiler\preprocessor.h" />
     <ClInclude Include="source\driver\driver_interface.h" />
+    <ClInclude Include="source\driver\sample_format.h" />
+    <ClInclude Include="source\engine\buffer_allocator.h" />
+    <ClInclude Include="source\engine\executor.h" />
     <ClInclude Include="source\engine\predecessor_resolver.h" />
     <ClInclude Include="source\engine\task_functions.h" />
     <ClInclude Include="source\engine\task_graph.h" />

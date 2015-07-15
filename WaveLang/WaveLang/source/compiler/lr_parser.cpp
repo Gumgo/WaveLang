@@ -510,7 +510,7 @@ c_lr_parse_tree c_lr_parser::parse_token_stream(t_lr_parser_get_next_token get_n
 			done = true;
 		} else {
 			// Unknown action type?
-			wl_halt();
+			wl_unreachable();
 		}
 	}
 

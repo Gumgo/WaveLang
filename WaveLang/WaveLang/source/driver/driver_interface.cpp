@@ -9,7 +9,7 @@ static PaSampleFormat get_pa_sample_format(e_sample_format sample_format) {
 		return paFloat32;
 
 	default:
-		wl_halt();
+		wl_unreachable();
 		return 0;
 	}
 }
@@ -17,10 +17,11 @@ static PaSampleFormat get_pa_sample_format(e_sample_format sample_format) {
 static void setup_stream_parameters(const s_driver_settings &settings, uint32 device_count,
 	PaStreamParameters &out_input_params, PaStreamParameters &out_output_params) {
 	wl_assert(VALID_INDEX(settings.device_index, device_count));
+	wl_assert(settings.frames_per_buffer > 0);
 
 	PaDeviceIndex device_index = static_cast<PaDeviceIndex>(settings.device_index);
 	const PaDeviceInfo *device_info = Pa_GetDeviceInfo(device_index);
-	wl_assert(device_info != nullptr);
+	wl_assert(device_info);
 
 	// $TODO fill these out eventually if we want to support line-in processing
 	ZERO_STRUCT(&out_input_params);
@@ -75,7 +76,7 @@ s_driver_result c_driver_interface::initialize() {
 }
 
 void c_driver_interface::shutdown() {
-	wl_assert(m_stream == nullptr);
+	wl_assert(!m_stream);
 
 	if (!m_initialized) {
 		return;
@@ -124,7 +125,7 @@ bool c_driver_interface::are_settings_supported(const s_driver_settings &setting
 
 s_driver_result c_driver_interface::start_stream(const s_driver_settings &settings) {
 	wl_assert(m_initialized);
-	wl_assert(m_stream == nullptr);
+	wl_assert(!m_stream);
 
 	s_driver_result result;
 	result.clear();
@@ -149,7 +150,7 @@ s_driver_result c_driver_interface::start_stream(const s_driver_settings &settin
 		stream_callback_internal,
 		this);
 	if (error != paNoError) {
-		wl_assert(m_stream == nullptr);
+		wl_assert(!m_stream);
 		result.result = k_driver_result_failed_to_open_stream;
 		result.message = Pa_GetErrorText(error);
 		return result;
@@ -162,7 +163,7 @@ s_driver_result c_driver_interface::start_stream(const s_driver_settings &settin
 
 		// Clean up the stream
 		if (Pa_CloseStream(m_stream) != paNoError) {
-			wl_halt();
+			wl_vhalt("Failed to close stream");
 		}
 
 		m_stream = nullptr;
@@ -171,21 +172,21 @@ s_driver_result c_driver_interface::start_stream(const s_driver_settings &settin
 
 	m_settings = settings;
 
-	wl_assert(m_stream != nullptr);
+	wl_assert(m_stream);
 	return result;
 }
 
 void c_driver_interface::stop_stream() {
-	if (m_stream == nullptr) {
+	if (!m_stream) {
 		return;
 	}
 
 	if (Pa_StopStream(m_stream) != paNoError) {
-		wl_halt();
+		wl_vhalt("Failed to stop stream");
 	}
 
 	if (Pa_CloseStream(m_stream) != paNoError) {
-		wl_halt();
+		wl_vhalt("Failed to close stream");
 	}
 
 	m_stream = nullptr;
@@ -195,13 +196,25 @@ bool c_driver_interface::is_stream_running() const {
 	return m_stream != nullptr;
 }
 
+const s_driver_settings &c_driver_interface::get_settings() const {
+	wl_assert(is_stream_running());
+	return m_settings;
+}
+
 int c_driver_interface::stream_callback_internal(
 	const void *input, void *output, unsigned long frame_count,
 	const PaStreamCallbackTimeInfo *time_info, PaStreamCallbackFlags status_flags, void *user_data) {
 	c_driver_interface *this_ptr = static_cast<c_driver_interface *>(user_data);
 
-	// $TODO temporary
-	memset(output, 0, sizeof(float) * frame_count * this_ptr->m_settings.frames_per_buffer);
+	wl_assert(frame_count == this_ptr->m_settings.frames_per_buffer);
+
+	s_driver_stream_callback_context context;
+	context.driver_settings = &this_ptr->m_settings;
+	context.output_buffers = output;
+	context.user_data = this_ptr->m_settings.stream_callback_user_data;
+	// $TODO fill in the rest
+
+	this_ptr->m_settings.stream_callback(context);
 
 	return 0;
 }

@@ -63,7 +63,7 @@ void c_ast_node_scope::iterate(c_ast_node_const_visitor *visitor) const {
 }
 
 void c_ast_node_scope::add_child(c_ast_node *child) {
-	wl_assert(child != nullptr);
+	wl_assert(child);
 	m_children.push_back(child);
 }
 
@@ -97,9 +97,9 @@ void c_ast_node_module_declaration::iterate(c_ast_node_visitor *visitor) {
 		// Don't iterate the arguments, because they will be iterated inside the body scope
 
 		if (m_is_native) {
-			wl_assert(m_scope == nullptr);
+			wl_assert(!m_scope);
 		} else {
-			wl_assert(m_scope != nullptr);
+			wl_assert(m_scope);
 			m_scope->iterate(visitor);
 		}
 
@@ -112,9 +112,9 @@ void c_ast_node_module_declaration::iterate(c_ast_node_const_visitor *visitor) c
 		// Don't iterate the arguments, because they will be iterated inside the body scope
 
 		if (m_is_native) {
-			wl_assert(m_scope == nullptr);
+			wl_assert(!m_scope);
 		} else {
-			wl_assert(m_scope != nullptr);
+			wl_assert(m_scope);
 			m_scope->iterate(visitor);
 		}
 
@@ -123,7 +123,7 @@ void c_ast_node_module_declaration::iterate(c_ast_node_const_visitor *visitor) c
 }
 
 void c_ast_node_module_declaration::set_is_native(bool is_native) {
-	wl_assert(!is_native || m_scope == nullptr);
+	wl_assert(!is_native || !m_scope);
 	m_is_native = is_native;
 }
 
@@ -148,7 +148,7 @@ bool c_ast_node_module_declaration::get_has_return_value() const {
 }
 
 void c_ast_node_module_declaration::add_argument(c_ast_node_named_value_declaration *argument) {
-	wl_assert(argument != nullptr);
+	wl_assert(argument);
 	m_arguments.push_back(argument);
 }
 
@@ -166,8 +166,8 @@ const c_ast_node_named_value_declaration *c_ast_node_module_declaration::get_arg
 
 void c_ast_node_module_declaration::set_scope(c_ast_node_scope *scope) {
 	wl_assert(!m_is_native);
-	wl_assert(m_scope == nullptr);
-	wl_assert(scope != nullptr);
+	wl_assert(!m_scope);
+	wl_assert(scope);
 	m_scope = scope;
 }
 
@@ -226,7 +226,7 @@ c_ast_node_named_value_assignment::~c_ast_node_named_value_assignment() {
 
 void c_ast_node_named_value_assignment::iterate(c_ast_node_visitor *visitor) {
 	if (visitor->begin_visit(this)) {
-		wl_assert(m_expression != nullptr);
+		wl_assert(m_expression);
 		m_expression->iterate(visitor);
 
 		visitor->end_visit(this);
@@ -235,7 +235,7 @@ void c_ast_node_named_value_assignment::iterate(c_ast_node_visitor *visitor) {
 
 void c_ast_node_named_value_assignment::iterate(c_ast_node_const_visitor *visitor) const {
 	if (visitor->begin_visit(this)) {
-		wl_assert(m_expression != nullptr);
+		wl_assert(m_expression);
 		m_expression->iterate(visitor);
 
 		visitor->end_visit(this);
@@ -251,8 +251,8 @@ const std::string &c_ast_node_named_value_assignment::get_named_value() const {
 }
 
 void c_ast_node_named_value_assignment::set_expression(c_ast_node_expression *expression) {
-	wl_assert(m_expression == nullptr);
-	wl_assert(expression != nullptr);
+	wl_assert(!m_expression);
+	wl_assert(expression);
 	m_expression = expression;
 }
 
@@ -275,7 +275,7 @@ c_ast_node_return_statement::~c_ast_node_return_statement() {
 
 void c_ast_node_return_statement::iterate(c_ast_node_visitor *visitor) {
 	if (visitor->begin_visit(this)) {
-		wl_assert(m_expression != nullptr);
+		wl_assert(m_expression);
 		m_expression->iterate(visitor);
 
 		visitor->end_visit(this);
@@ -284,7 +284,7 @@ void c_ast_node_return_statement::iterate(c_ast_node_visitor *visitor) {
 
 void c_ast_node_return_statement::iterate(c_ast_node_const_visitor *visitor) const {
 	if (visitor->begin_visit(this)) {
-		wl_assert(m_expression != nullptr);
+		wl_assert(m_expression);
 		m_expression->iterate(visitor);
 
 		visitor->end_visit(this);
@@ -292,8 +292,8 @@ void c_ast_node_return_statement::iterate(c_ast_node_const_visitor *visitor) con
 }
 
 void c_ast_node_return_statement::set_expression(c_ast_node_expression *expression) {
-	wl_assert(m_expression == nullptr);
-	wl_assert(expression != nullptr);
+	wl_assert(!m_expression);
+	wl_assert(expression);
 	m_expression = expression;
 }
 
@@ -316,7 +316,7 @@ c_ast_node_expression::~c_ast_node_expression() {
 
 void c_ast_node_expression::iterate(c_ast_node_visitor *visitor) {
 	if (visitor->begin_visit(this)) {
-		wl_assert(m_expression_value != nullptr);
+		wl_assert(m_expression_value);
 		m_expression_value->iterate(visitor);
 
 		visitor->end_visit(this);
@@ -325,7 +325,7 @@ void c_ast_node_expression::iterate(c_ast_node_visitor *visitor) {
 
 void c_ast_node_expression::iterate(c_ast_node_const_visitor *visitor) const {
 	if (visitor->begin_visit(this)) {
-		wl_assert(m_expression_value != nullptr);
+		wl_assert(m_expression_value);
 		m_expression_value->iterate(visitor);
 
 		visitor->end_visit(this);
@@ -333,8 +333,8 @@ void c_ast_node_expression::iterate(c_ast_node_const_visitor *visitor) const {
 }
 
 void c_ast_node_expression::set_expression_value(c_ast_node *expression_value) {
-	wl_assert(m_expression_value == nullptr);
-	wl_assert(expression_value != nullptr);
+	wl_assert(!m_expression_value);
+	wl_assert(expression_value);
 	m_expression_value = expression_value;
 }
 
@@ -436,7 +436,7 @@ const std::string &c_ast_node_module_call::get_name() const {
 }
 
 void c_ast_node_module_call::add_argument(c_ast_node_expression *argument) {
-	wl_assert(argument != nullptr);
+	wl_assert(argument);
 	m_arguments.push_back(argument);
 }
 

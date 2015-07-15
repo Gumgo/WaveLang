@@ -7,8 +7,6 @@
 #include <vector>
 #include <algorithm>
 
-void TEMP_STREAM_CB() {} // $TODO temporary!
-
 class c_command_line_interface {
 public:
 	c_command_line_interface(int argc, char **argv);
@@ -241,7 +239,8 @@ void c_command_line_interface::process_command_init_stream(const s_command &comm
 		// Stop the old stream
 		runtime_context.driver_interface.stop_stream();
 
-		settings.stream_callback = TEMP_STREAM_CB;
+		settings.stream_callback = runtime_context.stream_callback;
+		settings.stream_callback_user_data = &runtime_context;
 		s_driver_result result = runtime_context.driver_interface.start_stream(settings);
 		if (result.result != k_driver_result_success) {
 			std::cout << result.message << "\n";
@@ -280,12 +279,16 @@ void c_command_line_interface::process_command_load_synth(const s_command &comma
 		}
 
 		if (runtime_context.driver_interface.is_stream_running()) {
-			// $TODO we need to atomically swap out the active graph
-		} else {
-			// No stream running, so we can just switch the active task graph here
-			runtime_context.active_task_graph = loading_task_graph;
+			// Set up the executor with the new graph
+			runtime_context.executor.shutdown();
+
+			s_executor_settings settings;
+			settings.task_graph = &task_graph;
+			settings.max_buffer_size = runtime_context.driver_interface.get_settings().frames_per_buffer;
+			runtime_context.executor.initialize(settings);
 		}
 
+		runtime_context.active_task_graph = loading_task_graph;
 		return;
 	}
 

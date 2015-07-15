@@ -47,7 +47,7 @@ public:
 
 private:
 	// Internal representation of a task
-	ALIGNAS(LOCK_FREE_ALIGNMENT) struct s_task {
+	ALIGNAS_LOCK_FREE struct s_task {
 		// A task acts like its own thread
 		f_thread_entry_point task_function;
 		s_thread_parameter_block params;
@@ -57,6 +57,8 @@ private:
 		c_thread_pool *this_ptr;
 		uint32 worker_thread_index;
 	};
+
+	static void worker_thread_entry_point(const s_thread_parameter_block *param_block);
 
 	std::vector<c_thread> m_threads;
 
@@ -71,8 +73,6 @@ private:
 	c_lock_free_aligned_array_allocator<s_task> m_pending_tasks_element_memory;
 	c_lock_free_aligned_array_allocator<s_aligned_lock_free_handle> m_pending_tasks_queue_memory;
 	c_lock_free_aligned_array_allocator<s_aligned_lock_free_handle> m_pending_tasks_free_list_memory;
-
-	static void worker_thread_entry_point(const s_thread_parameter_block *param_block);
 };
 
 #endif // WAVELANG_THREAD_POOL_H__

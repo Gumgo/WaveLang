@@ -97,7 +97,7 @@ uint32 c_native_module_registry::get_native_module_index(const char *name) {
 		}
 	}
 
-	wl_halt();
+	wl_vhalt("Native module not found");
 	return static_cast<uint32>(-1);
 }
 

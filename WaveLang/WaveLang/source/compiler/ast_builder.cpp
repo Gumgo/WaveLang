@@ -191,7 +191,7 @@ static std::vector<c_ast_node *> build_scope_items(const c_lr_parse_tree &parse_
 
 	default:
 		// Invalid type
-		wl_halt();
+		wl_unreachable();
 	}
 
 	return result;
@@ -320,7 +320,7 @@ static c_ast_node_module_declaration *build_module_declaration(const c_lr_parse_
 			} else if (node_is_type(qualifier_node, k_token_type_keyword_out)) {
 				argument_declaration->set_qualifier(c_ast_node_named_value_declaration::k_qualifier_out);
 			} else {
-				wl_halt();
+				wl_unreachable();
 			}
 
 			argument_declaration->set_name(
@@ -542,18 +542,16 @@ static c_ast_node_expression *build_expression(const c_lr_parse_tree &parse_tree
 					result->set_expression_value(constant_node);
 					expression_type_found = true;
 				} catch (const std::invalid_argument &) {
-					// We should have already caught this in the lexer
-					wl_halt();
+					wl_vhalt("We should have already caught this in the lexer");
 				} catch (const std::out_of_range &) {
-					// We should have already caught this in the lexer
-					wl_halt();
+					wl_vhalt("We should have already caught this in the lexer");
 				}
 			} else {
-				wl_halt();
+				wl_unreachable();
 			}
 		} else {
 			// Unknown expression type
-			wl_halt();
+			wl_unreachable();
 		}
 	}
 
@@ -594,7 +592,7 @@ static c_ast_node_module_call *build_binary_operator_call(const c_lr_parse_tree 
 		break;
 
 	default:
-		wl_halt();
+		wl_unreachable();
 	}
 
 	c_ast_node_expression *arg_0 = build_expression(parse_tree, tokens, node_0);
@@ -628,7 +626,7 @@ static c_ast_node_module_call *build_unary_operator_call(const c_lr_parse_tree &
 		break;
 
 	default:
-		wl_halt();
+		wl_unreachable();
 	}
 
 	c_ast_node_expression *arg_0 = build_expression(parse_tree, tokens, node_1);

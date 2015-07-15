@@ -26,9 +26,9 @@ static void fixup_source(std::vector<char> &inout_source);
 
 s_compiler_result c_compiler::compile(const char *root_path, const char *source_filename,
 	c_execution_graph *out_execution_graph) {
-	wl_assert(root_path != nullptr);
-	wl_assert(source_filename != nullptr);
-	wl_assert(out_execution_graph != nullptr);
+	wl_assert(root_path);
+	wl_assert(source_filename);
+	wl_assert(out_execution_graph);
 	wl_assert(out_execution_graph->get_node_count() == 0);
 
 	s_compiler_result result;

@@ -19,7 +19,7 @@ c_thread::~c_thread() {
 void c_thread::start(const s_thread_definition &thread_definition) {
 	wl_assert(!is_running());
 	wl_assert(VALID_INDEX(thread_definition.thread_priority, k_thread_priority_count));
-	wl_assert(thread_definition.thread_entry_point != nullptr);
+	wl_assert(thread_definition.thread_entry_point);
 
 	// Store thread function and parameter block for the thread to use
 	m_thread_entry_point = thread_definition.thread_entry_point;
@@ -35,7 +35,7 @@ void c_thread::start(const s_thread_definition &thread_definition) {
 		CREATE_SUSPENDED,				// Start suspended so we can set up some additional properties
 		&thread_id);					// Cache thread ID
 
-	wl_assert(m_thread_handle != nullptr);
+	wl_assert(m_thread_handle);
 
 	// Cache the thread ID
 	m_thread_id = static_cast<uint32>(thread_id);
@@ -51,24 +51,24 @@ void c_thread::start(const s_thread_definition &thread_definition) {
 	static_assert(NUMBEROF(k_thread_priority_map) == k_thread_priority_count, "Thread priority mapping mismatch");
 
 	if (!SetThreadPriority(m_thread_handle, k_thread_priority_map[thread_definition.thread_priority])) {
-		wl_halt();
+		wl_vhalt("Failed to set thread priority");
 	}
 
 	if (thread_definition.processor != -1 &&
 		SetThreadIdealProcessor(m_thread_handle, static_cast<DWORD>(thread_definition.processor)) < 0) {
-		wl_halt();
+		wl_vhalt("Failed to set ideal processor");
 	}
 
 	// Start the thread - should return 1 because the thread previously had a suspend count of 1
 	if (ResumeThread(m_thread_handle) != 1) {
-		wl_halt();
+		wl_vhalt("Failed to start thread");
 	}
 }
 
 void c_thread::join() {
 	wl_assert(is_running());
 	if (WaitForSingleObject(m_thread_handle, INFINITE) != WAIT_OBJECT_0) {
-		wl_halt();
+		wl_vhalt("Failed to join thread");
 	}
 	CloseHandle(m_thread_handle);
 	m_thread_handle = nullptr;
@@ -91,7 +91,7 @@ DWORD WINAPI c_thread::thread_entry_point(LPVOID param) {
 	c_thread *this_thread = static_cast<c_thread *>(param);
 
 	// Run the thread function
-	wl_assert(this_thread->m_thread_entry_point != nullptr);
+	wl_assert(this_thread->m_thread_entry_point);
 	this_thread->m_thread_entry_point(&this_thread->m_thread_parameter_block);
 
 	return 0;

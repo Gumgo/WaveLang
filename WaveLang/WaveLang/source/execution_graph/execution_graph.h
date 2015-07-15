@@ -46,6 +46,10 @@ enum e_execution_graph_result {
 	k_execution_graph_result_count
 };
 
+struct s_execution_graph_globals {
+	uint32 max_voices;
+};
+
 class c_execution_graph {
 public:
 	static const uint32 k_invalid_index = static_cast<uint32>(-1);
@@ -76,6 +80,9 @@ public:
 	size_t get_node_outgoing_edge_count(uint32 node_index) const;
 	uint32 get_node_outgoing_edge_index(uint32 node_index, size_t edge) const;
 
+	void set_globals(const s_execution_graph_globals &globals);
+	const s_execution_graph_globals get_globals() const;
+
 	void remove_unused_nodes_and_reassign_node_indices();
 
 #if PREDEFINED(EXECUTION_GRAPH_OUTPUT_ENABLED)
@@ -83,17 +90,6 @@ public:
 #endif // PREDEFINED(EXECUTION_GRAPH_OUTPUT_ENABLED)
 
 private:
-	uint32 allocate_node();
-	void add_edge_internal(uint32 from_index, uint32 to_index);
-	bool add_edge_for_load(uint32 from_index, uint32 to_index);
-	void remove_edge_internal(uint32 from_index, uint32 to_index);
-
-	bool validate_node(uint32 index) const;
-	bool validate_edge(uint32 from_index, uint32 to_index) const;
-
-	bool visit_node_for_cycle_detection(uint32 node_index,
-		std::vector<bool> &nodes_visited, std::vector<bool> &nodes_marked) const;
-
 	struct s_node {
 		e_execution_graph_node_type type;
 		union {
@@ -108,7 +104,19 @@ private:
 		std::vector<uint32> outgoing_edge_indices;
 	};
 
+	uint32 allocate_node();
+	void add_edge_internal(uint32 from_index, uint32 to_index);
+	bool add_edge_for_load(uint32 from_index, uint32 to_index);
+	void remove_edge_internal(uint32 from_index, uint32 to_index);
+
+	bool validate_node(uint32 index) const;
+	bool validate_edge(uint32 from_index, uint32 to_index) const;
+
+	bool visit_node_for_cycle_detection(uint32 node_index,
+		std::vector<bool> &nodes_visited, std::vector<bool> &nodes_marked) const;
+
 	std::vector<s_node> m_nodes;
+	s_execution_graph_globals m_globals;
 };
 
 #endif // WAVELANG_EXECUTION_GRAPH_H__

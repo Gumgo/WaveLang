@@ -176,7 +176,7 @@ static bool optimize_node(c_execution_graph *execution_graph, uint32 node_index)
 		break;
 
 	default:
-		wl_halt();
+		wl_unreachable();
 	}
 
 	return optimized;
@@ -428,7 +428,7 @@ static bool try_to_apply_optimization_rule(c_execution_graph *execution_graph, u
 			break;
 
 		default:
-			wl_halt();
+			wl_unreachable();
 			return false;
 		}
 	}
@@ -517,7 +517,7 @@ static bool try_to_apply_optimization_rule(c_execution_graph *execution_graph, u
 			break;
 
 		default:
-			wl_halt();
+			wl_unreachable();
 		}
 	}
 

@@ -9,6 +9,7 @@
 static const char k_format_identifier[] = { 'w', 'a', 'v', 'e', 'l', 'a', 'n', 'g' };
 
 c_execution_graph::c_execution_graph() {
+	ZERO_STRUCT(&m_globals);
 }
 
 // $TODO do we care about being endian-correct?
@@ -80,7 +81,7 @@ e_execution_graph_result c_execution_graph::save(const char *fname) const {
 			break;
 
 		default:
-			wl_halt();
+			wl_unreachable();
 		}
 	}
 
@@ -280,6 +281,11 @@ bool c_execution_graph::validate() const {
 		} else {
 			break;
 		}
+	}
+
+	// Validate globals
+	if (m_globals.max_voices < 1) {
+		return false;
 	}
 
 	return true;
@@ -658,6 +664,14 @@ size_t c_execution_graph::get_node_outgoing_edge_count(uint32 node_index) const 
 uint32 c_execution_graph::get_node_outgoing_edge_index(uint32 node_index, size_t edge) const {
 	const s_node &node = m_nodes[node_index];
 	return node.outgoing_edge_indices[edge];
+}
+
+void c_execution_graph::set_globals(const s_execution_graph_globals &globals) {
+	m_globals = globals;
+}
+
+const s_execution_graph_globals c_execution_graph::get_globals() const {
+	return m_globals;
 }
 
 void c_execution_graph::remove_unused_nodes_and_reassign_node_indices() {

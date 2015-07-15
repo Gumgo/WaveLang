@@ -3,11 +3,7 @@
 
 #ifdef _DEBUG
 
-void wl_assert(bool expression) {
-	assert(expression);
-}
-
-void wl_halt() {
+void handle_assert(const char *message) {
 	assert(false);
 }
 

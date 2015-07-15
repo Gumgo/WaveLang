@@ -71,7 +71,7 @@ s_compiler_result c_preprocessor::preprocess(c_compiler_string source, c_preproc
 				break;
 
 			default:
-				wl_halt();
+				wl_unreachable();
 			}
 		}
 

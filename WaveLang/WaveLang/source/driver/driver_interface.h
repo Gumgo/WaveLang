@@ -2,7 +2,10 @@
 #define WAVELANG_DRIVER_INTERFACE_H__
 
 #include "common/common.h"
+#include "driver/sample_format.h"
 #include <string>
+
+// $TODO VST integration will eventually just act as another driver
 
 // Forward declarations for PA
 typedef void PaStream;
@@ -30,15 +33,15 @@ struct s_driver_result {
 	}
 };
 
-// $TODO add more format options
-enum e_sample_format {
-	k_sample_format_float32,
+struct s_driver_stream_callback_context {
+	const s_driver_settings *driver_settings;
+	void *output_buffers;
+	// $TODO add more data
 
-	k_sample_format_count
+	void *user_data;
 };
 
-// $TODO come up with proper arguments
-typedef void (*f_driver_stream_callback)();
+typedef void(*f_driver_stream_callback)(const s_driver_stream_callback_context &context);
 
 struct s_driver_settings {
 	// Index of the device to use for the stream
@@ -53,19 +56,21 @@ struct s_driver_settings {
 	// Format of each sample
 	e_sample_format sample_format;
 
-	// Number of frames in each requested buffer - specify 0 to let the driver decide
+	// Number of frames in each requested buffer
 	uint32 frames_per_buffer;
 
 	// Stream callback
 	f_driver_stream_callback stream_callback;
+	void *stream_callback_user_data;
 
 	void set_default() {
 		device_index = 0;
 		sample_rate = 44100.0;
 		output_channels = 2;
 		sample_format = k_sample_format_float32;
-		frames_per_buffer = 0;
+		frames_per_buffer = 512;
 		stream_callback = nullptr;
+		stream_callback_user_data = nullptr;
 	}
 };
 
@@ -95,6 +100,7 @@ public:
 	s_driver_result start_stream(const s_driver_settings &settings);
 	void stop_stream();
 	bool is_stream_running() const;
+	const s_driver_settings &get_settings() const;
 
 private:
 	static int stream_callback_internal(

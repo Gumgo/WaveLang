@@ -6,6 +6,12 @@
 #define ALIGNOF __alignof
 #define ALIGNAS(x) __declspec(align(x))
 
+// No-op statement which is optimized away
+#define NOOP do {} while (0)
+
+// Allows for multiple statements in a single macro
+#define MACRO_BLOCK(x) do { x } while (0)
+
 // Causes an error if x is used before it has been defined
 #define PREDEFINED(x) (1 / defined x## && x)
 

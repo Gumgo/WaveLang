@@ -21,6 +21,11 @@ inline bool string_compare_case_insensitive(const char *str_a, const char *str_b
 	}
 }
 
+// alignment must be a power of 2
+template<typename t_size, typename t_alignment> t_size align_size(t_size size, t_alignment alignment) {
+	return (size + (alignment - 1)) & (alignment - 1);
+}
+
 class c_uncopyable {
 public:
 	c_uncopyable() {}

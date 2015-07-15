@@ -256,7 +256,7 @@ private:
 
 public:
 	c_ast_validator_visitor(std::vector<s_compiler_result> *error_accumulator) {
-		wl_assert(error_accumulator != nullptr);
+		wl_assert(error_accumulator);
 
 		m_pass = k_pass_count;
 		m_errors = error_accumulator;
@@ -335,7 +335,7 @@ public:
 					// Look up the context
 					s_named_value *match = get_named_value(argument);
 					// Context must already exist for this argument
-					wl_assert(match != nullptr);
+					wl_assert(match);
 
 					if (match->last_statement_assigned < 0) {
 						s_compiler_result error;
@@ -401,7 +401,7 @@ public:
 			wl_assert(m_pass == k_pass_validate_syntax);
 
 			// Prepare for processing in scope visitor
-			wl_assert(m_module_for_next_scope == nullptr);
+			wl_assert(!m_module_for_next_scope);
 			m_module_for_next_scope = node;
 			return true;
 		} else {
@@ -457,7 +457,7 @@ public:
 		const c_ast_node *identifier = get_identifier(result.identifier_name);
 		if (identifier) {
 			s_named_value *named_value = get_named_value(identifier);
-			wl_assert(named_value != nullptr);
+			wl_assert(named_value);
 			named_value->last_statement_used = scope.current_statement;
 		}
 
@@ -480,7 +480,7 @@ public:
 				// Look up the context
 				s_named_value *match = get_named_value(identifier);
 				// Since we've verified that this is a named value, it must already have a context
-				wl_assert(match != nullptr);
+				wl_assert(match);
 
 				if (match->last_statement_assigned == scope.current_statement) {
 					// Make sure we're not assigning to a value we used as an output parameter; this is ambiguous
@@ -505,7 +505,7 @@ public:
 		s_scope &scope = m_scope_stack.front();
 
 		// Return statements will fail at the parser stage if they are outside of a module
-		wl_assert(scope.module_for_scope != nullptr);
+		wl_assert(scope.module_for_scope);
 
 		detect_statements_after_return(scope, node);
 
@@ -539,7 +539,7 @@ public:
 		const c_ast_node *identifier = get_identifier(result.identifier_name);
 		if (identifier) {
 			s_named_value *named_value = get_named_value(identifier);
-			wl_assert(named_value != nullptr);
+			wl_assert(named_value);
 			named_value->last_statement_used = scope.current_statement;
 		}
 
@@ -609,7 +609,7 @@ public:
 			s_named_value *match = get_named_value(identifier);
 #endif // PREDEFINED(ASSERTS_ENABLED)
 			// Since we've verified that this is a named value, it must already have a context
-			wl_assert(match != nullptr);
+			wl_assert(match);
 		}
 	}
 
@@ -679,7 +679,7 @@ public:
 				const c_ast_node *identifier = get_identifier(result.identifier_name);
 				if (identifier) {
 					s_named_value *named_value = get_named_value(identifier);
-					wl_assert(named_value != nullptr);
+					wl_assert(named_value);
 
 					if (argument->get_qualifier() == c_ast_node_named_value_declaration::k_qualifier_in) {
 						named_value->last_statement_used = scope.current_statement;
@@ -717,7 +717,7 @@ public:
 };
 
 s_compiler_result c_ast_validator::validate(const c_ast_node *ast, std::vector<s_compiler_result> &out_errors) {
-	wl_assert(ast != nullptr);
+	wl_assert(ast);
 
 	s_compiler_result result;
 	result.clear();

@@ -71,8 +71,7 @@ private:
 			}
 		}
 
-		// Not found
-		wl_halt();
+		wl_vhalt("Identifier not found");
 		return nullptr;
 	}
 
@@ -97,9 +96,9 @@ public:
 		const c_ast_node *ast_root,
 		c_execution_graph *execution_graph,
 		const c_ast_node_module_declaration *module_declaration) {
-		wl_assert(ast_root != nullptr);
-		wl_assert(execution_graph != nullptr);
-		wl_assert(module_declaration != nullptr);
+		wl_assert(ast_root);
+		wl_assert(execution_graph);
+		wl_assert(module_declaration);
 
 		m_ast_root = ast_root;
 		m_execution_graph = execution_graph;
@@ -150,7 +149,7 @@ public:
 			}
 		}
 
-		wl_halt();
+		wl_vhalt("Module declaration not found");
 		return nullptr;
 	}
 
@@ -412,6 +411,10 @@ void c_execution_graph_builder::build_execution_graph(const c_ast_node *ast, c_e
 		out_execution_graph->add_edge(out_argument_node_index, output_node_index);
 	}
 
+	// $TODO Get real data for this:
+	s_execution_graph_globals globals;
+	globals.max_voices = 1;
+	out_execution_graph->set_globals(globals);
 
 #if PREDEFINED(EXECUTION_GRAPH_OUTPUT_ENABLED)
 	out_execution_graph->output_to_file();
