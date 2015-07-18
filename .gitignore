@@ -2,8 +2,8 @@
 *.sdf
 *.opensdf
 *.vcxproj.user
-/WaveLang/bin
-/WaveLang/WaveLangRuntime/Release
-/WaveLang/WaveLangRuntime/Debug
-/WaveLang/WaveLangCompiler/Release
-/WaveLang/WaveLangCompiler/Debug
+/bin
+/WaveLangRuntime/Release
+/WaveLangRuntime/Debug
+/WaveLangCompiler/Release
+/WaveLangCompiler/Debug
