@@ -1,5 +1,6 @@
 #include "engine/executor.h"
 #include "engine/task_graph.h"
+#include "engine/task_functions.h"
 
 c_executor::c_executor() {
 	m_state.initialize(k_state_uninitialized);
@@ -56,7 +57,7 @@ void c_executor::initialize_internal(const s_executor_settings &settings) {
 
 	{ // Initialize thread pool
 		s_thread_pool_settings thread_pool_settings;
-		thread_pool_settings.thread_count = 4; // $TODO don't hardcode this
+		thread_pool_settings.thread_count = 1; // $TODO don't hardcode this
 		thread_pool_settings.max_tasks = m_task_graph->get_max_task_concurrency();
 		thread_pool_settings.start_paused = true;
 		m_thread_pool.start(thread_pool_settings);
@@ -145,9 +146,13 @@ void c_executor::initialize_internal(const s_executor_settings &settings) {
 	}
 
 	{ // Allocate space for a context for each task
-
 		m_task_contexts.free();
 		m_task_contexts.allocate(m_task_graph->get_task_count());
+	}
+
+	{ // Allocate space for buffer assignments
+		m_buffer_contexts.free();
+		m_buffer_contexts.allocate(m_task_graph->get_buffer_count());
 	}
 }
 
@@ -172,6 +177,13 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 				static_cast<int32>(m_task_graph->get_task_predecessor_count(task)));
 		}
 
+		// Initially all buffers are unassigned
+		for (uint32 buffer = 0; buffer < m_task_graph->get_buffer_count(); buffer++) {
+			s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer];
+			buffer_context.handle = k_lock_free_invalid_handle;
+			buffer_context.usages_remaining.initialize(m_task_graph->get_buffer_usages(buffer)); 
+		}
+
 		m_tasks_remaining.initialize(static_cast<int32>(m_task_graph->get_task_count()));
 
 		// Add the initial tasks
@@ -191,6 +203,23 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 		} else {
 			// $TODO add to the output buffer
 		}
+
+		// Free the output buffers
+		for (size_t index = 0; index < m_task_graph->get_output_count(); index++) {
+			if (m_task_graph->is_output_buffer(index)) {
+				uint32 buffer_index = m_task_graph->get_output_buffer(index);
+				decrement_buffer_usage(buffer_index);
+			}
+		}
+
+#if PREDEFINED(ASSERTS_ENABLED)
+		// All buffers should have been freed
+		for (size_t buffer = 0; buffer < m_buffer_contexts.get_array().get_count(); buffer++) {
+			s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer];
+			wl_assert(buffer_context.handle == k_lock_free_invalid_handle);
+			wl_assert(buffer_context.usages_remaining.get_unsafe() == 0);
+		}
+#endif // PREDEFINED(ASSERTS_ENABLED)
 	}
 
 	if (!any_voice_processed) {
@@ -224,7 +253,15 @@ void c_executor::process_task_wrapper(const s_thread_parameter_block *params) {
 }
 
 void c_executor::process_task(uint32 task_index, uint32 frames) {
+	e_task_function task_function = m_task_graph->get_task_function(task_index);
+	const s_task_function_description &task_function_description =
+		c_task_function_registry::get_task_function_description(task_function);
+
+	allocate_output_buffers(task_function_description, task_index);
+
 	// $TODO process the task
+
+	decrement_buffer_usages(task_function_description, task_index);
 
 	// Decrement remaining predecessor counts for all successors to this task
 	size_t successor_count = m_task_graph->get_task_successors_count(task_index);
@@ -244,5 +281,59 @@ void c_executor::process_task(uint32 task_index, uint32 frames) {
 	if (prev_tasks_remaining == 1) {
 		// Notify the calling thread that we are done
 		m_all_tasks_complete_signal.notify();
+	}
+}
+
+void c_executor::allocate_output_buffers(
+	const s_task_function_description &task_function_description, uint32 task_index) {
+	// Any input buffers should already be allocated
+#if PREDEFINED(ASSERTS_ENABLED)
+	for (size_t index = 0; index < task_function_description.in_buffer_count; index++) {
+		uint32 buffer_index = m_task_graph->get_task_in_buffer(task_index, index);
+		wl_assert(m_buffer_contexts.get_array()[buffer_index].handle != k_lock_free_invalid_handle);
+	}
+
+	for (size_t index = 0; index < task_function_description.inout_buffer_count; index++) {
+		uint32 buffer_index = m_task_graph->get_task_inout_buffer(task_index, index);
+		wl_assert(m_buffer_contexts.get_array()[buffer_index].handle != k_lock_free_invalid_handle);
+	}
+#endif // PREDEFINED(ASSERTS_ENABLED)
+
+	// Allocate output buffers
+	for (size_t index = 0; index < task_function_description.out_buffer_count; index++) {
+		uint32 buffer_index = m_task_graph->get_task_out_buffer(task_index, index);
+		wl_assert(m_buffer_contexts.get_array()[buffer_index].handle == k_lock_free_invalid_handle);
+		m_buffer_contexts.get_array()[buffer_index].handle = m_buffer_allocator.allocate_buffer();
+	}
+}
+
+void c_executor::decrement_buffer_usages(
+	const s_task_function_description &task_function_description, uint32 task_index) {
+	// Decrement usage of each buffer
+	for (size_t index = 0; index < task_function_description.in_buffer_count; index++) {
+		uint32 buffer_index = m_task_graph->get_task_in_buffer(task_index, index);
+		decrement_buffer_usage(buffer_index);
+	}
+
+	for (size_t index = 0; index < task_function_description.out_buffer_count; index++) {
+		uint32 buffer_index = m_task_graph->get_task_out_buffer(task_index, index);
+		decrement_buffer_usage(buffer_index);
+	}
+
+	for (size_t index = 0; index < task_function_description.inout_buffer_count; index++) {
+		uint32 buffer_index = m_task_graph->get_task_inout_buffer(task_index, index);
+		decrement_buffer_usage(buffer_index);
+	}
+}
+
+
+void c_executor::decrement_buffer_usage(uint32 buffer_index) {
+	// Free the buffer if usage reaches 0
+	s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer_index];
+	int32 prev_usage = buffer_context.usages_remaining.decrement();
+	wl_assert(prev_usage > 0);
+	if (prev_usage == 1) {
+		m_buffer_allocator.free_buffer(buffer_context.handle);
+		buffer_context.handle = k_lock_free_invalid_handle;
 	}
 }

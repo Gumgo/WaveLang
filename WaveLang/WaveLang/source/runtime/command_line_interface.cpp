@@ -200,7 +200,7 @@ void c_command_line_interface::process_command_init_stream(const s_command &comm
 			settings.sample_rate = device_info.default_sample_rate;
 			settings.output_channels = std::min(2u, device_info.max_output_channels);
 			settings.sample_format = k_sample_format_float32;
-			settings.frames_per_buffer = 0;
+			settings.frames_per_buffer = 512; // $TODO how do I choose this?
 			valid_settings = true;
 			read_settings = false;
 		}

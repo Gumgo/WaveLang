@@ -20,6 +20,7 @@ void c_buffer_allocator::initialize(const s_buffer_allocator_settings &settings)
 	switch (settings.buffer_type) {
 	case k_buffer_type_real:
 		element_size = 4;
+		break;
 
 	default:
 		wl_unreachable();

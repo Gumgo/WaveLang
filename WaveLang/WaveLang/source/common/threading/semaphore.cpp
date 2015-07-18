@@ -1,6 +1,7 @@
 #include "common/threading/semaphore.h"
 
 c_semaphore::c_semaphore() {
+	m_count = 0;
 }
 
 c_semaphore::~c_semaphore() {

@@ -45,6 +45,9 @@ e_execution_graph_result c_execution_graph::save(const char *fname) const {
 	}
 	write(out, k_execution_graph_format_version);
 
+	// Write the globals
+	write(out, m_globals.max_voices);
+
 	// Write the node count, and also count up all edges
 	uint32 node_count = static_cast<uint32>(m_nodes.size());
 	uint32 edge_count = 0;
@@ -135,6 +138,11 @@ e_execution_graph_result c_execution_graph::load(const char *fname) {
 
 	if (format_version != k_execution_graph_format_version) {
 		return k_execution_graph_result_version_mismatch;
+	}
+
+	// Read the globals
+	if (!read(in, m_globals.max_voices)) {
+		return in.eof() ? k_execution_graph_result_invalid_graph : k_execution_graph_result_failed_to_read;
 	}
 
 	// Read the node count

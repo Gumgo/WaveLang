@@ -99,6 +99,31 @@ uint32 c_task_graph::get_max_buffer_concurrency() const {
 	return m_max_buffer_concurrency;
 }
 
+uint32 c_task_graph::get_buffer_usages(uint32 buffer_index) const {
+	return m_buffer_usages[buffer_index];
+}
+
+uint32 c_task_graph::get_output_count() const {
+	wl_assert(m_output_buffers_count == m_output_constants_count);
+	return m_output_buffers_count;
+}
+
+bool c_task_graph::is_output_buffer(uint32 output_index) const {
+	wl_assert(VALID_INDEX(output_index, get_output_count()));
+	// If the buffer index is k_invalid_buffer, this output is a constant
+	return (m_buffer_lists[m_output_buffers_start + output_index] != k_invalid_buffer);
+}
+
+uint32 c_task_graph::get_output_buffer(uint32 output_index) const {
+	wl_assert(is_output_buffer(output_index));
+	return m_buffer_lists[m_output_buffers_start + output_index];
+}
+
+real32 c_task_graph::get_output_constant(uint32 output_index) const {
+	wl_assert(!is_output_buffer(output_index));
+	return m_constant_lists[m_output_constants_start + output_index];
+}
+
 const s_task_graph_globals &c_task_graph::get_globals() const {
 	return m_globals;
 }
@@ -109,6 +134,7 @@ bool c_task_graph::build(const c_execution_graph &execution_graph) {
 	m_buffer_lists.clear();
 	m_task_lists.clear();
 	m_buffer_count = 0;
+	m_buffer_usages.clear();
 	m_max_task_concurrency = 0;
 	m_max_buffer_concurrency = 0;
 	m_output_buffers_start = 0;
@@ -136,6 +162,7 @@ bool c_task_graph::build(const c_execution_graph &execution_graph) {
 		build_task_successor_lists(execution_graph, nodes_to_tasks);
 		allocate_buffers(execution_graph);
 		calculate_max_concurrency();
+		calculate_buffer_usages();
 
 		const s_execution_graph_globals &execution_graph_globals = execution_graph.get_globals();
 		m_globals.max_voices = execution_graph_globals.max_voices;
@@ -147,6 +174,7 @@ bool c_task_graph::build(const c_execution_graph &execution_graph) {
 		m_buffer_lists.clear();
 		m_task_lists.clear();
 		m_buffer_count = 0;
+		m_buffer_usages.clear();
 		m_max_task_concurrency = 0;
 		m_max_buffer_concurrency = 0;
 		m_output_buffers_start = 0;
@@ -1135,12 +1163,13 @@ uint32 c_task_graph::estimate_max_concurrency(uint32 node_count, const std::vect
 			}
 
 			if (can_merge) {
-				merge_group_heads[merge_group_index] = merge_group_lists.size();
+				size_t new_index = merge_group_lists.size();
 
 				s_merged_node_group merged_node_group;
 				merged_node_group.node_index = node_index_a;
 				merged_node_group.next = merge_group_heads[merge_group_index];
 				merge_group_lists.push_back(merged_node_group);
+				merge_group_heads[merge_group_index] = new_index;
 
 				merged = true;
 			}
@@ -1160,4 +1189,36 @@ uint32 c_task_graph::estimate_max_concurrency(uint32 node_count, const std::vect
 	// The number of merge groups we end up with is the max concurrency. It is an overestimate, meaning we will reserve
 	// more memory than necessary.
 	return static_cast<uint32>(merge_group_heads.size());
+}
+
+void c_task_graph::calculate_buffer_usages() {
+	m_buffer_usages.resize(m_buffer_count, 0);
+
+	// Each time a buffer is used in a task, increment its usage count
+	for (uint32 task_index = 0; task_index < m_tasks.size(); task_index++) {
+		const s_task &task = m_tasks[task_index];
+		const s_task_function_description &task_function_description =
+			c_task_function_registry::get_task_function_description(task.task_function);
+
+		for (size_t index = 0; index < task_function_description.in_buffer_count; index++) {
+			uint32 buffer_index = m_buffer_lists[task.in_buffers_start + index];
+			m_buffer_usages[buffer_index]++;
+		}
+
+		for (size_t index = 0; index < task_function_description.out_buffer_count; index++) {
+			uint32 buffer_index = m_buffer_lists[task.out_buffers_start + index];
+			m_buffer_usages[buffer_index]++;
+		}
+
+		for (size_t index = 0; index < task_function_description.inout_buffer_count; index++) {
+			uint32 buffer_index = m_buffer_lists[task.inout_buffers_start + index];
+			m_buffer_usages[buffer_index]++;
+		}
+	}
+
+	// Each output buffer contributes to usage to prevent the buffer from deallocating at the end of the last task
+	for (size_t index = 0; index < m_output_buffers_count; index++) {
+		uint32 buffer_index = m_buffer_lists[m_output_buffers_start + index];
+		m_buffer_usages[buffer_index]++;
+	}
 }

@@ -9,11 +9,13 @@ void c_lock_free_queue<t_element>::initialize(
 	c_element_array element_memory,
 	c_lock_free_handle_array queue_memory,
 	c_lock_free_handle_array free_list_memory) {
-	// Make sure sizes match up
-	wl_assert(element_memory.get_count() + 1 == queue_memory.get_count());
+	// Make sure sizes match up - we need at least 1 element for the dummy node which is unusable
+	wl_vassert(element_memory.get_count() > 0, "Lock free queue requires 1 additional node");
+	wl_assert(element_memory.get_count() == queue_memory.get_count());
 	wl_assert(queue_memory.get_count() == free_list_memory.get_count());
 
 	m_elements = element_memory;
+	m_queue = queue_memory;
 	m_free_list.initialize(free_list_memory);
 
 	// We always keep one dummy node at the front of the queue
@@ -23,6 +25,11 @@ void c_lock_free_queue<t_element>::initialize(
 	front_and_back.handle = m_free_list.allocate();
 	m_front.handle.initialize(front_and_back.data);
 	m_back.handle.initialize(front_and_back.data);
+
+	s_lock_free_handle_data front_next;
+	front_next.tag = 0;
+	front_next.handle = k_lock_free_invalid_handle;
+	m_queue[0].handle.initialize(front_next.data);
 }
 
 template<typename t_element>
@@ -33,6 +40,9 @@ bool c_lock_free_queue<t_element>::push(const t_element &element) {
 		// Pool is empty
 		return false;
 	}
+
+	// Store the element
+	memcpy(&m_elements[handle], &element, sizeof(t_element));
 
 	s_lock_free_handle_data next;
 	next.tag = 0;

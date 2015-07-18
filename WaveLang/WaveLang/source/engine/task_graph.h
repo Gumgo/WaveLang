@@ -41,6 +41,12 @@ public:
 
 	uint32 get_buffer_count() const;
 	uint32 get_max_buffer_concurrency() const;
+	uint32 get_buffer_usages(uint32 buffer_index) const;
+
+	uint32 get_output_count() const;
+	bool is_output_buffer(uint32 output_index) const;
+	uint32 get_output_buffer(uint32 output_index) const;
+	real32 get_output_constant(uint32 output_index) const;
 
 	const s_task_graph_globals &get_globals() const;
 
@@ -100,6 +106,7 @@ private:
 		const std::vector<uint32> &inout_connections, std::vector<uint32> &nodes_to_buffers, uint32 buffer_index);
 	void calculate_max_concurrency();
 	uint32 estimate_max_concurrency(uint32 node_count, const std::vector<bool> &concurrency_matrix) const;
+	void calculate_buffer_usages();
 
 	std::vector<s_task> m_tasks;
 
@@ -109,6 +116,9 @@ private:
 
 	// Total number of unique buffers required
 	uint32 m_buffer_count;
+
+	// Number of times each buffer is used
+	std::vector<uint32> m_buffer_usages;
 
 	// Max amount of concurrency that can exist at any given time during execution
 	uint32 m_max_task_concurrency;

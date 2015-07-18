@@ -13,7 +13,7 @@ void c_thread_pool::start(const s_thread_pool_settings &settings) {
 	wl_assert(settings.max_tasks > 0);
 
 	// Set up the task queue
-	m_pending_tasks_element_memory.allocate(settings.max_tasks);
+	m_pending_tasks_element_memory.allocate(settings.max_tasks + 1);
 	m_pending_tasks_queue_memory.allocate(settings.max_tasks + 1);
 	m_pending_tasks_free_list_memory.allocate(settings.max_tasks + 1);
 	m_pending_tasks.initialize(
@@ -124,6 +124,16 @@ void c_thread_pool::worker_thread_entry_point(const s_thread_parameter_block *pa
 
 	// Keep looping until we find a termination task
 	while (true) {
+		// Check if we should pause
+		while (context.this_ptr->m_check_paused.get()) {
+			// Check if we're paused in a thread-safe manner
+			c_scoped_lock lock(context.this_ptr->m_pause_mutex);
+			if (context.this_ptr->m_paused) {
+				// Wait on the condition variable. If we spuriously wake up, we will loop and pause again.
+				context.this_ptr->m_pause_condition_variable.wait(lock);
+			}
+		}
+
 		// Attempt to pop a task from the queue
 		s_task task;
 		if (context.this_ptr->m_pending_tasks.pop(task)) {
@@ -133,16 +143,6 @@ void c_thread_pool::worker_thread_entry_point(const s_thread_parameter_block *pa
 			}
 
 			task.task_function(&task.params);
-		} else {
-			// No available tasks, check if we should pause
-			if (context.this_ptr->m_check_paused.get()) {
-				// Check if we're paused in a thread-safe manner
-				c_scoped_lock lock(context.this_ptr->m_pause_mutex);
-				if (context.this_ptr->m_paused) {
-					// Wait on the condition variable. If we spuriously wake up, we will loop and pause again.
-					context.this_ptr->m_pause_condition_variable.wait(lock);
-				}
-			}
 		}
 	}
 }

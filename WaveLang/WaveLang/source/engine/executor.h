@@ -10,6 +10,7 @@
 #include "driver/sample_format.h"
 
 class c_task_graph;
+struct s_task_function_description;
 
 struct s_executor_settings {
 	const c_task_graph *task_graph;
@@ -55,8 +56,13 @@ private:
 		bool active;
 	};
 
-	ALIGNAS_LOCK_FREE struct s_task_context{
+	ALIGNAS_LOCK_FREE struct s_task_context {
 		c_atomic_int32 predecessors_remaining;
+	};
+
+	ALIGNAS_LOCK_FREE struct s_buffer_context {
+		c_atomic_int32 usages_remaining;
+		uint32 handle;
 	};
 
 	struct s_task_parameters {
@@ -74,6 +80,10 @@ private:
 
 	static void process_task_wrapper(const s_thread_parameter_block *params);
 	void process_task(uint32 task_index, uint32 frames);
+
+	void allocate_output_buffers(const s_task_function_description &task_function_description, uint32 task_index);
+	void decrement_buffer_usages(const s_task_function_description &task_function_description, uint32 task_index);
+	void decrement_buffer_usage(uint32 buffer_index);
 
 	// Used to enable/disable the executor in a thread-safe manner
 	c_atomic_int32 m_state;
@@ -102,6 +112,9 @@ private:
 
 	// Context for each task for the currently processing voice
 	c_lock_free_aligned_array_allocator<s_task_context> m_task_contexts;
+
+	// Context for each buffer for the currently processing voice
+	c_lock_free_aligned_array_allocator<s_buffer_context> m_buffer_contexts;
 
 	// Total number of tasks remaining for the currently processing voice
 	ALIGNAS_LOCK_FREE c_atomic_int32 m_tasks_remaining;

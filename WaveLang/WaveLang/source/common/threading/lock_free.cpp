@@ -12,7 +12,7 @@ bool allocate_lock_free_aligned_memory(size_t size, void **out_base_pointer, voi
 	}
 
 	IF_ASSERTS_ENABLED(void *result = ) std::align(
-		k_lock_free_alignment, aligned_size, *out_aligned_pointer, aligned_size);
+		k_lock_free_alignment, size, *out_aligned_pointer, aligned_size);
 	wl_assert(aligned_size >= size);
 	wl_assert(result);
 

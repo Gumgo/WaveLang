@@ -33,6 +33,8 @@ struct s_driver_result {
 	}
 };
 
+struct s_driver_settings;
+
 struct s_driver_stream_callback_context {
 	const s_driver_settings *driver_settings;
 	void *output_buffers;
