@@ -40,55 +40,57 @@ e_task_function c_task_graph::get_task_function(uint32 task_index) const {
 	return m_tasks[task_index].task_function;
 }
 
-real32 c_task_graph::get_task_in_constant(uint32 task_index, size_t index) const {
+c_task_graph::c_constant_array c_task_graph::get_task_constants(uint32 task_index) const {
 	const s_task &task = m_tasks[task_index];
-	wl_assert(VALID_INDEX(index,
-		c_task_function_registry::get_task_function_description(task.task_function).in_constant_count));
-	return m_constant_lists[task.in_constants_start + index];
+	const s_task_function_description &task_function_description =
+		c_task_function_registry::get_task_function_description(task.task_function);
+	return c_constant_array(
+		task_function_description.in_constant_count == 0 ? nullptr : &m_constant_lists[task.in_constants_start],
+		task_function_description.in_constant_count);
 }
 
-uint32 c_task_graph::get_task_in_buffer(uint32 task_index, size_t index) const {
+c_task_graph::c_buffer_array c_task_graph::get_task_in_buffers(uint32 task_index) const {
 	const s_task &task = m_tasks[task_index];
-	wl_assert(VALID_INDEX(index,
-		c_task_function_registry::get_task_function_description(task.task_function).in_buffer_count));
-	return m_buffer_lists[task.in_buffers_start + index];
+	const s_task_function_description &task_function_description =
+		c_task_function_registry::get_task_function_description(task.task_function);
+	return c_buffer_array(
+		task_function_description.in_buffer_count == 0 ? nullptr : &m_buffer_lists[task.in_buffers_start],
+		task_function_description.in_buffer_count);
 }
 
-uint32 c_task_graph::get_task_out_buffer(uint32 task_index, size_t index) const {
+c_task_graph::c_buffer_array c_task_graph::get_task_out_buffers(uint32 task_index) const {
 	const s_task &task = m_tasks[task_index];
-	wl_assert(VALID_INDEX(index,
-		c_task_function_registry::get_task_function_description(task.task_function).out_buffer_count));
-	return m_buffer_lists[task.out_buffers_start + index];
+	const s_task_function_description &task_function_description =
+		c_task_function_registry::get_task_function_description(task.task_function);
+	return c_buffer_array(
+		task_function_description.out_buffer_count == 0 ? nullptr : &m_buffer_lists[task.out_buffers_start],
+		task_function_description.out_buffer_count);
 }
 
-uint32 c_task_graph::get_task_inout_buffer(uint32 task_index, size_t index) const {
+c_task_graph::c_buffer_array c_task_graph::get_task_inout_buffers(uint32 task_index) const {
 	const s_task &task = m_tasks[task_index];
-	wl_assert(VALID_INDEX(index,
-		c_task_function_registry::get_task_function_description(task.task_function).inout_buffer_count));
-	return m_buffer_lists[task.inout_buffers_start + index];
+	const s_task_function_description &task_function_description =
+		c_task_function_registry::get_task_function_description(task.task_function);
+	return c_buffer_array(
+		task_function_description.inout_buffer_count == 0 ? nullptr : &m_buffer_lists[task.inout_buffers_start],
+		task_function_description.inout_buffer_count);
 }
 
 size_t c_task_graph::get_task_predecessor_count(uint32 task_index) const {
 	return m_tasks[task_index].predecessor_count;
 }
 
-size_t c_task_graph::get_task_successors_count(uint32 task_index) const {
-	return m_tasks[task_index].successors_count;
-}
-
-uint32 c_task_graph::get_task_successor(uint32 task_index, size_t index) const {
+c_task_graph::c_task_array c_task_graph::get_task_successors(uint32 task_index) const {
 	const s_task &task = m_tasks[task_index];
-	wl_assert(VALID_INDEX(index, task.successors_count));
-	return m_task_lists[task.successors_start + index];
+	return c_task_array(
+		task.successors_count == 0 ? nullptr : &m_task_lists[task.successors_start],
+		task.successors_count);
 }
 
-size_t c_task_graph::get_initial_tasks_count() const {
-	return m_initial_tasks_count;
-}
-
-uint32 c_task_graph::get_initial_task(size_t index) const {
-	wl_assert(VALID_INDEX(index, m_initial_tasks_count));
-	return m_task_lists[m_initial_tasks_start + index];
+c_task_graph::c_task_array c_task_graph::get_initial_tasks() const {
+	return c_task_array(
+		m_initial_tasks_count == 0 ? nullptr : &m_task_lists[m_initial_tasks_start],
+		m_initial_tasks_count);
 }
 
 uint32 c_task_graph::get_buffer_count() const {
@@ -243,10 +245,22 @@ static bool does_native_module_call_input_branch(const c_execution_graph &execut
 #define TM_O(index) s_task_mapping(k_task_mapping_location_buffer_out, (index))
 #define TM_IO(index) s_task_mapping(k_task_mapping_location_buffer_inout, (index))
 
+// $TODO this is really complex to maintain, can the task mappings and match strings be moved to the task function
+// definitions?
+
 // This is the function which maps native module calls in the execution graph to tasks in the task graph. A single
 // native module can map to many different tasks - e.g. for performance reasons, we have different tasks for v + v and
 // v + c, and for memory optimization (and performance) we also have tasks which directly modify buffers which never
 // need to be reused.
+// Task mapping notation examples (NM = native module):
+// { TM_I(0), TM_I(1), TM_O(0) }
+//   NM arg 0 is an input and maps to task input 0
+//   NM arg 1 is an input and maps to task input 1
+//   NM arg 2 is an output and maps to task output 0
+// { TM_IO(0), TM_C(0), TM_IO(0) }
+//   NM arg 0 is an input and maps to task inout 0
+//   NM arg 1 is a constant and maps to task constant 0
+//   NM arg 2 is an output and maps to task inout 0
 bool c_task_graph::add_task_for_node(const c_execution_graph &execution_graph, uint32 node_index,
 	std::vector<uint32> &nodes_to_tasks) {
 	wl_assert(execution_graph.get_node_type(node_index) == k_execution_graph_node_type_native_module_call);
@@ -511,10 +525,25 @@ bool c_task_graph::add_task_for_node(const c_execution_graph &execution_graph, u
 		}
 
 	case k_native_module_test:
-		if (do_native_module_call_inputs_match(execution_graph, node_index, "")) {
-			s_task_mapping mapping[] = { TM_O(0) };
+		if (do_native_module_call_inputs_match(execution_graph, node_index, "v")) {
+			s_task_mapping mapping[] = { TM_I(0), TM_O(0) };
 			setup_task(execution_graph, node_index, task_index,
 				k_task_function_test, c_task_mapping_array::construct(mapping));
+			return true;
+		} else if (do_native_module_call_inputs_match(execution_graph, node_index, "c")) {
+			s_task_mapping mapping[] = { TM_C(0), TM_O(0) };
+			setup_task(execution_graph, node_index, task_index,
+				k_task_function_test_c, c_task_mapping_array::construct(mapping));
+			return true;
+		} else {
+			return false;
+		}
+
+	case k_native_module_delay_test:
+		if (do_native_module_call_inputs_match(execution_graph, node_index, "vc")) {
+			s_task_mapping mapping[] = { TM_I(0), TM_C(0), TM_O(0) };
+			setup_task(execution_graph, node_index, task_index,
+				k_task_function_test_delay, c_task_mapping_array::construct(mapping));
 			return true;
 		} else {
 			return false;

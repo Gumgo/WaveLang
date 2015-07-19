@@ -31,7 +31,7 @@ void handle_assert(const char *message);
 
 #define ASSERTS_ENABLED 0
 
-#define IF_ASSERTS_ENABLED(x)			NOOP
+#define IF_ASSERTS_ENABLED(x)
 #define wl_assert(expression)			NOOP
 #define wl_vassert(expression, message)	NOOP
 #define wl_halt()						NOOP

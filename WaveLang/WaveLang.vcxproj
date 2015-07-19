@@ -34,6 +34,9 @@
     <ClCompile Include="source\driver\driver_interface.cpp" />
     <ClCompile Include="source\driver\sample_format.cpp" />
     <ClCompile Include="source\engine\buffer_allocator.cpp" />
+    <ClCompile Include="source\engine\buffer_operations\buffer_operations.cpp" />
+    <ClCompile Include="source\engine\buffer_operations\buffer_operations_arithmetic.cpp" />
+    <ClCompile Include="source\engine\channel_mixer.cpp" />
     <ClCompile Include="source\engine\executor.cpp" />
     <ClCompile Include="source\engine\predecessor_resolver.cpp" />
     <ClCompile Include="source\engine\task_functions.cpp" />
@@ -71,7 +74,12 @@
     <ClInclude Include="source\compiler\preprocessor.h" />
     <ClInclude Include="source\driver\driver_interface.h" />
     <ClInclude Include="source\driver\sample_format.h" />
+    <ClInclude Include="source\engine\buffer.h" />
     <ClInclude Include="source\engine\buffer_allocator.h" />
+    <ClInclude Include="source\engine\buffer_operations\buffer_operations.h" />
+    <ClInclude Include="source\engine\buffer_operations\buffer_operations_arithmetic.h" />
+    <ClInclude Include="source\engine\buffer_operations\sse.h" />
+    <ClInclude Include="source\engine\channel_mixer.h" />
     <ClInclude Include="source\engine\executor.h" />
     <ClInclude Include="source\engine\predecessor_resolver.h" />
     <ClInclude Include="source\engine\task_functions.h" />

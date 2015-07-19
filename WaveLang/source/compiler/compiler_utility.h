@@ -37,6 +37,9 @@ enum e_compiler_result {
 	k_compiler_result_invalid_entry_point,
 	k_compiler_result_syntax_error,
 
+	k_compiler_result_constant_expected,
+	k_compiler_result_optimization_error,
+
 	k_compiler_result_count
 };
 

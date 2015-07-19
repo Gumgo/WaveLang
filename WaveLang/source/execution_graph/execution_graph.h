@@ -111,6 +111,7 @@ private:
 
 	bool validate_node(uint32 index) const;
 	bool validate_edge(uint32 from_index, uint32 to_index) const;
+	bool validate_constants() const;
 
 	bool visit_node_for_cycle_detection(uint32 node_index,
 		std::vector<bool> &nodes_visited, std::vector<bool> &nodes_marked) const;

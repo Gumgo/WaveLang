@@ -114,8 +114,14 @@ static bool try_to_apply_optimization_rule(c_execution_graph *execution_graph, u
 static void remove_useless_nodes(c_execution_graph *execution_graph);
 static void transfer_outputs(c_execution_graph *execution_graph,
 	uint32 destination_index, uint32 source_index);
+static void validate_optimized_constants(const c_execution_graph *execution_graph,
+	std::vector<s_compiler_result> &out_errors);
 
-void c_execution_graph_optimizer::optimize_graph(c_execution_graph *execution_graph) {
+s_compiler_result c_execution_graph_optimizer::optimize_graph(c_execution_graph *execution_graph,
+	std::vector<s_compiler_result> &out_errors) {
+	s_compiler_result result;
+	result.clear();
+
 	// Keep making passes over the graph until no more optimizations can be applied
 	bool optimization_performed;
 	do {
@@ -133,6 +139,14 @@ void c_execution_graph_optimizer::optimize_graph(c_execution_graph *execution_gr
 #if PREDEFINED(EXECUTION_GRAPH_OUTPUT_ENABLED)
 	execution_graph->output_to_file();
 #endif // PREDEFINED(EXECUTION_GRAPH_OUTPUT_ENABLED)
+
+	validate_optimized_constants(execution_graph, out_errors);
+	if (!out_errors.empty()) {
+		result.result = k_compiler_result_optimization_error;
+		result.message = "Optimization error(s) detected";
+	}
+
+	return result;
 }
 
 static bool optimize_node(c_execution_graph *execution_graph, uint32 node_index) {
@@ -221,7 +235,8 @@ static bool optimize_native_module_call(c_execution_graph *execution_graph, uint
 				s_native_module_compile_time_argument argument;
 				IF_ASSERTS_ENABLED(argument.assigned = false);
 
-				if (native_module.argument_types[arg] == k_native_module_argument_type_in) {
+				if (native_module.argument_types[arg] == k_native_module_argument_type_in ||
+					native_module.argument_types[arg] == k_native_module_argument_type_constant) {
 					uint32 input_node_index = execution_graph->get_node_incoming_edge_index(node_index, next_input);
 					uint32 constant_node_index = execution_graph->get_node_incoming_edge_index(input_node_index, 0);
 					IF_ASSERTS_ENABLED(argument.is_input = true);
@@ -579,5 +594,44 @@ static void transfer_outputs(c_execution_graph *execution_graph,
 		uint32 to_node_index = execution_graph->get_node_outgoing_edge_index(source_index, 0);
 		execution_graph->remove_edge(source_index, to_node_index);
 		execution_graph->add_edge(destination_index, to_node_index);
+	}
+}
+
+static void validate_optimized_constants(const c_execution_graph *execution_graph,
+	std::vector<s_compiler_result> &out_errors) {
+	for (uint32 node_index = 0; node_index < execution_graph->get_node_count(); node_index++) {
+		if (execution_graph->get_node_type(node_index) != k_execution_graph_node_type_native_module_call) {
+			continue;
+		}
+
+		const s_native_module &native_module = c_native_module_registry::get_native_module(
+			execution_graph->get_native_module_call_native_module_index(node_index));
+
+		wl_assert(native_module.in_argument_count == execution_graph->get_node_incoming_edge_count(node_index));
+		// For each constant input, verify that a constant node is linked up
+		size_t input = 0;
+		for (size_t arg = 0; arg < native_module.argument_count; arg++) {
+			e_native_module_argument_type argument_type = native_module.argument_types[arg];
+			if (argument_type == k_native_module_argument_type_in) {
+				input++;
+			} else if (argument_type == k_native_module_argument_type_constant) {
+				// Validate that this input is constant
+				uint32 input_node_index = execution_graph->get_node_incoming_edge_index(node_index, input);
+				uint32 constant_node_index = execution_graph->get_node_incoming_edge_index(input_node_index, 0);
+
+				if (execution_graph->get_node_type(constant_node_index) != k_execution_graph_node_type_constant) {
+					s_compiler_result error;
+					error.result = k_compiler_result_constant_expected;
+					error.source_location.clear();
+					error.message = "Input argument to native module call '" + std::string(native_module.name) +
+						"' does not resolve to a constant";
+					out_errors.push_back(error);
+				}
+
+				input++;
+			}
+		}
+
+		wl_assert(input == native_module.in_argument_count);
 	}
 }

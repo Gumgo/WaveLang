@@ -4,45 +4,12 @@
 #include "common/common.h"
 #include "common/threading/lock_free.h"
 #include "common/threading/lock_free_pool.h"
-
-// $TODO bool buffers?
-enum e_buffer_type {
-	k_buffer_type_real,
-
-	k_buffer_type_count
-};
+#include "engine/buffer.h"
 
 struct s_buffer_allocator_settings {
 	e_buffer_type buffer_type;	// Type of each buffer
 	size_t buffer_size;			// Number of element in each buffer
 	size_t buffer_count;		// Number of buffers to be allocated
-};
-
-ALIGNAS_LOCK_FREE struct c_buffer : private c_uncopyable {
-public:
-	bool is_constant() const {
-		return m_constant;
-	}
-
-	void set_constant(bool constant) {
-		m_constant = constant;
-	}
-
-	void *get_data() {
-		return m_data;
-	}
-
-	const void *get_data() const {
-		return m_data;
-	}
-
-private:
-	c_buffer() {}
-
-	friend class c_buffer_allocator;
-
-	void *m_data;		// Pointer to the data
-	bool m_constant;	// Whether this buffer consists of a single value across all elements
 };
 
 class c_buffer_allocator {

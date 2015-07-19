@@ -44,6 +44,7 @@ public:
 		if (m_base_pointer) {
 			wl_assert(m_array.get_pointer());
 			free_lock_free_aligned_memory(m_base_pointer);
+			m_base_pointer = nullptr;
 			m_array = c_wrapped_array<t_element>(nullptr, 0);
 		}
 	}

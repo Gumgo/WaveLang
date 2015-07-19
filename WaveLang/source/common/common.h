@@ -23,7 +23,15 @@ inline bool string_compare_case_insensitive(const char *str_a, const char *str_b
 
 // alignment must be a power of 2
 template<typename t_size, typename t_alignment> t_size align_size(t_size size, t_alignment alignment) {
-	return (size + (alignment - 1)) & (alignment - 1);
+	return (size + (alignment - 1)) & ~(alignment - 1);
+}
+
+template<typename t_size, typename t_alignment> bool is_size_aligned(t_size size, t_alignment alignment) {
+	return (size & (alignment - 1)) == 0;
+}
+
+template<typename t_pointer, typename t_alignment> bool is_pointer_aligned(t_pointer *pointer, t_alignment alignment) {
+	return is_size_aligned(reinterpret_cast<size_t>(pointer), alignment);
 }
 
 class c_uncopyable {
@@ -39,6 +47,11 @@ private:
 template<typename t_element>
 class c_wrapped_array_const {
 public:
+	c_wrapped_array_const()
+		: m_pointer(nullptr)
+		, m_count(0) {
+	}
+
 	c_wrapped_array_const(const t_element *pointer, size_t count)
 		: m_pointer(pointer)
 		, m_count(count) {
@@ -70,6 +83,11 @@ private:
 template<typename t_element>
 class c_wrapped_array {
 public:
+	c_wrapped_array()
+		: m_pointer(nullptr)
+		, m_count(0) {
+	}
+
 	c_wrapped_array(t_element *pointer, size_t count)
 		: m_pointer(pointer)
 		, m_count(count) {

@@ -16,6 +16,10 @@ class c_task_graph {
 public:
 	static const uint32 k_invalid_buffer = static_cast<uint32>(-1);
 
+	typedef c_wrapped_array_const<real32> c_constant_array;
+	typedef c_wrapped_array_const<uint32> c_buffer_array;
+	typedef c_wrapped_array_const<uint32> c_task_array;
+
 	c_task_graph();
 	~c_task_graph();
 
@@ -26,23 +30,21 @@ public:
 
 	e_task_function get_task_function(uint32 task_index) const;
 
-	real32 get_task_in_constant(uint32 task_index, size_t index) const;
-	uint32 get_task_in_buffer(uint32 task_index, size_t index) const;
-	uint32 get_task_out_buffer(uint32 task_index, size_t index) const;
-	uint32 get_task_inout_buffer(uint32 task_index, size_t index) const;
+	c_constant_array get_task_constants(uint32 task_index) const;
+	c_buffer_array get_task_in_buffers(uint32 task_index) const;
+	c_buffer_array get_task_out_buffers(uint32 task_index) const;
+	c_buffer_array get_task_inout_buffers(uint32 task_index) const;
 
 	size_t get_task_predecessor_count(uint32 task_index) const;
+	c_task_array get_task_successors(uint32 task_index) const;
 
-	size_t get_task_successors_count(uint32 task_index) const;
-	uint32 get_task_successor(uint32 task_index, size_t index) const;
-
-	size_t get_initial_tasks_count() const;
-	uint32 get_initial_task(size_t index) const;
+	c_task_array get_initial_tasks() const;
 
 	uint32 get_buffer_count() const;
 	uint32 get_max_buffer_concurrency() const;
 	uint32 get_buffer_usages(uint32 buffer_index) const;
 
+	// Since this can switch between constant and buffer, don't return an array, require querying
 	uint32 get_output_count() const;
 	bool is_output_buffer(uint32 output_index) const;
 	uint32 get_output_buffer(uint32 output_index) const;

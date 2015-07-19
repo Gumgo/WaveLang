@@ -75,8 +75,12 @@ static const s_native_module k_native_modules[] = {
 
 	// Non-constant test module
 	make_native_module(NATIVE_PREFIX "test",
-	true, make_args(NMAT(out)),
+	true, make_args(NMAT(in), NMAT(out)),
 	nullptr),
+
+	make_native_module(NATIVE_PREFIX "delay_test",
+	true, make_args(NMAT(in), NMAT(constant), NMAT(out)),
+	nullptr)
 };
 
 static_assert(NUMBEROF(k_native_modules) == k_native_module_count, "Native module definition list mismatch");
@@ -140,7 +144,8 @@ static s_native_module make_native_module(
 			native_module.argument_types[native_module.argument_count] =
 				arguments.argument_types[native_module.argument_count];
 
-			if (arguments.argument_types[native_module.argument_count] == k_native_module_argument_type_in) {
+			if (arguments.argument_types[native_module.argument_count] == k_native_module_argument_type_in ||
+				arguments.argument_types[native_module.argument_count] == k_native_module_argument_type_constant) {
 				native_module.in_argument_count++;
 			} else {
 				native_module.out_argument_count++;

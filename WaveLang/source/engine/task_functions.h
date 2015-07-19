@@ -3,6 +3,8 @@
 
 #include "common/common.h"
 
+class c_buffer;
+
 // buffer = a buffer input
 // bufferio = a buffer inout
 // constant = a constant input
@@ -46,12 +48,35 @@ enum e_task_function {
 
 	// $TODO temporary
 	k_task_function_test,
+	k_task_function_test_c,
+	k_task_function_test_delay,
 
 	k_task_function_count
 };
 
+struct s_task_function_context {
+	uint32 buffer_size;
+	void *task_memory;
+	// $TODO more things like timing
+
+	c_wrapped_array_const<real32> in_constants;
+	c_wrapped_array_const<const c_buffer *> in_buffers;
+	c_wrapped_array_const<c_buffer *> out_buffers;
+	c_wrapped_array_const<c_buffer *> inout_buffers;
+};
+
+typedef void (*f_task_function)(const s_task_function_context &context);
+
+// This function takes a list of constant inputs to the task and returns the amount of memory the task requires
+typedef c_wrapped_array_const<real32> c_task_constant_inputs;
+typedef size_t (*f_task_memory_query)(c_task_constant_inputs constant_inputs);
+
 struct s_task_function_description {
-	void *function; // $TODO make this a fn pointer
+	// Function to execute
+	f_task_function function;
+
+	// Memory query function, or null
+	f_task_memory_query memory_query;
 
 	// Number of constant inputs
 	uint32 in_constant_count;

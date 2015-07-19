@@ -89,10 +89,11 @@ static void build_native_module_declarations(c_ast_node_scope *global_scope) {
 				// Add a declaration for this argument
 				c_ast_node_named_value_declaration *argument = new c_ast_node_named_value_declaration();
 				wl_assert(arg_type == k_native_module_argument_type_in ||
-					arg_type == k_native_module_argument_type_out);
-				argument->set_qualifier((arg_type == k_native_module_argument_type_in) ?
-					c_ast_node_named_value_declaration::k_qualifier_in :
-					c_ast_node_named_value_declaration::k_qualifier_out);
+					arg_type == k_native_module_argument_type_out ||
+					arg_type == k_native_module_argument_type_constant);
+				argument->set_qualifier((arg_type == k_native_module_argument_type_out) ?
+					c_ast_node_named_value_declaration::k_qualifier_out :
+					c_ast_node_named_value_declaration::k_qualifier_in);
 
 				module_declaration->add_argument(argument);
 			}

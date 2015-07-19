@@ -86,7 +86,12 @@
     <ClInclude Include="..\WaveLang\source\common\types.h" />
     <ClInclude Include="..\WaveLang\source\driver\driver_interface.h" />
     <ClInclude Include="..\WaveLang\source\driver\sample_format.h" />
+    <ClInclude Include="..\WaveLang\source\engine\buffer.h" />
     <ClInclude Include="..\WaveLang\source\engine\buffer_allocator.h" />
+    <ClInclude Include="..\WaveLang\source\engine\buffer_operations\buffer_operations.h" />
+    <ClInclude Include="..\WaveLang\source\engine\buffer_operations\buffer_operations_arithmetic.h" />
+    <ClInclude Include="..\WaveLang\source\engine\buffer_operations\sse.h" />
+    <ClInclude Include="..\WaveLang\source\engine\channel_mixer.h" />
     <ClInclude Include="..\WaveLang\source\engine\executor.h" />
     <ClInclude Include="..\WaveLang\source\engine\predecessor_resolver.h" />
     <ClInclude Include="..\WaveLang\source\engine\task_functions.h" />
@@ -106,6 +111,9 @@
     <ClCompile Include="..\WaveLang\source\driver\driver_interface.cpp" />
     <ClCompile Include="..\WaveLang\source\driver\sample_format.cpp" />
     <ClCompile Include="..\WaveLang\source\engine\buffer_allocator.cpp" />
+    <ClCompile Include="..\WaveLang\source\engine\buffer_operations\buffer_operations.cpp" />
+    <ClCompile Include="..\WaveLang\source\engine\buffer_operations\buffer_operations_arithmetic.cpp" />
+    <ClCompile Include="..\WaveLang\source\engine\channel_mixer.cpp" />
     <ClCompile Include="..\WaveLang\source\engine\executor.cpp" />
     <ClCompile Include="..\WaveLang\source\engine\predecessor_resolver.cpp" />
     <ClCompile Include="..\WaveLang\source\engine\task_functions.cpp" />

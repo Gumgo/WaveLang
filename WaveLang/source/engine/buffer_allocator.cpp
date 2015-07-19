@@ -1,6 +1,7 @@
 #include "engine/buffer_allocator.h"
+#include "engine/buffer_operations/sse.h"
 
-static_assert(CACHE_LINE_SIZE >= 16, "Cache line too small for SSE");
+static_assert(CACHE_LINE_SIZE >= SSE_ALIGNMENT, "Cache line too small for SSE");
 
 c_buffer_allocator::c_buffer_allocator() {
 }
@@ -27,7 +28,7 @@ void c_buffer_allocator::initialize(const s_buffer_allocator_settings &settings)
 	}
 
 	// Round the number of elements up to a multiple of 4. This is because SSE instructions work on groups of 4.
-	size_t element_count = align_size(settings.buffer_size, 4);
+	size_t element_count = align_size(settings.buffer_size, k_sse_block_size);
 
 	// Calculate the size of a single buffer, which should be both cache aligned, for threading, and 16-byte aligned,
 	// for SSE

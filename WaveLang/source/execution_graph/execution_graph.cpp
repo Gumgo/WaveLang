@@ -291,6 +291,8 @@ bool c_execution_graph::validate() const {
 		}
 	}
 
+	validate_constants();
+
 	// Validate globals
 	if (m_globals.max_voices < 1) {
 		return false;
@@ -327,7 +329,8 @@ uint32 c_execution_graph::add_native_module_call_node(uint32 native_module_index
 		uint32 argument_node_index = allocate_node();
 		s_node &argument_node = m_nodes[argument_node_index];
 		argument_node.data = 0;
-		if (native_module.argument_types[arg] == k_native_module_argument_type_in) {
+		if (native_module.argument_types[arg] == k_native_module_argument_type_in ||
+			native_module.argument_types[arg] == k_native_module_argument_type_constant) {
 			argument_node.type = k_execution_graph_node_type_native_module_input;
 			argument_node.outgoing_edge_indices.push_back(index);
 			m_nodes[index].incoming_edge_indices.push_back(argument_node_index);
@@ -599,6 +602,42 @@ bool c_execution_graph::validate_edge(uint32 from_index, uint32 to_index) const 
 	default:
 		// Unknown type
 		return false;
+	}
+
+	return true;
+}
+
+bool c_execution_graph::validate_constants() const {
+	// This should only be called after all nodes and edges have been validated
+	for (uint32 node_index = 0; node_index < m_nodes.size(); node_index++) {
+		if (get_node_type(node_index) != k_execution_graph_node_type_native_module_call) {
+			continue;
+		}
+
+		const s_native_module &native_module = c_native_module_registry::get_native_module(
+			get_native_module_call_native_module_index(node_index));
+
+		wl_assert(native_module.in_argument_count == get_node_incoming_edge_count(node_index));
+		// For each constant input, verify that a constant node is linked up
+		size_t input = 0;
+		for (size_t arg = 0; arg < native_module.argument_count; arg++) {
+			e_native_module_argument_type argument_type = native_module.argument_types[arg];
+			if (argument_type == k_native_module_argument_type_in) {
+				input++;
+			} else if (argument_type == k_native_module_argument_type_constant) {
+				// Validate that this input is constant
+				uint32 input_node_index = get_node_incoming_edge_index(node_index, input);
+				uint32 constant_node_index = get_node_incoming_edge_index(input_node_index, 0);
+
+				if (get_node_type(constant_node_index) != k_execution_graph_node_type_constant) {
+					return false;
+				}
+
+				input++;
+			}
+		}
+
+		wl_assert(input == native_module.in_argument_count);
 	}
 
 	return true;

@@ -15,6 +15,7 @@ struct s_task_function_description;
 struct s_executor_settings {
 	const c_task_graph *task_graph;
 	uint32 max_buffer_size;
+	uint32 output_channels;
 };
 
 struct s_executor_chunk_context {
@@ -67,6 +68,7 @@ private:
 
 	struct s_task_parameters {
 		c_executor *this_ptr;
+		uint32 voice_index;
 		uint32 task_index;
 		uint32 frames;
 	};
@@ -76,13 +78,13 @@ private:
 
 	void execute_internal(const s_executor_chunk_context &chunk_context);
 
-	void add_task(uint32 task_index, uint32 frames);
+	void add_task(uint32 voice_index, uint32 task_index, uint32 frames);
 
 	static void process_task_wrapper(const s_thread_parameter_block *params);
-	void process_task(uint32 task_index, uint32 frames);
+	void process_task(uint32 voice_index, uint32 task_index, uint32 frames);
 
-	void allocate_output_buffers(const s_task_function_description &task_function_description, uint32 task_index);
-	void decrement_buffer_usages(const s_task_function_description &task_function_description, uint32 task_index);
+	void allocate_output_buffers(uint32 task_index);
+	void decrement_buffer_usages(uint32 task_index);
 	void decrement_buffer_usage(uint32 buffer_index);
 
 	// Used to enable/disable the executor in a thread-safe manner
@@ -115,6 +117,12 @@ private:
 
 	// Context for each buffer for the currently processing voice
 	c_lock_free_aligned_array_allocator<s_buffer_context> m_buffer_contexts;
+
+	// Buffers to accumulate the final result into
+	std::vector<uint32> m_voice_output_accumulation_buffers;
+
+	// Buffers to mix to output channels
+	std::vector<uint32> m_channel_mix_buffers;
 
 	// Total number of tasks remaining for the currently processing voice
 	ALIGNAS_LOCK_FREE c_atomic_int32 m_tasks_remaining;

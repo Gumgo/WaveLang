@@ -11,6 +11,9 @@ enum e_native_module_argument_type {
 	k_native_module_argument_type_in,
 	k_native_module_argument_type_out,
 
+	// Same as input argument, except the value must resolve to a compile-time constant
+	k_native_module_argument_type_constant,
+
 	k_native_module_argument_type_count
 };
 
@@ -60,6 +63,7 @@ enum e_native_module {
 
 	// $TODO temporary for testing
 	k_native_module_test,
+	k_native_module_delay_test,
 
 	k_native_module_count
 };
