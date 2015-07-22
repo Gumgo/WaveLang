@@ -17,7 +17,7 @@ void mix_output_buffers_to_channel_buffers(
 		// Mix mono to N channels
 		c_buffer *output_buffer = buffer_allocator.get_buffer(output_buffers[0]);
 		for (size_t index = 0; index < channel_buffer_count; index++) {
-			buffer_operation_assignment_buffer(
+			s_buffer_operation_assignment::buffer(
 				frames,
 				buffer_allocator.get_buffer(channel_buffers[index]),
 				output_buffer);
@@ -25,7 +25,7 @@ void mix_output_buffers_to_channel_buffers(
 	} else if (channel_buffer_count == 1) {
 		// Mix N channels to mono
 		// Add the first 2 directly
-		buffer_operation_addition_buffer_buffer(
+		s_buffer_operation_addition::buffer_buffer(
 			frames,
 			buffer_allocator.get_buffer(channel_buffers[0]),
 			buffer_allocator.get_buffer(output_buffers[0]),
@@ -33,21 +33,21 @@ void mix_output_buffers_to_channel_buffers(
 
 		// Accumulate the remaining buffers
 		for (size_t index = 2; index < channel_buffer_count; index++) {
-			buffer_operation_addition_bufferio_buffer(
+			s_buffer_operation_addition::bufferio_buffer(
 				frames,
 				buffer_allocator.get_buffer(channel_buffers[0]),
 				buffer_allocator.get_buffer(output_buffers[index]));
 		}
 
 		// Scale the result
-		buffer_operation_multiplication_bufferio_constant(
+		s_buffer_operation_multiplication::bufferio_constant(
 			frames,
 			buffer_allocator.get_buffer(channel_buffers[0]),
 			1.0f / static_cast<real32>(output_buffers.get_count()));
 	} else {
 		// $TODO unsupported, for now zero the channel buffers
 		for (size_t index = 0; index < channel_buffer_count; index++) {
-			buffer_operation_assignment_constant(
+			s_buffer_operation_assignment::constant(
 				frames,
 				buffer_allocator.get_buffer(channel_buffers[index]),
 				0.0f);

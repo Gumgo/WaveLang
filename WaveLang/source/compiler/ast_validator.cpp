@@ -32,15 +32,6 @@ private:
 		// A named value cannot be used without first being assigned
 	};
 
-	// $TODO remove
-	enum e_expression_expectation {
-		k_expression_expectation_value_or_valueless,	// This expression can either be a value or have no value
-		k_expression_expectation_value,					// This expression must have a value
-		k_expression_expectation_assignment,			// This expression must be a single named value identifier
-
-		k_expression_expectation_count
-	};
-
 	struct s_scope {
 		// The module this scope belongs to, or null
 		const c_ast_node_module_declaration *module_for_scope;
@@ -96,11 +87,6 @@ private:
 
 	// When we build expressions, we return the results through this stack
 	std::stack<s_expression_result> m_expression_stack;
-
-	// $TODO remove
-	// Used to validate that expressions resolve to their expected values
-	// When sub-expressions are discovered, expecatations are pushed to this stack in reverse argument order
-	std::stack<e_expression_expectation> expression_expectation_stack;
 
 	// Keeps track of the graph of module calls to detect cycles
 	std::vector<s_module_call> m_module_calls;

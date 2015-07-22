@@ -30,7 +30,7 @@ enum e_execution_graph_node_type {
 	k_execution_graph_node_type_output,
 
 	// Holds an intermediate value, optimized away in the final graph
-	k_execution_graph_node_type_intermediate_value,
+	k_execution_graph_node_type_intermediate_value, // $TODO unused currently - possibly delete this
 
 	k_execution_graph_node_type_count
 };

@@ -5,11 +5,6 @@
 
 static const uint32 k_invalid_task = static_cast<uint32>(-1);
 
-// Specify a string like the following: "cvv". The character count is the number of arguments. Each 'c' indicates a
-// constant input, each 'v' indicates a non-constant input. Returns true if the module call inputs match this pattern.
-static bool do_native_module_call_inputs_match(const c_execution_graph &execution_graph, uint32 node_index,
-	const char *in_args);
-
 // Returns true if the given input is used as more than once. This indicates that the input cannot be used as an inout
 // because overwriting the buffer would invalidate its second usage as an input.
 static bool does_native_module_call_input_branch(const c_execution_graph &execution_graph, uint32 node_index,
@@ -186,40 +181,31 @@ bool c_task_graph::build(const c_execution_graph &execution_graph) {
 	return success;
 }
 
-static bool do_native_module_call_inputs_match(const c_execution_graph &execution_graph, uint32 node_index,
-	const char *in_args) {
+// See native_module_task_mapping.h for a description of the string produced
+static void get_native_module_call_input_string(const c_execution_graph &execution_graph, uint32 node_index,
+	c_wrapped_array<char> out_string_buffer) {
 	wl_assert(execution_graph.get_node_type(node_index) == k_execution_graph_node_type_native_module_call);
-	wl_assert(in_args);
 
 	size_t incoming_edge_count = execution_graph.get_node_incoming_edge_count(node_index);
-
-#if PREDEFINED(ASSERTS_ENABLED)
-	for (const char *ch = in_args; *ch != '\0'; ch++) {
-		wl_assert(*ch == 'c' || *ch == 'v');
-	}
-#endif // PREDEFINED(ASSERTS_ENABLED)
-	wl_assert(in_args[incoming_edge_count] == '\0');
-
 	for (size_t index = 0; index < incoming_edge_count; index++) {
 		uint32 input_node_index = execution_graph.get_node_incoming_edge_index(node_index, index);
 		uint32 source_node_index = execution_graph.get_node_incoming_edge_index(input_node_index, 0);
 
-		if (in_args[index] == 'c') {
-			if (execution_graph.get_node_type(source_node_index) != k_execution_graph_node_type_constant) {
-				// The input is not a constant
-				return false;
-			}
+		if (execution_graph.get_node_type(source_node_index) == k_execution_graph_node_type_constant) {
+			// The input is a constant
+			out_string_buffer[index] = 'c';
 		} else {
-			wl_assert(in_args[index] == 'v');
-			if (execution_graph.get_node_type(source_node_index) != k_execution_graph_node_type_native_module_output) {
-				// The input is not the result of a module call, so it must be a constant
-				return false;
-			}
+			// The input is the result of a module call
+			wl_assert(execution_graph.get_node_type(source_node_index) ==
+				k_execution_graph_node_type_native_module_output);
+
+			bool branches = does_native_module_call_input_branch(execution_graph, node_index, index);
+			out_string_buffer[index] = branches ? 'v' : 'V';
 		}
 	}
 
-	// All inputs match
-	return true;
+	// Add null terminator
+	out_string_buffer[incoming_edge_count] = '\0';
 }
 
 static bool does_native_module_call_input_branch(const c_execution_graph &execution_graph, uint32 node_index,
@@ -232,35 +218,13 @@ static bool does_native_module_call_input_branch(const c_execution_graph &execut
 	if (execution_graph.get_node_type(source_node_index) == k_execution_graph_node_type_constant) {
 		// We don't care if a constant value is branched because constant values don't take up buffers, they are
 		// directly inlined into the task.
-		return true;
+		return false;
 	} else {
 		wl_assert(execution_graph.get_node_type(source_node_index) == k_execution_graph_node_type_native_module_output);
 		return (execution_graph.get_node_outgoing_edge_count(source_node_index) > 1);
 	}
 }
 
-// Shorthand
-#define TM_C(index) s_task_mapping(k_task_mapping_location_constant_in, (index))
-#define TM_I(index) s_task_mapping(k_task_mapping_location_buffer_in, (index))
-#define TM_O(index) s_task_mapping(k_task_mapping_location_buffer_out, (index))
-#define TM_IO(index) s_task_mapping(k_task_mapping_location_buffer_inout, (index))
-
-// $TODO this is really complex to maintain, can the task mappings and match strings be moved to the task function
-// definitions?
-
-// This is the function which maps native module calls in the execution graph to tasks in the task graph. A single
-// native module can map to many different tasks - e.g. for performance reasons, we have different tasks for v + v and
-// v + c, and for memory optimization (and performance) we also have tasks which directly modify buffers which never
-// need to be reused.
-// Task mapping notation examples (NM = native module):
-// { TM_I(0), TM_I(1), TM_O(0) }
-//   NM arg 0 is an input and maps to task input 0
-//   NM arg 1 is an input and maps to task input 1
-//   NM arg 2 is an output and maps to task output 0
-// { TM_IO(0), TM_C(0), TM_IO(0) }
-//   NM arg 0 is an input and maps to task inout 0
-//   NM arg 1 is a constant and maps to task constant 0
-//   NM arg 2 is an output and maps to task inout 0
 bool c_task_graph::add_task_for_node(const c_execution_graph &execution_graph, uint32 node_index,
 	std::vector<uint32> &nodes_to_tasks) {
 	wl_assert(execution_graph.get_node_type(node_index) == k_execution_graph_node_type_native_module_call);
@@ -271,287 +235,25 @@ bool c_task_graph::add_task_for_node(const c_execution_graph &execution_graph, u
 	wl_assert(nodes_to_tasks[node_index] == k_invalid_task);
 	nodes_to_tasks[node_index] = task_index;
 
+	// Construct string representing inputs - 1 extra character for null terminator
+	char inputs_string[k_max_native_module_arguments + 1];
+	get_native_module_call_input_string(execution_graph, node_index,
+		c_wrapped_array<char>::construct(inputs_string));
+
 	uint32 native_module_index = execution_graph.get_native_module_call_native_module_index(node_index);
-	switch (native_module_index) {
-	case k_native_module_noop:
-		wl_vhalt("We don't allow no-ops at this point");
+
+	c_task_mapping_array task_mapping_array;
+	e_task_function task_function = k_task_function_count;
+	bool mapping_found = get_task_mapping_for_native_module_and_inputs(
+		native_module_index, inputs_string, task_function, task_mapping_array);
+
+	if (task_mapping_array.get_count() == 0) {
+		wl_assert(task_function = k_task_function_count);
 		return false;
-
-	case k_native_module_negation:
-		if (do_native_module_call_inputs_match(execution_graph, node_index, "v")) {
-			if (!does_native_module_call_input_branch(execution_graph, node_index, 0)) {
-				s_task_mapping mapping[] = { TM_IO(0), TM_IO(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_negation_bufferio, c_task_mapping_array::construct(mapping));
-				return true;
-			} else {
-				s_task_mapping mapping[] = { TM_I(0), TM_O(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_negation_buffer, c_task_mapping_array::construct(mapping));
-				return true;
-			}
-		} else {
-			return false;
-		}
-
-	case k_native_module_addition:
-		if (do_native_module_call_inputs_match(execution_graph, node_index, "vv")) {
-			if (!does_native_module_call_input_branch(execution_graph, node_index, 0)) {
-				s_task_mapping mapping[] = { TM_IO(0), TM_I(0), TM_IO(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_addition_bufferio_buffer, c_task_mapping_array::construct(mapping));
-				return true;
-			} else if (!does_native_module_call_input_branch(execution_graph, node_index, 1)) {
-				s_task_mapping mapping[] = { TM_I(0), TM_IO(0), TM_IO(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_addition_bufferio_buffer, c_task_mapping_array::construct(mapping));
-				return true;
-			} else {
-				s_task_mapping mapping[] = { TM_I(0), TM_I(1), TM_O(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_addition_buffer_buffer, c_task_mapping_array::construct(mapping));
-				return true;
-			}
-		} else if (do_native_module_call_inputs_match(execution_graph, node_index, "vc")) {
-			if (!does_native_module_call_input_branch(execution_graph, node_index, 0)) {
-				s_task_mapping mapping[] = { TM_IO(0), TM_C(0), TM_IO(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_addition_bufferio_constant, c_task_mapping_array::construct(mapping));
-				return true;
-			} else {
-				s_task_mapping mapping[] = { TM_I(0), TM_C(0), TM_O(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_addition_buffer_constant, c_task_mapping_array::construct(mapping));
-				return true;
-			}
-		} else if (do_native_module_call_inputs_match(execution_graph, node_index, "cv")) {
-			if (!does_native_module_call_input_branch(execution_graph, node_index, 1)) {
-				s_task_mapping mapping[] = { TM_C(0), TM_IO(0), TM_IO(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_addition_bufferio_constant, c_task_mapping_array::construct(mapping));
-				return true;
-			} else {
-				s_task_mapping mapping[] = { TM_C(0), TM_I(0), TM_O(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_addition_buffer_constant, c_task_mapping_array::construct(mapping));
-				return true;
-			}
-		} else {
-			return false;
-		}
-
-	case k_native_module_subtraction:
-		if (do_native_module_call_inputs_match(execution_graph, node_index, "vv")) {
-			if (!does_native_module_call_input_branch(execution_graph, node_index, 0)) {
-				s_task_mapping mapping[] = { TM_IO(0), TM_I(0), TM_IO(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_subtraction_bufferio_buffer, c_task_mapping_array::construct(mapping));
-				return true;
-			} else if (!does_native_module_call_input_branch(execution_graph, node_index, 1)) {
-				s_task_mapping mapping[] = { TM_I(0), TM_IO(0), TM_IO(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_subtraction_buffer_bufferio, c_task_mapping_array::construct(mapping));
-				return true;
-			} else {
-				s_task_mapping mapping[] = { TM_I(0), TM_I(1), TM_O(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_subtraction_buffer_buffer, c_task_mapping_array::construct(mapping));
-				return true;
-			}
-		} else if (do_native_module_call_inputs_match(execution_graph, node_index, "vc")) {
-			if (!does_native_module_call_input_branch(execution_graph, node_index, 0)) {
-				s_task_mapping mapping[] = { TM_IO(0), TM_C(0), TM_IO(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_subtraction_bufferio_constant, c_task_mapping_array::construct(mapping));
-				return true;
-			} else {
-				s_task_mapping mapping[] = { TM_I(0), TM_C(0), TM_O(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_subtraction_buffer_constant, c_task_mapping_array::construct(mapping));
-				return true;
-			}
-		} else if (do_native_module_call_inputs_match(execution_graph, node_index, "cv")) {
-			if (!does_native_module_call_input_branch(execution_graph, node_index, 1)) {
-				s_task_mapping mapping[] = { TM_C(0), TM_IO(0), TM_IO(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_subtraction_constant_bufferio, c_task_mapping_array::construct(mapping));
-				return true;
-			} else {
-				s_task_mapping mapping[] = { TM_C(0), TM_I(0), TM_O(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_subtraction_constant_buffer, c_task_mapping_array::construct(mapping));
-				return true;
-			}
-		} else {
-			return false;
-		}
-
-	case k_native_module_multiplication:
-		if (do_native_module_call_inputs_match(execution_graph, node_index, "vv")) {
-			if (!does_native_module_call_input_branch(execution_graph, node_index, 0)) {
-				s_task_mapping mapping[] = { TM_IO(0), TM_I(0), TM_IO(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_multiplication_bufferio_buffer, c_task_mapping_array::construct(mapping));
-				return true;
-			} else if (!does_native_module_call_input_branch(execution_graph, node_index, 1)) {
-				s_task_mapping mapping[] = { TM_I(0), TM_IO(0), TM_IO(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_multiplication_bufferio_buffer, c_task_mapping_array::construct(mapping));
-				return true;
-			} else {
-				s_task_mapping mapping[] = { TM_I(0), TM_I(1), TM_O(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_multiplication_buffer_buffer, c_task_mapping_array::construct(mapping));
-				return true;
-			}
-		} else if (do_native_module_call_inputs_match(execution_graph, node_index, "vc")) {
-			if (!does_native_module_call_input_branch(execution_graph, node_index, 0)) {
-				s_task_mapping mapping[] = { TM_IO(0), TM_C(0), TM_IO(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_multiplication_bufferio_constant, c_task_mapping_array::construct(mapping));
-				return true;
-			} else {
-				s_task_mapping mapping[] = { TM_I(0), TM_C(0), TM_O(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_multiplication_buffer_constant, c_task_mapping_array::construct(mapping));
-				return true;
-			}
-		} else if (do_native_module_call_inputs_match(execution_graph, node_index, "cv")) {
-			if (!does_native_module_call_input_branch(execution_graph, node_index, 1)) {
-				s_task_mapping mapping[] = { TM_C(0), TM_IO(0), TM_IO(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_multiplication_bufferio_constant, c_task_mapping_array::construct(mapping));
-				return true;
-			} else {
-				s_task_mapping mapping[] = { TM_C(0), TM_I(0), TM_O(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_multiplication_buffer_constant, c_task_mapping_array::construct(mapping));
-				return true;
-			}
-		} else {
-			return false;
-		}
-
-	case k_native_module_division:
-		if (do_native_module_call_inputs_match(execution_graph, node_index, "vv")) {
-			if (!does_native_module_call_input_branch(execution_graph, node_index, 0)) {
-				s_task_mapping mapping[] = { TM_IO(0), TM_I(0), TM_IO(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_division_bufferio_buffer, c_task_mapping_array::construct(mapping));
-				return true;
-			} else if (!does_native_module_call_input_branch(execution_graph, node_index, 1)) {
-				s_task_mapping mapping[] = { TM_I(0), TM_IO(0), TM_IO(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_division_buffer_bufferio, c_task_mapping_array::construct(mapping));
-				return true;
-			} else {
-				s_task_mapping mapping[] = { TM_I(0), TM_I(1), TM_O(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_division_buffer_buffer, c_task_mapping_array::construct(mapping));
-				return true;
-			}
-		} else if (do_native_module_call_inputs_match(execution_graph, node_index, "vc")) {
-			if (!does_native_module_call_input_branch(execution_graph, node_index, 0)) {
-				s_task_mapping mapping[] = { TM_IO(0), TM_C(0), TM_IO(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_division_bufferio_constant, c_task_mapping_array::construct(mapping));
-				return true;
-			} else {
-				s_task_mapping mapping[] = { TM_I(0), TM_C(0), TM_O(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_division_buffer_constant, c_task_mapping_array::construct(mapping));
-				return true;
-			}
-		} else if (do_native_module_call_inputs_match(execution_graph, node_index, "cv")) {
-			if (!does_native_module_call_input_branch(execution_graph, node_index, 1)) {
-				s_task_mapping mapping[] = { TM_C(0), TM_IO(0), TM_IO(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_division_constant_bufferio, c_task_mapping_array::construct(mapping));
-				return true;
-			} else {
-				s_task_mapping mapping[] = { TM_C(0), TM_I(0), TM_O(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_division_constant_buffer, c_task_mapping_array::construct(mapping));
-				return true;
-			}
-		} else {
-			return false;
-		}
-
-	case k_native_module_modulo:
-		if (do_native_module_call_inputs_match(execution_graph, node_index, "vv")) {
-			if (!does_native_module_call_input_branch(execution_graph, node_index, 0)) {
-				s_task_mapping mapping[] = { TM_IO(0), TM_I(0), TM_IO(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_modulo_bufferio_buffer, c_task_mapping_array::construct(mapping));
-				return true;
-			} else if (!does_native_module_call_input_branch(execution_graph, node_index, 1)) {
-				s_task_mapping mapping[] = { TM_I(0), TM_IO(0), TM_IO(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_modulo_buffer_bufferio, c_task_mapping_array::construct(mapping));
-				return true;
-			} else {
-				s_task_mapping mapping[] = { TM_I(0), TM_I(1), TM_O(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_modulo_buffer_buffer, c_task_mapping_array::construct(mapping));
-				return true;
-			}
-		} else if (do_native_module_call_inputs_match(execution_graph, node_index, "vc")) {
-			if (!does_native_module_call_input_branch(execution_graph, node_index, 0)) {
-				s_task_mapping mapping[] = { TM_IO(0), TM_C(0), TM_IO(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_modulo_bufferio_constant, c_task_mapping_array::construct(mapping));
-				return true;
-			} else {
-				s_task_mapping mapping[] = { TM_I(0), TM_C(0), TM_O(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_modulo_buffer_constant, c_task_mapping_array::construct(mapping));
-				return true;
-			}
-		} else if (do_native_module_call_inputs_match(execution_graph, node_index, "cv")) {
-			if (!does_native_module_call_input_branch(execution_graph, node_index, 1)) {
-				s_task_mapping mapping[] = { TM_C(0), TM_IO(0), TM_IO(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_modulo_constant_bufferio, c_task_mapping_array::construct(mapping));
-				return true;
-			} else {
-				s_task_mapping mapping[] = { TM_C(0), TM_I(0), TM_O(0) };
-				setup_task(execution_graph, node_index, task_index,
-					k_task_function_modulo_constant_buffer, c_task_mapping_array::construct(mapping));
-				return true;
-			}
-		} else {
-			return false;
-		}
-
-	case k_native_module_test:
-		if (do_native_module_call_inputs_match(execution_graph, node_index, "v")) {
-			s_task_mapping mapping[] = { TM_I(0), TM_O(0) };
-			setup_task(execution_graph, node_index, task_index,
-				k_task_function_test, c_task_mapping_array::construct(mapping));
-			return true;
-		} else if (do_native_module_call_inputs_match(execution_graph, node_index, "c")) {
-			s_task_mapping mapping[] = { TM_C(0), TM_O(0) };
-			setup_task(execution_graph, node_index, task_index,
-				k_task_function_test_c, c_task_mapping_array::construct(mapping));
-			return true;
-		} else {
-			return false;
-		}
-
-	case k_native_module_delay_test:
-		if (do_native_module_call_inputs_match(execution_graph, node_index, "vc")) {
-			s_task_mapping mapping[] = { TM_I(0), TM_C(0), TM_O(0) };
-			setup_task(execution_graph, node_index, task_index,
-				k_task_function_test_delay, c_task_mapping_array::construct(mapping));
-			return true;
-		} else {
-			return false;
-		}
-
-	default:
-		wl_unreachable();
-		return false;
+	} else {
+		wl_assert(VALID_INDEX(task_function, k_task_function_count));
+		setup_task(execution_graph, node_index, task_index, task_function, task_mapping_array);
+		return true;
 	}
 }
 
@@ -908,7 +610,7 @@ void c_task_graph::allocate_buffers(const c_execution_graph &execution_graph) {
 				// store the constant in the constant list.
 				uint32 constant_node_index = execution_graph.get_node_incoming_edge_index(node_index, 0);
 				wl_assert(execution_graph.get_node_type(constant_node_index) == k_execution_graph_node_type_constant);
-				m_constant_lists[m_output_constants_start + node_index] =
+				m_constant_lists[m_output_constants_start + output_index] =
 					execution_graph.get_constant_node_value(constant_node_index);
 			}
 		}
@@ -1248,6 +950,10 @@ void c_task_graph::calculate_buffer_usages() {
 	// Each output buffer contributes to usage to prevent the buffer from deallocating at the end of the last task
 	for (size_t index = 0; index < m_output_buffers_count; index++) {
 		uint32 buffer_index = m_buffer_lists[m_output_buffers_start + index];
-		m_buffer_usages[buffer_index]++;
+
+		// Ignore constant outputs
+		if (buffer_index != k_invalid_buffer) {
+			m_buffer_usages[buffer_index]++;
+		}
 	}
 }

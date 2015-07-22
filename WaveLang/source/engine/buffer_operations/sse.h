@@ -20,6 +20,14 @@ static const size_t k_sse_block_size = SSE_BLOCK_SIZE;
 #include <x86intrin.h>
 #endif // PREDEFINED(COMPILER_MSVC)
 
+#ifndef WAVELANG_SSE_MATHFUN_H__
+#define WAVELANG_SSE_MATHFUN_H__
+#define USE_SSE2
+#pragma warning(disable:4305)
+#include "sse_mathfun.h"
+#pragma warning(default:4305)
+#endif // WAVELANG_SSE_MATHFUN_H__
+
 class c_real32_4 {
 public:
 	c_real32_4() {
@@ -97,6 +105,56 @@ inline c_real32_4 operator/(const c_real32_4 &lhs, const c_real32_4 &rhs) {
 
 inline c_real32_4 operator%(const c_real32_4 &lhs, const c_real32_4 &rhs) {
 	return 0.0f; // $TODO unimplemented!!!
+}
+
+inline c_real32_4 abs(const c_real32_4 &v) {
+	// Mask off the sign bit for fast abs
+	static const __m128 k_sign_mask = _mm_set1_ps(-0.0f);
+	return _mm_andnot_ps(k_sign_mask, v);
+}
+
+inline c_real32_4 floor(const c_real32_4 &v) {
+	return _mm_floor_ps(v);
+}
+
+inline c_real32_4 ceil(const c_real32_4 &v) {
+	return _mm_ceil_ps(v);
+}
+
+inline c_real32_4 round(const c_real32_4 &v) {
+	return _mm_round_ps(v, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC);
+}
+
+inline c_real32_4 min(const c_real32_4 &a, const c_real32_4 &b) {
+	return _mm_min_ps(a, b);
+}
+
+inline c_real32_4 max(const c_real32_4 &a, const c_real32_4 &b) {
+	return _mm_max_ps(a, b);
+}
+
+inline c_real32_4 log(const c_real32_4 &v) {
+	return log_ps(v);
+}
+
+inline c_real32_4 exp(const c_real32_4 &v) {
+	return exp_ps(v);
+}
+
+inline c_real32_4 sqrt(const c_real32_4 &v) {
+	return _mm_sqrt_ps(v);
+}
+
+inline c_real32_4 pow(const c_real32_4 &a, const c_real32_4 &b) {
+	return exp(b * log(a));
+}
+
+inline c_real32_4 sin(const c_real32_4 &v) {
+	return sin_ps(v);
+}
+
+inline c_real32_4 cos(const c_real32_4 &v) {
+	return cos_ps(v);
 }
 
 #else // PREDEFINED(SSE_ENABLED)

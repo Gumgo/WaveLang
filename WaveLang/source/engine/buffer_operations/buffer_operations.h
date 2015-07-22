@@ -268,4 +268,50 @@ void buffer_operator_inout_in(const t_operation &op, size_t buffer_size,
 	}
 }
 
+template<typename t_operation>
+struct s_buffer_operation_1_input {
+	static void buffer(size_t buffer_size, c_buffer_out out, c_buffer_in in) {
+		buffer_operator_out_in(t_operation(), buffer_size, out, in);
+	}
+
+	static void bufferio(size_t buffer_size, c_buffer_inout inout) {
+		buffer_operator_inout(t_operation(), buffer_size, inout);
+	}
+
+	static void constant(size_t buffer_size, c_buffer_out out, real32 in) {
+		buffer_operator_out_in(t_operation(), buffer_size, out, in);
+	}
+};
+
+template<typename t_operation, typename t_operation_reverse = t_operation>
+struct s_buffer_operation_2_inputs {
+	static void buffer_buffer(size_t buffer_size, c_buffer_out out, c_buffer_in in_a, c_buffer_in in_b) {
+		buffer_operator_out_in_in(t_operation(), buffer_size, out, in_a, in_b);
+	}
+
+	static void bufferio_buffer(size_t buffer_size, c_buffer_inout inout, c_buffer_in in) {
+		buffer_operator_inout_in(t_operation(), buffer_size, inout, in);
+	}
+
+	static void buffer_bufferio(size_t buffer_size, c_buffer_in in, c_buffer_inout inout) {
+		buffer_operator_inout_in(t_operation_reverse(), buffer_size, inout, in);
+	}
+
+	static void buffer_constant(size_t buffer_size, c_buffer_out out, c_buffer_in in_a, real32 in_b) {
+		buffer_operator_out_in_in(t_operation(), buffer_size, out, in_a, in_b);
+	}
+
+	static void bufferio_constant(size_t buffer_size, c_buffer_inout inout, real32 in) {
+		buffer_operator_inout_in(t_operation(), buffer_size, inout, in);
+	}
+
+	static void constant_buffer(size_t buffer_size, c_buffer_out out, real32 in_a, c_buffer_in in_b) {
+		buffer_operator_out_in_in(t_operation_reverse(), buffer_size, out, in_b, in_a);
+	}
+
+	static void constant_bufferio(size_t buffer_size, real32 in, c_buffer_inout inout) {
+		buffer_operator_inout_in(t_operation_reverse(), buffer_size, inout, in);
+	}
+};
+
 #endif // WAVELANG_BUFFER_OPERATIONS_H__

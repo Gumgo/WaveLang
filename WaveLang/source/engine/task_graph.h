@@ -3,7 +3,7 @@
 
 #include "common/common.h"
 #include "engine/task_functions.h"
-
+#include "engine/native_module_task_mapping.h"
 #include <vector>
 
 class c_execution_graph;
@@ -70,32 +70,6 @@ private:
 		size_t successors_start;
 		size_t successors_count;
 	};
-
-	enum e_task_mapping_location {
-		k_task_mapping_location_constant_in,
-		k_task_mapping_location_buffer_in,
-		k_task_mapping_location_buffer_out,
-		k_task_mapping_location_buffer_inout,
-
-		k_task_mapping_location_count
-	};
-
-	struct s_task_mapping {
-		// Where to map to on the task
-		e_task_mapping_location location;
-
-		// Index for the location
-		size_t index;
-
-		s_task_mapping(e_task_mapping_location loc, size_t idx)
-			: location(loc)
-			, index(idx) {
-		}
-	};
-
-	// Maps execution graph native module inputs/outputs to task inputs/outputs/inouts
-	// The array should first list all inputs for the native module, then list all outputs
-	typedef c_wrapped_array_const<s_task_mapping> c_task_mapping_array;
 
 	bool add_task_for_node(const c_execution_graph &execution_graph, uint32 node_index,
 		std::vector<uint32> &nodes_to_tasks);

@@ -3,6 +3,7 @@
 #include "engine/task_functions.h"
 #include "engine/buffer_operations/buffer_operations_arithmetic.h"
 #include "engine/channel_mixer.h"
+#include <algorithm>
 
 c_executor::c_executor() {
 	m_state.initialize(k_state_uninitialized);
@@ -60,7 +61,7 @@ void c_executor::initialize_internal(const s_executor_settings &settings) {
 	{ // Initialize thread pool
 		s_thread_pool_settings thread_pool_settings;
 		thread_pool_settings.thread_count = 1; // $TODO don't hardcode this
-		thread_pool_settings.max_tasks = m_task_graph->get_max_task_concurrency();
+		thread_pool_settings.max_tasks = std::max(1u, m_task_graph->get_max_task_concurrency());
 		thread_pool_settings.start_paused = true;
 		m_thread_pool.start(thread_pool_settings);
 	}
@@ -231,14 +232,16 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 
 		// Add the initial tasks
 		c_task_graph::c_task_array initial_tasks = m_task_graph->get_initial_tasks();
-		for (size_t initial_task = 0; initial_task < initial_tasks.get_count(); initial_task++) {
-			add_task(voice, initial_tasks[initial_task], chunk_context.frames);
-		}
+		if (initial_tasks.get_count() > 0) {
+			for (size_t initial_task = 0; initial_task < initial_tasks.get_count(); initial_task++) {
+				add_task(voice, initial_tasks[initial_task], chunk_context.frames);
+			}
 
-		// Start the threads processing
-		m_thread_pool.resume();
-		m_all_tasks_complete_signal.wait();
-		m_thread_pool.pause();
+			// Start the threads processing
+			m_thread_pool.resume();
+			m_all_tasks_complete_signal.wait();
+			m_thread_pool.pause();
+		}
 
 		if (voices_processed == 0) {
 			// Swap the output buffers into the accumulation buffers
@@ -254,7 +257,7 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 				} else {
 					uint32 buffer_handle = m_buffer_allocator.allocate_buffer();
 					m_voice_output_accumulation_buffers[output] = buffer_handle;
-					buffer_operation_assignment_constant(
+					s_buffer_operation_assignment::constant(
 						chunk_context.frames,
 						m_buffer_allocator.get_buffer(buffer_handle),
 						m_task_graph->get_output_constant(output));
@@ -267,12 +270,12 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 				wl_assert(accumulation_buffer_handle != k_lock_free_invalid_handle);
 				if (m_task_graph->is_output_buffer(output)) {
 					uint32 output_buffer_handle = m_task_graph->get_output_buffer(output);
-					buffer_operation_addition_bufferio_buffer(
+					s_buffer_operation_addition::bufferio_buffer(
 						chunk_context.frames,
 						m_buffer_allocator.get_buffer(accumulation_buffer_handle),
 						m_buffer_allocator.get_buffer(output_buffer_handle));
 				} else {
-					buffer_operation_assignment_constant(
+					s_buffer_operation_assignment::constant(
 						chunk_context.frames,
 						m_buffer_allocator.get_buffer(accumulation_buffer_handle),
 						m_task_graph->get_output_constant(output));
@@ -306,7 +309,7 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 			wl_assert(m_voice_output_accumulation_buffers[output] == k_lock_free_invalid_handle);
 			uint32 buffer_handle = m_buffer_allocator.allocate_buffer();
 			m_voice_output_accumulation_buffers[output] = buffer_handle;
-			buffer_operation_assignment_constant(
+			s_buffer_operation_assignment::constant(
 				chunk_context.frames,
 				m_buffer_allocator.get_buffer(buffer_handle),
 				0.0f);

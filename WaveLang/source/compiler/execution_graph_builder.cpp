@@ -232,19 +232,17 @@ public:
 			identifier->argument_index = m_arguments_found;
 			m_arguments_found++;
 
-			// Inputs already have an intermediate value node assigned
+			// Inputs already have a value assigned
 			uint32 argument_node_index = m_argument_node_indices[identifier->argument_index];
-			wl_assert(m_execution_graph->get_node_type(argument_node_index) ==
-				k_execution_graph_node_type_intermediate_value);
 			identifier->current_intermediate_value_node_index = argument_node_index;
 		} else if (qualifier == c_ast_node_named_value_declaration::k_qualifier_out) {
 			// Associate the argument node with the named value
 			identifier->argument_index = m_arguments_found;
 			m_arguments_found++;
-			// No intermediate value is initially assigned
+			// No value is initially assigned
 		} else {
 			wl_assert(qualifier == c_ast_node_named_value_declaration::k_qualifier_none);
-			// No intermediate value is initially assigned
+			// No value is initially assigned
 		}
 
 		return true;

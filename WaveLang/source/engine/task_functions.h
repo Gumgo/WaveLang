@@ -5,6 +5,7 @@
 
 class c_buffer;
 
+// List of all task functions
 // buffer = a buffer input
 // bufferio = a buffer inout
 // constant = a constant input
@@ -45,6 +46,45 @@ enum e_task_function {
 	k_task_function_modulo_bufferio_constant,
 	k_task_function_modulo_constant_buffer,
 	k_task_function_modulo_constant_bufferio,
+
+	k_task_function_abs_buffer,
+	k_task_function_abs_bufferio,
+
+	k_task_function_floor_buffer,
+	k_task_function_floor_bufferio,
+
+	k_task_function_ceil_buffer,
+	k_task_function_ceil_bufferio,
+
+	k_task_function_round_buffer,
+	k_task_function_round_bufferio,
+
+	k_task_function_min_buffer_buffer,
+	k_task_function_min_bufferio_buffer,
+	k_task_function_min_buffer_constant,
+	k_task_function_min_bufferio_constant,
+
+	k_task_function_max_buffer_buffer,
+	k_task_function_max_bufferio_buffer,
+	k_task_function_max_buffer_constant,
+	k_task_function_max_bufferio_constant,
+
+	k_task_function_exp_buffer,
+	k_task_function_exp_bufferio,
+
+	k_task_function_log_buffer,
+	k_task_function_log_bufferio,
+
+	k_task_function_sqrt_buffer,
+	k_task_function_sqrt_bufferio,
+
+	k_task_function_pow_buffer_buffer,
+	k_task_function_pow_bufferio_buffer,
+	k_task_function_pow_buffer_bufferio,
+	k_task_function_pow_buffer_constant,
+	k_task_function_pow_bufferio_constant,
+	k_task_function_pow_constant_buffer,
+	k_task_function_pow_constant_bufferio,
 
 	// $TODO temporary
 	k_task_function_test,

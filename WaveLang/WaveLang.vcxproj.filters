@@ -114,10 +114,10 @@
     <ClCompile Include="source\engine\buffer_operations\buffer_operations.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\engine\buffer_operations\buffer_operations_arithmetic.cpp">
+    <ClCompile Include="source\engine\channel_mixer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\engine\channel_mixer.cpp">
+    <ClCompile Include="source\engine\native_module_task_mapping.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -240,6 +240,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\engine\channel_mixer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\engine\native_module_task_mapping.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\engine\buffer_operations\buffer_operations_utility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\engine\buffer_operations\sse_mathfun.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

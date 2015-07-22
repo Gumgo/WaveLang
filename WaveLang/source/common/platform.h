@@ -29,7 +29,7 @@
 #undef PLATFORM_APPLE
 #define PLATFORM_APPLE 1
 #define CACHE_LINE_SIZE 64
-#elif defined(__LINUX__)
+#elif defined(__linux__)
 #undef PLATFORM_LINUX
 #define PLATFORM_LINUX 1
 #define CACHE_LINE_SIZE 64
