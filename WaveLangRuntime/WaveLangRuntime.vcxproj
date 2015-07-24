@@ -110,7 +110,8 @@
     <ClCompile Include="..\WaveLang\source\common\threading\lock_free_pool.cpp" />
     <ClCompile Include="..\WaveLang\source\common\threading\mutex.cpp" />
     <ClCompile Include="..\WaveLang\source\common\threading\semaphore.cpp" />
-    <ClCompile Include="..\WaveLang\source\common\threading\thread.cpp" />
+    <ClCompile Include="..\WaveLang\source\common\threading\thread_fallback.cpp" />
+    <ClCompile Include="..\WaveLang\source\common\threading\thread_windows.cpp" />
     <ClCompile Include="..\WaveLang\source\driver\driver_interface.cpp" />
     <ClCompile Include="..\WaveLang\source\driver\sample_format.cpp" />
     <ClCompile Include="..\WaveLang\source\engine\buffer_allocator.cpp" />
@@ -128,7 +129,8 @@
     <ClCompile Include="..\WaveLang\source\runtime\runtime_context.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\WaveLang\source\common\threading\atomics.inl" />
+    <None Include="..\WaveLang\source\common\threading\atomics_fallback.inl" />
+    <None Include="..\WaveLang\source\common\threading\atomics_windows.inl" />
     <None Include="..\WaveLang\source\common\threading\lock_free_queue.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

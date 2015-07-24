@@ -18,7 +18,8 @@
     <ClCompile Include="source\common\threading\lock_free_queue.inl" />
     <ClCompile Include="source\common\threading\mutex.cpp" />
     <ClCompile Include="source\common\threading\semaphore.cpp" />
-    <ClCompile Include="source\common\threading\thread.cpp" />
+    <ClCompile Include="source\common\threading\thread_fallback.cpp" />
+    <ClCompile Include="source\common\threading\thread_windows.cpp" />
     <ClCompile Include="source\compiler\ast.cpp" />
     <ClCompile Include="source\compiler\ast_builder.cpp" />
     <ClCompile Include="source\compiler\ast_validator.cpp" />
@@ -93,7 +94,8 @@
     <ClInclude Include="source\runtime\runtime_context.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="source\common\threading\atomics.inl" />
+    <None Include="source\common\threading\atomics_fallback.inl" />
+    <None Include="source\common\threading\atomics_windows.inl" />
     <None Include="source\compiler\compiler_utility.inl" />
   </ItemGroup>
   <ItemGroup>

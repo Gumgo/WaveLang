@@ -3,6 +3,23 @@
 
 #include "common/common.h"
 
+#define PREFER_THREAD_IMPLEMENTATION_FALLBACK 1
+
+#define USE_THREAD_IMPLEMENTATION_WINDOWS 0
+
+#if !PREDEFINED(PREFER_THREAD_IMPLEMENTATION_FALLBACK)
+	#if PREDEFINED(PLATFORM_WINDOWS)
+		#undef USE_THREAD_IMPLEMENTATION_WINDOWS
+		#define USE_THREAD_IMPLEMENTATION_WINDOWS 1
+	#endif // implementation
+#endif // !PREDEFINED(PREFER_THREAD_IMPLEMENTATION_FALLBACK)
+
+#if PREDEFINED(USE_THREAD_IMPLEMENTATION_WINDOWS)
+// No additional includes
+#else // fallback
+#include <thread>
+#endif // fallback
+
 enum e_thread_priority {
 	k_thread_priority_lowest,
 	k_thread_priority_low,
@@ -49,6 +66,12 @@ struct s_thread_definition {
 // Class encapsulating a thread
 class c_thread : private c_uncopyable {
 public:
+#if PREDEFINED(USE_THREAD_IMPLEMENTATION_WINDOWS)
+	typedef uint32 t_thread_id;
+#else // fallback
+	typedef std::thread::id t_thread_id;
+#endif // fallback
+
 	// Initializes to not running state
 	c_thread();
 
@@ -69,10 +92,10 @@ public:
 	bool is_running() const;
 
 	// Returns the ID of this thread
-	uint32 get_thread_id() const;
+	t_thread_id get_thread_id() const;
 
 	// Returns the ID of the current thread
-	static uint32 get_current_thread_id();
+	static t_thread_id get_current_thread_id();
 
 private:
 	// Thread function and parameter block
@@ -80,15 +103,16 @@ private:
 	s_thread_parameter_block m_thread_parameter_block;
 
 	// Cached thread ID
-	uint32 m_thread_id;
+	t_thread_id m_thread_id;
 
-	// Platform-specific thread handle
-#if PREDEFINED(PLATFORM_WINDOWS)
+	// Implementation-specific thread handle
+#if PREDEFINED(USE_THREAD_IMPLEMENTATION_WINDOWS)
 	HANDLE m_thread_handle;
 	static DWORD WINAPI thread_entry_point(LPVOID param);
-#else // platform
-#error Unknown platform
-#endif // platform
+#else // fallback
+	std::thread m_thread;
+	static void thread_entry_point(const c_thread *this_ptr);
+#endif // fallback
 };
 
 #endif // WAVELANG_THREAD_H__

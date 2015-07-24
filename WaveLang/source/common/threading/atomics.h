@@ -3,6 +3,23 @@
 
 #include "common/common.h"
 
+#define PREFER_ATOMICS_IMPLEMENTATION_FALLBACK 1
+
+#define USE_ATOMICS_IMPLEMENTATION_WINDOWS 0
+
+#if !PREDEFINED(PREFER_ATOMICS_IMPLEMENTATION_FALLBACK)
+	#if PREDEFINED(PLATFORM_WINDOWS)
+		#undef USE_ATOMICS_IMPLEMENTATION_WINDOWS
+		#define USE_ATOMICS_IMPLEMENTATION_WINDOWS 1
+	#endif // implementation
+#endif // !PREDEFINED(PREFER_ATOMICS_IMPLEMENTATION_FALLBACK)
+
+#if PREDEFINED(USE_ATOMICS_IMPLEMENTATION_WINDOWS)
+// No additional includes
+#else // fallback
+#include <atomic>
+#endif // fallback
+
 class c_atomic_int32 {
 public:
 	// Not thread safe - simply sets the initial value. Construction of an object inherently is not atomic, so there is
@@ -47,8 +64,14 @@ public:
 	template<typename t_operation> int32 execute_atomic(const t_operation &operation);
 
 private:
+#if PREDEFINED(USE_ATOMICS_IMPLEMENTATION_WINDOWS)
 	volatile int32 m_value;
+#else // fallback
+	std::atomic<int32> m_value;
+#endif // fallback
 };
+
+static_assert(sizeof(c_atomic_int32) == sizeof(int32), "c_atomic_int32 not 32 bits?");
 
 class c_atomic_int64 {
 public:
@@ -94,9 +117,20 @@ public:
 	template<typename t_operation> int64 execute_atomic(const t_operation &operation);
 
 private:
+#if PREDEFINED(USE_ATOMICS_IMPLEMENTATION_WINDOWS)
 	volatile int64 m_value;
+#else // fallback
+	std::atomic<int64> m_value;
+#endif // fallback
 };
 
-#include "common/threading/atomics.inl"
+static_assert(sizeof(c_atomic_int32) == sizeof(int32), "c_atomic_int64 not 64 bits?");
+
+#if PREDEFINED(USE_ATOMICS_IMPLEMENTATION_WINDOWS)
+#include "common/threading/atomics_windows.inl"
+#else // fallback
+#include "common/threading/atomics_fallback.inl"
+#endif // fallback
+
 
 #endif // WAVELANG_ATOMICS_H__

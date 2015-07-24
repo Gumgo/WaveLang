@@ -1,6 +1,6 @@
 #include "common/threading/thread.h"
 
-#if PREDEFINED(PLATFORM_WINDOWS)
+#if PREDEFINED(USE_THREAD_IMPLEMENTATION_WINDOWS)
 
 c_thread::c_thread() {
 	m_thread_handle = nullptr;
@@ -78,12 +78,12 @@ bool c_thread::is_running() const {
 	return m_thread_handle != nullptr;
 }
 
-uint32 c_thread::get_thread_id() const {
+c_thread::t_thread_id c_thread::get_thread_id() const {
 	wl_assert(is_running());
 	return m_thread_id;
 }
 
-uint32 c_thread::get_current_thread_id() {
+c_thread::t_thread_id c_thread::get_current_thread_id() {
 	return static_cast<uint32>(GetCurrentThreadId());
 }
 
@@ -97,6 +97,4 @@ DWORD WINAPI c_thread::thread_entry_point(LPVOID param) {
 	return 0;
 }
 
-#else // platform
-#error Unknown platform
-#endif // platform
+#endif // PREDEFINED(USE_THREAD_IMPLEMENTATION_WINDOWS)

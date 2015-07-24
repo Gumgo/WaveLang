@@ -81,9 +81,6 @@
     <ClCompile Include="source\common\threading\lock_free_pool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\common\threading\thread.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="source\engine\thread_pool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -118,6 +115,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\engine\native_module_task_mapping.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\common\threading\thread_windows.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\common\threading\thread_fallback.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -256,7 +259,10 @@
     <None Include="source\compiler\compiler_utility.inl">
       <Filter>Header Files</Filter>
     </None>
-    <None Include="source\common\threading\atomics.inl">
+    <None Include="source\common\threading\atomics_windows.inl">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="source\common\threading\atomics_fallback.inl">
       <Filter>Header Files</Filter>
     </None>
   </ItemGroup>

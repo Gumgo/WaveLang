@@ -1,5 +1,3 @@
-// Non platform-specific functions first:
-
 inline void c_atomic_int32::initialize(int32 value) {
 	m_value = value;
 }
@@ -57,8 +55,6 @@ int64 c_atomic_int64::execute_atomic(const t_operation &operation) {
 	} while (compare_exchange(original, result) != original);
 	return original;
 }
-
-#if PREDEFINED(PLATFORM_WINDOWS)
 
 static_assert(sizeof(volatile unsigned long) == sizeof(volatile int32), "Atomic size mismatch");
 static_assert(sizeof(volatile unsigned long long) == sizeof(volatile int64), "Atomic size mismatch");
@@ -154,7 +150,3 @@ inline int64 c_atomic_int64::or(int64 x) {
 inline int64 c_atomic_int64::xor(int64 x) {
 	return InterlockedXor(to_dst64(&m_value), to_src64(x));
 }
-
-#else // platform
-#error Unimplemented platform
-#endif // platform
