@@ -67,6 +67,7 @@
     <None Include="..\WaveLang\source\common\threading\atomics_windows.inl" />
     <None Include="..\WaveLang\source\common\threading\lock_free_queue.inl" />
     <None Include="..\WaveLang\source\compiler\compiler_utility.inl" />
+    <None Include="..\WaveLang\source\compiler\lr_parse_tables.inl" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\WaveLang\source\compiler\execution_graph_optimization_rules.txt" />

@@ -175,6 +175,9 @@
     <None Include="..\WaveLang\source\common\threading\atomics_fallback.inl">
       <Filter>Header Files</Filter>
     </None>
+    <None Include="..\WaveLang\source\compiler\lr_parse_tables.inl">
+      <Filter>Header Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\WaveLang\source\compiler\execution_graph_optimization_rules.txt" />

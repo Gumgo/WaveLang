@@ -265,6 +265,9 @@
     <None Include="source\common\threading\atomics_fallback.inl">
       <Filter>Header Files</Filter>
     </None>
+    <None Include="source\compiler\lr_parse_tables.inl">
+      <Filter>Header Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="source\compiler\execution_graph_optimization_rules.txt" />

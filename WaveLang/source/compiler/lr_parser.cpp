@@ -1,6 +1,10 @@
 #include "compiler/lr_parser.h"
 #include <stack>
 
+#if PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+#include <fstream>
+#endif // PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+
 c_lr_symbol::c_lr_symbol() {
 	m_index = 0;
 	m_is_nonterminal = 0;
@@ -292,6 +296,31 @@ c_lr_action_goto_table::c_lr_action_goto_table() {
 	m_nonterminal_count = 0;
 }
 
+uint32 c_lr_action_goto_table::get_state_count() const {
+#if PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+	return m_action_table.size() / m_terminal_count;
+#else // PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+	return m_action_table.get_count() / m_terminal_count;
+#endif // PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+}
+
+
+c_lr_action c_lr_action_goto_table::get_action(uint32 state_index, uint16 terminal_index) const {
+	wl_assert(VALID_INDEX(state_index, get_state_count()));
+	wl_assert(VALID_INDEX(terminal_index, m_terminal_count));
+	size_t index = state_index * m_terminal_count + terminal_index;
+	return m_action_table[index];
+}
+
+uint32 c_lr_action_goto_table::get_goto(uint32 state_index, uint16 nonterminal_index) const {
+	wl_assert(VALID_INDEX(state_index, get_state_count()));
+	wl_assert(VALID_INDEX(nonterminal_index, m_nonterminal_count));
+	size_t index = state_index * m_nonterminal_count + nonterminal_index;
+	return m_goto_table[index];
+}
+
+#if PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+
 void c_lr_action_goto_table::initialize(uint16 terminal_count, uint16 nonterminal_count) {
 	m_terminal_count = terminal_count;
 	m_nonterminal_count = nonterminal_count;
@@ -300,10 +329,6 @@ void c_lr_action_goto_table::initialize(uint16 terminal_count, uint16 nontermina
 void c_lr_action_goto_table::add_state() {
 	m_action_table.resize(m_action_table.size() + m_terminal_count);
 	m_goto_table.resize(m_goto_table.size() + m_nonterminal_count, k_invalid_state_index);
-}
-
-uint32 c_lr_action_goto_table::get_state_count() const {
-	return m_action_table.size() / m_terminal_count;
 }
 
 e_lr_conflict c_lr_action_goto_table::set_action(uint32 state_index, uint16 terminal_index, c_lr_action action) {
@@ -342,19 +367,70 @@ void c_lr_action_goto_table::set_goto(uint32 state_index, uint16 nonterminal_ind
 	m_goto_table[index] = goto_index;
 }
 
-c_lr_action c_lr_action_goto_table::get_action(uint32 state_index, uint16 terminal_index) const {
-	wl_assert(VALID_INDEX(state_index, get_state_count()));
-	wl_assert(VALID_INDEX(terminal_index, m_terminal_count));
-	size_t index = state_index * m_terminal_count + terminal_index;
-	return m_action_table[index];
+void c_lr_action_goto_table::output_action_goto_tables() const {
+	std::ofstream out("lr_parse_tables.inl");
+
+	out << "// THIS FILE WAS AUTOMATICALLY GENERATED - DO NOT EDIT\n\n";
+
+	out << "static const c_lr_action k_lr_action_table[] = {\n";
+	for (size_t index = 0; index < m_action_table.size(); index++) {
+		const c_lr_action &action = m_action_table[index];
+
+		e_lr_action_type action_type = action.get_action_type();
+		const char *action_type_string = nullptr;
+		uint32 action_index = 0;
+
+		switch (action_type) {
+		case k_lr_action_type_invalid:
+			action_type_string = "k_lr_action_type_invalid";
+			break;
+
+		case k_lr_action_type_shift:
+			action_type_string = "k_lr_action_type_shift";
+			action_index = action.get_shift_state_index();
+			break;
+
+		case k_lr_action_type_reduce:
+			action_type_string = "k_lr_action_type_reduce";
+			action_index = action.get_reduce_production_index();
+			break;
+
+		case k_lr_action_type_accept:
+			action_type_string = "k_lr_action_type_accept";
+			break;
+
+		default:
+			wl_unreachable();
+		}
+
+		out << "\tc_lr_action(" << action_type_string << ", " << action_index << "),\n";
+	}
+	out << "};\n\n";
+
+	out << "static const uint32 k_lr_goto_table[] = {\n";
+	for (size_t index = 0; index < m_goto_table.size(); index++) {
+		uint32 goto_index = m_goto_table[index];
+		if (goto_index == k_invalid_state_index) {
+			out << "\tc_lr_action_goto_table::k_invalid_state_index,\n";
+		} else {
+			out << "\t" << goto_index << ",\n";
+		}
+	}
+	out << "};\n";
 }
 
-uint32 c_lr_action_goto_table::get_goto(uint32 state_index, uint16 nonterminal_index) const {
-	wl_assert(VALID_INDEX(state_index, get_state_count()));
-	wl_assert(VALID_INDEX(nonterminal_index, m_nonterminal_count));
-	size_t index = state_index * m_nonterminal_count + nonterminal_index;
-	return m_goto_table[index];
+#else // PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+
+void c_lr_action_goto_table::initialize(uint16 terminal_count, uint16 nonterminal_count,
+	c_wrapped_array_const<c_lr_action> action_table, c_wrapped_array_const<uint32> goto_table) {
+	m_terminal_count = terminal_count;
+	m_nonterminal_count = nonterminal_count;
+
+	m_action_table = action_table;
+	m_goto_table = goto_table;
 }
+
+#endif // PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
 
 c_lr_symbol c_lr_parse_tree_node::get_symbol() const {
 	return m_symbol;
@@ -418,29 +494,25 @@ const c_lr_parse_tree_node &c_lr_parse_tree::get_node(size_t index) const {
 	return m_nodes[index];
 }
 
+#if PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+
 void c_lr_parser::initialize(const c_lr_production_set &production_set) {
-	// Create the augmented production set
-	// For this, we will add a new start nonterminal, an end_of_input terminal, and a new start rule
-	wl_assert(production_set.get_terminal_count() < std::numeric_limits<uint16>::max());
-	wl_assert(production_set.get_nonterminal_count() < std::numeric_limits<uint16>::max());
-
-	m_start_nonterminal_index = production_set.get_nonterminal_count();
-	m_end_of_input_terminal_index = production_set.get_terminal_count();
-
-	m_production_set.initialize(production_set.get_terminal_count() + 1, production_set.get_nonterminal_count() + 1);
-	for (size_t index = 0; index < production_set.get_production_count(); index++) {
-		m_production_set.add_production(production_set.get_production(index));
-	}
-
-	// Add the new start production, which yields the original start symbol
-	m_start_production_index = m_production_set.get_production_count();
-	m_production_set.add_production(
-		c_lr_symbol(false, m_start_nonterminal_index),
-		c_lr_symbol(false, 0)); // Maps to the user-provided start symbol, which is implicitly index 0
-
+	create_augmented_production_set(production_set);
 	compute_symbols_properties();
 	compute_item_sets();
+	m_action_goto_table.output_action_goto_tables();
 }
+
+#else // PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+
+void c_lr_parser::initialize(const c_lr_production_set &production_set,
+	c_wrapped_array_const<c_lr_action> action_table, c_wrapped_array_const<uint32> goto_table) {
+	create_augmented_production_set(production_set);
+	m_action_goto_table.initialize(m_production_set.get_terminal_count(), m_production_set.get_nonterminal_count(),
+		action_table, goto_table);
+}
+
+#endif // PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
 
 c_lr_parse_tree c_lr_parser::parse_token_stream(t_lr_parser_get_next_token get_next_token, void *context,
 	std::vector<size_t> &out_error_tokens) const {
@@ -516,6 +588,33 @@ c_lr_parse_tree c_lr_parser::parse_token_stream(t_lr_parser_get_next_token get_n
 
 	return result_tree;
 }
+
+void c_lr_parser::create_augmented_production_set(const c_lr_production_set &production_set) {
+	m_end_of_input_terminal_index = production_set.get_terminal_count();
+
+	// Create the augmented production set
+	// For this, we will add a new start nonterminal, an end_of_input terminal, and a new start rule
+	wl_assert(production_set.get_terminal_count() < std::numeric_limits<uint16>::max());
+	wl_assert(production_set.get_nonterminal_count() < std::numeric_limits<uint16>::max());
+
+	m_production_set.initialize(production_set.get_terminal_count() + 1, production_set.get_nonterminal_count() + 1);
+	for (size_t index = 0; index < production_set.get_production_count(); index++) {
+		m_production_set.add_production(production_set.get_production(index));
+	}
+
+	uint32 start_nonterminal_index = production_set.get_nonterminal_count();
+#if PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+	m_start_nonterminal_index = start_nonterminal_index;
+	m_start_production_index = m_production_set.get_production_count();
+#endif PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+
+	// Add the new start production, which yields the original start symbol
+	m_production_set.add_production(
+		c_lr_symbol(false, start_nonterminal_index),
+		c_lr_symbol(false, 0)); // Maps to the user-provided start symbol, which is implicitly index 0
+}
+
+#if PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
 
 void c_lr_parser::compute_symbols_properties() {
 	// Calculate properties for all the symbols
@@ -919,3 +1018,5 @@ c_lr_item_set c_lr_parser::compute_goto(const c_lr_item_set &item_set, c_lr_symb
 	c_lr_item_set closed_result = compute_closure(result);
 	return closed_result;
 }
+
+#endif // PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)

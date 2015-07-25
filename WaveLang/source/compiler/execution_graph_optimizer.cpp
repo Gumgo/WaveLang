@@ -136,6 +136,11 @@ s_compiler_result c_execution_graph_optimizer::optimize_graph(c_execution_graph 
 
 	execution_graph->remove_unused_nodes_and_reassign_node_indices();
 
+	// $TODO deduplicate:
+	// 1) deduplicate all constant nodes with the same value
+	// 2) combine any native modules with the same type and inputs
+	// 3) repeat (2) until no changes occur
+
 #if PREDEFINED(EXECUTION_GRAPH_OUTPUT_ENABLED)
 	execution_graph->output_to_file();
 #endif // PREDEFINED(EXECUTION_GRAPH_OUTPUT_ENABLED)

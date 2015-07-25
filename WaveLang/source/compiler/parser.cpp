@@ -39,6 +39,10 @@ static const s_lr_production k_production_table[] = {
 	#include "parser_rules.txt"
 };
 
+#if !PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+#include "lr_parse_tables.inl"
+#endif PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+
 static bool g_parser_initialized = false;
 static c_lr_parser g_lr_parser;
 
@@ -49,10 +53,10 @@ static bool process_source_file(
 	s_parser_source_file_output &source_file_output,
 	std::vector<s_compiler_result> &out_errors);
 
-#ifdef OUTPUT_PARSE_TREE
+#if PREDEFINED(OUTPUT_PARSE_TREE_ENABLED)
 static void print_parse_tree(std::ofstream &out, const s_lexer_source_file_output &tokens,
 	const c_lr_parse_tree &tree, size_t index);
-#endif // OUTPUT_PARSE_TREE
+#endif // PREDEFINED(OUTPUT_PARSE_TREE_ENABLED)
 
 void c_parser::initialize_parser() {
 	wl_assert(!g_parser_initialized);
@@ -64,7 +68,13 @@ void c_parser::initialize_parser() {
 		production_set.add_production(k_production_table[index]);
 	}
 
+#if PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
 	g_lr_parser.initialize(production_set);
+#else // PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+	g_lr_parser.initialize(production_set,
+		c_wrapped_array_const<c_lr_action>::construct(k_lr_action_table),
+		c_wrapped_array_const<uint32>::construct(k_lr_goto_table));
+#endif // PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
 	g_parser_initialized = true;
 }
 
@@ -84,12 +94,12 @@ s_compiler_result c_parser::process(const s_compiler_context &context, const s_l
 
 	bool failed = false;
 
-#ifdef OUTPUT_PARSE_TREE
+#if PREDEFINED(OUTPUT_PARSE_TREE_ENABLED)
 	{
 		// Clear the tree output
 		std::ofstream out("parse_tree.txt");
 	}
-#endif // OUTPUT_PARSE_TREE
+#endif // PREDEFINED(OUTPUT_PARSE_TREE_ENABLED)
 
 	// Iterate over each source file and attempt to process it
 	for (size_t source_file_index = 0; source_file_index < context.source_files.size(); source_file_index++) {
@@ -142,14 +152,14 @@ static bool process_source_file(
 	std::vector<size_t> error_tokens;
 	source_file_output.parse_tree = g_lr_parser.parse_token_stream(s_parser_context::get_next_token, &context,
 		error_tokens);
-#ifdef OUTPUT_PARSE_TREE
+#if PREDEFINED(OUTPUT_PARSE_TREE_ENABLED)
 	if (error_tokens.empty()) {
 		std::ofstream out("parse_tree.txt", std::ios::app);
 		print_parse_tree(out, source_file_input,
 			source_file_output.parse_tree, source_file_output.parse_tree.get_root_node_index());
 		out << "\n";
 	}
-#endif // OUTPUT_PARSE_TREE
+#endif // PREDEFINED(OUTPUT_PARSE_TREE_ENABLED)
 
 	for (size_t error_index = 0; error_index < error_tokens.size(); error_index++) {
 		const s_token &token = source_file_input.tokens[error_tokens[error_index]];
