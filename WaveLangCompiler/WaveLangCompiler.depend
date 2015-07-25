@@ -1,0 +1,37 @@
+# depslib dependency file v1.0
+1437220524 source:/home/njanetos/Google Drive/Programming/WaveLang/WaveLang/source/common/asserts.cpp
+	"common/asserts.h"
+	<cassert>
+
+1437327818 /home/njanetos/Google Drive/Programming/WaveLang/WaveLang/source/common/asserts.h
+
+1437220524 source:/home/njanetos/Google Drive/Programming/WaveLang/WaveLang/source/common/threading/condition_variable.cpp
+	"common/threading/condition_variable.h"
+	"common/threading/mutex.h"
+
+1437220524 /home/njanetos/Google Drive/Programming/WaveLang/WaveLang/source/common/threading/condition_variable.h
+	"common/common.h"
+	<condition_variable>
+
+1437857062 /home/njanetos/Google Drive/Programming/WaveLang/WaveLang/source/common/common.h
+	"common/macros.h"
+	"common/platform.h"
+	"common/types.h"
+	"common/asserts.h"
+	<cctype>
+	<cstddef>
+
+1437856894 /home/njanetos/Google Drive/Programming/WaveLang/WaveLang/source/common/macros.h
+
+1437856942 /home/njanetos/Google Drive/Programming/WaveLang/WaveLang/source/common/platform.h
+	"common/macros.h"
+	<Windows.h>
+	<WinNT.h>
+	<WinBase.h>
+
+1437220524 /home/njanetos/Google Drive/Programming/WaveLang/WaveLang/source/common/types.h
+
+1437220524 /home/njanetos/Google Drive/Programming/WaveLang/WaveLang/source/common/threading/mutex.h
+	"common/common.h"
+	<mutex>
+

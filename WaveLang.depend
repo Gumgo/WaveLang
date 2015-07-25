@@ -1,0 +1,7 @@
+# depslib dependency file v1.0
+1437220524 source:/home/njanetos/Google Drive/Programming/WaveLang/WaveLang/source/common/asserts.cpp
+	"common/asserts.h"
+	<cassert>
+
+1437327818 /home/njanetos/Google Drive/Programming/WaveLang/WaveLang/source/common/asserts.h
+

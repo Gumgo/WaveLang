@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="WaveLang" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Release Win32">
+				<Option output="WaveLang" prefix_auto="1" extension_auto="1" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add directory="$(VC_IncludePath)" />
+					<Add directory="$(WindowsSDK_IncludePath)" />
+					<Add directory="$(SolutionDir)WaveLang/source/" />
+					<Add directory="C:/Program Files (no install)/portaudio/pa_stable_v19_20140130/portaudio/include/" />
+				</Compiler>
+			</Target>
+			<Target title="Debug Win32">
+				<Option output="WaveLang" prefix_auto="1" extension_auto="1" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add directory="$(VC_IncludePath)" />
+					<Add directory="$(WindowsSDK_IncludePath)" />
+					<Add directory="$(SolutionDir)WaveLang/source/" />
+					<Add directory="C:/Program Files (no install)/portaudio/pa_stable_v19_20140130/portaudio/include/" />
+				</Compiler>
+			</Target>
+		</Build>
+		<Unit filename="source/common/asserts.cpp" />
+		<Unit filename="source/common/asserts.h" />
+		<Unit filename="source/common/common.h" />
+		<Unit filename="source/common/macros.h" />
+		<Unit filename="source/common/platform.h" />
+		<Unit filename="source/common/threading/atomics.h" />
+		<Unit filename="source/common/threading/atomics_fallback.inl" />
+		<Unit filename="source/common/threading/atomics_windows.inl" />
+		<Unit filename="source/common/threading/condition_variable.cpp" />
+		<Unit filename="source/common/threading/condition_variable.h" />
+		<Unit filename="source/common/threading/lock_free.cpp" />
+		<Unit filename="source/common/threading/lock_free.h" />
+		<Unit filename="source/common/threading/lock_free_pool.cpp" />
+		<Unit filename="source/common/threading/lock_free_pool.h" />
+		<Unit filename="source/common/threading/lock_free_queue.h" />
+		<Unit filename="source/common/threading/lock_free_queue.inl" />
+		<Unit filename="source/common/threading/mutex.cpp" />
+		<Unit filename="source/common/threading/mutex.h" />
+		<Unit filename="source/common/threading/semaphore.cpp" />
+		<Unit filename="source/common/threading/semaphore.h" />
+		<Unit filename="source/common/threading/thread.h" />
+		<Unit filename="source/common/threading/thread_fallback.cpp" />
+		<Unit filename="source/common/threading/thread_windows.cpp" />
+		<Unit filename="source/common/types.h" />
+		<Unit filename="source/compiler/ast.cpp" />
+		<Unit filename="source/compiler/ast.h" />
+		<Unit filename="source/compiler/ast_builder.cpp" />
+		<Unit filename="source/compiler/ast_builder.h" />
+		<Unit filename="source/compiler/ast_validator.cpp" />
+		<Unit filename="source/compiler/ast_validator.h" />
+		<Unit filename="source/compiler/compiler.cpp" />
+		<Unit filename="source/compiler/compiler.h" />
+		<Unit filename="source/compiler/compiler_main.cpp" />
+		<Unit filename="source/compiler/compiler_utility.cpp" />
+		<Unit filename="source/compiler/compiler_utility.h" />
+		<Unit filename="source/compiler/compiler_utility.inl" />
+		<Unit filename="source/compiler/execution_graph_builder.cpp" />
+		<Unit filename="source/compiler/execution_graph_builder.h" />
+		<Unit filename="source/compiler/execution_graph_optimizer.cpp" />
+		<Unit filename="source/compiler/execution_graph_optimizer.h" />
+		<Unit filename="source/compiler/lexer.cpp" />
+		<Unit filename="source/compiler/lexer.h" />
+		<Unit filename="source/compiler/lr_parser.cpp" />
+		<Unit filename="source/compiler/lr_parser.h" />
+		<Unit filename="source/compiler/parser.cpp" />
+		<Unit filename="source/compiler/parser.h" />
+		<Unit filename="source/compiler/preprocessor.cpp" />
+		<Unit filename="source/compiler/preprocessor.h" />
+		<Unit filename="source/driver/driver_interface.cpp" />
+		<Unit filename="source/driver/driver_interface.h" />
+		<Unit filename="source/driver/sample_format.cpp" />
+		<Unit filename="source/driver/sample_format.h" />
+		<Unit filename="source/engine/buffer.h" />
+		<Unit filename="source/engine/buffer_allocator.cpp" />
+		<Unit filename="source/engine/buffer_allocator.h" />
+		<Unit filename="source/engine/buffer_operations/buffer_operations.cpp" />
+		<Unit filename="source/engine/buffer_operations/buffer_operations.h" />
+		<Unit filename="source/engine/buffer_operations/buffer_operations_arithmetic.h" />
+		<Unit filename="source/engine/buffer_operations/buffer_operations_utility.h" />
+		<Unit filename="source/engine/buffer_operations/sse.h" />
+		<Unit filename="source/engine/buffer_operations/sse_mathfun.h" />
+		<Unit filename="source/engine/channel_mixer.cpp" />
+		<Unit filename="source/engine/channel_mixer.h" />
+		<Unit filename="source/engine/executor.cpp" />
+		<Unit filename="source/engine/executor.h" />
+		<Unit filename="source/engine/native_module_task_mapping.cpp" />
+		<Unit filename="source/engine/native_module_task_mapping.h" />
+		<Unit filename="source/engine/predecessor_resolver.cpp" />
+		<Unit filename="source/engine/predecessor_resolver.h" />
+		<Unit filename="source/engine/task_functions.cpp" />
+		<Unit filename="source/engine/task_functions.h" />
+		<Unit filename="source/engine/task_graph.cpp" />
+		<Unit filename="source/engine/task_graph.h" />
+		<Unit filename="source/engine/thread_pool.cpp" />
+		<Unit filename="source/engine/thread_pool.h" />
+		<Unit filename="source/execution_graph/execution_graph.cpp" />
+		<Unit filename="source/execution_graph/execution_graph.h" />
+		<Unit filename="source/execution_graph/native_modules.cpp" />
+		<Unit filename="source/execution_graph/native_modules.h" />
+		<Unit filename="source/runtime/command_line_interface.cpp" />
+		<Unit filename="source/runtime/runtime_context.cpp" />
+		<Unit filename="source/runtime/runtime_context.h" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
