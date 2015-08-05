@@ -1,5 +1,8 @@
 #include "compiler/lr_parser.h"
 #include <stack>
+#include <limits>
+
+const uint32 c_lr_action_goto_table::k_invalid_state_index;
 
 c_lr_symbol::c_lr_symbol() {
 	m_index = 0;

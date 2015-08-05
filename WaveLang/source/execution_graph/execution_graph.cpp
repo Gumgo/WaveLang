@@ -8,6 +8,8 @@
 
 static const char k_format_identifier[] = { 'w', 'a', 'v', 'e', 'l', 'a', 'n', 'g' };
 
+const uint32 c_execution_graph::k_invalid_index;
+
 c_execution_graph::c_execution_graph() {
 	ZERO_STRUCT(&m_globals);
 }

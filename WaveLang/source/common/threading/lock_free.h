@@ -6,7 +6,7 @@
 
 // Data structures containing a lock-free handle should be cache line aligned
 #define LOCK_FREE_ALIGNMENT CACHE_LINE_SIZE
-#define ALIGNAS_LOCK_FREE ALIGNAS(LOCK_FREE_ALIGNMENT)
+#define ALIGNAS_LOCK_FREE alignas(LOCK_FREE_ALIGNMENT)
 
 // More type-friendly version:
 static const size_t k_lock_free_alignment = LOCK_FREE_ALIGNMENT;
@@ -70,7 +70,7 @@ struct s_lock_free_handle {
 };
 
 // Aligned version to avoid false sharing
-ALIGNAS_LOCK_FREE struct s_aligned_lock_free_handle : public s_lock_free_handle {};
+struct ALIGNAS_LOCK_FREE s_aligned_lock_free_handle : public s_lock_free_handle {};
 
 // A list of handles pointing to the next node in the list
 typedef c_wrapped_array<s_aligned_lock_free_handle> c_lock_free_handle_array;

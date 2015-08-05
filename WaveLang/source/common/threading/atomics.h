@@ -7,14 +7,14 @@
 
 #define USE_ATOMICS_IMPLEMENTATION_WINDOWS 0
 
-#if !PREDEFINED(PREFER_ATOMICS_IMPLEMENTATION_FALLBACK,)
+#if !PREDEFINED(PREFER_ATOMICS_IMPLEMENTATION_FALLBACK)
 	#if PREDEFINED(PLATFORM_WINDOWS)
 		#undef USE_ATOMICS_IMPLEMENTATION_WINDOWS
 		#define USE_ATOMICS_IMPLEMENTATION_WINDOWS 1
 	#endif // implementation
 #endif // !PREDEFINED(PREFER_ATOMICS_IMPLEMENTATION_FALLBACK)
 
-#if PREDEFINED(USE_ATOMICS_IMPLEMENTATION_WINDOWS,)
+#if PREDEFINED(USE_ATOMICS_IMPLEMENTATION_WINDOWS)
 // No additional includes
 #else // fallback
 #include <atomic>
@@ -47,14 +47,15 @@ public:
 	// Decrements the value
 	inline int32 decrement();
 
+	// $TODO fix these names
 	// ANDs the value with x
-	inline int32 and_(int32 x);
+	inline int32 bitwise_and(int32 x);
 
 	// ORs the value with x
-	inline int32 or_(int32 x);
+	inline int32 bitwise_or(int32 x);
 
 	// XORs the value with x
-	inline int32 xor_(int32 x);
+	inline int32 bitwise_xor(int32 x);
 
 	// Performs the specified operation atomically
 	// T should implement int32 operator()(int32 value) const
@@ -64,7 +65,7 @@ public:
 	template<typename t_operation> int32 execute_atomic(const t_operation &operation);
 
 private:
-#if PREDEFINED(USE_ATOMICS_IMPLEMENTATION_WINDOWS,)
+#if PREDEFINED(USE_ATOMICS_IMPLEMENTATION_WINDOWS)
 	volatile int32 m_value;
 #else // fallback
 	std::atomic<int32> m_value;
@@ -101,13 +102,13 @@ public:
 	inline int64 decrement();
 
 	// ANDs the value with x
-	inline int64 and_(int64 x);
+	inline int64 bitwise_and(int64 x);
 
 	// ORs the value with x
-	inline int64 or_(int64 x);
+	inline int64 bitwise_or(int64 x);
 
 	// XORs the value with x
-	inline int64 xor_(int64 x);
+	inline int64 bitwise_xor(int64 x);
 
 	// Performs the specified operation atomically
 	// T should implement int64 operator()(int64 value) const
@@ -117,7 +118,7 @@ public:
 	template<typename t_operation> int64 execute_atomic(const t_operation &operation);
 
 private:
-#if PREDEFINED(USE_ATOMICS_IMPLEMENTATION_WINDOWS,)
+#if PREDEFINED(USE_ATOMICS_IMPLEMENTATION_WINDOWS)
 	volatile int64 m_value;
 #else // fallback
 	std::atomic<int64> m_value;
@@ -126,7 +127,7 @@ private:
 
 static_assert(sizeof(c_atomic_int32) == sizeof(int32), "c_atomic_int64 not 64 bits?");
 
-#if PREDEFINED(USE_ATOMICS_IMPLEMENTATION_WINDOWS,)
+#if PREDEFINED(USE_ATOMICS_IMPLEMENTATION_WINDOWS)
 #include "common/threading/atomics_windows.inl"
 #else // fallback
 #include "common/threading/atomics_fallback.inl"

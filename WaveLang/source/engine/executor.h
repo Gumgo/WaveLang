@@ -57,11 +57,11 @@ private:
 		bool active;
 	};
 
-	ALIGNAS_LOCK_FREE struct s_task_context {
+	struct ALIGNAS_LOCK_FREE s_task_context {
 		c_atomic_int32 predecessors_remaining;
 	};
 
-	ALIGNAS_LOCK_FREE struct s_buffer_context {
+	struct ALIGNAS_LOCK_FREE s_buffer_context {
 		c_atomic_int32 usages_remaining;
 		uint32 handle;
 	};

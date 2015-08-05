@@ -5,6 +5,8 @@
 
 static const uint32 k_invalid_task = static_cast<uint32>(-1);
 
+const uint32 c_task_graph::k_invalid_buffer;
+
 // Returns true if the given input is used as more than once. This indicates that the input cannot be used as an inout
 // because overwriting the buffer would invalidate its second usage as an input.
 static bool does_native_module_call_input_branch(const c_execution_graph &execution_graph, uint32 node_index,

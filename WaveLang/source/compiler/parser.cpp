@@ -29,7 +29,7 @@ static s_lr_production make_production(
 }
 
 // Shorthand
-#define PROD(x, ...) make_production(x, __VA_ARGS__), // Hack to allow the macro to accept commas
+#define PROD(x, ...) make_production(x, ##__VA_ARGS__), // Hack to allow the macro to accept commas
 #define TS(x) c_lr_symbol(true, static_cast<uint16>(k_token_type_ ## x))
 #define NS(x) c_lr_symbol(false, static_cast<uint16>(k_parser_nonterminal_ ## x))
 

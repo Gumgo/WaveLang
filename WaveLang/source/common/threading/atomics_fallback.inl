@@ -75,15 +75,15 @@ inline int32 c_atomic_int32::decrement() {
 
 // Seems to not be 32-bit versions of these functions defined except for IA64
 
-inline int32 c_atomic_int32::and_(int32 x) {
+inline int32 c_atomic_int32::bitwise_and(int32 x) {
 	return m_value.fetch_and(x);
 }
 
-inline int32 c_atomic_int32::or_(int32 x) {
+inline int32 c_atomic_int32::bitwise_or(int32 x) {
 	return m_value.fetch_or(x);
 }
 
-inline int32 c_atomic_int32::xor_(int32 x) {
+inline int32 c_atomic_int32::bitwise_xor(int32 x) {
 	return m_value.fetch_xor(x);
 }
 
@@ -114,14 +114,14 @@ inline int64 c_atomic_int64::decrement() {
 	return m_value--;
 }
 
-inline int64 c_atomic_int64::and_(int64 x) {
+inline int64 c_atomic_int64::bitwise_and(int64 x) {
 	return m_value.fetch_and(x);
 }
 
-inline int64 c_atomic_int64::or_(int64 x) {
+inline int64 c_atomic_int64::bitwise_or(int64 x) {
 	return m_value.fetch_or(x);
 }
 
-inline int64 c_atomic_int64::xor_(int64 x) {
+inline int64 c_atomic_int64::bitwise_xor(int64 x) {
 	return m_value.fetch_xor(x);
 }

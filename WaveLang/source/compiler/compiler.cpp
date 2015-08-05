@@ -10,6 +10,7 @@
 #include "compiler/execution_graph_optimizer.h"
 #include <algorithm>
 #include <vector>
+#include <memory>
 #include <fstream>
 #include <iostream>
 
@@ -105,7 +106,7 @@ s_compiler_result c_compiler::compile(const char *root_path, const char *source_
 	c_parser::shutdown_parser();
 
 	// Build the AST from the result of the parser
-	std::auto_ptr<c_ast_node> ast(c_ast_builder::build_ast(lexer_output, parser_output));
+	std::unique_ptr<c_ast_node> ast(c_ast_builder::build_ast(lexer_output, parser_output));
 
 	if (result.result != k_compiler_result_success) {
 		output_error(context, result);
@@ -205,7 +206,7 @@ static s_compiler_result read_and_preprocess_source_file(
 		std::streampos full_file_size = source_file_in.tellg();
 		source_file_in.seekg(0);
 
-		if (full_file_size > static_cast<std::streampos>(std::numeric_limits<size_t>::max())) {
+		if (full_file_size > static_cast<std::streampos>(std::numeric_limits<int32>::max())) {
 			result.result = k_compiler_result_failed_to_read_file;
 			result.source_location.source_file_index = static_cast<int32>(source_file_index);
 			result.message = "Source file '" + full_filename + "' is too big";

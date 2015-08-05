@@ -2,6 +2,7 @@
 #define WAVELANG_SSE_H__
 
 #include "common/common.h"
+#include <algorithm>
 
 #define SSE_ENABLED 1
 
@@ -16,7 +17,7 @@ static const size_t k_sse_block_size = SSE_BLOCK_SIZE;
 
 #if PREDEFINED(COMPILER_MSVC)
 #include <intrin.h>
-#else PREDEFINED(COMPILER_MSVC)
+#else // PREDEFINED(COMPILER_MSVC)
 #include <x86intrin.h>
 #endif // PREDEFINED(COMPILER_MSVC)
 
@@ -113,16 +114,39 @@ inline c_real32_4 abs(const c_real32_4 &v) {
 	return _mm_andnot_ps(k_sign_mask, v);
 }
 
+// $TODO write an SSE version which doesn't rely on SSE4.1 for floor, ceil, and round
+
 inline c_real32_4 floor(const c_real32_4 &v) {
-	return _mm_floor_ps(v);
+	//return _mm_floor_ps(v);
+    alignas(SSE_ALIGNMENT) real32 val[4];
+    _mm_store_ps(val, v);
+    val[0] = std::floor(val[0]);
+    val[1] = std::floor(val[1]);
+    val[2] = std::floor(val[2]);
+    val[3] = std::floor(val[3]);
+    return c_real32_4(val);
 }
 
 inline c_real32_4 ceil(const c_real32_4 &v) {
-	return _mm_ceil_ps(v);
+	//return _mm_ceil_ps(v);
+    alignas(SSE_ALIGNMENT) real32 val[4];
+    _mm_store_ps(val, v);
+    val[0] = std::ceil(val[0]);
+    val[1] = std::ceil(val[1]);
+    val[2] = std::ceil(val[2]);
+    val[3] = std::ceil(val[3]);
+    return c_real32_4(val);
 }
 
 inline c_real32_4 round(const c_real32_4 &v) {
-	return _mm_round_ps(v, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC);
+	//return _mm_round_ps(v, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC);
+    alignas(SSE_ALIGNMENT) real32 val[4];
+    _mm_store_ps(val, v);
+    val[0] = std::round(val[0]);
+    val[1] = std::round(val[1]);
+    val[2] = std::round(val[2]);
+    val[3] = std::round(val[3]);
+    return c_real32_4(val);
 }
 
 inline c_real32_4 min(const c_real32_4 &a, const c_real32_4 &b) {

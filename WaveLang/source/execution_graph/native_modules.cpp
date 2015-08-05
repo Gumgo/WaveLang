@@ -1,4 +1,5 @@
 #include "execution_graph/native_modules.h"
+#include <cmath>
 
 #define NATIVE_PREFIX "__native_"
 

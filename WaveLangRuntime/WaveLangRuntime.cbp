@@ -11,9 +11,10 @@
 				<Option type="0" />
 				<Option compiler="gcc" />
 				<Compiler>
-					<Add directory="$(VC_IncludePath)" />
-					<Add directory="$(WindowsSDK_IncludePath)" />
-					<Add directory="$(SolutionDir)WaveLang/source/" />
+					<Add option="-O3" />
+					<Add option="-std=c++11" />
+					<Add option="-lpthread" />
+					<Add directory="../WaveLang/source" />
 					<Add directory="C:/Program Files (no install)/portaudio/pa_stable_v19_20140130/portaudio/include/" />
 				</Compiler>
 				<Linker>
@@ -27,9 +28,10 @@
 				<Option type="0" />
 				<Option compiler="gcc" />
 				<Compiler>
-					<Add directory="$(VC_IncludePath)" />
-					<Add directory="$(WindowsSDK_IncludePath)" />
-					<Add directory="$(SolutionDir)WaveLang/source/" />
+					<Add option="-std=c++11" />
+					<Add option="-lpthread" />
+					<Add option="-D_DEBUG" />
+					<Add directory="../WaveLang/source" />
 					<Add directory="C:/Program Files (no install)/portaudio/pa_stable_v19_20140130/portaudio/include/" />
 				</Compiler>
 				<Linker>
@@ -42,9 +44,11 @@
 		<Unit filename="../WaveLang/source/common/asserts.cpp" />
 		<Unit filename="../WaveLang/source/common/asserts.h" />
 		<Unit filename="../WaveLang/source/common/common.h" />
+		<Unit filename="../WaveLang/source/common/macros.h" />
 		<Unit filename="../WaveLang/source/common/platform.h" />
 		<Unit filename="../WaveLang/source/common/threading/atomics.h" />
-		<Unit filename="../WaveLang/source/common/threading/atomics.inl" />
+		<Unit filename="../WaveLang/source/common/threading/atomics_fallback.inl" />
+		<Unit filename="../WaveLang/source/common/threading/atomics_windows.inl" />
 		<Unit filename="../WaveLang/source/common/threading/condition_variable.cpp" />
 		<Unit filename="../WaveLang/source/common/threading/condition_variable.h" />
 		<Unit filename="../WaveLang/source/common/threading/lock_free.cpp" />
@@ -57,7 +61,9 @@
 		<Unit filename="../WaveLang/source/common/threading/mutex.h" />
 		<Unit filename="../WaveLang/source/common/threading/semaphore.cpp" />
 		<Unit filename="../WaveLang/source/common/threading/semaphore.h" />
-		<Unit filename="../WaveLang/source/common/threading/thread.cpp" />
+		<Unit filename="../WaveLang/source/common/threading/thread.h" />
+		<Unit filename="../WaveLang/source/common/threading/thread_fallback.cpp" />
+		<Unit filename="../WaveLang/source/common/threading/thread_windows.cpp" />
 		<Unit filename="../WaveLang/source/common/types.h" />
 		<Unit filename="../WaveLang/source/driver/driver_interface.cpp" />
 		<Unit filename="../WaveLang/source/driver/driver_interface.h" />
@@ -68,13 +74,16 @@
 		<Unit filename="../WaveLang/source/engine/buffer_allocator.h" />
 		<Unit filename="../WaveLang/source/engine/buffer_operations/buffer_operations.cpp" />
 		<Unit filename="../WaveLang/source/engine/buffer_operations/buffer_operations.h" />
-		<Unit filename="../WaveLang/source/engine/buffer_operations/buffer_operations_arithmetic.cpp" />
 		<Unit filename="../WaveLang/source/engine/buffer_operations/buffer_operations_arithmetic.h" />
+		<Unit filename="../WaveLang/source/engine/buffer_operations/buffer_operations_utility.h" />
 		<Unit filename="../WaveLang/source/engine/buffer_operations/sse.h" />
+		<Unit filename="../WaveLang/source/engine/buffer_operations/sse_mathfun.h" />
 		<Unit filename="../WaveLang/source/engine/channel_mixer.cpp" />
 		<Unit filename="../WaveLang/source/engine/channel_mixer.h" />
 		<Unit filename="../WaveLang/source/engine/executor.cpp" />
 		<Unit filename="../WaveLang/source/engine/executor.h" />
+		<Unit filename="../WaveLang/source/engine/native_module_task_mapping.cpp" />
+		<Unit filename="../WaveLang/source/engine/native_module_task_mapping.h" />
 		<Unit filename="../WaveLang/source/engine/predecessor_resolver.cpp" />
 		<Unit filename="../WaveLang/source/engine/predecessor_resolver.h" />
 		<Unit filename="../WaveLang/source/engine/task_functions.cpp" />

@@ -32,7 +32,7 @@ enum e_thread_priority {
 
 // Parameters for thread function
 // Since we don't know what might go in here, might as well align
-ALIGNAS(16) struct s_thread_parameter_block {
+struct alignas(16) s_thread_parameter_block {
 	// 32 bytes of memory for custom parameters
 	uint8 memory[32];
 

@@ -3,6 +3,7 @@
 #include "compiler/lexer.h"
 #include "compiler/parser.h"
 #include "execution_graph/native_modules.h"
+#include <stdexcept>
 
 static bool node_is_type(const c_lr_parse_tree_node &node, e_token_type terminal_type) {
 	return node.get_symbol().is_terminal() && node.get_symbol().get_index() == terminal_type;

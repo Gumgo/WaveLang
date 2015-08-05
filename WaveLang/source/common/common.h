@@ -7,6 +7,8 @@
 #include "common/asserts.h"
 #include <cctype>
 #include <cstddef>
+#include <cstdint>
+#include <cstring>
 
 // Some utility functions... if this list gets too big, move these somewhere better
 inline bool string_compare_case_insensitive(const char *str_a, const char *str_b) {
@@ -29,6 +31,10 @@ template<typename t_size, typename t_alignment> t_size align_size(t_size size, t
 
 template<typename t_size, typename t_alignment> bool is_size_aligned(t_size size, t_alignment alignment) {
 	return (size & (alignment - 1)) == 0;
+}
+
+template<typename t_pointer, typename t_alignment> t_pointer align_pointer(t_pointer pointer, t_alignment alignment) {
+    return reinterpret_cast<t_pointer>((reinterpret_cast<uintptr_t>(pointer) + (alignment - 1)) & ~(alignment - 1));
 }
 
 template<typename t_pointer, typename t_alignment> bool is_pointer_aligned(t_pointer *pointer, t_alignment alignment) {

@@ -47,7 +47,7 @@ public:
 
 private:
 	// Internal representation of a task
-	ALIGNAS_LOCK_FREE struct s_task {
+	struct ALIGNAS_LOCK_FREE s_task {
 		// A task acts like its own thread
 		f_thread_entry_point task_function;
 		s_thread_parameter_block params;
