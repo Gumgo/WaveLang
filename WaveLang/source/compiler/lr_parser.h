@@ -250,6 +250,25 @@ private:
 	std::vector<c_lr_parse_tree_node> m_nodes;
 };
 
+class c_lr_parse_tree_iterator {
+public:
+	c_lr_parse_tree_iterator(const c_lr_parse_tree &parse_tree, size_t node_index);
+
+	bool is_valid() const;
+	bool has_child() const;
+	bool has_sibling() const;
+
+	void follow_child();
+	void follow_sibling();
+
+	size_t get_node_index() const;
+	const c_lr_parse_tree_node &get_node() const;
+
+private:
+	const c_lr_parse_tree &m_parse_tree;
+	size_t m_current_node_index;
+};
+
 typedef bool (*t_lr_parser_get_next_token)(void *context, uint16 &out_token);
 
 class c_lr_parser {

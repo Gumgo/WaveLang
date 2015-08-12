@@ -2,16 +2,18 @@
 
 const char *k_entry_point_name = "main";
 
-static const char *k_data_type_strings[] = {
+static const char *k_ast_data_type_strings[] = {
 	"void",
-	"value"
+	"module",
+	"real",
+	"string"
 };
 
-static_assert(NUMBEROF(k_data_type_strings) == k_data_type_count, "Data type string mismatch");
+static_assert(NUMBEROF(k_ast_data_type_strings) == k_ast_data_type_count, "Data type string mismatch");
 
-const char *get_data_type_string(e_data_type data_type) {
-	wl_assert(VALID_INDEX(data_type, k_data_type_count));
-	return k_data_type_strings[data_type];
+const char *get_ast_data_type_string(e_ast_data_type data_type) {
+	wl_assert(VALID_INDEX(data_type, k_ast_data_type_count));
+	return k_ast_data_type_strings[data_type];
 }
 
 c_ast_node::c_ast_node(e_ast_node_type type)
@@ -82,12 +84,18 @@ const c_ast_node *c_ast_node_scope::get_child(size_t index) const {
 c_ast_node_module_declaration::c_ast_node_module_declaration()
 	: c_ast_node(k_ast_node_type_module_declaration) {
 	m_is_native = false;
-	m_has_return_value = false;
+	m_return_type = k_ast_data_type_void;
 	m_scope = nullptr;
 }
 
 c_ast_node_module_declaration::~c_ast_node_module_declaration() {
-	// Don't delete arguments, as they are owned by the body scope
+	// For non-native modules, don't delete arguments, as they are owned by the body scope. For native modules, there is
+	// no scope, so we do delete them here.
+	if (m_is_native) {
+		for (size_t arg = 0; arg < m_arguments.size(); arg++) {
+			delete m_arguments[arg];
+		}
+	}
 
 	delete m_scope;
 }
@@ -139,12 +147,13 @@ const std::string &c_ast_node_module_declaration::get_name() const {
 	return m_name;
 }
 
-void c_ast_node_module_declaration::set_has_return_value(bool has_return_value) {
-	m_has_return_value = has_return_value;
+void c_ast_node_module_declaration::set_return_type(e_ast_data_type return_type) {
+	wl_assert(VALID_INDEX(return_type, k_ast_data_type_count));
+	m_return_type = return_type;
 }
 
-bool c_ast_node_module_declaration::get_has_return_value() const {
-	return m_has_return_value;
+e_ast_data_type c_ast_node_module_declaration::get_return_type() const {
+	return m_return_type;
 }
 
 void c_ast_node_module_declaration::add_argument(c_ast_node_named_value_declaration *argument) {
@@ -181,7 +190,8 @@ const c_ast_node_scope *c_ast_node_module_declaration::get_scope() const {
 
 c_ast_node_named_value_declaration::c_ast_node_named_value_declaration()
 	: c_ast_node(k_ast_node_type_named_value_declaration) {
-	m_qualifier = k_qualifier_none;
+	m_qualifier = k_ast_qualifier_none;
+	m_data_type = k_ast_data_type_real;
 }
 
 c_ast_node_named_value_declaration::~c_ast_node_named_value_declaration() {}
@@ -206,13 +216,24 @@ const std::string &c_ast_node_named_value_declaration::get_name() const {
 	return m_name;
 }
 
-void c_ast_node_named_value_declaration::set_qualifier(e_qualifier qualifier) {
-	wl_assert(VALID_INDEX(qualifier, k_qualifier_count));
+void c_ast_node_named_value_declaration::set_qualifier(e_ast_qualifier qualifier) {
+	wl_assert(VALID_INDEX(qualifier, k_ast_qualifier_count));
 	m_qualifier = qualifier;
 }
 
-c_ast_node_named_value_declaration::e_qualifier c_ast_node_named_value_declaration::get_qualifier() const {
+e_ast_qualifier c_ast_node_named_value_declaration::get_qualifier() const {
 	return m_qualifier;
+}
+
+void c_ast_node_named_value_declaration::set_data_type(e_ast_data_type data_type) {
+	wl_assert(VALID_INDEX(data_type, k_ast_data_type_count));
+	wl_assert(data_type != k_ast_data_type_void);
+	wl_assert(data_type != k_ast_data_type_module);
+	m_data_type = data_type;
+}
+
+e_ast_data_type c_ast_node_named_value_declaration::get_data_type() const {
+	return m_data_type;
 }
 
 c_ast_node_named_value_assignment::c_ast_node_named_value_assignment()
@@ -348,7 +369,8 @@ const c_ast_node *c_ast_node_expression::get_expression_value() const {
 
 c_ast_node_constant::c_ast_node_constant()
 	: c_ast_node(k_ast_node_type_constant) {
-	m_value = 0.0f;
+	m_data_type = k_ast_data_type_real;
+	m_real_value = 0.0f;
 }
 
 c_ast_node_constant::~c_ast_node_constant() {}
@@ -365,12 +387,30 @@ void c_ast_node_constant::iterate(c_ast_node_const_visitor *visitor) const {
 	}
 }
 
-void c_ast_node_constant::set_value(real32 value) {
-	m_value = value;
+e_ast_data_type c_ast_node_constant::get_data_type() const {
+	return m_data_type;
 }
 
-real32 c_ast_node_constant::get_value() const {
-	return m_value;
+void c_ast_node_constant::set_real_value(real32 value) {
+	m_data_type = k_ast_data_type_real;
+	m_real_value = value;
+	m_string_value.clear();
+}
+
+real32 c_ast_node_constant::get_real_value() const {
+	wl_assert(m_data_type == k_ast_data_type_real);
+	return m_real_value;
+}
+
+void c_ast_node_constant::set_string_value(const std::string &value) {
+	m_data_type = k_ast_data_type_string;
+	m_real_value = 0.0f;
+	m_string_value = value;;
+}
+
+const std::string &c_ast_node_constant::get_string_value() const {
+	wl_assert(m_data_type == k_ast_data_type_string);
+	return m_string_value;
 }
 
 c_ast_node_named_value::c_ast_node_named_value()

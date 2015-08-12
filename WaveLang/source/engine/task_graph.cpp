@@ -10,12 +10,17 @@ static const uint32 k_invalid_task = static_cast<uint32>(-1);
 static bool does_native_module_call_input_branch(const c_execution_graph &execution_graph, uint32 node_index,
 	size_t in_arg_index);
 
+// Returns the real buffer index from the task graph data, regardless of whether it is in, out, or inout
+static uint32 get_real_buffer_index(const s_task_graph_data &data);
+
 c_task_graph::c_task_graph() {
 	m_buffer_count = 0;
 	m_max_task_concurrency = 0;
 	m_max_buffer_concurrency = 0;
-	m_output_buffers_start = 0;
-	m_output_buffers_count = 0;
+	m_initial_tasks_start = 0;
+	m_initial_tasks_count = 0;
+	m_outputs_start = 0;
+	m_outputs_count = 0;
 
 	ZERO_STRUCT(&m_globals);
 }
@@ -35,57 +40,36 @@ e_task_function c_task_graph::get_task_function(uint32 task_index) const {
 	return m_tasks[task_index].task_function;
 }
 
-c_task_graph::c_constant_array c_task_graph::get_task_constants(uint32 task_index) const {
+c_task_graph_data_array c_task_graph::get_task_arguments(uint32 task_index) const {
 	const s_task &task = m_tasks[task_index];
 	const s_task_function_description &task_function_description =
 		c_task_function_registry::get_task_function_description(task.task_function);
-	return c_constant_array(
-		task_function_description.in_constant_count == 0 ? nullptr : &m_constant_lists[task.in_constants_start],
-		task_function_description.in_constant_count);
-}
-
-c_task_graph::c_buffer_array c_task_graph::get_task_in_buffers(uint32 task_index) const {
-	const s_task &task = m_tasks[task_index];
-	const s_task_function_description &task_function_description =
-		c_task_function_registry::get_task_function_description(task.task_function);
-	return c_buffer_array(
-		task_function_description.in_buffer_count == 0 ? nullptr : &m_buffer_lists[task.in_buffers_start],
-		task_function_description.in_buffer_count);
-}
-
-c_task_graph::c_buffer_array c_task_graph::get_task_out_buffers(uint32 task_index) const {
-	const s_task &task = m_tasks[task_index];
-	const s_task_function_description &task_function_description =
-		c_task_function_registry::get_task_function_description(task.task_function);
-	return c_buffer_array(
-		task_function_description.out_buffer_count == 0 ? nullptr : &m_buffer_lists[task.out_buffers_start],
-		task_function_description.out_buffer_count);
-}
-
-c_task_graph::c_buffer_array c_task_graph::get_task_inout_buffers(uint32 task_index) const {
-	const s_task &task = m_tasks[task_index];
-	const s_task_function_description &task_function_description =
-		c_task_function_registry::get_task_function_description(task.task_function);
-	return c_buffer_array(
-		task_function_description.inout_buffer_count == 0 ? nullptr : &m_buffer_lists[task.inout_buffers_start],
-		task_function_description.inout_buffer_count);
+	return c_task_graph_data_array(
+		task_function_description.argument_count == 0 ? nullptr : &m_data_lists[task.arguments_start],
+		task_function_description.argument_count);
 }
 
 size_t c_task_graph::get_task_predecessor_count(uint32 task_index) const {
 	return m_tasks[task_index].predecessor_count;
 }
 
-c_task_graph::c_task_array c_task_graph::get_task_successors(uint32 task_index) const {
+c_task_graph_task_array c_task_graph::get_task_successors(uint32 task_index) const {
 	const s_task &task = m_tasks[task_index];
-	return c_task_array(
+	return c_task_graph_task_array(
 		task.successors_count == 0 ? nullptr : &m_task_lists[task.successors_start],
 		task.successors_count);
 }
 
-c_task_graph::c_task_array c_task_graph::get_initial_tasks() const {
-	return c_task_array(
+c_task_graph_task_array c_task_graph::get_initial_tasks() const {
+	return c_task_graph_task_array(
 		m_initial_tasks_count == 0 ? nullptr : &m_task_lists[m_initial_tasks_start],
 		m_initial_tasks_count);
+}
+
+c_task_graph_data_array c_task_graph::get_outputs() const {
+	return c_task_graph_data_array(
+		m_outputs_count == 0 ? nullptr : &m_data_lists[m_outputs_start],
+		m_outputs_count);
 }
 
 uint32 c_task_graph::get_buffer_count() const {
@@ -100,42 +84,23 @@ uint32 c_task_graph::get_buffer_usages(uint32 buffer_index) const {
 	return m_buffer_usages[buffer_index];
 }
 
-uint32 c_task_graph::get_output_count() const {
-	wl_assert(m_output_buffers_count == m_output_constants_count);
-	return m_output_buffers_count;
-}
-
-bool c_task_graph::is_output_buffer(uint32 output_index) const {
-	wl_assert(VALID_INDEX(output_index, get_output_count()));
-	// If the buffer index is k_invalid_buffer, this output is a constant
-	return (m_buffer_lists[m_output_buffers_start + output_index] != k_invalid_buffer);
-}
-
-uint32 c_task_graph::get_output_buffer(uint32 output_index) const {
-	wl_assert(is_output_buffer(output_index));
-	return m_buffer_lists[m_output_buffers_start + output_index];
-}
-
-real32 c_task_graph::get_output_constant(uint32 output_index) const {
-	wl_assert(!is_output_buffer(output_index));
-	return m_constant_lists[m_output_constants_start + output_index];
-}
-
 const s_task_graph_globals &c_task_graph::get_globals() const {
 	return m_globals;
 }
 
 bool c_task_graph::build(const c_execution_graph &execution_graph) {
 	m_tasks.clear();
-	m_constant_lists.clear();
-	m_buffer_lists.clear();
+	m_data_lists.clear();
 	m_task_lists.clear();
+	m_string_table.clear();
 	m_buffer_count = 0;
 	m_buffer_usages.clear();
 	m_max_task_concurrency = 0;
 	m_max_buffer_concurrency = 0;
-	m_output_buffers_start = 0;
-	m_output_buffers_count = 0;
+	m_initial_tasks_start = 0;
+	m_initial_tasks_count = 0;
+	m_outputs_start = 0;
+	m_outputs_count = 0;
 
 	// Maps nodes in the execution graph to tasks in the task graph
 	std::vector<uint32> nodes_to_tasks(execution_graph.get_node_count(), k_invalid_task);
@@ -147,7 +112,6 @@ bool c_task_graph::build(const c_execution_graph &execution_graph) {
 		// We should never encounter these node types, even if the graph was loaded from a file (they should never
 		// appear in a file and if they do we should fail to load).
 		wl_assert(execution_graph.get_node_type(index) != k_execution_graph_node_type_invalid);
-		wl_assert(execution_graph.get_node_type(index) != k_execution_graph_node_type_intermediate_value);
 
 		// We only care about native module calls - we access other node types through the call's edges
 		if (execution_graph.get_node_type(index) == k_execution_graph_node_type_native_module_call) {
@@ -156,6 +120,7 @@ bool c_task_graph::build(const c_execution_graph &execution_graph) {
 	}
 
 	if (success) {
+		resolve_strings();
 		build_task_successor_lists(execution_graph, nodes_to_tasks);
 		allocate_buffers(execution_graph);
 		calculate_max_concurrency();
@@ -167,15 +132,17 @@ bool c_task_graph::build(const c_execution_graph &execution_graph) {
 
 	if (!success) {
 		m_tasks.clear();
-		m_constant_lists.clear();
-		m_buffer_lists.clear();
+		m_data_lists.clear();
 		m_task_lists.clear();
+		m_string_table.clear();
 		m_buffer_count = 0;
 		m_buffer_usages.clear();
 		m_max_task_concurrency = 0;
 		m_max_buffer_concurrency = 0;
-		m_output_buffers_start = 0;
-		m_output_buffers_count = 0;
+		m_initial_tasks_start = 0;
+		m_initial_tasks_count = 0;
+		m_outputs_start = 0;
+		m_outputs_count = 0;
 	}
 
 	return success;
@@ -225,6 +192,52 @@ static bool does_native_module_call_input_branch(const c_execution_graph &execut
 	}
 }
 
+static uint32 get_real_buffer_index(const s_task_graph_data &data) {
+	uint32 buffer_index = c_task_graph::k_invalid_buffer;
+
+	switch (data.type) {
+	case k_task_data_type_real_buffer_in:
+		buffer_index = data.data.real_buffer_in;
+		break;
+
+	case k_task_data_type_real_buffer_out:
+		buffer_index = data.data.real_buffer_out;
+		break;
+
+	case k_task_data_type_real_buffer_inout:
+		buffer_index = data.data.real_buffer_inout;
+		break;
+
+	case k_task_data_type_real_constant_in:
+	case k_task_data_type_string_constant_in:
+		// Nothing to do
+		break;
+
+	default:
+		wl_unreachable();
+	}
+
+	return buffer_index;
+}
+
+void c_task_graph::resolve_strings() {
+	for (uint32 task_index = 0; task_index < m_tasks.size(); task_index++) {
+		s_task &task = m_tasks[task_index];
+		const s_task_function_description &task_function_description =
+			c_task_function_registry::get_task_function_description(task.task_function);
+
+		for (size_t arg = 0; arg < task_function_description.argument_count; arg++) {
+			s_task_graph_data &argument = m_data_lists[task.arguments_start + arg];
+
+			if (argument.type == k_task_data_type_string_constant_in) {
+				// We previously stored the offset in the pointer
+				argument.data.string_constant_in = m_string_table.get_string(
+					reinterpret_cast<size_t>(argument.data.string_constant_in));
+			}
+		}
+	}
+}
+
 bool c_task_graph::add_task_for_node(const c_execution_graph &execution_graph, uint32 node_index,
 	std::vector<uint32> &nodes_to_tasks) {
 	wl_assert(execution_graph.get_node_type(node_index) == k_execution_graph_node_type_native_module_call);
@@ -267,25 +280,19 @@ void c_task_graph::setup_task(const c_execution_graph &execution_graph, uint32 n
 	const s_task_function_description &task_function_description =
 		c_task_function_registry::get_task_function_description(task_function);
 
-	// Set up the lists of task inputs/outputs
+	// Set up the lists of task arguments
 	// Initially, we store the execution graph nodes in this list
-	// For the inout list, we need to store both input and output node index, so we double its size (for now)
-	task.in_constants_start = m_constant_lists.size();
-	task.in_buffers_start = m_buffer_lists.size();
-	task.out_buffers_start = task.in_buffers_start + task_function_description.in_buffer_count;
-	task.inout_buffers_start = task.out_buffers_start + task_function_description.out_buffer_count;
+	task.arguments_start = m_data_lists.size();
 
-	IF_ASSERTS_ENABLED(size_t old_size = m_buffer_lists.size());
-	m_constant_lists.resize(m_constant_lists.size() + task_function_description.in_constant_count);
-	m_buffer_lists.resize(m_buffer_lists.size() +
-		task_function_description.in_buffer_count +
-		task_function_description.out_buffer_count +
-		task_function_description.inout_buffer_count * 2); // Double its size to store both input and output nodes
+	IF_ASSERTS_ENABLED(size_t old_size = m_data_lists.size());
+	m_data_lists.resize(m_data_lists.size() + task_function_description.argument_count);
 
 #if PREDEFINED(ASSERTS_ENABLED)
-	for (size_t index = old_size; index < m_buffer_lists.size(); index++) {
+	for (size_t index = old_size; index < m_data_lists.size(); index++) {
 		// Fill with 0xffffffff so we can assert that we don't set a value twice
-		m_buffer_lists[index] = c_execution_graph::k_invalid_index;
+		m_data_lists[index].type = k_task_data_type_count;
+		m_data_lists[index].data.execution_graph_index_a = c_execution_graph::k_invalid_index;
+		m_data_lists[index].data.execution_graph_index_b = c_execution_graph::k_invalid_index;
 	}
 #endif // PREDEFINED(ASSERTS_ENABLED)
 
@@ -297,50 +304,54 @@ void c_task_graph::setup_task(const c_execution_graph &execution_graph, uint32 n
 
 	// Map each input to its defined location in the task
 	for (size_t index = 0; index < execution_graph.get_node_incoming_edge_count(node_index); index++) {
-		s_task_mapping task_mapping = task_mapping_array[task_mapping_index];
+		uint32 argument_index = task_mapping_array[task_mapping_index];
+		wl_assert(VALID_INDEX(argument_index, task_function_description.argument_count));
+		s_task_graph_data &argument_data = m_data_lists[task.arguments_start + argument_index];
+		argument_data.type = task_function_description.argument_types[argument_index];
 
-		if (task_mapping.location == k_task_mapping_location_constant_in) {
-			wl_assert(VALID_INDEX(task_mapping.index, task_function_description.in_constant_count));
+		// Obtain the source input node
+		uint32 input_node_index = execution_graph.get_node_incoming_edge_index(node_index, index);
+		uint32 source_node_index = execution_graph.get_node_incoming_edge_index(input_node_index, 0);
 
-			// Obtain the constant node and value
-			uint32 input_node_index = execution_graph.get_node_incoming_edge_index(node_index, index);
-			uint32 source_node_index = execution_graph.get_node_incoming_edge_index(input_node_index, 0);
-			m_constant_lists[task.in_constants_start + task_mapping.index] =
-				execution_graph.get_constant_node_value(source_node_index);
-		} else if (task_mapping.location == k_task_mapping_location_buffer_in) {
-			wl_assert(VALID_INDEX(task_mapping.index, task_function_description.in_buffer_count));
-
-			// Obtain the input node
-			uint32 input_node_index = execution_graph.get_node_incoming_edge_index(node_index, index);
-#if PREDEFINED(ASSERTS_ENABLED)
+		switch (argument_data.type) {
+		case k_task_data_type_real_buffer_in:
 			// Verify that this is a buffer input
-			uint32 source_node_index = execution_graph.get_node_incoming_edge_index(input_node_index, 0);
 			wl_assert(execution_graph.get_node_type(source_node_index) ==
 				k_execution_graph_node_type_native_module_output);
-#endif // PREDEFINED(ASSERTS_ENABLED)
-
+			wl_assert(argument_data.data.execution_graph_index_a == c_execution_graph::k_invalid_index);
 			// Store the input node index for now
-			wl_assert(m_buffer_lists[task.in_buffers_start + task_mapping.index] ==
-				c_execution_graph::k_invalid_index);
-			m_buffer_lists[task.in_buffers_start + task_mapping.index] = input_node_index;
-		} else if (task_mapping.location == k_task_mapping_location_buffer_inout) {
-			wl_assert(VALID_INDEX(task_mapping.index, task_function_description.inout_buffer_count));
+			argument_data.data.execution_graph_index_a = input_node_index;
+			break;
 
-			// Obtain the input node
-			uint32 input_node_index = execution_graph.get_node_incoming_edge_index(node_index, index);
-#if PREDEFINED(ASSERTS_ENABLED)
+		case k_task_data_type_real_buffer_out:
+			wl_vhalt("Can't map inputs to outputs");
+			break;
+
+		case k_task_data_type_real_buffer_inout:
 			// Verify that this is a buffer input
-			uint32 source_node_index = execution_graph.get_node_incoming_edge_index(input_node_index, 0);
 			wl_assert(execution_graph.get_node_type(source_node_index) ==
 				k_execution_graph_node_type_native_module_output);
-#endif // PREDEFINED(ASSERTS_ENABLED)
+			wl_assert(argument_data.data.execution_graph_index_a == c_execution_graph::k_invalid_index);
+			// Store the input node index for now
+			argument_data.data.execution_graph_index_a = input_node_index;
+			break;
 
-			// Store the input node index for now - we're storing both input and output, so make space for both
-			wl_assert(m_buffer_lists[task.inout_buffers_start + task_mapping.index * 2] ==
-				c_execution_graph::k_invalid_index);
-			m_buffer_lists[task.inout_buffers_start + task_mapping.index * 2] = input_node_index;
-		} else {
-			wl_vhalt("Can't map inputs to outputs");
+		case k_task_data_type_real_constant_in:
+			wl_assert(argument_data.data.execution_graph_index_a == c_execution_graph::k_invalid_index);
+			argument_data.data.real_constant_in = execution_graph.get_constant_node_real_value(source_node_index);
+			break;
+
+		case k_task_data_type_string_constant_in:
+			wl_assert(argument_data.data.execution_graph_index_a == c_execution_graph::k_invalid_index);
+			// add_string() returns an offset, so temporarily store this in the pointer. This is because as we add more
+			// strings, the string table may be resized and pointers would be invalidated, so instead we store offsets
+			// and resolve them to pointers at the end.
+			argument_data.data.string_constant_in = reinterpret_cast<const char *>(
+				m_string_table.add_string(execution_graph.get_constant_node_string_value(source_node_index)));
+			break;
+
+		default:
+			wl_unreachable();
 		}
 
 		task_mapping_index++;
@@ -348,30 +359,38 @@ void c_task_graph::setup_task(const c_execution_graph &execution_graph, uint32 n
 
 	// Map each output to its defined location in the task
 	for (size_t index = 0; index < execution_graph.get_node_outgoing_edge_count(node_index); index++) {
-		s_task_mapping task_mapping = task_mapping_array[task_mapping_index];
+		uint32 argument_index = task_mapping_array[task_mapping_index];
+		wl_assert(VALID_INDEX(argument_index, task_function_description.argument_count));
+		s_task_graph_data &argument_data = m_data_lists[task.arguments_start + argument_index];
+		argument_data.type = task_function_description.argument_types[argument_index];
 
-		if (task_mapping.location == k_task_mapping_location_buffer_out) {
-			wl_assert(VALID_INDEX(task_mapping.index, task_function_description.out_buffer_count));
+		// Obtain the output node
+		uint32 output_node_index = execution_graph.get_node_outgoing_edge_index(node_index, index);
 
-			// Obtain the output node
-			uint32 output_node_index = execution_graph.get_node_outgoing_edge_index(node_index, index);
-
-			// Store the output node index for now
-			wl_assert(m_buffer_lists[task.out_buffers_start + task_mapping.index] ==
-				c_execution_graph::k_invalid_index);
-			m_buffer_lists[task.out_buffers_start + task_mapping.index] = output_node_index;
-		} else if (task_mapping.location == k_task_mapping_location_buffer_inout) {
-			wl_assert(VALID_INDEX(task_mapping.index, task_function_description.inout_buffer_count));
-
-			// Obtain the output node
-			uint32 output_node_index = execution_graph.get_node_outgoing_edge_index(node_index, index);
-
-			// Store the output node index for now - we're storing both input and output, so make space for both
-			wl_assert(m_buffer_lists[task.inout_buffers_start + task_mapping.index * 2 + 1] ==
-				c_execution_graph::k_invalid_index);
-			m_buffer_lists[task.inout_buffers_start + task_mapping.index * 2 + 1] = output_node_index;
-		} else {
+		switch (argument_data.type) {
+		case k_task_data_type_real_buffer_in:
 			wl_vhalt("Can't map outputs to inputs");
+			break;
+
+		case k_task_data_type_real_buffer_out:
+			wl_assert(argument_data.data.execution_graph_index_a == c_execution_graph::k_invalid_index);
+			// Store the output node index for now
+			argument_data.data.execution_graph_index_a = output_node_index;
+			break;
+
+		case k_task_data_type_real_buffer_inout:
+			wl_assert(argument_data.data.execution_graph_index_b == c_execution_graph::k_invalid_index);
+			// Store the output node index for now
+			argument_data.data.execution_graph_index_b = output_node_index;
+			break;
+
+		case k_task_data_type_real_constant_in:
+		case k_task_data_type_string_constant_in:
+			wl_vhalt("Can't map outputs to inputs");
+			break;
+
+		default:
+			wl_unreachable();
 		}
 
 		task_mapping_index++;
@@ -380,9 +399,9 @@ void c_task_graph::setup_task(const c_execution_graph &execution_graph, uint32 n
 	wl_assert(task_mapping_index == task_mapping_array.get_count());
 
 #if PREDEFINED(ASSERTS_ENABLED)
-	for (size_t index = old_size; index < m_buffer_lists.size(); index++) {
+	for (size_t index = old_size; index < m_data_lists.size(); index++) {
 		// Make sure we have filled in all values
-		wl_assert(m_buffer_lists[index] != c_execution_graph::k_invalid_index);
+		wl_assert(m_data_lists[index].type != k_task_data_type_count);
 	}
 #endif // PREDEFINED(ASSERTS_ENABLED)
 }
@@ -453,8 +472,14 @@ void c_task_graph::build_task_successor_lists(const c_execution_graph &execution
 		const s_task_function_description &task_function_description =
 			c_task_function_registry::get_task_function_description(task.task_function);
 
-		if (task_function_description.in_buffer_count == 0 &&
-			task_function_description.inout_buffer_count == 0) {
+		bool any_input_buffers = false;
+		for (size_t arg = 0; !any_input_buffers && arg < task_function_description.argument_count; arg++) {
+			any_input_buffers =
+				(task_function_description.argument_types[arg] == k_task_data_type_real_buffer_in) ||
+				(task_function_description.argument_types[arg] == k_task_data_type_real_buffer_inout);
+		}
+
+		if (!any_input_buffers) {
 			m_initial_tasks_count++;
 			m_task_lists.push_back(task_index);
 		}
@@ -468,167 +493,149 @@ void c_task_graph::allocate_buffers(const c_execution_graph &execution_graph) {
 	// Maps input/output nodes to allocated buffers
 	std::vector<uint32> nodes_to_buffers(execution_graph.get_node_count(), k_invalid_buffer);
 
-	size_t total_buffer_lists_size = 0;
+	// Associate nodes which share an inout buffer
 	for (uint32 task_index = 0; task_index < m_tasks.size(); task_index++) {
 		const s_task &task = m_tasks[task_index];
 		const s_task_function_description &task_function_description =
 			c_task_function_registry::get_task_function_description(task.task_function);
 
-		for (size_t index = 0; index < task_function_description.inout_buffer_count; index++) {
-			uint32 input_node_index = m_buffer_lists[task.inout_buffers_start + index * 2];
-			uint32 output_node_index = m_buffer_lists[task.inout_buffers_start + index * 2 + 1];
-			inout_connections[input_node_index] = output_node_index;
-			inout_connections[output_node_index] = input_node_index;
-		}
+		for (size_t arg = 0; arg < task_function_description.argument_count; arg++) {
+			const s_task_graph_data &argument = m_data_lists[task.arguments_start + arg];
 
-		total_buffer_lists_size += task_function_description.in_buffer_count;
-		total_buffer_lists_size += task_function_description.out_buffer_count;
-		total_buffer_lists_size += task_function_description.inout_buffer_count;
-	}
-
-	// We need a list of final output nodes
-	m_output_buffers_count = 0;
-	for (uint32 node_index = 0; node_index < execution_graph.get_node_count(); node_index++) {
-		if (execution_graph.get_node_type(node_index) == k_execution_graph_node_type_output) {
-			m_output_buffers_count++;
+			if (argument.type == k_task_data_type_real_buffer_inout) {
+				inout_connections[argument.data.execution_graph_index_a] = argument.data.execution_graph_index_b;
+				inout_connections[argument.data.execution_graph_index_b] = argument.data.execution_graph_index_a;
+			}
 		}
 	}
-
-	// The output constants list is the same size as the output buffers list, but for each index, only one is used
-	m_output_constants_count = m_output_buffers_count;
-
-	total_buffer_lists_size += m_output_buffers_count;
 
 	for (uint32 task_index = 0; task_index < m_tasks.size(); task_index++) {
 		const s_task &task = m_tasks[task_index];
 		const s_task_function_description &task_function_description =
 			c_task_function_registry::get_task_function_description(task.task_function);
 
-		for (size_t index = 0; index < task_function_description.in_buffer_count; index++) {
-			// For each in buffer, find all attached nodes and create a mapping
-			uint32 input_node_index = m_buffer_lists[task.in_buffers_start + index];
-			if (nodes_to_buffers[input_node_index] != k_invalid_buffer) {
-				// Already allocated, skip this one
-				continue;
+		for (size_t arg = 0; arg < task_function_description.argument_count; arg++) {
+			s_task_graph_data &argument = m_data_lists[task.arguments_start + arg];
+
+			// For each buffer, find all attached nodes and create a mapping
+			switch (argument.type) {
+			case k_task_data_type_real_buffer_in:
+			case k_task_data_type_real_buffer_out:
+			case k_task_data_type_real_buffer_inout:
+				if (argument.type == k_task_data_type_real_buffer_inout) {
+					// Inout buffers should have both nodes filled in
+					wl_assert(argument.data.execution_graph_index_b != c_execution_graph::k_invalid_index);
+					// This mapping should always be equal because this is an inout buffer - there is only one buffer
+					wl_assert(nodes_to_buffers[argument.data.execution_graph_index_a] ==
+						nodes_to_buffers[argument.data.execution_graph_index_b]);
+				} else {
+					wl_assert(argument.data.execution_graph_index_b == c_execution_graph::k_invalid_index);
+				}
+
+				if (nodes_to_buffers[argument.data.execution_graph_index_a] != k_invalid_buffer) {
+					// Already allocated, skip this one
+					continue;
+				}
+
+				assign_buffer_to_related_nodes(execution_graph, argument.data.execution_graph_index_a,
+					inout_connections, nodes_to_buffers, m_buffer_count);
+				m_buffer_count++;
+				break;
+
+			case k_task_data_type_real_constant_in:
+			case k_task_data_type_string_constant_in:
+				// Nothing to do
+				break;
+
+			default:
+				wl_unreachable();
 			}
-
-			assign_buffer_to_related_nodes(execution_graph, input_node_index, inout_connections, nodes_to_buffers,
-				m_buffer_count);
-			m_buffer_count++;
-		}
-
-		for (size_t index = 0; index < task_function_description.out_buffer_count; index++) {
-			// For each out buffer, find all attached nodes and create a mapping
-			uint32 output_node_index = m_buffer_lists[task.out_buffers_start + index];
-			if (nodes_to_buffers[output_node_index] != k_invalid_buffer) {
-				// Already allocated, skip this one
-				continue;
-			}
-
-			assign_buffer_to_related_nodes(execution_graph, output_node_index, inout_connections, nodes_to_buffers,
-				m_buffer_count);
-			m_buffer_count++;
-		}
-
-		for (size_t index = 0; index < task_function_description.inout_buffer_count; index++) {
-			// For each inout buffer, find all attached nodes and create a mapping
-			uint32 input_node_index = m_buffer_lists[task.inout_buffers_start + index * 2];
-#if PREDEFINED(ASSERTS_ENABLED)
-			uint32 output_node_index = m_buffer_lists[task.inout_buffers_start + index * 2 + 1];
-#endif // PREDEFINED(ASSERTS_ENABLED)
-
-			// This mapping should always be equal because this is an inout buffer - there is only one buffer
-			wl_assert(nodes_to_buffers[input_node_index] == nodes_to_buffers[output_node_index]);
-
-			if (nodes_to_buffers[input_node_index] != k_invalid_buffer) {
-				// Already allocated, skip this one
-				continue;
-			}
-
-			// Because this is an inout node, we only need to call the assignment function on one side, and the function
-			// will recurse and assign both sides to the buffer
-			assign_buffer_to_related_nodes(execution_graph, input_node_index, inout_connections, nodes_to_buffers,
-				m_buffer_count);
-			m_buffer_count++;
 		}
 	}
 
-	// Finally, rebuild the buffer lists by following the node-to-buffer mapping
-	std::vector<uint32> new_buffer_lists;
-	new_buffer_lists.reserve(total_buffer_lists_size);
-
+	// Finally, follow the node-to-buffer mapping
 	for (uint32 task_index = 0; task_index < m_tasks.size(); task_index++) {
 		s_task &task = m_tasks[task_index];
 		const s_task_function_description &task_function_description =
 			c_task_function_registry::get_task_function_description(task.task_function);
 
-		size_t new_in_buffers_start = new_buffer_lists.size();
-		for (size_t index = 0; index < task_function_description.in_buffer_count; index++) {
-			uint32 node_index = m_buffer_lists[task.in_buffers_start + index];
-			wl_assert(nodes_to_buffers[node_index] != k_invalid_buffer);
-			new_buffer_lists.push_back(nodes_to_buffers[node_index]);
-		}
-		task.in_buffers_start = new_in_buffers_start;
+		for (size_t arg = 0; arg < task_function_description.argument_count; arg++) {
+			s_task_graph_data &argument = m_data_lists[task.arguments_start + arg];
 
-		size_t new_out_buffers_start = new_buffer_lists.size();
-		for (size_t index = 0; index < task_function_description.out_buffer_count; index++) {
-			uint32 node_index = m_buffer_lists[task.out_buffers_start + index];
-			wl_assert(nodes_to_buffers[node_index] != k_invalid_buffer);
-			new_buffer_lists.push_back(nodes_to_buffers[node_index]);
-		}
-		task.out_buffers_start = new_out_buffers_start;
+			// For each buffer, find all attached nodes and create a mapping
+			switch (argument.type) {
+			case k_task_data_type_real_buffer_in:
+				argument.data.real_buffer_in = nodes_to_buffers[argument.data.execution_graph_index_a];
+				wl_assert(argument.data.real_buffer_in != k_invalid_buffer);
+				break;
 
-		size_t new_inout_buffers_start = new_buffer_lists.size();
-		for (size_t index = 0; index < task_function_description.inout_buffer_count; index++) {
-			uint32 node_index = m_buffer_lists[task.inout_buffers_start + index * 2];
+			case k_task_data_type_real_buffer_out:
+				argument.data.real_buffer_out = nodes_to_buffers[argument.data.execution_graph_index_a];
+				wl_assert(argument.data.real_buffer_out != k_invalid_buffer);
+				break;
 
-			// Both nodes should be mapped to the same buffer
-#if PREDEFINED(ASSERTS_ENABLED)
-			uint32 node_index_verify = m_buffer_lists[task.inout_buffers_start + index * 2 + 1];
-#endif // PREDEFINED(ASSERTS_ENABLED)
-			wl_assert(nodes_to_buffers[node_index] == nodes_to_buffers[node_index_verify]);
-			wl_assert(nodes_to_buffers[node_index] != k_invalid_buffer);
-			new_buffer_lists.push_back(nodes_to_buffers[node_index]);
+			case k_task_data_type_real_buffer_inout:
+				wl_assert(nodes_to_buffers[argument.data.execution_graph_index_a] ==
+					nodes_to_buffers[argument.data.execution_graph_index_b]);
+				argument.data.real_buffer_inout = nodes_to_buffers[argument.data.execution_graph_index_a];
+				wl_assert(argument.data.real_buffer_inout != k_invalid_buffer);
+				break;
+
+			case k_task_data_type_real_constant_in:
+			case k_task_data_type_string_constant_in:
+				// Nothing to do
+				break;
+
+			default:
+				wl_unreachable();
+			}
 		}
-		task.inout_buffers_start = new_inout_buffers_start;
 	}
 
 	// Build final output buffer list. The buffers are listed in output-index order
-	m_output_buffers_start = new_buffer_lists.size();
-	new_buffer_lists.resize(new_buffer_lists.size() + m_output_buffers_count, k_invalid_buffer);
-	m_output_constants_start = m_constant_lists.size();
-	m_constant_lists.resize(m_constant_lists.size() + m_output_constants_count, 0.0f);
+	m_outputs_count = 0;
 	for (uint32 node_index = 0; node_index < execution_graph.get_node_count(); node_index++) {
 		if (execution_graph.get_node_type(node_index) == k_execution_graph_node_type_output) {
-			// Offset into the list by the output index
+			m_outputs_count++;
+		}
+	}
+
+	m_outputs_start = m_data_lists.size();
+	m_data_lists.resize(m_data_lists.size() + m_outputs_count);
+
+#if PREDEFINED(ASSERTS_ENABLED)
+	for (size_t index = m_outputs_start; index < m_data_lists.size(); index++) {
+		m_data_lists[index].type = k_task_data_type_count;
+	}
+#endif // PREDEFINED(ASSERTS_ENABLED)
+
+	for (uint32 node_index = 0; node_index < execution_graph.get_node_count(); node_index++) {
+		if (execution_graph.get_node_type(node_index) == k_execution_graph_node_type_output) {
 			uint32 output_index = execution_graph.get_output_node_output_index(node_index);
-			wl_assert(new_buffer_lists[m_output_buffers_start + output_index] == k_invalid_buffer);
+
+			// Offset into the list by the output index
+			s_task_graph_data &output_data = m_data_lists[m_outputs_start + output_index];
+			wl_assert(output_data.type == k_task_data_type_count);
+
 			if (nodes_to_buffers[node_index] != k_invalid_buffer) {
-				new_buffer_lists[m_output_buffers_start + output_index] = nodes_to_buffers[node_index];
+				output_data.type = k_task_data_type_real_buffer_in;
+				output_data.data.real_buffer_in = nodes_to_buffers[node_index];
 			} else {
-				// This output has a constant piped directly into it, so store k_invalid_buffer in the buffer list, and
-				// store the constant in the constant list.
+				// This output has a constant piped directly into it
 				uint32 constant_node_index = execution_graph.get_node_incoming_edge_index(node_index, 0);
 				wl_assert(execution_graph.get_node_type(constant_node_index) == k_execution_graph_node_type_constant);
-				m_constant_lists[m_output_constants_start + output_index] =
-					execution_graph.get_constant_node_value(constant_node_index);
+				output_data.type = k_task_data_type_real_constant_in;
+				output_data.data.real_constant_in = execution_graph.get_constant_node_real_value(constant_node_index);
 			}
 		}
 	}
 
 #if PREDEFINED(ASSERTS_ENABLED)
-	// Final verification that we didn't set anything to k_invalid_buffer
-	for (size_t index = 0; index < new_buffer_lists.size(); index++) {
-		if (index >= m_output_buffers_start && index < m_output_buffers_start + m_output_buffers_count) {
-			// These are allowed to be invalid because a constant may be taking its place
-		} else {
-			wl_assert(new_buffer_lists[index] != k_invalid_buffer);
-		}
+	// Verify that we assigned all outputs
+	for (size_t index = m_outputs_start; index < m_data_lists.size(); index++) {
+		wl_assert(m_data_lists[index].type != k_task_data_type_count);
 	}
 #endif // PREDEFINED(ASSERTS_ENABLED)
-
-	wl_assert(new_buffer_lists.size() == total_buffer_lists_size);
-	m_buffer_lists.swap(new_buffer_lists);
 }
 
 void c_task_graph::assign_buffer_to_related_nodes(const c_execution_graph &execution_graph, uint32 node_index,
@@ -746,37 +753,22 @@ void c_task_graph::calculate_max_concurrency() {
 		const s_task_function_description &task_function_description =
 			c_task_function_registry::get_task_function_description(task.task_function);
 
-		size_t list_starts[] = {
-			task.in_buffers_start,
-			task.out_buffers_start,
-			task.inout_buffers_start
-		};
-		size_t list_counts[] = {
-			task_function_description.in_buffer_count,
-			task_function_description.out_buffer_count,
-			task_function_description.inout_buffer_count
-		};
+		for (size_t index_a = 0; index_a < task_function_description.argument_count; index_a++) {
+			const s_task_graph_data &arg_a = m_data_lists[task.arguments_start + index_a];
+			uint32 buffer_a = get_real_buffer_index(arg_a);
+			if (buffer_a == k_invalid_buffer) {
+				continue;
+			}
 
-		static_assert(NUMBEROF(list_starts) == NUMBEROF(list_counts), "Start/count mismatch?");
-
-		for (size_t list_a = 0; list_a < NUMBEROF(list_starts); list_a++) {
-			size_t start_a = list_starts[list_a];
-			size_t count_a = list_counts[list_a];
-
-			for (size_t index_a = 0; index_a < count_a; index_a++) {
-				uint32 buffer_a = m_buffer_lists[start_a + index_a];
-
-				for (size_t list_b = 0; list_b < NUMBEROF(list_starts); list_b++) {
-					size_t start_b = list_starts[list_b];
-					size_t count_b = list_counts[list_b];
-
-					for (size_t index_b = 0; index_b < count_b; index_b++) {
-						uint32 buffer_b = m_buffer_lists[start_b + index_b];
-
-						buffer_concurrency[buffer_a * m_buffer_count + buffer_b] = true;
-						buffer_concurrency[buffer_b * m_buffer_count + buffer_a] = true;
-					}
+			for (size_t index_b = 0; index_b < task_function_description.argument_count; index_b++) {
+				const s_task_graph_data &arg_b = m_data_lists[task.arguments_start + index_b];
+				uint32 buffer_b = get_real_buffer_index(arg_b);
+				if (buffer_b == k_invalid_buffer) {
+					continue;
 				}
+
+				buffer_concurrency[buffer_a * m_buffer_count + buffer_b] = true;
+				buffer_concurrency[buffer_b * m_buffer_count + buffer_a] = true;
 			}
 		}
 	}
@@ -787,19 +779,6 @@ void c_task_graph::calculate_max_concurrency() {
 		const s_task_function_description &task_a_function_description =
 			c_task_function_registry::get_task_function_description(task_a.task_function);
 
-		size_t list_starts_a[] = {
-			task_a.in_buffers_start,
-			task_a.out_buffers_start,
-			task_a.inout_buffers_start
-		};
-		size_t list_counts_a[] = {
-			task_a_function_description.in_buffer_count,
-			task_a_function_description.out_buffer_count,
-			task_a_function_description.inout_buffer_count
-		};
-
-		static_assert(NUMBEROF(list_starts_a) == NUMBEROF(list_counts_a), "Start/count mismatch?");
-
 		for (uint32 task_b_index = task_a_index + 1; task_b_index < m_tasks.size(); task_b_index++) {
 			if (!predecessor_resolver.are_a_b_concurrent(task_a_index, task_b_index)) {
 				continue;
@@ -809,47 +788,41 @@ void c_task_graph::calculate_max_concurrency() {
 			const s_task_function_description &task_b_function_description =
 				c_task_function_registry::get_task_function_description(task_b.task_function);
 
-			size_t list_starts_b[] = {
-				task_b.in_buffers_start,
-				task_b.out_buffers_start,
-				task_b.inout_buffers_start
-			};
-			size_t list_counts_b[] = {
-				task_b_function_description.in_buffer_count,
-				task_b_function_description.out_buffer_count,
-				task_b_function_description.inout_buffer_count
-			};
+			for (size_t index_a = 0; index_a < task_a_function_description.argument_count; index_a++) {
+				const s_task_graph_data &arg_a = m_data_lists[task_a.arguments_start + index_a];
+				uint32 buffer_a = get_real_buffer_index(arg_a);
+				if (buffer_a == k_invalid_buffer) {
+					continue;
+				}
 
-			static_assert(NUMBEROF(list_starts_b) == NUMBEROF(list_counts_b), "Start/count mismatch?");
-
-			for (size_t list_a = 0; list_a < NUMBEROF(list_starts_a); list_a++) {
-				size_t start_a = list_starts_a[list_a];
-				size_t count_a = list_counts_a[list_a];
-
-				for (size_t index_a = 0; index_a < count_a; index_a++) {
-					uint32 buffer_a = m_buffer_lists[start_a + index_a];
-
-					for (size_t list_b = 0; list_b < NUMBEROF(list_starts_b); list_b++) {
-						size_t start_b = list_starts_b[list_b];
-						size_t count_b = list_counts_b[list_b];
-
-						for (size_t index_b = 0; index_b < count_b; index_b++) {
-							uint32 buffer_b = m_buffer_lists[start_b + index_b];
-
-							buffer_concurrency[buffer_a * m_buffer_count + buffer_b] = true;
-							buffer_concurrency[buffer_b * m_buffer_count + buffer_a] = true;
-						}
+				for (size_t index_b = 0; index_b < task_b_function_description.argument_count; index_b++) {
+					const s_task_graph_data &arg_b = m_data_lists[task_b.arguments_start + index_b];
+					uint32 buffer_b = get_real_buffer_index(arg_b);
+					if (buffer_b == k_invalid_buffer) {
+						continue;
 					}
+
+					buffer_concurrency[buffer_a * m_buffer_count + buffer_b] = true;
+					buffer_concurrency[buffer_b * m_buffer_count + buffer_a] = true;
 				}
 			}
 		}
 	}
 
 	// All output buffers are concurrent
-	for (size_t out_buffer_a = 0; out_buffer_a < m_output_buffers_count; out_buffer_a++) {
-		for (size_t out_buffer_b = out_buffer_a + 1; out_buffer_b < m_output_buffers_count; out_buffer_b++) {
-			uint32 output_buffer_a_index = m_buffer_lists[m_output_buffers_start + out_buffer_a];
-			uint32 output_buffer_b_index = m_buffer_lists[m_output_buffers_start + out_buffer_b];
+	for (size_t output_a = 0; output_a < m_outputs_count; output_a++) {
+		const s_task_graph_data &output_a_data = m_data_lists[m_outputs_start + output_a];
+		uint32 output_buffer_a_index = get_real_buffer_index(output_a_data);
+		if (output_buffer_a_index == k_invalid_buffer) {
+			continue;
+		}
+
+		for (size_t output_b = output_a + 1; output_b < m_outputs_count; output_b++) {
+			const s_task_graph_data &output_b_data = m_data_lists[m_outputs_start + output_b];
+			uint32 output_buffer_b_index = get_real_buffer_index(output_b_data);
+			if (output_buffer_b_index == k_invalid_buffer) {
+				continue;
+			}
 
 			buffer_concurrency[output_buffer_a_index * m_buffer_count + output_buffer_b_index] = true;
 			buffer_concurrency[output_buffer_b_index * m_buffer_count + output_buffer_a_index] = true;
@@ -931,29 +904,25 @@ void c_task_graph::calculate_buffer_usages() {
 		const s_task_function_description &task_function_description =
 			c_task_function_registry::get_task_function_description(task.task_function);
 
-		for (size_t index = 0; index < task_function_description.in_buffer_count; index++) {
-			uint32 buffer_index = m_buffer_lists[task.in_buffers_start + index];
-			m_buffer_usages[buffer_index]++;
-		}
+		for (size_t index = 0; index < task_function_description.argument_count; index++) {
+			const s_task_graph_data &argument = m_data_lists[task.arguments_start + index];
+			uint32 buffer_index = get_real_buffer_index(argument);
+			if (buffer_index == k_invalid_buffer) {
+				continue;
+			}
 
-		for (size_t index = 0; index < task_function_description.out_buffer_count; index++) {
-			uint32 buffer_index = m_buffer_lists[task.out_buffers_start + index];
-			m_buffer_usages[buffer_index]++;
-		}
-
-		for (size_t index = 0; index < task_function_description.inout_buffer_count; index++) {
-			uint32 buffer_index = m_buffer_lists[task.inout_buffers_start + index];
 			m_buffer_usages[buffer_index]++;
 		}
 	}
 
 	// Each output buffer contributes to usage to prevent the buffer from deallocating at the end of the last task
-	for (size_t index = 0; index < m_output_buffers_count; index++) {
-		uint32 buffer_index = m_buffer_lists[m_output_buffers_start + index];
-
-		// Ignore constant outputs
-		if (buffer_index != k_invalid_buffer) {
-			m_buffer_usages[buffer_index]++;
+	for (size_t index = 0; index < m_outputs_count; index++) {
+		const s_task_graph_data &output = m_data_lists[m_outputs_start + index];
+		uint32 buffer_index = get_real_buffer_index(output);
+		if (buffer_index == k_invalid_buffer) {
+			continue;
 		}
+
+		m_buffer_usages[buffer_index]++;
 	}
 }

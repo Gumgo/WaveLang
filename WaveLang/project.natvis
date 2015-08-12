@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+	<Type Name="c_wrapped_array&lt;*&gt;">
+		<DisplayString>{{count={m_count}}}</DisplayString>
+
+		<Expand>
+			<Item Name="[count]">m_count</Item>
+			<ArrayItems>
+				<Size>m_count</Size>
+				<ValuePointer>m_pointer</ValuePointer>
+			</ArrayItems>
+		</Expand>
+	</Type>
+
+	<Type Name="c_wrapped_array_const&lt;*&gt;">
+		<DisplayString>{{count={m_count}}}</DisplayString>
+
+		<Expand>
+			<Item Name="[count]">m_count</Item>
+			<ArrayItems>
+				<Size>m_count</Size>
+				<ValuePointer>m_pointer</ValuePointer>
+			</ArrayItems>
+		</Expand>
+	</Type>
+
+	<Type Name="c_lr_symbol">
+		<DisplayString Condition="!m_is_nonepsilon">
+			{{epsilon}}
+		</DisplayString>
+		<DisplayString Condition="m_is_nonepsilon &amp;&amp; m_is_nonterminal">
+			{(e_parser_nonterminal) m_index}
+		</DisplayString>
+		<DisplayString Condition="m_is_nonepsilon &amp;&amp; !m_is_nonterminal">
+			{(e_token_type) m_index}
+		</DisplayString>
+	</Type>
+
+</AutoVisualizer>

@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -20,6 +20,7 @@
     <ClCompile Include="source\common\threading\semaphore.cpp" />
     <ClCompile Include="source\common\threading\thread_fallback.cpp" />
     <ClCompile Include="source\common\threading\thread_windows.cpp" />
+    <ClCompile Include="source\common\utility\string_table.cpp" />
     <ClCompile Include="source\compiler\ast.cpp" />
     <ClCompile Include="source\compiler\ast_builder.cpp" />
     <ClCompile Include="source\compiler\ast_validator.cpp" />
@@ -62,6 +63,7 @@
     <ClInclude Include="source\common\threading\semaphore.h" />
     <ClInclude Include="source\common\threading\thread.h" />
     <ClInclude Include="source\common\types.h" />
+    <ClInclude Include="source\common\utility\string_table.h" />
     <ClInclude Include="source\compiler\ast.h" />
     <ClInclude Include="source\compiler\ast_builder.h" />
     <ClInclude Include="source\compiler\ast_validator.h" />
@@ -103,6 +105,9 @@
     <Text Include="source\compiler\execution_graph_optimization_rules.txt" />
     <Text Include="source\compiler\parser_rules.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="project.natvis" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{3C91230B-D007-4E4B-97BC-E410271F1B7D}</ProjectGuid>
     <RootNamespace>WaveLang</RootNamespace>
@@ -111,13 +116,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>

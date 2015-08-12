@@ -102,6 +102,9 @@
     <ClInclude Include="..\WaveLang\source\engine\buffer_operations\sse_mathfun.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\WaveLang\source\common\utility\string_table.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\WaveLang\source\common\asserts.cpp">
@@ -171,6 +174,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\WaveLang\source\common\threading\thread_fallback.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\WaveLang\source\common\utility\string_table.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

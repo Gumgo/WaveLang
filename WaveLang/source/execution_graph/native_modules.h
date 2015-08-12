@@ -46,37 +46,70 @@ enum e_native_module {
 	k_native_module_count
 };
 
-enum e_native_module_argument_type {
-	k_native_module_argument_type_in,
-	k_native_module_argument_type_out,
+enum e_native_module_argument_qualifier {
+	k_native_module_argument_qualifier_in,
+	k_native_module_argument_qualifier_out,
 
 	// Same as input argument, except the value must resolve to a compile-time constant
-	k_native_module_argument_type_constant,
+	k_native_module_argument_qualifier_constant,
+
+	k_native_module_argument_qualifier_count
+};
+
+enum e_native_module_argument_type {
+	k_native_module_argument_type_real,
+	k_native_module_argument_type_string,
 
 	k_native_module_argument_type_count
+};
+
+struct s_native_module_argument {
+	e_native_module_argument_qualifier qualifier;
+	e_native_module_argument_type type;
 };
 
 // Return value for a compile-time native module call
 struct s_native_module_compile_time_argument {
 #if PREDEFINED(ASSERTS_ENABLED)
-	bool is_input;
+	s_native_module_argument argument;
 	bool assigned;
 #endif // PREDEFINED(ASSERTS_ENABLED)
 
-	real32 value;
+	real32 real_value;
+	std::string string_value;
 
 	// These functions are used to enforce correct usage of input or output
 
 	operator real32() const {
-		wl_assert(is_input);
-		return value;
+		wl_assert(
+			argument.qualifier == k_native_module_argument_qualifier_in ||
+			argument.qualifier == k_native_module_argument_qualifier_constant);
+		wl_assert(argument.type == k_native_module_argument_type_real);
+		return real_value;
 	}
 
 	real32 operator=(real32 value) {
-		wl_assert(!is_input);
-		this->value = value;
+		wl_assert(argument.qualifier == k_native_module_argument_qualifier_out);
+		wl_assert(argument.type == k_native_module_argument_type_real);
+		this->real_value = value;
 		IF_ASSERTS_ENABLED(assigned = true);
 		return value;
+	}
+
+	operator std::string() const {
+		wl_assert(
+			argument.qualifier == k_native_module_argument_qualifier_in ||
+			argument.qualifier == k_native_module_argument_qualifier_constant);
+		wl_assert(argument.type == k_native_module_argument_type_string);
+		return string_value;
+	}
+
+	const std::string &operator=(const std::string &value) {
+		wl_assert(argument.qualifier == k_native_module_argument_qualifier_out);
+		wl_assert(argument.type == k_native_module_argument_type_string);
+		this->string_value = value;
+		IF_ASSERTS_ENABLED(assigned = true);
+		return string_value;
 	}
 
 private:
@@ -88,7 +121,7 @@ private:
 typedef std::vector<s_native_module_compile_time_argument> c_native_module_compile_time_argument_list;
 typedef void (*f_native_module_compile_time_call)(c_native_module_compile_time_argument_list &arguments);
 
-const size_t k_max_native_module_arguments = 10;
+static const size_t k_max_native_module_arguments = 10;
 
 struct s_native_module {
 	// Name of the native module
@@ -102,8 +135,8 @@ struct s_native_module {
 	size_t in_argument_count;
 	size_t out_argument_count;
 
-	// Type of each argument (in or out)
-	e_native_module_argument_type argument_types[k_max_native_module_arguments];
+	// List of arguments
+	s_native_module_argument arguments[k_max_native_module_arguments];
 
 	// Function to resolve the module at compile time if all inputs are constant, or null if this is not possible
 	f_native_module_compile_time_call compile_time_call;

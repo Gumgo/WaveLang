@@ -4,6 +4,31 @@
 #include "compiler/parser.h"
 #include "execution_graph/native_modules.h"
 
+static const e_ast_data_type k_native_module_argument_type_to_ast_data_type_mapping[] = {
+	k_ast_data_type_real,	// k_native_module_argument_type_real
+	k_ast_data_type_string	// k_native_module_argument_type_string
+};
+static_assert(NUMBEROF(k_native_module_argument_type_to_ast_data_type_mapping) == k_native_module_argument_type_count,
+	"Native module argument type to ast data type mismatch");
+
+static const e_ast_qualifier k_native_module_argument_qualifier_to_ast_qualifier_mapping[] = {
+	k_ast_qualifier_in,		// k_native_module_argument_qualifier_in
+	k_ast_qualifier_out,	// k_native_module_argument_qualifier_out
+	k_ast_qualifier_in		// k_native_module_argument_qualifier_constant
+};
+static_assert(NUMBEROF(k_native_module_argument_qualifier_to_ast_qualifier_mapping) ==
+	k_native_module_argument_qualifier_count, "Native module argument qualifier to ast qualifier mismatch");
+
+static e_ast_data_type get_ast_data_type(e_native_module_argument_type type) {
+	wl_assert(VALID_INDEX(type, k_native_module_argument_type_count));
+	return k_native_module_argument_type_to_ast_data_type_mapping[type];
+}
+
+static e_ast_qualifier get_ast_qualifier(e_native_module_argument_qualifier qualifier) {
+	wl_assert(VALID_INDEX(qualifier, k_native_module_argument_qualifier_count));
+	return k_native_module_argument_qualifier_to_ast_qualifier_mapping[qualifier];
+}
+
 static bool node_is_type(const c_lr_parse_tree_node &node, e_token_type terminal_type) {
 	return node.get_symbol().is_terminal() && node.get_symbol().get_index() == terminal_type;
 }
@@ -12,21 +37,52 @@ static bool node_is_type(const c_lr_parse_tree_node &node, e_parser_nonterminal 
 	return !node.get_symbol().is_terminal() && node.get_symbol().get_index() == nonterminal_type;
 }
 
+static e_ast_data_type get_data_type_from_node(const c_lr_parse_tree_node &node) {
+	if (node_is_type(node, k_token_type_keyword_void)) {
+		return k_ast_data_type_void;
+	} else if (node_is_type(node, k_token_type_keyword_module)) {
+		return k_ast_data_type_module;
+	} else if (node_is_type(node, k_token_type_keyword_real)) {
+		return k_ast_data_type_real;
+	} else if (node_is_type(node, k_token_type_keyword_string)) {
+		return k_ast_data_type_string;
+	} else {
+		wl_unreachable();
+		return k_ast_data_type_count;
+	}
+}
+
+static e_ast_qualifier get_qualifier_from_node(const c_lr_parse_tree_node &node) {
+	if (node_is_type(node, k_token_type_keyword_in)) {
+		return k_ast_qualifier_in;
+	} else if (node_is_type(node, k_token_type_keyword_out)) {
+		return k_ast_qualifier_out;
+	} else {
+		return k_ast_qualifier_count;
+		wl_unreachable();
+	}
+}
+
+static std::vector<size_t> build_left_recursive_list(const c_lr_parse_tree &parse_tree, size_t start_node_index,
+	e_parser_nonterminal list_node_type);
+
 static void build_native_module_declarations(c_ast_node_scope *global_scope);
 
 static void add_parse_tree_to_global_scope(const c_lr_parse_tree &parse_tree,
 	const s_lexer_source_file_output &tokens, c_ast_node_scope *global_scope);
 
-static std::vector<c_ast_node *> build_scope_items(const c_lr_parse_tree &parse_tree,
-	const s_lexer_source_file_output &tokens, const c_lr_parse_tree_node &scope_item_node,
-	bool module_declarations_allowed,
-	bool named_value_declarations_allowed,
-	bool named_value_assignments_allowed,
-	bool expressions_allowed,
-	bool return_statements_allowed);
+static c_ast_node *build_global_scope_item(const c_lr_parse_tree &parse_tree,
+	const s_lexer_source_file_output &tokens, const c_lr_parse_tree_node &global_scope_item_node);
 
 static c_ast_node_module_declaration *build_module_declaration(const c_lr_parse_tree &parse_tree,
 	const s_lexer_source_file_output &tokens, const c_lr_parse_tree_node &module_declaration_node);
+
+static c_ast_node_scope *build_scope(const c_lr_parse_tree &parse_tree,
+	const s_lexer_source_file_output &tokens, const c_lr_parse_tree_node &scope_node,
+	const std::vector<c_ast_node *> &initial_children);
+
+static std::vector<c_ast_node *> build_scope_items(const c_lr_parse_tree &parse_tree,
+	const s_lexer_source_file_output &tokens, const c_lr_parse_tree_node &scope_item_node);
 
 static std::vector<c_ast_node *> build_named_value_declaration_and_optional_assignment(
 	const c_lr_parse_tree &parse_tree, const s_lexer_source_file_output &tokens,
@@ -68,6 +124,46 @@ c_ast_node *c_ast_builder::build_ast(const s_lexer_output &lexer_output, const s
 	return global_scope;
 }
 
+static std::vector<size_t> build_left_recursive_list(const c_lr_parse_tree &parse_tree, size_t start_node_index,
+	e_parser_nonterminal list_node_type) {
+	// The left-recursive item list [a,b,c] would appear in one of the two forms in the parse tree:
+	//       N   |     N
+	//      / \  |    / \
+	//     N   c |   N   c
+	//    / \    |  / \
+	//   N   b   | N   b
+	//  / \      | |
+	// N   a     | a
+	// where N is an item list node.
+
+	std::vector<size_t> list_node_indices;
+	c_lr_parse_tree_iterator it(parse_tree, start_node_index);
+	while (it.is_valid()) {
+		const c_lr_parse_tree_node &list_node = it.get_node();
+		if (node_is_type(list_node, list_node_type)) {
+			if (list_node.has_sibling()) {
+				list_node_indices.push_back(list_node.get_sibling_index());
+			}
+
+			// The first child is another list node, or invalid
+			it.follow_child();
+		} else {
+			// This list is in the second form
+			list_node_indices.push_back(it.get_node_index());
+			break;
+		}
+	}
+
+	// Due to the left-recursive rule, we end up visiting the actual items themselves in reverse, so accumulate and flip
+	// the order
+	size_t half = list_node_indices.size() / 2;
+	for (size_t index = 0; index < half; index++) {
+		std::swap(list_node_indices[index], list_node_indices[list_node_indices.size() - index - 1]);
+	}
+
+	return list_node_indices;
+}
+
 static void build_native_module_declarations(c_ast_node_scope *global_scope) {
 	for (uint32 index = 0; index < c_native_module_registry::get_native_module_count(); index++) {
 		const s_native_module &native_module = c_native_module_registry::get_native_module(index);
@@ -75,27 +171,22 @@ static void build_native_module_declarations(c_ast_node_scope *global_scope) {
 		c_ast_node_module_declaration *module_declaration = new c_ast_node_module_declaration();
 		module_declaration->set_is_native(true);
 		module_declaration->set_name(native_module.name);
-		module_declaration->set_has_return_value(native_module.first_output_is_return);
+		module_declaration->set_return_type(k_ast_data_type_void);
 
 		bool first_out_argument_found = false;
 		for (size_t arg = 0; arg < native_module.argument_count; arg++) {
-			e_native_module_argument_type arg_type = native_module.argument_types[arg];
+			s_native_module_argument argument = native_module.arguments[arg];
 			if (native_module.first_output_is_return &&
-				arg_type == k_native_module_argument_type_out &&
+				argument.qualifier == k_native_module_argument_qualifier_out &&
 				!first_out_argument_found) {
 				// The first out argument is routed through the return value, so don't add a declaration for it
+				module_declaration->set_return_type(get_ast_data_type(argument.type));
 				first_out_argument_found = true;
 			} else {
 				// Add a declaration for this argument
-				c_ast_node_named_value_declaration *argument = new c_ast_node_named_value_declaration();
-				wl_assert(arg_type == k_native_module_argument_type_in ||
-					arg_type == k_native_module_argument_type_out ||
-					arg_type == k_native_module_argument_type_constant);
-				argument->set_qualifier((arg_type == k_native_module_argument_type_out) ?
-					c_ast_node_named_value_declaration::k_qualifier_out :
-					c_ast_node_named_value_declaration::k_qualifier_in);
-
-				module_declaration->add_argument(argument);
+				c_ast_node_named_value_declaration *argument_declaration = new c_ast_node_named_value_declaration();
+				argument_declaration->set_qualifier(get_ast_qualifier(argument.qualifier));
+				module_declaration->add_argument(argument_declaration);
 			}
 		}
 
@@ -108,44 +199,201 @@ static void add_parse_tree_to_global_scope(const c_lr_parse_tree &parse_tree,
 	const c_lr_parse_tree_node &root_node = parse_tree.get_node(parse_tree.get_root_node_index());
 	wl_assert(node_is_type(root_node, k_parser_nonterminal_start));
 
+	const c_lr_parse_tree_node &global_scope_node = parse_tree.get_node(root_node.get_child_index());
+	wl_assert(node_is_type(global_scope_node, k_parser_nonterminal_global_scope));
+
 	// Iterate through the list of global scope items
-	// Due to the left-recursive rule, we end up visiting the actual items themselves in reverse, so accumulate and flip
-	// the order
-	std::vector<size_t> item_indices;
-	size_t global_scope_index = root_node.get_child_index();
-	while (global_scope_index != c_lr_parse_tree::k_invalid_index) {
-		const c_lr_parse_tree_node &global_scope_node = parse_tree.get_node(global_scope_index);
-		wl_assert(node_is_type(global_scope_node, k_parser_nonterminal_global_scope));
+	std::vector<size_t> item_indices = build_left_recursive_list(parse_tree, global_scope_node.get_child_index(),
+		k_parser_nonterminal_global_scope_item_list);
 
-		if (global_scope_node.has_sibling()) {
-			item_indices.push_back(global_scope_node.get_sibling_index());
-		}
-
-		// The first child is another global scope node, or invalid
-		global_scope_index = global_scope_node.get_child_index();
-	}
-
-	// Visit in reverse
 	for (size_t index = 0; index < item_indices.size(); index++) {
-		size_t reverse_index = item_indices.size() - index - 1;
-
-		const c_lr_parse_tree_node &global_scope_item_node = parse_tree.get_node(item_indices[reverse_index]);
+		const c_lr_parse_tree_node &global_scope_item_node = parse_tree.get_node(item_indices[index]);
 		wl_assert(node_is_type(global_scope_item_node, k_parser_nonterminal_global_scope_item));
-		std::vector<c_ast_node *> items = build_scope_items(parse_tree, tokens, global_scope_item_node,
-			true, false, false, false, false);
-		for (size_t item_index = 0; item_index < items.size(); item_index++) {
-			global_scope->add_child(items[item_index]);
-		}
+		c_ast_node *item = build_global_scope_item(parse_tree, tokens, global_scope_item_node);
+		global_scope->add_child(item);
 	}
 }
 
+static c_ast_node *build_global_scope_item(const c_lr_parse_tree &parse_tree,
+	const s_lexer_source_file_output &tokens, const c_lr_parse_tree_node &global_scope_item_node) {
+	// Determine what type the scope item is
+	wl_assert(global_scope_item_node.has_child());
+	wl_assert(!global_scope_item_node.has_sibling());
+
+	const c_lr_parse_tree_node &item_type_node = parse_tree.get_node(global_scope_item_node.get_child_index());
+
+	wl_assert(!item_type_node.get_symbol().is_terminal());
+	switch (item_type_node.get_symbol().get_index()) {
+	case k_parser_nonterminal_module_declaration:
+		return build_module_declaration(parse_tree, tokens, item_type_node);
+
+	default:
+		// Invalid type
+		wl_unreachable();
+		return NULL;
+	}
+}
+
+static c_ast_node_module_declaration *build_module_declaration(const c_lr_parse_tree &parse_tree,
+	const s_lexer_source_file_output &tokens, const c_lr_parse_tree_node &module_declaration_node) {
+	wl_assert(node_is_type(module_declaration_node, k_parser_nonterminal_module_declaration));
+
+	c_lr_parse_tree_iterator it(parse_tree, module_declaration_node.get_child_index());
+
+	const c_lr_parse_tree_node &module_keyword_node = it.get_node();
+	wl_assert(node_is_type(module_keyword_node, k_token_type_keyword_module));
+	it.follow_sibling();
+
+	const c_lr_parse_tree_node &module_return_type_node = it.get_node();
+	wl_assert(node_is_type(module_return_type_node, k_parser_nonterminal_type_or_void));
+	it.follow_sibling();
+
+	const c_lr_parse_tree_node &module_name_node = it.get_node();
+	wl_assert(node_is_type(module_name_node, k_token_type_identifier));
+	it.follow_sibling();
+
+	wl_assert(node_is_type(it.get_node(), k_token_type_left_parenthesis));
+	it.follow_sibling();
+
+	const c_lr_parse_tree_node &module_declaration_arguments_node = it.get_node();
+	wl_assert(node_is_type(module_declaration_arguments_node, k_parser_nonterminal_module_declaration_arguments));
+	it.follow_sibling();
+
+	wl_assert(node_is_type(it.get_node(), k_token_type_right_parenthesis));
+	it.follow_sibling();
+
+	const c_lr_parse_tree_node &scope_node = it.get_node();
+	wl_assert(node_is_type(scope_node, k_parser_nonterminal_scope));
+	wl_assert(!it.has_sibling());
+
+	c_ast_node_module_declaration *module_declaration = new c_ast_node_module_declaration();
+	module_declaration->set_source_location(
+		tokens.tokens[module_keyword_node.get_token_index()].source_location);
+
+	const c_lr_parse_tree_node &return_type_node = parse_tree.get_node(module_return_type_node.get_child_index());
+	e_ast_data_type return_type = get_data_type_from_node(return_type_node);
+
+	module_declaration->set_return_type(return_type);
+	module_declaration->set_name(tokens.tokens[module_name_node.get_token_index()].token_string.to_std_string());
+
+	std::vector<c_ast_node *> initial_scope_children;
+
+	// Read the arguments, if they exist
+	if (module_declaration_arguments_node.has_child()) {
+		const c_lr_parse_tree_node &module_declaration_argument_list_node =
+			parse_tree.get_node(module_declaration_arguments_node.get_child_index());
+
+		// The argument list node is either an argument declaration, or a list, comma, and declaration
+		std::vector<size_t> argument_indices = build_left_recursive_list(
+			parse_tree, module_declaration_argument_list_node.get_child_index(),
+			k_parser_nonterminal_module_declaration_argument_list);
+
+		// Skip the commas
+		for (size_t index = 0; index < argument_indices.size(); index++) {
+			if (index == 0) {
+				wl_assert(node_is_type(parse_tree.get_node(argument_indices[index]),
+					k_parser_nonterminal_module_declaration_argument));
+			} else {
+				wl_assert(node_is_type(parse_tree.get_node(argument_indices[index]),
+					k_token_type_comma));
+				argument_indices[index] = parse_tree.get_node(argument_indices[index]).get_sibling_index();
+				wl_assert(node_is_type(parse_tree.get_node(argument_indices[index]),
+					k_parser_nonterminal_module_declaration_argument));
+			}
+		}
+
+		// Process arguments
+		for (size_t argument_index = 0; argument_index < argument_indices.size(); argument_index++) {
+			c_ast_node_named_value_declaration *argument_declaration = new c_ast_node_named_value_declaration();
+			initial_scope_children.push_back(argument_declaration);
+
+			c_lr_parse_tree_iterator arg_it(parse_tree, argument_indices[argument_index]);
+			wl_assert(node_is_type(arg_it.get_node(), k_parser_nonterminal_module_declaration_argument));
+			arg_it.follow_child();
+
+			const c_lr_parse_tree_node &argument_qualifier_node = arg_it.get_node();
+			wl_assert(node_is_type(argument_qualifier_node,
+				k_parser_nonterminal_module_declaration_argument_qualifier));
+			arg_it.follow_sibling();
+
+			const c_lr_parse_tree_node &argument_type_node = arg_it.get_node();
+			wl_assert(node_is_type(argument_type_node, k_parser_nonterminal_type));
+			arg_it.follow_sibling();
+
+			const c_lr_parse_tree_node &argument_name_node = arg_it.get_node();
+			wl_assert(node_is_type(argument_name_node, k_token_type_identifier));
+			wl_assert(!arg_it.has_sibling());
+
+			wl_assert(argument_qualifier_node.has_child());
+			const c_lr_parse_tree_node &qualifier_node = parse_tree.get_node(argument_qualifier_node.get_child_index());
+			e_ast_qualifier qualifier = get_qualifier_from_node(qualifier_node);
+
+			wl_assert(argument_type_node.has_child());
+			const c_lr_parse_tree_node &type_node = parse_tree.get_node(argument_type_node.get_child_index());
+			e_ast_data_type data_type = get_data_type_from_node(type_node);
+
+			argument_declaration->set_source_location(
+				tokens.tokens[qualifier_node.get_token_index()].source_location);
+
+			argument_declaration->set_qualifier(qualifier);
+			argument_declaration->set_data_type(data_type);
+
+			argument_declaration->set_name(
+				tokens.tokens[argument_name_node.get_token_index()].token_string.to_std_string());
+
+			module_declaration->add_argument(argument_declaration);
+		}
+	}
+
+	// Create the scope with the arguments as the initial children. This is because the arguments are considered part
+	// of the module's scope.
+	c_ast_node_scope *module_body_scope = build_scope(parse_tree, tokens, scope_node, initial_scope_children);
+	module_declaration->set_scope(module_body_scope);
+
+	return module_declaration;
+}
+
+static c_ast_node_scope *build_scope(const c_lr_parse_tree &parse_tree,
+	const s_lexer_source_file_output &tokens, const c_lr_parse_tree_node &scope_node,
+	const std::vector<c_ast_node *> &initial_children) {
+	wl_assert(node_is_type(scope_node, k_parser_nonterminal_scope));
+
+	c_lr_parse_tree_iterator it(parse_tree, scope_node.get_child_index());
+
+	wl_assert(node_is_type(it.get_node(), k_token_type_left_brace));
+	it.follow_sibling();
+
+	const c_lr_parse_tree_node &scope_item_list_node = it.get_node();
+	wl_assert(node_is_type(it.get_node(), k_parser_nonterminal_scope_item_list));
+	it.follow_sibling();
+
+	wl_assert(node_is_type(it.get_node(), k_token_type_right_brace));
+	wl_assert(!it.has_sibling());
+
+	// Add the initial items first
+	c_ast_node_scope *scope = new c_ast_node_scope();
+	for (size_t initial_index = 0; initial_index < initial_children.size(); initial_index++) {
+		scope->add_child(initial_children[initial_index]);
+	}
+
+	// Iterate through the items in the module body and add each one to the module's scope
+	std::vector<size_t> item_indices = build_left_recursive_list(parse_tree, scope_item_list_node.get_child_index(),
+		k_parser_nonterminal_scope_item_list);
+
+	for (size_t index = 0; index < item_indices.size(); index++) {
+		const c_lr_parse_tree_node &scope_item_node = parse_tree.get_node(item_indices[index]);
+		wl_assert(node_is_type(scope_item_node, k_parser_nonterminal_scope_item));
+		std::vector<c_ast_node *> items = build_scope_items(parse_tree, tokens, scope_item_node);
+		for (size_t item_index = 0; item_index < items.size(); item_index++) {
+			scope->add_child(items[item_index]);
+		}
+	}
+
+	return scope;
+}
+
 static std::vector<c_ast_node *> build_scope_items(const c_lr_parse_tree &parse_tree,
-	const s_lexer_source_file_output &tokens, const c_lr_parse_tree_node &scope_item_node,
-	bool module_declarations_allowed,
-	bool named_value_declarations_allowed,
-	bool named_value_assignments_allowed,
-	bool expressions_allowed,
-	bool return_statements_allowed) {
+	const s_lexer_source_file_output &tokens, const c_lr_parse_tree_node &scope_item_node) {
 	// Determine what type the scope item is
 	wl_assert(scope_item_node.has_child());
 	wl_assert(!scope_item_node.has_sibling());
@@ -156,37 +404,32 @@ static std::vector<c_ast_node *> build_scope_items(const c_lr_parse_tree &parse_
 
 	wl_assert(!item_type_node.get_symbol().is_terminal());
 	switch (item_type_node.get_symbol().get_index()) {
-	case k_parser_nonterminal_module_declaration:
-		wl_assert(module_declarations_allowed);
-		result.push_back(build_module_declaration(parse_tree, tokens, item_type_node));
+	case k_parser_nonterminal_scope:
+		result.push_back(build_scope(parse_tree, tokens, item_type_node, std::vector<c_ast_node *>()));
 		break;
 
 	case k_parser_nonterminal_named_value_declaration:
-		wl_assert(named_value_declarations_allowed);
 		result = build_named_value_declaration_and_optional_assignment(parse_tree, tokens, item_type_node);
 		break;
 
 	case k_parser_nonterminal_named_value_assignment:
-		wl_assert(named_value_assignments_allowed);
 		result.push_back(build_named_value_assignment(parse_tree, tokens, item_type_node));
 		break;
 
 	case k_parser_nonterminal_expression:
-		wl_assert(expressions_allowed);
-		{
-			// In this case, we wrap the expression in a named value assignment, but don't fill in the named value being
-			// assigned to. This is because we assume that the assignments are from output parameters in a module call.
-			// Technically this means we can allow named value assignment nodes with no actual assignment, but it's
-			// pointless to do this, and will get optimized away later.
-			c_ast_node_named_value_assignment *named_value_assignment = new c_ast_node_named_value_assignment();
-			c_ast_node_expression *expression = build_expression(parse_tree, tokens, item_type_node);
-			named_value_assignment->set_expression(expression);
-			result.push_back(named_value_assignment);
-		}
+	{
+		// In this case, we wrap the expression in a named value assignment, but don't fill in the named value being
+		// assigned to. This is because we assume that the assignments are from output parameters in a module call.
+		// Technically this means we can allow named value assignment nodes with no actual assignment, but it's
+		// pointless to do this, and will get optimized away later.
+		c_ast_node_named_value_assignment *named_value_assignment = new c_ast_node_named_value_assignment();
+		c_ast_node_expression *expression = build_expression(parse_tree, tokens, item_type_node);
+		named_value_assignment->set_expression(expression);
+		result.push_back(named_value_assignment);
 		break;
+	}
 
 	case k_parser_nonterminal_module_return_statement:
-		wl_assert(return_statements_allowed);
 		result.push_back(build_return_statement(parse_tree, tokens, item_type_node));
 		break;
 
@@ -198,209 +441,48 @@ static std::vector<c_ast_node *> build_scope_items(const c_lr_parse_tree &parse_
 	return result;
 }
 
-static c_ast_node_module_declaration *build_module_declaration(const c_lr_parse_tree &parse_tree,
-	const s_lexer_source_file_output &tokens, const c_lr_parse_tree_node &module_declaration_node) {
-	wl_assert(node_is_type(module_declaration_node, k_parser_nonterminal_module_declaration));
-
-	const c_lr_parse_tree_node &module_keyword_node =
-		parse_tree.get_node(module_declaration_node.get_child_index());
-	const c_lr_parse_tree_node &module_declaration_return_node =
-		parse_tree.get_node(module_keyword_node.get_sibling_index());
-	const c_lr_parse_tree_node &module_name_node =
-		parse_tree.get_node(module_declaration_return_node.get_sibling_index());
-	const c_lr_parse_tree_node &left_paren_node =
-		parse_tree.get_node(module_name_node.get_sibling_index());
-	const c_lr_parse_tree_node &module_declaration_arguments_node =
-		parse_tree.get_node(left_paren_node.get_sibling_index());
-	const c_lr_parse_tree_node &right_paren_node =
-		parse_tree.get_node(module_declaration_arguments_node.get_sibling_index());
-	const c_lr_parse_tree_node &left_brace_node =
-		parse_tree.get_node(right_paren_node.get_sibling_index());
-	const c_lr_parse_tree_node &module_body_item_list_node =
-		parse_tree.get_node(left_brace_node.get_sibling_index());
-	const c_lr_parse_tree_node &right_brace_node =
-		parse_tree.get_node(module_body_item_list_node.get_sibling_index());
-
-	// Assert all the correct types
-	wl_assert(node_is_type(module_keyword_node, k_token_type_keyword_module));
-	wl_assert(node_is_type(module_declaration_return_node, k_parser_nonterminal_module_declaration_return));
-	wl_assert(node_is_type(module_name_node, k_token_type_identifier));
-	wl_assert(node_is_type(left_paren_node, k_token_type_left_parenthesis));
-	wl_assert(node_is_type(module_declaration_arguments_node, k_parser_nonterminal_module_declaration_arguments));
-	wl_assert(node_is_type(right_paren_node, k_token_type_right_parenthesis));
-	wl_assert(node_is_type(left_brace_node, k_token_type_left_brace));
-	wl_assert(node_is_type(module_body_item_list_node, k_parser_nonterminal_module_body_item_list));
-	wl_assert(node_is_type(right_brace_node, k_token_type_right_brace));
-
-	c_ast_node_module_declaration *module_declaration = new c_ast_node_module_declaration();
-	module_declaration->set_source_location(
-		tokens.tokens[module_keyword_node.get_token_index()].source_location);
-
-	// Set return value true or false
-	bool has_return = module_declaration_return_node.has_child();
-	if (has_return) {
-		// There should either be an "out" keyword, or nothing
-		wl_assert(node_is_type(parse_tree.get_node(module_declaration_return_node.get_child_index()),
-			k_token_type_keyword_out));
-	}
-
-	module_declaration->set_has_return_value(has_return);
-	module_declaration->set_name(tokens.tokens[module_name_node.get_token_index()].token_string.to_std_string());
-
-	// Create the module body scope before we read the arguments. This is because the arguments get included as body
-	// scope items.
-	c_ast_node_scope *module_body_scope = new c_ast_node_scope();
-	module_declaration->set_scope(module_body_scope);
-
-	// Read the arguments, if they exist
-	if (module_declaration_arguments_node.has_child()) {
-		const c_lr_parse_tree_node &module_declaration_argument_list_node =
-			parse_tree.get_node(module_declaration_arguments_node.get_child_index());
-
-		// The argument list node is either an argument declaration, or a list, comma, and declaration
-		// Accumulate arguments and read in reverse due to left-recursivity
-		std::vector<size_t> argument_indices;
-
-		size_t child_index = module_declaration_argument_list_node.get_child_index();
-		while (child_index != c_lr_parse_tree::k_invalid_index) {
-			const c_lr_parse_tree_node &child_node = parse_tree.get_node(child_index);
-
-			if (!child_node.has_sibling()) {
-				wl_assert(node_is_type(child_node, k_parser_nonterminal_module_declaration_argument));
-				argument_indices.push_back(child_index);
-				child_index = c_lr_parse_tree::k_invalid_index;
-			} else {
-				// Skip the comma and read the next node for the argument
-				const c_lr_parse_tree_node &comma_node = parse_tree.get_node(child_node.get_sibling_index());
-				wl_assert(node_is_type(comma_node, k_token_type_comma));
-				size_t argument_index = comma_node.get_sibling_index();
-				wl_assert(node_is_type(parse_tree.get_node(argument_index),
-					k_parser_nonterminal_module_declaration_argument));
-				argument_indices.push_back(argument_index);
-
-				wl_assert(child_node.has_child());
-				child_index = child_node.get_child_index();
-			}
-		}
-
-		// Process arguments (in reverse)
-		for (size_t argument_index = 0; argument_index < argument_indices.size(); argument_index++) {
-			size_t reverse_argument_index = argument_indices.size() - argument_index - 1;
-
-			c_ast_node_named_value_declaration *argument_declaration = new c_ast_node_named_value_declaration();
-
-			const c_lr_parse_tree_node &module_declaration_argument_node =
-				parse_tree.get_node(argument_indices[reverse_argument_index]);
-			wl_assert(node_is_type(module_declaration_argument_node, k_parser_nonterminal_module_declaration_argument));
-			wl_assert(module_declaration_argument_node.has_child());
-
-			const c_lr_parse_tree_node &module_declaration_argument_qualifier_node =
-				parse_tree.get_node(module_declaration_argument_node.get_child_index());
-			const c_lr_parse_tree_node &keyword_val_node =
-				parse_tree.get_node(module_declaration_argument_qualifier_node.get_sibling_index());
-			const c_lr_parse_tree_node &argument_name_node =
-				parse_tree.get_node(keyword_val_node.get_sibling_index());
-
-			// Make sure nodes are the right type
-			wl_assert(node_is_type(module_declaration_argument_qualifier_node,
-				k_parser_nonterminal_module_declaration_argument_qualifier));
-			wl_assert(node_is_type(keyword_val_node,
-				k_token_type_keyword_val));
-			wl_assert(node_is_type(argument_name_node,
-				k_token_type_identifier));
-
-			wl_assert(module_declaration_argument_qualifier_node.has_child());
-			const c_lr_parse_tree_node &qualifier_node =
-				parse_tree.get_node(module_declaration_argument_qualifier_node.get_child_index());
-
-			argument_declaration->set_source_location(
-				tokens.tokens[qualifier_node.get_token_index()].source_location);
-
-			if (node_is_type(qualifier_node, k_token_type_keyword_in)) {
-				argument_declaration->set_qualifier(c_ast_node_named_value_declaration::k_qualifier_in);
-			} else if (node_is_type(qualifier_node, k_token_type_keyword_out)) {
-				argument_declaration->set_qualifier(c_ast_node_named_value_declaration::k_qualifier_out);
-			} else {
-				wl_unreachable();
-			}
-
-			argument_declaration->set_name(
-				tokens.tokens[argument_name_node.get_token_index()].token_string.to_std_string());
-
-			module_declaration->add_argument(argument_declaration);
-			module_body_scope->add_child(argument_declaration);
-		}
-	}
-
-	// Iterate through the items in the module body and add each one to the module's scope
-
-	// Due to the left-recursive rule, we end up visiting the actual items themselves in reverse, so accumulate and flip
-	// the order
-	std::vector<size_t> item_indices;
-	size_t module_body_item_list_index = module_body_item_list_node.get_child_index();
-	while (module_body_item_list_index != c_lr_parse_tree::k_invalid_index) {
-		const c_lr_parse_tree_node &item_list_node = parse_tree.get_node(module_body_item_list_index);
-		wl_assert(node_is_type(item_list_node, k_parser_nonterminal_module_body_item_list));
-
-		if (item_list_node.has_sibling()) {
-			item_indices.push_back(item_list_node .get_sibling_index());
-		}
-
-		// The first child is another item list, or invalid
-		module_body_item_list_index = item_list_node.get_child_index();
-	}
-
-	// Visit in reverse
-	for (size_t index = 0; index < item_indices.size(); index++) {
-		size_t reverse_index = item_indices.size() - index - 1;
-
-		const c_lr_parse_tree_node &module_body_item_node = parse_tree.get_node(item_indices[reverse_index]);
-		wl_assert(node_is_type(module_body_item_node, k_parser_nonterminal_module_body_item));
-		std::vector<c_ast_node *> items = build_scope_items(parse_tree, tokens, module_body_item_node,
-			false, true, true, true, true);
-		for (size_t item_index = 0; item_index < items.size(); item_index++) {
-			module_body_scope->add_child(items[item_index]);
-		}
-	}
-
-	return module_declaration;
-}
-
 static std::vector<c_ast_node *> build_named_value_declaration_and_optional_assignment(
 	const c_lr_parse_tree &parse_tree, const s_lexer_source_file_output &tokens,
 	const c_lr_parse_tree_node &named_value_declaration_node) {
 	wl_assert(node_is_type(named_value_declaration_node, k_parser_nonterminal_named_value_declaration));
 
-	// "val", identifier, and assignment node
-	const c_lr_parse_tree_node &val_node =
-		parse_tree.get_node(named_value_declaration_node.get_child_index());
-	const c_lr_parse_tree_node &name_node =
-		parse_tree.get_node(val_node.get_sibling_index());
+	c_lr_parse_tree_iterator it(parse_tree, named_value_declaration_node.get_child_index());
 
-	wl_assert(node_is_type(val_node, k_token_type_keyword_val));
+	// "val", identifier, and assignment node
+
+	const c_lr_parse_tree_node &named_value_type_node = it.get_node();
+	wl_assert(node_is_type(named_value_type_node, k_parser_nonterminal_type));
+	it.follow_sibling();
+
+	const c_lr_parse_tree_node &name_node = it.get_node();
 	wl_assert(node_is_type(name_node, k_token_type_identifier));
+
+	const c_lr_parse_tree_node &type_node = parse_tree.get_node(named_value_type_node.get_child_index());
+	e_ast_data_type data_type = get_data_type_from_node(type_node);
 
 	std::vector<c_ast_node *> result;
 
 	c_ast_node_named_value_declaration *declaration = new c_ast_node_named_value_declaration();
-	declaration->set_source_location(tokens.tokens[val_node.get_token_index()].source_location);
+	declaration->set_source_location(tokens.tokens[type_node.get_token_index()].source_location);
 
+	declaration->set_data_type(data_type);
 	declaration->set_name(tokens.tokens[name_node.get_token_index()].token_string.to_std_string());
 	result.push_back(declaration);
 
 	// Read the optional assignment
-	if (name_node.has_sibling()) {
-		const c_lr_parse_tree_node &expression_assignment_node =
-			parse_tree.get_node(name_node.get_sibling_index());
+	if (it.has_sibling()) {
+		it.follow_sibling();
+		const c_lr_parse_tree_node &expression_assignment_node = it.get_node();
 		wl_assert(node_is_type(expression_assignment_node, k_parser_nonterminal_expression_assignment));
+		wl_assert(!it.has_sibling());
+		it.follow_child();
 
-		const c_lr_parse_tree_node &assignment_operator_node =
-			parse_tree.get_node(expression_assignment_node.get_child_index());
-		const c_lr_parse_tree_node &expression_node =
-			parse_tree.get_node(assignment_operator_node.get_sibling_index());
+		wl_assert(node_is_type(it.get_node(), k_token_type_operator_assignment));
+		it.follow_sibling();
 
-		wl_assert(node_is_type(assignment_operator_node, k_token_type_operator_assignment));
+		const c_lr_parse_tree_node &expression_node = it.get_node();
 		wl_assert(node_is_type(expression_node, k_parser_nonterminal_expression));
+		wl_assert(!it.has_sibling());
 
 		c_ast_node_expression *expression = build_expression(parse_tree, tokens, expression_node);
 
@@ -418,19 +500,22 @@ static c_ast_node_named_value_assignment *build_named_value_assignment(const c_l
 	const s_lexer_source_file_output &tokens, const c_lr_parse_tree_node &named_value_assignment_node) {
 	wl_assert(node_is_type(named_value_assignment_node, k_parser_nonterminal_named_value_assignment));
 
-	const c_lr_parse_tree_node &name_node =
-		parse_tree.get_node(named_value_assignment_node.get_child_index());
-	const c_lr_parse_tree_node &expression_assignment_node =
-		parse_tree.get_node(name_node.get_sibling_index());
-	const c_lr_parse_tree_node &assignment_node =
-		parse_tree.get_node(expression_assignment_node.get_child_index());
-	const c_lr_parse_tree_node &expression_node =
-		parse_tree.get_node(assignment_node.get_sibling_index());
+	c_lr_parse_tree_iterator it(parse_tree, named_value_assignment_node.get_child_index());
 
+	const c_lr_parse_tree_node &name_node = it.get_node();
 	wl_assert(node_is_type(name_node, k_token_type_identifier));
-	wl_assert(node_is_type(expression_assignment_node, k_parser_nonterminal_expression_assignment));
-	wl_assert(node_is_type(assignment_node, k_token_type_operator_assignment));
+	it.follow_sibling();
+
+	wl_assert(node_is_type(it.get_node(), k_parser_nonterminal_expression_assignment));
+	wl_assert(!it.has_sibling());
+	it.follow_child();
+
+	wl_assert(node_is_type(it.get_node(), k_token_type_operator_assignment));
+	it.follow_sibling();
+
+	const c_lr_parse_tree_node &expression_node = it.get_node();
 	wl_assert(node_is_type(expression_node, k_parser_nonterminal_expression));
+	wl_assert(!it.has_sibling());
 
 	c_ast_node_named_value_assignment *result = new c_ast_node_named_value_assignment();
 	result->set_source_location(tokens.tokens[name_node.get_token_index()].source_location);
@@ -447,13 +532,15 @@ static c_ast_node_return_statement *build_return_statement(const c_lr_parse_tree
 	const s_lexer_source_file_output &tokens, const c_lr_parse_tree_node &return_statement_node) {
 	wl_assert(node_is_type(return_statement_node, k_parser_nonterminal_module_return_statement));
 
-	const c_lr_parse_tree_node &return_node =
-		parse_tree.get_node(return_statement_node.get_child_index());
-	const c_lr_parse_tree_node &expression_node =
-		parse_tree.get_node(return_node.get_sibling_index());
+	c_lr_parse_tree_iterator it(parse_tree, return_statement_node.get_child_index());
 
+	const c_lr_parse_tree_node &return_node = it.get_node();
 	wl_assert(node_is_type(return_node, k_token_type_keyword_return));
+	it.follow_sibling();
+
+	const c_lr_parse_tree_node &expression_node = it.get_node();
 	wl_assert(node_is_type(expression_node, k_parser_nonterminal_expression));
+	wl_assert(!it.has_sibling());
 
 	c_ast_node_return_statement *result = new c_ast_node_return_statement();
 	result->set_source_location(tokens.tokens[return_node.get_token_index()].source_location);
@@ -533,13 +620,13 @@ static c_ast_node_expression *build_expression(const c_lr_parse_tree &parse_tree
 				result->set_expression_value(build_module_call(parse_tree, tokens,
 					parse_tree.get_node(child_node.get_child_index())));
 				expression_type_found = true;
-			} else if (node_is_type(child_node, k_token_type_constant)) {
+			} else if (node_is_type(child_node, k_token_type_constant_real)) {
 				try {
 					// This is a constant
 					std::string string_value = tokens.tokens[child_node.get_token_index()].token_string.to_std_string();
 					c_ast_node_constant *constant_node = new c_ast_node_constant();
 					constant_node->set_source_location(tokens.tokens[child_node.get_token_index()].source_location);
-					constant_node->set_value(std::stof(string_value));
+					constant_node->set_real_value(std::stof(string_value));
 					result->set_expression_value(constant_node);
 					expression_type_found = true;
 				} catch (const std::invalid_argument &) {
@@ -547,6 +634,33 @@ static c_ast_node_expression *build_expression(const c_lr_parse_tree &parse_tree
 				} catch (const std::out_of_range &) {
 					wl_vhalt("We should have already caught this in the lexer");
 				}
+			} else if (node_is_type(child_node, k_token_type_constant_string)) {
+				// This is a string
+				c_compiler_string unescaped_string = tokens.tokens[child_node.get_token_index()].token_string;
+				std::string escaped_string;
+
+				// Go through each character and resolve escape sequences
+				for (size_t index = 0; index < unescaped_string.get_length(); index++) {
+					char ch = unescaped_string[index];
+					if (ch == '\\') {
+						index++;
+						char escape_result;
+						size_t advance = compiler_utility::resolve_escape_sequence(
+							unescaped_string.advance(index), &escape_result);
+						wl_vassert(advance > 0, "We should have already caught this in the lexer");
+
+						index += advance;
+						escaped_string.push_back(escape_result);
+					} else {
+						escaped_string.push_back(ch);
+					}
+				}
+
+				c_ast_node_constant *constant_node = new c_ast_node_constant();
+				constant_node->set_source_location(tokens.tokens[child_node.get_token_index()].source_location);
+				constant_node->set_string_value(escaped_string);
+				result->set_expression_value(constant_node);
+				expression_type_found = true;
 			} else {
 				wl_unreachable();
 			}
@@ -619,7 +733,8 @@ static c_ast_node_module_call *build_unary_operator_call(const c_lr_parse_tree &
 	wl_assert(node_0.get_symbol().is_terminal());
 	switch (node_0.get_symbol().get_index()) {
 	case k_token_type_operator_addition:
-		operator_module_name = c_native_module_registry::k_operator_noop_name; // +x just returns x, and will be optimized away
+		// +x just returns x, and will be optimized away
+		operator_module_name = c_native_module_registry::k_operator_noop_name;
 		break;
 
 	case k_token_type_operator_subtraction:
@@ -660,38 +775,25 @@ static c_ast_node_module_call *build_module_call(const c_lr_parse_tree &parse_tr
 		wl_assert(node_is_type(parse_tree.get_node(node_2.get_sibling_index()),
 			k_token_type_right_parenthesis));
 
-		// The argument list node is either an argument declaration, or a list, comma, and declaration
-		// Accumulate arguments and read in reverse due to left-recursivity
-		std::vector<size_t> argument_indices;
+		// The argument list node is either an expression, or a list, comma, and expression
+		std::vector<size_t> argument_indices = build_left_recursive_list(parse_tree, node_2.get_child_index(),
+			k_parser_nonterminal_module_call_argument_list);
 
-		size_t child_index = node_2.get_child_index();
-		while (child_index != c_lr_parse_tree::k_invalid_index) {
-			const c_lr_parse_tree_node &child_node = parse_tree.get_node(child_index);
-
-			if (!child_node.has_sibling()) {
-				wl_assert(node_is_type(child_node, k_parser_nonterminal_expression));
-				argument_indices.push_back(child_index);
-				child_index = c_lr_parse_tree::k_invalid_index;
+		// Skip the commas
+		for (size_t index = 0; index < argument_indices.size(); index++) {
+			if (index == 0) {
+				wl_assert(node_is_type(parse_tree.get_node(argument_indices[index]), k_parser_nonterminal_expression));
 			} else {
-				// Skip the comma and read the next node for the argument
-				const c_lr_parse_tree_node &comma_node = parse_tree.get_node(child_node.get_sibling_index());
-				wl_assert(node_is_type(comma_node, k_token_type_comma));
-				size_t argument_index = comma_node.get_sibling_index();
-				wl_assert(node_is_type(parse_tree.get_node(argument_index),
-					k_parser_nonterminal_expression));
-				argument_indices.push_back(argument_index);
-
-				wl_assert(child_node.has_child());
-				child_index = child_node.get_child_index();
+				wl_assert(node_is_type(parse_tree.get_node(argument_indices[index]), k_token_type_comma));
+				argument_indices[index] = parse_tree.get_node(argument_indices[index]).get_sibling_index();
+				wl_assert(node_is_type(parse_tree.get_node(argument_indices[index]), k_parser_nonterminal_expression));
 			}
 		}
 
-		// Process arguments (in reverse)
+		// Process arguments
 		for (size_t argument_index = 0; argument_index < argument_indices.size(); argument_index++) {
-			size_t reverse_argument_index = argument_indices.size() - argument_index - 1;
-
-			c_ast_node_expression *expression = build_expression(parse_tree, tokens,
-				parse_tree.get_node(argument_indices[reverse_argument_index]));
+			c_ast_node_expression *expression =
+				build_expression(parse_tree, tokens, parse_tree.get_node(argument_indices[argument_index]));
 
 			module_call->add_argument(expression);
 		}

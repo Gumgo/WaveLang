@@ -1,7 +1,7 @@
 #include "compiler/parser.h"
 #include "compiler/lexer.h"
 
-#define OUTPUT_PARSE_TREE_ENABLED 0
+#define OUTPUT_PARSE_TREE_ENABLED 1
 
 #if PREDEFINED(OUTPUT_PARSE_TREE_ENABLED)
 #include <fstream>
@@ -180,14 +180,17 @@ static bool process_source_file(
 #if PREDEFINED(OUTPUT_PARSE_TREE_ENABLED)
 static const char *k_parse_tree_output_terminal_strings[] = {
 	"invalid",
-	"keyword-module",
 	"keyword-const",
 	"keyword-in",
 	"keyword-out",
-	"keyword-val",
+	"keyword-module",
+	"keyword-void",
+	"keyword-real",
+	"keyword-string",
 	"keyword-return",
 	"identifier",
-	"constant",
+	"constant-real",
+	"constant-string",
 	"left-parenthesis",
 	"right-parenthesis",
 	"left-brace",
@@ -207,15 +210,18 @@ static_assert(NUMBEROF(k_parse_tree_output_terminal_strings) == k_token_type_cou
 static const char *k_parse_tree_output_nonterminal_strings[] = {
 	"start",
 	"global-scope",
+	"global-scope-item-list",
 	"global-scope-item",
+	"type",
+	"type-or-void",
 	"module-declaration",
-	"module-declaration-return",
 	"module-declaration-arguments",
 	"module-declaration-argument-list",
 	"module-declaration-argument",
 	"module-declaration-argument-qualifier",
-	"module-body-item-list",
-	"module-body-item",
+	"scope",
+	"scope-item-list",
+	"scope-item",
 	"module-return-statement",
 	"named-value-declaration",
 	"named-value-assignment",

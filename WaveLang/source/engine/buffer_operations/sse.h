@@ -24,8 +24,10 @@ static const size_t k_sse_block_size = SSE_BLOCK_SIZE;
 #define WAVELANG_SSE_MATHFUN_H__
 #define USE_SSE2
 #pragma warning(disable:4305)
+#pragma warning(disable:4838)
 #include "sse_mathfun.h"
 #pragma warning(default:4305)
+#pragma warning(default:4838)
 #endif // WAVELANG_SSE_MATHFUN_H__
 
 class c_real32_4 {

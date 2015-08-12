@@ -94,22 +94,73 @@ enum e_task_function {
 	k_task_function_count
 };
 
+enum e_task_data_type {
+	k_task_data_type_real_buffer_in,
+	k_task_data_type_real_buffer_out,
+	k_task_data_type_real_buffer_inout,
+	k_task_data_type_real_constant_in,
+	k_task_data_type_string_constant_in,
+
+	k_task_data_type_count
+};
+
+struct s_task_function_argument {
+#if PREDEFINED(ASSERTS_ENABLED)
+	e_task_data_type type;
+#endif // PREDEFINED(ASSERTS_ENABLED)
+
+	// Do not access these directly
+	union {
+		const c_buffer *real_buffer_in;
+		c_buffer *real_buffer_out;
+		c_buffer *real_buffer_inout;
+		real32 real_constant_in;
+		const char *string_constant_in;
+	} data;
+
+	const c_buffer *get_real_buffer_in() const {
+		wl_assert(type == k_task_data_type_real_buffer_in);
+		return data.real_buffer_in;
+	}
+
+	c_buffer *get_real_buffer_out() const {
+		wl_assert(type == k_task_data_type_real_buffer_out);
+		return data.real_buffer_out;
+	}
+
+	c_buffer *get_real_buffer_inout() const {
+		wl_assert(type == k_task_data_type_real_buffer_inout);
+		return data.real_buffer_inout;
+	}
+
+	real32 get_real_constant_in() const {
+		wl_assert(type == k_task_data_type_real_constant_in);
+		return data.real_constant_in;
+	}
+
+	const char *get_string_constant_in() const {
+		wl_assert(type == k_task_data_type_string_constant_in);
+		return data.string_constant_in;
+	}
+};
+
+typedef c_wrapped_array_const<s_task_function_argument> c_task_function_arguments;
+
 struct s_task_function_context {
 	uint32 buffer_size;
 	void *task_memory;
 	// $TODO more things like timing
 
-	c_wrapped_array_const<real32> in_constants;
-	c_wrapped_array_const<const c_buffer *> in_buffers;
-	c_wrapped_array_const<c_buffer *> out_buffers;
-	c_wrapped_array_const<c_buffer *> inout_buffers;
+	c_task_function_arguments arguments;
 };
 
 typedef void (*f_task_function)(const s_task_function_context &context);
 
-// This function takes a list of constant inputs to the task and returns the amount of memory the task requires
-typedef c_wrapped_array_const<real32> c_task_constant_inputs;
-typedef size_t (*f_task_memory_query)(c_task_constant_inputs constant_inputs);
+// This function takes the list of arguments and returns the amount of memory the task requires
+// Only the constant arguments are available - any buffer arguments are null
+typedef size_t (*f_task_memory_query)(c_task_function_arguments arguments);
+
+static const size_t k_max_task_function_arguments = 10;
 
 struct s_task_function_description {
 	// Function to execute
@@ -118,18 +169,11 @@ struct s_task_function_description {
 	// Memory query function, or null
 	f_task_memory_query memory_query;
 
-	// Number of constant inputs
-	uint32 in_constant_count;
+	// Number of arguments
+	uint32 argument_count;
 
-	// Number of buffers used as inputs to the function
-	uint32 in_buffer_count;
-
-	// Number of buffers used as outputs from the function
-	uint32 out_buffer_count;
-
-	// Number of buffers used as inouts for the function; these are buffers which start as an input and are overwritten
-	// to be used as an output.
-	uint32 inout_buffer_count;
+	// Type of each argument
+	e_task_data_type argument_types[k_max_task_function_arguments];
 
 	// $TODO more data about how this task is allowed to be optimized (e.g. accumulator)
 };

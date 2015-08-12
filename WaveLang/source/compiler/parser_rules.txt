@@ -1,19 +1,30 @@
 PROD(NS(start),
 	NS(global_scope))
 
-PROD(NS(global_scope))
 PROD(NS(global_scope),
-	NS(global_scope), NS(global_scope_item))
+	NS(global_scope_item_list))
+
+PROD(NS(global_scope_item_list))
+PROD(NS(global_scope_item_list),
+	NS(global_scope_item_list), NS(global_scope_item))
 
 PROD(NS(global_scope_item),
 	NS(module_declaration))
 
-PROD(NS(module_declaration),
-	TS(keyword_module), NS(module_declaration_return), TS(identifier), TS(left_parenthesis), NS(module_declaration_arguments), TS(right_parenthesis), TS(left_brace), NS(module_body_item_list), TS(right_brace))
+PROD(NS(type),
+	TS(keyword_real))
+PROD(NS(type),
+	TS(keyword_string))
 
-PROD(NS(module_declaration_return))
-PROD(NS(module_declaration_return),
-	TS(keyword_out))
+PROD(NS(type_or_void),
+	TS(keyword_real))
+PROD(NS(type_or_void),
+	TS(keyword_string))
+PROD(NS(type_or_void),
+	TS(keyword_void))
+
+PROD(NS(module_declaration),
+	TS(keyword_module), NS(type_or_void), TS(identifier), TS(left_parenthesis), NS(module_declaration_arguments), TS(right_parenthesis), NS(scope))
 
 PROD(NS(module_declaration_arguments))
 PROD(NS(module_declaration_arguments),
@@ -25,33 +36,38 @@ PROD(NS(module_declaration_argument_list),
 	NS(module_declaration_argument_list), TS(comma), NS(module_declaration_argument))
 
 PROD(NS(module_declaration_argument),
-	NS(module_declaration_argument_qualifier), TS(keyword_val), TS(identifier))
+	NS(module_declaration_argument_qualifier), NS(type), TS(identifier))
 
 PROD(NS(module_declaration_argument_qualifier),
 	TS(keyword_in))
 PROD(NS(module_declaration_argument_qualifier),
 	TS(keyword_out))
 
-PROD(NS(module_body_item_list))
-PROD(NS(module_body_item_list),
-	NS(module_body_item_list), NS(module_body_item))
+PROD(NS(scope),
+	TS(left_brace), NS(scope_item_list), TS(right_brace))
 
-PROD(NS(module_body_item),
+PROD(NS(scope_item_list))
+PROD(NS(scope_item_list),
+	NS(scope_item_list), NS(scope_item))
+
+PROD(NS(scope_item),
+	NS(scope))
+PROD(NS(scope_item),
 	NS(named_value_declaration), TS(semicolon))
-PROD(NS(module_body_item),
+PROD(NS(scope_item),
 	NS(named_value_assignment), TS(semicolon))
-PROD(NS(module_body_item),
+PROD(NS(scope_item),
 	NS(expression), TS(semicolon))
-PROD(NS(module_body_item),
+PROD(NS(scope_item),
 	NS(module_return_statement), TS(semicolon))
 
 PROD(NS(module_return_statement),
 	TS(keyword_return), NS(expression))
 
 PROD(NS(named_value_declaration),
-	TS(keyword_val), TS(identifier))
+	NS(type), TS(identifier))
 PROD(NS(named_value_declaration),
-	TS(keyword_val), TS(identifier), NS(expression_assignment))
+	NS(type), TS(identifier), NS(expression_assignment))
 
 PROD(NS(named_value_assignment),
 	TS(identifier), NS(expression_assignment))
@@ -92,7 +108,9 @@ PROD(NS(expr_4),
 PROD(NS(expr_4),
 	NS(module_call))
 PROD(NS(expr_4),
-	TS(constant))
+	TS(constant_real))
+PROD(NS(expr_4),
+	TS(constant_string))
 
 PROD(NS(module_call),
 	TS(identifier), TS(left_parenthesis), TS(right_parenthesis))

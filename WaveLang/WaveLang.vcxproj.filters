@@ -123,6 +123,9 @@
     <ClCompile Include="source\common\threading\thread_fallback.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\common\utility\string_table.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\common\asserts.h">
@@ -254,6 +257,9 @@
     <ClInclude Include="source\engine\buffer_operations\sse_mathfun.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\common\utility\string_table.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="source\compiler\compiler_utility.inl">
@@ -272,5 +278,8 @@
   <ItemGroup>
     <Text Include="source\compiler\execution_graph_optimization_rules.txt" />
     <Text Include="source\compiler\parser_rules.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="project.natvis" />
   </ItemGroup>
 </Project>

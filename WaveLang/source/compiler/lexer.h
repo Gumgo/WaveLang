@@ -12,11 +12,13 @@ enum e_token_type {
 	// Keywords
 	k_token_type_first_keyword,
 
-	k_token_type_keyword_module = k_token_type_first_keyword,
-	k_token_type_keyword_const,
+	k_token_type_keyword_const = k_token_type_first_keyword,
 	k_token_type_keyword_in,
 	k_token_type_keyword_out,
-	k_token_type_keyword_val,
+	k_token_type_keyword_module,
+	k_token_type_keyword_void,
+	k_token_type_keyword_real,
+	k_token_type_keyword_string,
 	k_token_type_keyword_return,
 
 	k_token_type_last_keyword = k_token_type_keyword_return,
@@ -24,8 +26,9 @@ enum e_token_type {
 	// Identifiers start with [a-zA-Z_] followed by 0 or more [a-zA-Z0-9_]
 	k_token_type_identifier,
 
-	// Constants,
-	k_token_type_constant,
+	// Constants
+	k_token_type_constant_real,
+	k_token_type_constant_string,
 
 	// Paired symbols
 	k_token_type_first_single_character_operator,

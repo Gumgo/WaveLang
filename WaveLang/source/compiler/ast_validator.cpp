@@ -16,9 +16,17 @@ public:
 private:
 	struct s_expression_result {
 		// Type which the expression resolved to
-		e_data_type type;
+		e_ast_data_type type;
 		// If non-empty, this result contains an assignable named value and can be used as an out argument
 		std::string identifier_name;
+	};
+
+	struct s_identifier {
+		// The type this identifier represents
+		e_ast_data_type data_type;
+
+		// Node associated with the identifier
+		const c_ast_node *ast_node;
 	};
 
 	struct s_named_value {
@@ -36,6 +44,9 @@ private:
 		// The module this scope belongs to, or null
 		const c_ast_node_module_declaration *module_for_scope;
 
+		// Whether this scope is the outermost scope for a module
+		bool is_module_outer_scope;
+
 		// The current statement
 		int32 current_statement;
 
@@ -43,13 +54,14 @@ private:
 		int32 return_statement;
 
 		// Identifiers in this scope
-		std::map<std::string, const c_ast_node *> identifiers;
+		std::map<std::string, s_identifier> identifiers;
 
 		// Named values in this scope
 		std::map<const c_ast_node *, s_named_value> named_values;
 
 		s_scope() {
 			module_for_scope = nullptr;
+			is_module_outer_scope = false;
 			current_statement = 0;
 			return_statement = -1;
 		}
@@ -148,7 +160,7 @@ private:
 	}
 
 	// Adds an identifier to the top scope if it does not exist in this scope or lower
-	bool add_identifier_to_scope(const std::string &name, const c_ast_node *node) {
+	bool add_identifier_to_scope(const std::string &name, const c_ast_node *node, e_ast_data_type data_type) {
 		bool found = false;
 		for (size_t index = 0; !found && index < m_scope_stack.size(); index++) {
 			const s_scope &scope = m_scope_stack[index];
@@ -156,7 +168,10 @@ private:
 		}
 
 		if (!found) {
-			m_scope_stack.front().identifiers.insert(std::make_pair(name, node));
+			s_identifier identifier;
+			identifier.data_type = data_type;
+			identifier.ast_node = node;
+			m_scope_stack.front().identifiers.insert(std::make_pair(name, identifier));
 		} else {
 			s_compiler_result error;
 			error.result = k_compiler_result_duplicate_identifier;
@@ -169,12 +184,12 @@ private:
 	}
 
 	// Returns the identifier associated with the given name, or null
-	const c_ast_node *get_identifier(const std::string &name) const {
+	const s_identifier *get_identifier(const std::string &name) const {
 		for (size_t index = 0; index < m_scope_stack.size(); index++) {
 			const s_scope &scope = m_scope_stack[index];
 			auto match = scope.identifiers.find(name);
 			if (match != scope.identifiers.end()) {
-				return match->second;
+				return &match->second;
 			}
 		}
 
@@ -230,13 +245,34 @@ private:
 		m_errors->push_back(error);
 	}
 
-	void type_mismatch_error(s_compiler_source_location source_location, e_data_type expected, e_data_type actual) {
+	void unassignable_type_error(s_compiler_source_location source_location, const std::string &name,
+		e_ast_data_type type) {
+		s_compiler_result error;
+		error.result = k_compiler_result_type_mismatch;
+		error.source_location = source_location;
+		error.message = "Identifier '" + name + "' of type '" + std::string(get_ast_data_type_string(type)) +
+			"' is not assignable";
+		m_errors->push_back(error);
+	}
+
+	void uncallable_type_error(s_compiler_source_location source_location, const std::string &name,
+		e_ast_data_type type) {
+		s_compiler_result error;
+		error.result = k_compiler_result_type_mismatch;
+		error.source_location = source_location;
+		error.message = "Identifier '" + name + "' of type '" + std::string(get_ast_data_type_string(type)) +
+			"' is not callable";
+		m_errors->push_back(error);
+	}
+
+	void type_mismatch_error(s_compiler_source_location source_location,
+		e_ast_data_type expected, e_ast_data_type actual) {
 		s_compiler_result error;
 		error.result = k_compiler_result_type_mismatch;
 		error.source_location = source_location;
 		error.message = "Type mismatch: expected '" +
-			std::string(get_data_type_string(expected)) + "', got '" +
-			std::string(get_data_type_string(actual)) + "'";
+			std::string(get_ast_data_type_string(expected)) + "', got '" +
+			std::string(get_ast_data_type_string(actual)) + "'";
 		m_errors->push_back(error);
 	}
 
@@ -292,7 +328,14 @@ public:
 		if (m_module_for_next_scope) {
 			wl_assert(m_pass == k_pass_validate_syntax);
 			scope.module_for_scope = m_module_for_next_scope;
+			scope.is_module_outer_scope = true;
 			m_module_for_next_scope = nullptr;
+		} else {
+			// Try to take the module from the previous scope if it exists
+			if (m_scope_stack.size() > 1) {
+				const s_scope &prev_scope = m_scope_stack[1];
+				scope.module_for_scope = prev_scope.module_for_scope;
+			}
 		}
 
 		return true;
@@ -302,9 +345,11 @@ public:
 		s_scope &scope = m_scope_stack.front();
 
 		// Process the end of modules here:
-		if (scope.module_for_scope) {
+		if (scope.is_module_outer_scope) {
+			wl_assert(scope.module_for_scope);
+
 			// Make sure a return statement was found if necessary
-			if (scope.module_for_scope->get_has_return_value() &&
+			if (scope.module_for_scope->get_return_type() != k_ast_data_type_void &&
 				scope.return_statement < 0) {
 				s_compiler_result error;
 				error.result = k_compiler_result_missing_return_statement;
@@ -317,7 +362,7 @@ public:
 			for (size_t index = 0; index < scope.module_for_scope->get_argument_count(); index++) {
 				const c_ast_node_named_value_declaration *argument = scope.module_for_scope->get_argument(index);
 
-				if (argument->get_qualifier() == c_ast_node_named_value_declaration::k_qualifier_out) {
+				if (argument->get_qualifier() == k_ast_qualifier_out) {
 					// Look up the context
 					s_named_value *match = get_named_value(argument);
 					// Context must already exist for this argument
@@ -347,7 +392,7 @@ public:
 		if (m_pass == k_pass_register_global_identifiers) {
 			// Add the module's name to the list of identifiers seen so far
 			wl_assert(m_scope_stack.size() == 1);
-			add_identifier_to_scope(node->get_name(), node);
+			add_identifier_to_scope(node->get_name(), node, k_ast_data_type_module);
 
 			m_module_calls.push_back(s_module_call());
 			m_module_calls.back().module = node;
@@ -356,7 +401,7 @@ public:
 				m_entry_point_found = true;
 
 				// Should have no return value and only out arguments
-				if (node->get_has_return_value()) {
+				if (node->get_return_type() != k_ast_data_type_void) {
 					s_compiler_result error;
 					error.result = k_compiler_result_invalid_entry_point;
 					error.source_location = node->get_source_location();
@@ -364,11 +409,16 @@ public:
 					m_errors->push_back(error);
 				}
 
+				// $TODO change this when we support inputs
 				bool all_out = true;
+				bool all_real = true;
 				for (size_t arg = 0; all_out && arg < node->get_argument_count(); arg++) {
-					if (node->get_argument(arg)->get_qualifier() !=
-						c_ast_node_named_value_declaration::k_qualifier_out) {
+					if (node->get_argument(arg)->get_qualifier() != k_ast_qualifier_out) {
 						all_out = false;
+					}
+
+					if (node->get_argument(arg)->get_data_type() != k_ast_data_type_real) {
+						all_real = false;
 					}
 				}
 
@@ -377,6 +427,14 @@ public:
 					error.result = k_compiler_result_invalid_entry_point;
 					error.source_location = node->get_source_location();
 					error.message = "Entry point '" + node->get_name() + "' must only take out arguments";
+					m_errors->push_back(error);
+				}
+
+				if (!all_real) {
+					s_compiler_result error;
+					error.result = k_compiler_result_invalid_entry_point;
+					error.source_location = node->get_source_location();
+					error.message = "Entry point '" + node->get_name() + "' must only take real arguments";
 					m_errors->push_back(error);
 				}
 			}
@@ -405,15 +463,14 @@ public:
 		detect_statements_after_return(scope, node);
 
 		// Add the identifier to the scope
-		if (add_identifier_to_scope(node->get_name(), node)) {
+		if (add_identifier_to_scope(node->get_name(), node, node->get_data_type())) {
 			s_named_value named_value;
-			if (node->get_qualifier() == c_ast_node_named_value_declaration::k_qualifier_none ||
-				node->get_qualifier() == c_ast_node_named_value_declaration::k_qualifier_out) {
+			if (node->get_qualifier() == k_ast_qualifier_none || node->get_qualifier() == k_ast_qualifier_out) {
 				// Locals and outputs start out being unassigned
 				named_value.last_statement_assigned = -1;
 			} else {
 				// Module inputs are already assigned at the beginning of the module
-				wl_assert(node->get_qualifier() == c_ast_node_named_value_declaration::k_qualifier_in);
+				wl_assert(node->get_qualifier() == k_ast_qualifier_in);
 				named_value.last_statement_assigned = m_scope_stack.front().current_statement;
 			}
 
@@ -440,9 +497,9 @@ public:
 		m_expression_stack.pop();
 
 		// If a valid identifier has been provided, update its last used statement
-		const c_ast_node *identifier = get_identifier(result.identifier_name);
-		if (identifier) {
-			s_named_value *named_value = get_named_value(identifier);
+		const s_identifier *result_identifier = get_identifier(result.identifier_name);
+		if (result_identifier) {
+			s_named_value *named_value = get_named_value(result_identifier->ast_node);
 			wl_assert(named_value);
 			named_value->last_statement_used = scope.current_statement;
 		}
@@ -451,20 +508,16 @@ public:
 			// If this assignment node has no name, it means it's just a placeholder for an expression; nothing to do.
 		} else {
 			// First make sure this is actually a named value
-			const c_ast_node *identifier = get_identifier(node->get_named_value());
+			const s_identifier *identifier = get_identifier(node->get_named_value());
 			if (!identifier) {
 				undeclared_identifier_error(node->get_source_location(), node->get_named_value());
-			} else if (identifier->get_type() != k_ast_node_type_named_value_declaration) {
-				s_compiler_result error;
-				error.result = k_compiler_result_type_mismatch;
-				error.source_location = node->get_source_location();
-				error.message = "Identifier '" + node->get_named_value() + "' is not a named value";
-				m_errors->push_back(error);
-			} else if (result.type != k_data_type_value) {
-				type_mismatch_error(node->get_source_location(), k_data_type_value, result.type);
+			} else if (identifier->ast_node->get_type() != k_ast_node_type_named_value_declaration) {
+				unassignable_type_error(node->get_source_location(), node->get_named_value(), identifier->data_type);
+			} else if (result.type != identifier->data_type) {
+				type_mismatch_error(node->get_source_location(), identifier->data_type, result.type);
 			} else {
 				// Look up the context
-				s_named_value *match = get_named_value(identifier);
+				s_named_value *match = get_named_value(identifier->ast_node);
 				// Since we've verified that this is a named value, it must already have a context
 				wl_assert(match);
 
@@ -495,15 +548,24 @@ public:
 
 		detect_statements_after_return(scope, node);
 
+		if (!scope.is_module_outer_scope) {
+			s_compiler_result error;
+			error.result = k_compiler_result_statements_after_return;
+			error.source_location = node->get_source_location();
+			error.message = "Return statement in module '" + scope.module_for_scope->get_name() +
+				"' must be in outermost scope";
+			m_errors->push_back(error);
+		}
+
 		if (scope.return_statement >= 0) {
 			s_compiler_result error;
-			error.result = k_compiler_result_duplicate_identifier;
+			error.result = k_compiler_result_duplicate_return_statement;
 			error.source_location = node->get_source_location();
 			error.message = "Module '" + scope.module_for_scope->get_name() + "' has multiple return statements";
 			m_errors->push_back(error);
 		}
 
-		if (!scope.module_for_scope->get_has_return_value()) {
+		if (scope.module_for_scope->get_return_type() == k_ast_data_type_void) {
 			s_compiler_result error;
 			error.result = k_compiler_result_extraneous_return_statement;
 			error.source_location = node->get_source_location();
@@ -522,19 +584,16 @@ public:
 		m_expression_stack.pop();
 
 		// If a valid identifier has been provided, update its last used statement
-		const c_ast_node *identifier = get_identifier(result.identifier_name);
+		const s_identifier *identifier = get_identifier(result.identifier_name);
 		if (identifier) {
-			s_named_value *named_value = get_named_value(identifier);
+			s_named_value *named_value = get_named_value(identifier->ast_node);
 			wl_assert(named_value);
 			named_value->last_statement_used = scope.current_statement;
 		}
 
-		if (result.type != k_data_type_value) {
-			s_compiler_result error;
-			error.result = k_compiler_result_type_mismatch;
-			error.source_location = node->get_source_location();
-			error.message = "Attempting to return '" + std::string(get_data_type_string(result.type)) + "'";
-			m_errors->push_back(error);
+		wl_assert(scope.module_for_scope);
+		if (result.type != scope.module_for_scope->get_return_type()) {
+			type_mismatch_error(node->get_source_location(), scope.module_for_scope->get_return_type(), result.type);
 		}
 
 		if (scope.return_statement < 0) {
@@ -561,7 +620,7 @@ public:
 
 	virtual void end_visit(const c_ast_node_constant *node) {
 		s_expression_result result;
-		result.type = k_data_type_value;
+		result.type = node->get_data_type();
 		m_expression_stack.push(result);
 	}
 
@@ -571,32 +630,27 @@ public:
 
 	virtual void end_visit(const c_ast_node_named_value *node) {
 		s_expression_result result;
-		result.type = k_data_type_value;
+		result.type = k_ast_data_type_void;
 		result.identifier_name = node->get_name();
-		m_expression_stack.push(result);
 
 		s_scope &scope = m_scope_stack.front();
 
 		// First make sure this is actually a named value
-		const c_ast_node *identifier = get_identifier(node->get_name());
+		const s_identifier *identifier = get_identifier(node->get_name());
 		if (!identifier) {
 			result.identifier_name = "$invalid";
 			undeclared_identifier_error(node->get_source_location(), node->get_name());
-		} else if (identifier->get_type() != k_ast_node_type_named_value_declaration) {
-			result.identifier_name = "$invalid";
-			s_compiler_result error;
-			error.result = k_compiler_result_type_mismatch;
-			error.source_location = node->get_source_location();
-			error.message = "Identifier '" + node->get_name() + "' is not a named value";
-			m_errors->push_back(error);
+		} else if (identifier->ast_node->get_type() != k_ast_node_type_named_value_declaration) {
+			unassignable_type_error(node->get_source_location(), node->get_name(), identifier->data_type);
 		} else {
-#if PREDEFINED(ASSERTS_ENABLED)
 			// Look up the context
-			s_named_value *match = get_named_value(identifier);
-#endif // PREDEFINED(ASSERTS_ENABLED)
+			IF_ASSERTS_ENABLED(s_named_value *match = get_named_value(identifier->ast_node));
 			// Since we've verified that this is a named value, it must already have a context
 			wl_assert(match);
+			result.type = identifier->data_type;
 		}
+
+		m_expression_stack.push(result);
 	}
 
 	virtual bool begin_visit(const c_ast_node_module_call *node) {
@@ -606,7 +660,7 @@ public:
 	virtual void end_visit(const c_ast_node_module_call *node) {
 		// If there is an error, this is the default result we will push
 		s_expression_result result;
-		result.type = k_data_type_value;
+		result.type = k_ast_data_type_void;
 
 		std::vector<s_expression_result> argument_expression_results(node->get_argument_count());
 
@@ -620,23 +674,19 @@ public:
 		s_scope &scope = m_scope_stack.front();
 
 		// First make sure this is actually a module value
-		const c_ast_node *identifier = get_identifier(node->get_name());
+		const s_identifier *identifier = get_identifier(node->get_name());
 		if (!identifier) {
 			undeclared_identifier_error(node->get_source_location(), node->get_name());
-		} else if (identifier->get_type() != k_ast_node_type_module_declaration) {
-			s_compiler_result error;
-			error.result = k_compiler_result_type_mismatch;
-			error.source_location = node->get_source_location();
-			error.message = "Identifier '" + node->get_name() + "' is not a module";
-			m_errors->push_back(error);
+		} else if (identifier->ast_node->get_type() != k_ast_node_type_module_declaration) {
+			uncallable_type_error(node->get_source_location(), node->get_name(), identifier->data_type);
 		} else {
 			const c_ast_node_module_declaration *module_declaration =
-				static_cast<const c_ast_node_module_declaration *>(identifier);
+				static_cast<const c_ast_node_module_declaration *>(identifier->ast_node);
 
 			add_module_subcall(scope.module_for_scope, module_declaration);
 
 			// Set return type
-			result.type = module_declaration->get_has_return_value() ? k_data_type_value : k_data_type_void;
+			result.type = module_declaration->get_return_type();
 
 			if (node->get_argument_count() != module_declaration->get_argument_count()) {
 				s_compiler_result error;
@@ -656,21 +706,21 @@ public:
 
 				// We already validated the expression, which would have provided errors for things like invalid
 				// identifier, so all we need to do here is validate that the type matches
-				if (argument_result.type != k_data_type_value) {
+				if (argument_result.type != argument->get_data_type()) {
 					type_mismatch_error(node->get_argument(arg)->get_source_location(),
-						k_data_type_value, argument_result.type);
+						argument->get_data_type(), argument_result.type);
 				}
 
 				// If a valid identifier has been provided, update its last assigned or last used statement
-				const c_ast_node *identifier = get_identifier(result.identifier_name);
+				const s_identifier *identifier = get_identifier(result.identifier_name);
 				if (identifier) {
-					s_named_value *named_value = get_named_value(identifier);
+					s_named_value *named_value = get_named_value(identifier->ast_node);
 					wl_assert(named_value);
 
-					if (argument->get_qualifier() == c_ast_node_named_value_declaration::k_qualifier_in) {
+					if (argument->get_qualifier() == k_ast_qualifier_in) {
 						named_value->last_statement_used = scope.current_statement;
 					} else {
-						wl_assert(argument->get_qualifier() == c_ast_node_named_value_declaration::k_qualifier_out);
+						wl_assert(argument->get_qualifier() == k_ast_qualifier_out);
 
 						if (named_value->last_statement_assigned == scope.current_statement) {
 							// We should not assign the same named value from two different outputs

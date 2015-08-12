@@ -182,18 +182,6 @@ static bool optimize_node(c_execution_graph *execution_graph, uint32 node_index)
 		// Outputs can't be optimized
 		break;
 
-	case k_execution_graph_node_type_intermediate_value:
-		// We can remove all intermediate values we come across
-		{
-			wl_assert(execution_graph->get_node_incoming_edge_count(node_index) == 1);
-			uint32 input_node_index = execution_graph->get_node_incoming_edge_index(node_index, 0);
-			execution_graph->remove_edge(input_node_index, node_index);
-			transfer_outputs(execution_graph, input_node_index, node_index);
-			execution_graph->remove_node(node_index);
-			optimized = true;
-		}
-		break;
-
 	default:
 		wl_unreachable();
 	}
@@ -237,24 +225,41 @@ static bool optimize_native_module_call(c_execution_graph *execution_graph, uint
 			c_native_module_compile_time_argument_list arg_list;
 
 			for (size_t arg = 0; arg < native_module.argument_count; arg++) {
-				s_native_module_compile_time_argument argument;
-				IF_ASSERTS_ENABLED(argument.assigned = false);
+				s_native_module_argument argument = native_module.arguments[arg];
+				s_native_module_compile_time_argument compile_time_argument;
+#if PREDEFINED(ASSERTS_ENABLED)
+				compile_time_argument.assigned = false;
+				compile_time_argument.argument = argument;
+#endif // PREDEFINED(ASSERTS_ENABLED)
 
-				if (native_module.argument_types[arg] == k_native_module_argument_type_in ||
-					native_module.argument_types[arg] == k_native_module_argument_type_constant) {
+				if (argument.qualifier == k_native_module_argument_qualifier_in ||
+					argument.qualifier == k_native_module_argument_qualifier_constant) {
 					uint32 input_node_index = execution_graph->get_node_incoming_edge_index(node_index, next_input);
 					uint32 constant_node_index = execution_graph->get_node_incoming_edge_index(input_node_index, 0);
-					IF_ASSERTS_ENABLED(argument.is_input = true);
-					argument.value = execution_graph->get_constant_node_value(constant_node_index);
+
+					switch (execution_graph->get_constant_node_data_type(constant_node_index)) {
+					case k_native_module_argument_type_real:
+						compile_time_argument.real_value =
+							execution_graph->get_constant_node_real_value(constant_node_index);
+						break;
+
+					case k_native_module_argument_type_string:
+						compile_time_argument.string_value =
+							execution_graph->get_constant_node_string_value(constant_node_index);
+						break;
+
+					default:
+						wl_unreachable();
+					}
+
 					next_input++;
 				} else {
-					wl_assert(native_module.argument_types[arg] == k_native_module_argument_type_out);
-					IF_ASSERTS_ENABLED(argument.is_input = false);
-					argument.value = 0.0f;
+					wl_assert(argument.qualifier == k_native_module_argument_qualifier_out);
+					compile_time_argument.real_value = 0.0f;
 					next_output++;
 				}
 
-				arg_list.push_back(argument);
+				arg_list.push_back(compile_time_argument);
 			}
 
 			wl_assert(next_input == native_module.in_argument_count);
@@ -265,12 +270,25 @@ static bool optimize_native_module_call(c_execution_graph *execution_graph, uint
 
 			next_output = 0;
 			for (size_t arg = 0; arg < native_module.argument_count; arg++) {
-				if (native_module.argument_types[arg] == k_native_module_argument_type_out) {
-					s_native_module_compile_time_argument argument = arg_list[arg];
-					wl_assert(argument.assigned);
+				s_native_module_argument argument = native_module.arguments[arg];
+				if (argument.qualifier == k_native_module_argument_qualifier_out) {
+					const s_native_module_compile_time_argument &compile_time_argument = arg_list[arg];
+					wl_assert(compile_time_argument.assigned);
 
 					// Create a constant node for this output
-					uint32 constant_node_index = execution_graph->add_constant_node(argument.value);
+					uint32 constant_node_index = c_execution_graph::k_invalid_index;
+					switch (execution_graph->get_constant_node_data_type(constant_node_index)) {
+					case k_native_module_argument_type_real:
+						constant_node_index = execution_graph->add_constant_node(compile_time_argument.real_value);
+						break;
+
+					case k_native_module_argument_type_string:
+						constant_node_index = execution_graph->add_constant_node(compile_time_argument.string_value);
+						break;
+
+					default:
+						wl_unreachable();
+					}
 
 					// Hook up all outputs with this node instead
 					uint32 output_node_index = execution_graph->get_node_outgoing_edge_index(node_index, next_output);
@@ -350,102 +368,104 @@ static bool try_to_apply_optimization_rule(c_execution_graph *execution_graph, u
 		const s_optimization_rule_description_component &component = rule.from.components[c];
 		switch (component.type) {
 		case k_optimization_rule_description_component_type_native_module:
-			{
-				if (match_state_stack.empty()) {
-					// Only do this when starting out
-					s_match_state initial_state;
-					initial_state.current_node_output_index = c_execution_graph::k_invalid_index;
-					initial_state.current_node_index = node_index;
-					initial_state.next_input_index = 0;
-					match_state_stack.push(initial_state);
-				} else {
-					// Try to advance to the next input
-					s_match_state &current_state = match_state_stack.top();
-					if (!current_state.has_more_inputs(execution_graph)) {
-						return false;
-					}
-
-					s_match_state new_state;
-					new_state.current_node_output_index = c_execution_graph::k_invalid_index;
-					new_state.current_node_index = current_state.follow_next_input(execution_graph,
-						new_state.current_node_output_index);
-					new_state.next_input_index = 0;
-					match_state_stack.push(new_state);
-				}
-
-				// The module described by the rule should match the top of the state stack
-				const s_match_state &current_state = match_state_stack.top();
-				uint32 current_index = current_state.current_node_index;
-				if (execution_graph->get_node_type(current_index) != k_execution_graph_node_type_native_module_call ||
-					component.index != execution_graph->get_native_module_call_native_module_index(current_index)) {
-					// Not a match
-					return false;
-				}
-			}
-			break;
-
-		case k_optimization_rule_description_component_type_native_module_end:
-			{
-				wl_assert(!match_state_stack.empty());
-				// We expect that if we were able to match and enter a module, we should also match when leaving
-				// If not, it means the rule does not match the definition of the module (e.g. too few arguments)
-#if PREDEFINED(ASSERTS_ENABLED)
-				const s_match_state &current_state = match_state_stack.top();
-				wl_assert(!current_state.has_more_inputs(execution_graph));
-				if (match_state_stack.size() == 1) {
-					should_be_done = true;
-				}
-#endif // PREDEFINED(ASSERTS_ENABLED)
-				match_state_stack.pop();
-			}
-			break;
-
-		case k_optimization_rule_description_component_type_value:
-		case k_optimization_rule_description_component_type_constant:
-		case k_optimization_rule_description_component_type_real:
-			{
+		{
+			if (match_state_stack.empty()) {
+				// Only do this when starting out
+				s_match_state initial_state;
+				initial_state.current_node_output_index = c_execution_graph::k_invalid_index;
+				initial_state.current_node_index = node_index;
+				initial_state.next_input_index = 0;
+				match_state_stack.push(initial_state);
+			} else {
 				// Try to advance to the next input
-				wl_assert(!match_state_stack.empty());
 				s_match_state &current_state = match_state_stack.top();
 				if (!current_state.has_more_inputs(execution_graph)) {
 					return false;
 				}
 
-				uint32 new_node_output_index = c_execution_graph::k_invalid_index;
-				uint32 new_node_index = current_state.follow_next_input(execution_graph, new_node_output_index);
+				s_match_state new_state;
+				new_state.current_node_output_index = c_execution_graph::k_invalid_index;
+				new_state.current_node_index = current_state.follow_next_input(execution_graph,
+					new_state.current_node_output_index);
+				new_state.next_input_index = 0;
+				match_state_stack.push(new_state);
+			}
 
-				if (component.type == k_optimization_rule_description_component_type_value) {
-					// Match anything except for constants
-					if (execution_graph->get_node_type(new_node_index) == k_execution_graph_node_type_constant) {
-						return false;
-					} else {
-						wl_assert(matched_value_node_indices[component.index] == c_execution_graph::k_invalid_index);
-						// If this is a module node, it means we had to pass through an output node to get here. Store
-						// the output node as the match, because that's what inputs will be hooked up to.
-						if (new_node_output_index == c_execution_graph::k_invalid_index) {
-							matched_value_node_indices[component.index] = new_node_index;
-						} else {
-							matched_value_node_indices[component.index] = new_node_output_index;
-						}
-					}
-				} else if (component.type == k_optimization_rule_description_component_type_constant) {
-					// Match only constants
-					if (execution_graph->get_node_type(new_node_index) != k_execution_graph_node_type_constant) {
-						return false;
-					} else {
-						wl_assert(matched_constant_node_indices[component.index] == c_execution_graph::k_invalid_index);
-						matched_constant_node_indices[component.index] = new_node_index;
-					}
+			// The module described by the rule should match the top of the state stack
+			const s_match_state &current_state = match_state_stack.top();
+			uint32 current_index = current_state.current_node_index;
+			if (execution_graph->get_node_type(current_index) != k_execution_graph_node_type_native_module_call ||
+				component.index != execution_graph->get_native_module_call_native_module_index(current_index)) {
+				// Not a match
+				return false;
+			}
+			break;
+		}
+
+		case k_optimization_rule_description_component_type_native_module_end:
+		{
+			wl_assert(!match_state_stack.empty());
+			// We expect that if we were able to match and enter a module, we should also match when leaving
+			// If not, it means the rule does not match the definition of the module (e.g. too few arguments)
+#if PREDEFINED(ASSERTS_ENABLED)
+			const s_match_state &current_state = match_state_stack.top();
+			wl_assert(!current_state.has_more_inputs(execution_graph));
+			if (match_state_stack.size() == 1) {
+				should_be_done = true;
+			}
+#endif // PREDEFINED(ASSERTS_ENABLED)
+			match_state_stack.pop();
+			break;
+		}
+
+		case k_optimization_rule_description_component_type_value:
+		case k_optimization_rule_description_component_type_constant:
+		case k_optimization_rule_description_component_type_real:
+		{
+			// Try to advance to the next input
+			wl_assert(!match_state_stack.empty());
+			s_match_state &current_state = match_state_stack.top();
+			if (!current_state.has_more_inputs(execution_graph)) {
+				return false;
+			}
+
+			uint32 new_node_output_index = c_execution_graph::k_invalid_index;
+			uint32 new_node_index = current_state.follow_next_input(execution_graph, new_node_output_index);
+
+			if (component.type == k_optimization_rule_description_component_type_value) {
+				// Match anything except for constants
+				if (execution_graph->get_node_type(new_node_index) == k_execution_graph_node_type_constant) {
+					return false;
 				} else {
-					wl_assert(component.type == k_optimization_rule_description_component_type_real);
-					// Match only constants with the given value
-					if (execution_graph->get_node_type(new_node_index) != k_execution_graph_node_type_constant ||
-						execution_graph->get_constant_node_value(new_node_index) != component.real_value) {
-						return false;
+					wl_assert(matched_value_node_indices[component.index] == c_execution_graph::k_invalid_index);
+					// If this is a module node, it means we had to pass through an output node to get here. Store
+					// the output node as the match, because that's what inputs will be hooked up to.
+					if (new_node_output_index == c_execution_graph::k_invalid_index) {
+						matched_value_node_indices[component.index] = new_node_index;
+					} else {
+						matched_value_node_indices[component.index] = new_node_output_index;
 					}
+				}
+			} else if (component.type == k_optimization_rule_description_component_type_constant) {
+				// Match only constants
+				if (execution_graph->get_node_type(new_node_index) != k_execution_graph_node_type_constant) {
+					return false;
+				} else {
+					wl_assert(matched_constant_node_indices[component.index] == c_execution_graph::k_invalid_index);
+					matched_constant_node_indices[component.index] = new_node_index;
+				}
+			} else {
+				wl_assert(component.type == k_optimization_rule_description_component_type_real);
+				// Match only constants with the given value
+				if (execution_graph->get_node_type(new_node_index) != k_execution_graph_node_type_constant ||
+					execution_graph->get_constant_node_data_type(new_node_index) !=
+					k_native_module_argument_type_real ||
+					execution_graph->get_constant_node_real_value(new_node_index) != component.real_value) {
+					return false;
 				}
 			}
 			break;
+		}
 
 		default:
 			wl_unreachable();
@@ -467,74 +487,74 @@ static bool try_to_apply_optimization_rule(c_execution_graph *execution_graph, u
 		const s_optimization_rule_description_component &component = rule.to.components[c];
 		switch (component.type) {
 		case k_optimization_rule_description_component_type_native_module:
-			{
-				uint32 node_index = execution_graph->add_native_module_call_node(component.index);
-				// We currently only allow a single outgoing edge, due to the way we express rules
-				wl_assert(execution_graph->get_node_outgoing_edge_count(node_index) == 1);
+		{
+			uint32 node_index = execution_graph->add_native_module_call_node(component.index);
+			// We currently only allow a single outgoing edge, due to the way we express rules
+			wl_assert(execution_graph->get_node_outgoing_edge_count(node_index) == 1);
 
-				if (root_module_node_index == c_execution_graph::k_invalid_index) {
-					wl_assert(match_state_stack.empty());
-					root_module_node_index = node_index;
-				} else {
-					s_match_state &current_state = match_state_stack.top();
-					wl_assert(current_state.has_more_inputs(execution_graph));
-
-					uint32 input_node_index = execution_graph->get_node_incoming_edge_index(
-						current_state.current_node_index, current_state.next_input_index);
-					uint32 output_node_index = execution_graph->get_node_outgoing_edge_index(node_index, 0);
-					execution_graph->add_edge(output_node_index, input_node_index);
-					current_state.next_input_index++;
-				}
-
-				s_match_state new_state;
-				new_state.current_node_output_index = c_execution_graph::k_invalid_index;
-				new_state.current_node_index = node_index;
-				new_state.next_input_index = 0;
-				match_state_stack.push(new_state);
-			}
-			break;
-
-		case k_optimization_rule_description_component_type_native_module_end:
-			{
-				wl_assert(!match_state_stack.empty());
-				// We expect that if we were able to match and enter a module, we should also match when leaving
-				// If not, it means the rule does not match the definition of the module (e.g. too few arguments)
-#if PREDEFINED(ASSERTS_ENABLED)
-				const s_match_state &current_state = match_state_stack.top();
-				wl_assert(!current_state.has_more_inputs(execution_graph));
-				if (match_state_stack.size() == 1) {
-					should_be_done = true;
-				}
-#endif // PREDEFINED(ASSERTS_ENABLED)
-				match_state_stack.pop();
-			}
-			break;
-
-		case k_optimization_rule_description_component_type_value:
-		case k_optimization_rule_description_component_type_constant:
-		case k_optimization_rule_description_component_type_real:
-			{
-				// Hook up this input and advance
-				wl_assert(!match_state_stack.empty());
+			if (root_module_node_index == c_execution_graph::k_invalid_index) {
+				wl_assert(match_state_stack.empty());
+				root_module_node_index = node_index;
+			} else {
 				s_match_state &current_state = match_state_stack.top();
 				wl_assert(current_state.has_more_inputs(execution_graph));
 
 				uint32 input_node_index = execution_graph->get_node_incoming_edge_index(
 					current_state.current_node_index, current_state.next_input_index);
+				uint32 output_node_index = execution_graph->get_node_outgoing_edge_index(node_index, 0);
+				execution_graph->add_edge(output_node_index, input_node_index);
 				current_state.next_input_index++;
+			}
 
-				if (component.type == k_optimization_rule_description_component_type_value) {
-					execution_graph->add_edge(matched_value_node_indices[component.index], input_node_index);
-				} else if (component.type == k_optimization_rule_description_component_type_constant) {
-					execution_graph->add_edge(matched_constant_node_indices[component.index], input_node_index);
-				} else {
-					wl_assert(component.type == k_optimization_rule_description_component_type_real);
-					// Create a constant node with this value
-					uint32 new_constant_node_index = execution_graph->add_constant_node(component.real_value);
-					execution_graph->add_edge(new_constant_node_index, input_node_index);
-				}
+			s_match_state new_state;
+			new_state.current_node_output_index = c_execution_graph::k_invalid_index;
+			new_state.current_node_index = node_index;
+			new_state.next_input_index = 0;
+			match_state_stack.push(new_state);
+			break;
+		}
+
+		case k_optimization_rule_description_component_type_native_module_end:
+		{
+			wl_assert(!match_state_stack.empty());
+			// We expect that if we were able to match and enter a module, we should also match when leaving
+			// If not, it means the rule does not match the definition of the module (e.g. too few arguments)
+#if PREDEFINED(ASSERTS_ENABLED)
+			const s_match_state &current_state = match_state_stack.top();
+			wl_assert(!current_state.has_more_inputs(execution_graph));
+			if (match_state_stack.size() == 1) {
+				should_be_done = true;
+			}
+#endif // PREDEFINED(ASSERTS_ENABLED)
+			match_state_stack.pop();
+			break;
+		}
+
+		case k_optimization_rule_description_component_type_value:
+		case k_optimization_rule_description_component_type_constant:
+		case k_optimization_rule_description_component_type_real:
+		{
+			// Hook up this input and advance
+			wl_assert(!match_state_stack.empty());
+			s_match_state &current_state = match_state_stack.top();
+			wl_assert(current_state.has_more_inputs(execution_graph));
+
+			uint32 input_node_index = execution_graph->get_node_incoming_edge_index(
+				current_state.current_node_index, current_state.next_input_index);
+			current_state.next_input_index++;
+
+			if (component.type == k_optimization_rule_description_component_type_value) {
+				execution_graph->add_edge(matched_value_node_indices[component.index], input_node_index);
+			} else if (component.type == k_optimization_rule_description_component_type_constant) {
+				execution_graph->add_edge(matched_constant_node_indices[component.index], input_node_index);
+			} else {
+				wl_assert(component.type == k_optimization_rule_description_component_type_real);
+				// Create a constant node with this value
+				uint32 new_constant_node_index = execution_graph->add_constant_node(component.real_value);
+				execution_graph->add_edge(new_constant_node_index, input_node_index);
 			}
 			break;
+		}
 
 		default:
 			wl_unreachable();
@@ -616,10 +636,10 @@ static void validate_optimized_constants(const c_execution_graph *execution_grap
 		// For each constant input, verify that a constant node is linked up
 		size_t input = 0;
 		for (size_t arg = 0; arg < native_module.argument_count; arg++) {
-			e_native_module_argument_type argument_type = native_module.argument_types[arg];
-			if (argument_type == k_native_module_argument_type_in) {
+			e_native_module_argument_qualifier argument_qualifier = native_module.arguments[arg].qualifier;
+			if (argument_qualifier == k_native_module_argument_qualifier_in) {
 				input++;
-			} else if (argument_type == k_native_module_argument_type_constant) {
+			} else if (argument_qualifier == k_native_module_argument_qualifier_constant) {
 				// Validate that this input is constant
 				uint32 input_node_index = execution_graph->get_node_incoming_edge_index(node_index, input);
 				uint32 constant_node_index = execution_graph->get_node_incoming_edge_index(input_node_index, 0);

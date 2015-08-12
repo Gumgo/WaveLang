@@ -54,21 +54,21 @@ s_compiler_result c_preprocessor::preprocess(c_compiler_string source, c_preproc
 				return result;
 
 			case k_preprocessor_token_import:
-				{
-					// Store the import string result here
-					c_compiler_string import_string;
+			{
+				// Store the import string result here
+				c_compiler_string import_string;
 
-					if (!process_import(preprocessor_line.advance(preprocessor_token_length), import_string)) {
-						result.result = k_compiler_result_preprocessor_error;
-						result.source_location.line = line_number;
-						result.message = "Preprocessor error: '" + line.to_std_string() + "'";
-						return result;
-					} else {
-						// Success! Add to the import list
-						output.imports.push_back(import_string);
-					}
+				if (!process_import(preprocessor_line.advance(preprocessor_token_length), import_string)) {
+					result.result = k_compiler_result_preprocessor_error;
+					result.source_location.line = line_number;
+					result.message = "Preprocessor error: '" + line.to_std_string() + "'";
+					return result;
+				} else {
+					// Success! Add to the import list
+					output.imports.push_back(import_string);
 				}
 				break;
+			}
 
 			default:
 				wl_unreachable();

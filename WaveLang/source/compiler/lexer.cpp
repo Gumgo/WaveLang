@@ -5,16 +5,19 @@
 static const char *k_lexer_token_table[] = {
 	"",			// k_token_type_invalid
 
-	"module",	// k_token_type_keyword_module
 	"const",	// k_token_type_keyword_const
 	"in",		// k_token_type_keyword_in
 	"out",		// k_token_type_keyword_out
-	"val",		// k_token_type_keyword_val
+	"module",	// k_token_type_keyword_module
+	"void",		// k_token_type_keyword_void,
+	"real",		// k_token_type_keyword_real,
+	"string",	// k_token_type_keyword_string,
 	"return",	// k_token_type_keyword_return
 
 	"",			// k_token_type_identifier
 
-	"",			// k_token_type_constant
+	"",			// k_token_type_constant_real
+	"",			// k_token_type_constant_string
 
 	"(",		// k_token_type_left_parenthesis
 	")",		// k_token_type_right_parenthesis
@@ -193,6 +196,11 @@ static bool process_source_file(
 					}
 
 					line_remaining = line_remaining.advance(token.token_string.get_length());
+					if (token.token_type == k_token_type_constant_string) {
+						// We need to also skip the quotes because they're not included in the string
+						line_remaining = line_remaining.advance(2);
+					}
+
 					pos += static_cast<int32>(token.token_string.get_length());
 				}
 			}
@@ -244,7 +252,7 @@ static s_token read_next_token(
 		return result;
 	}
 
-	// Check if the token is a constant
+	// Check if the token is a constant real
 	if (compiler_utility::is_number(str[0])) {
 		bool error = false;
 		bool decimal_point_found = false;
@@ -274,12 +282,55 @@ static s_token read_next_token(
 			// Make sure the value is valid
 			try {
 				std::stof(result.token_string.to_std_string());
-				result.token_type = k_token_type_constant;
+				result.token_type = k_token_type_constant_real;
 			} catch (const std::invalid_argument &) {
 				result.token_type = k_token_type_invalid;
 			} catch (const std::out_of_range &) {
 				result.token_type = k_token_type_invalid;
 			}
+		}
+
+		return result;
+	}
+
+	// Check if the token is the start of a string
+	if (str[0] == '"') {
+		bool error = false;
+		bool found_end_quote = false;
+
+		// Read until we find another quote or encounter an error
+		size_t index;
+		for (index = 1; index < str.get_length(); index++) {
+			char ch = str[index];
+
+			if (!compiler_utility::is_valid_source_character(ch)) {
+				error = true;
+			} else if (ch == '\\') {
+				// Escape sequence
+				index++;
+				size_t advance = compiler_utility::resolve_escape_sequence(str.advance(index), nullptr);
+				if (advance == 0) {
+					// Error resolving escape sequence
+					error = true;
+				} else {
+					// Keep the sequence in the string but advance over it. We will resolve it later.
+					index += advance;
+				}
+			} else if (ch == '"') {
+				// Found the end of the string
+				found_end_quote = true;
+				break;
+			}
+		}
+
+		// Set the token string even if we detect an error
+		// Leave off the start and end quotes
+		result.token_string = str.substr(1, index - (found_end_quote ? 1 : 0));
+
+		if (error) {
+			result.token_type = k_token_type_invalid;
+		} else {
+			result.token_type = k_token_type_constant_string;
 		}
 
 		return result;

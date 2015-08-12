@@ -10,16 +10,24 @@
 
 enum e_parser_nonterminal {
 	k_parser_nonterminal_start,
+
 	k_parser_nonterminal_global_scope,
+	k_parser_nonterminal_global_scope_item_list,
 	k_parser_nonterminal_global_scope_item,
+
+	k_parser_nonterminal_type,
+	k_parser_nonterminal_type_or_void,
+
 	k_parser_nonterminal_module_declaration,
-	k_parser_nonterminal_module_declaration_return,
 	k_parser_nonterminal_module_declaration_arguments,
 	k_parser_nonterminal_module_declaration_argument_list,
 	k_parser_nonterminal_module_declaration_argument,
 	k_parser_nonterminal_module_declaration_argument_qualifier,
-	k_parser_nonterminal_module_body_item_list,
-	k_parser_nonterminal_module_body_item,
+
+	k_parser_nonterminal_scope,
+	k_parser_nonterminal_scope_item_list,
+	k_parser_nonterminal_scope_item,
+
 	k_parser_nonterminal_module_return_statement,
 	k_parser_nonterminal_named_value_declaration,
 	k_parser_nonterminal_named_value_assignment,

@@ -19,8 +19,8 @@ private:
 	struct s_identifier {
 		static const size_t k_invalid_argument = static_cast<size_t>(-1);
 
-		uint32 current_intermediate_value_node_index;	// Index of the node holding the most recent value
-		size_t argument_index;							// Argument index, if this identifier is an argument
+		uint32 current_value_node_index;	// Index of the node holding the most recent value
+		size_t argument_index;				// Argument index, if this identifier is an argument
 	};
 
 	struct s_scope {
@@ -57,7 +57,7 @@ private:
 #endif // PREDEFINED(ASSERTS_ENABLED)
 
 		s_identifier identifier;
-		identifier.current_intermediate_value_node_index = c_execution_graph::k_invalid_index;
+		identifier.current_value_node_index = c_execution_graph::k_invalid_index;
 		identifier.argument_index = s_identifier::k_invalid_argument;
 		m_scope_stack.front().identifiers.insert(std::make_pair(name, identifier));
 	}
@@ -79,12 +79,12 @@ private:
 		s_identifier *identifier = get_identifier(name);
 
 		// Update the node
-		identifier->current_intermediate_value_node_index = node_index;
+		identifier->current_value_node_index = node_index;
 		if (identifier->argument_index != s_identifier::k_invalid_argument) {
 			const c_ast_node_named_value_declaration *argument = m_module_declaration->get_argument(
 				identifier->argument_index);
 
-			if (argument->get_qualifier() == c_ast_node_named_value_declaration::k_qualifier_out) {
+			if (argument->get_qualifier() == k_ast_qualifier_out) {
 				// Update the out argument node
 				m_argument_node_indices[identifier->argument_index] = node_index;
 			}
@@ -111,7 +111,7 @@ public:
 
 	void set_in_argument_node_index(size_t argument_index, uint32 node_index) {
 		const c_ast_node_named_value_declaration *argument = m_module_declaration->get_argument(argument_index);
-		wl_assert(argument->get_qualifier() == c_ast_node_named_value_declaration::k_qualifier_in);
+		wl_assert(argument->get_qualifier() == k_ast_qualifier_in);
 
 		// We shouldn't be double assigning
 		wl_assert(m_argument_node_indices[argument_index] == c_execution_graph::k_invalid_index);
@@ -120,7 +120,7 @@ public:
 
 	uint32 get_out_argument_node_index(size_t argument_index) const {
 		const c_ast_node_named_value_declaration *argument = m_module_declaration->get_argument(argument_index);
-		wl_assert(argument->get_qualifier() == c_ast_node_named_value_declaration::k_qualifier_out);
+		wl_assert(argument->get_qualifier() == k_ast_qualifier_out);
 
 		// All outputs should be assigned
 		wl_assert(m_argument_node_indices[argument_index] != c_execution_graph::k_invalid_index);
@@ -128,7 +128,7 @@ public:
 	}
 
 	uint32 get_return_value_node_index() const {
-		wl_assert(m_module_declaration->get_has_return_value());
+		wl_assert(m_module_declaration->get_return_type() != k_ast_data_type_void);
 		return m_return_node_index;
 	}
 
@@ -169,7 +169,7 @@ public:
 			uint32 native_module_index = c_native_module_registry::get_native_module_index(node->get_name().c_str());
 			const s_native_module &native_module = c_native_module_registry::get_native_module(native_module_index);
 
-			wl_assert(native_module.first_output_is_return == node->get_has_return_value());
+			wl_assert(native_module.first_output_is_return == (node->get_return_type() != k_ast_data_type_void));
 
 			// Create a native module call node
 			uint32 native_module_call_node_index = m_execution_graph->add_native_module_call_node(native_module_index);
@@ -190,16 +190,16 @@ public:
 			}
 
 			for (size_t arg = 0; arg < node->get_argument_count(); arg++) {
-				c_ast_node_named_value_declaration::e_qualifier qualifier = node->get_argument(arg)->get_qualifier();
+				e_ast_qualifier qualifier = node->get_argument(arg)->get_qualifier();
 
-				if (qualifier == c_ast_node_named_value_declaration::k_qualifier_in) {
+				if (qualifier == k_ast_qualifier_in) {
 					// This argument feeds into the module call input node
 					uint32 input_node_index = m_execution_graph->get_node_incoming_edge_index(
 						native_module_call_node_index, next_input);
 					m_execution_graph->add_edge(m_argument_node_indices[arg], input_node_index);
 					next_input++;
 				} else {
-					wl_assert(qualifier == c_ast_node_named_value_declaration::k_qualifier_out);
+					wl_assert(qualifier == k_ast_qualifier_out);
 					// This argument is assigned by the module call output node
 					uint32 output_node_index = m_execution_graph->get_node_outgoing_edge_index(
 						native_module_call_node_index, next_output);
@@ -225,23 +225,23 @@ public:
 		add_identifier_to_scope(node->get_name());
 		s_identifier *identifier = get_identifier(node->get_name());
 
-		c_ast_node_named_value_declaration::e_qualifier qualifier = node->get_qualifier();
+		e_ast_qualifier qualifier = node->get_qualifier();
 
-		if (qualifier == c_ast_node_named_value_declaration::k_qualifier_in) {
+		if (qualifier == k_ast_qualifier_in) {
 			// Associate the argument node with the named value
 			identifier->argument_index = m_arguments_found;
 			m_arguments_found++;
 
 			// Inputs already have a value assigned
 			uint32 argument_node_index = m_argument_node_indices[identifier->argument_index];
-			identifier->current_intermediate_value_node_index = argument_node_index;
-		} else if (qualifier == c_ast_node_named_value_declaration::k_qualifier_out) {
+			identifier->current_value_node_index = argument_node_index;
+		} else if (qualifier == k_ast_qualifier_out) {
 			// Associate the argument node with the named value
 			identifier->argument_index = m_arguments_found;
 			m_arguments_found++;
 			// No value is initially assigned
 		} else {
-			wl_assert(qualifier == c_ast_node_named_value_declaration::k_qualifier_none);
+			wl_assert(qualifier == k_ast_qualifier_none);
 			// No value is initially assigned
 		}
 
@@ -304,7 +304,21 @@ public:
 
 	virtual void end_visit(const c_ast_node_constant *node) {
 		// Add a constant node and return it through the expression stack
-		uint32 constant_node_index = m_execution_graph->add_constant_node(node->get_value());
+		uint32 constant_node_index;
+		switch (node->get_data_type()) {
+		case k_ast_data_type_real:
+			constant_node_index = m_execution_graph->add_constant_node(node->get_real_value());
+			break;
+
+		case k_ast_data_type_string:
+			constant_node_index = m_execution_graph->add_constant_node(node->get_string_value());
+			break;
+
+		default:
+			constant_node_index = c_execution_graph::k_invalid_index;
+			wl_unreachable();
+		}
+
 		s_expression_result result;
 		result.node_index = constant_node_index;
 		m_expression_stack.push(result);
@@ -317,10 +331,10 @@ public:
 	virtual void end_visit(const c_ast_node_named_value *node) {
 		// Return the node containing this named value's current value, as well as the named value's name
 		s_identifier *identifier = get_identifier(node->get_name());
-		wl_assert(identifier->current_intermediate_value_node_index != c_execution_graph::k_invalid_index);
+		wl_assert(identifier->current_value_node_index != c_execution_graph::k_invalid_index);
 
 		s_expression_result result;
-		result.node_index = identifier->current_intermediate_value_node_index;
+		result.node_index = identifier->current_value_node_index;
 		result.identifier_name = node->get_name();
 		m_expression_stack.push(result);
 	}
@@ -349,13 +363,13 @@ public:
 			const c_ast_node_named_value_declaration *argument = module_call_declaration->get_argument(arg);
 			s_expression_result result = argument_expression_results[arg];
 
-			c_ast_node_named_value_declaration::e_qualifier qualifier = argument->get_qualifier();
-			if (qualifier == c_ast_node_named_value_declaration::k_qualifier_in) {
+			e_ast_qualifier qualifier = argument->get_qualifier();
+			if (qualifier == k_ast_qualifier_in) {
 				// We expect to be able to provide a node as input
 				wl_assert(result.node_index != c_execution_graph::k_invalid_index);
 				module_builder.set_in_argument_node_index(arg, result.node_index);
 			} else {
-				wl_assert(qualifier == c_ast_node_named_value_declaration::k_qualifier_out);
+				wl_assert(qualifier == k_ast_qualifier_out);
 				// We expect a named value to store the output in
 				wl_assert(!result.identifier_name.empty());
 				// We will later expect that all outputs get filled with node indices
@@ -369,8 +383,8 @@ public:
 			const c_ast_node_named_value_declaration *argument = module_call_declaration->get_argument(arg);
 			s_expression_result result = argument_expression_results[arg];
 
-			c_ast_node_named_value_declaration::e_qualifier qualifier = argument->get_qualifier();
-			if (qualifier == c_ast_node_named_value_declaration::k_qualifier_out) {
+			e_ast_qualifier qualifier = argument->get_qualifier();
+			if (qualifier == k_ast_qualifier_out) {
 				uint32 out_node_index = module_builder.get_out_argument_node_index(arg);
 				wl_assert(out_node_index != c_execution_graph::k_invalid_index);
 				update_identifier_node_index(result.identifier_name, out_node_index);
@@ -379,7 +393,7 @@ public:
 
 		// Push this module call's result onto the stack
 		s_expression_result result;
-		if (module_call_declaration->get_has_return_value()) {
+		if (module_call_declaration->get_return_type() != k_ast_data_type_void) {
 			result.node_index = module_builder.get_return_value_node_index();
 			wl_assert(result.node_index != c_execution_graph::k_invalid_index);
 		} else {
@@ -394,15 +408,14 @@ void c_execution_graph_builder::build_execution_graph(const c_ast_node *ast, c_e
 	// Find the entry point to start iteration
 	const c_ast_node_module_declaration *entry_point_module =
 		c_execution_graph_module_builder::find_module_declaration(ast, k_entry_point_name);
-	wl_assert(!entry_point_module->get_has_return_value());
+	wl_assert(entry_point_module->get_return_type() == k_ast_data_type_void);
 
 	c_execution_graph_module_builder builder(ast, out_execution_graph, entry_point_module);
 	entry_point_module->iterate(&builder);
 
 	// Add an output node for each argument (they should all be out arguments)
 	for (size_t arg = 0; arg < entry_point_module->get_argument_count(); arg++) {
-		wl_assert(entry_point_module->get_argument(arg)->get_qualifier() ==
-			c_ast_node_named_value_declaration::k_qualifier_out);
+		wl_assert(entry_point_module->get_argument(arg)->get_qualifier() == k_ast_qualifier_out);
 
 		uint32 output_node_index = out_execution_graph->add_output_node(static_cast<uint32>(arg));
 		uint32 out_argument_node_index = builder.get_out_argument_node_index(arg);

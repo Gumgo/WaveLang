@@ -13,7 +13,7 @@
 #define MACRO_BLOCK(x) do { x } while (0)
 
 // Causes an error if x is used before it has been defined
-#define PREDEFINED(x) (1 / defined x## && x)
+#define PREDEFINED(x, ...) (1 / defined x##__VA_ARGS__ && x)
 
 #define NUMBEROF(x) (sizeof(x) / (sizeof(x[0])))
 

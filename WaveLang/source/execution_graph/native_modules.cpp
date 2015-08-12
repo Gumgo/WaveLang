@@ -31,20 +31,26 @@ static void native_module_sqrt(c_native_module_compile_time_argument_list &argum
 static void native_module_pow(c_native_module_compile_time_argument_list &arguments);
 
 struct s_native_module_argument_list {
-	e_native_module_argument_type argument_types[k_max_native_module_arguments];
+	s_native_module_argument arguments[k_max_native_module_arguments];
 };
 
+static s_native_module_argument make_arg();
+
+static s_native_module_argument make_arg(
+	e_native_module_argument_qualifier qualifier,
+	e_native_module_argument_type type);
+
 static s_native_module_argument_list make_args(
-	e_native_module_argument_type arg_0 = k_native_module_argument_type_count,
-	e_native_module_argument_type arg_1 = k_native_module_argument_type_count,
-	e_native_module_argument_type arg_2 = k_native_module_argument_type_count,
-	e_native_module_argument_type arg_3 = k_native_module_argument_type_count,
-	e_native_module_argument_type arg_4 = k_native_module_argument_type_count,
-	e_native_module_argument_type arg_5 = k_native_module_argument_type_count,
-	e_native_module_argument_type arg_6 = k_native_module_argument_type_count,
-	e_native_module_argument_type arg_7 = k_native_module_argument_type_count,
-	e_native_module_argument_type arg_8 = k_native_module_argument_type_count,
-	e_native_module_argument_type arg_9 = k_native_module_argument_type_count);
+	s_native_module_argument arg_0 = make_arg(),
+	s_native_module_argument arg_1 = make_arg(),
+	s_native_module_argument arg_2 = make_arg(),
+	s_native_module_argument arg_3 = make_arg(),
+	s_native_module_argument arg_4 = make_arg(),
+	s_native_module_argument arg_5 = make_arg(),
+	s_native_module_argument arg_6 = make_arg(),
+	s_native_module_argument arg_7 = make_arg(),
+	s_native_module_argument arg_8 = make_arg(),
+	s_native_module_argument arg_9 = make_arg());
 
 static s_native_module make_native_module(
 	const char *name,
@@ -52,85 +58,86 @@ static s_native_module make_native_module(
 	const s_native_module_argument_list &arguments,
 	f_native_module_compile_time_call compile_time_call);
 
-#define NMAT(x) k_native_module_argument_type_ ## x
+#define NMAT(qualifier, type) \
+	make_arg(k_native_module_argument_qualifier_ ## qualifier, k_native_module_argument_type_ ## type)
 
 // The global list of native modules
 static const s_native_module k_native_modules[] = {
 	make_native_module(c_native_module_registry::k_operator_noop_name,
-	true, make_args(NMAT(in), NMAT(out)),
+	true, make_args(NMAT(in, real), NMAT(out, real)),
 	native_module_noop),
 
 	make_native_module(c_native_module_registry::k_operator_negation_name,
-	true, make_args(NMAT(in), NMAT(out)),
+	true, make_args(NMAT(in, real), NMAT(out, real)),
 	native_module_negation),
 
 	make_native_module(c_native_module_registry::k_operator_addition_operator_name,
-	true, make_args(NMAT(in), NMAT(in), NMAT(out)),
+	true, make_args(NMAT(in, real), NMAT(in, real), NMAT(out, real)),
 	native_module_addition),
 
 	make_native_module(c_native_module_registry::k_operator_subtraction_operator_name,
-	true, make_args(NMAT(in), NMAT(in), NMAT(out)),
+	true, make_args(NMAT(in, real), NMAT(in, real), NMAT(out, real)),
 	native_module_subtraction),
 
 	make_native_module(c_native_module_registry::k_operator_multiplication_operator_name,
-	true, make_args(NMAT(in), NMAT(in), NMAT(out)),
+	true, make_args(NMAT(in, real), NMAT(in, real), NMAT(out, real)),
 	native_module_multiplication),
 
 	make_native_module(c_native_module_registry::k_operator_division_name,
-	true, make_args(NMAT(in), NMAT(in), NMAT(out)),
+	true, make_args(NMAT(in, real), NMAT(in, real), NMAT(out, real)),
 	native_module_division),
 
 	make_native_module(c_native_module_registry::k_operator_modulo_name,
-	true, make_args(NMAT(in), NMAT(in), NMAT(out)),
+	true, make_args(NMAT(in, real), NMAT(in, real), NMAT(out, real)),
 	native_module_modulo),
 
 	make_native_module(NATIVE_PREFIX "abs",
-	true, make_args(NMAT(in), NMAT(out)),
+	true, make_args(NMAT(in, real), NMAT(out, real)),
 	native_module_abs),
 
 	make_native_module(NATIVE_PREFIX "floor",
-	true, make_args(NMAT(in), NMAT(out)),
+	true, make_args(NMAT(in, real), NMAT(out, real)),
 	native_module_floor),
 
 	make_native_module(NATIVE_PREFIX "ceil",
-	true, make_args(NMAT(in), NMAT(out)),
+	true, make_args(NMAT(in, real), NMAT(out, real)),
 	native_module_ceil),
 
 	make_native_module(NATIVE_PREFIX "round",
-	true, make_args(NMAT(in), NMAT(out)),
+	true, make_args(NMAT(in, real), NMAT(out, real)),
 	native_module_round),
 
 	make_native_module(NATIVE_PREFIX "min",
-	true, make_args(NMAT(in), NMAT(in), NMAT(out)),
+	true, make_args(NMAT(in, real), NMAT(in, real), NMAT(out, real)),
 	native_module_min),
 
 	make_native_module(NATIVE_PREFIX "max",
-	true, make_args(NMAT(in), NMAT(in), NMAT(out)),
+	true, make_args(NMAT(in, real), NMAT(in, real), NMAT(out, real)),
 	native_module_max),
 
 	make_native_module(NATIVE_PREFIX "exp",
-	true, make_args(NMAT(in), NMAT(out)),
+	true, make_args(NMAT(in, real), NMAT(out, real)),
 	native_module_exp),
 
 	make_native_module(NATIVE_PREFIX "log",
-	true, make_args(NMAT(in), NMAT(out)),
+	true, make_args(NMAT(in, real), NMAT(out, real)),
 	native_module_log),
 
 	make_native_module(NATIVE_PREFIX "sqrt",
-	true, make_args(NMAT(in), NMAT(out)),
+	true, make_args(NMAT(in, real), NMAT(out, real)),
 	native_module_sqrt),
 
 	make_native_module(NATIVE_PREFIX "pow",
-	true, make_args(NMAT(in), NMAT(in), NMAT(out)),
+	true, make_args(NMAT(in, real), NMAT(in, real), NMAT(out, real)),
 	native_module_pow),
 
 	// Non-constant test module
 	make_native_module(NATIVE_PREFIX "test",
-	true, make_args(NMAT(in), NMAT(out)),
+	true, make_args(NMAT(in, real), NMAT(out, real)),
 	nullptr),
 
 	make_native_module(NATIVE_PREFIX "delay_test",
-	true, make_args(NMAT(in), NMAT(constant), NMAT(out)),
+	true, make_args(NMAT(in, real), NMAT(constant, real), NMAT(out, real)),
 	nullptr)
 };
 
@@ -156,17 +163,28 @@ uint32 c_native_module_registry::get_native_module_index(const char *name) {
 	return static_cast<uint32>(-1);
 }
 
+static s_native_module_argument make_arg() {
+	return make_arg(k_native_module_argument_qualifier_count, k_native_module_argument_type_count);
+}
+
+static s_native_module_argument make_arg(
+	e_native_module_argument_qualifier qualifier,
+	e_native_module_argument_type type) {
+	s_native_module_argument arg = { qualifier, type };
+	return arg;
+}
+
 static s_native_module_argument_list make_args(
-	e_native_module_argument_type arg_0,
-	e_native_module_argument_type arg_1,
-	e_native_module_argument_type arg_2,
-	e_native_module_argument_type arg_3,
-	e_native_module_argument_type arg_4,
-	e_native_module_argument_type arg_5,
-	e_native_module_argument_type arg_6,
-	e_native_module_argument_type arg_7,
-	e_native_module_argument_type arg_8,
-	e_native_module_argument_type arg_9) {
+	s_native_module_argument arg_0,
+	s_native_module_argument arg_1,
+	s_native_module_argument arg_2,
+	s_native_module_argument arg_3,
+	s_native_module_argument arg_4,
+	s_native_module_argument arg_5,
+	s_native_module_argument arg_6,
+	s_native_module_argument arg_7,
+	s_native_module_argument arg_8,
+	s_native_module_argument arg_9) {
 	s_native_module_argument_list arg_list = {
 		arg_0, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9
 	};
@@ -188,15 +206,15 @@ static s_native_module make_native_module(
 	for (native_module.argument_count = 0;
 		 native_module.argument_count < k_max_native_module_arguments;
 		 native_module.argument_count++) {
-		// Loop until we find an k_native_module_argument_type_count
-		if (arguments.argument_types[native_module.argument_count] != k_native_module_argument_type_count) {
-			wl_assert(VALID_INDEX(arguments.argument_types[native_module.argument_count],
-				k_native_module_argument_type_count));
-			native_module.argument_types[native_module.argument_count] =
-				arguments.argument_types[native_module.argument_count];
+		s_native_module_argument arg = arguments.arguments[native_module.argument_count];
+		// Loop until we find an k_native_module_argument_qualifier_count
+		if (arg.qualifier != k_native_module_argument_qualifier_count) {
+			wl_assert(VALID_INDEX(arg.qualifier, k_native_module_argument_qualifier_count));
+			wl_assert(VALID_INDEX(arg.type, k_native_module_argument_type_count));
+			native_module.arguments[native_module.argument_count] = arg;
 
-			if (arguments.argument_types[native_module.argument_count] == k_native_module_argument_type_in ||
-				arguments.argument_types[native_module.argument_count] == k_native_module_argument_type_constant) {
+			if (arg.qualifier == k_native_module_argument_qualifier_in ||
+				arg.qualifier == k_native_module_argument_qualifier_constant) {
 				native_module.in_argument_count++;
 			} else {
 				native_module.out_argument_count++;

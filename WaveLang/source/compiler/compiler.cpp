@@ -152,6 +152,7 @@ s_compiler_result c_compiler::compile(const char *root_path, const char *source_
 }
 
 static void output_error(const s_compiler_context &context, const s_compiler_result &result) {
+	// $TODO reverse-escape characters in the message
 	std::cout << "COMPILE ERROR (code " << result.result << ")";
 	if (result.source_location.source_file_index >= 0) {
 		std::cout << " in file " << context.source_files[result.source_location.source_file_index].filename;

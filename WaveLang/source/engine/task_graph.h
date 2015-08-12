@@ -4,6 +4,7 @@
 #include "common/common.h"
 #include "engine/task_functions.h"
 #include "engine/native_module_task_mapping.h"
+#include "common/utility/string_table.h"
 #include <vector>
 
 class c_execution_graph;
@@ -12,13 +13,56 @@ struct s_task_graph_globals {
 	uint32 max_voices;
 };
 
+struct s_task_graph_data {
+	e_task_data_type type;
+
+	// Do not access these directly
+	union {
+		struct {
+			// Used when building the graph
+			uint32 execution_graph_index_a;
+			uint32 execution_graph_index_b;
+		};
+
+		uint32 real_buffer_in;
+		uint32 real_buffer_out;
+		uint32 real_buffer_inout;
+		real32 real_constant_in;
+		const char *string_constant_in;
+	} data;
+
+	uint32 get_real_buffer_in() const {
+		wl_assert(type == k_task_data_type_real_buffer_in);
+		return data.real_buffer_in;
+	}
+
+	uint32 get_real_buffer_out() const {
+		wl_assert(type == k_task_data_type_real_buffer_out);
+		return data.real_buffer_out;
+	}
+
+	uint32 get_real_buffer_inout() const {
+		wl_assert(type == k_task_data_type_real_buffer_inout);
+		return data.real_buffer_inout;
+	}
+
+	real32 get_real_constant_in() const {
+		wl_assert(type == k_task_data_type_real_constant_in);
+		return data.real_constant_in;
+	}
+
+	const char *get_string_constant_in() const {
+		wl_assert(type == k_task_data_type_string_constant_in);
+		return data.string_constant_in;
+	}
+};
+
+typedef c_wrapped_array_const<s_task_graph_data> c_task_graph_data_array;
+typedef c_wrapped_array_const<uint32> c_task_graph_task_array;
+
 class c_task_graph {
 public:
 	static const uint32 k_invalid_buffer = static_cast<uint32>(-1);
-
-	typedef c_wrapped_array_const<real32> c_constant_array;
-	typedef c_wrapped_array_const<uint32> c_buffer_array;
-	typedef c_wrapped_array_const<uint32> c_task_array;
 
 	c_task_graph();
 	~c_task_graph();
@@ -29,26 +73,17 @@ public:
 	uint32 get_max_task_concurrency() const;
 
 	e_task_function get_task_function(uint32 task_index) const;
-
-	c_constant_array get_task_constants(uint32 task_index) const;
-	c_buffer_array get_task_in_buffers(uint32 task_index) const;
-	c_buffer_array get_task_out_buffers(uint32 task_index) const;
-	c_buffer_array get_task_inout_buffers(uint32 task_index) const;
+	c_task_graph_data_array get_task_arguments(uint32 task_index) const;
 
 	size_t get_task_predecessor_count(uint32 task_index) const;
-	c_task_array get_task_successors(uint32 task_index) const;
+	c_task_graph_task_array get_task_successors(uint32 task_index) const;
 
-	c_task_array get_initial_tasks() const;
+	c_task_graph_task_array get_initial_tasks() const;
+	c_task_graph_data_array get_outputs() const;
 
 	uint32 get_buffer_count() const;
 	uint32 get_max_buffer_concurrency() const;
 	uint32 get_buffer_usages(uint32 buffer_index) const;
-
-	// Since this can switch between constant and buffer, don't return an array, require querying
-	uint32 get_output_count() const;
-	bool is_output_buffer(uint32 output_index) const;
-	uint32 get_output_buffer(uint32 output_index) const;
-	real32 get_output_constant(uint32 output_index) const;
 
 	const s_task_graph_globals &get_globals() const;
 
@@ -57,11 +92,8 @@ private:
 		// The function to execute during this task
 		e_task_function task_function;
 
-		// Start index in m_constant_lists or m_buffer_lists for each list of constants or buffers for the task function
-		size_t in_constants_start;
-		size_t in_buffers_start;
-		size_t out_buffers_start;
-		size_t inout_buffers_start;
+		// Start index in m_data_lists
+		size_t arguments_start;
 
 		// Number of tasks which must complete before this task is executed
 		size_t predecessor_count;
@@ -71,6 +103,7 @@ private:
 		size_t successors_count;
 	};
 
+	void resolve_strings();
 	bool add_task_for_node(const c_execution_graph &execution_graph, uint32 node_index,
 		std::vector<uint32> &nodes_to_tasks);
 	void setup_task(const c_execution_graph &execution_graph, uint32 node_index,
@@ -86,9 +119,9 @@ private:
 
 	std::vector<s_task> m_tasks;
 
-	std::vector<real32> m_constant_lists;
-	std::vector<uint32> m_buffer_lists;
+	std::vector<s_task_graph_data> m_data_lists;
 	std::vector<uint32> m_task_lists;
+	c_string_table m_string_table;
 
 	// Total number of unique buffers required
 	uint32 m_buffer_count;
@@ -105,13 +138,8 @@ private:
 	size_t m_initial_tasks_count;
 
 	// List of final output buffers
-	size_t m_output_buffers_start;
-	size_t m_output_buffers_count;
-
-	// It is possible that an output is linked up to a constant instead of a buffer. In this case, a constant will be
-	// stored at the appropriate index in this list, and in the output buffer list, k_invalid_buffer will be stored.
-	size_t m_output_constants_start;
-	size_t m_output_constants_count;
+	size_t m_outputs_start;
+	size_t m_outputs_count;
 
 	s_task_graph_globals m_globals;
 };

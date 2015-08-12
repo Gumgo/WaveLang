@@ -2,6 +2,8 @@
 #define WAVELANG_EXECUTION_GRAPH_H__
 
 #include "common/common.h"
+#include "common/utility/string_table.h"
+#include "execution_graph/native_modules.h"
 #include <vector>
 
 #define EXECUTION_GRAPH_OUTPUT_ENABLED 1
@@ -26,11 +28,8 @@ enum e_execution_graph_node_type {
 	// An output to a native module
 	k_execution_graph_node_type_native_module_output,
 
-	// Takes exactly 1 input of intermediate value type
+	// Takes exactly 1 input
 	k_execution_graph_node_type_output,
-
-	// Holds an intermediate value, optimized away in the final graph
-	k_execution_graph_node_type_intermediate_value, // $TODO unused currently - possibly delete this
 
 	k_execution_graph_node_type_count
 };
@@ -62,9 +61,9 @@ public:
 	bool validate() const;
 
 	uint32 add_constant_node(real32 constant_value);
+	uint32 add_constant_node(const std::string &constant_value);
 	uint32 add_native_module_call_node(uint32 native_module_index);
 	uint32 add_output_node(uint32 output_index);
-	uint32 add_intermediate_value_node();
 	void remove_node(uint32 node_index);
 
 	void add_edge(uint32 from_index, uint32 to_index);
@@ -72,7 +71,9 @@ public:
 
 	uint32 get_node_count() const;
 	e_execution_graph_node_type get_node_type(uint32 node_index) const;
-	real32 get_constant_node_value(uint32 node_index) const;
+	e_native_module_argument_type get_constant_node_data_type(uint32 node_index) const;
+	real32 get_constant_node_real_value(uint32 node_index) const;
+	const char *get_constant_node_string_value(uint32 node_index) const;
 	uint32 get_native_module_call_native_module_index(uint32 node_index) const;
 	uint32 get_output_node_output_index(uint32 node_index) const;
 	size_t get_node_incoming_edge_count(uint32 node_index) const;
@@ -93,12 +94,23 @@ private:
 	struct s_node {
 		e_execution_graph_node_type type;
 		union {
-			uint32 data;
+			struct {
+				uint32 native_module_index;
+			} native_module_call;
 
-			uint32 native_module_index;
-			real32 constant_value;
-			uint32 output_index;
-		};
+			struct {
+				e_native_module_argument_type type;
+
+				union {
+					real32 real_value;
+					uint32 string_index;
+				};
+			} constant;
+
+			struct {
+				uint32 output_index;
+			} output;
+		} node_data;
 
 		std::vector<uint32> incoming_edge_indices;
 		std::vector<uint32> outgoing_edge_indices;
@@ -112,12 +124,18 @@ private:
 	bool validate_node(uint32 index) const;
 	bool validate_edge(uint32 from_index, uint32 to_index) const;
 	bool validate_constants() const;
+	bool validate_string_table() const;
+	bool get_type_from_node(uint32 node_index, e_native_module_argument_type &out_type) const;
 
 	bool visit_node_for_cycle_detection(uint32 node_index,
 		std::vector<bool> &nodes_visited, std::vector<bool> &nodes_marked) const;
 
+	void remove_unused_strings();
+
 	std::vector<s_node> m_nodes;
 	s_execution_graph_globals m_globals;
+
+	c_string_table m_string_table;
 };
 
 #endif // WAVELANG_EXECUTION_GRAPH_H__

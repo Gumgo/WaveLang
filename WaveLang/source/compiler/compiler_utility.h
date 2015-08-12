@@ -121,6 +121,13 @@ namespace compiler_utility {
 	bool is_number(char c);
 
 	bool is_valid_source_character(char c);
+
+	// Attempts to resolve the first escape sequence detected in str. The initial backslash should be left off, as it is
+	// assumed that it has already been detected when this function is called. If escape sequence resolution is
+	// successful, the resulting character is stored in out_result (if a non-null pointer is provided) and the number of
+	// characters used in the sequence is returned (e.g. \xab returns 3, \t returns 1). If no matching escape sequence
+	// is found, 0 is returned.
+	size_t resolve_escape_sequence(c_compiler_string str, char *out_result);
 }
 
 #include "compiler_utility.inl"

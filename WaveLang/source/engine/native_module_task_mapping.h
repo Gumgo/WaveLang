@@ -9,32 +9,9 @@
 // different tasks depending on its inputs. Once a task is selected, the inputs and outputs of the native module must be
 // mapped to the inputs/outputs of the task.
 
-enum e_task_mapping_location {
-	k_task_mapping_location_constant_in,
-	k_task_mapping_location_buffer_in,
-	k_task_mapping_location_buffer_out,
-	k_task_mapping_location_buffer_inout,
-
-	k_task_mapping_location_count
-};
-
-// Specifies where on a task to map a native module input/output
-struct s_task_mapping {
-	// Where to map to on the task
-	e_task_mapping_location location;
-
-	// Index for the location
-	size_t index;
-
-	s_task_mapping(e_task_mapping_location loc, size_t idx)
-		: location(loc)
-		, index(idx) {
-	}
-};
-
-// Maps execution graph native module inputs/outputs to task inputs/outputs/inouts
+// Maps execution graph native module inputs/outputs to task input/output/inout argument indices
 // The array should first list all inputs for the native module, then list all outputs
-typedef c_wrapped_array_const<s_task_mapping> c_task_mapping_array;
+typedef c_wrapped_array_const<uint32> c_task_mapping_array;
 
 // Chooses the appropriate task and input/output mapping for the given native module and inputs, or returns false if no
 // mapping is found.

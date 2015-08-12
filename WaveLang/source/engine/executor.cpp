@@ -72,27 +72,54 @@ void c_executor::initialize_internal(const s_executor_settings &settings) {
 		buffer_allocator_settings.buffer_size = settings.max_buffer_size;
 		buffer_allocator_settings.buffer_count = m_task_graph->get_max_buffer_concurrency();
 
+		c_task_graph_data_array outputs = m_task_graph->get_outputs();
+
 		// Allocate an additional buffer for each constant output. The task graph doesn't require buffers for these, but
 		// at this point we do.
-		for (uint32 output = 0; output < m_task_graph->get_output_count(); output++) {
-			if (!m_task_graph->is_output_buffer(output)) {
+		for (uint32 output = 0; output < outputs.get_count(); output++) {
+			if (outputs[output].type == k_task_data_type_real_constant_in) {
 				buffer_allocator_settings.buffer_count++;
 			}
 		}
 
+		// Allocate an additional buffer for each "duplicated" output buffer. This is because we need to keep them
+		// separate for accumulation.
+		{
+			std::vector<uint32> buffer_deduplicator;
+			buffer_deduplicator.reserve(outputs.get_count());
+			uint32 total_buffer_outputs = 0;
+			uint32 unique_buffer_outputs = 0;
+			for (uint32 output = 0; output < outputs.get_count(); output++) {
+
+				if (outputs[output].type == k_task_data_type_real_buffer_in) {
+					uint32 output_buffer_index = outputs[output].get_real_buffer_in();
+					if (std::find(buffer_deduplicator.begin(), buffer_deduplicator.end(), output_buffer_index) ==
+						buffer_deduplicator.end()) {
+						unique_buffer_outputs++;
+						buffer_deduplicator.push_back(output_buffer_index);
+					}
+
+					total_buffer_outputs++;
+				}
+			}
+
+			uint32 duplicated_buffer_outputs = total_buffer_outputs - unique_buffer_outputs;
+			buffer_allocator_settings.buffer_count += duplicated_buffer_outputs;
+		}
+
 		// If we support multiple voices, we need buffers to accumulate the final result into
 		if (m_task_graph->get_globals().max_voices > 1) {
-			buffer_allocator_settings.buffer_count += m_task_graph->get_output_count();
+			buffer_allocator_settings.buffer_count += outputs.get_count();
 		}
 
 		// If the output count differs from the channel count, we'll need additional buffers to perform mixing
-		if (settings.output_channels != m_task_graph->get_output_count()) {
+		if (settings.output_channels != outputs.get_count()) {
 			buffer_allocator_settings.buffer_count += settings.output_channels;
 		}
 
 		m_buffer_allocator.initialize(buffer_allocator_settings);
 
-		m_voice_output_accumulation_buffers.resize(m_task_graph->get_output_count());
+		m_voice_output_accumulation_buffers.resize(outputs.get_count());
 		m_channel_mix_buffers.resize(settings.output_channels);
 	}
 
@@ -112,10 +139,39 @@ void c_executor::initialize_internal(const s_executor_settings &settings) {
 
 			size_t required_memory_for_task = 0;
 			if (task_function_description.memory_query) {
-				// The memory query takes the tasks's constant inputs. We don't (currently) support dynamic task memory
-				// usage.
-				c_task_graph::c_constant_array constants = m_task_graph->get_task_constants(task);
-				required_memory_for_task = task_function_description.memory_query(constants);
+				// The memory query function will be able to read from the constant inputs.
+				// We don't (currently) support dynamic task memory usage.
+				c_task_graph_data_array task_arguments = m_task_graph->get_task_arguments(task);
+				s_task_function_argument arguments[k_max_task_function_arguments];
+				for (size_t arg = 0; arg < task_arguments.get_count(); arg++) {
+					const s_task_graph_data &task_argument = task_arguments[arg];
+					s_task_function_argument &argument = arguments[arg];
+
+					// Null-out any buffer pointers
+					ZERO_STRUCT(&argument);
+					argument.type = task_argument.type;
+					switch (argument.type) {
+					case k_task_data_type_real_buffer_in:
+					case k_task_data_type_real_buffer_out:
+					case k_task_data_type_real_buffer_inout:
+						// Nothing to do
+						break;
+
+					case k_task_data_type_real_constant_in:
+						argument.data.real_constant_in = task_argument.get_real_constant_in();
+						break;
+
+					case k_task_data_type_string_constant_in:
+						argument.data.string_constant_in = task_argument.get_string_constant_in();
+						break;
+
+					default:
+						wl_unreachable();
+					}
+				}
+
+				required_memory_for_task = task_function_description.memory_query(
+					c_task_function_arguments(arguments, task_arguments.get_count()));
 			}
 
 			if (required_memory_for_task == 0) {
@@ -208,6 +264,8 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 	std::fill(m_channel_mix_buffers.begin(), m_channel_mix_buffers.end(),
 		k_lock_free_invalid_handle);
 
+	c_task_graph_data_array outputs = m_task_graph->get_outputs();
+
 	// Process each active voice
 	uint32 voices_processed = 0;
 	for (uint32 voice = 0; voice < m_voice_contexts.size(); voice++) {
@@ -231,7 +289,7 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 		m_tasks_remaining.initialize(static_cast<int32>(m_task_graph->get_task_count()));
 
 		// Add the initial tasks
-		c_task_graph::c_task_array initial_tasks = m_task_graph->get_initial_tasks();
+		c_task_graph_task_array initial_tasks = m_task_graph->get_initial_tasks();
 		if (initial_tasks.get_count() > 0) {
 			for (size_t initial_task = 0; initial_task < initial_tasks.get_count(); initial_task++) {
 				add_task(voice, initial_tasks[initial_task], chunk_context.frames);
@@ -245,47 +303,65 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 
 		if (voices_processed == 0) {
 			// Swap the output buffers into the accumulation buffers
-			for (uint32 output = 0; output < m_task_graph->get_output_count(); output++) {
+			for (uint32 output = 0; output < outputs.get_count(); output++) {
 				wl_assert(m_voice_output_accumulation_buffers[output] == k_lock_free_invalid_handle);
-				if (m_task_graph->is_output_buffer(output)) {
+				if (outputs[output].type == k_task_data_type_real_buffer_in) {
 					// Swap out the buffer
 					s_buffer_context &buffer_context =
-						m_buffer_contexts.get_array()[m_task_graph->get_output_buffer(output)];
-					std::swap(m_voice_output_accumulation_buffers[output], buffer_context.handle);
-					wl_assert(buffer_context.usages_remaining.get_unsafe() == 1);
-					IF_ASSERTS_ENABLED(buffer_context.usages_remaining.initialize(0));
+						m_buffer_contexts.get_array()[outputs[output].get_real_buffer_in()];
+
+					wl_assert(buffer_context.usages_remaining.get_unsafe() >= 0);
+					if (buffer_context.usages_remaining.get_unsafe() > 0) {
+						// Set usage count to 0, but don't deallocate, because we're swapping it into the accumulation
+						// buffer slot. Don't clear the handle though, because it may be used as another output.
+						buffer_context.usages_remaining.initialize(0);
+						m_voice_output_accumulation_buffers[output] = buffer_context.handle;
+					} else {
+						// This case occurs when a single buffer is used for multiple outputs, and the buffer was
+						// already swapped to an accumulation slot. In this case, we must actually allocate an
+						// additional buffer and copy to it, because we need to keep the data separate both
+						// accumulations.
+						uint32 buffer_handle = m_buffer_allocator.allocate_buffer();
+						m_voice_output_accumulation_buffers[output] = buffer_handle;
+						s_buffer_operation_assignment::buffer(
+							chunk_context.frames,
+							m_buffer_allocator.get_buffer(buffer_handle),
+							m_buffer_allocator.get_buffer(buffer_context.handle));
+					}
 				} else {
+					wl_assert(outputs[output].type == k_task_data_type_real_constant_in);
 					uint32 buffer_handle = m_buffer_allocator.allocate_buffer();
 					m_voice_output_accumulation_buffers[output] = buffer_handle;
 					s_buffer_operation_assignment::constant(
 						chunk_context.frames,
 						m_buffer_allocator.get_buffer(buffer_handle),
-						m_task_graph->get_output_constant(output));
+						outputs[output].get_real_constant_in());
 				}
 			}
 		} else {
 			// Add to the accumulation buffers, which should already exist from the first voice
-			for (uint32 output = 0; output < m_task_graph->get_output_count(); output++) {
+			for (uint32 output = 0; output < outputs.get_count(); output++) {
 				uint32 accumulation_buffer_handle = m_voice_output_accumulation_buffers[output];
 				wl_assert(accumulation_buffer_handle != k_lock_free_invalid_handle);
-				if (m_task_graph->is_output_buffer(output)) {
-					uint32 output_buffer_handle = m_task_graph->get_output_buffer(output);
+				if (outputs[output].type == k_task_data_type_real_buffer_in) {
+					uint32 output_buffer_handle = outputs[output].get_real_buffer_in();
 					s_buffer_operation_addition::bufferio_buffer(
 						chunk_context.frames,
 						m_buffer_allocator.get_buffer(accumulation_buffer_handle),
 						m_buffer_allocator.get_buffer(output_buffer_handle));
 				} else {
+					wl_assert(outputs[output].type == k_task_data_type_real_constant_in);
 					s_buffer_operation_assignment::constant(
 						chunk_context.frames,
 						m_buffer_allocator.get_buffer(accumulation_buffer_handle),
-						m_task_graph->get_output_constant(output));
+						outputs[output].get_real_constant_in());
 				}
 			}
 
 			// Free the output buffers
-			for (size_t index = 0; index < m_task_graph->get_output_count(); index++) {
-				if (m_task_graph->is_output_buffer(index)) {
-					uint32 buffer_index = m_task_graph->get_output_buffer(index);
+			for (size_t index = 0; index < outputs.get_count(); index++) {
+				if (outputs[index].type == k_task_data_type_real_buffer_in) {
+					uint32 buffer_index = outputs[index].get_real_buffer_in();
 					decrement_buffer_usage(buffer_index);
 				}
 			}
@@ -295,7 +371,8 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 		// All buffers should have been freed
 		for (size_t buffer = 0; buffer < m_buffer_contexts.get_array().get_count(); buffer++) {
 			s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer];
-			wl_assert(buffer_context.handle == k_lock_free_invalid_handle);
+			// We can't assert this because we don't clear handles for output buffers due to the duplication case:
+			//wl_assert(buffer_context.handle == k_lock_free_invalid_handle);
 			wl_assert(buffer_context.usages_remaining.get_unsafe() == 0);
 		}
 #endif // PREDEFINED(ASSERTS_ENABLED)
@@ -305,7 +382,7 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 
 	if (voices_processed == 0) {
 		// Allocate zero'd buffers
-		for (uint32 output = 0; output < m_task_graph->get_output_count(); output++) {
+		for (uint32 output = 0; output < outputs.get_count(); output++) {
 			wl_assert(m_voice_output_accumulation_buffers[output] == k_lock_free_invalid_handle);
 			uint32 buffer_handle = m_buffer_allocator.allocate_buffer();
 			m_voice_output_accumulation_buffers[output] = buffer_handle;
@@ -316,7 +393,7 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 		}
 	}
 
-	if (m_task_graph->get_output_count() != chunk_context.output_channels) {
+	if (outputs.get_count() != chunk_context.output_channels) {
 		// Allocate channel buffers
 		for (uint32 channel = 0; channel < chunk_context.output_channels; channel++) {
 			wl_assert(m_channel_mix_buffers[channel] == k_lock_free_invalid_handle);
@@ -331,7 +408,7 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 			accumulation_buffers, channel_buffers);
 
 		// Free the accumulation buffers
-		for (uint32 output = 0; output < m_task_graph->get_output_count(); output++) {
+		for (uint32 output = 0; output < outputs.get_count(); output++) {
 			m_buffer_allocator.free_buffer(m_voice_output_accumulation_buffers[output]);
 		}
 	} else {
@@ -384,64 +461,48 @@ void c_executor::process_task(uint32 voice_index, uint32 task_index, uint32 fram
 
 	{
 		// Set up the arguments
-		static const size_t k_max_task_function_arguments = 10;
-		real32 in_constant_args[k_max_task_function_arguments];
-		const c_buffer *in_buffer_args[k_max_task_function_arguments];
-		c_buffer *out_buffer_args[k_max_task_function_arguments];
-		c_buffer *inout_buffer_args[k_max_task_function_arguments];
+		s_task_function_argument arguments[k_max_task_function_arguments];
+		c_task_graph_data_array argument_data = m_task_graph->get_task_arguments(task_index);
 
-		size_t next_in_constant_arg = 0;
-		size_t next_in_buffer_arg = 0;
-		size_t next_out_buffer_arg = 0;
-		size_t next_inout_buffer_arg = 0;
+		for (size_t arg = 0; arg < argument_data.get_count(); arg++) {
+			s_task_function_argument &argument = arguments[arg];
+			argument.type = argument_data[arg].type;
 
-		c_task_graph::c_constant_array constants = m_task_graph->get_task_constants(task_index);
-		for (size_t index = 0; index < constants.get_count(); index++) {
-			wl_assert(next_in_constant_arg < k_max_task_function_arguments);
-			in_constant_args[next_in_constant_arg] = constants[index];
-			next_in_constant_arg++;
-		}
+			switch (argument.type) {
+			case k_task_data_type_real_buffer_in:
+				argument.data.real_buffer_in = m_buffer_allocator.get_buffer(
+					m_buffer_contexts.get_array()[argument_data[arg].get_real_buffer_in()].handle);
+				break;
 
-		c_task_graph::c_buffer_array in_buffers = m_task_graph->get_task_in_buffers(task_index);
-		for (size_t index = 0; index < in_buffers.get_count(); index++) {
-			wl_assert(next_in_buffer_arg < k_max_task_function_arguments);
-			uint32 buffer_index = in_buffers[index];
-			const s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer_index];
-			in_buffer_args[next_in_buffer_arg] = m_buffer_allocator.get_buffer(buffer_context.handle);
-			next_in_buffer_arg++;
-		}
+			case k_task_data_type_real_buffer_out:
+				argument.data.real_buffer_out = m_buffer_allocator.get_buffer(
+					m_buffer_contexts.get_array()[argument_data[arg].get_real_buffer_out()].handle);
+				break;
 
-		c_task_graph::c_buffer_array out_buffers = m_task_graph->get_task_out_buffers(task_index);
-		for (size_t index = 0; index < out_buffers.get_count(); index++) {
-			wl_assert(next_out_buffer_arg < k_max_task_function_arguments);
-			uint32 buffer_index = out_buffers[index];
-			const s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer_index];
-			out_buffer_args[next_out_buffer_arg] = m_buffer_allocator.get_buffer(buffer_context.handle);
-			next_out_buffer_arg++;
-		}
+			case k_task_data_type_real_buffer_inout:
+				argument.data.real_buffer_inout = m_buffer_allocator.get_buffer(
+					m_buffer_contexts.get_array()[argument_data[arg].get_real_buffer_inout()].handle);
+				break;
 
-		c_task_graph::c_buffer_array inout_buffers = m_task_graph->get_task_inout_buffers(task_index);
-		for (size_t index = 0; index < inout_buffers.get_count(); index++) {
-			wl_assert(next_inout_buffer_arg < k_max_task_function_arguments);
-			uint32 buffer_index = inout_buffers[index];
-			const s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer_index];
-			inout_buffer_args[next_inout_buffer_arg] = m_buffer_allocator.get_buffer(buffer_context.handle);
-			next_inout_buffer_arg++;
+			case k_task_data_type_real_constant_in:
+				argument.data.real_constant_in = argument_data[arg].get_real_constant_in();
+				break;
+
+			case k_task_data_type_string_constant_in:
+				argument.data.string_constant_in = argument_data[arg].get_string_constant_in();
+				break;
+
+
+			default:
+				wl_unreachable();
+			}
 		}
 
 		s_task_function_context task_function_context;
 		task_function_context.buffer_size = frames;
 		task_function_context.task_memory =
 			m_voice_task_memory_pointers[m_task_graph->get_task_count() * voice_index + task_index];
-
-		task_function_context.in_constants =
-			c_wrapped_array_const<real32>(in_constant_args, next_in_constant_arg);
-		task_function_context.in_buffers =
-			c_wrapped_array_const<const c_buffer *>(in_buffer_args, next_in_buffer_arg);
-		task_function_context.out_buffers =
-			c_wrapped_array_const<c_buffer *>(out_buffer_args, next_out_buffer_arg);
-		task_function_context.inout_buffers =
-			c_wrapped_array_const<c_buffer *>(inout_buffer_args, next_inout_buffer_arg);
+		task_function_context.arguments = c_task_function_arguments(arguments, argument_data.get_count());
 
 		// $TODO fill in timing info, etc.
 
@@ -453,7 +514,7 @@ void c_executor::process_task(uint32 voice_index, uint32 task_index, uint32 fram
 	decrement_buffer_usages(task_index);
 
 	// Decrement remaining predecessor counts for all successors to this task
-	c_task_graph::c_task_array successors = m_task_graph->get_task_successors(task_index);
+	c_task_graph_task_array successors = m_task_graph->get_task_successors(task_index);
 	for (size_t successor = 0; successor < successors.get_count(); successor++) {
 		uint32 successor_index = successors[successor];
 
@@ -474,48 +535,72 @@ void c_executor::process_task(uint32 voice_index, uint32 task_index, uint32 fram
 }
 
 void c_executor::allocate_output_buffers(uint32 task_index) {
-	// Any input buffers should already be allocated
-#if PREDEFINED(ASSERTS_ENABLED)
-	c_task_graph::c_buffer_array in_buffers = m_task_graph->get_task_in_buffers(task_index);
-	for (size_t index = 0; index < in_buffers.get_count(); index++) {
-		uint32 buffer_index = in_buffers[index];
-		wl_assert(m_buffer_contexts.get_array()[buffer_index].handle != k_lock_free_invalid_handle);
-	}
+	c_task_graph_data_array arguments = m_task_graph->get_task_arguments(task_index);
 
-	c_task_graph::c_buffer_array inout_buffers = m_task_graph->get_task_inout_buffers(task_index);
-	for (size_t index = 0; index < inout_buffers.get_count(); index++) {
-		uint32 buffer_index = inout_buffers[index];
-		wl_assert(m_buffer_contexts.get_array()[buffer_index].handle != k_lock_free_invalid_handle);
-	}
-#endif // PREDEFINED(ASSERTS_ENABLED)
+	for (size_t index = 0; index < arguments.get_count(); index++) {
+		const s_task_graph_data &argument = arguments[index];
 
-	// Allocate output buffers
-	c_task_graph::c_buffer_array out_buffers = m_task_graph->get_task_out_buffers(task_index);
-	for (size_t index = 0; index < out_buffers.get_count(); index++) {
-		uint32 buffer_index = out_buffers[index];
-		wl_assert(m_buffer_contexts.get_array()[buffer_index].handle == k_lock_free_invalid_handle);
-		m_buffer_contexts.get_array()[buffer_index].handle = m_buffer_allocator.allocate_buffer();
+		switch (argument.type) {
+		case k_task_data_type_real_buffer_in:
+			// Any input buffers should already be allocated
+			wl_assert(m_buffer_contexts.get_array()[argument.get_real_buffer_in()].handle !=
+				k_lock_free_invalid_handle);
+			break;
+
+		case k_task_data_type_real_buffer_out:
+		{
+			// Allocate output buffers
+			uint32 buffer_index = argument.get_real_buffer_out();
+			wl_assert(m_buffer_contexts.get_array()[buffer_index].handle == k_lock_free_invalid_handle);
+			m_buffer_contexts.get_array()[buffer_index].handle = m_buffer_allocator.allocate_buffer();
+			break;
+		}
+
+		case k_task_data_type_real_buffer_inout:
+			// Any input buffers should already be allocated
+			wl_assert(m_buffer_contexts.get_array()[argument.get_real_buffer_inout()].handle !=
+				k_lock_free_invalid_handle);
+			break;
+
+		case k_task_data_type_real_constant_in:
+		case k_task_data_type_string_constant_in:
+			// Nothing to do
+			break;
+
+		default:
+			wl_unreachable();
+		}
 	}
 }
 
 void c_executor::decrement_buffer_usages(uint32 task_index) {
+	c_task_graph_data_array arguments = m_task_graph->get_task_arguments(task_index);
+
 	// Decrement usage of each buffer
-	c_task_graph::c_buffer_array in_buffers = m_task_graph->get_task_in_buffers(task_index);
-	for (size_t index = 0; index < in_buffers.get_count(); index++) {
-		uint32 buffer_index = in_buffers[index];
-		decrement_buffer_usage(buffer_index);
-	}
+	for (size_t index = 0; index < arguments.get_count(); index++) {
+		const s_task_graph_data &argument = arguments[index];
 
-	c_task_graph::c_buffer_array out_buffers = m_task_graph->get_task_out_buffers(task_index);
-	for (size_t index = 0; index < out_buffers.get_count(); index++) {
-		uint32 buffer_index = out_buffers[index];
-		decrement_buffer_usage(buffer_index);
-	}
+		switch (argument.type) {
+		case k_task_data_type_real_buffer_in:
+			decrement_buffer_usage(argument.get_real_buffer_in());
+			break;
 
-	c_task_graph::c_buffer_array inout_buffers = m_task_graph->get_task_inout_buffers(task_index);
-	for (size_t index = 0; index < inout_buffers.get_count(); index++) {
-		uint32 buffer_index = inout_buffers[index];
-		decrement_buffer_usage(buffer_index);
+		case k_task_data_type_real_buffer_out:
+			decrement_buffer_usage(argument.get_real_buffer_out());
+			break;
+
+		case k_task_data_type_real_buffer_inout:
+			decrement_buffer_usage(argument.get_real_buffer_inout());
+			break;
+
+		case k_task_data_type_real_constant_in:
+		case k_task_data_type_string_constant_in:
+			// Nothing to do
+			break;
+
+		default:
+			wl_unreachable();
+		}
 	}
 }
 
