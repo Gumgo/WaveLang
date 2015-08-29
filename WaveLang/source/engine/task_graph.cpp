@@ -209,6 +209,7 @@ static uint32 get_real_buffer_index(const s_task_graph_data &data) {
 		break;
 
 	case k_task_data_type_real_constant_in:
+	case k_task_data_type_bool_constant_in:
 	case k_task_data_type_string_constant_in:
 		// Nothing to do
 		break;
@@ -341,6 +342,11 @@ void c_task_graph::setup_task(const c_execution_graph &execution_graph, uint32 n
 			argument_data.data.real_constant_in = execution_graph.get_constant_node_real_value(source_node_index);
 			break;
 
+		case k_task_data_type_bool_constant_in:
+			wl_assert(argument_data.data.execution_graph_index_a == c_execution_graph::k_invalid_index);
+			argument_data.data.bool_constant_in = execution_graph.get_constant_node_bool_value(source_node_index);
+			break;
+
 		case k_task_data_type_string_constant_in:
 			wl_assert(argument_data.data.execution_graph_index_a == c_execution_graph::k_invalid_index);
 			// add_string() returns an offset, so temporarily store this in the pointer. This is because as we add more
@@ -385,6 +391,7 @@ void c_task_graph::setup_task(const c_execution_graph &execution_graph, uint32 n
 			break;
 
 		case k_task_data_type_real_constant_in:
+		case k_task_data_type_bool_constant_in:
 		case k_task_data_type_string_constant_in:
 			wl_vhalt("Can't map outputs to inputs");
 			break;
@@ -543,6 +550,7 @@ void c_task_graph::allocate_buffers(const c_execution_graph &execution_graph) {
 				break;
 
 			case k_task_data_type_real_constant_in:
+			case k_task_data_type_bool_constant_in:
 			case k_task_data_type_string_constant_in:
 				// Nothing to do
 				break;
@@ -582,6 +590,7 @@ void c_task_graph::allocate_buffers(const c_execution_graph &execution_graph) {
 				break;
 
 			case k_task_data_type_real_constant_in:
+			case k_task_data_type_bool_constant_in:
 			case k_task_data_type_string_constant_in:
 				// Nothing to do
 				break;

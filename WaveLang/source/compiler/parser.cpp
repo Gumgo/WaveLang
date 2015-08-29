@@ -186,10 +186,12 @@ static const char *k_parse_tree_output_terminal_strings[] = {
 	"keyword-module",
 	"keyword-void",
 	"keyword-real",
+	"keyword-bool",
 	"keyword-string",
 	"keyword-return",
 	"identifier",
 	"constant-real",
+	"constant-bool",
 	"constant-string",
 	"left-parenthesis",
 	"right-parenthesis",
@@ -203,6 +205,7 @@ static const char *k_parse_tree_output_terminal_strings[] = {
 	"operator-multiplication",
 	"operator-division",
 	"operator-modulo",
+	"operator-concatenation",
 	"comment"
 };
 static_assert(NUMBEROF(k_parse_tree_output_terminal_strings) == k_token_type_count, "Incorrect array size");

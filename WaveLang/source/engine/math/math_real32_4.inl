@@ -1,0 +1,136 @@
+inline c_real32_4::c_real32_4() {
+}
+
+inline c_real32_4::c_real32_4(real32 v)
+	: m_value(_mm_set1_ps(v)) {
+}
+
+inline c_real32_4::c_real32_4(real32 a, real32 b, real32 c, real32 d)
+	: m_value(_mm_set_ps(a, b, c, d)) {
+}
+
+inline c_real32_4::c_real32_4(const real32 *ptr) {
+	load(ptr);
+}
+
+inline c_real32_4::c_real32_4(const __m128 &v)
+	: m_value(v) {
+}
+
+inline c_real32_4::c_real32_4(const c_real32_4 &v)
+	: m_value(v.m_value) {
+}
+
+inline void c_real32_4::load(const real32 *ptr) {
+	wl_assert(is_pointer_aligned(ptr, k_sse_alignment));
+	m_value = _mm_load_ps(ptr);
+}
+
+inline void c_real32_4::store(real32 *ptr) const {
+	wl_assert(is_pointer_aligned(ptr, k_sse_alignment));
+	_mm_store_ps(ptr, m_value);
+}
+
+inline c_real32_4 &c_real32_4::c_real32_4::operator=(const __m128 &v) {
+	m_value = v;
+	return *this;
+}
+
+inline c_real32_4 &c_real32_4::operator=(const c_real32_4 &v) {
+	m_value = v.m_value;
+	return *this;
+}
+
+inline c_real32_4::operator __m128() const {
+	return m_value;
+}
+
+inline c_int32_4 c_real32_4::int32_4_from_bits() const {
+	return _mm_castps_si128(m_value);
+}
+
+inline c_real32_4 operator+(const c_real32_4 &v) {
+	return v;
+}
+
+inline c_real32_4 operator-(const c_real32_4 &v) {
+	return _mm_sub_ps(_mm_set1_ps(0.0f), v);
+}
+
+inline c_real32_4 operator+(const c_real32_4 &lhs, const c_real32_4 &rhs) {
+	return _mm_add_ps(lhs, rhs);
+}
+
+inline c_real32_4 operator-(const c_real32_4 &lhs, const c_real32_4 &rhs) {
+	return _mm_sub_ps(lhs, rhs);
+}
+
+inline c_real32_4 operator*(const c_real32_4 &lhs, const c_real32_4 &rhs) {
+	return _mm_mul_ps(lhs, rhs);
+}
+
+inline c_real32_4 operator/(const c_real32_4 &lhs, const c_real32_4 &rhs) {
+	return _mm_div_ps(lhs, rhs);
+}
+
+inline c_real32_4 operator%(const c_real32_4 &lhs, const c_real32_4 &rhs) {
+	// Rounds toward 0
+	__m128 c = _mm_div_ps(lhs, rhs);
+	__m128i i = _mm_cvttps_epi32(c);
+	__m128 c_trunc = _mm_cvtepi32_ps(i);
+	__m128 base = _mm_mul_ps(c_trunc, rhs);
+	return _mm_sub_ps(lhs, base);
+}
+
+inline c_real32_4 abs(const c_real32_4 &v) {
+	// Mask off the sign bit for fast abs
+	static const __m128 k_sign_mask = _mm_set1_ps(-0.0f);
+	return _mm_andnot_ps(k_sign_mask, v);
+}
+
+inline c_real32_4 floor(const c_real32_4 &v) {
+	// $TODO support SSE3
+	return _mm_floor_ps(v);
+}
+
+inline c_real32_4 ceil(const c_real32_4 &v) {
+	// $TODO support SSE3
+	return _mm_ceil_ps(v);
+}
+
+inline c_real32_4 round(const c_real32_4 &v) {
+	// $TODO support SSE3
+	return _mm_round_ps(v, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC);
+}
+
+inline c_real32_4 min(const c_real32_4 &a, const c_real32_4 &b) {
+	return _mm_min_ps(a, b);
+}
+
+inline c_real32_4 max(const c_real32_4 &a, const c_real32_4 &b) {
+	return _mm_max_ps(a, b);
+}
+
+inline c_real32_4 log(const c_real32_4 &v) {
+	return log_ps(v);
+}
+
+inline c_real32_4 exp(const c_real32_4 &v) {
+	return exp_ps(v);
+}
+
+inline c_real32_4 sqrt(const c_real32_4 &v) {
+	return _mm_sqrt_ps(v);
+}
+
+inline c_real32_4 pow(const c_real32_4 &a, const c_real32_4 &b) {
+	return exp(b * log(a));
+}
+
+inline c_real32_4 sin(const c_real32_4 &v) {
+	return sin_ps(v);
+}
+
+inline c_real32_4 cos(const c_real32_4 &v) {
+	return cos_ps(v);
+}

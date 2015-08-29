@@ -14,10 +14,14 @@ PROD(NS(global_scope_item),
 PROD(NS(type),
 	TS(keyword_real))
 PROD(NS(type),
+	TS(keyword_bool))
+PROD(NS(type),
 	TS(keyword_string))
 
 PROD(NS(type_or_void),
 	TS(keyword_real))
+PROD(NS(type_or_void),
+	TS(keyword_bool))
 PROD(NS(type_or_void),
 	TS(keyword_string))
 PROD(NS(type_or_void),
@@ -83,6 +87,8 @@ PROD(NS(expr_1),
 PROD(NS(expr_1),
 	NS(expr_1), TS(operator_subtraction), NS(expr_2))
 PROD(NS(expr_1),
+	NS(expr_1), TS(operator_concatenation), NS(expr_2))
+PROD(NS(expr_1),
 	NS(expr_2))
 
 PROD(NS(expr_2),
@@ -109,6 +115,8 @@ PROD(NS(expr_4),
 	NS(module_call))
 PROD(NS(expr_4),
 	TS(constant_real))
+PROD(NS(expr_4),
+	TS(constant_bool))
 PROD(NS(expr_4),
 	TS(constant_string))
 

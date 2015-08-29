@@ -1,10 +1,8 @@
 #include "execution_graph/execution_graph.h"
+#include "common/utility/file_utility.h"
 #include <string>
 #include <algorithm>
-
-#if PREDEFINED(EXECUTION_GRAPH_OUTPUT_ENABLED)
 #include <fstream>
-#endif // PREDEFINED(EXECUTION_GRAPH_OUTPUT_ENABLED)
 
 static const char k_format_identifier[] = { 'w', 'a', 'v', 'e', 'l', 'a', 'n', 'g' };
 
@@ -13,15 +11,6 @@ c_execution_graph::c_execution_graph() {
 }
 
 // $TODO do we care about being endian-correct?
-
-template<typename t_value> void write(std::ofstream &out, t_value value) {
-	out.write(reinterpret_cast<const char *>(&value), sizeof(value));
-}
-
-template<typename t_value> bool read(std::ifstream &in, t_value &value) {
-	in.read(reinterpret_cast<char *>(&value), sizeof(value));
-	return !in.fail();
-}
 
 e_execution_graph_result c_execution_graph::save(const char *fname) const {
 	wl_assert(validate());
@@ -69,6 +58,8 @@ e_execution_graph_result c_execution_graph::save(const char *fname) const {
 			write(out, node.node_data.constant.type);
 			if (node.node_data.constant.type == k_native_module_argument_type_real) {
 				write(out, node.node_data.constant.real_value);
+			} else if (node.node_data.constant.type == k_native_module_argument_type_bool) {
+				write(out, node.node_data.constant.bool_value);
 			} else if (node.node_data.constant.type == k_native_module_argument_type_string) {
 				write(out, node.node_data.constant.string_index);
 			} else {
@@ -182,6 +173,10 @@ e_execution_graph_result c_execution_graph::load(const char *fname) {
 
 			if (node.node_data.constant.type == k_native_module_argument_type_real) {
 				if (!read(in, node.node_data.constant.real_value)) {
+					return in.eof() ? k_execution_graph_result_invalid_graph : k_execution_graph_result_failed_to_read;
+				}
+			} else if (node.node_data.constant.type == k_native_module_argument_type_bool) {
+				if (!read(in, node.node_data.constant.bool_value)) {
 					return in.eof() ? k_execution_graph_result_invalid_graph : k_execution_graph_result_failed_to_read;
 				}
 			} else if (node.node_data.constant.type == k_native_module_argument_type_string) {
@@ -356,6 +351,15 @@ uint32 c_execution_graph::add_constant_node(real32 constant_value) {
 	node.type = k_execution_graph_node_type_constant;
 	node.node_data.constant.type = k_native_module_argument_type_real;
 	node.node_data.constant.real_value = constant_value;
+	return index;
+}
+
+uint32 c_execution_graph::add_constant_node(bool constant_value) {
+	uint32 index = allocate_node();
+	s_node &node = m_nodes[index];
+	node.type = k_execution_graph_node_type_constant;
+	node.node_data.constant.type = k_native_module_argument_type_bool;
+	node.node_data.constant.bool_value = constant_value;
 	return index;
 }
 
@@ -892,6 +896,13 @@ real32 c_execution_graph::get_constant_node_real_value(uint32 node_index) const 
 	return node.node_data.constant.real_value;
 }
 
+bool c_execution_graph::get_constant_node_bool_value(uint32 node_index) const {
+	const s_node &node = m_nodes[node_index];
+	wl_assert(node.type == k_execution_graph_node_type_constant);
+	wl_assert(node.node_data.constant.type == k_native_module_argument_type_bool);
+	return node.node_data.constant.bool_value;
+}
+
 const char *c_execution_graph::get_constant_node_string_value(uint32 node_index) const {
 	const s_node &node = m_nodes[node_index];
 	wl_assert(node.type == k_execution_graph_node_type_constant);
@@ -991,6 +1002,8 @@ void c_execution_graph::output_to_file() const {
 			shape = "circle";
 			if (node.node_data.constant.type == k_native_module_argument_type_real) {
 				label = std::to_string(node.node_data.constant.real_value);
+			} else if (node.node_data.constant.type == k_native_module_argument_type_bool) {
+				label = m_string_table.get_string(node.node_data.constant.bool_value);
 			} else if (node.node_data.constant.type == k_native_module_argument_type_string) {
 				label = m_string_table.get_string(node.node_data.constant.string_index);
 			} else {

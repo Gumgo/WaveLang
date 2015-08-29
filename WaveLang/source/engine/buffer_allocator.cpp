@@ -1,5 +1,5 @@
 #include "engine/buffer_allocator.h"
-#include "engine/buffer_operations/sse.h"
+#include "engine/math/sse.h"
 
 static_assert(CACHE_LINE_SIZE >= SSE_ALIGNMENT, "Cache line too small for SSE");
 

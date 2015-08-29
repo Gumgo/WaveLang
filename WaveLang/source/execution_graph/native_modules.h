@@ -24,6 +24,9 @@ enum e_native_module {
 	k_native_module_multiplication,
 	k_native_module_division,
 	k_native_module_modulo,
+	k_native_module_concatenation,
+
+	// $TODO bool operators: ~, &, |, ^
 
 	// Utility functions
 	k_native_module_abs,
@@ -38,6 +41,9 @@ enum e_native_module {
 	k_native_module_pow,
 
 	// $TODO trig functions
+
+	// Samplers
+	k_native_module_sampler,
 
 	// $TODO temporary for testing
 	k_native_module_test,
@@ -58,6 +64,7 @@ enum e_native_module_argument_qualifier {
 
 enum e_native_module_argument_type {
 	k_native_module_argument_type_real,
+	k_native_module_argument_type_bool,
 	k_native_module_argument_type_string,
 
 	k_native_module_argument_type_count
@@ -75,12 +82,16 @@ struct s_native_module_compile_time_argument {
 	bool assigned;
 #endif // PREDEFINED(ASSERTS_ENABLED)
 
-	real32 real_value;
+	// Don't use these directly
+	union {
+		real32 real_value;
+		bool bool_value;
+	};
 	std::string string_value;
 
 	// These functions are used to enforce correct usage of input or output
 
-	operator real32() const {
+	real32 get_real() const {
 		wl_assert(
 			argument.qualifier == k_native_module_argument_qualifier_in ||
 			argument.qualifier == k_native_module_argument_qualifier_constant);
@@ -96,7 +107,23 @@ struct s_native_module_compile_time_argument {
 		return value;
 	}
 
-	operator std::string() const {
+	bool get_bool() const {
+		wl_assert(
+			argument.qualifier == k_native_module_argument_qualifier_in ||
+			argument.qualifier == k_native_module_argument_qualifier_constant);
+		wl_assert(argument.type == k_native_module_argument_type_bool);
+		return bool_value;
+	}
+
+	bool operator=(bool value) {
+		wl_assert(argument.qualifier == k_native_module_argument_qualifier_out);
+		wl_assert(argument.type == k_native_module_argument_type_bool);
+		this->bool_value = value;
+		IF_ASSERTS_ENABLED(assigned = true);
+		return value;
+	}
+
+	const std::string &get_string() const {
 		wl_assert(
 			argument.qualifier == k_native_module_argument_qualifier_in ||
 			argument.qualifier == k_native_module_argument_qualifier_constant);
@@ -156,6 +183,7 @@ public:
 	static const char *k_operator_multiplication_operator_name;
 	static const char *k_operator_division_name;
 	static const char *k_operator_modulo_name;
+	static const char *k_operator_concatenation_name;
 };
 
 #endif // WAVELANG_NATIVE_MODULES_H__

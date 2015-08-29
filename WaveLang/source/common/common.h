@@ -21,6 +21,7 @@ inline bool string_compare_case_insensitive(const char *str_a, const char *str_b
 	}
 }
 
+// $TODO make alignment a template parameter, because we should never need runtime-custom alignment sizes
 // alignment must be a power of 2
 template<typename t_size, typename t_alignment> t_size align_size(t_size size, t_alignment alignment) {
 	return (size + (alignment - 1)) & ~(alignment - 1);
@@ -30,9 +31,62 @@ template<typename t_size, typename t_alignment> bool is_size_aligned(t_size size
 	return (size & (alignment - 1)) == 0;
 }
 
+template<typename t_pointer, typename t_alignment> t_pointer align_pointer(t_pointer pointer, t_alignment alignment) {
+	return reinterpret_cast<t_pointer>((reinterpret_cast<uintptr_t>(pointer) + (alignment - 1)) & ~(alignment - 1));
+}
+
 template<typename t_pointer, typename t_alignment> bool is_pointer_aligned(t_pointer *pointer, t_alignment alignment) {
 	return is_size_aligned(reinterpret_cast<size_t>(pointer), alignment);
 }
+
+template<typename t_value> t_value swap_byte_order(t_value value) {
+	t_value result;
+	for (size_t index = 0; index < sizeof(result); index++) {
+		reinterpret_cast<uint8 *>(&result)[index] = reinterpret_cast<const uint8 *>(&value)[sizeof(value) - index - 1];
+	}
+	return result;
+}
+
+template<typename t_value> t_value clamp(t_value value, t_value lower, t_value upper) {
+	return std::min(std::max(value, lower), upper);
+}
+
+#if PREDEFINED(ENDIANNESS_LITTLE)
+template<typename t_value> t_value native_to_little_endian(t_value value) {
+	return value;
+}
+
+template<typename t_value> t_value native_to_big_endian(t_value value) {
+	return swap_byte_order(value);
+}
+
+template<typename t_value> t_value little_to_native_endian(t_value value) {
+	return value;
+}
+
+template<typename t_value> t_value big_to_native_endian(t_value value) {
+	return swap_byte_order(value);
+}
+#elif PREDEFINED(ENDIANNESS_BIG)
+template<typename t_value> t_value native_to_little_endian(t_value value) {
+	return swap_byte_order(value);
+}
+
+template<typename t_value> t_value native_to_big_endian(t_value value) {
+	return value;
+}
+
+template<typename t_value> t_value little_to_native_endian(t_value value) {
+	return swap_byte_order(value);
+}
+
+template<typename t_value> t_value big_to_native_endian(t_value value) {
+	return value;
+}
+#else // endianness
+#error Unknown endianness
+#endif // endianness
+
 
 class c_uncopyable {
 public:
@@ -43,6 +97,8 @@ private:
 	c_uncopyable(const c_uncopyable &other);
 	c_uncopyable &operator=(const c_uncopyable &other);
 };
+
+// Wrapped arrays can safely be ZERO_STRUCT'd
 
 template<typename t_element>
 class c_wrapped_array_const {
@@ -57,9 +113,9 @@ public:
 		, m_count(count) {
 	}
 
-	template<size_t c>
-	static c_wrapped_array_const<t_element> construct(const t_element(&arr)[c]) {
-		return c_wrapped_array_const<t_element>(arr, c);
+	template<size_t k_count>
+	static c_wrapped_array_const<t_element> construct(const t_element(&arr)[k_count]) {
+		return c_wrapped_array_const<t_element>(arr, k_count);
 	}
 
 	size_t get_count() const {
@@ -93,9 +149,9 @@ public:
 		, m_count(count) {
 	}
 
-	template<size_t c>
-	static c_wrapped_array<t_element> construct(t_element (&arr)[c]) {
-		return c_wrapped_array<t_element>(arr, c);
+	template<size_t k_count>
+	static c_wrapped_array<t_element> construct(t_element (&arr)[k_count]) {
+		return c_wrapped_array<t_element>(arr, k_count);
 	}
 
 	size_t get_count() const {

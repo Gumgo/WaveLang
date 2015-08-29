@@ -1,11 +1,6 @@
 #ifndef WAVELANG_MACROS_H__
 #define WAVELANG_MACROS_H__
 
-// Annoyingly, despite NOT being implemented, some header files prevent us from defining alignof and alignas! So we must
-// instead use all-caps versions.
-#define ALIGNOF __alignof
-#define ALIGNAS(x) __declspec(align(x))
-
 // No-op statement which is optimized away
 #define NOOP do {} while (0)
 

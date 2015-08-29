@@ -81,9 +81,6 @@
     <ClInclude Include="..\WaveLang\source\engine\buffer_operations\buffer_operations_arithmetic.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\WaveLang\source\engine\buffer_operations\sse.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\WaveLang\source\engine\buffer_operations\buffer_operations.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -99,10 +96,31 @@
     <ClInclude Include="..\WaveLang\source\engine\buffer_operations\buffer_operations_utility.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\WaveLang\source\engine\buffer_operations\sse_mathfun.h">
+    <ClInclude Include="..\WaveLang\source\common\utility\string_table.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\WaveLang\source\common\utility\string_table.h">
+    <ClInclude Include="..\WaveLang\source\common\utility\file_utility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\WaveLang\source\engine\sample\sample.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\WaveLang\source\engine\sample\sample_library.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\WaveLang\source\engine\sample\native_samples.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\WaveLang\source\engine\buffer_operations\buffer_operations_sampler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\WaveLang\source\engine\math\sse.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\WaveLang\source\engine\math\sse_mathfun.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\WaveLang\source\common\utility\aligned_allocator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -179,6 +197,21 @@
     <ClCompile Include="..\WaveLang\source\common\utility\string_table.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\WaveLang\source\common\utility\file_utility.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\WaveLang\source\engine\sample\sample.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\WaveLang\source\engine\sample\sample_library.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\WaveLang\source\engine\sample\native_samples.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\WaveLang\source\engine\buffer_operations\buffer_operations_sampler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\WaveLang\source\common\threading\lock_free_queue.inl">
@@ -188,6 +221,9 @@
       <Filter>Header Files</Filter>
     </None>
     <None Include="..\WaveLang\source\common\threading\atomics_fallback.inl">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="..\WaveLang\source\engine\sample\native_samples.inl">
       <Filter>Header Files</Filter>
     </None>
   </ItemGroup>

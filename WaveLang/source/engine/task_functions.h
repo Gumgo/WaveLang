@@ -4,6 +4,8 @@
 #include "common/common.h"
 
 class c_buffer;
+class c_sample_library_accessor;
+class c_sample_library_requester;
 
 // List of all task functions
 // buffer = a buffer input
@@ -86,6 +88,10 @@ enum e_task_function {
 	k_task_function_pow_constant_buffer,
 	k_task_function_pow_constant_bufferio,
 
+	k_task_function_sampler_buffer,
+	k_task_function_sampler_bufferio,
+	k_task_function_sampler_constant,
+
 	// $TODO temporary
 	k_task_function_test,
 	k_task_function_test_c,
@@ -99,6 +105,7 @@ enum e_task_data_type {
 	k_task_data_type_real_buffer_out,
 	k_task_data_type_real_buffer_inout,
 	k_task_data_type_real_constant_in,
+	k_task_data_type_bool_constant_in,
 	k_task_data_type_string_constant_in,
 
 	k_task_data_type_count
@@ -115,6 +122,7 @@ struct s_task_function_argument {
 		c_buffer *real_buffer_out;
 		c_buffer *real_buffer_inout;
 		real32 real_constant_in;
+		bool bool_constant_in;
 		const char *string_constant_in;
 	} data;
 
@@ -138,6 +146,11 @@ struct s_task_function_argument {
 		return data.real_constant_in;
 	}
 
+	bool get_bool_constant_in() const {
+		wl_assert(type == k_task_data_type_bool_constant_in);
+		return data.bool_constant_in;
+	}
+
 	const char *get_string_constant_in() const {
 		wl_assert(type == k_task_data_type_string_constant_in);
 		return data.string_constant_in;
@@ -147,27 +160,41 @@ struct s_task_function_argument {
 typedef c_wrapped_array_const<s_task_function_argument> c_task_function_arguments;
 
 struct s_task_function_context {
+	c_sample_library_accessor *sample_accessor;
+	c_sample_library_requester *sample_requester;
+
+	uint32 sample_rate;
 	uint32 buffer_size;
 	void *task_memory;
+
 	// $TODO more things like timing
 
 	c_task_function_arguments arguments;
 };
 
-typedef void (*f_task_function)(const s_task_function_context &context);
+// This function takes a partially-filled-in context and returns the amount of memory the task requires
+// Basic data such as sample rate is available, as well as any constant arguments - any buffer arguments are null
+typedef size_t (*f_task_memory_query)(const s_task_function_context &context);
 
-// This function takes the list of arguments and returns the amount of memory the task requires
-// Only the constant arguments are available - any buffer arguments are null
-typedef size_t (*f_task_memory_query)(c_task_function_arguments arguments);
+// Called after task memory has been allocated - should be used to initialize this memory
+// Basic data such as sample rate is available, as well as any constant arguments - any buffer arguments are null
+// In addition, this is the time where samples should be requested, as that interface is provided on the context
+typedef void (*f_task_initializer)(const s_task_function_context &context);
+
+// Function executed for the task
+typedef void (*f_task_function)(const s_task_function_context &context);
 
 static const size_t k_max_task_function_arguments = 10;
 
 struct s_task_function_description {
-	// Function to execute
-	f_task_function function;
-
 	// Memory query function, or null
 	f_task_memory_query memory_query;
+
+	// Function for initializing task memory
+	f_task_initializer initializer;
+
+	// Function to execute
+	f_task_function function;
 
 	// Number of arguments
 	uint32 argument_count;

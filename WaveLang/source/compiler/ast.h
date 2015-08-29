@@ -8,11 +8,11 @@
 extern const char *k_entry_point_name;
 
 // List of types
-// $TODO bool type
 enum e_ast_data_type {
 	k_ast_data_type_void,
 	k_ast_data_type_module,
 	k_ast_data_type_real,
+	k_ast_data_type_bool,
 	k_ast_data_type_string,
 
 	k_ast_data_type_count
@@ -211,13 +211,19 @@ public:
 	void set_real_value(real32 value);
 	real32 get_real_value() const;
 
+	void set_bool_value(bool value);
+	bool get_bool_value() const;
+
 	void set_string_value(const std::string &value);
 	const std::string &get_string_value() const;
 
 public:
 	e_ast_data_type m_data_type;	// Data type
-	real32 m_real_value;			// The value, if a real
-	std::string m_string_value;		// The value, if a string
+	union {
+		real32 m_real_value;		// The value, if a real
+		bool m_bool_value;			// The value, if a bool
+	};
+	std::string m_string_value;		// The value, if a string (can't be in the union since it's not POD)
 };
 
 class c_ast_node_named_value : public c_ast_node {

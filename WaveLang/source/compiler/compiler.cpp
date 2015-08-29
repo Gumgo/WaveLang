@@ -8,15 +8,13 @@
 #include "execution_graph/execution_graph.h"
 #include "compiler/execution_graph_builder.h"
 #include "compiler/execution_graph_optimizer.h"
+#include "common/utility/file_utility.h"
 #include <algorithm>
 #include <vector>
 #include <fstream>
 #include <iostream>
 
 static void output_error(const s_compiler_context &context, const s_compiler_result &result);
-
-// Converts all separators to the platform-standard symbol
-static void standardize_path(std::string &inout_path);
 
 static s_compiler_result read_and_preprocess_source_file(
 	s_compiler_context &context,
@@ -44,14 +42,11 @@ s_compiler_result c_compiler::compile(const char *root_path, const char *source_
 		context.root_path.push_back('/');
 	}
 
-	standardize_path(context.root_path);
-
 	// List of source files we need to process
 	context.source_files.push_back(s_compiler_source_file());
 	{
 		s_compiler_source_file &first_source_file = context.source_files.back();
 		first_source_file.filename = source_filename;
-		standardize_path(first_source_file.filename);
 	}
 
 	// While we keep resolving #import lines, keep processing source files
@@ -171,15 +166,6 @@ static void output_error(const s_compiler_context &context, const s_compiler_res
 	std::cout << ": " << result.message << "\n";
 }
 
-static void standardize_path(std::string &inout_path) {
-	// $TODO Make correct symbol for platform
-	for (size_t index = 0; index < inout_path.length(); index++) {
-		if (inout_path[index] == '\\') {
-			inout_path[index] = '/';
-		}
-	}
-}
-
 static s_compiler_result read_and_preprocess_source_file(
 	s_compiler_context &context,
 	size_t source_file_index) {
@@ -190,7 +176,12 @@ static s_compiler_result read_and_preprocess_source_file(
 	s_compiler_source_file &source_file = context.source_files[source_file_index];
 
 	// Construct the full filename
-	std::string full_filename = context.root_path + source_file.filename;
+	std::string full_filename;
+	if (is_path_relative(source_file.filename.c_str())) {
+		full_filename = context.root_path + source_file.filename;
+	} else {
+		full_filename = source_file.filename;
+	}
 
 	{
 		// Try to open the file and read it in
@@ -245,16 +236,28 @@ static s_compiler_result read_and_preprocess_source_file(
 		// Check to see if there are any new imports
 		for (size_t index = 0; index < preprocessor_output.imports.size(); index++) {
 			std::string import_path = preprocessor_output.imports[index].to_std_string();
-			standardize_path(import_path);
+			std::string full_import_path;
+			if (is_path_relative(import_path.c_str())) {
+				full_import_path = context.root_path + import_path;
+			} else {
+				full_import_path = import_path;
+			}
 
 			bool found_match = false;
 			for (size_t existing_index = 0;
 				 !found_match && existing_index < context.source_files.size();
 				 existing_index++) {
-				// Check if the strings are equal, ignoring case
+				// Check if the paths point to the same file
 				// If so, we won't add the import to the list
-				found_match = string_compare_case_insensitive(
-					import_path.c_str(), context.source_files[existing_index].filename.c_str());
+				std::string full_existing_path;
+				if (is_path_relative(context.source_files[existing_index].filename.c_str())) {
+					full_existing_path = context.root_path + context.source_files[existing_index].filename;
+				} else {
+					full_existing_path = context.source_files[existing_index].filename;
+				}
+				found_match = are_file_paths_equivalent(
+					full_import_path.c_str(),
+					full_existing_path.c_str());
 			}
 
 			if (!found_match) {

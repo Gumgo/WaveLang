@@ -8,22 +8,27 @@
 #include "engine/buffer_allocator.h"
 #include "engine/thread_pool.h"
 #include "driver/sample_format.h"
+#include "engine/sample/sample_library.h"
 
 class c_task_graph;
 struct s_task_function_description;
 
 struct s_executor_settings {
 	const c_task_graph *task_graph;
+	uint32 sample_rate;
 	uint32 max_buffer_size;
 	uint32 output_channels;
 };
 
+// $TODO we probably don't need these settings to be both in settings and chunk context. We should instead store off the
+// relevant settings, then assert against the ones provided in the chunk context to make sure they don't change.
 struct s_executor_chunk_context {
-	double sample_rate;
+	uint32 sample_rate;
 	uint32 output_channels;
 	e_sample_format sample_format;
 	uint32 frames;
 
+	// $TODO make this a wrapped array
 	void *output_buffers;
 };
 
@@ -57,11 +62,11 @@ private:
 		bool active;
 	};
 
-	ALIGNAS_LOCK_FREE struct s_task_context {
+	struct ALIGNAS_LOCK_FREE s_task_context {
 		c_atomic_int32 predecessors_remaining;
 	};
 
-	ALIGNAS_LOCK_FREE struct s_buffer_context {
+	struct ALIGNAS_LOCK_FREE s_buffer_context {
 		c_atomic_int32 usages_remaining;
 		uint32 handle;
 	};
@@ -70,6 +75,7 @@ private:
 		c_executor *this_ptr;
 		uint32 voice_index;
 		uint32 task_index;
+		uint32 sample_rate;
 		uint32 frames;
 	};
 
@@ -78,10 +84,10 @@ private:
 
 	void execute_internal(const s_executor_chunk_context &chunk_context);
 
-	void add_task(uint32 voice_index, uint32 task_index, uint32 frames);
+	void add_task(uint32 voice_index, uint32 task_index, uint32 sample_rate, uint32 frames);
 
 	static void process_task_wrapper(const s_thread_parameter_block *params);
-	void process_task(uint32 voice_index, uint32 task_index, uint32 frames);
+	void process_task(const s_task_parameters *params);
 
 	void allocate_output_buffers(uint32 task_index);
 	void decrement_buffer_usages(uint32 task_index);
@@ -104,7 +110,7 @@ private:
 	c_buffer_allocator m_buffer_allocator;
 
 	// Allocator for task-persistent memory
-	c_lock_free_aligned_array_allocator<uint8> m_task_memory_allocator;
+	c_lock_free_aligned_allocator<uint8> m_task_memory_allocator;
 
 	// Pointer to each task's persistent memory for each voice
 	std::vector<void *> m_voice_task_memory_pointers;
@@ -113,10 +119,10 @@ private:
 	std::vector<s_voice_context> m_voice_contexts;
 
 	// Context for each task for the currently processing voice
-	c_lock_free_aligned_array_allocator<s_task_context> m_task_contexts;
+	c_lock_free_aligned_allocator<s_task_context> m_task_contexts;
 
 	// Context for each buffer for the currently processing voice
-	c_lock_free_aligned_array_allocator<s_buffer_context> m_buffer_contexts;
+	c_lock_free_aligned_allocator<s_buffer_context> m_buffer_contexts;
 
 	// Buffers to accumulate the final result into
 	std::vector<uint32> m_voice_output_accumulation_buffers;
@@ -129,6 +135,9 @@ private:
 
 	// Signaled when all tasks are complete
 	c_semaphore m_all_tasks_complete_signal;
+
+	// Sample library
+	c_sample_library m_sample_library;
 };
 
 #endif // WAVELANG_EXECUTOR_H__

@@ -47,7 +47,7 @@ public:
 
 private:
 	// Internal representation of a task
-	ALIGNAS_LOCK_FREE struct s_task {
+	struct ALIGNAS_LOCK_FREE s_task {
 		// A task acts like its own thread
 		f_thread_entry_point task_function;
 		s_thread_parameter_block params;
@@ -70,9 +70,9 @@ private:
 
 	// Queue of tasks to complete
 	c_lock_free_queue<s_task> m_pending_tasks;
-	c_lock_free_aligned_array_allocator<s_task> m_pending_tasks_element_memory;
-	c_lock_free_aligned_array_allocator<s_aligned_lock_free_handle> m_pending_tasks_queue_memory;
-	c_lock_free_aligned_array_allocator<s_aligned_lock_free_handle> m_pending_tasks_free_list_memory;
+	c_lock_free_aligned_allocator<s_task> m_pending_tasks_element_memory;
+	c_lock_free_aligned_allocator<s_aligned_lock_free_handle> m_pending_tasks_queue_memory;
+	c_lock_free_aligned_allocator<s_aligned_lock_free_handle> m_pending_tasks_free_list_memory;
 };
 
 #endif // WAVELANG_THREAD_POOL_H__

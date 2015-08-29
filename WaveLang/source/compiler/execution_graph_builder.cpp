@@ -310,6 +310,10 @@ public:
 			constant_node_index = m_execution_graph->add_constant_node(node->get_real_value());
 			break;
 
+		case k_ast_data_type_bool:
+			constant_node_index = m_execution_graph->add_constant_node(node->get_bool_value());
+			break;
+
 		case k_ast_data_type_string:
 			constant_node_index = m_execution_graph->add_constant_node(node->get_string_value());
 			break;

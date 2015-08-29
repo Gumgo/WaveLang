@@ -369,6 +369,22 @@ bool get_task_mapping_for_native_module_and_inputs(
 		}
 		break;
 
+	case k_native_module_sampler:
+		if (do_native_module_inputs_match(native_module_inputs, "ccccV")) {
+			static const uint32 k_mapping[] = { 0, 1, 2, 3, 4, 4 };
+			task_mapping_array = c_task_mapping_array::construct(k_mapping);
+			task_function = k_task_function_sampler_bufferio;
+		} else if (do_native_module_inputs_match(native_module_inputs, "ccccv")) {
+			static const uint32 k_mapping[] = { 0, 1, 2, 3, 5, 4 };
+			task_mapping_array = c_task_mapping_array::construct(k_mapping);
+			task_function = k_task_function_sampler_buffer;
+		} else if (do_native_module_inputs_match(native_module_inputs, "ccccc")) {
+			static const uint32 k_mapping[] = { 0, 1, 2, 3, 5, 4 };
+			task_mapping_array = c_task_mapping_array::construct(k_mapping);
+			task_function = k_task_function_sampler_constant;
+		}
+		break;
+
 	case k_native_module_test:
 		if (do_native_module_inputs_match(native_module_inputs, "v")) {
 			static const uint32 k_mapping[] = { 1, 0 };

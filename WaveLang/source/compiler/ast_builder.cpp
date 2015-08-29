@@ -6,6 +6,7 @@
 
 static const e_ast_data_type k_native_module_argument_type_to_ast_data_type_mapping[] = {
 	k_ast_data_type_real,	// k_native_module_argument_type_real
+	k_ast_data_type_bool,	// k_native_module_argument_type_bool
 	k_ast_data_type_string	// k_native_module_argument_type_string
 };
 static_assert(NUMBEROF(k_native_module_argument_type_to_ast_data_type_mapping) == k_native_module_argument_type_count,
@@ -44,6 +45,8 @@ static e_ast_data_type get_data_type_from_node(const c_lr_parse_tree_node &node)
 		return k_ast_data_type_module;
 	} else if (node_is_type(node, k_token_type_keyword_real)) {
 		return k_ast_data_type_real;
+	} else if (node_is_type(node, k_token_type_keyword_bool)) {
+		return k_ast_data_type_bool;
 	} else if (node_is_type(node, k_token_type_keyword_string)) {
 		return k_ast_data_type_string;
 	} else {
@@ -186,6 +189,7 @@ static void build_native_module_declarations(c_ast_node_scope *global_scope) {
 				// Add a declaration for this argument
 				c_ast_node_named_value_declaration *argument_declaration = new c_ast_node_named_value_declaration();
 				argument_declaration->set_qualifier(get_ast_qualifier(argument.qualifier));
+				argument_declaration->set_data_type(get_ast_data_type(argument.type));
 				module_declaration->add_argument(argument_declaration);
 			}
 		}
@@ -704,6 +708,10 @@ static c_ast_node_module_call *build_binary_operator_call(const c_lr_parse_tree 
 
 	case k_token_type_operator_modulo:
 		operator_module_name = c_native_module_registry::k_operator_modulo_name;
+		break;
+
+	case k_token_type_operator_concatenation:
+		operator_module_name = c_native_module_registry::k_operator_concatenation_name;
 		break;
 
 	default:

@@ -141,28 +141,31 @@ void c_executor::initialize_internal(const s_executor_settings &settings) {
 			if (task_function_description.memory_query) {
 				// The memory query function will be able to read from the constant inputs.
 				// We don't (currently) support dynamic task memory usage.
-				c_task_graph_data_array task_arguments = m_task_graph->get_task_arguments(task);
-				s_task_function_argument arguments[k_max_task_function_arguments];
-				for (size_t arg = 0; arg < task_arguments.get_count(); arg++) {
-					const s_task_graph_data &task_argument = task_arguments[arg];
-					s_task_function_argument &argument = arguments[arg];
 
-					// Null-out any buffer pointers
-					ZERO_STRUCT(&argument);
-					argument.type = task_argument.type;
+				// Set up the arguments
+				s_task_function_argument arguments[k_max_task_function_arguments];
+				c_task_graph_data_array argument_data = m_task_graph->get_task_arguments(task);
+
+				for (size_t arg = 0; arg < argument_data.get_count(); arg++) {
+					s_task_function_argument &argument = arguments[arg];
+					argument.type = argument_data[arg].type;
+
 					switch (argument.type) {
 					case k_task_data_type_real_buffer_in:
 					case k_task_data_type_real_buffer_out:
 					case k_task_data_type_real_buffer_inout:
-						// Nothing to do
 						break;
 
 					case k_task_data_type_real_constant_in:
-						argument.data.real_constant_in = task_argument.get_real_constant_in();
+						argument.data.real_constant_in = argument_data[arg].get_real_constant_in();
+						break;
+
+					case k_task_data_type_bool_constant_in:
+						argument.data.bool_constant_in = argument_data[arg].get_bool_constant_in();
 						break;
 
 					case k_task_data_type_string_constant_in:
-						argument.data.string_constant_in = task_argument.get_string_constant_in();
+						argument.data.string_constant_in = argument_data[arg].get_string_constant_in();
 						break;
 
 					default:
@@ -170,8 +173,13 @@ void c_executor::initialize_internal(const s_executor_settings &settings) {
 					}
 				}
 
-				required_memory_for_task = task_function_description.memory_query(
-					c_task_function_arguments(arguments, task_arguments.get_count()));
+				s_task_function_context task_function_context;
+				ZERO_STRUCT(&task_function_context);
+				task_function_context.sample_rate = settings.sample_rate;
+				task_function_context.arguments = c_task_function_arguments(arguments, argument_data.get_count());
+				// $TODO fill in timing info, etc.
+
+				required_memory_for_task = task_function_description.memory_query(task_function_context);
 			}
 
 			if (required_memory_for_task == 0) {
@@ -229,6 +237,64 @@ void c_executor::initialize_internal(const s_executor_settings &settings) {
 			m_voice_task_memory_pointers.clear();
 			m_voice_task_memory_pointers.resize(total_voice_task_memory_pointers, nullptr);
 		}
+	}
+
+	{ // Initialize task memory and load samples
+		m_sample_library.clear_requested_samples();
+
+		for (uint32 task = 0; task < m_task_graph->get_task_count(); task++) {
+			const s_task_function_description &task_function_description =
+				c_task_function_registry::get_task_function_description(m_task_graph->get_task_function(task));
+
+			if (task_function_description.initializer) {
+				// Set up the arguments
+				s_task_function_argument arguments[k_max_task_function_arguments];
+				c_task_graph_data_array argument_data = m_task_graph->get_task_arguments(task);
+
+				for (size_t arg = 0; arg < argument_data.get_count(); arg++) {
+					s_task_function_argument &argument = arguments[arg];
+					argument.type = argument_data[arg].type;
+
+					switch (argument.type) {
+					case k_task_data_type_real_buffer_in:
+					case k_task_data_type_real_buffer_out:
+					case k_task_data_type_real_buffer_inout:
+						break;
+
+					case k_task_data_type_real_constant_in:
+						argument.data.real_constant_in = argument_data[arg].get_real_constant_in();
+						break;
+
+					case k_task_data_type_bool_constant_in:
+						argument.data.bool_constant_in = argument_data[arg].get_bool_constant_in();
+						break;
+
+					case k_task_data_type_string_constant_in:
+						argument.data.string_constant_in = argument_data[arg].get_string_constant_in();
+						break;
+
+					default:
+						wl_unreachable();
+					}
+				}
+
+				c_sample_library_requester sample_library_requester(m_sample_library);
+				s_task_function_context task_function_context;
+				ZERO_STRUCT(&task_function_context);
+				task_function_context.sample_requester = &sample_library_requester;
+				task_function_context.sample_rate = settings.sample_rate;
+				task_function_context.arguments = c_task_function_arguments(arguments, argument_data.get_count());
+				// $TODO fill in timing info, etc.
+
+				for (uint32 voice = 0; voice < m_task_graph->get_globals().max_voices; voice++) {
+					task_function_context.task_memory =
+						m_voice_task_memory_pointers[m_task_graph->get_task_count() * voice + task];
+					task_function_description.initializer(task_function_context);
+				}
+			}
+		}
+
+		m_sample_library.update_loaded_samples();
 	}
 
 	{ // Setup voice contexts
@@ -292,7 +358,7 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 		c_task_graph_task_array initial_tasks = m_task_graph->get_initial_tasks();
 		if (initial_tasks.get_count() > 0) {
 			for (size_t initial_task = 0; initial_task < initial_tasks.get_count(); initial_task++) {
-				add_task(voice, initial_tasks[initial_task], chunk_context.frames);
+				add_task(voice, initial_tasks[initial_task], chunk_context.sample_rate, chunk_context.frames);
 			}
 
 			// Start the threads processing
@@ -433,7 +499,7 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 	}
 }
 
-void c_executor::add_task(uint32 voice_index, uint32 task_index, uint32 frames) {
+void c_executor::add_task(uint32 voice_index, uint32 task_index, uint32 sample_rate, uint32 frames) {
 	wl_assert(m_task_contexts.get_array()[task_index].predecessors_remaining.get() == 0);
 
 	s_thread_pool_task task;
@@ -442,6 +508,7 @@ void c_executor::add_task(uint32 voice_index, uint32 task_index, uint32 frames) 
 	task_params->this_ptr = this;
 	task_params->voice_index = voice_index;
 	task_params->task_index = task_index;
+	task_params->sample_rate = sample_rate;
 	task_params->frames = frames;
 
 	m_thread_pool.add_task(task);
@@ -449,20 +516,20 @@ void c_executor::add_task(uint32 voice_index, uint32 task_index, uint32 frames) 
 
 void c_executor::process_task_wrapper(const s_thread_parameter_block *params) {
 	const s_task_parameters *task_params = params->get_memory_typed<s_task_parameters>();
-	task_params->this_ptr->process_task(task_params->voice_index, task_params->task_index, task_params->frames);
+	task_params->this_ptr->process_task(task_params);
 }
 
-void c_executor::process_task(uint32 voice_index, uint32 task_index, uint32 frames) {
-	e_task_function task_function = m_task_graph->get_task_function(task_index);
+void c_executor::process_task(const s_task_parameters *params) {
+	e_task_function task_function = m_task_graph->get_task_function(params->task_index);
 	const s_task_function_description &task_function_description =
 		c_task_function_registry::get_task_function_description(task_function);
 
-	allocate_output_buffers(task_index);
+	allocate_output_buffers(params->task_index);
 
 	{
 		// Set up the arguments
 		s_task_function_argument arguments[k_max_task_function_arguments];
-		c_task_graph_data_array argument_data = m_task_graph->get_task_arguments(task_index);
+		c_task_graph_data_array argument_data = m_task_graph->get_task_arguments(params->task_index);
 
 		for (size_t arg = 0; arg < argument_data.get_count(); arg++) {
 			s_task_function_argument &argument = arguments[arg];
@@ -488,22 +555,28 @@ void c_executor::process_task(uint32 voice_index, uint32 task_index, uint32 fram
 				argument.data.real_constant_in = argument_data[arg].get_real_constant_in();
 				break;
 
+			case k_task_data_type_bool_constant_in:
+				argument.data.bool_constant_in = argument_data[arg].get_bool_constant_in();
+				break;
+
 			case k_task_data_type_string_constant_in:
 				argument.data.string_constant_in = argument_data[arg].get_string_constant_in();
 				break;
-
 
 			default:
 				wl_unreachable();
 			}
 		}
 
+		c_sample_library_accessor sample_library_accessor(m_sample_library);
 		s_task_function_context task_function_context;
-		task_function_context.buffer_size = frames;
+		task_function_context.sample_accessor = &sample_library_accessor;
+		task_function_context.sample_requester = nullptr;
+		task_function_context.sample_rate = params->sample_rate;
+		task_function_context.buffer_size = params->frames;
 		task_function_context.task_memory =
-			m_voice_task_memory_pointers[m_task_graph->get_task_count() * voice_index + task_index];
+			m_voice_task_memory_pointers[m_task_graph->get_task_count() * params->voice_index + params->task_index];
 		task_function_context.arguments = c_task_function_arguments(arguments, argument_data.get_count());
-
 		// $TODO fill in timing info, etc.
 
 		// Call the task function
@@ -511,10 +584,10 @@ void c_executor::process_task(uint32 voice_index, uint32 task_index, uint32 fram
 		task_function_description.function(task_function_context);
 	}
 
-	decrement_buffer_usages(task_index);
+	decrement_buffer_usages(params->task_index);
 
 	// Decrement remaining predecessor counts for all successors to this task
-	c_task_graph_task_array successors = m_task_graph->get_task_successors(task_index);
+	c_task_graph_task_array successors = m_task_graph->get_task_successors(params->task_index);
 	for (size_t successor = 0; successor < successors.get_count(); successor++) {
 		uint32 successor_index = successors[successor];
 
@@ -522,7 +595,7 @@ void c_executor::process_task(uint32 voice_index, uint32 task_index, uint32 fram
 			m_task_contexts.get_array()[successor_index].predecessors_remaining.decrement();
 		wl_assert(prev_predecessors_remaining > 0);
 		if (prev_predecessors_remaining == 1) {
-			add_task(voice_index, successor_index, frames);
+			add_task(params->voice_index, successor_index, params->sample_rate, params->frames);
 		}
 	}
 
@@ -563,6 +636,7 @@ void c_executor::allocate_output_buffers(uint32 task_index) {
 			break;
 
 		case k_task_data_type_real_constant_in:
+		case k_task_data_type_bool_constant_in:
 		case k_task_data_type_string_constant_in:
 			// Nothing to do
 			break;
@@ -594,6 +668,7 @@ void c_executor::decrement_buffer_usages(uint32 task_index) {
 			break;
 
 		case k_task_data_type_real_constant_in:
+		case k_task_data_type_bool_constant_in:
 		case k_task_data_type_string_constant_in:
 			// Nothing to do
 			break;

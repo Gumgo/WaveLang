@@ -9,6 +9,7 @@ const char *c_native_module_registry::k_operator_subtraction_operator_name = NAT
 const char *c_native_module_registry::k_operator_multiplication_operator_name = NATIVE_PREFIX "multiplication";
 const char *c_native_module_registry::k_operator_division_name = NATIVE_PREFIX "division";
 const char *c_native_module_registry::k_operator_modulo_name = NATIVE_PREFIX "modulo";
+const char *c_native_module_registry::k_operator_concatenation_name = NATIVE_PREFIX "concatenation";
 
 // List of compile-time native modules
 static void native_module_noop(c_native_module_compile_time_argument_list &arguments);
@@ -18,6 +19,7 @@ static void native_module_subtraction(c_native_module_compile_time_argument_list
 static void native_module_multiplication(c_native_module_compile_time_argument_list &arguments);
 static void native_module_division(c_native_module_compile_time_argument_list &arguments);
 static void native_module_modulo(c_native_module_compile_time_argument_list &arguments);
+static void native_module_concatenation(c_native_module_compile_time_argument_list &arguments);
 
 static void native_module_abs(c_native_module_compile_time_argument_list &arguments);
 static void native_module_floor(c_native_module_compile_time_argument_list &arguments);
@@ -64,81 +66,95 @@ static s_native_module make_native_module(
 // The global list of native modules
 static const s_native_module k_native_modules[] = {
 	make_native_module(c_native_module_registry::k_operator_noop_name,
-	true, make_args(NMAT(in, real), NMAT(out, real)),
-	native_module_noop),
+		true, make_args(NMAT(in, real), NMAT(out, real)),
+		native_module_noop),
 
 	make_native_module(c_native_module_registry::k_operator_negation_name,
-	true, make_args(NMAT(in, real), NMAT(out, real)),
-	native_module_negation),
+		true, make_args(NMAT(in, real), NMAT(out, real)),
+		native_module_negation),
 
 	make_native_module(c_native_module_registry::k_operator_addition_operator_name,
-	true, make_args(NMAT(in, real), NMAT(in, real), NMAT(out, real)),
-	native_module_addition),
+		true, make_args(NMAT(in, real), NMAT(in, real), NMAT(out, real)),
+		native_module_addition),
 
 	make_native_module(c_native_module_registry::k_operator_subtraction_operator_name,
-	true, make_args(NMAT(in, real), NMAT(in, real), NMAT(out, real)),
-	native_module_subtraction),
+		true, make_args(NMAT(in, real), NMAT(in, real), NMAT(out, real)),
+		native_module_subtraction),
 
 	make_native_module(c_native_module_registry::k_operator_multiplication_operator_name,
-	true, make_args(NMAT(in, real), NMAT(in, real), NMAT(out, real)),
-	native_module_multiplication),
+		true, make_args(NMAT(in, real), NMAT(in, real), NMAT(out, real)),
+		native_module_multiplication),
 
 	make_native_module(c_native_module_registry::k_operator_division_name,
-	true, make_args(NMAT(in, real), NMAT(in, real), NMAT(out, real)),
-	native_module_division),
+		true, make_args(NMAT(in, real), NMAT(in, real), NMAT(out, real)),
+		native_module_division),
 
 	make_native_module(c_native_module_registry::k_operator_modulo_name,
-	true, make_args(NMAT(in, real), NMAT(in, real), NMAT(out, real)),
-	native_module_modulo),
+		true, make_args(NMAT(in, real), NMAT(in, real), NMAT(out, real)),
+		native_module_modulo),
+
+	make_native_module(c_native_module_registry::k_operator_concatenation_name,
+		true, make_args(NMAT(in, string), NMAT(in, string), NMAT(out, string)),
+		native_module_concatenation),
 
 	make_native_module(NATIVE_PREFIX "abs",
-	true, make_args(NMAT(in, real), NMAT(out, real)),
-	native_module_abs),
+		true, make_args(NMAT(in, real), NMAT(out, real)),
+		native_module_abs),
 
 	make_native_module(NATIVE_PREFIX "floor",
-	true, make_args(NMAT(in, real), NMAT(out, real)),
-	native_module_floor),
+		true, make_args(NMAT(in, real), NMAT(out, real)),
+		native_module_floor),
 
 	make_native_module(NATIVE_PREFIX "ceil",
-	true, make_args(NMAT(in, real), NMAT(out, real)),
-	native_module_ceil),
+		true, make_args(NMAT(in, real), NMAT(out, real)),
+		native_module_ceil),
 
 	make_native_module(NATIVE_PREFIX "round",
-	true, make_args(NMAT(in, real), NMAT(out, real)),
-	native_module_round),
+		true, make_args(NMAT(in, real), NMAT(out, real)),
+		native_module_round),
 
 	make_native_module(NATIVE_PREFIX "min",
-	true, make_args(NMAT(in, real), NMAT(in, real), NMAT(out, real)),
-	native_module_min),
+		true, make_args(NMAT(in, real), NMAT(in, real), NMAT(out, real)),
+		native_module_min),
 
 	make_native_module(NATIVE_PREFIX "max",
-	true, make_args(NMAT(in, real), NMAT(in, real), NMAT(out, real)),
-	native_module_max),
+		true, make_args(NMAT(in, real), NMAT(in, real), NMAT(out, real)),
+		native_module_max),
 
 	make_native_module(NATIVE_PREFIX "exp",
-	true, make_args(NMAT(in, real), NMAT(out, real)),
-	native_module_exp),
+		true, make_args(NMAT(in, real), NMAT(out, real)),
+		native_module_exp),
 
 	make_native_module(NATIVE_PREFIX "log",
-	true, make_args(NMAT(in, real), NMAT(out, real)),
-	native_module_log),
+		true, make_args(NMAT(in, real), NMAT(out, real)),
+		native_module_log),
 
 	make_native_module(NATIVE_PREFIX "sqrt",
-	true, make_args(NMAT(in, real), NMAT(out, real)),
-	native_module_sqrt),
+		true, make_args(NMAT(in, real), NMAT(out, real)),
+		native_module_sqrt),
 
 	make_native_module(NATIVE_PREFIX "pow",
-	true, make_args(NMAT(in, real), NMAT(in, real), NMAT(out, real)),
-	native_module_pow),
+		true, make_args(NMAT(in, real), NMAT(in, real), NMAT(out, real)),
+		native_module_pow),
+
+	make_native_module(NATIVE_PREFIX "sampler",
+		true, make_args(
+			NMAT(constant, string),	// Name
+			NMAT(constant, real),	// Channel
+			NMAT(constant, bool),	// Loop
+			NMAT(constant, bool),	// Bidi
+			NMAT(in, real),			// Speed
+			NMAT(out, real)),		// Result
+		nullptr),
 
 	// Non-constant test module
 	make_native_module(NATIVE_PREFIX "test",
-	true, make_args(NMAT(in, real), NMAT(out, real)),
-	nullptr),
+		true, make_args(NMAT(in, real), NMAT(out, real)),
+		nullptr),
 
 	make_native_module(NATIVE_PREFIX "delay_test",
-	true, make_args(NMAT(in, real), NMAT(constant, real), NMAT(out, real)),
-	nullptr)
+		true, make_args(NMAT(in, real), NMAT(constant, real), NMAT(out, real)),
+		nullptr)
 };
 
 static_assert(NUMBEROF(k_native_modules) == k_native_module_count, "Native module definition list mismatch");
@@ -236,86 +252,91 @@ static s_native_module make_native_module(
 
 static void native_module_noop(c_native_module_compile_time_argument_list &arguments) {
 	wl_assert(arguments.size() == 2);
-	arguments[1] = static_cast<real32>(arguments[0]);
+	arguments[1] = arguments[0].get_real();
 }
 
 static void native_module_negation(c_native_module_compile_time_argument_list &arguments) {
 	wl_assert(arguments.size() == 2);
-	arguments[1] = -arguments[0];
+	arguments[1] = -arguments[0].get_real();
 }
 
 static void native_module_addition(c_native_module_compile_time_argument_list &arguments) {
 	wl_assert(arguments.size() == 3);
-	arguments[2] = arguments[0] + arguments[1];
+	arguments[2] = arguments[0].get_real() + arguments[1].get_real();
 }
 
 static void native_module_subtraction(c_native_module_compile_time_argument_list &arguments) {
 	wl_assert(arguments.size() == 3);
-	arguments[2] = arguments[0] - arguments[1];
+	arguments[2] = arguments[0].get_real() - arguments[1].get_real();
 }
 
 static void native_module_multiplication(c_native_module_compile_time_argument_list &arguments) {
 	wl_assert(arguments.size() == 3);
-	arguments[2] = arguments[0] * arguments[1];
+	arguments[2] = arguments[0].get_real() * arguments[1].get_real();
 }
 
 static void native_module_division(c_native_module_compile_time_argument_list &arguments) {
 	wl_assert(arguments.size() == 3);
-	arguments[2] = arguments[0] / arguments[1];
+	arguments[2] = arguments[0].get_real() / arguments[1].get_real();
 }
 
 static void native_module_modulo(c_native_module_compile_time_argument_list &arguments) {
 	wl_assert(arguments.size() == 3);
-	arguments[2] = std::fmod(arguments[0], arguments[1]);
+	arguments[2] = std::fmod(arguments[0].get_real(), arguments[1].get_real());
+}
+
+static void native_module_concatenation(c_native_module_compile_time_argument_list &arguments) {
+	wl_assert(arguments.size() == 3);
+	arguments[2] = arguments[0].get_string() + arguments[1].get_string();
 }
 
 static void native_module_abs(c_native_module_compile_time_argument_list &arguments) {
 	wl_assert(arguments.size() == 2);
-	arguments[1] = std::abs(arguments[0]);
+	arguments[1] = std::abs(arguments[0].get_real());
 }
 
 static void native_module_floor(c_native_module_compile_time_argument_list &arguments) {
 	wl_assert(arguments.size() == 2);
-	arguments[1] = std::floor(arguments[0]);
+	arguments[1] = std::floor(arguments[0].get_real());
 }
 
 static void native_module_ceil(c_native_module_compile_time_argument_list &arguments) {
 	wl_assert(arguments.size() == 2);
-	arguments[1] = std::ceil(arguments[0]);
+	arguments[1] = std::ceil(arguments[0].get_real());
 }
 
 static void native_module_round(c_native_module_compile_time_argument_list &arguments) {
 	wl_assert(arguments.size() == 2);
-	arguments[1] = std::round(arguments[0]);
+	arguments[1] = std::round(arguments[0].get_real());
 }
 
 static void native_module_min(c_native_module_compile_time_argument_list &arguments) {
 	wl_assert(arguments.size() == 3);
-	arguments[2] = std::fmin(arguments[0], arguments[1]);
+	arguments[2] = std::fmin(arguments[0].get_real(), arguments[1].get_real());
 }
 
 static void native_module_max(c_native_module_compile_time_argument_list &arguments) {
 	wl_assert(arguments.size() == 3);
-	arguments[2] = std::fmax(arguments[0], arguments[1]);
+	arguments[2] = std::fmax(arguments[0].get_real(), arguments[1].get_real());
 }
 
 static void native_module_exp(c_native_module_compile_time_argument_list &arguments) {
 	wl_assert(arguments.size() == 2);
-	arguments[1] = std::exp(arguments[0]);
+	arguments[1] = std::exp(arguments[0].get_real());
 }
 
 static void native_module_log(c_native_module_compile_time_argument_list &arguments) {
 	wl_assert(arguments.size() == 2);
-	arguments[1] = std::log(arguments[0]);
+	arguments[1] = std::log(arguments[0].get_real());
 }
 
 static void native_module_sqrt(c_native_module_compile_time_argument_list &arguments) {
 	wl_assert(arguments.size() == 2);
-	arguments[1] = std::sqrt(arguments[0]);
+	arguments[1] = std::sqrt(arguments[0].get_real());
 }
 
 static void native_module_pow(c_native_module_compile_time_argument_list &arguments) {
 	wl_assert(arguments.size() == 3);
-	arguments[2] = std::pow(arguments[0], arguments[1]);
+	arguments[2] = std::pow(arguments[0].get_real(), arguments[1].get_real());
 }
 

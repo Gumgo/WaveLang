@@ -28,6 +28,7 @@ struct s_task_graph_data {
 		uint32 real_buffer_out;
 		uint32 real_buffer_inout;
 		real32 real_constant_in;
+		bool bool_constant_in;
 		const char *string_constant_in;
 	} data;
 
@@ -49,6 +50,11 @@ struct s_task_graph_data {
 	real32 get_real_constant_in() const {
 		wl_assert(type == k_task_data_type_real_constant_in);
 		return data.real_constant_in;
+	}
+
+	bool get_bool_constant_in() const {
+		wl_assert(type == k_task_data_type_bool_constant_in);
+		return data.bool_constant_in;
 	}
 
 	const char *get_string_constant_in() const {

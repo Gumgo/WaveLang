@@ -57,8 +57,8 @@ struct s_buffer_operation_multiplication {
 			const real32 *in_a_ptr = in_a->get_data<real32>();
 			real32 in_a_val = *in_a_ptr;
 			if (in_a_val == 0.0f) {
-				c_real32_4 *out_ptr = out->get_data<c_real32_4>();
-				*out_ptr = c_real32_4(0.0f);
+				real32 *out_ptr = out->get_data<real32>();
+				c_real32_4(0.0f).store(out_ptr);
 				out->set_constant(true);
 				return;
 			}
@@ -68,8 +68,8 @@ struct s_buffer_operation_multiplication {
 			const real32 *in_b_ptr = in_b->get_data<real32>();
 			real32 in_b_val = *in_b_ptr;
 			if (in_b_val == 0.0f) {
-				c_real32_4 *out_ptr = out->get_data<c_real32_4>();
-				*out_ptr = c_real32_4(0.0f);
+				real32 *out_ptr = out->get_data<real32>();
+				c_real32_4(0.0f).store(out_ptr);
 				out->set_constant(true);
 				return;
 			}
@@ -80,11 +80,10 @@ struct s_buffer_operation_multiplication {
 
 	static void bufferio_buffer(size_t buffer_size, c_buffer_inout inout, c_buffer_in in) {
 		if (inout->is_constant()) {
-			const real32 *inout_ptr = inout->get_data<real32>();
+			real32 *inout_ptr = inout->get_data<real32>();
 			real32 inout_val = *inout_ptr;
 			if (inout_val == 0.0f) {
-				c_real32_4 *inout_ptr_4 = inout->get_data<c_real32_4>();
-				*inout_ptr_4 = c_real32_4(0.0f);
+				c_real32_4(0.0f).store(inout_ptr);
 				return;
 			}
 		}
@@ -93,8 +92,8 @@ struct s_buffer_operation_multiplication {
 			const real32 *in_ptr = in->get_data<real32>();
 			real32 in_val = *in_ptr;
 			if (in_val == 0.0f) {
-				c_real32_4 *inout_ptr = inout->get_data<c_real32_4>();
-				*inout_ptr = c_real32_4(0.0f);
+				real32 *inout_ptr = inout->get_data<real32>();
+				c_real32_4(0.0f).store(inout_ptr);
 				inout->set_constant(true);
 				return;
 			}

@@ -1,29 +1,4 @@
 #include "common/threading/lock_free.h"
-#include <memory>
-
-bool allocate_lock_free_aligned_memory(size_t size, void **out_base_pointer, void **out_aligned_pointer) {
-	wl_assert(out_base_pointer);
-	wl_assert(out_aligned_pointer);
-
-	size_t aligned_size = size + k_lock_free_alignment - 1;
-	*out_base_pointer = *out_aligned_pointer = malloc(aligned_size);
-	if (!(*out_base_pointer)) {
-		return false;
-	}
-
-	IF_ASSERTS_ENABLED(void *result = ) std::align(
-		k_lock_free_alignment, size, *out_aligned_pointer, aligned_size);
-	wl_assert(aligned_size >= size);
-	wl_assert(result);
-
-	return true;
-}
-
-void free_lock_free_aligned_memory(void *base_pointer) {
-	if (base_pointer) {
-		free(base_pointer);
-	}
-}
 
 void lock_free_list_push(c_lock_free_handle_array &node_storage, s_lock_free_handle &list_head, uint32 handle) {
 	// Push the node to the head of the list

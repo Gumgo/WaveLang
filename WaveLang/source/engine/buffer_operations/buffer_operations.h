@@ -3,7 +3,7 @@
 
 #include "common/common.h"
 #include "engine/buffer.h"
-#include "engine/buffer_operations/sse.h"
+#include "engine/math/math.h"
 
 #if PREDEFINED(ASSERTS_ENABLED)
 void validate_buffer(const c_buffer *buffer);
@@ -28,9 +28,9 @@ void buffer_operator_out(const t_operation &op, size_t buffer_size,
 	validate_buffer(out);
 
 	// Reminder: t_operation MUST be a pure function with no side effects or memory!
-	c_real32_4 *out_ptr = out->get_data<c_real32_4>();
+	real32 *out_ptr = out->get_data<real32>();
 	c_real32_4 out_val = op();
-	*out_ptr = out_val;
+	out_val.store(out_ptr);
 	out->set_constant(true);
 }
 
@@ -41,18 +41,18 @@ void buffer_operator_inout(const t_operation &op, size_t buffer_size,
 	validate_buffer(inout);
 
 	if (inout->is_constant()) {
-		c_real32_4 *inout_ptr = inout->get_data<c_real32_4>();
-		c_real32_4 in_val(*inout_ptr);
+		real32 *inout_ptr = inout->get_data<real32>();
+		c_real32_4 in_val(inout_ptr);
 		c_real32_4 out_val = op(in_val);
-		*inout_ptr = out_val;
+		out_val.store(inout_ptr);
 	} else {
-		c_real32_4 *inout_ptr = inout->get_data<c_real32_4>();
-		c_real32_4 *inout_ptr_end = inout_ptr + align_size(buffer_size, k_sse_block_size) / k_sse_block_size;
+		real32 *inout_ptr = inout->get_data<real32>();
+		real32 *inout_ptr_end = inout_ptr + align_size(buffer_size, k_sse_block_elements);
 		for (; inout_ptr < inout_ptr_end;
-			 inout_ptr++) {
-			c_real32_4 in_val(*inout_ptr);
+			 inout_ptr += k_sse_block_elements) {
+			c_real32_4 in_val(inout_ptr);
 			c_real32_4 out_val = op(in_val);
-			*inout_ptr = out_val;
+			out_val.store(inout_ptr);
 		}
 	}
 }
@@ -64,21 +64,21 @@ void buffer_operator_out_in(const t_operation &op, size_t buffer_size,
 	validate_buffer(in);
 
 	if (in->is_constant()) {
-		c_real32_4 *out_ptr = out->get_data<c_real32_4>();
-		const c_real32_4 *in_ptr = in->get_data<c_real32_4>();
-		c_real32_4 in_val(*in_ptr);
+		real32 *out_ptr = out->get_data<real32>();
+		const real32 *in_ptr = in->get_data<real32>();
+		c_real32_4 in_val(in_ptr);
 		c_real32_4 out_val = op(in_val);
-		*out_ptr = out_val;
+		out_val.store(out_ptr);
 		out->set_constant(true);
 	} else {
-		c_real32_4 *out_ptr = out->get_data<c_real32_4>();
-		c_real32_4 *out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_size) / k_sse_block_size;
-		const c_real32_4 *in_ptr = in->get_data<c_real32_4>();
+		real32 *out_ptr = out->get_data<real32>();
+		real32 *out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_elements);
+		const real32 *in_ptr = in->get_data<real32>();
 		for (; out_ptr < out_ptr_end;
-			 out_ptr++, in_ptr++) {
-			c_real32_4 in_val(*in_ptr);
+			 out_ptr += k_sse_block_elements, in_ptr += k_sse_block_elements) {
+			c_real32_4 in_val(in_ptr);
 			c_real32_4 out_val = op(in_val);
-			*out_ptr = out_val;
+			out_val.store(out_ptr);
 		}
 		out->set_constant(false);
 	}
@@ -89,10 +89,10 @@ void buffer_operator_out_in(const t_operation &op, size_t buffer_size,
 	c_buffer_out out, const real32 in) {
 	validate_buffer(out);
 
-	c_real32_4 *out_ptr = out->get_data<c_real32_4>();
+	real32 *out_ptr = out->get_data<real32>();
 	c_real32_4 in_val(in);
 	c_real32_4 out_val = op(in_val);
-	*out_ptr = out_val;
+	out_val.store(out_ptr);
 	out->set_constant(true);
 }
 
@@ -105,53 +105,53 @@ void buffer_operator_out_in_in(const t_operation &op, size_t buffer_size,
 
 	if (in_a->is_constant()) {
 		if (in_b->is_constant()) {
-			c_real32_4 *out_ptr = out->get_data<c_real32_4>();
-			const c_real32_4 *in_a_ptr = in_a->get_data<c_real32_4>();
-			const c_real32_4 *in_b_ptr = in_b->get_data<c_real32_4>();
-			c_real32_4 in_a_val(*in_a_ptr);
-			c_real32_4 in_b_val(*in_b_ptr);
+			real32 *out_ptr = out->get_data<real32>();
+			const real32 *in_a_ptr = in_a->get_data<real32>();
+			const real32 *in_b_ptr = in_b->get_data<real32>();
+			c_real32_4 in_a_val(in_a_ptr);
+			c_real32_4 in_b_val(in_b_ptr);
 			c_real32_4 out_val = op(in_a_val, in_b_val);
-			*out_ptr = out_val;
+			out_val.store(out_ptr);
 			out->set_constant(true);
 		} else {
-			c_real32_4 *out_ptr = out->get_data<c_real32_4>();
-			c_real32_4 *out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_size) / k_sse_block_size;
-			const c_real32_4 *in_a_ptr = in_a->get_data<c_real32_4>();
-			const c_real32_4 *in_b_ptr = in_b->get_data<c_real32_4>();
-			c_real32_4 in_a_val(*in_a_ptr);
+			real32 *out_ptr = out->get_data<real32>();
+			real32 *out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_elements);
+			const real32 *in_a_ptr = in_a->get_data<real32>();
+			const real32 *in_b_ptr = in_b->get_data<real32>();
+			c_real32_4 in_a_val(in_a_ptr);
 			for (; out_ptr < out_ptr_end;
-				 out_ptr++, in_b_ptr++) {
-				c_real32_4 in_b_val(*in_b_ptr);
+				 out_ptr += k_sse_block_elements, in_b_ptr += k_sse_block_elements) {
+				c_real32_4 in_b_val(in_b_ptr);
 				c_real32_4 out_val = op(in_a_val, in_b_val);
-				*out_ptr = out_val;
+				out_val.store(out_ptr);
 			}
 			out->set_constant(false);
 		}
 	} else {
 		if (in_b->is_constant()) {
-			c_real32_4 *out_ptr = out->get_data<c_real32_4>();
-			c_real32_4 *out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_size) / k_sse_block_size;
-			const c_real32_4 *in_a_ptr = in_a->get_data<c_real32_4>();
-			const c_real32_4 *in_b_ptr = in_b->get_data<c_real32_4>();
-			c_real32_4 in_b_val(*in_b_ptr);
+			real32 *out_ptr = out->get_data<real32>();
+			real32 *out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_elements);
+			const real32 *in_a_ptr = in_a->get_data<real32>();
+			const real32 *in_b_ptr = in_b->get_data<real32>();
+			c_real32_4 in_b_val(in_b_ptr);
 			for (; out_ptr < out_ptr_end;
-				 out_ptr++, in_a_ptr++) {
-				c_real32_4 in_a_val(*in_a_ptr);
+				 out_ptr += k_sse_block_elements, in_a_ptr += k_sse_block_elements) {
+				c_real32_4 in_a_val(in_a_ptr);
 				c_real32_4 out_val = op(in_a_val, in_b_val);
-				*out_ptr = out_val;
+				out_val.store(out_ptr);
 			}
 			out->set_constant(false);
 		} else {
-			c_real32_4 *out_ptr = out->get_data<c_real32_4>();
-			c_real32_4 *out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_size) / k_sse_block_size;
-			const c_real32_4 *in_a_ptr = in_a->get_data<c_real32_4>();
-			const c_real32_4 *in_b_ptr = in_b->get_data<c_real32_4>();
+			real32 *out_ptr = out->get_data<real32>();
+			real32 *out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_elements);
+			const real32 *in_a_ptr = in_a->get_data<real32>();
+			const real32 *in_b_ptr = in_b->get_data<real32>();
 			for (; out_ptr < out_ptr_end;
-				 out_ptr++, in_a_ptr++, in_b_ptr++) {
-				c_real32_4 in_a_val(*in_a_ptr);
-				c_real32_4 in_b_val(*in_b_ptr);
+				 out_ptr += k_sse_block_elements, in_a_ptr += k_sse_block_elements, in_b_ptr += k_sse_block_elements) {
+				c_real32_4 in_a_val(in_a_ptr);
+				c_real32_4 in_b_val(in_b_ptr);
 				c_real32_4 out_val = op(in_a_val, in_b_val);
-				*out_ptr = out_val;
+				out_val.store(out_ptr);
 			}
 			out->set_constant(false);
 		}
@@ -165,23 +165,23 @@ void buffer_operator_out_in_in(const t_operation &op, size_t buffer_size,
 	validate_buffer(in_a);
 
 	if (in_a->is_constant()) {
-		c_real32_4 *out_ptr = out->get_data<c_real32_4>();
-		const c_real32_4 *in_a_ptr = in_a->get_data<c_real32_4>();
-		c_real32_4 in_a_val(*in_a_ptr);
+		real32 *out_ptr = out->get_data<real32>();
+		const real32 *in_a_ptr = in_a->get_data<real32>();
+		c_real32_4 in_a_val(in_a_ptr);
 		c_real32_4 in_b_val(in_b);
 		c_real32_4 out_val = op(in_a_val, in_b_val);
-		*out_ptr = out_val;
+		out_val.store(out_ptr);
 		out->set_constant(true);
 	} else {
-		c_real32_4 *out_ptr = out->get_data<c_real32_4>();
-		c_real32_4 *out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_size) / k_sse_block_size;
-		const c_real32_4 *in_a_ptr = in_a->get_data<c_real32_4>();
+		real32 *out_ptr = out->get_data<real32>();
+		real32 *out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_elements);
+		const real32 *in_a_ptr = in_a->get_data<real32>();
 		c_real32_4 in_b_val(in_b);
 		for (; out_ptr < out_ptr_end;
-			 out_ptr++, in_a_ptr++) {
-			c_real32_4 in_a_val(*in_a_ptr);
+			 out_ptr += k_sse_block_elements, in_a_ptr += k_sse_block_elements) {
+			c_real32_4 in_a_val(in_a_ptr);
 			c_real32_4 out_val = op(in_a_val, in_b_val);
-			*out_ptr = out_val;
+			out_val.store(out_ptr);
 		}
 		out->set_constant(false);
 	}
@@ -195,48 +195,48 @@ void buffer_operator_inout_in(const t_operation &op, size_t buffer_size,
 
 	if (inout->is_constant()) {
 		if (in->is_constant()) {
-			c_real32_4 *inout_ptr = inout->get_data<c_real32_4>();
-			const c_real32_4 *in_ptr = in->get_data<c_real32_4>();
-			c_real32_4 in_a_val(*inout_ptr);
-			c_real32_4 in_b_val(*in_ptr);
+			real32 *inout_ptr = inout->get_data<real32>();
+			const real32 *in_ptr = in->get_data<real32>();
+			c_real32_4 in_a_val(inout_ptr);
+			c_real32_4 in_b_val(in_ptr);
 			c_real32_4 out_val = op(in_a_val, in_b_val);
-			*inout_ptr = out_val;
+			out_val.store(inout_ptr);
 		} else {
-			c_real32_4 *inout_ptr = inout->get_data<c_real32_4>();
-			c_real32_4 *inout_ptr_end = inout_ptr + align_size(buffer_size, k_sse_block_size) / k_sse_block_size;
-			const c_real32_4 *in_ptr = in->get_data<c_real32_4>();
-			c_real32_4 in_a_val(*inout_ptr);
+			real32 *inout_ptr = inout->get_data<real32>();
+			real32 *inout_ptr_end = inout_ptr + align_size(buffer_size, k_sse_block_elements);
+			const real32 *in_ptr = in->get_data<real32>();
+			c_real32_4 in_a_val(inout_ptr);
 			for (; inout_ptr < inout_ptr_end;
-				 inout_ptr++, in_ptr++) {
-				c_real32_4 in_b_val(*in_ptr);
+				 inout_ptr += k_sse_block_elements, in_ptr += k_sse_block_elements) {
+				c_real32_4 in_b_val(in_ptr);
 				c_real32_4 out_val = op(in_a_val, in_b_val);
-				*inout_ptr = out_val;
+				out_val.store(inout_ptr);
 			}
 			inout->set_constant(false);
 		}
 	} else {
 		if (in->is_constant()) {
-			c_real32_4 *inout_ptr = inout->get_data<c_real32_4>();
-			c_real32_4 *inout_ptr_end = inout_ptr + align_size(buffer_size, k_sse_block_size) / k_sse_block_size;
-			const c_real32_4 *in_ptr = in->get_data<c_real32_4>();
-			c_real32_4 in_b_val(*in_ptr);
+			real32 *inout_ptr = inout->get_data<real32>();
+			real32 *inout_ptr_end = inout_ptr + align_size(buffer_size, k_sse_block_elements);
+			const real32 *in_ptr = in->get_data<real32>();
+			c_real32_4 in_b_val(in_ptr);
 			for (; inout_ptr < inout_ptr_end;
-				 inout_ptr++) {
-				c_real32_4 in_a_val(*inout_ptr);
+				 inout_ptr += k_sse_block_elements) {
+				c_real32_4 in_a_val(inout_ptr);
 				c_real32_4 out_val = op(in_a_val, in_b_val);
-				*inout_ptr = out_val;
+				out_val.store(inout_ptr);
 			}
 			inout->set_constant(false);
 		} else {
-			c_real32_4 *inout_ptr = inout->get_data<c_real32_4>();
-			c_real32_4 *inout_ptr_end = inout_ptr + align_size(buffer_size, k_sse_block_size) / k_sse_block_size;
-			const c_real32_4 *in_ptr = in->get_data<c_real32_4>();
+			real32 *inout_ptr = inout->get_data<real32>();
+			real32 *inout_ptr_end = inout_ptr + align_size(buffer_size, k_sse_block_elements);
+			const real32 *in_ptr = in->get_data<real32>();
 			for (; inout_ptr < inout_ptr_end;
-				 inout_ptr++, in_ptr++) {
-				c_real32_4 in_a_val(*inout_ptr);
-				c_real32_4 in_b_val(*in_ptr);
+				 inout_ptr += k_sse_block_elements, in_ptr += k_sse_block_elements) {
+				c_real32_4 in_a_val(inout_ptr);
+				c_real32_4 in_b_val(in_ptr);
 				c_real32_4 out_val = op(in_a_val, in_b_val);
-				*inout_ptr = out_val;
+				out_val.store(inout_ptr);
 			}
 			inout->set_constant(false);
 		}
@@ -249,20 +249,20 @@ void buffer_operator_inout_in(const t_operation &op, size_t buffer_size,
 	validate_buffer(inout);
 
 	if (inout->is_constant()) {
-		c_real32_4 *inout_ptr = inout->get_data<c_real32_4>();
-		c_real32_4 in_a_val(*inout_ptr);
+		real32 *inout_ptr = inout->get_data<real32>();
+		c_real32_4 in_a_val(inout_ptr);
 		c_real32_4 in_b_val(in);
 		c_real32_4 out_val = op(in_a_val, in_b_val);
-		*inout_ptr = out_val;
+		out_val.store(inout_ptr);
 	} else {
-		c_real32_4 *inout_ptr = inout->get_data<c_real32_4>();
-		c_real32_4 *inout_ptr_end = inout_ptr + align_size(buffer_size, k_sse_block_size) / k_sse_block_size;
+		real32 *inout_ptr = inout->get_data<real32>();
+		real32 *inout_ptr_end = inout_ptr + align_size(buffer_size, k_sse_block_elements);
 		c_real32_4 in_b_val(in);
 		for (; inout_ptr < inout_ptr_end;
-				inout_ptr++) {
-			c_real32_4 in_a_val(*inout_ptr);
+			 inout_ptr += k_sse_block_elements) {
+			c_real32_4 in_a_val(inout_ptr);
 			c_real32_4 out_val = op(in_a_val, in_b_val);
-			*inout_ptr = out_val;
+			out_val.store(inout_ptr);
 		}
 		inout->set_constant(false);
 	}

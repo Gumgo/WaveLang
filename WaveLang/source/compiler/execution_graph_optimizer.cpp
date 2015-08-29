@@ -243,6 +243,11 @@ static bool optimize_native_module_call(c_execution_graph *execution_graph, uint
 							execution_graph->get_constant_node_real_value(constant_node_index);
 						break;
 
+					case k_native_module_argument_type_bool:
+						compile_time_argument.bool_value =
+							execution_graph->get_constant_node_bool_value(constant_node_index);
+						break;
+
 					case k_native_module_argument_type_string:
 						compile_time_argument.string_value =
 							execution_graph->get_constant_node_string_value(constant_node_index);
@@ -277,9 +282,13 @@ static bool optimize_native_module_call(c_execution_graph *execution_graph, uint
 
 					// Create a constant node for this output
 					uint32 constant_node_index = c_execution_graph::k_invalid_index;
-					switch (execution_graph->get_constant_node_data_type(constant_node_index)) {
+					switch (argument.type) {
 					case k_native_module_argument_type_real:
 						constant_node_index = execution_graph->add_constant_node(compile_time_argument.real_value);
+						break;
+
+					case k_native_module_argument_type_bool:
+						constant_node_index = execution_graph->add_constant_node(compile_time_argument.bool_value);
 						break;
 
 					case k_native_module_argument_type_string:

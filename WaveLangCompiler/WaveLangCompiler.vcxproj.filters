@@ -87,6 +87,9 @@
     <ClCompile Include="..\WaveLang\source\common\utility\string_table.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\WaveLang\source\common\utility\file_utility.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\WaveLang\source\common\asserts.h">
@@ -165,6 +168,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\WaveLang\source\common\utility\string_table.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\WaveLang\source\common\utility\file_utility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\WaveLang\source\common\utility\aligned_allocator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

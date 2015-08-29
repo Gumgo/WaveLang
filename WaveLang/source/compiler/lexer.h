@@ -18,6 +18,7 @@ enum e_token_type {
 	k_token_type_keyword_module,
 	k_token_type_keyword_void,
 	k_token_type_keyword_real,
+	k_token_type_keyword_bool,
 	k_token_type_keyword_string,
 	k_token_type_keyword_return,
 
@@ -28,6 +29,7 @@ enum e_token_type {
 
 	// Constants
 	k_token_type_constant_real,
+	k_token_type_constant_bool,
 	k_token_type_constant_string,
 
 	// Paired symbols
@@ -58,14 +60,18 @@ enum e_token_type {
 	k_token_type_operator_multiplication,
 	k_token_type_operator_division,
 	k_token_type_operator_modulo,
+	k_token_type_operator_concatenation,
 
-	k_token_type_last_operator = k_token_type_operator_modulo,
+	k_token_type_last_operator = k_token_type_operator_concatenation,
 
 	// Comment tokens - should never be a result of the lexer
 	k_token_type_comment,
 
 	k_token_type_count
 };
+
+extern const char *k_token_type_constant_bool_false_string;
+extern const char *k_token_type_constant_bool_true_string;
 
 struct s_token {
 	// The type of token

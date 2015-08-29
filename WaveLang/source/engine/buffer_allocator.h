@@ -29,14 +29,14 @@ private:
 
 	// Pool of buffers to allocate from
 	c_lock_free_pool m_buffer_pool;
-	c_lock_free_aligned_array_allocator<s_aligned_lock_free_handle> m_buffer_pool_free_list_memory;
+	c_lock_free_aligned_allocator<s_aligned_lock_free_handle> m_buffer_pool_free_list_memory;
 
 	// The buffer backing memory
 	size_t m_aligned_padded_buffer_size;
-	c_lock_free_aligned_array_allocator<uint8> m_buffer_memory;
+	c_lock_free_aligned_allocator<uint8> m_buffer_memory;
 
 	// The buffers themselves
-	c_lock_free_aligned_array_allocator<c_buffer> m_buffers;
+	c_lock_free_aligned_allocator<c_buffer> m_buffers;
 };
 
 #endif // WAVELANG_BUFFER_ALLOCATOR_H__

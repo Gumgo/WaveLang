@@ -20,6 +20,7 @@
     <ClCompile Include="source\common\threading\semaphore.cpp" />
     <ClCompile Include="source\common\threading\thread_fallback.cpp" />
     <ClCompile Include="source\common\threading\thread_windows.cpp" />
+    <ClCompile Include="source\common\utility\file_utility.cpp" />
     <ClCompile Include="source\common\utility\string_table.cpp" />
     <ClCompile Include="source\compiler\ast.cpp" />
     <ClCompile Include="source\compiler\ast_builder.cpp" />
@@ -37,7 +38,11 @@
     <ClCompile Include="source\driver\sample_format.cpp" />
     <ClCompile Include="source\engine\buffer_allocator.cpp" />
     <ClCompile Include="source\engine\buffer_operations\buffer_operations.cpp" />
+    <ClCompile Include="source\engine\buffer_operations\buffer_operations_sampler.cpp" />
     <ClCompile Include="source\engine\channel_mixer.cpp" />
+    <ClCompile Include="source\engine\sample\native_samples.cpp" />
+    <ClCompile Include="source\engine\sample\sample.cpp" />
+    <ClCompile Include="source\engine\sample\sample_library.cpp" />
     <ClCompile Include="source\engine\executor.cpp" />
     <ClCompile Include="source\engine\native_module_task_mapping.cpp" />
     <ClCompile Include="source\engine\predecessor_resolver.cpp" />
@@ -63,6 +68,8 @@
     <ClInclude Include="source\common\threading\semaphore.h" />
     <ClInclude Include="source\common\threading\thread.h" />
     <ClInclude Include="source\common\types.h" />
+    <ClInclude Include="source\common\utility\aligned_allocator.h" />
+    <ClInclude Include="source\common\utility\file_utility.h" />
     <ClInclude Include="source\common\utility\string_table.h" />
     <ClInclude Include="source\compiler\ast.h" />
     <ClInclude Include="source\compiler\ast_builder.h" />
@@ -81,13 +88,20 @@
     <ClInclude Include="source\engine\buffer_allocator.h" />
     <ClInclude Include="source\engine\buffer_operations\buffer_operations.h" />
     <ClInclude Include="source\engine\buffer_operations\buffer_operations_arithmetic.h" />
+    <ClInclude Include="source\engine\buffer_operations\buffer_operations_sampler.h" />
     <ClInclude Include="source\engine\buffer_operations\buffer_operations_utility.h" />
-    <ClInclude Include="source\engine\buffer_operations\sse.h" />
-    <ClInclude Include="source\engine\buffer_operations\sse_mathfun.h" />
     <ClInclude Include="source\engine\channel_mixer.h" />
     <ClInclude Include="source\engine\executor.h" />
+    <ClInclude Include="source\engine\math\math.h" />
+    <ClInclude Include="source\engine\math\math_int32_4.h" />
+    <ClInclude Include="source\engine\math\math_real32_4.h" />
+    <ClInclude Include="source\engine\math\sse.h" />
+    <ClInclude Include="source\engine\math\sse_mathfun.h" />
     <ClInclude Include="source\engine\native_module_task_mapping.h" />
+    <ClInclude Include="source\engine\sample\native_samples.h" />
     <ClInclude Include="source\engine\predecessor_resolver.h" />
+    <ClInclude Include="source\engine\sample\sample.h" />
+    <ClInclude Include="source\engine\sample\sample_library.h" />
     <ClInclude Include="source\engine\task_functions.h" />
     <ClInclude Include="source\engine\task_graph.h" />
     <ClInclude Include="source\engine\thread_pool.h" />
@@ -100,6 +114,9 @@
     <None Include="source\common\threading\atomics_windows.inl" />
     <None Include="source\compiler\compiler_utility.inl" />
     <None Include="source\compiler\lr_parse_tables.inl" />
+    <None Include="source\engine\math\math_int32_4.inl" />
+    <None Include="source\engine\math\math_real32_4.inl" />
+    <None Include="source\engine\sample\native_samples.inl" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="source\compiler\execution_graph_optimization_rules.txt" />

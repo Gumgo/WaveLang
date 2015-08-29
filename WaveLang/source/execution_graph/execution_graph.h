@@ -61,6 +61,7 @@ public:
 	bool validate() const;
 
 	uint32 add_constant_node(real32 constant_value);
+	uint32 add_constant_node(bool constant_value);
 	uint32 add_constant_node(const std::string &constant_value);
 	uint32 add_native_module_call_node(uint32 native_module_index);
 	uint32 add_output_node(uint32 output_index);
@@ -73,6 +74,7 @@ public:
 	e_execution_graph_node_type get_node_type(uint32 node_index) const;
 	e_native_module_argument_type get_constant_node_data_type(uint32 node_index) const;
 	real32 get_constant_node_real_value(uint32 node_index) const;
+	bool get_constant_node_bool_value(uint32 node_index) const;
 	const char *get_constant_node_string_value(uint32 node_index) const;
 	uint32 get_native_module_call_native_module_index(uint32 node_index) const;
 	uint32 get_output_node_output_index(uint32 node_index) const;
@@ -103,6 +105,7 @@ private:
 
 				union {
 					real32 real_value;
+					bool bool_value;
 					uint32 string_index;
 				};
 			} constant;

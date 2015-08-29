@@ -9,14 +9,16 @@ static const char *k_lexer_token_table[] = {
 	"in",		// k_token_type_keyword_in
 	"out",		// k_token_type_keyword_out
 	"module",	// k_token_type_keyword_module
-	"void",		// k_token_type_keyword_void,
-	"real",		// k_token_type_keyword_real,
-	"string",	// k_token_type_keyword_string,
+	"void",		// k_token_type_keyword_void
+	"real",		// k_token_type_keyword_real
+	"bool",		// k_token_type_keyword_bool
+	"string",	// k_token_type_keyword_string
 	"return",	// k_token_type_keyword_return
 
 	"",			// k_token_type_identifier
 
 	"",			// k_token_type_constant_real
+	"",			// k_token_type_constant_bool
 	"",			// k_token_type_constant_string
 
 	"(",		// k_token_type_left_parenthesis
@@ -31,14 +33,18 @@ static const char *k_lexer_token_table[] = {
 	":=",		// k_token_type_operator_assignment
 	"+",		// k_token_type_operator_addition
 	"-",		// k_token_type_operator_subtraction
-	"*",		// k_token_type_multiplication
-	"/",		// k_token_type_division
-	"%",		// k_token_type_modulo
+	"*",		// k_token_type_operator_multiplication
+	"/",		// k_token_type_operator_division
+	"%",		// k_token_type_operator_modulo
+	".",		// k_token_type_operator_concatenation
 
 	"//"		// k_token_type_comment
 };
 
 static_assert(NUMBEROF(k_lexer_token_table) == k_token_type_count, "Invalid lexer token table");
+
+const char *k_token_type_constant_bool_false_string = "false";
+const char *k_token_type_constant_bool_true_string = "true";
 
 typedef std::unordered_map<std::string, e_token_type> c_lexer_table;
 
@@ -68,6 +74,12 @@ void c_lexer::initialize_lexer() {
 		g_lexer_globals.keyword_table.insert(std::make_pair(
 			k_lexer_token_table[token_type], static_cast<e_token_type>(token_type)));
 	}
+
+	// Add bool values to the keyword table
+	g_lexer_globals.keyword_table.insert(std::make_pair(
+		k_token_type_constant_bool_false_string, k_token_type_constant_bool));
+	g_lexer_globals.keyword_table.insert(std::make_pair(
+		k_token_type_constant_bool_true_string, k_token_type_constant_bool));
 
 	for (size_t token_type = k_token_type_first_single_character_operator;
 		 token_type <= k_token_type_last_single_character_operator;

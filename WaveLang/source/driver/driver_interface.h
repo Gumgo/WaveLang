@@ -50,7 +50,7 @@ struct s_driver_settings {
 	uint32 device_index;
 
 	// Sample rate of the stream
-	double sample_rate;
+	real64 sample_rate;
 
 	// Number of output channels (1 = mono, 2 = stereo, etc.)
 	uint32 output_channels;
@@ -80,9 +80,9 @@ struct s_device_info {
 	const char *name;
 	// $TODO host API identifier?
 	uint32 max_output_channels;
-	double default_low_output_latency;
-	double default_high_output_latency;
-	double default_sample_rate;
+	real64 default_low_output_latency;
+	real64 default_high_output_latency;
+	real64 default_sample_rate;
 };
 
 class c_driver_interface {

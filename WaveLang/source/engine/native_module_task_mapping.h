@@ -26,15 +26,18 @@ typedef c_wrapped_array_const<uint32> c_task_mapping_array;
 // + v and v + c, and for memory optimization (and performance) we also have tasks which directly modify buffers which
 // never need to be reused.
 
-// Task mapping notation examples (NM = native module, see cpp file for meanings of TM_ macros):
-// { TM_I(0), TM_I(1), TM_O(0) }
-//   NM arg 0 is an input and maps to task input 0
-//   NM arg 1 is an input and maps to task input 1
-//   NM arg 2 is an output and maps to task output 0
-// { TM_IO(0), TM_C(0), TM_IO(0) }
-//   NM arg 0 is an input and maps to task inout 0
-//   NM arg 1 is a constant and maps to task constant 0
-//   NM arg 2 is an output and maps to task inout 0
+// Task mapping notation examples (NM = native module):
+// native_module(in 0, in 1, out 2) => task(out 0, in 1, in 2)
+// mapping = { 1, 2, 0 }
+//   NM arg 0 is an input and maps to task argument 1, which is an input
+//   NM arg 1 is an input and maps to task argument 2, which is an input
+//   NM arg 2 is an output and maps to task argument 0, which is an output
+// native_module(in 0, in 1, out 2) => task(inout 0, in 1)
+// mapping = { 0, 1, 0 }
+//   NM arg 0 is an input and maps to task argument 0, which is an inout
+//   NM arg 1 is an input and maps to task argument 1, which is an input
+//   NM arg 2 is an output and maps to task argument 0, which is an inout
+// Notice that in the last example, the inout task argument is hooked up to both an input and an output from the NM
 
 bool get_task_mapping_for_native_module_and_inputs(
 	uint32 native_module_index,

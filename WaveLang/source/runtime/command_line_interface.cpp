@@ -284,6 +284,7 @@ void c_command_line_interface::process_command_load_synth(const s_command &comma
 
 			s_executor_settings settings;
 			settings.task_graph = &task_graph;
+			settings.sample_rate = static_cast<uint32>(runtime_context.driver_interface.get_settings().sample_rate);
 			settings.max_buffer_size = runtime_context.driver_interface.get_settings().frames_per_buffer;
 			settings.output_channels = runtime_context.driver_interface.get_settings().output_channels;
 			runtime_context.executor.initialize(settings);

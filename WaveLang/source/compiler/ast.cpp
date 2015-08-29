@@ -6,6 +6,7 @@ static const char *k_ast_data_type_strings[] = {
 	"void",
 	"module",
 	"real",
+	"bool",
 	"string"
 };
 
@@ -400,6 +401,17 @@ void c_ast_node_constant::set_real_value(real32 value) {
 real32 c_ast_node_constant::get_real_value() const {
 	wl_assert(m_data_type == k_ast_data_type_real);
 	return m_real_value;
+}
+
+void c_ast_node_constant::set_bool_value(bool value) {
+	m_data_type = k_ast_data_type_bool;
+	m_bool_value = value;
+	m_string_value.clear();
+}
+
+bool c_ast_node_constant::get_bool_value() const {
+	wl_assert(m_data_type == k_ast_data_type_bool);
+	return m_bool_value;
 }
 
 void c_ast_node_constant::set_string_value(const std::string &value) {
