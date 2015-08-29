@@ -96,13 +96,13 @@ struct s_optimization_rule {
 // Shorthand for native modules
 #define NM_BEGIN(x)		s_optimization_rule_description_component::native_module(x)
 #define NM_END			s_optimization_rule_description_component::native_module_end()
-#define NM_NOOP(x, ...)	NM_BEGIN(k_native_module_noop), x, __VA_ARGS__, NM_END
-#define NM_NEG(x, ...)	NM_BEGIN(k_native_module_negation), x, __VA_ARGS__, NM_END
-#define NM_ADD(x, ...)	NM_BEGIN(k_native_module_addition), x, __VA_ARGS__, NM_END
-#define NM_SUB(x, ...)	NM_BEGIN(k_native_module_subtraction), x, __VA_ARGS__, NM_END
-#define NM_MUL(x, ...)	NM_BEGIN(k_native_module_multiplication), x, __VA_ARGS__, NM_END
-#define NM_DIV(x, ...)	NM_BEGIN(k_native_module_division), x, __VA_ARGS__, NM_END
-#define NM_MOD(x, ...)	NM_BEGIN(k_native_module_modulo), x, __VA_ARGS__, NM_END
+#define NM_NOOP(x, ...)	NM_BEGIN(k_native_module_noop), x, ##__VA_ARGS__, NM_END
+#define NM_NEG(x, ...)	NM_BEGIN(k_native_module_negation), x, ##__VA_ARGS__, NM_END
+#define NM_ADD(x, ...)	NM_BEGIN(k_native_module_addition), x, ##__VA_ARGS__, NM_END
+#define NM_SUB(x, ...)	NM_BEGIN(k_native_module_subtraction), x, ##__VA_ARGS__, NM_END
+#define NM_MUL(x, ...)	NM_BEGIN(k_native_module_multiplication), x, ##__VA_ARGS__, NM_END
+#define NM_DIV(x, ...)	NM_BEGIN(k_native_module_division), x, ##__VA_ARGS__, NM_END
+#define NM_MOD(x, ...)	NM_BEGIN(k_native_module_modulo), x, ##__VA_ARGS__, NM_END
 
 static const s_optimization_rule k_optimization_rules[] = {
 #include "execution_graph_optimization_rules.txt"

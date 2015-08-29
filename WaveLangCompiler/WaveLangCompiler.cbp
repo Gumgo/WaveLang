@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="WaveLangCompiler" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Release Win32">
+				<Option output="WaveLangCompiler" prefix_auto="1" extension_auto="1" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O3" />
+					<Add option="-std=c++11" />
+					<Add directory="../WaveLang/source" />
+				</Compiler>
+			</Target>
+			<Target title="Debug Win32">
+				<Option output="WaveLangCompiler" prefix_auto="1" extension_auto="1" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-std=c++11" />
+					<Add option="-D_DEBUG" />
+					<Add directory="../WaveLang/source" />
+				</Compiler>
+			</Target>
+		</Build>
+		<Unit filename="../WaveLang/source/common/asserts.cpp" />
+		<Unit filename="../WaveLang/source/common/asserts.h" />
+		<Unit filename="../WaveLang/source/common/common.h" />
+		<Unit filename="../WaveLang/source/common/platform.h" />
+		<Unit filename="../WaveLang/source/common/threading/atomics.h" />
+		<Unit filename="../WaveLang/source/common/threading/atomics_fallback.inl" />
+		<Unit filename="../WaveLang/source/common/threading/atomics_windows.inl" />
+		<Unit filename="../WaveLang/source/common/threading/condition_variable.cpp" />
+		<Unit filename="../WaveLang/source/common/threading/condition_variable.h" />
+		<Unit filename="../WaveLang/source/common/threading/lock_free.cpp" />
+		<Unit filename="../WaveLang/source/common/threading/lock_free.h" />
+		<Unit filename="../WaveLang/source/common/threading/lock_free_pool.cpp" />
+		<Unit filename="../WaveLang/source/common/threading/lock_free_pool.h" />
+		<Unit filename="../WaveLang/source/common/threading/lock_free_queue.h" />
+		<Unit filename="../WaveLang/source/common/threading/lock_free_queue.inl" />
+		<Unit filename="../WaveLang/source/common/threading/mutex.cpp" />
+		<Unit filename="../WaveLang/source/common/threading/mutex.h" />
+		<Unit filename="../WaveLang/source/common/threading/semaphore.cpp" />
+		<Unit filename="../WaveLang/source/common/threading/semaphore.h" />
+		<Unit filename="../WaveLang/source/common/threading/thread_fallback.cpp" />
+		<Unit filename="../WaveLang/source/common/threading/thread_windows.cpp" />
+		<Unit filename="../WaveLang/source/common/types.h" />
+		<Unit filename="../WaveLang/source/compiler/ast.cpp" />
+		<Unit filename="../WaveLang/source/compiler/ast.h" />
+		<Unit filename="../WaveLang/source/compiler/ast_builder.cpp" />
+		<Unit filename="../WaveLang/source/compiler/ast_builder.h" />
+		<Unit filename="../WaveLang/source/compiler/ast_validator.cpp" />
+		<Unit filename="../WaveLang/source/compiler/ast_validator.h" />
+		<Unit filename="../WaveLang/source/compiler/compiler.cpp" />
+		<Unit filename="../WaveLang/source/compiler/compiler.h" />
+		<Unit filename="../WaveLang/source/compiler/compiler_main.cpp" />
+		<Unit filename="../WaveLang/source/compiler/compiler_utility.cpp" />
+		<Unit filename="../WaveLang/source/compiler/compiler_utility.h" />
+		<Unit filename="../WaveLang/source/compiler/compiler_utility.inl" />
+		<Unit filename="../WaveLang/source/compiler/execution_graph_builder.cpp" />
+		<Unit filename="../WaveLang/source/compiler/execution_graph_builder.h" />
+		<Unit filename="../WaveLang/source/compiler/execution_graph_optimizer.cpp" />
+		<Unit filename="../WaveLang/source/compiler/execution_graph_optimizer.h" />
+		<Unit filename="../WaveLang/source/compiler/lexer.cpp" />
+		<Unit filename="../WaveLang/source/compiler/lexer.h" />
+		<Unit filename="../WaveLang/source/compiler/lr_parser.cpp" />
+		<Unit filename="../WaveLang/source/compiler/lr_parser.h" />
+		<Unit filename="../WaveLang/source/compiler/parser.cpp" />
+		<Unit filename="../WaveLang/source/compiler/parser.h" />
+		<Unit filename="../WaveLang/source/compiler/preprocessor.cpp" />
+		<Unit filename="../WaveLang/source/compiler/preprocessor.h" />
+		<Unit filename="../WaveLang/source/engine/thread_pool.cpp" />
+		<Unit filename="../WaveLang/source/engine/thread_pool.h" />
+		<Unit filename="../WaveLang/source/execution_graph/execution_graph.cpp" />
+		<Unit filename="../WaveLang/source/execution_graph/execution_graph.h" />
+		<Unit filename="../WaveLang/source/execution_graph/native_modules.cpp" />
+		<Unit filename="../WaveLang/source/execution_graph/native_modules.h" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

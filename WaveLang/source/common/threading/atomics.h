@@ -47,14 +47,15 @@ public:
 	// Decrements the value
 	inline int32 decrement();
 
+	// $TODO fix these names
 	// ANDs the value with x
-	inline int32 and(int32 x);
+	inline int32 bitwise_and(int32 x);
 
 	// ORs the value with x
-	inline int32 or(int32 x);
+	inline int32 bitwise_or(int32 x);
 
 	// XORs the value with x
-	inline int32 xor(int32 x);
+	inline int32 bitwise_xor(int32 x);
 
 	// Performs the specified operation atomically
 	// T should implement int32 operator()(int32 value) const
@@ -101,13 +102,13 @@ public:
 	inline int64 decrement();
 
 	// ANDs the value with x
-	inline int64 and(int64 x);
+	inline int64 bitwise_and(int64 x);
 
 	// ORs the value with x
-	inline int64 or(int64 x);
+	inline int64 bitwise_or(int64 x);
 
 	// XORs the value with x
-	inline int64 xor(int64 x);
+	inline int64 bitwise_xor(int64 x);
 
 	// Performs the specified operation atomically
 	// T should implement int64 operator()(int64 value) const

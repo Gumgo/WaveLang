@@ -1,9 +1,15 @@
 #ifndef WAVELANG_ASSERTS_H__
 #define WAVELANG_ASSERTS_H__
 
-#ifdef _DEBUG
+#include "common/macros.h"
 
+#ifdef _DEBUG
 #define ASSERTS_ENABLED 1
+#else // _DEBUG
+#define ASSERTS_ENABLED 0
+#endif // _DEBUG
+
+#if PREDEFINED(ASSERTS_ENABLED)
 
 #define IF_ASSERTS_ENABLED(x) x
 
@@ -27,9 +33,7 @@
 
 void handle_assert(const char *message);
 
-#else // _DEBUG
-
-#define ASSERTS_ENABLED 0
+#else // PREDEFINED(ASSERTS_ENABLED)
 
 #define IF_ASSERTS_ENABLED(x)
 #define wl_assert(expression)			NOOP
@@ -38,6 +42,6 @@ void handle_assert(const char *message);
 #define wl_vhalt(message)				NOOP
 #define wl_unreachable()				NOOP
 
-#endif // _DEBUG
+#endif // PREDEFINED(ASSERTS_ENABLED)
 
 #endif // WAVELANG_ASSERTS_H__

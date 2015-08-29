@@ -93,5 +93,5 @@ void c_predecessor_resolver::resolve() {
 
 		out << "\n";
 	}
-#endif PREDEFINED(OUTPUT_PREDECESSOR_RESOLUTION)
+#endif // PREDEFINED(OUTPUT_PREDECESSOR_RESOLUTION)
 }

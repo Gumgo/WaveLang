@@ -15,7 +15,7 @@ static const size_t k_sse_block_size = SSE_BLOCK_SIZE;
 
 #if PREDEFINED(COMPILER_MSVC)
 #include <intrin.h>
-#else PREDEFINED(COMPILER_MSVC)
+#else // PREDEFINED(COMPILER_MSVC)
 #include <x86intrin.h>
 #endif // PREDEFINED(COMPILER_MSVC)
 

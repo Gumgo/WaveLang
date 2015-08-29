@@ -102,15 +102,15 @@ inline int32 c_atomic_int32::decrement() {
 
 // Seems to not be 32-bit versions of these functions defined except for IA64
 
-inline int32 c_atomic_int32::and(int32 x) {
+inline int32 c_atomic_int32::bitwise_and(int32 x) {
 	return execute_atomic(s_atomic_operation_and<int32>(x));
 }
 
-inline int32 c_atomic_int32::or(int32 x) {
+inline int32 c_atomic_int32::bitwise_or(int32 x) {
 	return execute_atomic(s_atomic_operation_or<int32>(x));
 }
 
-inline int32 c_atomic_int32::xor(int32 x) {
+inline int32 c_atomic_int32::bitwise_xor(int32 x) {
 	return execute_atomic(s_atomic_operation_xor<int32>(x));
 }
 
@@ -139,14 +139,14 @@ inline int64 c_atomic_int64::decrement() {
 	return InterlockedDecrement(to_dst64(&m_value)) + 1;
 }
 
-inline int64 c_atomic_int64::and(int64 x) {
+inline int64 c_atomic_int64::bitwise_and(int64 x) {
 	return InterlockedAnd(to_dst64(&m_value), to_src64(x));
 }
 
-inline int64 c_atomic_int64::or(int64 x) {
+inline int64 c_atomic_int64::bitwise_or(int64 x) {
 	return InterlockedOr(to_dst64(&m_value), to_src64(x));
 }
 
-inline int64 c_atomic_int64::xor(int64 x) {
+inline int64 c_atomic_int64::bitwise_xor(int64 x) {
 	return InterlockedXor(to_dst64(&m_value), to_src64(x));
 }

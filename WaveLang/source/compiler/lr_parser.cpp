@@ -1,5 +1,8 @@
 #include "compiler/lr_parser.h"
 #include <stack>
+#include <limits>
+
+const uint32 c_lr_action_goto_table::k_invalid_state_index;
 
 #if PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
 #include <fstream>

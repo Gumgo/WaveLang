@@ -6,6 +6,9 @@
 #include "common/types.h"
 #include "common/asserts.h"
 #include <cctype>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
 
 // Some utility functions... if this list gets too big, move these somewhere better
 inline bool string_compare_case_insensitive(const char *str_a, const char *str_b) {

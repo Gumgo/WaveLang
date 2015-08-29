@@ -3,6 +3,7 @@
 #include "compiler/lexer.h"
 #include "compiler/parser.h"
 #include "execution_graph/native_modules.h"
+#include <stdexcept>
 
 static const e_ast_data_type k_native_module_argument_type_to_ast_data_type_mapping[] = {
 	k_ast_data_type_real,	// k_native_module_argument_type_real
