@@ -226,5 +226,8 @@
     <None Include="..\WaveLang\source\engine\sample\native_samples.inl">
       <Filter>Header Files</Filter>
     </None>
+    <None Include="..\WaveLang\source\engine\buffer_operations\sinc_window_coefficients.inl">
+      <Filter>Header Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

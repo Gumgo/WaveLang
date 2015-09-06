@@ -7,6 +7,7 @@
 
 c_executor::c_executor() {
 	m_state.initialize(k_state_uninitialized);
+	m_sample_library.initialize("./");
 }
 
 void c_executor::initialize(const s_executor_settings &settings) {
@@ -148,9 +149,9 @@ void c_executor::initialize_internal(const s_executor_settings &settings) {
 
 				for (size_t arg = 0; arg < argument_data.get_count(); arg++) {
 					s_task_function_argument &argument = arguments[arg];
-					argument.type = argument_data[arg].type;
+					IF_ASSERTS_ENABLED(argument.type = argument_data[arg].type);
 
-					switch (argument.type) {
+					switch (argument_data[arg].type) {
 					case k_task_data_type_real_buffer_in:
 					case k_task_data_type_real_buffer_out:
 					case k_task_data_type_real_buffer_inout:
@@ -253,9 +254,9 @@ void c_executor::initialize_internal(const s_executor_settings &settings) {
 
 				for (size_t arg = 0; arg < argument_data.get_count(); arg++) {
 					s_task_function_argument &argument = arguments[arg];
-					argument.type = argument_data[arg].type;
+					IF_ASSERTS_ENABLED(argument.type = argument_data[arg].type);
 
-					switch (argument.type) {
+					switch (argument_data[arg].type) {
 					case k_task_data_type_real_buffer_in:
 					case k_task_data_type_real_buffer_out:
 					case k_task_data_type_real_buffer_inout:
@@ -533,9 +534,9 @@ void c_executor::process_task(const s_task_parameters *params) {
 
 		for (size_t arg = 0; arg < argument_data.get_count(); arg++) {
 			s_task_function_argument &argument = arguments[arg];
-			argument.type = argument_data[arg].type;
+			IF_ASSERTS_ENABLED(argument.type = argument_data[arg].type);
 
-			switch (argument.type) {
+			switch (argument_data[arg].type) {
 			case k_task_data_type_real_buffer_in:
 				argument.data.real_buffer_in = m_buffer_allocator.get_buffer(
 					m_buffer_contexts.get_array()[argument_data[arg].get_real_buffer_in()].handle);

@@ -114,6 +114,7 @@
     <None Include="source\common\threading\atomics_windows.inl" />
     <None Include="source\compiler\compiler_utility.inl" />
     <None Include="source\compiler\lr_parse_tables.inl" />
+    <None Include="source\engine\buffer_operations\sinc_window_coefficients.inl" />
     <None Include="source\engine\math\math_int32_4.inl" />
     <None Include="source\engine\math\math_real32_4.inl" />
     <None Include="source\engine\sample\native_samples.inl" />

@@ -325,6 +325,9 @@
     <None Include="source\engine\math\math_int32_4.inl">
       <Filter>Header Files</Filter>
     </None>
+    <None Include="source\engine\buffer_operations\sinc_window_coefficients.inl">
+      <Filter>Header Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="source\compiler\execution_graph_optimization_rules.txt" />

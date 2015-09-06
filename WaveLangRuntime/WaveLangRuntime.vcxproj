@@ -145,6 +145,7 @@
     <None Include="..\WaveLang\source\common\threading\atomics_fallback.inl" />
     <None Include="..\WaveLang\source\common\threading\atomics_windows.inl" />
     <None Include="..\WaveLang\source\common\threading\lock_free_queue.inl" />
+    <None Include="..\WaveLang\source\engine\buffer_operations\sinc_window_coefficients.inl" />
     <None Include="..\WaveLang\source\engine\sample\native_samples.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

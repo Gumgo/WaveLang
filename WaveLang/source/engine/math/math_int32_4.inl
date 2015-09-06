@@ -6,7 +6,7 @@ inline c_int32_4::c_int32_4(int32 v)
 }
 
 inline c_int32_4::c_int32_4(int32 a, int32 b, int32 c, int32 d)
-	: m_value(_mm_set_epi32(a, b, c, d)) {
+	: m_value(_mm_set_epi32(d, c, b, a)) {
 }
 
 inline c_int32_4::c_int32_4(const int32 *ptr) {
@@ -128,4 +128,14 @@ inline c_int32_4 min_unsigned(const c_int32_4 &a, const c_int32_4 &b) {
 inline c_int32_4 max_unsigned(const c_int32_4 &a, const c_int32_4 &b) {
 	// $TODO support SSE3
 	return _mm_max_epu32(a, b);
+}
+
+template<int32 k_pos_0, int32 k_pos_1, int32 k_pos_2, int32 k_pos_3>
+c_real32_4 shuffle(const c_real32_4 &a, const c_real32_4 &b) {
+	static_assert(VALID_INDEX(k_pos_0, k_sse_block_elements), "Must be in range [0,3]");
+	static_assert(VALID_INDEX(k_pos_1, k_sse_block_elements), "Must be in range [0,3]");
+	static_assert(VALID_INDEX(k_pos_2, k_sse_block_elements), "Must be in range [0,3]");
+	static_assert(VALID_INDEX(k_pos_3, k_sse_block_elements), "Must be in range [0,3]");
+	static const int32 k_shuffle_pos = k_pos_0 | (k_pos_1 << 2) | (k_pos_2 << 4) | (k_pos_3 << 6);
+	return _mm_shuffle_ps(a, b, k_shuffle_pos);
 }

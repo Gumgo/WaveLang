@@ -14,7 +14,7 @@ enum e_sample_loop_mode {
 	k_sample_loop_mode_count
 };
 
-static const uint32 k_max_sample_padding = 6;
+static const uint32 k_max_sample_padding = 4;
 
 // Contains a predefined buffer of audio sample data. This data has an associated sample rate which is independent of
 // the output sample rate. A sample can optionally consist of a mipmap of sub-samples for improved resampling quality.
@@ -93,6 +93,9 @@ private:
 	e_sample_loop_mode m_loop_mode;	// How this sample should loop
 	uint32 m_loop_start;			// Start loop point, in samples
 	uint32 m_loop_end;				// End loop point, in samples
+
+	bool m_phase_shift_enabled;		// Whether phase shifting is allowed (implemented by extending the loop)
+	// $TODO
 
 	c_aligned_allocator<real32, k_sse_alignment> m_sample_data;
 	std::vector<c_sample *> m_mipmap;

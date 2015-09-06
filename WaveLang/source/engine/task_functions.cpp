@@ -544,23 +544,20 @@ static void task_function_sampler_constant(const s_task_function_context &contex
 }
 
 static size_t task_memory_query_sampler(const s_task_function_context &context) {
-	return sizeof(s_buffer_operation_sampler);
+	return s_buffer_operation_sampler::query_memory();
 }
 
 static void task_initializer_sampler(const s_task_function_context &context) {
-	s_buffer_operation_sampler *task_context = static_cast<s_buffer_operation_sampler *>(context.task_memory);
 	const char *name = context.arguments[0].get_string_constant_in();
 	real32 channel = context.arguments[1].get_real_constant_in();
 	bool loop = context.arguments[2].get_bool_constant_in();
 	bool bidi = context.arguments[3].get_bool_constant_in();
-
-	task_context->sample_handle = context.sample_requester->request_sample(name,
-		loop ? (bidi ? k_sample_loop_mode_bidi_loop : k_sample_loop_mode_loop) : k_sample_loop_mode_none);
-	if (channel >= 0.0f && channel == floor(channel)) {
-		task_context->channel = static_cast<uint32>(channel);
-	} else {
-		task_context->channel = 0xffffffff;
-	}
+	e_sample_loop_mode loop_mode =
+		loop ? (bidi ? k_sample_loop_mode_bidi_loop : k_sample_loop_mode_loop) : k_sample_loop_mode_none;
+	s_buffer_operation_sampler::initialize(
+		context.sample_requester,
+		static_cast<s_buffer_operation_sampler *>(context.task_memory),
+		name, loop_mode, channel);
 }
 
 // TEMP TEST CODE

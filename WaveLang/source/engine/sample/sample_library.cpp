@@ -31,9 +31,10 @@ void c_sample_library::initialize(const char *root_path) {
 	for (uint32 index = 0; index < k_native_sample_count; index++) {
 		m_native_samples.push_back(s_requested_sample());
 		s_requested_sample &requested_sample = m_native_samples.back();
-		requested_sample.file_path = get_native_sample_name(index);;
+		requested_sample.file_path = get_native_sample_name(index);
 		requested_sample.timestamp = 0;
 		requested_sample.sample = build_native_sample(index);
+		requested_sample.loop_mode = requested_sample.sample->get_loop_mode();
 	}
 }
 

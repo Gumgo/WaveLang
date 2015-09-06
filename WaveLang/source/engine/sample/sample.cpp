@@ -282,7 +282,7 @@ void c_sample::initialize(c_wrapped_array_const<c_sample *> mipmap) {
 	wl_assert(m_mipmap.empty());
 
 	wl_assert(m_type == k_type_none);
-	m_type = k_type_uninitialized_mipmap_sample;
+	m_type = k_type_mipmap;
 
 	wl_assert(mipmap.get_count() > 0);
 

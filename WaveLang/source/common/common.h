@@ -24,10 +24,18 @@ inline bool string_compare_case_insensitive(const char *str_a, const char *str_b
 	}
 }
 
+#define ALIGN_SIZE(size, alignment) ((size) + ((alignment) - 1) & ~((alignment) - 1))
+#define ALIGN_SIZE_DOWN(size, alignment) ((size) & ~((alignment) - 1))
+#define IS_SIZE_ALIGNED(size, alignment) ((size) & ((alignment) - 1) == 0)
+
 // $TODO make alignment a template parameter, because we should never need runtime-custom alignment sizes
 // alignment must be a power of 2
 template<typename t_size, typename t_alignment> t_size align_size(t_size size, t_alignment alignment) {
 	return (size + (alignment - 1)) & ~(alignment - 1);
+}
+
+template<typename t_size, typename t_alignment> t_size align_size_down(t_size size, t_alignment alignment) {
+	return size & ~(alignment - 1);
 }
 
 template<typename t_size, typename t_alignment> bool is_size_aligned(t_size size, t_alignment alignment) {

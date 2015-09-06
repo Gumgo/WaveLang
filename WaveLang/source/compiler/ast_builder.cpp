@@ -627,7 +627,7 @@ static c_ast_node_expression *build_expression(const c_lr_parse_tree &parse_tree
 				expression_type_found = true;
 			} else if (node_is_type(child_node, k_token_type_constant_real)) {
 				try {
-					// This is a constant
+					// This is a real
 					std::string string_value = tokens.tokens[child_node.get_token_index()].token_string.to_std_string();
 					c_ast_node_constant *constant_node = new c_ast_node_constant();
 					constant_node->set_source_location(tokens.tokens[child_node.get_token_index()].source_location);
@@ -639,6 +639,18 @@ static c_ast_node_expression *build_expression(const c_lr_parse_tree &parse_tree
 				} catch (const std::out_of_range &) {
 					wl_vhalt("We should have already caught this in the lexer");
 				}
+			} else if (node_is_type(child_node, k_token_type_constant_bool)) {
+				// This is a bool
+				std::string string_value = tokens.tokens[child_node.get_token_index()].token_string.to_std_string();
+				c_ast_node_constant *constant_node = new c_ast_node_constant();
+				constant_node->set_source_location(tokens.tokens[child_node.get_token_index()].source_location);
+				wl_vassert(string_value == k_token_type_constant_bool_false_string ||
+					string_value == k_token_type_constant_bool_true_string,
+					"We should have already caught this in the lexer");
+				bool bool_value = (string_value == k_token_type_constant_bool_true_string);
+				constant_node->set_bool_value(bool_value);
+				result->set_expression_value(constant_node);
+				expression_type_found = true;
 			} else if (node_is_type(child_node, k_token_type_constant_string)) {
 				// This is a string
 				c_compiler_string unescaped_string = tokens.tokens[child_node.get_token_index()].token_string;

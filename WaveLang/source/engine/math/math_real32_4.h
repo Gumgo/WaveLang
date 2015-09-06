@@ -24,6 +24,7 @@ public:
 
 	inline operator __m128() const;
 	inline c_int32_4 int32_4_from_bits() const;
+	inline c_real32_4 sum_elements() const;
 
 private:
 	__m128 m_value;
@@ -53,5 +54,9 @@ inline c_real32_4 sqrt(const c_real32_4 &v);
 inline c_real32_4 pow(const c_real32_4 &a, const c_real32_4 &b);
 inline c_real32_4 sin(const c_real32_4 &v);
 inline c_real32_4 cos(const c_real32_4 &v);
+
+// Shuffle
+template<int32 k_pos_0, int32 k_pos_1, int32 k_pos_2, int32 k_pos_3>
+c_real32_4 shuffle(const c_real32_4 &a, const c_real32_4 &b);
 
 #endif // WAVELANG_MATH_REAL32_4_H__

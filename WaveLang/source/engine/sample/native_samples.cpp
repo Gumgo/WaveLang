@@ -89,18 +89,18 @@ c_sample *build_native_sample(uint32 native_sample) {
 		wl_assert(data.mipmap_data.get_count() <= k_max_native_sample_mipmap_levels);
 
 		c_sample *sub_samples[k_max_native_sample_mipmap_levels];
-		for (uint32 index = 0; index < data.sample_data.get_count(); index++) {
+		for (uint32 index = 0; index < data.mipmap_data.get_count(); index++) {
 			c_sample *sub_sample = new c_sample();
 
 			c_sample_data_array sub_sample_data = data.mipmap_data[index];
 			uint32 sample_rate = sub_sample_data.get_count() * k_native_sample_frequency;
-			sample->initialize_for_mipmap(sample_rate, 1, sub_sample_data.get_count(),
+			sub_sample->initialize_for_mipmap(sample_rate, 1, sub_sample_data.get_count(),
 				k_sample_loop_mode_loop, 0, sub_sample_data.get_count(), sub_sample_data);
 
 			sub_samples[index] = sub_sample;
 		}
 
-		c_wrapped_array_const<c_sample *> sub_sample_array(sub_samples, data.sample_data.get_count());
+		c_wrapped_array_const<c_sample *> sub_sample_array(sub_samples, data.mipmap_data.get_count());
 		sample->initialize(sub_sample_array);
 	}
 

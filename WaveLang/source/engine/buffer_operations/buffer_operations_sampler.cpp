@@ -1,90 +1,39 @@
 #include "engine/buffer_operations/buffer_operations_sampler.h"
 #include "engine/sample/sample_library.h"
 
-#define CALCULATE_KERNEL_COEFFICIENTS 0
+#define GENERATE_SINC_WINDOW 0
 
-#if PREDEFINED(CALCULATE_KERNEL_COEFFICIENTS)
-#include <iostream>
-#endif // PREDEFINED(CALCULATE_KERNEL_COEFFICIENTS)
+#if PREDEFINED(GENERATE_SINC_WINDOW)
+#include <fstream>
+#endif // PREDEFINED(GENERATE_SINC_WINDOW)
 
+// The size in samples of the sinc window, inclusive of the first and last sample
 static const size_t k_sinc_window_size = 9;
+
+// The number of windowed sinc values computed per sample
+// The total number of sinc window samples (excluding padding) is (window_size-1) * resolution
+static const size_t k_sinc_window_sample_resolution = 32;
+
 static_assert(k_sinc_window_size % 2 == 1, "Window must be odd in order to be centered on a sample and symmetrical");
 static_assert(k_sinc_window_size / 2 <= k_max_sample_padding, "Window half-size cannot exceeds max sample padding");
 
-/* TODO this will change I think
-static const int32 k_windowed_sinc_filter_sample_count = 256;
-static const real32 k_windowed_sinc_filter_coefficients[] = {
-	-3.89817e-17f,	-0.00786137f,	-0.0157712f,	-0.0236545f,
-	-0.0314353f,	-0.0390375f,	-0.0463852f,	-0.0534039f,
-	-0.0600211f,	-0.0661665f,	-0.0717736f,	-0.0767793f,
-	-0.0811255f,	-0.0847593f,	-0.0876333f,	-0.0897068f,
-	-0.0909457f,	-0.0913231f,	-0.09082f,		-0.0894249f,
-	-0.0871348f,	-0.0839549f,	-0.0798989f,	-0.0749888f,
-	-0.0692551f,	-0.0627367f,	-0.0554803f,	-0.0475407f,
-	-0.0389798f,	-0.0298668f,	-0.0202773f,	-0.0102927f,
-	 3.89817e-17f,	 0.0105094f,	 0.0211401f,	 0.0317937f,
-	 0.0423694f,	 0.0527649f,	 0.0628777f,	 0.0726054f,
-	 0.0818469f,	 0.0905037f,	 0.09848f,		 0.105684f,
-	 0.11203f,		 0.117438f,		 0.121832f,		 0.125147f,
-	 0.127324f,		 0.128315f,		 0.128079f,		 0.126588f,
-	 0.123823f,		 0.119776f,		 0.11445f,		 0.107861f,
-	 0.100035f,		 0.0910124f,	 0.0808427f,	 0.0695885f,
-	 0.0573233f,	 0.0441316f,	 0.0301087f,	 0.0153599f,
-	-3.89817e-17f,	-0.0158475f,	-0.0320512f,	-0.0484724f,
-	-0.0649664f,	-0.0813832f,	-0.0975688f,	-0.113366f,
-	-0.128617f,		-0.14316f,		-0.156839f,		-0.169494f,
-	-0.180972f,		-0.191124f,		-0.199804f,		-0.206875f,
-	-0.212207f,		-0.215678f,		-0.217178f,		-0.216607f,
-	-0.213876f,		-0.208911f,		-0.20165f,		-0.192044f,
-	-0.180063f,		-0.165689f,		-0.148921f,		-0.129773f,
-	-0.108277f,		-0.0844804f,	-0.0584463f,	-0.0302544f,
-	 3.89817e-17f,	 0.0322063f,	 0.0662391f,	 0.101959f,
-	 0.139214f,		 0.177837f,		 0.217654f,		 0.258475f,
-	 0.300105f,		 0.34234f,		 0.384967f,		 0.42777f,
-	 0.470528f,		 0.513017f,		 0.555011f,		 0.596286f,
-	 0.63662f,		 0.675791f,		 0.713585f,		 0.749793f,
-	 0.784213f,		 0.816652f,		 0.846928f,		 0.874869f,
-	 0.900316f,		 0.923125f,		 0.943165f,		 0.960322f,
-	 0.974495f,		 0.985605f,		 0.993587f,		 0.998394f,
-	 1.0f,			 0.998394f,		 0.993587f,		 0.985605f,
-	 0.974495f,		 0.960322f,		 0.943165f,		 0.923125f,
-	 0.900316f,		 0.874869f,		 0.846928f,		 0.816652f,
-	 0.784213f,		 0.749793f,		 0.713585f,		 0.675791f,
-	 0.63662f,		 0.596286f,		 0.555011f,		 0.513017f,
-	 0.470528f,		 0.42777f,		 0.384967f,		 0.34234f,
-	 0.300105f,		 0.258475f,		 0.217654f,		 0.177837f,
-	 0.139214f,		 0.101959f,		 0.0662391f,	 0.0322063f,
-	 3.89817e-17f,	-0.0302544f,	-0.0584463f,	-0.0844804f,
-	-0.108277f,		-0.129773f,		-0.148921f,		-0.165689f,
-	-0.180063f,		-0.192044f,		-0.20165f,		-0.208911f,
-	-0.213876f,		-0.216607f,		-0.217178f,		-0.215678f,
-	-0.212207f,		-0.206875f,		-0.199804f,		-0.191124f,
-	-0.180972f,		-0.169494f,		-0.156839f,		-0.14316f,
-	-0.128617f,		-0.113366f,		-0.0975688f,	-0.0813832f,
-	-0.0649664f,	-0.0484724f,	-0.0320512f,	-0.0158475f,
-	-3.89817e-17f,	 0.0153599f,	 0.0301087f,	 0.0441316f,
-	 0.0573233f,	 0.0695885f,	 0.0808427f,	 0.0910124f,
-	 0.100035f,		 0.107861f,		 0.11445f,		 0.119776f,
-	 0.123823f,		 0.126588f,		 0.128079f,		 0.128315f,
-	 0.127324f,		 0.125147f,		 0.121832f,		 0.117438f,
-	 0.11203f,		 0.105684f,		 0.09848f,		 0.0905037f,
-	 0.0818469f,	 0.0726054f,	 0.0628777f,	 0.0527649f,
-	 0.0423694f,	 0.0317937f,	 0.0211401f,	 0.0105094f,
-	 3.89817e-17f,	-0.0102927f,	-0.0202773f,	-0.0298668f,
-	-0.0389798f,	-0.0475407f,	-0.0554803f,	-0.0627367f,
-	-0.0692551f,	-0.0749888f,	-0.0798989f,	-0.0839549f,
-	-0.0871348f,	-0.0894249f,	-0.09082f,		-0.0913231f,
-	-0.0909457f,	-0.0897068f,	-0.0876333f,	-0.0847593f,
-	-0.0811255f,	-0.0767793f,	-0.0717736f,	-0.0661665f,
-	-0.0600211f,	-0.0534039f,	-0.0463852f,	-0.0390375f,
-	-0.0314353f,	-0.0236545f,	-0.0157712f,	-0.00786137f,
-	-3.89817e-17f,	 0.0f
+// To be more cache-friendly, we precompute the slopes and place them adjacent to the values. Otherwise we would need to
+// traverse two arrays in parallel. The cost is that we use 2x memory (which could ultimately hurt caching).
+struct ALIGNAS_SSE s_sinc_window_coefficients {
+	// Four sinc window values, each spaced apart by 1 sample distance
+	real32 values[k_sse_block_elements];
+
+	// Slopes corresponding to each value for linear interpolation
+	real32 slopes[k_sse_block_elements];
 };
 
-// 2 extra samples: right endpoint and extra sample for interpolation
-static_assert(NUMBEROF(k_windowed_sinc_filter_coefficients) == k_windowed_sinc_filter_sample_count + 2,
+#include "sinc_window_coefficients.inl"
+
+static_assert(NUMBEROF(k_sinc_window_coefficients) == k_sinc_window_sample_resolution,
 	"Windowed sinc filter coefficient count mismatch");
-*/
+static_assert(NUMBEROF(k_sinc_window_coefficients[0]) ==
+	ALIGN_SIZE(k_sinc_window_size - 1, k_sse_block_elements) / k_sse_block_elements,
+	"Windowed sinc filter coefficient count mismatch");
 
 // Common utility functions used in all versions of the sampler:
 
@@ -99,7 +48,7 @@ static void get_sample_time_data(const c_sample *sample,
 // incremented, which can be less than 4 if the sample ends or if the end of the buffer is reached. The time before each
 // increment is stored in out_time. Handles looping/wrapping.
 static size_t increment_time(bool loop, real32 length, real32 loop_start_time, real32 loop_end_time,
-	s_buffer_operation_sampler *context, const c_real32_4 &speed, size_t &inout_buffer_samples_remaining,
+	s_buffer_operation_sampler *context, const c_real32_4 &advance, size_t &inout_buffer_samples_remaining,
 	real32 (&out_time)[k_sse_block_elements]);
 
 // Fast approximation to log2. Result is divided into integer and fraction parts.
@@ -120,6 +69,11 @@ static void fetch_mipmapped_samples(const c_sample *sample, uint32 channel,
 
 // Calculates the interpolated sample at the given time. The input sample should not be a mipmap.
 static real32 fetch_sample(const c_sample *sample, uint32 channel, real32 time);
+
+// Treats a and b as a contiguous block of 8 values and shifts left by the given amount; returns only the first 4
+static c_real32_4 shift_left_1(const c_real32_4 &a, const c_real32_4 &b);
+static c_real32_4 shift_left_2(const c_real32_4 &a, const c_real32_4 &b);
+static c_real32_4 shift_left_3(const c_real32_4 &a, const c_real32_4 &b);
 
 size_t s_buffer_operation_sampler::query_memory() {
 	return sizeof(s_buffer_operation_sampler);
@@ -167,17 +121,16 @@ void s_buffer_operation_sampler::buffer(
 	}
 
 	bool is_mipmap = sample->is_mipmap();
+	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
 	// Bidi loops are preprocessed so at this point they act as normal loops
 	bool loop = (sample->get_loop_mode() != k_sample_loop_mode_none);
 	real32 length;
 	real32 loop_start_time;
 	real32 loop_end_time;
-	get_sample_time_data(sample, length, loop_start_time, loop_end_time);
+	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
 
 	real32 stream_sample_rate = static_cast<real32>(sample_rate);
-	real32 sample_rate_0 = is_mipmap ?
-		static_cast<real32>(sample->get_mipmap_sample(0)->get_sample_rate()) :
-		static_cast<real32>(sample->get_sample_rate());
+	real32 sample_rate_0 = static_cast<real32>(sample_0->get_sample_rate());
 
 	size_t samples_written = 0;
 	size_t buffer_samples_remaining = buffer_size;
@@ -186,11 +139,12 @@ void s_buffer_operation_sampler::buffer(
 	const real32 *speed_ptr = speed->get_data<real32>();
 	for (; out_ptr < out_ptr_end; out_ptr += k_sse_block_elements, speed_ptr += k_sse_block_elements) {
 		c_real32_4 speed_val(speed_ptr);
+		c_real32_4 advance = speed_val / c_real32_4(stream_sample_rate);
 		c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(sample_rate_0) * speed_val;
 
 		// Increment the time first, storing each intermediate time value
 		ALIGNAS_SSE real32 time[k_sse_block_elements];
-		size_t increment_count = increment_time(loop, length, loop_start_time, loop_end_time, context, speed_val,
+		size_t increment_count = increment_time(loop, length, loop_start_time, loop_end_time, context, advance,
 			buffer_samples_remaining, time);
 		wl_assert(increment_count > 0);
 
@@ -240,17 +194,16 @@ void s_buffer_operation_sampler::bufferio(
 	}
 
 	bool is_mipmap = sample->is_mipmap();
+	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
 	// Bidi loops are preprocessed so at this point they act as normal loops
 	bool loop = (sample->get_loop_mode() != k_sample_loop_mode_none);
 	real32 length;
 	real32 loop_start_time;
 	real32 loop_end_time;
-	get_sample_time_data(sample, length, loop_start_time, loop_end_time);
+	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
 
 	real32 stream_sample_rate = static_cast<real32>(sample_rate);
-	real32 sample_rate_0 = is_mipmap ?
-		static_cast<real32>(sample->get_mipmap_sample(0)->get_sample_rate()) :
-		static_cast<real32>(sample->get_sample_rate());
+	real32 sample_rate_0 = static_cast<real32>(sample_0->get_sample_rate());
 
 	size_t samples_written = 0;
 	size_t buffer_samples_remaining = buffer_size;
@@ -258,11 +211,12 @@ void s_buffer_operation_sampler::bufferio(
 	real32 *speed_out_ptr_end = speed_out_ptr + align_size(buffer_size, k_sse_block_elements);
 	for (; speed_out_ptr < speed_out_ptr_end; speed_out_ptr += k_sse_block_elements) {
 		c_real32_4 speed_val(speed_out_ptr);
+		c_real32_4 advance = speed_val / c_real32_4(stream_sample_rate);
 		c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(sample_rate_0) * speed_val;
 
 		// Increment the time first, storing each intermediate time value
 		ALIGNAS_SSE real32 time[k_sse_block_elements];
-		size_t increment_count = increment_time(loop, length, loop_start_time, loop_end_time, context, speed_val,
+		size_t increment_count = increment_time(loop, length, loop_start_time, loop_end_time, context, advance,
 			buffer_samples_remaining, time);
 		wl_assert(increment_count > 0);
 
@@ -304,19 +258,18 @@ void s_buffer_operation_sampler::constant(
 	}
 
 	bool is_mipmap = sample->is_mipmap();
+	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
 	// Bidi loops are preprocessed so at this point they act as normal loops
 	bool loop = (sample->get_loop_mode() != k_sample_loop_mode_none);
 	real32 length;
 	real32 loop_start_time;
 	real32 loop_end_time;
-	get_sample_time_data(sample, length, loop_start_time, loop_end_time);
+	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
 
 	real32 stream_sample_rate = static_cast<real32>(sample_rate);
 	c_real32_4 speed_val(speed);
-	c_real32_4 speed_adjusted_sample_rate_0;
-	speed_adjusted_sample_rate_0 = is_mipmap ?
-		static_cast<real32>(sample->get_mipmap_sample(0)->get_sample_rate()) :
-		static_cast<real32>(sample->get_sample_rate());
+	c_real32_4 advance = speed / c_real32_4(stream_sample_rate);
+	c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(static_cast<real32>(sample_0->get_sample_rate()));
 	speed_adjusted_sample_rate_0 = speed_adjusted_sample_rate_0 * speed_val;
 
 	size_t samples_written = 0;
@@ -326,7 +279,7 @@ void s_buffer_operation_sampler::constant(
 	for (; out_ptr < out_ptr_end; out_ptr += k_sse_block_elements) {
 		// Increment the time first, storing each intermediate time value
 		ALIGNAS_SSE real32 time[k_sse_block_elements];
-		size_t increment_count = increment_time(loop, length, loop_start_time, loop_end_time, context, speed_val,
+		size_t increment_count = increment_time(loop, length, loop_start_time, loop_end_time, context, advance,
 			buffer_samples_remaining, time);
 		wl_assert(increment_count > 0);
 
@@ -361,19 +314,27 @@ static bool handle_failed_sample(const c_sample *sample, uint32 channel, c_buffe
 
 static void get_sample_time_data(const c_sample *sample,
 	real32 &out_length, real32 &out_loop_start, real32 &out_loop_end) {
-	uint32 sample_rate = sample->get_sample_rate();
 	uint32 first_sampling_frame = sample->get_first_sampling_frame();
-	out_length = static_cast<real32>(sample_rate * sample->get_sampling_frame_count()) * 0.001f;
-	out_loop_start = static_cast<real32>(sample_rate * (sample->get_loop_start() - first_sampling_frame)) * 0.001f;
-	out_loop_end = static_cast<real32>(sample_rate * (sample->get_loop_end() - first_sampling_frame)) * 0.001f;
+	c_real32_4 time_data(
+		static_cast<real32>(sample->get_sampling_frame_count()),
+		static_cast<real32>(sample->get_loop_start() - first_sampling_frame),
+		static_cast<real32>(sample->get_loop_end() - first_sampling_frame),
+		0.0f);
+	time_data = time_data / c_real32_4(static_cast<real32>(sample->get_sample_rate()));
+	ALIGNAS_SSE real32 time_data_array[k_sse_block_elements];
+	time_data.store(time_data_array);
+
+	out_loop_start = time_data_array[0];
+	out_loop_start = time_data_array[1];
+	out_loop_end = time_data_array[2];
 }
 
 static size_t increment_time(bool loop, real32 length, real32 loop_start_time, real32 loop_end_time,
-	s_buffer_operation_sampler *context, const c_real32_4 &speed, size_t &inout_buffer_samples_remaining,
+	s_buffer_operation_sampler *context, const c_real32_4 &advance, size_t &inout_buffer_samples_remaining,
 	real32 (&out_time)[k_sse_block_elements]) {
 	// We haven't vectorized this, so extract the reals
-	ALIGNAS_SSE real32 speed_array[k_sse_block_elements];
-	speed.store(speed_array);
+	ALIGNAS_SSE real32 advance_array[k_sse_block_elements];
+	advance.store(advance_array);
 
 	wl_assert(!context->reached_end);
 	ZERO_STRUCT(&out_time);
@@ -387,7 +348,7 @@ static size_t increment_time(bool loop, real32 length, real32 loop_start_time, r
 
 		// Increment the time - might be able to use SSE HADDs for this, but getting increment_count and reached_end
 		// would probably be tricky
-		context->time += speed_array[i];
+		context->time += advance_array[i];
 		if (loop) {
 			if (context->time >= loop_end_time) {
 				// Return to the loop start point
@@ -527,18 +488,155 @@ x = samples required for computing A or B
 	+-------x-------+									+-------x-------+
 		+-------x-------+									+-------x-------+
 			+-------x-------+									+-------x-------+
+
+Consider computing the following interpolated sample S:
+
+	+-------+-------+-------+-----S-+-------+-------+-------+-------+
+	+---------------A-------------a-+
+			+---------------B-----b---------+
+					+-------------c-C---------------+
+							+-----d---------D---------------+
+
+The value of S is: samples[A]*sinc[a-A] + samples[B]*sinc[b-B] + samples[C]*sinc[c-C] + samples[D]*sinc[d-D]
+where sample[X] is the value of the sample at time X, and sinc[y] is the windowed sinc value at position y, which can
+range from -window_size/2 to window_size/2. Notice that for a given offset S-floor(S), the list of sinc values required
+are always the same. Therefore, we precompute the required sinc values for N possible sample fractions, then interpolate
+between them.
 */
 
 static real32 fetch_sample(const c_sample *sample, uint32 channel, real32 time) {
 	wl_assert(!sample->is_mipmap());
 
+	// Determine which sample we want and split it into fractional and integer parts
+	real32 sample_index = time * static_cast<real32>(sample->get_sample_rate());
+	real32 sample_index_rounded_down;
+	real32 sample_index_frac_part = std::modf(sample_index, &sample_index_rounded_down);
+	uint32 sample_index_int_part = static_cast<uint32>(sample_index_rounded_down);
+	sample_index_int_part += sample->get_first_sampling_frame();
 
+	wl_assert(sample_index_int_part >= (k_sinc_window_size / 2 - 1));
+	uint32 start_window_sample_index = sample_index_int_part - (k_sinc_window_size / 2 - 1);
+	uint32 end_window_sample_index = start_window_sample_index + k_sinc_window_size - 1;
 
-	return 0.0f;
+	// We use SSE so we need to read in 16-byte-aligned blocks. Therefore if our start sample is unaligned we must
+	// perform some shifting.
+
+	uint32 start_sse_index = align_size_down(start_window_sample_index, k_sse_block_elements);
+	uint32 end_sse_index = align_size(end_window_sample_index, k_sse_block_elements);
+	c_wrapped_array_const<real32> sample_data = sample->get_channel_sample_data(channel);
+	const real32 *sample_ptr = &sample_data[start_sse_index];
+	// Don't dereference the array directly because we may want a pointer to the very end, which is not a valid element
+	wl_assert(end_sse_index <= sample_data.get_count());
+	const real32 *sample_end_ptr = sample_data.get_pointer() + end_sse_index;
+
+	uint32 sse_offset = start_window_sample_index - start_sse_index;
+	wl_assert(VALID_INDEX(sse_offset, k_sse_block_elements));
+
+	// Determine which windowed sinc lookup table to use
+	real32 sinc_window_table_index = sample_index_frac_part * static_cast<real32>(k_sinc_window_sample_resolution);
+	real32 sinc_window_table_index_rounded_down;
+	real32 sinc_window_table_index_frac_part =
+		std::modf(sinc_window_table_index, &sinc_window_table_index_rounded_down);
+	uint32 sinc_window_table_index_int_part = static_cast<uint32>(sinc_window_table_index_rounded_down);
+	wl_assert(VALID_INDEX(sinc_window_table_index_int_part, k_sinc_window_sample_resolution));
+	const s_sinc_window_coefficients *sinc_window_ptr = k_sinc_window_coefficients[sinc_window_table_index_int_part];
+
+	c_real32_4 slope_multiplier(sinc_window_table_index_frac_part);
+	c_real32_4 result_4(0.0f);
+
+	switch (sse_offset) {
+	case 0:
+	{
+		for (; sample_ptr < sample_end_ptr; sample_ptr += k_sse_block_elements, sinc_window_ptr++) {
+			c_real32_4 samples(sample_ptr);
+
+			c_real32_4 sinc_window_values(sinc_window_ptr->values);
+			c_real32_4 sinc_window_slopes(sinc_window_ptr->slopes);
+			result_4 = result_4 + (samples * sinc_window_values) + (slope_multiplier * sinc_window_slopes);
+		}
+		break;
+	}
+
+	case 1:
+	{
+		c_real32_4 prev_block(sample_ptr);
+		sample_ptr += k_sse_block_elements;
+		for (; sample_ptr < sample_end_ptr; sample_ptr += k_sse_block_elements, sinc_window_ptr++) {
+			c_real32_4 curr_block(sample_ptr);
+			c_real32_4 samples = shift_left_1(prev_block, curr_block);
+			prev_block = curr_block;
+
+			c_real32_4 sinc_window_values(sinc_window_ptr->values);
+			c_real32_4 sinc_window_slopes(sinc_window_ptr->slopes);
+			result_4 = result_4 + (samples * sinc_window_values) + (slope_multiplier * sinc_window_slopes);
+		}
+		break;
+	}
+
+	case 2:
+	{
+		c_real32_4 prev_block(sample_ptr);
+		sample_ptr += k_sse_block_elements;
+		for (; sample_ptr < sample_end_ptr; sample_ptr += k_sse_block_elements, sinc_window_ptr++) {
+			c_real32_4 curr_block(sample_ptr);
+			c_real32_4 samples = shift_left_2(prev_block, curr_block);
+			prev_block = curr_block;
+
+			c_real32_4 sinc_window_values(sinc_window_ptr->values);
+			c_real32_4 sinc_window_slopes(sinc_window_ptr->slopes);
+			result_4 = result_4 + (samples * sinc_window_values) + (slope_multiplier * sinc_window_slopes);
+		}
+		break;
+	}
+
+	case 3:
+	{
+		c_real32_4 prev_block(sample_ptr);
+		sample_ptr += k_sse_block_elements;
+		for (; sample_ptr < sample_end_ptr; sample_ptr += k_sse_block_elements, sinc_window_ptr++) {
+			c_real32_4 curr_block(sample_ptr);
+			c_real32_4 samples = shift_left_3(prev_block, curr_block);
+			prev_block = curr_block;
+
+			c_real32_4 sinc_window_values(sinc_window_ptr->values);
+			c_real32_4 sinc_window_slopes(sinc_window_ptr->slopes);
+			result_4 = result_4 + (samples * sinc_window_values) + (slope_multiplier * sinc_window_slopes);
+		}
+		break;
+	}
+
+	default:
+		wl_vhalt("SSE offset not in range 0-3?");
+	}
+
+	// Perform the final sum and return the result
+	c_real32_4 result_4_sum = result_4.sum_elements();
+	ALIGNAS_SSE real32 result[k_sse_block_elements];
+	result_4_sum.store(result);
+	return result[0];
 }
 
-#if PREDEFINED(CALCULATE_KERNEL_COEFFICIENTS)
-namespace windowed_sinc_filter {
+static c_real32_4 shift_left_1(const c_real32_4 &a, const c_real32_4 &b) {
+	// [.xyz][w...] => [z.w.]
+	// [.xyz][z.w.] => [xyzw]
+	c_real32_4 c = shuffle<3, 0, 0, 0>(a, b);
+	return shuffle<1, 2, 0, 2>(a, c);
+}
+
+static c_real32_4 shift_left_2(const c_real32_4 &a, const c_real32_4 &b) {
+	// [..xy][zw..] => [xyzw]
+	return shuffle<2, 3, 0, 1>(a, b);
+}
+
+static c_real32_4 shift_left_3(const c_real32_4 &a, const c_real32_4 &b) {
+	// [...x][yzw.] => [x.y.]
+	// [x.y.][yzw.] => [xyzw]
+	c_real32_4 c = shuffle<3, 0, 0, 0>(a, b);
+	return shuffle<0, 2, 1, 2>(c, b);
+}
+
+#if PREDEFINED(GENERATE_SINC_WINDOW)
+namespace sinc_window_generator {
 	static const real64 k_pi = 3.1415926535897932384626433832795;
 	static const real64 k_alpha = 3.0;
 
@@ -562,36 +660,93 @@ namespace windowed_sinc_filter {
 	}
 
 	real64 kaiser(real64 alpha, uint32 n, uint32 i) {
-		wl_assert(VALID_INDEX(i, n));
+		wl_assert(i >= 0 && i <= n);
 
-		// w(i) = I_0(pi * alpha * sqrt(1 - ((2i)/(n-1) - 1)^2)) / I_0(pi * alpha)
-		real64 sqrt_arg = (2.0 * static_cast<real64>(i)) / (static_cast<real64>(n) - 1) - 1.0;
+		// w(i) = I_0(pi * alpha * sqrt(1 - ((2i)/n - 1)^2)) / I_0(pi * alpha)
+		real64 sqrt_arg = (2.0 * static_cast<real64>(i)) / static_cast<real64>(n) - 1.0;
 		sqrt_arg = 1.0 - (sqrt_arg * sqrt_arg);
-		return i_0(k_pi * alpha * std::sqrt(1.0 - sqrt(sqrt_arg))) / i_0(k_pi * alpha);
+		return i_0(k_pi * alpha * std::sqrt(sqrt_arg)) / i_0(k_pi * alpha);
 	}
 
-	void calculate_windowed_sinc_filter_coefficients() {
-		int32 actual_samples = k_windowed_sinc_filter_sample_count + 1; // One additional sample for symmetry
-		for (int32 sample = 0; sample < actual_samples; sample++) {
-			real64 kaiser_multiplier = kaiser(k_alpha, actual_samples, sample);
-			real64 x = static_cast<real64>(sample) / static_cast<real64>(k_windowed_sinc_filter_sample_count) - 0.5;
-			x *= static_cast<real64>(k_window_width);
+	real64 sinc(uint32 n, uint32 i) {
+		wl_assert(i >= 0 && i <= n);
+		real64 x = (static_cast<real64>(2 * i) / static_cast<real64>(n) - 1.0) *
+			static_cast<real64>(k_sinc_window_size / 2);
+		return (x == 0.0) ?
+			1.0 :
+			std::sin(k_pi * x) / (k_pi * x);
+	}
 
-			real64 sinc = (x == 0.0) ?
-				1.0 :
-				std::sin(k_pi * x) / (k_pi * x);
-
-			real32 sinc_32 = static_cast<real32>(sinc);
-			std::cout << sinc_32 << ", ";
+	std::string fixup_real32(real32 v) {
+		std::string str = std::to_string(v);
+		if (str.find_first_of('.') == std::string::npos) {
+			str += ".0";
 		}
+		str.push_back('f');
+		return str;
+	}
+
+	void generate() {
+		std::ofstream out("sinc_window_coefficients.inl");
+
+		// Generate N arrays, one corresponding to each possible resolution offset (range [0,resolution-1])
+		// Each array is window_size-1 in length (rounded up to multiples of SSE)
+
+		size_t sse_array_length = align_size(k_sinc_window_size - 1, k_sse_block_elements) / k_sse_block_elements;
+		uint32 total_values = static_cast<uint32>((k_sinc_window_size - 1) * k_sinc_window_sample_resolution);
+
+		out << "static const s_sinc_window_coefficients k_sinc_window_coefficients[][" << sse_array_length << "] = {\n";
+
+		for (size_t resolution_index = 0; resolution_index < k_sinc_window_sample_resolution; resolution_index++) {
+			size_t sample_index;
+			s_sinc_window_coefficients coefficients;
+			ZERO_STRUCT(&coefficients);
+			size_t sse_index = 0;
+
+			out << "\t{\n";
+
+			for (sample_index = 0; sample_index < k_sinc_window_size - 1; sample_index++) {
+				uint32 window_value_index = static_cast<uint32>(
+					(k_sinc_window_size - 2 - sample_index) * k_sinc_window_sample_resolution + resolution_index);
+
+				real64 curr_value =
+					sinc(total_values, window_value_index) * kaiser(3.0, total_values, window_value_index);
+				real64 next_value =
+					sinc(total_values, window_value_index + 1) * kaiser(3.0, total_values, window_value_index + 1);
+				coefficients.values[sse_index] = static_cast<real32>(curr_value);
+				coefficients.slopes[sse_index] = static_cast<real32>(
+					(next_value - curr_value) / static_cast<real64>(k_sinc_window_sample_resolution));
+
+				sse_index++;
+				// Output if we're a multiple of 4, or if we're the last index
+				if (sse_index == k_sse_block_elements || sample_index == k_sinc_window_size - 1) {
+					out << "\t\t{ " <<
+						fixup_real32(coefficients.values[0]) << ", " <<
+						fixup_real32(coefficients.values[1]) << ", " <<
+						fixup_real32(coefficients.values[2]) << ", " <<
+						fixup_real32(coefficients.values[3]) << ", " <<
+						fixup_real32(coefficients.slopes[0]) << ", " <<
+						fixup_real32(coefficients.slopes[1]) << ", " <<
+						fixup_real32(coefficients.slopes[2]) << ", " <<
+						fixup_real32(coefficients.slopes[3]) << " },\n";
+
+					ZERO_STRUCT(&coefficients);
+					sse_index = 0;
+				}
+			}
+
+			out << "\t},\n";
+		}
+
+		out << "};\n";
 	}
 }
 
 int main(int argc, char **argv) {
-	windowed_sinc_filter::calculate_windowed_sinc_filter_coefficients();
+	sinc_window_generator::generate();
 	return 0;
 }
-#endif // PREDEFINED(CALCULATE_KERNEL_COEFFICIENTS)
+#endif // PREDEFINED(GENERATE_SINC_WINDOW)
 
 #if 0
 #include <iostream>

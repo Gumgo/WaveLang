@@ -6,7 +6,7 @@ inline c_real32_4::c_real32_4(real32 v)
 }
 
 inline c_real32_4::c_real32_4(real32 a, real32 b, real32 c, real32 d)
-	: m_value(_mm_set_ps(a, b, c, d)) {
+	: m_value(_mm_set_ps(d, c, b, a)) {
 }
 
 inline c_real32_4::c_real32_4(const real32 *ptr) {
@@ -47,6 +47,12 @@ inline c_real32_4::operator __m128() const {
 
 inline c_int32_4 c_real32_4::int32_4_from_bits() const {
 	return _mm_castps_si128(m_value);
+}
+
+inline c_real32_4 c_real32_4::sum_elements() const {
+	c_real32_4 x = _mm_hadd_ps(m_value, m_value);
+	x = _mm_hadd_ps(x, x);
+	return x;
 }
 
 inline c_real32_4 operator+(const c_real32_4 &v) {
@@ -133,4 +139,14 @@ inline c_real32_4 sin(const c_real32_4 &v) {
 
 inline c_real32_4 cos(const c_real32_4 &v) {
 	return cos_ps(v);
+}
+
+template<int32 k_pos_0, int32 k_pos_1, int32 k_pos_2, int32 k_pos_3>
+c_int32_4 shuffle(const c_int32_4 &a, const c_int32_4 &b) {
+	static_assert(VALID_INDEX(k_pos_0, k_sse_block_elements), "Must be in range [0,3]");
+	static_assert(VALID_INDEX(k_pos_1, k_sse_block_elements), "Must be in range [0,3]");
+	static_assert(VALID_INDEX(k_pos_2, k_sse_block_elements), "Must be in range [0,3]");
+	static_assert(VALID_INDEX(k_pos_3, k_sse_block_elements), "Must be in range [0,3]");
+	static const int32 k_shuffle_pos = k_pos_0 | (k_pos_1 << 2) | (k_pos_2 << 4) | (k_pos_3 << 6);
+	return _mm_shuffle_epi32(a, b, k_shuffle_pos);
 }

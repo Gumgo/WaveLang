@@ -56,4 +56,8 @@ inline c_int32_4 max(const c_int32_4 &a, const c_int32_4 &b);
 inline c_int32_4 min_unsigned(const c_int32_4 &a, const c_int32_4 &b);
 inline c_int32_4 max_unsigned(const c_int32_4 &a, const c_int32_4 &b);
 
+// Shuffle
+template<int32 k_pos_0, int32 k_pos_1, int32 k_pos_2, int32 k_pos_3>
+c_int32_4 shuffle(const c_int32_4 &a, const c_int32_4 &b);
+
 #endif // WAVELANG_MATH_INT32_4_H__
