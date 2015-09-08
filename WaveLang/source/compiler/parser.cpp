@@ -206,6 +206,15 @@ static const char *k_parse_tree_output_terminal_strings[] = {
 	"operator-division",
 	"operator-modulo",
 	"operator-concatenation",
+	"operator-not",
+	"operator-equal",
+	"operator-not-equal",
+	"operator-greater",
+	"operator-less",
+	"operator-greater-equal",
+	"operator-less-equal",
+	"operator-and",
+	"operator-or",
 	"comment"
 };
 static_assert(NUMBEROF(k_parse_tree_output_terminal_strings) == k_token_type_count, "Incorrect array size");
@@ -234,6 +243,10 @@ static const char *k_parse_tree_output_nonterminal_strings[] = {
 	"expr-2",
 	"expr-3",
 	"expr-4",
+	"expr-5",
+	"expr-6",
+	"expr-7",
+	"expr-8",
 	"module-call",
 	"module-call-argument-list"
 };

@@ -20,7 +20,7 @@ public:
 	void clear_requested_samples();
 
 	// Requests the sample with the given filename to be loaded and returns its handle
-	uint32 request_sample(const char *filename, e_sample_loop_mode loop_mode);
+	uint32 request_sample(const char *filename, e_sample_loop_mode loop_mode, bool phase_shift_enabled);
 
 	// Loads requested samples and unloads any loaded samples that have not been requested
 	void update_loaded_samples();
@@ -35,6 +35,9 @@ private:
 
 		// Loop mode
 		e_sample_loop_mode loop_mode;
+
+		// Phase shift enabled
+		bool phase_shift_enabled;
 
 		// Modification timestamp of the loaded sample
 		uint64 timestamp;
@@ -62,7 +65,7 @@ private:
 class c_sample_library_requester {
 public:
 	c_sample_library_requester(c_sample_library &sample_library);
-	uint32 request_sample(const char *filename, e_sample_loop_mode loop_mode);
+	uint32 request_sample(const char *filename, e_sample_loop_mode loop_mode, bool phase_shift_enabled);
 
 private:
 	c_sample_library &m_sample_library;

@@ -11,6 +11,15 @@ const char *c_native_module_registry::k_operator_multiplication_operator_name = 
 const char *c_native_module_registry::k_operator_division_name = NATIVE_PREFIX "division";
 const char *c_native_module_registry::k_operator_modulo_name = NATIVE_PREFIX "modulo";
 const char *c_native_module_registry::k_operator_concatenation_name = NATIVE_PREFIX "concatenation";
+const char *c_native_module_registry::k_operator_not_name = NATIVE_PREFIX "not";
+const char *c_native_module_registry::k_operator_equal_name = NATIVE_PREFIX "equal";
+const char *c_native_module_registry::k_operator_not_equal_name = NATIVE_PREFIX "not_equal";
+const char *c_native_module_registry::k_operator_less_name = NATIVE_PREFIX "less";
+const char *c_native_module_registry::k_operator_greater_name = NATIVE_PREFIX "greater";
+const char *c_native_module_registry::k_operator_less_equal_name = NATIVE_PREFIX "less_equal";
+const char *c_native_module_registry::k_operator_greater_equal_name = NATIVE_PREFIX "greater_equal";
+const char *c_native_module_registry::k_operator_and_name = NATIVE_PREFIX "and";
+const char *c_native_module_registry::k_operator_or_name = NATIVE_PREFIX "or";
 
 // List of compile-time native modules
 static void native_module_noop(c_native_module_compile_time_argument_list &arguments);
@@ -22,6 +31,20 @@ static void native_module_division(c_native_module_compile_time_argument_list &a
 static void native_module_modulo(c_native_module_compile_time_argument_list &arguments);
 static void native_module_concatenation(c_native_module_compile_time_argument_list &arguments);
 
+static void native_module_not(c_native_module_compile_time_argument_list &arguments);
+static void native_module_real_equal(c_native_module_compile_time_argument_list &arguments);
+static void native_module_real_not_equal(c_native_module_compile_time_argument_list &arguments);
+static void native_module_bool_equal(c_native_module_compile_time_argument_list &arguments);
+static void native_module_bool_not_equal(c_native_module_compile_time_argument_list &arguments);
+static void native_module_string_equal(c_native_module_compile_time_argument_list &arguments);
+static void native_module_string_not_equal(c_native_module_compile_time_argument_list &arguments);
+static void native_module_greater(c_native_module_compile_time_argument_list &arguments);
+static void native_module_less(c_native_module_compile_time_argument_list &arguments);
+static void native_module_greater_equal(c_native_module_compile_time_argument_list &arguments);
+static void native_module_less_equal(c_native_module_compile_time_argument_list &arguments);
+static void native_module_and(c_native_module_compile_time_argument_list &arguments);
+static void native_module_or(c_native_module_compile_time_argument_list &arguments);
+
 static void native_module_abs(c_native_module_compile_time_argument_list &arguments);
 static void native_module_floor(c_native_module_compile_time_argument_list &arguments);
 static void native_module_ceil(c_native_module_compile_time_argument_list &arguments);
@@ -32,6 +55,8 @@ static void native_module_exp(c_native_module_compile_time_argument_list &argume
 static void native_module_log(c_native_module_compile_time_argument_list &arguments);
 static void native_module_sqrt(c_native_module_compile_time_argument_list &arguments);
 static void native_module_pow(c_native_module_compile_time_argument_list &arguments);
+static void native_module_real_static_select(c_native_module_compile_time_argument_list &arguments);
+static void native_module_string_static_select(c_native_module_compile_time_argument_list &arguments);
 
 struct s_native_module_argument_list {
 	s_native_module_argument arguments[k_max_native_module_arguments];
@@ -98,6 +123,58 @@ static const s_native_module k_native_modules[] = {
 		true, make_args(NMAT(in, string), NMAT(in, string), NMAT(out, string)),
 		native_module_concatenation),
 
+	make_native_module(c_native_module_registry::k_operator_not_name,
+		true, make_args(NMAT(constant, bool), NMAT(out, bool)),
+		native_module_not),
+
+	make_native_module(c_native_module_registry::k_operator_equal_name,
+		true, make_args(NMAT(constant, real), NMAT(constant, real), NMAT(out, bool)),
+		native_module_real_equal),
+
+	make_native_module(c_native_module_registry::k_operator_not_equal_name,
+		true, make_args(NMAT(constant, real), NMAT(constant, real), NMAT(out, bool)),
+		native_module_real_not_equal),
+
+	make_native_module(c_native_module_registry::k_operator_equal_name,
+		true, make_args(NMAT(constant, bool), NMAT(constant, bool), NMAT(out, bool)),
+		native_module_bool_equal),
+
+	make_native_module(c_native_module_registry::k_operator_not_equal_name,
+		true, make_args(NMAT(constant, bool), NMAT(constant, bool), NMAT(out, bool)),
+		native_module_bool_not_equal),
+
+	make_native_module(c_native_module_registry::k_operator_equal_name,
+		true, make_args(NMAT(constant, string), NMAT(constant, string), NMAT(out, bool)),
+		native_module_string_equal),
+
+	make_native_module(c_native_module_registry::k_operator_not_equal_name,
+		true, make_args(NMAT(constant, string), NMAT(constant, string), NMAT(out, bool)),
+		native_module_string_not_equal),
+
+	make_native_module(c_native_module_registry::k_operator_greater_name,
+		true, make_args(NMAT(constant, real), NMAT(constant, real), NMAT(out, bool)),
+		native_module_greater),
+
+	make_native_module(c_native_module_registry::k_operator_less_name,
+		true, make_args(NMAT(constant, real), NMAT(constant, real), NMAT(out, bool)),
+		native_module_less),
+
+	make_native_module(c_native_module_registry::k_operator_greater_equal_name,
+		true, make_args(NMAT(constant, real), NMAT(constant, real), NMAT(out, bool)),
+		native_module_greater_equal),
+
+	make_native_module(c_native_module_registry::k_operator_less_equal_name,
+		true, make_args(NMAT(constant, real), NMAT(constant, real), NMAT(out, bool)),
+		native_module_less_equal),
+
+	make_native_module(c_native_module_registry::k_operator_and_name,
+		true, make_args(NMAT(constant, bool), NMAT(constant, bool), NMAT(out, bool)),
+		native_module_and),
+
+	make_native_module(c_native_module_registry::k_operator_or_name,
+		true, make_args(NMAT(constant, bool), NMAT(constant, bool), NMAT(out, bool)),
+		native_module_or),
+
 	make_native_module(NATIVE_PREFIX "abs",
 		true, make_args(NMAT(in, real), NMAT(out, real)),
 		native_module_abs),
@@ -138,24 +215,40 @@ static const s_native_module k_native_modules[] = {
 		true, make_args(NMAT(in, real), NMAT(in, real), NMAT(out, real)),
 		native_module_pow),
 
+	make_native_module(NATIVE_PREFIX "static_select",
+		true, make_args(NMAT(constant, bool), NMAT(in, real), NMAT(in, real), NMAT(out, real)),
+		native_module_real_static_select),
+
+	make_native_module(NATIVE_PREFIX "static_select",
+		true, make_args(NMAT(constant, bool), NMAT(in, string), NMAT(in, string), NMAT(out, string)),
+		native_module_string_static_select),
+
 	make_native_module(NATIVE_PREFIX "sampler",
 		true, make_args(
 			NMAT(constant, string),	// Name
 			NMAT(constant, real),	// Channel
-			NMAT(constant, bool),	// Loop
+			NMAT(in, real),			// Speed
+			NMAT(out, real)),		// Result
+		nullptr),
+
+	make_native_module(NATIVE_PREFIX "sampler_loop",
+		true, make_args(
+			NMAT(constant, string),	// Name
+			NMAT(constant, real),	// Channel
 			NMAT(constant, bool),	// Bidi
 			NMAT(in, real),			// Speed
 			NMAT(out, real)),		// Result
 		nullptr),
 
-	// Non-constant test module
-	make_native_module(NATIVE_PREFIX "test",
-		true, make_args(NMAT(in, real), NMAT(out, real)),
+	make_native_module(NATIVE_PREFIX "sampler_loop_phase_shift",
+		true, make_args(
+			NMAT(constant, string),	// Name
+			NMAT(constant, real),	// Channel
+			NMAT(constant, bool),	// Bidi
+			NMAT(in, real),			// Speed
+			NMAT(in, real),			// Phase
+			NMAT(out, real)),		// Result
 		nullptr),
-
-	make_native_module(NATIVE_PREFIX "delay_test",
-		true, make_args(NMAT(in, real), NMAT(constant, real), NMAT(out, real)),
-		nullptr)
 };
 
 static_assert(NUMBEROF(k_native_modules) == k_native_module_count, "Native module definition list mismatch");
@@ -167,17 +260,6 @@ uint32 c_native_module_registry::get_native_module_count() {
 const s_native_module &c_native_module_registry::get_native_module(uint32 index) {
 	wl_assert(VALID_INDEX(index, get_native_module_count()));
 	return k_native_modules[index];
-}
-
-uint32 c_native_module_registry::get_native_module_index(const char *name) {
-	for (uint32 index = 0; index < get_native_module_count(); index++) {
-		if (strcmp(name, get_native_module(index).name) == 0) {
-			return index;
-		}
-	}
-
-	wl_vhalt("Native module not found");
-	return static_cast<uint32>(-1);
 }
 
 static s_native_module_argument make_arg() {
@@ -291,6 +373,71 @@ static void native_module_concatenation(c_native_module_compile_time_argument_li
 	arguments[2] = arguments[0].get_string() + arguments[1].get_string();
 }
 
+static void native_module_not(c_native_module_compile_time_argument_list &arguments) {
+	wl_assert(arguments.size() == 2);
+	arguments[1] = !arguments[0].get_bool();
+}
+
+static void native_module_real_equal(c_native_module_compile_time_argument_list &arguments) {
+	wl_assert(arguments.size() == 3);
+	arguments[2] = arguments[0].get_real() == arguments[1].get_real();
+}
+
+static void native_module_real_not_equal(c_native_module_compile_time_argument_list &arguments) {
+	wl_assert(arguments.size() == 3);
+	arguments[2] = arguments[0].get_real() != arguments[1].get_real();
+}
+
+static void native_module_bool_equal(c_native_module_compile_time_argument_list &arguments) {
+	wl_assert(arguments.size() == 3);
+	arguments[2] = arguments[0].get_bool() == arguments[1].get_bool();
+}
+
+static void native_module_bool_not_equal(c_native_module_compile_time_argument_list &arguments) {
+	wl_assert(arguments.size() == 3);
+	arguments[2] = arguments[0].get_bool() != arguments[1].get_bool();
+}
+
+static void native_module_string_equal(c_native_module_compile_time_argument_list &arguments) {
+	wl_assert(arguments.size() == 3);
+	arguments[2] = arguments[0].get_string() == arguments[1].get_string();
+}
+
+static void native_module_string_not_equal(c_native_module_compile_time_argument_list &arguments) {
+	wl_assert(arguments.size() == 3);
+	arguments[2] = arguments[0].get_string() != arguments[1].get_string();
+}
+
+static void native_module_greater(c_native_module_compile_time_argument_list &arguments) {
+	wl_assert(arguments.size() == 3);
+	arguments[2] = arguments[0].get_real() > arguments[1].get_real();
+}
+
+static void native_module_less(c_native_module_compile_time_argument_list &arguments) {
+	wl_assert(arguments.size() == 3);
+	arguments[2] = arguments[0].get_real() < arguments[1].get_real();
+}
+
+static void native_module_greater_equal(c_native_module_compile_time_argument_list &arguments) {
+	wl_assert(arguments.size() == 3);
+	arguments[2] = arguments[0].get_real() >= arguments[1].get_real();
+}
+
+static void native_module_less_equal(c_native_module_compile_time_argument_list &arguments) {
+	wl_assert(arguments.size() == 3);
+	arguments[2] = arguments[0].get_real() <= arguments[1].get_real();
+}
+
+static void native_module_and(c_native_module_compile_time_argument_list &arguments) {
+	wl_assert(arguments.size() == 3);
+	arguments[2] = arguments[0].get_bool() && arguments[1].get_bool();
+}
+
+static void native_module_or(c_native_module_compile_time_argument_list &arguments) {
+	wl_assert(arguments.size() == 3);
+	arguments[2] = arguments[0].get_bool() || arguments[1].get_bool();
+}
+
 static void native_module_abs(c_native_module_compile_time_argument_list &arguments) {
 	wl_assert(arguments.size() == 2);
 	arguments[1] = std::abs(arguments[0].get_real());
@@ -341,3 +488,20 @@ static void native_module_pow(c_native_module_compile_time_argument_list &argume
 	arguments[2] = std::pow(arguments[0].get_real(), arguments[1].get_real());
 }
 
+static void native_module_real_static_select(c_native_module_compile_time_argument_list &arguments) {
+	wl_assert(arguments.size() == 4);
+	if (arguments[0].get_bool()) {
+		arguments[3] = arguments[1].get_real();
+	} else {
+		arguments[3] = arguments[2].get_real();
+	}
+}
+
+static void native_module_string_static_select(c_native_module_compile_time_argument_list &arguments) {
+	wl_assert(arguments.size() == 4);
+	if (arguments[0].get_bool()) {
+		arguments[3] = arguments[1].get_string();
+	} else {
+		arguments[3] = arguments[2].get_string();
+	}
+}

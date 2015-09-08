@@ -47,9 +47,10 @@ static void get_sample_time_data(const c_sample *sample,
 // Increments the sample's current time up to 4 times based on the speed provided and returns the number of times
 // incremented, which can be less than 4 if the sample ends or if the end of the buffer is reached. The time before each
 // increment is stored in out_time. Handles looping/wrapping.
-static size_t increment_time(bool loop, real32 length, real32 loop_start_time, real32 loop_end_time,
-	s_buffer_operation_sampler *context, const c_real32_4 &advance, size_t &inout_buffer_samples_remaining,
-	real32 (&out_time)[k_sse_block_elements]);
+static size_t increment_time(real32 length, s_buffer_operation_sampler *context,
+	const c_real32_4 &advance, size_t &inout_buffer_samples_remaining, real32 (&out_time)[k_sse_block_elements]);
+static size_t increment_time_looping(real32 loop_start_time, real32 loop_end_time, s_buffer_operation_sampler *context,
+	const c_real32_4 &advance, size_t &inout_buffer_samples_remaining, real32 (&out_time)[k_sse_block_elements]);
 
 // Fast approximation to log2. Result is divided into integer and fraction parts.
 static c_int32_4 fast_log2(const c_real32_4 &x, c_real32_4 &out_frac);
@@ -80,10 +81,11 @@ size_t s_buffer_operation_sampler::query_memory() {
 }
 
 void s_buffer_operation_sampler::initialize(c_sample_library_requester *sample_requester,
-	s_buffer_operation_sampler *context, const char *sample, e_sample_loop_mode loop_mode, real32 channel) {
+	s_buffer_operation_sampler *context, const char *sample, e_sample_loop_mode loop_mode, bool phase_shift_enabled,
+	real32 channel) {
 	wl_assert(VALID_INDEX(loop_mode, k_sample_loop_mode_count));
 
-	context->sample_handle = sample_requester->request_sample(sample, loop_mode);
+	context->sample_handle = sample_requester->request_sample(sample, loop_mode, phase_shift_enabled);
 	if (channel < 0.0f ||
 		std::floor(channel) != channel) {
 		context->sample_handle = c_sample_library::k_invalid_handle;
@@ -111,9 +113,9 @@ void s_buffer_operation_sampler::buffer(
 		return;
 	}
 
-	// Fill with 0 if we got to the end of the sample and we're not looping
+	// Fill with 0 if we got to the end of the sample
+	wl_assert(sample->get_loop_mode() == k_sample_loop_mode_none);
 	if (context->reached_end) {
-		wl_assert(sample->get_loop_mode() == k_sample_loop_mode_none);
 		real32 *out_ptr = out->get_data<real32>();
 		c_real32_4(0.0f).store(out_ptr);
 		out->set_constant(true);
@@ -122,11 +124,7 @@ void s_buffer_operation_sampler::buffer(
 
 	bool is_mipmap = sample->is_mipmap();
 	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
-	// Bidi loops are preprocessed so at this point they act as normal loops
-	bool loop = (sample->get_loop_mode() != k_sample_loop_mode_none);
-	real32 length;
-	real32 loop_start_time;
-	real32 loop_end_time;
+	real32 length, loop_start_time, loop_end_time;
 	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
 
 	real32 stream_sample_rate = static_cast<real32>(sample_rate);
@@ -144,8 +142,7 @@ void s_buffer_operation_sampler::buffer(
 
 		// Increment the time first, storing each intermediate time value
 		ALIGNAS_SSE real32 time[k_sse_block_elements];
-		size_t increment_count = increment_time(loop, length, loop_start_time, loop_end_time, context, advance,
-			buffer_samples_remaining, time);
+		size_t increment_count = increment_time(length, context, advance, buffer_samples_remaining, time);
 		wl_assert(increment_count > 0);
 
 		if (is_mipmap) {
@@ -184,9 +181,9 @@ void s_buffer_operation_sampler::bufferio(
 		return;
 	}
 
-	// Fill with 0 if we got to the end of the sample and we're not looping
+	// Fill with 0 if we got to the end of the sample
+	wl_assert(sample->get_loop_mode() == k_sample_loop_mode_none);
 	if (context->reached_end) {
-		wl_assert(sample->get_loop_mode() == k_sample_loop_mode_none);
 		real32 *out_ptr = speed_out->get_data<real32>();
 		c_real32_4(0.0f).store(out_ptr);
 		speed_out->set_constant(true);
@@ -195,11 +192,7 @@ void s_buffer_operation_sampler::bufferio(
 
 	bool is_mipmap = sample->is_mipmap();
 	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
-	// Bidi loops are preprocessed so at this point they act as normal loops
-	bool loop = (sample->get_loop_mode() != k_sample_loop_mode_none);
-	real32 length;
-	real32 loop_start_time;
-	real32 loop_end_time;
+	real32 length, loop_start_time, loop_end_time;
 	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
 
 	real32 stream_sample_rate = static_cast<real32>(sample_rate);
@@ -216,8 +209,7 @@ void s_buffer_operation_sampler::bufferio(
 
 		// Increment the time first, storing each intermediate time value
 		ALIGNAS_SSE real32 time[k_sse_block_elements];
-		size_t increment_count = increment_time(loop, length, loop_start_time, loop_end_time, context, advance,
-			buffer_samples_remaining, time);
+		size_t increment_count = increment_time(length, context, advance, buffer_samples_remaining, time);
 		wl_assert(increment_count > 0);
 
 		if (is_mipmap) {
@@ -248,9 +240,9 @@ void s_buffer_operation_sampler::constant(
 		return;
 	}
 
-	// Fill with 0 if we got to the end of the sample and we're not looping
+	// Fill with 0 if we got to the end of the sample
+	wl_assert(sample->get_loop_mode() == k_sample_loop_mode_none);
 	if (context->reached_end) {
-		wl_assert(sample->get_loop_mode() == k_sample_loop_mode_none);
 		real32 *out_ptr = out->get_data<real32>();
 		c_real32_4(0.0f).store(out_ptr);
 		out->set_constant(true);
@@ -259,11 +251,7 @@ void s_buffer_operation_sampler::constant(
 
 	bool is_mipmap = sample->is_mipmap();
 	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
-	// Bidi loops are preprocessed so at this point they act as normal loops
-	bool loop = (sample->get_loop_mode() != k_sample_loop_mode_none);
-	real32 length;
-	real32 loop_start_time;
-	real32 loop_end_time;
+	real32 length, loop_start_time, loop_end_time;
 	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
 
 	real32 stream_sample_rate = static_cast<real32>(sample_rate);
@@ -279,9 +267,802 @@ void s_buffer_operation_sampler::constant(
 	for (; out_ptr < out_ptr_end; out_ptr += k_sse_block_elements) {
 		// Increment the time first, storing each intermediate time value
 		ALIGNAS_SSE real32 time[k_sse_block_elements];
-		size_t increment_count = increment_time(loop, length, loop_start_time, loop_end_time, context, advance,
+		size_t increment_count = increment_time(length, context, advance, buffer_samples_remaining, time);
+		wl_assert(increment_count > 0);
+
+		if (is_mipmap) {
+			fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
+				increment_count, time, out_ptr);
+		} else {
+			for (size_t i = 0; i < increment_count; i++) {
+				out_ptr[i] = fetch_sample(sample, context->channel, time[i]);
+			}
+		}
+
+		samples_written += increment_count;
+	}
+
+	// If the sample ended before the end of the buffer, fill the rest with 0
+	size_t samples_remaining = buffer_size - samples_written;
+	memset(out->get_data<real32>() + samples_written, 0, samples_remaining * sizeof(real32));
+	out->set_constant(false);
+}
+
+void s_buffer_operation_sampler::loop_buffer(
+	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
+	size_t buffer_size, uint32 sample_rate, c_buffer_out out, c_buffer_in speed) {
+	validate_buffer(out);
+	validate_buffer(speed);
+
+	if (speed->is_constant()) {
+		// If speed is constant, simply use the constant-speed version
+		const real32 *speed_ptr = speed->get_data<real32>();
+		loop_constant(sample_accessor, context, buffer_size, sample_rate, out, *speed_ptr);
+		return;
+	}
+
+	const c_sample *sample = sample_accessor->get_sample(context->sample_handle);
+	if (handle_failed_sample(sample, context->channel, out)) {
+		return;
+	}
+
+	// Bidi loops are preprocessed so at this point they act as normal loops
+	wl_assert(sample->get_loop_mode() != k_sample_loop_mode_none);
+	wl_assert(!context->reached_end);
+
+	bool is_mipmap = sample->is_mipmap();
+	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
+	real32 length, loop_start_time, loop_end_time;
+	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
+
+	real32 stream_sample_rate = static_cast<real32>(sample_rate);
+	real32 sample_rate_0 = static_cast<real32>(sample_0->get_sample_rate());
+
+	size_t samples_written = 0;
+	size_t buffer_samples_remaining = buffer_size;
+	real32 *out_ptr = out->get_data<real32>();
+	real32 *out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_elements);
+	const real32 *speed_ptr = speed->get_data<real32>();
+	for (; out_ptr < out_ptr_end; out_ptr += k_sse_block_elements, speed_ptr += k_sse_block_elements) {
+		c_real32_4 speed_val(speed_ptr);
+		c_real32_4 advance = speed_val / c_real32_4(stream_sample_rate);
+		c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(sample_rate_0) * speed_val;
+
+		// Increment the time first, storing each intermediate time value
+		ALIGNAS_SSE real32 time[k_sse_block_elements];
+		size_t increment_count = increment_time_looping(loop_start_time, loop_end_time, context, advance,
 			buffer_samples_remaining, time);
 		wl_assert(increment_count > 0);
+
+		if (is_mipmap) {
+			fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
+				increment_count, time, out_ptr);
+		} else {
+			for (size_t i = 0; i < increment_count; i++) {
+				out_ptr[i] = fetch_sample(sample, context->channel, time[i]);
+			}
+		}
+
+		samples_written += increment_count;
+	}
+
+	// If the sample ended before the end of the buffer, fill the rest with 0
+	size_t samples_remaining = buffer_size - samples_written;
+	memset(out->get_data<real32>() + samples_written, 0, samples_remaining * sizeof(real32));
+	out->set_constant(false);
+}
+
+void s_buffer_operation_sampler::loop_bufferio(
+	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
+	size_t buffer_size, uint32 sample_rate, c_buffer_inout speed_out) {
+	validate_buffer(speed_out);
+
+	if (speed_out->is_constant()) {
+		// If speed is constant, simply use the constant-speed version
+		// We can store the first value of the buffer and then convert it to a pure output buffer
+		const real32 *speed_ptr = speed_out->get_data<real32>();
+		constant(sample_accessor, context, buffer_size, sample_rate, speed_out, *speed_ptr);
+		return;
+	}
+
+	const c_sample *sample = sample_accessor->get_sample(context->sample_handle);
+	if (handle_failed_sample(sample, context->channel, speed_out)) {
+		return;
+	}
+
+	// Bidi loops are preprocessed so at this point they act as normal loops
+	wl_assert(sample->get_loop_mode() != k_sample_loop_mode_none);
+	wl_assert(!context->reached_end);
+
+	bool is_mipmap = sample->is_mipmap();
+	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
+	real32 length, loop_start_time, loop_end_time;
+	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
+
+	real32 stream_sample_rate = static_cast<real32>(sample_rate);
+	real32 sample_rate_0 = static_cast<real32>(sample_0->get_sample_rate());
+
+	size_t samples_written = 0;
+	size_t buffer_samples_remaining = buffer_size;
+	real32 *speed_out_ptr = speed_out->get_data<real32>();
+	real32 *speed_out_ptr_end = speed_out_ptr + align_size(buffer_size, k_sse_block_elements);
+	for (; speed_out_ptr < speed_out_ptr_end; speed_out_ptr += k_sse_block_elements) {
+		c_real32_4 speed_val(speed_out_ptr);
+		c_real32_4 advance = speed_val / c_real32_4(stream_sample_rate);
+		c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(sample_rate_0) * speed_val;
+
+		// Increment the time first, storing each intermediate time value
+		ALIGNAS_SSE real32 time[k_sse_block_elements];
+		size_t increment_count = increment_time_looping(loop_start_time, loop_end_time, context, advance,
+			buffer_samples_remaining, time);
+		wl_assert(increment_count > 0);
+
+		if (is_mipmap) {
+			fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
+				increment_count, time, speed_out_ptr);
+		} else {
+			for (size_t i = 0; i < increment_count; i++) {
+				speed_out_ptr[i] = fetch_sample(sample, context->channel, time[i]);
+			}
+		}
+
+		samples_written += increment_count;
+	}
+
+	// If the sample ended before the end of the buffer, fill the rest with 0
+	size_t samples_remaining = buffer_size - samples_written;
+	memset(speed_out->get_data<real32>() + samples_written, 0, samples_remaining * sizeof(real32));
+	speed_out->set_constant(false);
+}
+
+void s_buffer_operation_sampler::loop_constant(
+	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
+	size_t buffer_size, uint32 sample_rate, c_buffer_out out, real32 speed) {
+	validate_buffer(out);
+
+	const c_sample *sample = sample_accessor->get_sample(context->sample_handle);
+	if (handle_failed_sample(sample, context->channel, out)) {
+		return;
+	}
+
+	// Bidi loops are preprocessed so at this point they act as normal loops
+	wl_assert(sample->get_loop_mode() != k_sample_loop_mode_none);
+	wl_assert(!context->reached_end);
+
+	bool is_mipmap = sample->is_mipmap();
+	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
+	real32 length, loop_start_time, loop_end_time;
+	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
+
+	real32 stream_sample_rate = static_cast<real32>(sample_rate);
+	c_real32_4 speed_val(speed);
+	c_real32_4 advance = speed / c_real32_4(stream_sample_rate);
+	c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(static_cast<real32>(sample_0->get_sample_rate()));
+	speed_adjusted_sample_rate_0 = speed_adjusted_sample_rate_0 * speed_val;
+
+	size_t samples_written = 0;
+	size_t buffer_samples_remaining = buffer_size;
+	real32 *out_ptr = out->get_data<real32>();
+	real32 *out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_elements);
+	for (; out_ptr < out_ptr_end; out_ptr += k_sse_block_elements) {
+		// Increment the time first, storing each intermediate time value
+		ALIGNAS_SSE real32 time[k_sse_block_elements];
+		size_t increment_count = increment_time_looping(loop_start_time, loop_end_time, context, advance,
+			buffer_samples_remaining, time);
+		wl_assert(increment_count > 0);
+
+		if (is_mipmap) {
+			fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
+				increment_count, time, out_ptr);
+		} else {
+			for (size_t i = 0; i < increment_count; i++) {
+				out_ptr[i] = fetch_sample(sample, context->channel, time[i]);
+			}
+		}
+
+		samples_written += increment_count;
+	}
+
+	// If the sample ended before the end of the buffer, fill the rest with 0
+	size_t samples_remaining = buffer_size - samples_written;
+	memset(out->get_data<real32>() + samples_written, 0, samples_remaining * sizeof(real32));
+	out->set_constant(false);
+}
+
+void s_buffer_operation_sampler::loop_phase_shift_buffer_buffer(
+	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
+	size_t buffer_size, uint32 sample_rate, c_buffer_out out, c_buffer_in speed, c_buffer_in phase) {
+	validate_buffer(out);
+	validate_buffer(speed);
+	validate_buffer(phase);
+
+	// Identify constant optimizations
+	if (speed->is_constant()) {
+		const real32 *speed_ptr = speed->get_data<real32>();
+		if (phase->is_constant()) {
+			const real32 *phase_ptr = phase->get_data<real32>();
+			loop_phase_shift_constant_constant(sample_accessor, context, buffer_size, sample_rate, out,
+				*speed_ptr, *phase_ptr);
+		} else {
+			loop_phase_shift_constant_buffer(sample_accessor, context, buffer_size, sample_rate, out,
+				*speed_ptr, phase);
+		}
+		return;
+	} else {
+		if (phase->is_constant()) {
+			const real32 *phase_ptr = phase->get_data<real32>();
+			loop_phase_shift_buffer_constant(sample_accessor, context, buffer_size, sample_rate, out,
+				speed, *phase_ptr);
+		}
+		return;
+	}
+
+	const c_sample *sample = sample_accessor->get_sample(context->sample_handle);
+	if (handle_failed_sample(sample, context->channel, out)) {
+		return;
+	}
+
+	// Bidi loops are preprocessed so at this point they act as normal loops
+	wl_assert(sample->get_loop_mode() != k_sample_loop_mode_none);
+	wl_assert(sample->is_phase_shift_enabled());
+	wl_assert(!context->reached_end);
+
+	bool is_mipmap = sample->is_mipmap();
+	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
+	real32 length, loop_start_time, loop_end_time;
+	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
+	c_real32_4 phase_time_multiplier = c_real32_4(loop_end_time - loop_start_time);
+
+	real32 stream_sample_rate = static_cast<real32>(sample_rate);
+	real32 sample_rate_0 = static_cast<real32>(sample_0->get_sample_rate());
+
+	size_t samples_written = 0;
+	size_t buffer_samples_remaining = buffer_size;
+	real32 *out_ptr = out->get_data<real32>();
+	real32 *out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_elements);
+	const real32 *speed_ptr = speed->get_data<real32>();
+	const real32 *phase_ptr = phase->get_data<real32>();
+	for (; out_ptr < out_ptr_end;
+		 out_ptr += k_sse_block_elements, speed_ptr += k_sse_block_elements, phase_ptr += k_sse_block_elements) {
+		c_real32_4 speed_val(speed_ptr);
+		c_real32_4 advance = speed_val / c_real32_4(stream_sample_rate);
+		c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(sample_rate_0) * speed_val;
+
+		c_real32_4 phase_val(phase_ptr);
+		c_real32_4 clamped_phase = min(max(phase_val, c_real32_4(0.0f)), c_real32_4(1.0f));
+		c_real32_4 time_offset = clamped_phase * phase_time_multiplier;
+
+		// Increment the time first, storing each intermediate time value
+		ALIGNAS_SSE real32 time[k_sse_block_elements];
+		size_t increment_count = increment_time_looping(loop_start_time, loop_end_time, context, advance,
+			buffer_samples_remaining, time);
+		wl_assert(increment_count > 0);
+
+		c_real32_4 phased_time = c_real32_4(time) + time_offset;
+		phased_time.store(time);
+
+		if (is_mipmap) {
+			fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
+				increment_count, time, out_ptr);
+		} else {
+			for (size_t i = 0; i < increment_count; i++) {
+				out_ptr[i] = fetch_sample(sample, context->channel, time[i]);
+			}
+		}
+
+		samples_written += increment_count;
+	}
+
+	// If the sample ended before the end of the buffer, fill the rest with 0
+	size_t samples_remaining = buffer_size - samples_written;
+	memset(out->get_data<real32>() + samples_written, 0, samples_remaining * sizeof(real32));
+	out->set_constant(false);
+}
+
+void s_buffer_operation_sampler::loop_phase_shift_bufferio_buffer(
+	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
+	size_t buffer_size, uint32 sample_rate, c_buffer_inout speed_out, c_buffer_in phase) {
+	validate_buffer(speed_out);
+	validate_buffer(phase);
+
+	// Identify constant optimizations
+	if (speed_out->is_constant()) {
+		const real32 *speed_ptr = speed_out->get_data<real32>();
+		if (phase->is_constant()) {
+			const real32 *phase_ptr = phase->get_data<real32>();
+			loop_phase_shift_constant_constant(sample_accessor, context, buffer_size, sample_rate, speed_out,
+				*speed_ptr, *phase_ptr);
+		} else {
+			loop_phase_shift_constant_buffer(sample_accessor, context, buffer_size, sample_rate, speed_out,
+				*speed_ptr, phase);
+		}
+		return;
+	} else {
+		if (phase->is_constant()) {
+			const real32 *phase_ptr = phase->get_data<real32>();
+			loop_phase_shift_bufferio_constant(sample_accessor, context, buffer_size, sample_rate,
+				speed_out, *phase_ptr);
+		}
+		return;
+	}
+
+	const c_sample *sample = sample_accessor->get_sample(context->sample_handle);
+	if (handle_failed_sample(sample, context->channel, speed_out)) {
+		return;
+	}
+
+	// Bidi loops are preprocessed so at this point they act as normal loops
+	wl_assert(sample->get_loop_mode() != k_sample_loop_mode_none);
+	wl_assert(sample->is_phase_shift_enabled());
+	wl_assert(!context->reached_end);
+
+	bool is_mipmap = sample->is_mipmap();
+	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
+	real32 length, loop_start_time, loop_end_time;
+	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
+	c_real32_4 phase_time_multiplier = c_real32_4(loop_end_time - loop_start_time);
+
+	real32 stream_sample_rate = static_cast<real32>(sample_rate);
+	real32 sample_rate_0 = static_cast<real32>(sample_0->get_sample_rate());
+
+	size_t samples_written = 0;
+	size_t buffer_samples_remaining = buffer_size;
+	real32 *speed_out_ptr = speed_out->get_data<real32>();
+	real32 *speed_out_ptr_end = speed_out_ptr + align_size(buffer_size, k_sse_block_elements);
+	const real32 *phase_ptr = phase->get_data<real32>();
+	for (; speed_out_ptr < speed_out_ptr_end;
+		 speed_out_ptr += k_sse_block_elements, phase_ptr += k_sse_block_elements) {
+		c_real32_4 speed_val(speed_out_ptr);
+		c_real32_4 advance = speed_val / c_real32_4(stream_sample_rate);
+		c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(sample_rate_0) * speed_val;
+
+		c_real32_4 phase_val(phase_ptr);
+		c_real32_4 clamped_phase = min(max(phase_val, c_real32_4(0.0f)), c_real32_4(1.0f));
+		c_real32_4 time_offset = clamped_phase * phase_time_multiplier;
+
+		// Increment the time first, storing each intermediate time value
+		ALIGNAS_SSE real32 time[k_sse_block_elements];
+		size_t increment_count = increment_time_looping(loop_start_time, loop_end_time, context, advance,
+			buffer_samples_remaining, time);
+		wl_assert(increment_count > 0);
+
+		c_real32_4 phased_time = c_real32_4(time) + time_offset;
+		phased_time.store(time);
+
+		if (is_mipmap) {
+			fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
+				increment_count, time, speed_out_ptr);
+		} else {
+			for (size_t i = 0; i < increment_count; i++) {
+				speed_out_ptr[i] = fetch_sample(sample, context->channel, time[i]);
+			}
+		}
+
+		samples_written += increment_count;
+	}
+
+	// If the sample ended before the end of the buffer, fill the rest with 0
+	size_t samples_remaining = buffer_size - samples_written;
+	memset(speed_out->get_data<real32>() + samples_written, 0, samples_remaining * sizeof(real32));
+	speed_out->set_constant(false);
+}
+
+void s_buffer_operation_sampler::loop_phase_shift_buffer_bufferio(
+	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
+	size_t buffer_size, uint32 sample_rate, c_buffer_in speed, c_buffer_inout phase_out) {
+	validate_buffer(speed);
+	validate_buffer(phase_out);
+
+	// Identify constant optimizations
+	if (speed->is_constant()) {
+		const real32 *speed_ptr = speed->get_data<real32>();
+		if (phase_out->is_constant()) {
+			const real32 *phase_ptr = phase_out->get_data<real32>();
+			loop_phase_shift_constant_constant(sample_accessor, context, buffer_size, sample_rate, phase_out,
+				*speed_ptr, *phase_ptr);
+		} else {
+			loop_phase_shift_constant_bufferio(sample_accessor, context, buffer_size, sample_rate,
+				*speed_ptr, phase_out);
+		}
+		return;
+	} else {
+		if (phase_out->is_constant()) {
+			const real32 *phase_ptr = phase_out->get_data<real32>();
+			loop_phase_shift_buffer_constant(sample_accessor, context, buffer_size, sample_rate, phase_out,
+				speed, *phase_ptr);
+		}
+		return;
+	}
+
+	const c_sample *sample = sample_accessor->get_sample(context->sample_handle);
+	if (handle_failed_sample(sample, context->channel, phase_out)) {
+		return;
+	}
+
+	// Bidi loops are preprocessed so at this point they act as normal loops
+	wl_assert(sample->get_loop_mode() != k_sample_loop_mode_none);
+	wl_assert(sample->is_phase_shift_enabled());
+	wl_assert(!context->reached_end);
+
+	bool is_mipmap = sample->is_mipmap();
+	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
+	real32 length, loop_start_time, loop_end_time;
+	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
+	c_real32_4 phase_time_multiplier = c_real32_4(loop_end_time - loop_start_time);
+
+	real32 stream_sample_rate = static_cast<real32>(sample_rate);
+	real32 sample_rate_0 = static_cast<real32>(sample_0->get_sample_rate());
+
+	size_t samples_written = 0;
+	size_t buffer_samples_remaining = buffer_size;
+	real32 *phase_out_ptr = phase_out->get_data<real32>();
+	real32 *phase_out_ptr_end = phase_out_ptr + align_size(buffer_size, k_sse_block_elements);
+	const real32 *speed_ptr = speed->get_data<real32>();
+	for (; phase_out_ptr < phase_out_ptr_end;
+		 phase_out_ptr += k_sse_block_elements, speed_ptr += k_sse_block_elements) {
+		c_real32_4 speed_val(speed_ptr);
+		c_real32_4 advance = speed_val / c_real32_4(stream_sample_rate);
+		c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(sample_rate_0) * speed_val;
+
+		c_real32_4 phase_val(phase_out_ptr);
+		c_real32_4 clamped_phase = min(max(phase_val, c_real32_4(0.0f)), c_real32_4(1.0f));
+		c_real32_4 time_offset = clamped_phase * phase_time_multiplier;
+
+		// Increment the time first, storing each intermediate time value
+		ALIGNAS_SSE real32 time[k_sse_block_elements];
+		size_t increment_count = increment_time_looping(loop_start_time, loop_end_time, context, advance,
+			buffer_samples_remaining, time);
+		wl_assert(increment_count > 0);
+
+		c_real32_4 phased_time = c_real32_4(time) + time_offset;
+		phased_time.store(time);
+
+		if (is_mipmap) {
+			fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
+				increment_count, time, phase_out_ptr);
+		} else {
+			for (size_t i = 0; i < increment_count; i++) {
+				phase_out_ptr[i] = fetch_sample(sample, context->channel, time[i]);
+			}
+		}
+
+		samples_written += increment_count;
+	}
+
+	// If the sample ended before the end of the buffer, fill the rest with 0
+	size_t samples_remaining = buffer_size - samples_written;
+	memset(phase_out->get_data<real32>() + samples_written, 0, samples_remaining * sizeof(real32));
+	phase_out->set_constant(false);
+}
+
+void s_buffer_operation_sampler::loop_phase_shift_buffer_constant(
+	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
+	size_t buffer_size, uint32 sample_rate, c_buffer_out out, c_buffer_in speed, real32 phase) {
+	validate_buffer(out);
+	validate_buffer(speed);
+
+	// Identify constant optimizations
+	if (speed->is_constant()) {
+		const real32 *speed_ptr = speed->get_data<real32>();
+		loop_phase_shift_constant_constant(sample_accessor, context, buffer_size, sample_rate, out,
+			*speed_ptr, phase);
+		return;
+	}
+
+	const c_sample *sample = sample_accessor->get_sample(context->sample_handle);
+	if (handle_failed_sample(sample, context->channel, out)) {
+		return;
+	}
+
+	// Bidi loops are preprocessed so at this point they act as normal loops
+	wl_assert(sample->get_loop_mode() != k_sample_loop_mode_none);
+	wl_assert(sample->is_phase_shift_enabled());
+	wl_assert(!context->reached_end);
+
+	bool is_mipmap = sample->is_mipmap();
+	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
+	real32 length, loop_start_time, loop_end_time;
+	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
+	real32 phase_time_multiplier = loop_end_time - loop_start_time;
+	real32 clamped_phase = std::min(std::max(phase, 0.0f), 1.0f);
+	c_real32_4 time_offset = c_real32_4(clamped_phase * phase_time_multiplier);
+
+	real32 stream_sample_rate = static_cast<real32>(sample_rate);
+	real32 sample_rate_0 = static_cast<real32>(sample_0->get_sample_rate());
+
+	size_t samples_written = 0;
+	size_t buffer_samples_remaining = buffer_size;
+	real32 *out_ptr = out->get_data<real32>();
+	real32 *out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_elements);
+	const real32 *speed_ptr = speed->get_data<real32>();
+	for (; out_ptr < out_ptr_end; out_ptr += k_sse_block_elements, speed_ptr += k_sse_block_elements) {
+		c_real32_4 speed_val(speed_ptr);
+		c_real32_4 advance = speed_val / c_real32_4(stream_sample_rate);
+		c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(sample_rate_0) * speed_val;
+
+		// Increment the time first, storing each intermediate time value
+		ALIGNAS_SSE real32 time[k_sse_block_elements];
+		size_t increment_count = increment_time_looping(loop_start_time, loop_end_time, context, advance,
+			buffer_samples_remaining, time);
+		wl_assert(increment_count > 0);
+
+		c_real32_4 phased_time = c_real32_4(time) + time_offset;
+		phased_time.store(time);
+
+		if (is_mipmap) {
+			fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
+				increment_count, time, out_ptr);
+		} else {
+			for (size_t i = 0; i < increment_count; i++) {
+				out_ptr[i] = fetch_sample(sample, context->channel, time[i]);
+			}
+		}
+
+		samples_written += increment_count;
+	}
+
+	// If the sample ended before the end of the buffer, fill the rest with 0
+	size_t samples_remaining = buffer_size - samples_written;
+	memset(out->get_data<real32>() + samples_written, 0, samples_remaining * sizeof(real32));
+	out->set_constant(false);
+}
+
+void s_buffer_operation_sampler::loop_phase_shift_bufferio_constant(
+	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
+	size_t buffer_size, uint32 sample_rate, c_buffer_inout speed_out, real32 phase) {
+	validate_buffer(speed_out);
+
+	// Identify constant optimizations
+	if (speed_out->is_constant()) {
+		const real32 *speed_ptr = speed_out->get_data<real32>();
+		loop_phase_shift_constant_constant(sample_accessor, context, buffer_size, sample_rate, speed_out,
+			*speed_ptr, phase);
+		return;
+	}
+
+	const c_sample *sample = sample_accessor->get_sample(context->sample_handle);
+	if (handle_failed_sample(sample, context->channel, speed_out)) {
+		return;
+	}
+
+	// Bidi loops are preprocessed so at this point they act as normal loops
+	wl_assert(sample->get_loop_mode() != k_sample_loop_mode_none);
+	wl_assert(sample->is_phase_shift_enabled());
+	wl_assert(!context->reached_end);
+
+	bool is_mipmap = sample->is_mipmap();
+	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
+	real32 length, loop_start_time, loop_end_time;
+	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
+	real32 phase_time_multiplier = loop_end_time - loop_start_time;
+	real32 clamped_phase = std::min(std::max(phase, 0.0f), 1.0f);
+	c_real32_4 time_offset = c_real32_4(clamped_phase * phase_time_multiplier);
+
+	real32 stream_sample_rate = static_cast<real32>(sample_rate);
+	real32 sample_rate_0 = static_cast<real32>(sample_0->get_sample_rate());
+
+	size_t samples_written = 0;
+	size_t buffer_samples_remaining = buffer_size;
+	real32 *speed_out_ptr = speed_out->get_data<real32>();
+	real32 *speed_out_ptr_end = speed_out_ptr + align_size(buffer_size, k_sse_block_elements);
+	for (; speed_out_ptr < speed_out_ptr_end; speed_out_ptr += k_sse_block_elements) {
+		c_real32_4 speed_val(speed_out_ptr);
+		c_real32_4 advance = speed_val / c_real32_4(stream_sample_rate);
+		c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(sample_rate_0) * speed_val;
+
+		// Increment the time first, storing each intermediate time value
+		ALIGNAS_SSE real32 time[k_sse_block_elements];
+		size_t increment_count = increment_time_looping(loop_start_time, loop_end_time, context, advance,
+			buffer_samples_remaining, time);
+		wl_assert(increment_count > 0);
+
+		c_real32_4 phased_time = c_real32_4(time) + time_offset;
+		phased_time.store(time);
+
+		if (is_mipmap) {
+			fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
+				increment_count, time, speed_out_ptr);
+		} else {
+			for (size_t i = 0; i < increment_count; i++) {
+				speed_out_ptr[i] = fetch_sample(sample, context->channel, time[i]);
+			}
+		}
+
+		samples_written += increment_count;
+	}
+
+	// If the sample ended before the end of the buffer, fill the rest with 0
+	size_t samples_remaining = buffer_size - samples_written;
+	memset(speed_out->get_data<real32>() + samples_written, 0, samples_remaining * sizeof(real32));
+	speed_out->set_constant(false);
+}
+
+void s_buffer_operation_sampler::loop_phase_shift_constant_buffer(
+	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
+	size_t buffer_size, uint32 sample_rate, c_buffer_out out, real32 speed, c_buffer_in phase) {
+	validate_buffer(out);
+	validate_buffer(phase);
+
+	// Identify constant optimizations
+	if (phase->is_constant()) {
+		const real32 *phase_ptr = phase->get_data<real32>();
+		loop_phase_shift_constant_constant(sample_accessor, context, buffer_size, sample_rate, out,
+			speed, *phase_ptr);
+		return;
+	}
+
+	const c_sample *sample = sample_accessor->get_sample(context->sample_handle);
+	if (handle_failed_sample(sample, context->channel, out)) {
+		return;
+	}
+
+	// Bidi loops are preprocessed so at this point they act as normal loops
+	wl_assert(sample->get_loop_mode() != k_sample_loop_mode_none);
+	wl_assert(sample->is_phase_shift_enabled());
+	wl_assert(!context->reached_end);
+
+	bool is_mipmap = sample->is_mipmap();
+	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
+	real32 length, loop_start_time, loop_end_time;
+	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
+	c_real32_4 phase_time_multiplier = c_real32_4(loop_end_time - loop_start_time);
+
+	real32 stream_sample_rate = static_cast<real32>(sample_rate);
+	c_real32_4 speed_val(speed);
+	c_real32_4 advance = speed / c_real32_4(stream_sample_rate);
+	c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(static_cast<real32>(sample_0->get_sample_rate()));
+	speed_adjusted_sample_rate_0 = speed_adjusted_sample_rate_0 * speed_val;
+
+	size_t samples_written = 0;
+	size_t buffer_samples_remaining = buffer_size;
+	real32 *out_ptr = out->get_data<real32>();
+	real32 *out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_elements);
+	const real32 *phase_ptr = phase->get_data<real32>();
+	for (; out_ptr < out_ptr_end; out_ptr += k_sse_block_elements, phase_ptr += k_sse_block_elements) {
+		c_real32_4 phase_val(phase_ptr);
+		c_real32_4 clamped_phase = min(max(phase_val, c_real32_4(0.0f)), c_real32_4(1.0f));
+		c_real32_4 time_offset = clamped_phase * phase_time_multiplier;
+
+		// Increment the time first, storing each intermediate time value
+		ALIGNAS_SSE real32 time[k_sse_block_elements];
+		size_t increment_count = increment_time_looping(loop_start_time, loop_end_time, context, advance,
+			buffer_samples_remaining, time);
+		wl_assert(increment_count > 0);
+
+		c_real32_4 phased_time = c_real32_4(time) + time_offset;
+		phased_time.store(time);
+
+		if (is_mipmap) {
+			fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
+				increment_count, time, out_ptr);
+		} else {
+			for (size_t i = 0; i < increment_count; i++) {
+				out_ptr[i] = fetch_sample(sample, context->channel, time[i]);
+			}
+		}
+
+		samples_written += increment_count;
+	}
+
+	// If the sample ended before the end of the buffer, fill the rest with 0
+	size_t samples_remaining = buffer_size - samples_written;
+	memset(out->get_data<real32>() + samples_written, 0, samples_remaining * sizeof(real32));
+	out->set_constant(false);
+}
+
+void s_buffer_operation_sampler::loop_phase_shift_constant_bufferio(
+	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
+	size_t buffer_size, uint32 sample_rate, real32 speed, c_buffer_inout phase_out) {
+	validate_buffer(phase_out);
+
+	// Identify constant optimizations
+	if (phase_out->is_constant()) {
+		const real32 *phase_ptr = phase_out->get_data<real32>();
+		loop_phase_shift_constant_constant(sample_accessor, context, buffer_size, sample_rate, phase_out,
+			speed, *phase_ptr);
+		return;
+	}
+
+	const c_sample *sample = sample_accessor->get_sample(context->sample_handle);
+	if (handle_failed_sample(sample, context->channel, phase_out)) {
+		return;
+	}
+
+	// Bidi loops are preprocessed so at this point they act as normal loops
+	wl_assert(sample->get_loop_mode() != k_sample_loop_mode_none);
+	wl_assert(sample->is_phase_shift_enabled());
+	wl_assert(!context->reached_end);
+
+	bool is_mipmap = sample->is_mipmap();
+	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
+	real32 length, loop_start_time, loop_end_time;
+	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
+	c_real32_4 phase_time_multiplier = c_real32_4(loop_end_time - loop_start_time);
+
+	real32 stream_sample_rate = static_cast<real32>(sample_rate);
+	c_real32_4 speed_val(speed);
+	c_real32_4 advance = speed / c_real32_4(stream_sample_rate);
+	c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(static_cast<real32>(sample_0->get_sample_rate()));
+	speed_adjusted_sample_rate_0 = speed_adjusted_sample_rate_0 * speed_val;
+
+	size_t samples_written = 0;
+	size_t buffer_samples_remaining = buffer_size;
+	real32 *phase_out_ptr = phase_out->get_data<real32>();
+	real32 *phase_out_ptr_end = phase_out_ptr + align_size(buffer_size, k_sse_block_elements);
+	for (; phase_out_ptr < phase_out_ptr_end; phase_out_ptr += k_sse_block_elements) {
+		c_real32_4 phase_val(phase_out_ptr);
+		c_real32_4 clamped_phase = min(max(phase_val, c_real32_4(0.0f)), c_real32_4(1.0f));
+		c_real32_4 time_offset = clamped_phase * phase_time_multiplier;
+
+		// Increment the time first, storing each intermediate time value
+		ALIGNAS_SSE real32 time[k_sse_block_elements];
+		size_t increment_count = increment_time_looping(loop_start_time, loop_end_time, context, advance,
+			buffer_samples_remaining, time);
+		wl_assert(increment_count > 0);
+
+		c_real32_4 phased_time = c_real32_4(time) + time_offset;
+		phased_time.store(time);
+
+		if (is_mipmap) {
+			fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
+				increment_count, time, phase_out_ptr);
+		} else {
+			for (size_t i = 0; i < increment_count; i++) {
+				phase_out_ptr[i] = fetch_sample(sample, context->channel, time[i]);
+			}
+		}
+
+		samples_written += increment_count;
+	}
+
+	// If the sample ended before the end of the buffer, fill the rest with 0
+	size_t samples_remaining = buffer_size - samples_written;
+	memset(phase_out->get_data<real32>() + samples_written, 0, samples_remaining * sizeof(real32));
+	phase_out->set_constant(false);
+}
+
+void s_buffer_operation_sampler::loop_phase_shift_constant_constant(
+	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
+	size_t buffer_size, uint32 sample_rate, c_buffer_out out, real32 speed, real32 phase) {
+	validate_buffer(out);
+
+	const c_sample *sample = sample_accessor->get_sample(context->sample_handle);
+	if (handle_failed_sample(sample, context->channel, out)) {
+		return;
+	}
+
+	// Bidi loops are preprocessed so at this point they act as normal loops
+	wl_assert(sample->get_loop_mode() != k_sample_loop_mode_none);
+	wl_assert(sample->is_phase_shift_enabled());
+	wl_assert(!context->reached_end);
+
+	bool is_mipmap = sample->is_mipmap();
+	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
+	real32 length, loop_start_time, loop_end_time;
+	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
+	real32 phase_time_multiplier = loop_end_time - loop_start_time;
+	real32 clamped_phase = std::min(std::max(phase, 0.0f), 1.0f);
+	c_real32_4 time_offset = c_real32_4(clamped_phase * phase_time_multiplier);
+
+	real32 stream_sample_rate = static_cast<real32>(sample_rate);
+	c_real32_4 speed_val(speed);
+	c_real32_4 advance = speed / c_real32_4(stream_sample_rate);
+	c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(static_cast<real32>(sample_0->get_sample_rate()));
+	speed_adjusted_sample_rate_0 = speed_adjusted_sample_rate_0 * speed_val;
+
+	size_t samples_written = 0;
+	size_t buffer_samples_remaining = buffer_size;
+	real32 *out_ptr = out->get_data<real32>();
+	real32 *out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_elements);
+	for (; out_ptr < out_ptr_end; out_ptr += k_sse_block_elements) {
+		// Increment the time first, storing each intermediate time value
+		ALIGNAS_SSE real32 time[k_sse_block_elements];
+		size_t increment_count = increment_time_looping(loop_start_time, loop_end_time, context, advance,
+			buffer_samples_remaining, time);
+		wl_assert(increment_count > 0);
+
+		c_real32_4 phased_time = c_real32_4(time) + time_offset;
+		phased_time.store(time);
 
 		if (is_mipmap) {
 			fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
@@ -329,9 +1110,8 @@ static void get_sample_time_data(const c_sample *sample,
 	out_loop_end = time_data_array[2];
 }
 
-static size_t increment_time(bool loop, real32 length, real32 loop_start_time, real32 loop_end_time,
-	s_buffer_operation_sampler *context, const c_real32_4 &advance, size_t &inout_buffer_samples_remaining,
-	real32 (&out_time)[k_sse_block_elements]) {
+static size_t increment_time(real32 length, s_buffer_operation_sampler *context,
+	const c_real32_4 &advance, size_t &inout_buffer_samples_remaining, real32 (&out_time)[k_sse_block_elements]) {
 	// We haven't vectorized this, so extract the reals
 	ALIGNAS_SSE real32 advance_array[k_sse_block_elements];
 	advance.store(advance_array);
@@ -349,23 +1129,49 @@ static size_t increment_time(bool loop, real32 length, real32 loop_start_time, r
 		// Increment the time - might be able to use SSE HADDs for this, but getting increment_count and reached_end
 		// would probably be tricky
 		context->time += advance_array[i];
-		if (loop) {
-			if (context->time >= loop_end_time) {
-				// Return to the loop start point
-				real32 wrap_offset = std::remainder(context->time - loop_start_time, loop_end_time - loop_start_time);
-				context->time = loop_start_time + wrap_offset;
-			}
-		} else {
-			if (context->time >= length) {
-				context->reached_end = true;
-				break;
-			}
+		if (context->time >= length) {
+			context->reached_end = true;
+			break;
 		}
 	}
 
 	// We should only ever increment less than 4 times if we reach the end of the buffer or the end of the sample
 	if (increment_count < k_sse_block_elements) {
 		wl_assert(context->reached_end || inout_buffer_samples_remaining == 0);
+	}
+
+	return increment_count;
+}
+
+static size_t increment_time_looping(real32 loop_start_time, real32 loop_end_time, s_buffer_operation_sampler *context,
+	const c_real32_4 &advance, size_t &inout_buffer_samples_remaining, real32 (&out_time)[k_sse_block_elements]) {
+	// We haven't vectorized this, so extract the reals
+	ALIGNAS_SSE real32 advance_array[k_sse_block_elements];
+	advance.store(advance_array);
+
+	wl_assert(!context->reached_end);
+	ZERO_STRUCT(&out_time);
+
+	// We will return the actual number of times incremented so we don't over-sample
+	size_t increment_count = 0;
+	for (uint32 i = 0; i < k_sse_block_elements && inout_buffer_samples_remaining > 0; i++) {
+		increment_count++;
+		inout_buffer_samples_remaining--;
+		out_time[i] = context->time;
+
+		// Increment the time - might be able to use SSE HADDs for this, but getting increment_count and reached_end
+		// would probably be tricky
+		context->time += advance_array[i];
+		if (context->time >= loop_end_time) {
+			// Return to the loop start point
+			real32 wrap_offset = std::remainder(context->time - loop_start_time, loop_end_time - loop_start_time);
+			context->time = loop_start_time + wrap_offset;
+		}
+	}
+
+	// We should only ever increment less than 4 times if we reach the end of the buffer
+	if (increment_count < k_sse_block_elements) {
+		wl_assert(inout_buffer_samples_remaining == 0);
 	}
 
 	return increment_count;

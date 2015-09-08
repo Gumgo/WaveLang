@@ -48,6 +48,9 @@ s_compiler_result c_compiler::compile(const char *root_path, const char *source_
 	{
 		s_compiler_source_file &first_source_file = context.source_files.back();
 		first_source_file.filename = source_filename;
+
+		// This source file is available as an "import" to itself
+		first_source_file.imports.push_back(true);
 	}
 
 	// While we keep resolving #import lines, keep processing source files
@@ -111,7 +114,7 @@ s_compiler_result c_compiler::compile(const char *root_path, const char *source_
 	// Validate the AST
 	{
 		std::vector<s_compiler_result> syntax_errors;
-		result = c_ast_validator::validate(ast.get(), syntax_errors);
+		result = c_ast_validator::validate(&context, ast.get(), syntax_errors);
 
 		for (size_t error = 0; error < syntax_errors.size(); error++) {
 			output_error(context, syntax_errors[error]);
@@ -259,6 +262,11 @@ static s_compiler_result read_and_preprocess_source_file(
 				found_match = are_file_paths_equivalent(
 					full_import_path.c_str(),
 					full_existing_path.c_str());
+
+				if (found_match) {
+					// This source file is importing the matching source file
+					context.source_files[source_file_index].imports[existing_index] = true;
+				}
 			}
 
 			if (!found_match) {
@@ -266,6 +274,16 @@ static s_compiler_result read_and_preprocess_source_file(
 				context.source_files.push_back(s_compiler_source_file());
 				s_compiler_source_file &new_source_file = context.source_files.back();
 				new_source_file.filename = import_path;
+				new_source_file.imports.resize(context.source_files.size() - 1, false);
+
+				// Add a new import entry to all source files
+				for (size_t add_import_index = 0; add_import_index < context.source_files.size(); add_import_index++) {
+					context.source_files[add_import_index].imports.push_back(false);
+				}
+
+				// This source file, and the new import itself, have import access
+				context.source_files[source_file_index].imports.back() = true;
+				context.source_files.back().imports.back() = true;
 			}
 		}
 	}

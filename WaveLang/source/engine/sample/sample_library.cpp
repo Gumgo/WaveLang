@@ -35,6 +35,7 @@ void c_sample_library::initialize(const char *root_path) {
 		requested_sample.timestamp = 0;
 		requested_sample.sample = build_native_sample(index);
 		requested_sample.loop_mode = requested_sample.sample->get_loop_mode();
+		requested_sample.phase_shift_enabled = requested_sample.sample->is_phase_shift_enabled();
 	}
 }
 
@@ -43,9 +44,14 @@ void c_sample_library::clear_requested_samples() {
 	m_previous_requested_samples.swap(m_requested_samples);
 }
 
-uint32 c_sample_library::request_sample(const char *filename, e_sample_loop_mode loop_mode) {
+uint32 c_sample_library::request_sample(const char *filename, e_sample_loop_mode loop_mode, bool phase_shift_enabled) {
 	wl_assert(filename);
 	wl_assert(VALID_INDEX(loop_mode, k_sample_loop_mode_count));
+
+	if (loop_mode == k_sample_loop_mode_none) {
+		// Phase doesn't exist without looping
+		phase_shift_enabled = false;
+	}
 
 	uint32 result;
 
@@ -53,9 +59,11 @@ uint32 c_sample_library::request_sample(const char *filename, e_sample_loop_mode
 	bool is_native = (strncmp(filename, native_prefix, strlen(native_prefix)) == 0);
 
 	if (is_native) {
+		// It's okay to return phase-shift enabled samples even if we don't request them
 		for (result = 0; result < m_native_samples.size(); result++) {
 			if (m_native_samples[result].file_path == filename &&
-				m_native_samples[result].loop_mode == loop_mode) {
+				m_native_samples[result].loop_mode == loop_mode &&
+				(m_native_samples[result].phase_shift_enabled || !phase_shift_enabled)) {
 				break;
 			}
 		}
@@ -78,7 +86,8 @@ uint32 c_sample_library::request_sample(const char *filename, e_sample_loop_mode
 		bool found = false;
 		for (uint32 index = 0; !found && index < m_requested_samples.size(); index++) {
 			if (are_file_paths_equivalent(full_path.c_str(), m_requested_samples[index].file_path.c_str()) &&
-				m_requested_samples[index].loop_mode == loop_mode) {
+				m_requested_samples[index].loop_mode == loop_mode &&
+				m_requested_samples[index].phase_shift_enabled == phase_shift_enabled) {
 				result = index;
 				found = true;
 			}
@@ -87,13 +96,14 @@ uint32 c_sample_library::request_sample(const char *filename, e_sample_loop_mode
 		if (!found) {
 			// Search through previously requested sample list
 			for (uint32 index = 0; !found && index < m_previous_requested_samples.size(); index++) {
-				s_requested_sample &previous_requsted_sample = m_previous_requested_samples[index];
-				if (are_file_paths_equivalent(full_path.c_str(), previous_requsted_sample.file_path.c_str()) &&
-					previous_requsted_sample.loop_mode == loop_mode) {
+				s_requested_sample &previous_requested_sample = m_previous_requested_samples[index];
+				if (are_file_paths_equivalent(full_path.c_str(), previous_requested_sample.file_path.c_str()) &&
+					previous_requested_sample.loop_mode == loop_mode &&
+					previous_requested_sample.phase_shift_enabled == phase_shift_enabled) {
 					// Move from the previous to the current list
 					result = m_requested_samples.size();
 					m_requested_samples.push_back(s_requested_sample());
-					std::swap(previous_requsted_sample, m_previous_requested_samples.back());
+					std::swap(previous_requested_sample, m_previous_requested_samples.back());
 					std::swap(m_requested_samples.back(), m_previous_requested_samples.back());
 					m_previous_requested_samples.pop_back();
 					found = true;
@@ -107,6 +117,7 @@ uint32 c_sample_library::request_sample(const char *filename, e_sample_loop_mode
 			s_requested_sample &new_request = m_requested_samples.back();
 			new_request.file_path = full_path;
 			new_request.loop_mode = loop_mode;
+			new_request.phase_shift_enabled = phase_shift_enabled;
 			new_request.timestamp = 0;
 			new_request.sample = nullptr;
 		}
@@ -140,7 +151,7 @@ void c_sample_library::update_loaded_samples() {
 
 		if (!request.sample) {
 			request.timestamp = new_timestamp;
-			request.sample = c_sample::load(request.file_path.c_str(), request.loop_mode);
+			request.sample = c_sample::load(request.file_path.c_str(), request.loop_mode, request.phase_shift_enabled);
 		}
 	}
 }
@@ -165,6 +176,7 @@ const c_sample *c_sample_library_accessor::get_sample(uint32 handle) const {
 c_sample_library_requester::c_sample_library_requester(c_sample_library &sample_library)
 	: m_sample_library(sample_library) {}
 
-uint32 c_sample_library_requester::request_sample(const char *filename, e_sample_loop_mode loop_mode) {
-	return m_sample_library.request_sample(filename, loop_mode);
+uint32 c_sample_library_requester::request_sample(const char *filename, e_sample_loop_mode loop_mode,
+	bool phase_shift_enabled) {
+	return m_sample_library.request_sample(filename, loop_mode, phase_shift_enabled);
 }

@@ -103,6 +103,9 @@ public:
 	void set_is_native(bool is_native);
 	bool get_is_native() const;
 
+	void set_native_module_index(uint32 native_module_index);
+	uint32 get_native_module_index() const;
+
 	void set_name(const std::string &name);
 	const std::string &get_name() const;
 
@@ -120,6 +123,7 @@ public:
 
 private:
 	bool m_is_native;												// Whether this module is native
+	uint32 m_native_module_index;									// Native module index, if native
 	std::string m_name;												// Name of this module
 	e_ast_data_type m_return_type;									// Module return type
 	std::vector<c_ast_node_named_value_declaration *> m_arguments;	// List of arguments for this module

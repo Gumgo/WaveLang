@@ -174,6 +174,7 @@ static void build_native_module_declarations(c_ast_node_scope *global_scope) {
 
 		c_ast_node_module_declaration *module_declaration = new c_ast_node_module_declaration();
 		module_declaration->set_is_native(true);
+		module_declaration->set_native_module_index(index);
 		module_declaration->set_name(native_module.name);
 		module_declaration->set_return_type(k_ast_data_type_void);
 
@@ -571,7 +572,7 @@ static c_ast_node_expression *build_expression(const c_lr_parse_tree &parse_tree
 			// Always turns into expr_1
 			current_node = &parse_tree.get_node(current_node->get_child_index());
 		} else if (node_is_type(*current_node, k_parser_nonterminal_expr_1)) {
-			// expr_1: + -
+			// expr_1: ||
 
 			const c_lr_parse_tree_node &child_node = parse_tree.get_node(current_node->get_child_index());
 			if (!child_node.has_sibling()) {
@@ -582,7 +583,7 @@ static c_ast_node_expression *build_expression(const c_lr_parse_tree &parse_tree
 				expression_type_found = true;
 			}
 		} else if (node_is_type(*current_node, k_parser_nonterminal_expr_2)) {
-			// expr_2: * / %
+			// expr_2: &&
 
 			const c_lr_parse_tree_node &child_node = parse_tree.get_node(current_node->get_child_index());
 			if (!child_node.has_sibling()) {
@@ -593,18 +594,62 @@ static c_ast_node_expression *build_expression(const c_lr_parse_tree &parse_tree
 				expression_type_found = true;
 			}
 		} else if (node_is_type(*current_node, k_parser_nonterminal_expr_3)) {
-			// expr_3: unary + -
+			// expr_3: == !=
 
 			const c_lr_parse_tree_node &child_node = parse_tree.get_node(current_node->get_child_index());
 			if (!child_node.has_sibling()) {
 				// Move to expr_4
 				current_node = &child_node;
 			} else {
-				result->set_expression_value(build_unary_operator_call(parse_tree, tokens, child_node));
+				result->set_expression_value(build_binary_operator_call(parse_tree, tokens, child_node));
 				expression_type_found = true;
 			}
 		} else if (node_is_type(*current_node, k_parser_nonterminal_expr_4)) {
-			// expr_4: parens, identifier, module_call, constant
+			// expr_4: > < >= <=
+
+			const c_lr_parse_tree_node &child_node = parse_tree.get_node(current_node->get_child_index());
+			if (!child_node.has_sibling()) {
+				// Move to expr_5
+				current_node = &child_node;
+			} else {
+				result->set_expression_value(build_binary_operator_call(parse_tree, tokens, child_node));
+				expression_type_found = true;
+			}
+		} else if (node_is_type(*current_node, k_parser_nonterminal_expr_5)) {
+			// expr_5: + -
+
+			const c_lr_parse_tree_node &child_node = parse_tree.get_node(current_node->get_child_index());
+			if (!child_node.has_sibling()) {
+				// Move to expr_6
+				current_node = &child_node;
+			} else {
+				result->set_expression_value(build_binary_operator_call(parse_tree, tokens, child_node));
+				expression_type_found = true;
+			}
+		} else if (node_is_type(*current_node, k_parser_nonterminal_expr_6)) {
+			// expr_6: * / %
+
+			const c_lr_parse_tree_node &child_node = parse_tree.get_node(current_node->get_child_index());
+			if (!child_node.has_sibling()) {
+				// Move to expr_7
+				current_node = &child_node;
+			} else {
+				result->set_expression_value(build_binary_operator_call(parse_tree, tokens, child_node));
+				expression_type_found = true;
+			}
+		} else if (node_is_type(*current_node, k_parser_nonterminal_expr_7)) {
+			// expr_7: unary + -
+
+			const c_lr_parse_tree_node &child_node = parse_tree.get_node(current_node->get_child_index());
+			if (!child_node.has_sibling()) {
+				// Move to expr_8
+				current_node = &child_node;
+			} else {
+				result->set_expression_value(build_unary_operator_call(parse_tree, tokens, child_node));
+				expression_type_found = true;
+			}
+		} else if (node_is_type(*current_node, k_parser_nonterminal_expr_8)) {
+			// expr_8: parens, identifier, module_call, constant
 
 			const c_lr_parse_tree_node &child_node = parse_tree.get_node(current_node->get_child_index());
 			if (node_is_type(child_node, k_token_type_left_parenthesis)) {
@@ -727,6 +772,38 @@ static c_ast_node_module_call *build_binary_operator_call(const c_lr_parse_tree 
 		operator_module_name = c_native_module_registry::k_operator_concatenation_name;
 		break;
 
+	case k_token_type_operator_equal:
+		operator_module_name = c_native_module_registry::k_operator_equal_name;
+		break;
+
+	case k_token_type_operator_not_equal:
+		operator_module_name = c_native_module_registry::k_operator_not_equal_name;
+		break;
+
+	case k_token_type_operator_greater:
+		operator_module_name = c_native_module_registry::k_operator_greater_name;
+		break;
+
+	case k_token_type_operator_less:
+		operator_module_name = c_native_module_registry::k_operator_less_name;
+		break;
+
+	case k_token_type_operator_greater_equal:
+		operator_module_name = c_native_module_registry::k_operator_greater_equal_name;
+		break;
+
+	case k_token_type_operator_less_equal:
+		operator_module_name = c_native_module_registry::k_operator_less_equal_name;
+		break;
+
+	case k_token_type_operator_and:
+		operator_module_name = c_native_module_registry::k_operator_and_name;
+		break;
+
+	case k_token_type_operator_or:
+		operator_module_name = c_native_module_registry::k_operator_or_name;
+		break;
+
 	default:
 		wl_unreachable();
 	}
@@ -760,6 +837,10 @@ static c_ast_node_module_call *build_unary_operator_call(const c_lr_parse_tree &
 
 	case k_token_type_operator_subtraction:
 		operator_module_name = c_native_module_registry::k_operator_negation_name;
+		break;
+
+	case k_token_type_operator_not:
+		operator_module_name = c_native_module_registry::k_operator_not_name;
 		break;
 
 	default:

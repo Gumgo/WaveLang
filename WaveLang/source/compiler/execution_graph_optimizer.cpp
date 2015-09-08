@@ -17,9 +17,10 @@ enum e_optimization_rule_description_component_type {
 
 	k_optimization_rule_description_component_type_native_module,
 	k_optimization_rule_description_component_type_native_module_end,
-	k_optimization_rule_description_component_type_value,
+	k_optimization_rule_description_component_type_variable,
 	k_optimization_rule_description_component_type_constant,
-	k_optimization_rule_description_component_type_real,
+	k_optimization_rule_description_component_type_real_value,
+	k_optimization_rule_description_component_type_bool_value,
 
 	k_optimization_rule_description_component_type_count
 };
@@ -29,45 +30,55 @@ struct s_optimization_rule_description_component {
 	union {
 		uint32 index;
 		real32 real_value;
-	};
+		bool bool_value;
+		// Currently no string value (likely will never be needed)
+	} data;
+
 
 	s_optimization_rule_description_component() {
 		type = k_optimization_rule_description_component_type_invalid;
-		index = 0;
+		data.index = 0;
 	}
 
 	static s_optimization_rule_description_component native_module(e_native_module native_module) {
 		s_optimization_rule_description_component result;
 		result.type = k_optimization_rule_description_component_type_native_module;
-		result.index = static_cast<uint32>(native_module);
+		result.data.index = static_cast<uint32>(native_module);
 		return result;
 	}
 
 	static s_optimization_rule_description_component native_module_end() {
 		s_optimization_rule_description_component result;
 		result.type = k_optimization_rule_description_component_type_native_module_end;
-		result.index = 0;
+		result.data.index = 0;
 		return result;
 	}
 
-	static s_optimization_rule_description_component value(uint32 index) {
+	static s_optimization_rule_description_component variable(uint32 index) {
 		s_optimization_rule_description_component result;
-		result.type = k_optimization_rule_description_component_type_value;
-		result.index = index;
+		result.type = k_optimization_rule_description_component_type_variable;
+		result.data.index = index;
 		return result;
 	}
 
 	static s_optimization_rule_description_component constant(uint32 index) {
 		s_optimization_rule_description_component result;
 		result.type = k_optimization_rule_description_component_type_constant;
-		result.index = index;
+		result.data.index = index;
 		return result;
 	}
 
-	static s_optimization_rule_description_component real(real32 real_value) {
+	static s_optimization_rule_description_component real_value(real32 real_value) {
 		s_optimization_rule_description_component result;
-		result.type = k_optimization_rule_description_component_type_real;
-		result.real_value = real_value;
+		result.type = k_optimization_rule_description_component_type_real_value;
+		result.data.real_value = real_value;
+		return result;
+	}
+
+	static s_optimization_rule_description_component bool_value(bool bool_value) {
+		s_optimization_rule_description_component result;
+		result.type = k_optimization_rule_description_component_type_bool_value;
+		result.data.bool_value = bool_value;
 		return result;
 	}
 
@@ -87,11 +98,16 @@ struct s_optimization_rule {
 };
 
 // Shorthand for placeholders
-#define X0		s_optimization_rule_description_component::value(0)
-#define X1		s_optimization_rule_description_component::value(1)
+#define X0		s_optimization_rule_description_component::variable(0)
+#define X1		s_optimization_rule_description_component::variable(1)
+#define X2		s_optimization_rule_description_component::variable(2)
+#define X3		s_optimization_rule_description_component::variable(3)
 #define C0		s_optimization_rule_description_component::constant(0)
 #define C1		s_optimization_rule_description_component::constant(1)
-#define REAL(r)	s_optimization_rule_description_component::real(r)
+#define C2		s_optimization_rule_description_component::constant(2)
+#define C3		s_optimization_rule_description_component::constant(3)
+#define RV(r)	s_optimization_rule_description_component::real_value(r)
+#define BV(b)	s_optimization_rule_description_component::bool_value(b)
 
 // Shorthand for native modules
 #define NM_BEGIN(x)		s_optimization_rule_description_component::native_module(x)
@@ -103,6 +119,10 @@ struct s_optimization_rule {
 #define NM_MUL(x, ...)	NM_BEGIN(k_native_module_multiplication), x, ##__VA_ARGS__, NM_END
 #define NM_DIV(x, ...)	NM_BEGIN(k_native_module_division), x, ##__VA_ARGS__, NM_END
 #define NM_MOD(x, ...)	NM_BEGIN(k_native_module_modulo), x, ##__VA_ARGS__, NM_END
+#define NM_RSEL(x, ...)	NM_BEGIN(k_native_module_real_static_select), x, ##__VA_ARGS__, NM_END
+#define NM_SSEL(x, ...)	NM_BEGIN(k_native_module_string_static_select), x, ##__VA_ARGS__, NM_END
+#define NM_SL(x, ...)	NM_BEGIN(k_native_module_sampler_loop), x, ##__VA_ARGS__, NM_END
+#define NM_SLPS(x, ...)	NM_BEGIN(k_native_module_sampler_loop_phase_shift), x, ##__VA_ARGS__, NM_END
 
 static const s_optimization_rule k_optimization_rules[] = {
 #include "execution_graph_optimization_rules.txt"
@@ -360,7 +380,7 @@ static bool try_to_apply_optimization_rule(c_execution_graph *execution_graph, u
 	};
 	std::stack<s_match_state> match_state_stack;
 
-	const size_t k_max_matches = 2;
+	const size_t k_max_matches = 4;
 	std::array<uint32, k_max_matches> matched_value_node_indices;
 	std::array<uint32, k_max_matches> matched_constant_node_indices;
 	std::fill(matched_value_node_indices.begin(), matched_value_node_indices.end(),
@@ -404,7 +424,7 @@ static bool try_to_apply_optimization_rule(c_execution_graph *execution_graph, u
 			const s_match_state &current_state = match_state_stack.top();
 			uint32 current_index = current_state.current_node_index;
 			if (execution_graph->get_node_type(current_index) != k_execution_graph_node_type_native_module_call ||
-				component.index != execution_graph->get_native_module_call_native_module_index(current_index)) {
+				component.data.index != execution_graph->get_native_module_call_native_module_index(current_index)) {
 				// Not a match
 				return false;
 			}
@@ -427,9 +447,10 @@ static bool try_to_apply_optimization_rule(c_execution_graph *execution_graph, u
 			break;
 		}
 
-		case k_optimization_rule_description_component_type_value:
+		case k_optimization_rule_description_component_type_variable:
 		case k_optimization_rule_description_component_type_constant:
-		case k_optimization_rule_description_component_type_real:
+		case k_optimization_rule_description_component_type_real_value:
+		case k_optimization_rule_description_component_type_bool_value:
 		{
 			// Try to advance to the next input
 			wl_assert(!match_state_stack.empty());
@@ -441,18 +462,18 @@ static bool try_to_apply_optimization_rule(c_execution_graph *execution_graph, u
 			uint32 new_node_output_index = c_execution_graph::k_invalid_index;
 			uint32 new_node_index = current_state.follow_next_input(execution_graph, new_node_output_index);
 
-			if (component.type == k_optimization_rule_description_component_type_value) {
+			if (component.type == k_optimization_rule_description_component_type_variable) {
 				// Match anything except for constants
 				if (execution_graph->get_node_type(new_node_index) == k_execution_graph_node_type_constant) {
 					return false;
 				} else {
-					wl_assert(matched_value_node_indices[component.index] == c_execution_graph::k_invalid_index);
+					wl_assert(matched_value_node_indices[component.data.index] == c_execution_graph::k_invalid_index);
 					// If this is a module node, it means we had to pass through an output node to get here. Store
 					// the output node as the match, because that's what inputs will be hooked up to.
 					if (new_node_output_index == c_execution_graph::k_invalid_index) {
-						matched_value_node_indices[component.index] = new_node_index;
+						matched_value_node_indices[component.data.index] = new_node_index;
 					} else {
-						matched_value_node_indices[component.index] = new_node_output_index;
+						matched_value_node_indices[component.data.index] = new_node_output_index;
 					}
 				}
 			} else if (component.type == k_optimization_rule_description_component_type_constant) {
@@ -460,17 +481,30 @@ static bool try_to_apply_optimization_rule(c_execution_graph *execution_graph, u
 				if (execution_graph->get_node_type(new_node_index) != k_execution_graph_node_type_constant) {
 					return false;
 				} else {
-					wl_assert(matched_constant_node_indices[component.index] == c_execution_graph::k_invalid_index);
-					matched_constant_node_indices[component.index] = new_node_index;
+					wl_assert(matched_constant_node_indices[component.data.index] ==
+						c_execution_graph::k_invalid_index);
+					matched_constant_node_indices[component.data.index] = new_node_index;
 				}
 			} else {
-				wl_assert(component.type == k_optimization_rule_description_component_type_real);
 				// Match only constants with the given value
-				if (execution_graph->get_node_type(new_node_index) != k_execution_graph_node_type_constant ||
-					execution_graph->get_constant_node_data_type(new_node_index) !=
-					k_native_module_argument_type_real ||
-					execution_graph->get_constant_node_real_value(new_node_index) != component.real_value) {
+				if (execution_graph->get_node_type(new_node_index) != k_execution_graph_node_type_constant) {
 					return false;
+				}
+
+				if (component.type == k_optimization_rule_description_component_type_real_value) {
+					if (execution_graph->get_constant_node_data_type(new_node_index) !=
+						k_native_module_argument_type_real ||
+						execution_graph->get_constant_node_real_value(new_node_index) != component.data.real_value) {
+						return false;
+					}
+				} else {
+					wl_assert(component.type == k_optimization_rule_description_component_type_bool_value);
+					if (execution_graph->get_constant_node_data_type(new_node_index) !=
+						k_native_module_argument_type_bool ||
+						execution_graph->get_constant_node_bool_value(new_node_index) != component.data.bool_value) {
+						return false;
+					}
+
 				}
 			}
 			break;
@@ -497,7 +531,7 @@ static bool try_to_apply_optimization_rule(c_execution_graph *execution_graph, u
 		switch (component.type) {
 		case k_optimization_rule_description_component_type_native_module:
 		{
-			uint32 node_index = execution_graph->add_native_module_call_node(component.index);
+			uint32 node_index = execution_graph->add_native_module_call_node(component.data.index);
 			// We currently only allow a single outgoing edge, due to the way we express rules
 			wl_assert(execution_graph->get_node_outgoing_edge_count(node_index) == 1);
 
@@ -539,9 +573,10 @@ static bool try_to_apply_optimization_rule(c_execution_graph *execution_graph, u
 			break;
 		}
 
-		case k_optimization_rule_description_component_type_value:
+		case k_optimization_rule_description_component_type_variable:
 		case k_optimization_rule_description_component_type_constant:
-		case k_optimization_rule_description_component_type_real:
+		case k_optimization_rule_description_component_type_real_value:
+		case k_optimization_rule_description_component_type_bool_value:
 		{
 			// Hook up this input and advance
 			wl_assert(!match_state_stack.empty());
@@ -552,14 +587,18 @@ static bool try_to_apply_optimization_rule(c_execution_graph *execution_graph, u
 				current_state.current_node_index, current_state.next_input_index);
 			current_state.next_input_index++;
 
-			if (component.type == k_optimization_rule_description_component_type_value) {
-				execution_graph->add_edge(matched_value_node_indices[component.index], input_node_index);
+			if (component.type == k_optimization_rule_description_component_type_variable) {
+				execution_graph->add_edge(matched_value_node_indices[component.data.index], input_node_index);
 			} else if (component.type == k_optimization_rule_description_component_type_constant) {
-				execution_graph->add_edge(matched_constant_node_indices[component.index], input_node_index);
-			} else {
-				wl_assert(component.type == k_optimization_rule_description_component_type_real);
+				execution_graph->add_edge(matched_constant_node_indices[component.data.index], input_node_index);
+			} else if (component.type == k_optimization_rule_description_component_type_real_value) {
 				// Create a constant node with this value
-				uint32 new_constant_node_index = execution_graph->add_constant_node(component.real_value);
+				uint32 new_constant_node_index = execution_graph->add_constant_node(component.data.real_value);
+				execution_graph->add_edge(new_constant_node_index, input_node_index);
+			} else {
+				wl_assert(component.type == k_optimization_rule_description_component_type_bool_value);
+				// Create a constant node with this value
+				uint32 new_constant_node_index = execution_graph->add_constant_node(component.data.bool_value);
 				execution_graph->add_edge(new_constant_node_index, input_node_index);
 			}
 			break;

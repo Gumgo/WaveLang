@@ -370,38 +370,70 @@ bool get_task_mapping_for_native_module_and_inputs(
 		break;
 
 	case k_native_module_sampler:
-		if (do_native_module_inputs_match(native_module_inputs, "ccccV")) {
-			static const uint32 k_mapping[] = { 0, 1, 2, 3, 4, 4 };
+		if (do_native_module_inputs_match(native_module_inputs, "ccV")) {
+			static const uint32 k_mapping[] = { 0, 1, 2, 2 };
 			task_mapping_array = c_task_mapping_array::construct(k_mapping);
 			task_function = k_task_function_sampler_bufferio;
-		} else if (do_native_module_inputs_match(native_module_inputs, "ccccv")) {
-			static const uint32 k_mapping[] = { 0, 1, 2, 3, 5, 4 };
+		} else if (do_native_module_inputs_match(native_module_inputs, "ccv")) {
+			static const uint32 k_mapping[] = { 0, 1, 3, 2 };
 			task_mapping_array = c_task_mapping_array::construct(k_mapping);
 			task_function = k_task_function_sampler_buffer;
-		} else if (do_native_module_inputs_match(native_module_inputs, "ccccc")) {
-			static const uint32 k_mapping[] = { 0, 1, 2, 3, 5, 4 };
+		} else if (do_native_module_inputs_match(native_module_inputs, "ccc")) {
+			static const uint32 k_mapping[] = { 0, 1, 3, 2 };
 			task_mapping_array = c_task_mapping_array::construct(k_mapping);
 			task_function = k_task_function_sampler_constant;
 		}
 		break;
 
-	case k_native_module_test:
-		if (do_native_module_inputs_match(native_module_inputs, "v")) {
-			static const uint32 k_mapping[] = { 1, 0 };
+	case k_native_module_sampler_loop:
+		if (do_native_module_inputs_match(native_module_inputs, "cccV")) {
+			static const uint32 k_mapping[] = { 0, 1, 2, 3, 3 };
 			task_mapping_array = c_task_mapping_array::construct(k_mapping);
-			task_function = k_task_function_test;
-		} else if (do_native_module_inputs_match(native_module_inputs, "c")) {
-			static const uint32 k_mapping[] = { 1, 0 };
+			task_function = k_task_function_sampler_loop_bufferio;
+		} else if (do_native_module_inputs_match(native_module_inputs, "cccv")) {
+			static const uint32 k_mapping[] = { 0, 1, 2, 4, 3 };
 			task_mapping_array = c_task_mapping_array::construct(k_mapping);
-			task_function = k_task_function_test_c;
+			task_function = k_task_function_sampler_loop_buffer;
+		} else if (do_native_module_inputs_match(native_module_inputs, "cccc")) {
+			static const uint32 k_mapping[] = { 0, 1, 2, 4, 3 };
+			task_mapping_array = c_task_mapping_array::construct(k_mapping);
+			task_function = k_task_function_sampler_loop_constant;
 		}
 		break;
 
-	case k_native_module_delay_test:
-		if (do_native_module_inputs_match(native_module_inputs, "vc")) {
-			static const uint32 k_mapping[] = { 1, 2, 0 };
+	case k_native_module_sampler_loop_phase_shift:
+		if (do_native_module_inputs_match(native_module_inputs, "cccVv")) {
+			static const uint32 k_mapping[] = { 0, 1, 2, 3, 4, 3 };
 			task_mapping_array = c_task_mapping_array::construct(k_mapping);
-			task_function = k_task_function_test_delay;
+			task_function = k_task_function_sampler_loop_phase_shift_bufferio_buffer;
+		} else if (do_native_module_inputs_match(native_module_inputs, "cccvV")) {
+			static const uint32 k_mapping[] = { 0, 1, 2, 3, 4, 4 };
+			task_mapping_array = c_task_mapping_array::construct(k_mapping);
+			task_function = k_task_function_sampler_loop_phase_shift_buffer_bufferio;
+		} else if (do_native_module_inputs_match(native_module_inputs, "cccvv")) {
+			static const uint32 k_mapping[] = { 0, 1, 2, 4, 5, 3 };
+			task_mapping_array = c_task_mapping_array::construct(k_mapping);
+			task_function = k_task_function_sampler_loop_phase_shift_buffer_buffer;
+		} else if (do_native_module_inputs_match(native_module_inputs, "cccVc")) {
+			static const uint32 k_mapping[] = { 0, 1, 2, 3, 4, 3 };
+			task_mapping_array = c_task_mapping_array::construct(k_mapping);
+			task_function = k_task_function_sampler_loop_phase_shift_bufferio_constant;
+		} else if (do_native_module_inputs_match(native_module_inputs, "cccvc")) {
+			static const uint32 k_mapping[] = { 0, 1, 2, 4, 5, 3 };
+			task_mapping_array = c_task_mapping_array::construct(k_mapping);
+			task_function = k_task_function_sampler_loop_phase_shift_buffer_constant;
+		} else if (do_native_module_inputs_match(native_module_inputs, "ccccV")) {
+			static const uint32 k_mapping[] = { 0, 1, 2, 3, 4, 4 };
+			task_mapping_array = c_task_mapping_array::construct(k_mapping);
+			task_function = k_task_function_sampler_loop_phase_shift_constant_bufferio;
+		} else if (do_native_module_inputs_match(native_module_inputs, "ccccv")) {
+			static const uint32 k_mapping[] = { 0, 1, 2, 4, 5, 3 };
+			task_mapping_array = c_task_mapping_array::construct(k_mapping);
+			task_function = k_task_function_sampler_loop_phase_shift_constant_buffer;
+		} else if (do_native_module_inputs_match(native_module_inputs, "ccccc")) {
+			static const uint32 k_mapping[] = { 0, 1, 2, 4, 5, 3 };
+			task_mapping_array = c_task_mapping_array::construct(k_mapping);
+			task_function = k_task_function_sampler_loop_phase_shift_constant_constant;
 		}
 		break;
 

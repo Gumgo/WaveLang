@@ -9,6 +9,8 @@
 class c_execution_graph_module_builder : public c_ast_node_const_visitor {
 private:
 	struct s_expression_result {
+		// Type of data
+		e_ast_data_type type;
 		// Node index in which the returned value is stored
 		uint32 node_index;
 		// If non-empty, this result contains an assignable named value and can be used as an out argument
@@ -19,6 +21,7 @@ private:
 	struct s_identifier {
 		static const size_t k_invalid_argument = static_cast<size_t>(-1);
 
+		e_ast_data_type data_type;			// Data type associated with this identifier
 		uint32 current_value_node_index;	// Index of the node holding the most recent value
 		size_t argument_index;				// Argument index, if this identifier is an argument
 	};
@@ -49,7 +52,7 @@ private:
 	std::stack<s_expression_result> m_expression_stack;
 
 	// Adds initially unassigned identifier
-	void add_identifier_to_scope(const std::string &name) {
+	void add_identifier_to_scope(const std::string &name, e_ast_data_type data_type) {
 #if PREDEFINED(ASSERTS_ENABLED)
 		for (size_t index = 0; index < m_scope_stack.size(); index++) {
 			wl_assert(m_scope_stack[index].identifiers.find(name) == m_scope_stack[index].identifiers.end());
@@ -57,6 +60,7 @@ private:
 #endif // PREDEFINED(ASSERTS_ENABLED)
 
 		s_identifier identifier;
+		identifier.data_type = data_type;
 		identifier.current_value_node_index = c_execution_graph::k_invalid_index;
 		identifier.argument_index = s_identifier::k_invalid_argument;
 		m_scope_stack.front().identifiers.insert(std::make_pair(name, identifier));
@@ -132,7 +136,43 @@ public:
 		return m_return_node_index;
 	}
 
-	static const c_ast_node_module_declaration *find_module_declaration(const c_ast_node *ast_root, const char *name) {
+	static const c_ast_node_module_declaration *find_module_declaration(const c_ast_node *ast_root, const char *name,
+		const std::vector<s_expression_result> &argument_types) {
+		// Native modules must all be at the root
+		wl_assert(ast_root->get_type() == k_ast_node_type_scope);
+
+		const c_ast_node_scope *root_scope = static_cast<const c_ast_node_scope *>(ast_root);
+		for (uint32 index = 0; index < root_scope->get_child_count(); index++) {
+			const c_ast_node *child = root_scope->get_child(index);
+			if (child->get_type() == k_ast_node_type_module_declaration) {
+				const c_ast_node_module_declaration *module_declaration =
+					static_cast<const c_ast_node_module_declaration *>(child);
+
+				if (module_declaration->get_name() == name) {
+					// Check if the argument types match to determine if this is the correct overload
+					bool match = (module_declaration->get_argument_count() == argument_types.size());
+
+					if (match) {
+						for (size_t arg = 0; match && arg < module_declaration->get_argument_count(); arg++) {
+							if (argument_types[arg].type != module_declaration->get_argument(arg)->get_data_type()) {
+								match = false;
+							}
+						}
+					}
+
+					if (match) {
+						return module_declaration;
+					}
+				}
+			}
+		}
+
+		wl_vhalt("Module declaration not found");
+		return nullptr;
+	}
+
+	static const c_ast_node_module_declaration *find_module_declaration_single(
+		const c_ast_node *ast_root, const char *name) {
 		// Native modules must all be at the root
 		wl_assert(ast_root->get_type() == k_ast_node_type_scope);
 
@@ -166,7 +206,7 @@ public:
 		wl_assert(m_module_declaration == node);
 
 		if (node->get_is_native()) {
-			uint32 native_module_index = c_native_module_registry::get_native_module_index(node->get_name().c_str());
+			uint32 native_module_index = node->get_native_module_index();
 			const s_native_module &native_module = c_native_module_registry::get_native_module(native_module_index);
 
 			wl_assert(native_module.first_output_is_return == (node->get_return_type() != k_ast_data_type_void));
@@ -222,7 +262,7 @@ public:
 	}
 
 	virtual bool begin_visit(const c_ast_node_named_value_declaration *node) {
-		add_identifier_to_scope(node->get_name());
+		add_identifier_to_scope(node->get_name(), node->get_data_type());
 		s_identifier *identifier = get_identifier(node->get_name());
 
 		e_ast_qualifier qualifier = node->get_qualifier();
@@ -324,6 +364,7 @@ public:
 		}
 
 		s_expression_result result;
+		result.type = node->get_data_type();
 		result.node_index = constant_node_index;
 		m_expression_stack.push(result);
 	}
@@ -338,6 +379,7 @@ public:
 		wl_assert(identifier->current_value_node_index != c_execution_graph::k_invalid_index);
 
 		s_expression_result result;
+		result.type = identifier->data_type;
 		result.node_index = identifier->current_value_node_index;
 		result.identifier_name = node->get_name();
 		m_expression_stack.push(result);
@@ -348,19 +390,19 @@ public:
 	}
 
 	virtual void end_visit(const c_ast_node_module_call *node) {
-		const c_ast_node_module_declaration *module_call_declaration =
-			find_module_declaration(m_ast_root, node->get_name().c_str());
-
-		c_execution_graph_module_builder module_builder(m_ast_root, m_execution_graph, module_call_declaration);
-
-		std::vector<s_expression_result> argument_expression_results(module_call_declaration->get_argument_count());
+		std::vector<s_expression_result> argument_expression_results(node->get_argument_count());
 
 		// Iterate over each argument in reverse, since that is the order they appear on the stack
-		for (size_t reverse_arg = 0; reverse_arg < module_call_declaration->get_argument_count(); reverse_arg++) {
-			size_t arg = module_call_declaration->get_argument_count() - reverse_arg - 1;
+		for (size_t reverse_arg = 0; reverse_arg < node->get_argument_count(); reverse_arg++) {
+			size_t arg = node->get_argument_count() - reverse_arg - 1;
 			argument_expression_results[arg] = m_expression_stack.top();
 			m_expression_stack.pop();
 		}
+
+		const c_ast_node_module_declaration *module_call_declaration =
+			find_module_declaration(m_ast_root, node->get_name().c_str(), argument_expression_results);
+
+		c_execution_graph_module_builder module_builder(m_ast_root, m_execution_graph, module_call_declaration);
 
 		// Hook up the input arguments
 		for (size_t arg = 0; arg < module_call_declaration->get_argument_count(); arg++) {
@@ -397,6 +439,7 @@ public:
 
 		// Push this module call's result onto the stack
 		s_expression_result result;
+		result.type = module_call_declaration->get_return_type();
 		if (module_call_declaration->get_return_type() != k_ast_data_type_void) {
 			result.node_index = module_builder.get_return_value_node_index();
 			wl_assert(result.node_index != c_execution_graph::k_invalid_index);
@@ -411,7 +454,7 @@ public:
 void c_execution_graph_builder::build_execution_graph(const c_ast_node *ast, c_execution_graph *out_execution_graph) {
 	// Find the entry point to start iteration
 	const c_ast_node_module_declaration *entry_point_module =
-		c_execution_graph_module_builder::find_module_declaration(ast, k_entry_point_name);
+		c_execution_graph_module_builder::find_module_declaration_single(ast, k_entry_point_name);
 	wl_assert(entry_point_module->get_return_type() == k_ast_data_type_void);
 
 	c_execution_graph_module_builder builder(ast, out_execution_graph, entry_point_module);

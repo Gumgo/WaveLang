@@ -26,11 +26,10 @@ enum e_compiler_result {
 	k_compiler_result_unassigned_output,
 	k_compiler_result_duplicate_identifier,
 	k_compiler_result_undeclared_identifier,
+	k_compiler_result_missing_import,
 	k_compiler_result_type_mismatch,
-	k_compiler_result_value_expected,
 	k_compiler_result_named_value_expected,
 	k_compiler_result_ambiguous_named_value_assignment,
-	k_compiler_result_unassigned_named_value_used,
 	k_compiler_result_incorrect_argument_count,
 	k_compiler_result_cyclic_module_call,
 	k_compiler_result_no_entry_point,
@@ -70,6 +69,8 @@ struct s_compiler_result {
 struct s_compiler_source_file {
 	std::string filename;
 	std::vector<char> source;
+	// Bitvector indicating which source files are available to this source file
+	std::vector<bool> imports;
 };
 
 struct s_compiler_context {

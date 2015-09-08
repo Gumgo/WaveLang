@@ -1005,7 +1005,7 @@ void c_execution_graph::output_to_file() const {
 			if (node.node_data.constant.type == k_native_module_argument_type_real) {
 				label = std::to_string(node.node_data.constant.real_value);
 			} else if (node.node_data.constant.type == k_native_module_argument_type_bool) {
-				label = m_string_table.get_string(node.node_data.constant.bool_value);
+				label = node.node_data.constant.bool_value ? "true" : "false";
 			} else if (node.node_data.constant.type == k_native_module_argument_type_string) {
 				label = m_string_table.get_string(node.node_data.constant.string_index);
 			} else {

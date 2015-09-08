@@ -37,6 +37,10 @@ enum e_parser_nonterminal {
 	k_parser_nonterminal_expr_2,
 	k_parser_nonterminal_expr_3,
 	k_parser_nonterminal_expr_4,
+	k_parser_nonterminal_expr_5,
+	k_parser_nonterminal_expr_6,
+	k_parser_nonterminal_expr_7,
+	k_parser_nonterminal_expr_8,
 	k_parser_nonterminal_module_call,
 	k_parser_nonterminal_module_call_argument_list,
 

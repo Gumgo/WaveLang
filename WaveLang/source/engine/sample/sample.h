@@ -21,7 +21,7 @@ static const uint32 k_max_sample_padding = 4;
 // See the initialize function for details of mipmap requirements.
 class c_sample {
 public:
-	static c_sample *load(const char *filename, e_sample_loop_mode loop_mode);
+	static c_sample *load(const char *filename, e_sample_loop_mode loop_mode, bool phase_shift_enabled);
 
 	c_sample();
 	~c_sample();
@@ -30,13 +30,13 @@ public:
 	// sample_data should contain channel_count sets of frame_count samples, non-interleaved
 	void initialize(
 		uint32 sample_rate, uint32 channel_count, uint32 frame_count,
-		e_sample_loop_mode loop_mode, uint32 loop_start, uint32 loop_end,
+		e_sample_loop_mode loop_mode, uint32 loop_start, uint32 loop_end, bool phase_shift_enabled,
 		c_wrapped_array_const<real32> sample_data);
 
 	// Initializes the sample to be used in a mipmap
 	void initialize_for_mipmap(
 		uint32 sample_rate, uint32 channel_count, uint32 frame_count,
-		e_sample_loop_mode loop_mode, uint32 loop_start, uint32 loop_end,
+		e_sample_loop_mode loop_mode, uint32 loop_start, uint32 loop_end, bool phase_shift_enabled,
 		c_wrapped_array_const<real32> sample_data);
 
 	// Initializes the sample as a mipmap of sub-samples containing audio data.
@@ -63,6 +63,7 @@ public:
 	uint32 get_loop_start() const;
 	uint32 get_loop_end() const;
 	c_wrapped_array_const<real32> get_channel_sample_data(uint32 channel) const;
+	bool is_phase_shift_enabled() const;
 
 	uint32 get_mipmap_count() const;
 	const c_sample *get_mipmap_sample(uint32 index) const;
@@ -93,9 +94,7 @@ private:
 	e_sample_loop_mode m_loop_mode;	// How this sample should loop
 	uint32 m_loop_start;			// Start loop point, in samples
 	uint32 m_loop_end;				// End loop point, in samples
-
 	bool m_phase_shift_enabled;		// Whether phase shifting is allowed (implemented by extending the loop)
-	// $TODO
 
 	c_aligned_allocator<real32, k_sse_alignment> m_sample_data;
 	std::vector<c_sample *> m_mipmap;

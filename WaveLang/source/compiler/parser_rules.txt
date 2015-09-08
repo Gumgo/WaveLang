@@ -83,41 +83,71 @@ PROD(NS(expression_assignment),
 	TS(operator_assignment), NS(expression))
 
 PROD(NS(expr_1),
-	NS(expr_1), TS(operator_addition), NS(expr_2))
-PROD(NS(expr_1),
-	NS(expr_1), TS(operator_subtraction), NS(expr_2))
-PROD(NS(expr_1),
-	NS(expr_1), TS(operator_concatenation), NS(expr_2))
+	NS(expr_1), TS(operator_or), NS(expr_2))
 PROD(NS(expr_1),
 	NS(expr_2))
 
 PROD(NS(expr_2),
-	NS(expr_2), TS(operator_multiplication), NS(expr_3))
-PROD(NS(expr_2),
-	NS(expr_2), TS(operator_division), NS(expr_3))
-PROD(NS(expr_2),
-	NS(expr_2), TS(operator_modulo), NS(expr_3))
+	NS(expr_2), TS(operator_and), NS(expr_3))
 PROD(NS(expr_2),
 	NS(expr_3))
 
 PROD(NS(expr_3),
-	TS(operator_addition), NS(expr_4))
+	NS(expr_3), TS(operator_equal), NS(expr_4))
 PROD(NS(expr_3),
-	TS(operator_subtraction), NS(expr_4))
+	NS(expr_3), TS(operator_not_equal), NS(expr_4))
 PROD(NS(expr_3),
 	NS(expr_4))
 
 PROD(NS(expr_4),
+	NS(expr_4), TS(operator_greater), NS(expr_5))
+PROD(NS(expr_4),
+	NS(expr_4), TS(operator_less), NS(expr_5))
+PROD(NS(expr_4),
+	NS(expr_4), TS(operator_greater_equal), NS(expr_5))
+PROD(NS(expr_4),
+	NS(expr_4), TS(operator_less_equal), NS(expr_5))
+PROD(NS(expr_4),
+	NS(expr_5))
+
+PROD(NS(expr_5),
+	NS(expr_5), TS(operator_addition), NS(expr_6))
+PROD(NS(expr_5),
+	NS(expr_5), TS(operator_subtraction), NS(expr_6))
+PROD(NS(expr_5),
+	NS(expr_5), TS(operator_concatenation), NS(expr_6))
+PROD(NS(expr_5),
+	NS(expr_6))
+
+PROD(NS(expr_6),
+	NS(expr_6), TS(operator_multiplication), NS(expr_7))
+PROD(NS(expr_6),
+	NS(expr_6), TS(operator_division), NS(expr_7))
+PROD(NS(expr_6),
+	NS(expr_6), TS(operator_modulo), NS(expr_7))
+PROD(NS(expr_6),
+	NS(expr_7))
+
+PROD(NS(expr_7),
+	TS(operator_addition), NS(expr_8))
+PROD(NS(expr_7),
+	TS(operator_subtraction), NS(expr_8))
+PROD(NS(expr_7),
+	TS(operator_not), NS(expr_8))
+PROD(NS(expr_7),
+	NS(expr_8))
+
+PROD(NS(expr_8),
 	TS(left_parenthesis), NS(expression), TS(right_parenthesis))
-PROD(NS(expr_4),
+PROD(NS(expr_8),
 	TS(identifier))
-PROD(NS(expr_4),
+PROD(NS(expr_8),
 	NS(module_call))
-PROD(NS(expr_4),
+PROD(NS(expr_8),
 	TS(constant_real))
-PROD(NS(expr_4),
+PROD(NS(expr_8),
 	TS(constant_bool))
-PROD(NS(expr_4),
+PROD(NS(expr_8),
 	TS(constant_string))
 
 PROD(NS(module_call),

@@ -27,6 +27,11 @@ private:
 
 		// Node associated with the identifier
 		const c_ast_node *ast_node;
+
+		// The number of overloads, if this is a module. If this number is greater than 1, then the actual identifiers
+		// can be looked up by querying "<module_name>$i" where i is in the range [0,overload_count-1]. ast_node will
+		// still point to the first registered overload for convenience.
+		uint32 overload_count;
 	};
 
 	struct s_named_value {
@@ -80,6 +85,9 @@ private:
 			module = nullptr;
 		}
 	};
+
+	// The compiler context
+	const s_compiler_context *m_compiler_context;
 
 	// The current pass
 	e_pass m_pass;
@@ -171,6 +179,7 @@ private:
 			s_identifier identifier;
 			identifier.data_type = data_type;
 			identifier.ast_node = node;
+			identifier.overload_count = 1;
 			m_scope_stack.front().identifiers.insert(std::make_pair(name, identifier));
 		} else {
 			s_compiler_result error;
@@ -181,6 +190,144 @@ private:
 		}
 
 		return !found;
+	}
+
+	// Returns true if the two sets of module arguments would prevent a module with the same name from being overloaded
+	bool do_module_arguments_conflict_for_overload(
+		const c_ast_node_module_declaration *node_a, const c_ast_node_module_declaration *node_b) {
+		wl_assert(node_a);
+		wl_assert(node_b);
+
+		if (node_a->get_argument_count() != node_b->get_argument_count()) {
+			return false;
+		}
+
+		for (size_t arg = 0; arg < node_a->get_argument_count(); arg++) {
+			const c_ast_node_named_value_declaration *arg_a = node_a->get_argument(arg);
+			const c_ast_node_named_value_declaration *arg_b = node_b->get_argument(arg);
+			if (arg_a->get_data_type() != arg_b->get_data_type()) {
+				// Only check argument type, not qualifier, because currently at the calling scope, inputs and outputs
+				// look identical, and we have no way of selecting between two modules that differ only by in vs. out.
+				return false;
+			}
+		}
+
+		// We cannot use return type alone to overload
+		return true;
+	}
+
+	// Adds a module identifier to the top scope if it does not exist in this scope or lower. Properly handles module
+	// overloading by adding uniquely-named identifiers for each version following a common pattern.
+	bool add_module_identifier_to_scope(const std::string &name, const c_ast_node_module_declaration *node) {
+		bool added = false;
+		s_identifier *match = nullptr;
+		for (size_t index = 0; !match && index < m_scope_stack.size(); index++) {
+			s_scope &scope = m_scope_stack[index];
+			auto it = scope.identifiers.find(name);
+			if (it != scope.identifiers.end()) {
+				match = &it->second;
+			}
+		}
+
+		if (!match) {
+			s_identifier identifier;
+			identifier.data_type = k_ast_data_type_module;
+			identifier.ast_node = node;
+			identifier.overload_count = 1;
+			m_scope_stack.front().identifiers.insert(std::make_pair(name, identifier));
+			added = true;
+		} else if (match->data_type != k_ast_data_type_module) {
+			s_compiler_result error;
+			error.result = k_compiler_result_duplicate_identifier;
+			error.source_location = node->get_source_location();
+			error.message = "Identifier '" + name + "' is already in use";
+			m_errors->push_back(error);
+		} else {
+			bool conflict = false;
+			// Check if this is a valid, non-conflicting overload
+			if (match->overload_count == 1) {
+				conflict = do_module_arguments_conflict_for_overload(
+					node, static_cast<const c_ast_node_module_declaration *>(match->ast_node));
+			} else {
+				wl_assert(match->overload_count > 1);
+				// Look at all existing overloaded versions
+				for (uint32 overload = 0; !conflict && overload < match->overload_count; overload++) {
+					std::string overload_name = name + '$' + std::to_string(overload);
+					const s_identifier *overload_identifier = get_identifier(overload_name);
+					wl_assert(overload_identifier);
+					wl_assert(overload_identifier->data_type == k_ast_data_type_module);
+
+					conflict = do_module_arguments_conflict_for_overload(
+						node, static_cast<const c_ast_node_module_declaration *>(overload_identifier->ast_node));
+				}
+			}
+
+			if (conflict) {
+				s_compiler_result error;
+				error.result = k_compiler_result_duplicate_identifier;
+				error.source_location = node->get_source_location();
+				error.message = "Overloaded module '" + name + "' conflicts with existing definition";
+				m_errors->push_back(error);
+			} else {
+				if (match->overload_count == 1) {
+					// Store the existing module in the overloaded way
+					s_identifier identifier;
+					identifier.data_type = k_ast_data_type_module;
+					identifier.ast_node = match->ast_node;
+					identifier.overload_count = 1;
+					m_scope_stack.front().identifiers.insert(std::make_pair(name + "$0", identifier));
+				}
+
+				s_identifier identifier;
+				identifier.data_type = k_ast_data_type_module;
+				identifier.ast_node = node;
+				identifier.overload_count = 1;
+				std::string overload_name = name + '$' + std::to_string(match->overload_count);
+				m_scope_stack.front().identifiers.insert(std::make_pair(overload_name, identifier));
+
+				match->overload_count++;
+				added = true;
+			}
+		}
+
+		return added;
+	}
+
+	const c_ast_node_module_declaration *find_matching_module_overload(const s_identifier *identifier,
+		const std::vector<s_expression_result> &argument_types) {
+		wl_assert(identifier);
+		wl_assert(identifier->data_type == k_ast_data_type_module);
+		for (uint32 overload = 0; overload < identifier->overload_count; overload++) {
+			const s_identifier *overload_identifier;
+			if (identifier->overload_count == 1) {
+				overload_identifier = identifier;
+			} else {
+				std::string overload_name =
+					static_cast<const c_ast_node_module_declaration *>(identifier->ast_node)->get_name() + '$' +
+					std::to_string(overload);
+				overload_identifier = get_identifier(overload_name);
+				wl_assert(overload_identifier);
+			}
+
+			const c_ast_node_module_declaration *overload_module_node =
+				static_cast<const c_ast_node_module_declaration *>(overload_identifier->ast_node);
+			if (overload_module_node->get_argument_count() != argument_types.size()) {
+				continue;
+			}
+
+			bool match = true;
+			for (size_t arg = 0; match && arg < overload_module_node->get_argument_count(); arg++) {
+				if (overload_module_node->get_argument(arg)->get_data_type() != argument_types[arg].type) {
+					match = false;
+				}
+			}
+
+			if (match) {
+				return overload_module_node;
+			}
+		}
+
+		return nullptr;
 	}
 
 	// Returns the identifier associated with the given name, or null
@@ -280,6 +427,7 @@ public:
 	c_ast_validator_visitor(std::vector<s_compiler_result> *error_accumulator) {
 		wl_assert(error_accumulator);
 
+		m_compiler_context = nullptr;
 		m_pass = k_pass_count;
 		m_errors = error_accumulator;
 		m_module_for_next_scope = nullptr;
@@ -290,6 +438,10 @@ public:
 	void set_pass(e_pass pass) {
 		wl_assert(pass < k_pass_count);
 		m_pass = pass;
+	}
+
+	void set_compiler_context(const s_compiler_context *compiler_context) {
+		m_compiler_context = compiler_context;
 	}
 
 	void detect_module_call_cycles() {
@@ -392,12 +544,20 @@ public:
 		if (m_pass == k_pass_register_global_identifiers) {
 			// Add the module's name to the list of identifiers seen so far
 			wl_assert(m_scope_stack.size() == 1);
-			add_identifier_to_scope(node->get_name(), node, k_ast_data_type_module);
+			add_module_identifier_to_scope(node->get_name(), node);
 
 			m_module_calls.push_back(s_module_call());
 			m_module_calls.back().module = node;
 
-			if (!m_entry_point_found && node->get_name() == k_entry_point_name) {
+			if (node->get_name() == k_entry_point_name) {
+				if (m_entry_point_found) {
+					s_compiler_result error;
+					error.result = k_compiler_result_invalid_entry_point;
+					error.source_location = node->get_source_location();
+					error.message = "Entry point '" + node->get_name() + "' must not be overloaded";
+					m_errors->push_back(error);
+				}
+
 				m_entry_point_found = true;
 
 				// Should have no return value and only out arguments
@@ -683,66 +843,120 @@ public:
 			const c_ast_node_module_declaration *module_declaration =
 				static_cast<const c_ast_node_module_declaration *>(identifier->ast_node);
 
-			add_module_subcall(scope.module_for_scope, module_declaration);
+			const c_ast_node_module_declaration *matching_overload_module_declaration =
+				find_matching_module_overload(identifier, argument_expression_results);
 
-			// Set return type
-			result.type = module_declaration->get_return_type();
-
-			if (node->get_argument_count() != module_declaration->get_argument_count()) {
+			if (!matching_overload_module_declaration && identifier->overload_count == 1) {
+				// For overloaded modules, spit out a single catch-all error if we don't find a match
 				s_compiler_result error;
-				error.result = k_compiler_result_incorrect_argument_count;
+				error.result = k_compiler_result_missing_import;
 				error.source_location = node->get_source_location();
-				error.message = "Incorrect argument count for module call '" + module_declaration->get_name() +
-					"': expected " + std::to_string(module_declaration->get_argument_count()) +
-					", got " + std::to_string(node->get_argument_count());
+				error.message = "No overloads for module '" + node->get_name() + "' match the arguments provided";
 				m_errors->push_back(error);
-			}
+			} else {
+				module_declaration = matching_overload_module_declaration;
 
-			// Examine each argument to see if its result matches
-			size_t args = std::min(node->get_argument_count(), module_declaration->get_argument_count());
-			for (size_t arg = 0; arg < args; arg++) {
-				const c_ast_node_named_value_declaration *argument = module_declaration->get_argument(arg);
-				const s_expression_result &argument_result = argument_expression_results[arg];
+				// Make sure this module is visible from the file it's being called from. This is kind of a hack/
+				// incomplete solution, but it prevents situations where A imports B, and then B can use modules from A.
+				bool module_is_imported = true;
+				if (!module_declaration->get_is_native()) {
+					size_t calling_source_file_index = scope.module_for_scope->get_source_location().source_file_index;
+					size_t callee_source_file_index = module_declaration->get_source_location().source_file_index;
 
-				// We already validated the expression, which would have provided errors for things like invalid
-				// identifier, so all we need to do here is validate that the type matches
-				if (argument_result.type != argument->get_data_type()) {
-					type_mismatch_error(node->get_argument(arg)->get_source_location(),
-						argument->get_data_type(), argument_result.type);
+					module_is_imported =
+						m_compiler_context->source_files[calling_source_file_index].imports[callee_source_file_index];
 				}
 
-				// If a valid identifier has been provided, update its last assigned or last used statement
-				const s_identifier *identifier = get_identifier(result.identifier_name);
-				if (identifier) {
-					s_named_value *named_value = get_named_value(identifier->ast_node);
-					wl_assert(named_value);
+				if (!module_is_imported) {
+					s_compiler_result error;
+					error.result = k_compiler_result_missing_import;
+					error.source_location = node->get_source_location();
+					error.message = "Identifier '" + node->get_name() + "' has not been imported";
+					m_errors->push_back(error);
+				} else {
+					add_module_subcall(scope.module_for_scope, module_declaration);
 
-					if (argument->get_qualifier() == k_ast_qualifier_in) {
-						named_value->last_statement_used = scope.current_statement;
+					// Set return type
+					result.type = module_declaration->get_return_type();
+
+					if (identifier->overload_count > 1) {
+						wl_assert(node->get_argument_count() == module_declaration->get_argument_count());
 					} else {
-						wl_assert(argument->get_qualifier() == k_ast_qualifier_out);
-
-						if (named_value->last_statement_assigned == scope.current_statement) {
-							// We should not assign the same named value from two different outputs
+						if (node->get_argument_count() != module_declaration->get_argument_count()) {
 							s_compiler_result error;
-							error.result = k_compiler_result_ambiguous_named_value_assignment;
+							error.result = k_compiler_result_incorrect_argument_count;
 							error.source_location = node->get_source_location();
-							error.message = "Ambiguous assignment for named value '" + result.identifier_name + "'";
+							error.message =
+								"Incorrect argument count for module call '" + module_declaration->get_name() +
+								"': expected " + std::to_string(module_declaration->get_argument_count()) +
+								", got " + std::to_string(node->get_argument_count());
+							m_errors->push_back(error);
+						}
+					}
+
+					// Examine each argument to see if its result matches
+					size_t args = std::min(node->get_argument_count(), module_declaration->get_argument_count());
+					for (size_t arg = 0; arg < args; arg++) {
+						const c_ast_node_named_value_declaration *argument = module_declaration->get_argument(arg);
+						const s_expression_result &argument_result = argument_expression_results[arg];
+
+						if (identifier->overload_count > 1) {
+							wl_assert(argument_result.type == argument->get_data_type());
+						} else {
+							// We already validated the expression, which would have provided errors for things like
+							// invalid identifier, so all we need to do here is validate that the type matches
+							if (argument_result.type != argument->get_data_type()) {
+								type_mismatch_error(node->get_argument(arg)->get_source_location(),
+									argument->get_data_type(), argument_result.type);
+							}
+						}
+
+						// If this argument has an out qualifier, it must take a direct named value
+						if (argument->get_qualifier() == k_ast_qualifier_out &&
+							result.identifier_name.empty()) {
+							s_compiler_result error;
+							error.result = k_compiler_result_named_value_expected;
+							error.source_location = node->get_argument(arg)->get_source_location();
+							error.message = "Expected named value for out-qualified argument";
 							m_errors->push_back(error);
 						}
 
-						named_value->last_statement_assigned = scope.current_statement;
-					}
+						// If a valid identifier has been provided, update its last assigned or last used statement
+						const s_identifier *identifier = get_identifier(result.identifier_name);
+						if (identifier) {
+							s_named_value *named_value = get_named_value(identifier->ast_node);
+							wl_assert(named_value);
 
-					// It is an error to use a named value as both an input and output in the same statement
-					if (named_value->last_statement_assigned == named_value->last_statement_used) {
-						// Make sure we're not assigning to a value we used as an output parameter; this is ambiguous
-						s_compiler_result error;
-						error.result = k_compiler_result_ambiguous_named_value_assignment;
-						error.source_location = node->get_source_location();
-						error.message = "Used and assigned named value '" + result.identifier_name +
-							"' in the same statement";
-						m_errors->push_back(error);
+							if (argument->get_qualifier() == k_ast_qualifier_in) {
+								named_value->last_statement_used = scope.current_statement;
+							} else {
+								wl_assert(argument->get_qualifier() == k_ast_qualifier_out);
+
+								if (named_value->last_statement_assigned == scope.current_statement) {
+									// We should not assign the same named value from two different outputs
+									s_compiler_result error;
+									error.result = k_compiler_result_ambiguous_named_value_assignment;
+									error.source_location = node->get_source_location();
+									error.message = "Ambiguous assignment for named value '" +
+										result.identifier_name + "'";
+									m_errors->push_back(error);
+								}
+
+								named_value->last_statement_assigned = scope.current_statement;
+							}
+
+							// It is an error to use a named value as both an input and output in the same statement
+							if (named_value->last_statement_assigned == named_value->last_statement_used) {
+								// Make sure we're not assigning to a value we used as an output parameter; this is
+								// ambiguous
+								s_compiler_result error;
+								error.result = k_compiler_result_ambiguous_named_value_assignment;
+								error.source_location = node->get_source_location();
+								error.message = "Used and assigned named value '" + result.identifier_name +
+									"' in the same statement";
+								m_errors->push_back(error);
+							}
+						}
 					}
 				}
 			}
@@ -752,13 +966,15 @@ public:
 	}
 };
 
-s_compiler_result c_ast_validator::validate(const c_ast_node *ast, std::vector<s_compiler_result> &out_errors) {
+s_compiler_result c_ast_validator::validate(const s_compiler_context *compiler_context, const c_ast_node *ast,
+	std::vector<s_compiler_result> &out_errors) {
 	wl_assert(ast);
 
 	s_compiler_result result;
 	result.clear();
 
 	c_ast_validator_visitor visitor(&out_errors);
+	visitor.set_compiler_context(compiler_context);
 	visitor.set_pass(c_ast_validator_visitor::k_pass_register_global_identifiers);
 	ast->iterate(&visitor);
 

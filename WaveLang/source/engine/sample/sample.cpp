@@ -27,9 +27,10 @@ struct s_wave_data_subchunk {
 
 // $TODO add cue-points to wav files: http://bleepsandpops.com/post/37792760450/adding-cue-points-to-wav-files-in-c
 
-static bool load_wave(std::ifstream &file, e_sample_loop_mode loop_mode, c_sample *out_sample);
+static bool load_wave(std::ifstream &file, e_sample_loop_mode loop_mode, bool phase_shift_enabled,
+	c_sample *out_sample);
 
-c_sample *c_sample::load(const char *filename, e_sample_loop_mode loop_mode) {
+c_sample *c_sample::load(const char *filename, e_sample_loop_mode loop_mode, bool phase_shift_enabled) {
 	c_sample *sample = new c_sample();
 
 	std::ifstream file(filename);
@@ -39,7 +40,7 @@ c_sample *c_sample::load(const char *filename, e_sample_loop_mode loop_mode) {
 	}
 
 	// $TODO detect format to determine which loading function to call
-	if (!load_wave(file, loop_mode, sample)) {
+	if (!load_wave(file, loop_mode, phase_shift_enabled, sample)) {
 		delete sample;
 		return nullptr;
 	}
@@ -47,7 +48,8 @@ c_sample *c_sample::load(const char *filename, e_sample_loop_mode loop_mode) {
 	return sample;
 }
 
-static bool load_wave(std::ifstream &file, e_sample_loop_mode loop_mode, c_sample *out_sample) {
+static bool load_wave(std::ifstream &file, e_sample_loop_mode loop_mode, bool phase_shift_enabled,
+	c_sample *out_sample) {
 	s_wave_riff_header riff_header;
 	if (!read(file, riff_header)) {
 		return false;
@@ -181,8 +183,9 @@ static bool load_wave(std::ifstream &file, e_sample_loop_mode loop_mode, c_sampl
 		return false;
 	}
 
+	// $TODO add loop point data if it exists (make sure to verify that it's valid first)
 	out_sample->initialize(fmt_subchunk.sample_rate, fmt_subchunk.num_channels, frames,
-		loop_mode, 0, frames, // $TODO add loop point data if it exists (make sure to verify that it's valid first)
+		loop_mode, 0, frames, phase_shift_enabled,
 		c_wrapped_array_const<real32>(sample_data.empty() ? nullptr : &sample_data.front(), sample_data.size()));
 	return true;
 }
@@ -210,7 +213,7 @@ c_sample::~c_sample() {
 }
 
 void c_sample::initialize(uint32 sample_rate, uint32 channel_count, uint32 frame_count,
-	e_sample_loop_mode loop_mode, uint32 loop_start, uint32 loop_end,
+	e_sample_loop_mode loop_mode, uint32 loop_start, uint32 loop_end, bool phase_shift_enabled,
 	c_wrapped_array_const<real32> sample_data) {
 	wl_assert(!m_sample_data.get_array().get_pointer());
 	wl_assert(m_mipmap.empty());
@@ -226,6 +229,7 @@ void c_sample::initialize(uint32 sample_rate, uint32 channel_count, uint32 frame
 	wl_assert(VALID_INDEX(loop_mode, k_sample_loop_mode_count));
 	m_loop_mode = loop_mode;
 	if (loop_mode == k_sample_loop_mode_none) {
+		wl_assert(!phase_shift_enabled);
 		m_loop_start = 0;
 		m_loop_end = 0;
 	} else {
@@ -234,12 +238,13 @@ void c_sample::initialize(uint32 sample_rate, uint32 channel_count, uint32 frame
 		m_loop_start = loop_start;
 		m_loop_end = loop_end;
 	}
+	m_phase_shift_enabled = phase_shift_enabled;
 
 	initialize_data_with_padding(channel_count, frame_count, sample_data, k_max_sample_padding, k_max_sample_padding);
 }
 
 void c_sample::initialize_for_mipmap(uint32 sample_rate, uint32 channel_count, uint32 frame_count,
-	e_sample_loop_mode loop_mode, uint32 loop_start, uint32 loop_end,
+	e_sample_loop_mode loop_mode, uint32 loop_start, uint32 loop_end, bool phase_shift_enabled,
 	c_wrapped_array_const<real32> sample_data) {
 	wl_assert(!m_sample_data.get_array().get_pointer());
 	wl_assert(m_mipmap.empty());
@@ -261,6 +266,7 @@ void c_sample::initialize_for_mipmap(uint32 sample_rate, uint32 channel_count, u
 	wl_assert(VALID_INDEX(loop_mode, k_sample_loop_mode_count));
 	m_loop_mode = loop_mode;
 	if (loop_mode == k_sample_loop_mode_none) {
+		wl_assert(!phase_shift_enabled);
 		m_loop_start = 0;
 		m_loop_end = 0;
 	}
@@ -270,6 +276,7 @@ void c_sample::initialize_for_mipmap(uint32 sample_rate, uint32 channel_count, u
 		m_loop_start = loop_start;
 		m_loop_end = loop_end;
 	}
+	m_phase_shift_enabled = phase_shift_enabled;
 
 	// Directly copy the data - do not modify it yet
 	m_sample_data.allocate(sample_data.get_count());
@@ -299,6 +306,7 @@ void c_sample::initialize(c_wrapped_array_const<c_sample *> mipmap) {
 		wl_assert(sample_a->m_sampling_frame_count == sample_b->m_sampling_frame_count * 2);
 		wl_assert(sample_a->m_loop_start == sample_b->m_loop_start * 2);
 		wl_assert(sample_a->m_loop_end == sample_b->m_loop_end * 2);
+		wl_assert(sample_a->m_phase_shift_enabled == sample_b->m_phase_shift_enabled);
 	}
 #endif // PREDEFINED(ASSERTS_ENABLED)
 
@@ -312,6 +320,7 @@ void c_sample::initialize(c_wrapped_array_const<c_sample *> mipmap) {
 	m_loop_mode = mipmap[0]->m_loop_mode;
 	m_loop_start = 0;
 	m_loop_end = 0;
+	m_phase_shift_enabled = mipmap[0]->m_phase_shift_enabled;
 
 	uint32 loop_padding = k_max_sample_padding;
 	m_mipmap.resize(mipmap.get_count());
@@ -381,6 +390,10 @@ uint32 c_sample::get_loop_end() const {
 	return m_loop_end;
 }
 
+bool c_sample::is_phase_shift_enabled() const {
+	return m_phase_shift_enabled;
+}
+
 c_wrapped_array_const<real32> c_sample::get_channel_sample_data(uint32 channel) const {
 	wl_assert(VALID_INDEX(channel, m_channel_count));
 	return c_wrapped_array_const<real32>(
@@ -401,6 +414,7 @@ void c_sample::initialize_data_with_padding(uint32 channel_count, uint32 frame_c
 	c_wrapped_array_const<real32> sample_data, uint32 edge_padding, uint32 loop_padding) {
 	// Add zero padding to the beginning of the sound
 	m_first_sampling_frame = edge_padding;
+	uint32 loop_frame_count = 0;
 
 	switch (m_loop_mode) {
 	case k_sample_loop_mode_none:
@@ -415,14 +429,18 @@ void c_sample::initialize_data_with_padding(uint32 channel_count, uint32 frame_c
 		// long enough) we want our window to "wrap" at the edges. In other words, we want both endpoints of our loop to
 		// appear to be identical for the maximum window size.
 		m_sampling_frame_count = m_loop_end + loop_padding;
+		loop_frame_count = m_loop_end - m_loop_start;
 		break;
 
 	case k_sample_loop_mode_bidi_loop:
 		// Same logic as above, but the actual looping portion of the sound is duplicated and reversed
 		m_sampling_frame_count = m_loop_end + loop_padding;
+		loop_frame_count = m_loop_end - m_loop_start;
 		if (m_loop_end - m_loop_start > 2) {
 			// Don't duplicate the first and last samples
-			m_sampling_frame_count += (m_loop_end - m_loop_start - 2);
+			uint32 reverse_frame_count = m_loop_end - m_loop_start - 2;
+			m_sampling_frame_count += reverse_frame_count;
+			loop_frame_count += reverse_frame_count;
 		}
 		break;
 
@@ -434,6 +452,9 @@ void c_sample::initialize_data_with_padding(uint32 channel_count, uint32 frame_c
 	// Add padding to the beginning and end
 	// Round up to account for SSE padding
 	m_total_frame_count = align_size(m_sampling_frame_count + (2 * edge_padding), k_sse_block_elements);
+	if (m_phase_shift_enabled) {
+		m_total_frame_count += loop_frame_count;
+	}
 
 	wl_assert(channel_count * frame_count == sample_data.get_count());
 	m_channel_count = channel_count;
@@ -490,11 +511,20 @@ void c_sample::initialize_data_with_padding(uint32 channel_count, uint32 frame_c
 				}
 			}
 
+			wl_assert(loop_mod == loop_frame_count);
+
 			// Extend the loop by both loop padding and edge padding
-			for (uint32 index = 0; index < loop_padding + edge_padding; index++) {
+			uint32 loop_extend = loop_padding + edge_padding;
+			if (m_phase_shift_enabled) {
+				// Double the loop so we can phase-shift without overrunning bounds
+				loop_extend += loop_mod;
+			}
+
+			for (uint32 index = 0; index < loop_extend; index++) {
 				sample_data_array[dst_offset] = sample_data_array[dst_offset - loop_mod];
 				dst_offset++;
 			}
+
 
 			// Finally, adjust loop points
 			m_loop_start += loop_padding;

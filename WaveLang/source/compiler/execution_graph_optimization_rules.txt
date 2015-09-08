@@ -19,7 +19,7 @@
 	{ NM_SUB(C0, X0) }
 },
 {
-	{ NM_ADD(X0, REAL(0)) },
+	{ NM_ADD(X0, RV(0)) },
 	{ NM_NOOP(X0) }
 },
 {
@@ -35,7 +35,7 @@
 	{ NM_ADD(X0, X1) }
 },
 {
-	{ NM_SUB(REAL(0), X0) },
+	{ NM_SUB(RV(0), X0) },
 	{ NM_NEG(X0) }
 },
 {
@@ -43,23 +43,23 @@
 	{ NM_MUL(X0, C0) }
 },
 {
-	{ NM_MUL(X0, REAL(0)) },
-	{ NM_NOOP(REAL(0)) }
+	{ NM_MUL(X0, RV(0)) },
+	{ NM_NOOP(RV(0)) }
 },
 {
-	{ NM_MUL(X0, REAL(1)) },
+	{ NM_MUL(X0, RV(1)) },
 	{ NM_NOOP(X0) }
 },
 {
-	{ NM_MUL(X0, REAL(-1)) },
+	{ NM_MUL(X0, RV(-1)) },
 	{ NM_NEG(X0) }
 },
 {
-	{ NM_DIV(X0, REAL(1)) },
+	{ NM_DIV(X0, RV(1)) },
 	{ NM_NOOP(X0) }
 },
 {
-	{ NM_DIV(X0, REAL(-1)) },
+	{ NM_DIV(X0, RV(-1)) },
 	{ NM_NEG(X0) }
 },
 {
@@ -69,4 +69,60 @@
 {
 	{ NM_DIV(C0, NM_NEG(X0)) },
 	{ NM_DIV(NM_NEG(C0), X0) }
+},
+{
+	{ NM_RSEL(BV(true), X0, X1) },
+	{ NM_NOOP(X0) }
+},
+{
+	{ NM_RSEL(BV(false), X0, X1) },
+	{ NM_NOOP(X0) }
+},
+{
+	{ NM_RSEL(BV(true), C0, X0) },
+	{ NM_NOOP(C0) }
+},
+{
+	{ NM_RSEL(BV(false), C0, X0) },
+	{ NM_NOOP(X0) }
+},
+{
+	{ NM_RSEL(BV(true), X0, C0) },
+	{ NM_NOOP(X0) }
+},
+{
+	{ NM_RSEL(BV(false), X0, C0) },
+	{ NM_NOOP(C0) }
+},
+{
+	{ NM_SSEL(BV(true), X0, X1) },
+	{ NM_NOOP(X0) }
+},
+{
+	{ NM_SSEL(BV(false), X0, X1) },
+	{ NM_NOOP(X0) }
+},
+{
+	{ NM_SSEL(BV(true), C0, X0) },
+	{ NM_NOOP(C0) }
+},
+{
+	{ NM_SSEL(BV(false), C0, X0) },
+	{ NM_NOOP(X0) }
+},
+{
+	{ NM_SSEL(BV(true), X0, C0) },
+	{ NM_NOOP(X0) }
+},
+{
+	{ NM_SSEL(BV(false), X0, C0) },
+	{ NM_NOOP(C0) }
+},
+{
+	{ NM_SLPS(C0, C1, C2, C3, RV(0)) },
+	{ NM_SL(C0, C1, C2, C3) }
+},
+{
+	{ NM_SLPS(C0, C1, C2, X0, RV(0)) },
+	{ NM_SL(C0, C1, C2, X0) }
 }

@@ -92,10 +92,18 @@ enum e_task_function {
 	k_task_function_sampler_bufferio,
 	k_task_function_sampler_constant,
 
-	// $TODO temporary
-	k_task_function_test,
-	k_task_function_test_c,
-	k_task_function_test_delay,
+	k_task_function_sampler_loop_buffer,
+	k_task_function_sampler_loop_bufferio,
+	k_task_function_sampler_loop_constant,
+
+	k_task_function_sampler_loop_phase_shift_buffer_buffer,
+	k_task_function_sampler_loop_phase_shift_bufferio_buffer,
+	k_task_function_sampler_loop_phase_shift_buffer_bufferio,
+	k_task_function_sampler_loop_phase_shift_buffer_constant,
+	k_task_function_sampler_loop_phase_shift_bufferio_constant,
+	k_task_function_sampler_loop_phase_shift_constant_buffer,
+	k_task_function_sampler_loop_phase_shift_constant_bufferio,
+	k_task_function_sampler_loop_phase_shift_constant_constant,
 
 	k_task_function_count
 };

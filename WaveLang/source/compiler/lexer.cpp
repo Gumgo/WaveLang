@@ -37,6 +37,15 @@ static const char *k_lexer_token_table[] = {
 	"/",		// k_token_type_operator_division
 	"%",		// k_token_type_operator_modulo
 	".",		// k_token_type_operator_concatenation
+	"!",		// k_token_type_operator_not
+	"==",		// k_token_type_operator_equal
+	"!=",		// k_token_type_operator_not_equal
+	">",		// k_token_type_operator_greater
+	"<",		// k_token_type_operator_less
+	">=",		// k_token_type_operator_greater_equal
+	"<=",		// k_token_type_operator_less_equal
+	"&&",		// k_token_type_operator_and
+	"||",		// k_token_type_operator_or
 
 	"//"		// k_token_type_comment
 };

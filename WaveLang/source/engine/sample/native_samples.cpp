@@ -22,38 +22,43 @@ typedef c_wrapped_array_const<c_sample_data_array> c_mipmap_data_array;
 struct s_native_sample_data {
 	const char *name;
 	bool is_mipmap;
+	bool phase_shift_enabled;
 	c_sample_data_array sample_data;
 	c_mipmap_data_array mipmap_data;
 };
 
 static s_native_sample_data make_native_sample(
 	const char *name,
+	bool phase_shift_enabled,
 	c_sample_data_array sample_data) {
 	s_native_sample_data native_sample_data;
 	native_sample_data.name = name;
 	native_sample_data.is_mipmap = false;
+	native_sample_data.phase_shift_enabled = phase_shift_enabled;
 	native_sample_data.sample_data = sample_data;
 	return native_sample_data;
 }
 
 static s_native_sample_data make_native_sample_mipmap(
 	const char *name,
+	bool phase_shift_enabled,
 	c_mipmap_data_array mipmap_data) {
 	s_native_sample_data native_sample_data;
 	native_sample_data.name = name;
 	native_sample_data.is_mipmap = true;
+	native_sample_data.phase_shift_enabled = phase_shift_enabled;
 	native_sample_data.mipmap_data = mipmap_data;
 	return native_sample_data;
 }
 
 static const s_native_sample_data k_native_sample_data[] = {
-	make_native_sample(NATIVE_SAMPLE_PREFIX "sin",
+	make_native_sample(NATIVE_SAMPLE_PREFIX "sin", false,
 		c_sample_data_array::construct(k_native_sample_sin_data)),
 
-	make_native_sample_mipmap(NATIVE_SAMPLE_PREFIX "sawtooth",
+	make_native_sample_mipmap(NATIVE_SAMPLE_PREFIX "sawtooth", true,
 		c_mipmap_data_array::construct(k_native_sample_sawtooth_data)),
 
-	make_native_sample_mipmap(NATIVE_SAMPLE_PREFIX "triangle",
+	make_native_sample_mipmap(NATIVE_SAMPLE_PREFIX "triangle", false,
 		c_mipmap_data_array::construct(k_native_sample_triangle_data))
 };
 
@@ -81,7 +86,8 @@ c_sample *build_native_sample(uint32 native_sample) {
 
 		uint32 sample_rate = data.sample_data.get_count() * k_native_sample_frequency;
 		sample->initialize(sample_rate, 1, data.sample_data.get_count(),
-			k_sample_loop_mode_loop, 0, data.sample_data.get_count(), data.sample_data);
+			k_sample_loop_mode_loop, 0, data.sample_data.get_count(), data.phase_shift_enabled,
+			data.sample_data);
 	} else {
 		// This sample consists of a mipmap of sample data arrays. Construct sub-samples for each one, and place them
 		// into a wrapped array to be passed to the owner mipmap sample.
@@ -95,7 +101,8 @@ c_sample *build_native_sample(uint32 native_sample) {
 			c_sample_data_array sub_sample_data = data.mipmap_data[index];
 			uint32 sample_rate = sub_sample_data.get_count() * k_native_sample_frequency;
 			sub_sample->initialize_for_mipmap(sample_rate, 1, sub_sample_data.get_count(),
-				k_sample_loop_mode_loop, 0, sub_sample_data.get_count(), sub_sample_data);
+				k_sample_loop_mode_loop, 0, sub_sample_data.get_count(), data.phase_shift_enabled,
+				sub_sample_data);
 
 			sub_samples[index] = sub_sample;
 		}

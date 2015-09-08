@@ -19,7 +19,7 @@ bool are_file_paths_equivalent(const char *path_a, const char *path_b) {
 
 		HANDLE file_a_handle = CreateFile(path_a, 0, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
 			OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-		HANDLE file_b_handle = CreateFile(path_a, 0, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
+		HANDLE file_b_handle = CreateFile(path_b, 0, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
 			OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
 		if (file_a_handle != INVALID_HANDLE_VALUE &&

@@ -5,7 +5,10 @@
 #include <vector>
 
 #ifdef _DEBUG
-#define LR_PARSE_TABLE_GENERATION_ENABLED 1
+// $TODO the language is complex enough at this point so that it takes a long time to generate the parse tables and it's
+// not practical to always enable when iterating in debug mode. Can we do some sort of language rule checksum thing here
+// so that we only regenerate when the checksum changes?
+#define LR_PARSE_TABLE_GENERATION_ENABLED 0
 #else // _DEBUG
 #define LR_PARSE_TABLE_GENERATION_ENABLED 0
 #endif // _DEBUG

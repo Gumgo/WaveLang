@@ -26,7 +26,19 @@ enum e_native_module {
 	k_native_module_modulo,
 	k_native_module_concatenation,
 
-	// $TODO bool operators: ~, &, |, ^
+	k_native_module_not,
+	k_native_module_real_equal,
+	k_native_module_real_not_equal,
+	k_native_module_bool_equal,
+	k_native_module_bool_not_equal,
+	k_native_module_string_equal,
+	k_native_module_string_not_equal,
+	k_native_module_greater,
+	k_native_module_less,
+	k_native_module_greater_equal,
+	k_native_module_less_equal,
+	k_native_module_and,
+	k_native_module_or,
 
 	// Utility functions
 	k_native_module_abs,
@@ -39,15 +51,15 @@ enum e_native_module {
 	k_native_module_log,
 	k_native_module_sqrt,
 	k_native_module_pow,
+	k_native_module_real_static_select,
+	k_native_module_string_static_select,
 
 	// $TODO trig functions
 
 	// Samplers
 	k_native_module_sampler,
-
-	// $TODO temporary for testing
-	k_native_module_test,
-	k_native_module_delay_test,
+	k_native_module_sampler_loop,
+	k_native_module_sampler_loop_phase_shift,
 
 	k_native_module_count
 };
@@ -173,7 +185,6 @@ class c_native_module_registry {
 public:
 	static uint32 get_native_module_count();
 	static const s_native_module &get_native_module(uint32 index);
-	static uint32 get_native_module_index(const char *name);
 
 	// Operator names
 	static const char *k_operator_noop_name;
@@ -184,6 +195,15 @@ public:
 	static const char *k_operator_division_name;
 	static const char *k_operator_modulo_name;
 	static const char *k_operator_concatenation_name;
+	static const char *k_operator_not_name;
+	static const char *k_operator_equal_name;
+	static const char *k_operator_not_equal_name;
+	static const char *k_operator_less_name;
+	static const char *k_operator_greater_name;
+	static const char *k_operator_less_equal_name;
+	static const char *k_operator_greater_equal_name;
+	static const char *k_operator_and_name;
+	static const char *k_operator_or_name;
 };
 
 #endif // WAVELANG_NATIVE_MODULES_H__

@@ -10,6 +10,15 @@
 #include "driver/sample_format.h"
 #include "engine/sample/sample_library.h"
 
+// $TODO write a profiler/reporter which measures the following:
+// - total time
+// - total task time
+// - total overhead time
+// - individual task time
+// - individual task function time
+// - individual task overhead time
+// For each of these measurements, record avg and worst
+
 class c_task_graph;
 struct s_task_function_description;
 
