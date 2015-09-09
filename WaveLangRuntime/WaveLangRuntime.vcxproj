@@ -101,6 +101,8 @@
     <ClInclude Include="..\WaveLang\source\engine\math\sse_mathfun.h" />
     <ClInclude Include="..\WaveLang\source\engine\native_module_task_mapping.h" />
     <ClInclude Include="..\WaveLang\source\engine\predecessor_resolver.h" />
+    <ClInclude Include="..\WaveLang\source\engine\profiler\profiler.h" />
+    <ClInclude Include="..\WaveLang\source\engine\profiler\stopwatch.h" />
     <ClInclude Include="..\WaveLang\source\engine\sample\native_samples.h" />
     <ClInclude Include="..\WaveLang\source\engine\sample\sample.h" />
     <ClInclude Include="..\WaveLang\source\engine\sample\sample_library.h" />
@@ -130,6 +132,8 @@
     <ClCompile Include="..\WaveLang\source\engine\executor.cpp" />
     <ClCompile Include="..\WaveLang\source\engine\native_module_task_mapping.cpp" />
     <ClCompile Include="..\WaveLang\source\engine\predecessor_resolver.cpp" />
+    <ClCompile Include="..\WaveLang\source\engine\profiler\profiler.cpp" />
+    <ClCompile Include="..\WaveLang\source\engine\profiler\stopwatch.cpp" />
     <ClCompile Include="..\WaveLang\source\engine\sample\native_samples.cpp" />
     <ClCompile Include="..\WaveLang\source\engine\sample\sample.cpp" />
     <ClCompile Include="..\WaveLang\source\engine\sample\sample_library.cpp" />

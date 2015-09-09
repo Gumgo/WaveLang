@@ -59,9 +59,11 @@ void c_executor::initialize_internal(const s_executor_settings &settings) {
 	m_task_graph = settings.task_graph;
 	m_max_buffer_size = settings.max_buffer_size;
 
+	uint32 thread_count = 1; // $TODO don't hardcode this
+
 	{ // Initialize thread pool
 		s_thread_pool_settings thread_pool_settings;
-		thread_pool_settings.thread_count = 1; // $TODO don't hardcode this
+		thread_pool_settings.thread_count = thread_count;
 		thread_pool_settings.max_tasks = std::max(1u, m_task_graph->get_max_task_concurrency());
 		thread_pool_settings.start_paused = true;
 		m_thread_pool.start(thread_pool_settings);
@@ -315,14 +317,36 @@ void c_executor::initialize_internal(const s_executor_settings &settings) {
 		m_buffer_contexts.free();
 		m_buffer_contexts.allocate(m_task_graph->get_buffer_count());
 	}
+
+	{ // Initialize the profiler
+		m_profiling_enabled = settings.profiling_enabled;
+		if (m_profiling_enabled) {
+			s_profiler_settings profiler_settings;
+			profiler_settings.worker_thread_count = thread_count;
+			profiler_settings.task_count = m_task_graph->get_task_count();
+			m_profiler.initialize(profiler_settings);
+			m_profiler.start();
+		}
+	}
 }
 
 void c_executor::shutdown_internal() {
 	IF_ASSERTS_ENABLED(uint32 unexecuted_tasks = ) m_thread_pool.stop();
 	wl_assert(unexecuted_tasks == 0);
+
+	if (m_profiling_enabled) {
+		m_profiler.stop();
+		s_profiler_report report;
+		m_profiler.get_report(report);
+		output_profiler_report("profiler_report.csv", report);
+	}
 }
 
 void c_executor::execute_internal(const s_executor_chunk_context &chunk_context) {
+	if (m_profiling_enabled) {
+		m_profiler.begin_execution();
+	}
+
 	wl_assert(chunk_context.frames <= m_max_buffer_size); // $TODO we could do multiple passes to handle this...
 
 	// Clear accumulation buffers
@@ -362,10 +386,18 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 				add_task(voice, initial_tasks[initial_task], chunk_context.sample_rate, chunk_context.frames);
 			}
 
+			if (m_profiling_enabled) {
+				m_profiler.begin_execution_tasks();
+			}
+
 			// Start the threads processing
 			m_thread_pool.resume();
 			m_all_tasks_complete_signal.wait();
 			m_thread_pool.pause();
+
+			if (m_profiling_enabled) {
+				m_profiler.end_execution_tasks();
+			}
 		}
 
 		if (voices_processed == 0) {
@@ -498,6 +530,10 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 	for (uint32 channel = 0; channel < chunk_context.output_channels; channel++) {
 		m_buffer_allocator.free_buffer(m_channel_mix_buffers[channel]);
 	}
+
+	if (m_profiling_enabled) {
+		m_profiler.end_execution();
+	}
 }
 
 void c_executor::add_task(uint32 voice_index, uint32 task_index, uint32 sample_rate, uint32 frames) {
@@ -515,12 +551,16 @@ void c_executor::add_task(uint32 voice_index, uint32 task_index, uint32 sample_r
 	m_thread_pool.add_task(task);
 }
 
-void c_executor::process_task_wrapper(const s_thread_parameter_block *params) {
+void c_executor::process_task_wrapper(uint32 thread_index, const s_thread_parameter_block *params) {
 	const s_task_parameters *task_params = params->get_memory_typed<s_task_parameters>();
-	task_params->this_ptr->process_task(task_params);
+	task_params->this_ptr->process_task(thread_index, task_params);
 }
 
-void c_executor::process_task(const s_task_parameters *params) {
+void c_executor::process_task(uint32 thread_index, const s_task_parameters *params) {
+	if (m_profiling_enabled) {
+		m_profiler.begin_task(thread_index, params->task_index);
+	}
+
 	e_task_function task_function = m_task_graph->get_task_function(params->task_index);
 	const s_task_function_description &task_function_description =
 		c_task_function_registry::get_task_function_description(task_function);
@@ -582,7 +622,16 @@ void c_executor::process_task(const s_task_parameters *params) {
 
 		// Call the task function
 		wl_assert(task_function_description.function);
+
+		if (m_profiling_enabled) {
+			m_profiler.begin_task_function(thread_index, params->task_index);
+		}
+
 		task_function_description.function(task_function_context);
+
+		if (m_profiling_enabled) {
+			m_profiler.end_task_function(thread_index, params->task_index);
+		}
 	}
 
 	decrement_buffer_usages(params->task_index);
@@ -605,6 +654,10 @@ void c_executor::process_task(const s_task_parameters *params) {
 	if (prev_tasks_remaining == 1) {
 		// Notify the calling thread that we are done
 		m_all_tasks_complete_signal.notify();
+	}
+
+	if (m_profiling_enabled) {
+		m_profiler.end_task(thread_index, params->task_index);
 	}
 }
 

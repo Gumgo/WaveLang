@@ -142,7 +142,7 @@ void c_thread_pool::worker_thread_entry_point(const s_thread_parameter_block *pa
 				break;
 			}
 
-			task.task_function(&task.params);
+			task.task_function(context.worker_thread_index, &task.params);
 		}
 	}
 }

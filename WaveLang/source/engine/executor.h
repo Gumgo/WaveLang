@@ -7,17 +7,9 @@
 #include "common/threading/atomics.h"
 #include "engine/buffer_allocator.h"
 #include "engine/thread_pool.h"
+#include "engine/profiler/profiler.h"
 #include "driver/sample_format.h"
 #include "engine/sample/sample_library.h"
-
-// $TODO write a profiler/reporter which measures the following:
-// - total time
-// - total task time
-// - total overhead time
-// - individual task time
-// - individual task function time
-// - individual task overhead time
-// For each of these measurements, record avg and worst
 
 class c_task_graph;
 struct s_task_function_description;
@@ -27,6 +19,8 @@ struct s_executor_settings {
 	uint32 sample_rate;
 	uint32 max_buffer_size;
 	uint32 output_channels;
+
+	bool profiling_enabled;
 };
 
 // $TODO we probably don't need these settings to be both in settings and chunk context. We should instead store off the
@@ -95,8 +89,8 @@ private:
 
 	void add_task(uint32 voice_index, uint32 task_index, uint32 sample_rate, uint32 frames);
 
-	static void process_task_wrapper(const s_thread_parameter_block *params);
-	void process_task(const s_task_parameters *params);
+	static void process_task_wrapper(uint32 thread_index, const s_thread_parameter_block *params);
+	void process_task(uint32 thread_index, const s_task_parameters *params);
 
 	void allocate_output_buffers(uint32 task_index);
 	void decrement_buffer_usages(uint32 task_index);
@@ -147,6 +141,10 @@ private:
 
 	// Sample library
 	c_sample_library m_sample_library;
+
+	// Used to measure execution time
+	bool m_profiling_enabled;
+	c_profiler m_profiler;
 };
 
 #endif // WAVELANG_EXECUTOR_H__

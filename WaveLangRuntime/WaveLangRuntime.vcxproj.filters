@@ -123,6 +123,12 @@
     <ClInclude Include="..\WaveLang\source\common\utility\aligned_allocator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\WaveLang\source\engine\profiler\stopwatch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\WaveLang\source\engine\profiler\profiler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\WaveLang\source\common\asserts.cpp">
@@ -210,6 +216,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\WaveLang\source\engine\buffer_operations\buffer_operations_sampler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\WaveLang\source\engine\profiler\stopwatch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\WaveLang\source\engine\profiler\profiler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

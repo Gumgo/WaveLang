@@ -5,9 +5,6 @@
 #include "compiler/compiler_utility.h"
 #include <vector>
 
-// $TODO: add !, ==, !=, >, <, >=, <=, &&, ||
-// use C++ operator precedence ordering
-
 enum e_token_type {
 	// Invalid token to indicate errors
 	k_token_type_invalid,

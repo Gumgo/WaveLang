@@ -15,9 +15,12 @@ struct s_thread_pool_settings {
 	bool start_paused;
 };
 
+// Entry point worker thread function
+typedef void (*f_worker_thread_entry_point)(uint32 thread_index, const s_thread_parameter_block *param_block);
+
 // An individual thread pool task acts like its own thread
 struct s_thread_pool_task {
-	f_thread_entry_point task_entry_point;
+	f_worker_thread_entry_point task_entry_point;
 	s_thread_parameter_block parameter_block;
 };
 
@@ -49,7 +52,7 @@ private:
 	// Internal representation of a task
 	struct ALIGNAS_LOCK_FREE s_task {
 		// A task acts like its own thread
-		f_thread_entry_point task_function;
+		f_worker_thread_entry_point task_function;
 		s_thread_parameter_block params;
 	};
 
