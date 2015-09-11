@@ -1001,7 +1001,7 @@ void c_execution_graph::output_to_file() const {
 
 		switch (node.type) {
 		case k_execution_graph_node_type_constant:
-			shape = "circle";
+			shape = "ellipse";
 			if (node.node_data.constant.type == k_native_module_argument_type_real) {
 				label = std::to_string(node.node_data.constant.real_value);
 			} else if (node.node_data.constant.type == k_native_module_argument_type_bool) {
@@ -1020,12 +1020,12 @@ void c_execution_graph::output_to_file() const {
 			break;
 
 		case k_execution_graph_node_type_native_module_input:
-			shape = "circle";
+			shape = "ellipse";
 			label = "input";
 			break;
 
 		case k_execution_graph_node_type_native_module_output:
-			shape = "circle";
+			shape = "ellipse";
 			label = "output";
 			break;
 

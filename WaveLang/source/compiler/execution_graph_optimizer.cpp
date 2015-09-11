@@ -134,6 +134,7 @@ static bool try_to_apply_optimization_rule(c_execution_graph *execution_graph, u
 static void remove_useless_nodes(c_execution_graph *execution_graph);
 static void transfer_outputs(c_execution_graph *execution_graph,
 	uint32 destination_index, uint32 source_index);
+static void deduplicate_nodes(c_execution_graph *execution_graph);
 static void validate_optimized_constants(const c_execution_graph *execution_graph,
 	std::vector<s_compiler_result> &out_errors);
 
@@ -156,10 +157,8 @@ s_compiler_result c_execution_graph_optimizer::optimize_graph(c_execution_graph 
 
 	execution_graph->remove_unused_nodes_and_reassign_node_indices();
 
-	// $TODO deduplicate:
-	// 1) deduplicate all constant nodes with the same value
-	// 2) combine any native modules with the same type and inputs
-	// 3) repeat (2) until no changes occur
+	deduplicate_nodes(execution_graph);
+	execution_graph->remove_unused_nodes_and_reassign_node_indices();
 
 #if PREDEFINED(EXECUTION_GRAPH_OUTPUT_ENABLED)
 	execution_graph->output_to_file();
@@ -668,6 +667,126 @@ static void transfer_outputs(c_execution_graph *execution_graph,
 		execution_graph->remove_edge(source_index, to_node_index);
 		execution_graph->add_edge(destination_index, to_node_index);
 	}
+}
+
+static void deduplicate_nodes(c_execution_graph *execution_graph) {
+	// 1) deduplicate all constant nodes with the same value
+	// 2) combine any native modules with the same type and inputs
+	// 3) repeat (2) until no changes occur
+
+	// Combine all equivalent constant nodes. Currently n^2, we could easily do better if it's worth the speedup.
+	for (uint32 node_a_index = 0; node_a_index < execution_graph->get_node_count(); node_a_index++) {
+		if (execution_graph->get_node_type(node_a_index) != k_execution_graph_node_type_constant) {
+			continue;
+		}
+
+		for (uint32 node_b_index = node_a_index + 1; node_b_index < execution_graph->get_node_count(); node_b_index++) {
+			if (execution_graph->get_node_type(node_b_index) != k_execution_graph_node_type_constant) {
+				continue;
+			}
+
+			// Both nodes are constant nodes
+			e_native_module_argument_type type = execution_graph->get_constant_node_data_type(node_a_index);
+			if (type != execution_graph->get_constant_node_data_type(node_b_index)) {
+				continue;
+			}
+
+			bool equal = false;
+			switch (type) {
+			case k_native_module_argument_type_real:
+				equal = (execution_graph->get_constant_node_real_value(node_a_index) ==
+					execution_graph->get_constant_node_real_value(node_b_index));
+				break;
+
+			case k_native_module_argument_type_bool:
+				equal = (execution_graph->get_constant_node_bool_value(node_a_index) ==
+					execution_graph->get_constant_node_bool_value(node_b_index));
+				break;
+
+			case k_native_module_argument_type_string:
+				equal = (strcmp(execution_graph->get_constant_node_string_value(node_a_index),
+					execution_graph->get_constant_node_string_value(node_b_index)) == 0);
+				break;
+
+			default:
+				wl_unreachable();
+			}
+
+			if (equal) {
+				// Redirect node B's outputs as outputs of node A
+				for (size_t edge = 0; edge < execution_graph->get_node_outgoing_edge_count(node_b_index); edge++) {
+					uint32 to_node_index = execution_graph->get_node_outgoing_edge_index(node_b_index, edge);
+					execution_graph->remove_edge(node_b_index, to_node_index);
+					execution_graph->add_edge(node_a_index, to_node_index);
+				}
+
+				// Remove node B, since it has no outgoing edges left
+				execution_graph->remove_node(node_b_index);
+			}
+		}
+	}
+
+	// Repeat the following until no changes occur:
+	bool graph_changed;
+	do {
+		graph_changed = false;
+
+		// Find any module calls with identical index and inputs and merge them.
+		// Currently n^2 but we could do better easily.
+		for (uint32 node_a_index = 0; node_a_index < execution_graph->get_node_count(); node_a_index++) {
+			if (execution_graph->get_node_type(node_a_index) != k_execution_graph_node_type_native_module_call) {
+				continue;
+			}
+
+			for (uint32 node_b_index = node_a_index + 1;
+				 node_b_index < execution_graph->get_node_count();
+				 node_b_index++) {
+				if (execution_graph->get_node_type(node_b_index) != k_execution_graph_node_type_native_module_call) {
+					continue;
+				}
+
+				if (execution_graph->get_native_module_call_native_module_index(node_a_index) !=
+					execution_graph->get_native_module_call_native_module_index(node_b_index)) {
+					continue;
+				}
+
+				wl_assert(execution_graph->get_node_incoming_edge_count(node_a_index) ==
+					execution_graph->get_node_incoming_edge_count(node_b_index));
+
+				uint32 identical_inputs = true;
+				for (size_t edge = 0;
+					 identical_inputs && edge < execution_graph->get_node_incoming_edge_count(node_a_index);
+					 edge++) {
+					// Skip past the "input" nodes directly to the source
+					uint32 source_node_a = execution_graph->get_node_incoming_edge_index(
+						execution_graph->get_node_incoming_edge_index(node_a_index, edge), 0);
+					uint32 source_node_b = execution_graph->get_node_incoming_edge_index(
+						execution_graph->get_node_incoming_edge_index(node_b_index, edge), 0);
+
+					identical_inputs = (source_node_a == source_node_b);
+				}
+
+				if (identical_inputs) {
+					for (size_t edge = 0; edge < execution_graph->get_node_outgoing_edge_count(node_a_index); edge++) {
+						uint32 output_node_a = execution_graph->get_node_outgoing_edge_index(node_a_index, edge);
+						uint32 output_node_b = execution_graph->get_node_outgoing_edge_index(node_b_index, edge);
+
+						for (size_t output = 0;
+							 output < execution_graph->get_node_outgoing_edge_count(output_node_b);
+							 output++) {
+							uint32 to_node_index = execution_graph->get_node_outgoing_edge_index(output_node_b, output);
+							execution_graph->remove_edge(output_node_b, to_node_index);
+							execution_graph->add_edge(output_node_a, to_node_index);
+						}
+					}
+
+					// Remove node B, since it has no outgoing edges left
+					execution_graph->remove_node(node_b_index);
+					graph_changed = true;
+				}
+			}
+		}
+	} while (graph_changed);
 }
 
 static void validate_optimized_constants(const c_execution_graph *execution_graph,
