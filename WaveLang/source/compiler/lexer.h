@@ -21,8 +21,9 @@ enum e_token_type {
 	k_token_type_keyword_bool,
 	k_token_type_keyword_string,
 	k_token_type_keyword_return,
+	k_token_type_keyword_repeat,
 
-	k_token_type_last_keyword = k_token_type_keyword_return,
+	k_token_type_last_keyword = k_token_type_keyword_repeat,
 
 	// Identifiers start with [a-zA-Z_] followed by 0 or more [a-zA-Z0-9_]
 	k_token_type_identifier,

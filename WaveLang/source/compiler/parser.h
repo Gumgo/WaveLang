@@ -31,6 +31,7 @@ enum e_parser_nonterminal {
 	k_parser_nonterminal_module_return_statement,
 	k_parser_nonterminal_named_value_declaration,
 	k_parser_nonterminal_named_value_assignment,
+	k_parser_nonterminal_repeat_loop,
 	k_parser_nonterminal_expression,
 	k_parser_nonterminal_expression_assignment,
 	k_parser_nonterminal_expr_1,

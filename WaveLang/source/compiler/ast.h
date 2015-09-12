@@ -33,7 +33,8 @@ enum e_ast_node_type {
 	k_ast_node_type_scope,						// A list of expressions
 	k_ast_node_type_module_declaration,			// Declaration of a module
 	k_ast_node_type_named_value_declaration,	// Declaration of a named value
-	k_ast_node_type_assignment,					// Assignment of an expression to a named value
+	k_ast_node_type_named_value_assignment,		// Assignment of an expression to a named value
+	k_ast_node_type_repeat_loop,				// Loop which repeats a constant number of times
 	k_ast_node_type_return_statement,			// Return statement of a module
 	k_ast_node_type_expression,					// An expression, which is either a constant or a module call
 	k_ast_node_type_constant,					// A constant value
@@ -50,6 +51,8 @@ class c_ast_node;
 class c_ast_node_scope;
 class c_ast_node_module_declaration;
 class c_ast_node_named_value_declaration;
+class c_ast_node_return_statement;
+class c_ast_node_repeat_loop;
 class c_ast_node_expression;
 class c_ast_node_constant;
 class c_ast_node_named_value;
@@ -154,6 +157,10 @@ private:
 
 class c_ast_node_named_value_assignment : public c_ast_node {
 public:
+	// Note: these nodes can also be created as "anonymous" (without a name) in order to reference existing expressions
+	// which didn't have real assignments - e.g. a repeat loop references an "anonymous" named value assignment for its
+	// expression
+
 	c_ast_node_named_value_assignment();
 	virtual ~c_ast_node_named_value_assignment();
 	virtual void iterate(c_ast_node_visitor *visitor);
@@ -178,13 +185,36 @@ public:
 	virtual void iterate(c_ast_node_visitor *visitor);
 	virtual void iterate(c_ast_node_const_visitor *visitor) const;
 
-	void set_expression(c_ast_node_expression *assignment);
+	void set_expression(c_ast_node_expression *expression);
 	c_ast_node_expression *get_expression();
 	const c_ast_node_expression *get_expression() const;
 
 private:
 	// Expression to be returned
 	c_ast_node_expression *m_expression;
+};
+
+class c_ast_node_repeat_loop : public c_ast_node {
+public:
+	c_ast_node_repeat_loop();
+	virtual ~c_ast_node_repeat_loop();
+	virtual void iterate(c_ast_node_visitor *visitor);
+	virtual void iterate(c_ast_node_const_visitor *visitor) const;
+
+	void set_expression(c_ast_node_named_value_assignment *named_value);
+	c_ast_node_named_value_assignment *get_expression();
+	const c_ast_node_named_value_assignment *get_expression() const;
+
+	void set_scope(c_ast_node_scope *scope);
+	c_ast_node_scope *get_scope();
+	const c_ast_node_scope *get_scope() const;
+
+private:
+	// Expression holding the loop count, stored inside of an existing named value assignment node
+	c_ast_node_named_value_assignment *m_expression;
+
+	// The scope of the repeat loop
+	c_ast_node_scope *m_scope;
 };
 
 class c_ast_node_expression : public c_ast_node {
@@ -282,6 +312,9 @@ public:
 	virtual bool begin_visit(c_ast_node_return_statement *node) = 0;
 	virtual void end_visit(c_ast_node_return_statement *node) = 0;
 
+	virtual bool begin_visit(c_ast_node_repeat_loop *node) = 0;
+	virtual void end_visit(c_ast_node_repeat_loop *node) = 0;
+
 	virtual bool begin_visit(c_ast_node_expression *node) = 0;
 	virtual void end_visit(c_ast_node_expression *node) = 0;
 
@@ -315,6 +348,9 @@ public:
 
 	virtual bool begin_visit(const c_ast_node_return_statement *node) = 0;
 	virtual void end_visit(const c_ast_node_return_statement *node) = 0;
+
+	virtual bool begin_visit(const c_ast_node_repeat_loop *node) = 0;
+	virtual void end_visit(const c_ast_node_repeat_loop *node) = 0;
 
 	virtual bool begin_visit(const c_ast_node_expression *node) = 0;
 	virtual void end_visit(const c_ast_node_expression *node) = 0;

@@ -166,8 +166,8 @@ s_compiler_result c_execution_graph_optimizer::optimize_graph(c_execution_graph 
 
 	validate_optimized_constants(execution_graph, out_errors);
 	if (!out_errors.empty()) {
-		result.result = k_compiler_result_optimization_error;
-		result.message = "Optimization error(s) detected";
+		result.result = k_compiler_result_graph_error;
+		result.message = "Graph error(s) detected";
 	}
 
 	return result;

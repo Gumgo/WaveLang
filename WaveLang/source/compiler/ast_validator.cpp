@@ -19,6 +19,8 @@ private:
 		e_ast_data_type type;
 		// If non-empty, this result contains an assignable named value and can be used as an out argument
 		std::string identifier_name;
+		// This is false if the result represents a named value which hasn't yet been assigned
+		bool has_value;
 	};
 
 	struct s_identifier {
@@ -52,9 +54,6 @@ private:
 		// Whether this scope is the outermost scope for a module
 		bool is_module_outer_scope;
 
-		// The current statement
-		int32 current_statement;
-
 		// The statement number which return occurs on
 		int32 return_statement;
 
@@ -67,7 +66,6 @@ private:
 		s_scope() {
 			module_for_scope = nullptr;
 			is_module_outer_scope = false;
-			current_statement = 0;
 			return_statement = -1;
 		}
 	};
@@ -105,8 +103,16 @@ private:
 	std::deque<s_scope> m_scope_stack;
 	size_t m_scope_depth;
 
+	// The current statement - this is globally increasing because all that matters is increasing order, not the initial
+	// value, and statement number must be retained in nested scopes
+	uint32 m_current_statement;
+
 	// When we build expressions, we return the results through this stack
 	std::stack<s_expression_result> m_expression_stack;
+
+	// Expression result of the last named value assignment. This exists because repeat loops aren't responsible for
+	// evaluating their expression, so they need to access the result somehow
+	s_expression_result m_last_assigned_expression_result;
 
 	// Keeps track of the graph of module calls to detect cycles
 	std::vector<s_module_call> m_module_calls;
@@ -364,7 +370,7 @@ private:
 	void detect_statements_after_return(s_scope &scope, const c_ast_node *node) {
 		// If a return statement exists and this statement immediately follows, emit an error
 		// The second condition is so we only emit one error for this
-		if (scope.return_statement >= 0 && scope.current_statement == scope.return_statement + 1) {
+		if (scope.return_statement >= 0 && m_current_statement == scope.return_statement + 1) {
 			s_compiler_result error;
 			error.result = k_compiler_result_statements_after_return;
 			error.source_location = node->get_source_location();
@@ -423,6 +429,14 @@ private:
 		m_errors->push_back(error);
 	}
 
+	void unassigned_named_value_error(s_compiler_source_location source_location, const std::string &name) {
+		s_compiler_result error;
+		error.result = k_compiler_result_unassigned_named_value_used;
+		error.source_location = source_location;
+		error.message = "Unassigned named value '" + name + "' used";
+		m_errors->push_back(error);
+	}
+
 public:
 	c_ast_validator_visitor(std::vector<s_compiler_result> *error_accumulator) {
 		wl_assert(error_accumulator);
@@ -431,6 +445,7 @@ public:
 		m_pass = k_pass_count;
 		m_errors = error_accumulator;
 		m_module_for_next_scope = nullptr;
+		m_current_statement = 0;
 		m_entry_point_found = false;
 		m_scope_depth = 0;
 	}
@@ -631,7 +646,7 @@ public:
 			} else {
 				// Module inputs are already assigned at the beginning of the module
 				wl_assert(node->get_qualifier() == k_ast_qualifier_in);
-				named_value.last_statement_assigned = m_scope_stack.front().current_statement;
+				named_value.last_statement_assigned = m_current_statement;
 			}
 
 			named_value.last_statement_used = -1;
@@ -642,7 +657,7 @@ public:
 	}
 
 	virtual void end_visit(const c_ast_node_named_value_declaration *node) {
-		m_scope_stack.front().current_statement++;
+		m_current_statement++;
 	}
 
 	virtual bool begin_visit(const c_ast_node_named_value_assignment *node) {
@@ -655,13 +670,14 @@ public:
 
 		s_expression_result result = m_expression_stack.top();
 		m_expression_stack.pop();
+		m_last_assigned_expression_result = result;
 
 		// If a valid identifier has been provided, update its last used statement
 		const s_identifier *result_identifier = get_identifier(result.identifier_name);
 		if (result_identifier) {
 			s_named_value *named_value = get_named_value(result_identifier->ast_node);
 			wl_assert(named_value);
-			named_value->last_statement_used = scope.current_statement;
+			named_value->last_statement_used = m_current_statement;
 		}
 
 		if (node->get_named_value().empty()) {
@@ -675,13 +691,16 @@ public:
 				unassignable_type_error(node->get_source_location(), node->get_named_value(), identifier->data_type);
 			} else if (result.type != identifier->data_type) {
 				type_mismatch_error(node->get_source_location(), identifier->data_type, result.type);
+			} else if (!result.has_value) {
+				// The result is a named value which hasn't been assigned yet
+				unassigned_named_value_error(node->get_source_location(), result.identifier_name);
 			} else {
 				// Look up the context
 				s_named_value *match = get_named_value(identifier->ast_node);
 				// Since we've verified that this is a named value, it must already have a context
 				wl_assert(match);
 
-				if (match->last_statement_assigned == scope.current_statement) {
+				if (match->last_statement_assigned == m_current_statement) {
 					// Make sure we're not assigning to a value we used as an output parameter; this is ambiguous
 					// However, it's okay if we used the named value on this same statement, e.g. x := x + 1;
 					s_compiler_result error;
@@ -690,14 +709,33 @@ public:
 					error.message = "Ambiguous assignment for named value '" + node->get_named_value() + "'";
 					m_errors->push_back(error);
 				} else {
-					match->last_statement_assigned = scope.current_statement;
+					match->last_statement_assigned = m_current_statement;
 				}
 			}
 		}
 
 		wl_assert(m_expression_stack.empty());
 
-		scope.current_statement++;
+		m_current_statement++;
+	}
+
+	virtual bool begin_visit(const c_ast_node_repeat_loop *node) {
+		s_scope &scope = m_scope_stack.front();
+		detect_statements_after_return(scope, node);
+
+		// Validate that the loop expression type is correct - a named value assignment node immediately preceded this
+		if (m_last_assigned_expression_result.type != k_ast_data_type_real) {
+			type_mismatch_error(node->get_source_location(),
+				m_last_assigned_expression_result.type, k_ast_data_type_real);
+		} else if (!m_last_assigned_expression_result.has_value) {
+			unassigned_named_value_error(node->get_source_location(),
+				m_last_assigned_expression_result.identifier_name);
+		}
+
+		return true;
+	}
+
+	virtual void end_visit(const c_ast_node_repeat_loop *node) {
 	}
 
 	virtual bool begin_visit(const c_ast_node_return_statement *node) {
@@ -748,7 +786,7 @@ public:
 		if (identifier) {
 			s_named_value *named_value = get_named_value(identifier->ast_node);
 			wl_assert(named_value);
-			named_value->last_statement_used = scope.current_statement;
+			named_value->last_statement_used = m_current_statement;
 		}
 
 		wl_assert(scope.module_for_scope);
@@ -757,12 +795,12 @@ public:
 		}
 
 		if (scope.return_statement < 0) {
-			scope.return_statement = scope.current_statement;
+			scope.return_statement = m_current_statement;
 		}
 
 		wl_assert(m_expression_stack.empty());
 
-		scope.current_statement++;
+		m_current_statement++;
 	}
 
 	virtual bool begin_visit(const c_ast_node_expression *node) {
@@ -781,6 +819,7 @@ public:
 	virtual void end_visit(const c_ast_node_constant *node) {
 		s_expression_result result;
 		result.type = node->get_data_type();
+		result.has_value = true;
 		m_expression_stack.push(result);
 	}
 
@@ -792,6 +831,7 @@ public:
 		s_expression_result result;
 		result.type = k_ast_data_type_void;
 		result.identifier_name = node->get_name();
+		result.has_value = true;
 
 		s_scope &scope = m_scope_stack.front();
 
@@ -804,10 +844,13 @@ public:
 			unassignable_type_error(node->get_source_location(), node->get_name(), identifier->data_type);
 		} else {
 			// Look up the context
-			IF_ASSERTS_ENABLED(s_named_value *match = get_named_value(identifier->ast_node));
+			s_named_value *match = get_named_value(identifier->ast_node);
 			// Since we've verified that this is a named value, it must already have a context
 			wl_assert(match);
 			result.type = identifier->data_type;
+
+			// If this identifier hasn't yet been assigned, clear the has_value field
+			result.has_value = (match->last_statement_assigned >= 0);
 		}
 
 		m_expression_stack.push(result);
@@ -821,6 +864,9 @@ public:
 		// If there is an error, this is the default result we will push
 		s_expression_result result;
 		result.type = k_ast_data_type_void;
+
+		// The result always has a value (even if it's void)
+		result.has_value = true;
 
 		std::vector<s_expression_result> argument_expression_results(node->get_argument_count());
 
@@ -921,6 +967,12 @@ public:
 							m_errors->push_back(error);
 						}
 
+						if (argument->get_qualifier() == k_ast_qualifier_in &&
+							!argument_result.has_value) {
+							unassigned_named_value_error(node->get_argument(arg)->get_source_location(),
+								argument_result.identifier_name);
+						}
+
 						// If a valid identifier has been provided, update its last assigned or last used statement
 						const s_identifier *identifier = get_identifier(result.identifier_name);
 						if (identifier) {
@@ -928,11 +980,11 @@ public:
 							wl_assert(named_value);
 
 							if (argument->get_qualifier() == k_ast_qualifier_in) {
-								named_value->last_statement_used = scope.current_statement;
+								named_value->last_statement_used = m_current_statement;
 							} else {
 								wl_assert(argument->get_qualifier() == k_ast_qualifier_out);
 
-								if (named_value->last_statement_assigned == scope.current_statement) {
+								if (named_value->last_statement_assigned == m_current_statement) {
 									// We should not assign the same named value from two different outputs
 									s_compiler_result error;
 									error.result = k_compiler_result_ambiguous_named_value_assignment;
@@ -942,7 +994,7 @@ public:
 									m_errors->push_back(error);
 								}
 
-								named_value->last_statement_assigned = scope.current_statement;
+								named_value->last_statement_assigned = m_current_statement;
 							}
 
 							// It is an error to use a named value as both an input and output in the same statement

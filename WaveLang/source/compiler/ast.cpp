@@ -249,7 +249,7 @@ e_ast_data_type c_ast_node_named_value_declaration::get_data_type() const {
 }
 
 c_ast_node_named_value_assignment::c_ast_node_named_value_assignment()
-	: c_ast_node(k_ast_node_type_assignment) {
+	: c_ast_node(k_ast_node_type_named_value_assignment) {
 	m_expression = nullptr;
 }
 
@@ -336,6 +336,62 @@ c_ast_node_expression *c_ast_node_return_statement::get_expression() {
 
 const c_ast_node_expression *c_ast_node_return_statement::get_expression() const {
 	return m_expression;
+}
+
+c_ast_node_repeat_loop::c_ast_node_repeat_loop()
+	: c_ast_node(k_ast_node_type_repeat_loop) {
+	m_scope = nullptr;
+	m_expression = nullptr;
+}
+
+c_ast_node_repeat_loop::~c_ast_node_repeat_loop() {
+	delete m_scope;
+}
+
+void c_ast_node_repeat_loop::iterate(c_ast_node_visitor *visitor) {
+	if (visitor->begin_visit(this)) {
+		wl_assert(m_scope);
+		m_scope->iterate(visitor);
+
+		visitor->end_visit(this);
+	}
+}
+
+void c_ast_node_repeat_loop::iterate(c_ast_node_const_visitor *visitor) const {
+	if (visitor->begin_visit(this)) {
+		wl_assert(m_scope);
+		m_scope->iterate(visitor);
+
+		visitor->end_visit(this);
+	}
+}
+
+void c_ast_node_repeat_loop::set_expression(c_ast_node_named_value_assignment *expression) {
+	wl_assert(!m_expression);
+	wl_assert(expression);
+	m_expression = expression;
+}
+
+c_ast_node_named_value_assignment *c_ast_node_repeat_loop::get_expression() {
+	return m_expression;
+}
+
+const c_ast_node_named_value_assignment *c_ast_node_repeat_loop::get_expression() const {
+	return m_expression;
+}
+
+void c_ast_node_repeat_loop::set_scope(c_ast_node_scope *scope) {
+	wl_assert(!m_scope);
+	wl_assert(scope);
+	m_scope = scope;
+}
+
+c_ast_node_scope *c_ast_node_repeat_loop::get_scope() {
+	return m_scope;
+}
+
+const c_ast_node_scope *c_ast_node_repeat_loop::get_scope() const {
+	return m_scope;
 }
 
 c_ast_node_expression::c_ast_node_expression()

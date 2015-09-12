@@ -6,6 +6,240 @@
 #include <deque>
 #include <stack>
 
+// Set a cap to prevent crazy things from happening if a user tries to loop billions of times
+static const uint32 k_max_loop_count = 10000;
+
+// Used to evaluate constants in a partially-built graph. Necessary for building repeat loops.
+class c_execution_graph_constant_evaluator {
+public:
+	struct s_result {
+		e_native_module_argument_type type;
+
+		union {
+			real32 real_value;
+			bool bool_value;
+		};
+		std::string string_value;
+	};
+
+private:
+	// The graph
+	const c_execution_graph *m_execution_graph;
+
+	// Maps node indices to their evaluated results. Either native module output nodes or constant nodes.
+	std::map<uint32, s_result> m_results;
+
+	// Stack of nodes to evaluate. Either native module output nodes or constant nodes.
+	std::stack<uint32> m_pending_nodes;
+
+	// The final result
+	bool m_invalid_constant;
+	s_result m_result;
+
+	void try_evaluate_node(uint32 node_index) {
+		// Attempt to evaluate this node
+		e_execution_graph_node_type node_type = m_execution_graph->get_node_type(node_index);
+		if (node_type == k_execution_graph_node_type_constant) {
+			// Easy - the node is simply a constant value already
+			s_result result;
+			result.type = m_execution_graph->get_constant_node_data_type(node_index);
+			switch (result.type) {
+			case k_native_module_argument_type_real:
+				result.real_value = m_execution_graph->get_constant_node_real_value(node_index);
+				break;
+
+			case k_native_module_argument_type_bool:
+				result.bool_value = m_execution_graph->get_constant_node_bool_value(node_index);
+				break;
+
+			case k_native_module_argument_type_string:
+				result.string_value = m_execution_graph->get_constant_node_string_value(node_index);
+				break;
+
+			default:
+				wl_unreachable();
+			}
+
+			m_results.insert(std::make_pair(node_index, result));
+		} else if (node_type == k_execution_graph_node_type_native_module_output) {
+			// This is the output to a native module call
+			uint32 native_module_node_index = m_execution_graph->get_node_incoming_edge_index(node_index, 0);
+			wl_assert(m_execution_graph->get_node_type(native_module_node_index) ==
+				k_execution_graph_node_type_native_module_call);
+
+			// First check if it can even be evaluated at compile-time
+			uint32 native_module_index =
+				m_execution_graph->get_native_module_call_native_module_index(native_module_node_index);
+			const s_native_module &native_module = c_native_module_registry::get_native_module(native_module_index);
+
+			if (!native_module.compile_time_call) {
+				// This native module can't be evaluated at compile-time
+				m_invalid_constant = true;
+				return;
+			}
+
+			// Perform the native module call to resolve the constant value
+			size_t next_input = 0;
+			size_t next_output = 0;
+			c_native_module_compile_time_argument_list arg_list;
+
+			bool all_inputs_evaluated = true;
+			for (size_t arg = 0; arg < native_module.argument_count; arg++) {
+				s_native_module_argument argument = native_module.arguments[arg];
+				s_native_module_compile_time_argument compile_time_argument;
+#if PREDEFINED(ASSERTS_ENABLED)
+				compile_time_argument.assigned = false;
+				compile_time_argument.argument = argument;
+#endif // PREDEFINED(ASSERTS_ENABLED)
+
+				if (argument.qualifier == k_native_module_argument_qualifier_in ||
+					argument.qualifier == k_native_module_argument_qualifier_constant) {
+					uint32 input_node_index = m_execution_graph->get_node_incoming_edge_index(
+						native_module_node_index, next_input);
+					uint32 source_node_index = m_execution_graph->get_node_incoming_edge_index(input_node_index, 0);
+
+					auto it = m_results.find(source_node_index);
+					if (it == m_results.end()) {
+						// Not yet evaluated - push this node to the stack. It may already be there, but that's okay, it
+						// will be skipped if it's encountered and already evaluated.
+						m_pending_nodes.push(source_node_index);
+						all_inputs_evaluated = false;
+					} else if (all_inputs_evaluated) {
+						// Don't bother adding any more arguments if we've failed to evaluate an input, but still loop
+						// so that we can add unevaluated nodes to the stack
+						const s_result &input_result = it->second;
+						switch (input_result.type) {
+						case k_native_module_argument_type_real:
+							compile_time_argument.real_value = input_result.real_value;
+							break;
+
+						case k_native_module_argument_type_bool:
+							compile_time_argument.bool_value = input_result.bool_value;
+							break;
+
+						case k_native_module_argument_type_string:
+							compile_time_argument.string_value = input_result.string_value;
+							break;
+
+						default:
+							wl_unreachable();
+						}
+					}
+
+					next_input++;
+				} else {
+					wl_assert(argument.qualifier == k_native_module_argument_qualifier_out);
+					compile_time_argument.real_value = 0.0f;
+					next_output++;
+				}
+
+				arg_list.push_back(compile_time_argument);
+			}
+
+			wl_assert(next_input == native_module.in_argument_count);
+			wl_assert(next_output == native_module.out_argument_count);
+
+			// Make the compile time call to resolve the outputs
+			if (all_inputs_evaluated) {
+				native_module.compile_time_call(arg_list);
+
+				next_output = 0;
+				for (size_t arg = 0; arg < native_module.argument_count; arg++) {
+					s_native_module_argument argument = native_module.arguments[arg];
+					if (argument.qualifier == k_native_module_argument_qualifier_out) {
+						const s_native_module_compile_time_argument &compile_time_argument = arg_list[arg];
+						wl_assert(compile_time_argument.assigned);
+
+						// Store the output result
+						s_result evaluation_result;
+						evaluation_result.type = argument.type;
+						switch (argument.type) {
+						case k_native_module_argument_type_real:
+							evaluation_result.real_value = compile_time_argument.real_value;
+							break;
+
+						case k_native_module_argument_type_bool:
+							evaluation_result.bool_value = compile_time_argument.bool_value;
+							break;
+
+						case k_native_module_argument_type_string:
+							evaluation_result.string_value = compile_time_argument.string_value;
+							break;
+
+						default:
+							wl_unreachable();
+						}
+
+						uint32 output_node_index = m_execution_graph->get_node_outgoing_edge_index(
+							native_module_node_index, next_output);
+						m_results.insert(std::make_pair(output_node_index, evaluation_result));
+
+						next_output++;
+					}
+				}
+
+				wl_assert(next_output == native_module.out_argument_count);
+			}
+
+		} else {
+			// We should only ever add constants and native module output nodes
+			wl_unreachable();
+		}
+	}
+
+public:
+	c_execution_graph_constant_evaluator() {
+		m_execution_graph = nullptr;
+	}
+
+	void initialize(const c_execution_graph *execution_graph) {
+		wl_assert(!m_execution_graph);
+		m_execution_graph = execution_graph;
+		m_invalid_constant = true;
+	}
+
+	// Each time a constant is evaluated, the evaluation progress is retained. This way, we can avoid re-evaluating the
+	// same thing multiple times. This works as long as nodes are only added and never removed or changed during
+	// construction. (We perform these actions at optimization time.)
+	bool evaluate_constant(uint32 node_index) {
+		wl_assert(m_execution_graph);
+		m_invalid_constant = false;
+		m_pending_nodes.push(node_index);
+
+		while (!m_invalid_constant && !m_pending_nodes.empty()) {
+			uint32 next_node_index = m_pending_nodes.top();
+			wl_assert(m_execution_graph->get_node_type(next_node_index) == k_execution_graph_node_type_constant ||
+				m_execution_graph->get_node_type(next_node_index) == k_execution_graph_node_type_native_module_output);
+
+			// Try to look up the result of this node's evaluation
+			auto it = m_results.find(next_node_index);
+			if (it == m_results.end()) {
+				try_evaluate_node(next_node_index);
+			} else {
+				// We have already evaluated the result
+				if (next_node_index == node_index) {
+					// This is our final result
+					m_result = it->second;
+				}
+
+				m_pending_nodes.pop();
+			}
+		}
+
+		while (!m_pending_nodes.empty()) {
+			m_pending_nodes.pop();
+		}
+
+		return !m_invalid_constant;
+	}
+
+	s_result get_result() const {
+		wl_assert(m_execution_graph);
+		wl_assert(!m_invalid_constant);
+		return m_result;
+	}
+};
+
 class c_execution_graph_module_builder : public c_ast_node_const_visitor {
 private:
 	struct s_expression_result {
@@ -31,6 +265,9 @@ private:
 		std::map<std::string, s_identifier> identifiers;
 	};
 
+	// Vector into which we accumulate errors
+	std::vector<s_compiler_result> *m_errors;
+
 	const c_ast_node *m_ast_root;								// Root of the AST
 	c_execution_graph *m_execution_graph;						// The execution graph we are building
 	const c_ast_node_module_declaration *m_module_declaration;	// The module we are adding to the graph
@@ -50,6 +287,16 @@ private:
 
 	// When we build expressions, we return the results through this stack
 	std::stack<s_expression_result> m_expression_stack;
+
+	// The last expression result assigned from a named value assignment node. We need this because repeat loops don't
+	// own their loop expressions, so they must loop back on the last evaluated result.
+	s_expression_result m_last_assigned_expression_result;
+
+	// Loop count for the next scope
+	uint32 m_loop_count_for_next_scope;
+
+	// Used to evaluate constants as we build the graph
+	c_execution_graph_constant_evaluator m_constant_evaluator;
 
 	// Adds initially unassigned identifier
 	void add_identifier_to_scope(const std::string &name, e_ast_data_type data_type) {
@@ -97,6 +344,7 @@ private:
 
 public:
 	c_execution_graph_module_builder(
+		std::vector<s_compiler_result> *error_accumulator,
 		const c_ast_node *ast_root,
 		c_execution_graph *execution_graph,
 		const c_ast_node_module_declaration *module_declaration) {
@@ -104,10 +352,15 @@ public:
 		wl_assert(execution_graph);
 		wl_assert(module_declaration);
 
+		m_errors = error_accumulator;
 		m_ast_root = ast_root;
 		m_execution_graph = execution_graph;
 		m_module_declaration = module_declaration;
 		m_arguments_found = 0;
+
+		m_loop_count_for_next_scope = 1;
+
+		m_constant_evaluator.initialize(execution_graph);
 
 		m_argument_node_indices.resize(module_declaration->get_argument_count(), c_execution_graph::k_invalid_index);
 		m_return_node_index = c_execution_graph::k_invalid_index;
@@ -194,8 +447,21 @@ public:
 	}
 
 	virtual bool begin_visit(const c_ast_node_scope *node) {
-		m_scope_stack.push_front(s_scope());
-		return true;
+		if (m_loop_count_for_next_scope > 1) {
+			// If this is a looped scope, then instead of visiting this scope directly, we manually invoke a recursive
+			// visit on the same node N times, except we reset the pending loop count so we don't loop infinitely
+			uint32 loop_count = m_loop_count_for_next_scope;
+			m_loop_count_for_next_scope = 1;
+
+			for (uint32 loop = 0; loop < loop_count; loop++) {
+				node->iterate(this);
+			}
+
+			return false;
+		} else {
+			m_scope_stack.push_front(s_scope());
+			return true;
+		}
 	}
 
 	virtual void end_visit(const c_ast_node_scope *node) {
@@ -297,6 +563,7 @@ public:
 	virtual void end_visit(const c_ast_node_named_value_assignment *node) {
 		s_expression_result result = m_expression_stack.top();
 		m_expression_stack.pop();
+		m_last_assigned_expression_result = result;
 
 		if (node->get_named_value().empty()) {
 			// If this assignment node has no name, it means it's just a placeholder for an expression; nothing to do.
@@ -327,6 +594,62 @@ public:
 		m_return_node_index = result.node_index;
 
 		wl_assert(m_expression_stack.empty());
+	}
+
+	virtual bool begin_visit(const c_ast_node_repeat_loop *node) {
+		wl_assert(m_last_assigned_expression_result.type == k_ast_data_type_real);
+
+		// Try to evaluate the expression down to a constant
+		if (!m_constant_evaluator.evaluate_constant(m_last_assigned_expression_result.node_index)) {
+			s_compiler_result error;
+			error.result = k_compiler_result_constant_expected;
+			error.source_location = node->get_source_location();
+			error.message = "Repeat loop count is not constant";
+			m_errors->push_back(error);
+		} else {
+			// We should have caught this with a type mismatch error in the evaluator
+			wl_assert(m_constant_evaluator.get_result().type == k_native_module_argument_type_real);
+
+			real32 loop_count_real = m_constant_evaluator.get_result().real_value;
+			if (std::isnan(loop_count_real) ||
+				std::isinf(loop_count_real) ||
+				loop_count_real < 0.0f ||
+				loop_count_real != std::floor(loop_count_real)) {
+				s_compiler_result error;
+				error.result = k_compiler_result_invalid_loop_count;
+				error.source_location = node->get_source_location();
+				error.message = "Invalid repeat loop count: " + std::to_string(loop_count_real);
+				m_errors->push_back(error);
+			} else if (loop_count_real > static_cast<uint32>(k_max_loop_count)) {
+				s_compiler_result error;
+				error.result = k_compiler_result_invalid_loop_count;
+				error.source_location = node->get_source_location();
+				error.message = "Repeat loop count " + std::to_string(loop_count_real) +
+					" exceeds maximum allowed loop count " + std::to_string(k_max_loop_count);
+				m_errors->push_back(error);
+			} else {
+				m_loop_count_for_next_scope = static_cast<uint32>(loop_count_real);
+
+				if (m_loop_count_for_next_scope == 0) {
+					// $TODO We currently don't allow looping zero times. This is because it's possible that previously
+					// unassigned named values are assigned in the loop, and if we don't run it at all, those values
+					// will remain uninitialized. Need to think about possible solutions, but for now just don't allow
+					// that case.
+					s_compiler_result error;
+					error.result = k_compiler_result_invalid_loop_count;
+					error.source_location = node->get_source_location();
+					error.message = "Repeat loop must execute at least once";
+					m_errors->push_back(error);
+
+					m_loop_count_for_next_scope = 1;
+				}
+			}
+		}
+
+		return true;
+	}
+
+	virtual void end_visit(const c_ast_node_repeat_loop *node) {
 	}
 
 	virtual bool begin_visit(const c_ast_node_expression *node) {
@@ -402,7 +725,8 @@ public:
 		const c_ast_node_module_declaration *module_call_declaration =
 			find_module_declaration(m_ast_root, node->get_name().c_str(), argument_expression_results);
 
-		c_execution_graph_module_builder module_builder(m_ast_root, m_execution_graph, module_call_declaration);
+		c_execution_graph_module_builder module_builder(
+			m_errors, m_ast_root, m_execution_graph, module_call_declaration);
 
 		// Hook up the input arguments
 		for (size_t arg = 0; arg < module_call_declaration->get_argument_count(); arg++) {
@@ -451,13 +775,17 @@ public:
 	}
 };
 
-void c_execution_graph_builder::build_execution_graph(const c_ast_node *ast, c_execution_graph *out_execution_graph) {
+s_compiler_result c_execution_graph_builder::build_execution_graph(
+	const c_ast_node *ast, c_execution_graph *out_execution_graph, std::vector<s_compiler_result> &out_errors) {
+	s_compiler_result result;
+	result.clear();
+
 	// Find the entry point to start iteration
 	const c_ast_node_module_declaration *entry_point_module =
 		c_execution_graph_module_builder::find_module_declaration_single(ast, k_entry_point_name);
 	wl_assert(entry_point_module->get_return_type() == k_ast_data_type_void);
 
-	c_execution_graph_module_builder builder(ast, out_execution_graph, entry_point_module);
+	c_execution_graph_module_builder builder(&out_errors, ast, out_execution_graph, entry_point_module);
 	entry_point_module->iterate(&builder);
 
 	// Add an output node for each argument (they should all be out arguments)
@@ -477,4 +805,12 @@ void c_execution_graph_builder::build_execution_graph(const c_ast_node *ast, c_e
 #if PREDEFINED(EXECUTION_GRAPH_OUTPUT_ENABLED)
 	out_execution_graph->output_to_file();
 #endif // PREDEFINED(EXECUTION_GRAPH_OUTPUT_ENABLED)
+
+	if (!out_errors.empty()) {
+		// Don't associate the error with a particular file, those errors are collected through out_errors
+		result.result = k_compiler_result_graph_error;
+		result.message = "Graph error(s) detected";
+	}
+
+	return result;
 }

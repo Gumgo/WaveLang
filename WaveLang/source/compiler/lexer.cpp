@@ -14,6 +14,7 @@ static const char *k_lexer_token_table[] = {
 	"bool",		// k_token_type_keyword_bool
 	"string",	// k_token_type_keyword_string
 	"return",	// k_token_type_keyword_return
+	"repeat",	// k_token_type_keyword_repeat
 
 	"",			// k_token_type_identifier
 

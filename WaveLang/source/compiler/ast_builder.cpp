@@ -98,6 +98,9 @@ static c_ast_node_named_value_assignment *build_named_value_assignment(const c_l
 static c_ast_node_return_statement *build_return_statement(const c_lr_parse_tree &parse_tree,
 	const s_lexer_source_file_output &tokens, const c_lr_parse_tree_node &return_statement_node);
 
+static std::vector<c_ast_node *> build_repeat_loop(const c_lr_parse_tree &parse_tree,
+	const s_lexer_source_file_output &tokens, const c_lr_parse_tree_node &return_statement_node);
+
 static c_ast_node_expression *build_expression(const c_lr_parse_tree &parse_tree,
 	const s_lexer_source_file_output &tokens, const c_lr_parse_tree_node &expression_node);
 
@@ -431,12 +434,17 @@ static std::vector<c_ast_node *> build_scope_items(const c_lr_parse_tree &parse_
 		c_ast_node_named_value_assignment *named_value_assignment = new c_ast_node_named_value_assignment();
 		c_ast_node_expression *expression = build_expression(parse_tree, tokens, item_type_node);
 		named_value_assignment->set_expression(expression);
+		named_value_assignment->set_source_location(expression->get_source_location());
 		result.push_back(named_value_assignment);
 		break;
 	}
 
 	case k_parser_nonterminal_module_return_statement:
 		result.push_back(build_return_statement(parse_tree, tokens, item_type_node));
+		break;
+
+	case k_parser_nonterminal_repeat_loop:
+		result = build_repeat_loop(parse_tree, tokens, item_type_node);
 		break;
 
 	default:
@@ -553,6 +561,54 @@ static c_ast_node_return_statement *build_return_statement(const c_lr_parse_tree
 
 	c_ast_node_expression *expression = build_expression(parse_tree, tokens, expression_node);
 	result->set_expression(expression);
+
+	return result;
+}
+
+static std::vector<c_ast_node *> build_repeat_loop(const c_lr_parse_tree &parse_tree,
+	const s_lexer_source_file_output &tokens, const c_lr_parse_tree_node &return_statement_node) {
+	wl_assert(node_is_type(return_statement_node, k_parser_nonterminal_repeat_loop));
+
+	c_lr_parse_tree_iterator it(parse_tree, return_statement_node.get_child_index());
+
+	const c_lr_parse_tree_node &repeat_node = it.get_node();
+	wl_assert(node_is_type(repeat_node, k_token_type_keyword_repeat));
+	it.follow_sibling();
+
+	wl_assert(node_is_type(it.get_node(), k_token_type_left_parenthesis));
+	it.follow_sibling();
+
+	const c_lr_parse_tree_node &expression_node = it.get_node();
+	wl_assert(node_is_type(expression_node, k_parser_nonterminal_expression));
+	it.follow_sibling();
+
+	wl_assert(node_is_type(it.get_node(), k_token_type_right_parenthesis));
+	it.follow_sibling();
+
+	const c_lr_parse_tree_node &scope_node = it.get_node();
+	wl_assert(node_is_type(scope_node, k_parser_nonterminal_scope));
+	wl_assert(!it.has_sibling());
+
+	std::vector<c_ast_node *> result;
+
+	c_ast_node_expression *expression = build_expression(parse_tree, tokens, expression_node);
+
+	// Create an "anonymous" assignment for the expression
+	c_ast_node_named_value_assignment *named_value_assignment = new c_ast_node_named_value_assignment();
+	named_value_assignment->set_expression(expression);
+	named_value_assignment->set_source_location(expression->get_source_location());
+	result.push_back(named_value_assignment);
+
+	c_ast_node_repeat_loop *repeat_loop = new c_ast_node_repeat_loop();
+	repeat_loop->set_source_location(tokens.tokens[repeat_node.get_token_index()].source_location);
+	result.push_back(repeat_loop);
+
+	// Point the repeat loop at the expression we just stored in the named value assignment
+	repeat_loop->set_expression(named_value_assignment);
+
+	// Create the scope
+	c_ast_node_scope *repeat_loop_scope = build_scope(parse_tree, tokens, scope_node, std::vector<c_ast_node *>());
+	repeat_loop->set_scope(repeat_loop_scope);
 
 	return result;
 }

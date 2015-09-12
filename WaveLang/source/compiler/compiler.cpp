@@ -126,9 +126,20 @@ s_compiler_result c_compiler::compile(const char *root_path, const char *source_
 		}
 	}
 
-	// Build the execution graph - it should be impossible to fail during this step if we have performed proper
-	// validation at all previous stages. Any unexpected conditions should be caught with an assert.
-	c_execution_graph_builder::build_execution_graph(ast.get(), out_execution_graph);
+	// Build the execution graph. This can fail if loops don't resolve to constants.
+	{
+		std::vector<s_compiler_result> graph_errors;
+		result = c_execution_graph_builder::build_execution_graph(ast.get(), out_execution_graph, graph_errors);
+
+		for (size_t error = 0; error < graph_errors.size(); error++) {
+			output_error(context, graph_errors[error]);
+		}
+
+		if (result.result != k_compiler_result_success) {
+			output_error(context, result);
+			return result;
+		}
+	}
 
 	// Optimize the graph. This can fail if constant inputs don't resolve to constants.
 	{
