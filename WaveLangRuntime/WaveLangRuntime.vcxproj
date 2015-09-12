@@ -93,6 +93,7 @@
     <ClInclude Include="..\WaveLang\source\engine\buffer_allocator.h" />
     <ClInclude Include="..\WaveLang\source\engine\buffer_operations\buffer_operations.h" />
     <ClInclude Include="..\WaveLang\source\engine\buffer_operations\buffer_operations_arithmetic.h" />
+    <ClInclude Include="..\WaveLang\source\engine\buffer_operations\buffer_operations_delay.h" />
     <ClInclude Include="..\WaveLang\source\engine\buffer_operations\buffer_operations_sampler.h" />
     <ClInclude Include="..\WaveLang\source\engine\buffer_operations\buffer_operations_utility.h" />
     <ClInclude Include="..\WaveLang\source\engine\channel_mixer.h" />
@@ -127,6 +128,7 @@
     <ClCompile Include="..\WaveLang\source\driver\sample_format.cpp" />
     <ClCompile Include="..\WaveLang\source\engine\buffer_allocator.cpp" />
     <ClCompile Include="..\WaveLang\source\engine\buffer_operations\buffer_operations.cpp" />
+    <ClCompile Include="..\WaveLang\source\engine\buffer_operations\buffer_operations_delay.cpp" />
     <ClCompile Include="..\WaveLang\source\engine\buffer_operations\buffer_operations_sampler.cpp" />
     <ClCompile Include="..\WaveLang\source\engine\channel_mixer.cpp" />
     <ClCompile Include="..\WaveLang\source\engine\executor.cpp" />

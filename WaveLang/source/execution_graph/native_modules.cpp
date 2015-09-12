@@ -152,12 +152,12 @@ static const s_native_module k_native_modules[] = {
 		native_module_string_not_equal),
 
 	make_native_module(c_native_module_registry::k_operator_greater_name,
-		true, make_args(NMAT(constant, real), NMAT(constant, real), NMAT(out, bool)),
-		native_module_greater),
+true, make_args(NMAT(constant, real), NMAT(constant, real), NMAT(out, bool)),
+native_module_greater),
 
-	make_native_module(c_native_module_registry::k_operator_less_name,
-		true, make_args(NMAT(constant, real), NMAT(constant, real), NMAT(out, bool)),
-		native_module_less),
+make_native_module(c_native_module_registry::k_operator_less_name,
+	true, make_args(NMAT(constant, real), NMAT(constant, real), NMAT(out, bool)),
+	native_module_less),
 
 	make_native_module(c_native_module_registry::k_operator_greater_equal_name,
 		true, make_args(NMAT(constant, real), NMAT(constant, real), NMAT(out, bool)),
@@ -249,6 +249,10 @@ static const s_native_module k_native_modules[] = {
 			NMAT(in, real),			// Phase
 			NMAT(out, real)),		// Result
 		nullptr),
+
+	make_native_module(NATIVE_PREFIX "delay",
+		true, make_args(NMAT(constant, real), NMAT(in, real), NMAT(out, real)),
+		nullptr)
 };
 
 static_assert(NUMBEROF(k_native_modules) == k_native_module_count, "Native module definition list mismatch");

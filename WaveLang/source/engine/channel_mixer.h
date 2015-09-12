@@ -18,4 +18,10 @@ void convert_and_interleave_to_output_buffer(
 	e_sample_format output_format,
 	void *output_buffer);
 
+void zero_output_buffers(
+	uint32 frames,
+	uint32 output_buffer_count,
+	e_sample_format output_format,
+	void *output_buffers);
+
 #endif // WAVELANG_CHANNEL_MIXER_H__

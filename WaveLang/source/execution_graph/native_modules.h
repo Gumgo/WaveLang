@@ -61,6 +61,9 @@ enum e_native_module {
 	k_native_module_sampler_loop,
 	k_native_module_sampler_loop_phase_shift,
 
+	// Delay
+	k_native_module_delay,
+
 	k_native_module_count
 };
 

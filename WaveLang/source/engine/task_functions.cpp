@@ -2,6 +2,7 @@
 #include "engine/buffer_operations/buffer_operations_arithmetic.h"
 #include "engine/buffer_operations/buffer_operations_utility.h"
 #include "engine/buffer_operations/buffer_operations_sampler.h"
+#include "engine/buffer_operations/buffer_operations_delay.h"
 #include "engine/sample/sample_library.h"
 
 static void task_function_negation_buffer(const s_task_function_context &context);
@@ -101,6 +102,10 @@ static void task_function_sampler_loop_phase_shift_bufferio_constant(const s_tas
 static void task_function_sampler_loop_phase_shift_constant_buffer(const s_task_function_context &context);
 static void task_function_sampler_loop_phase_shift_constant_bufferio(const s_task_function_context &context);
 static void task_function_sampler_loop_phase_shift_constant_constant(const s_task_function_context &context);
+
+static size_t task_memory_query_delay(const s_task_function_context &context);
+static void task_initializer_delay(const s_task_function_context &context);
+static void task_function_delay_buffer(const s_task_function_context &context);
 
 struct s_task_function_argument_list {
 	e_task_data_type arguments[k_max_task_function_arguments];
@@ -238,6 +243,9 @@ static const s_task_function_description k_task_functions[] = {
 		make_args(TDT(string_constant_in), TDT(real_constant_in), TDT(bool_constant_in), TDT(real_constant_in), TDT(real_buffer_inout))),
 	make_task(task_memory_query_sampler, task_initializer_sampler_loop_phase_shift, task_function_sampler_loop_phase_shift_constant_constant,
 		make_args(TDT(string_constant_in), TDT(real_constant_in), TDT(bool_constant_in), TDT(real_buffer_out), TDT(real_constant_in), TDT(real_constant_in))),
+
+	make_task(task_memory_query_delay, task_initializer_delay, task_function_delay_buffer,
+		make_args(TDT(real_constant_in), TDT(real_buffer_out), TDT(real_buffer_in)))
 };
 
 static_assert(NUMBEROF(k_task_functions) == k_task_function_count, "Update task functions");
@@ -702,4 +710,25 @@ static void task_function_sampler_loop_phase_shift_constant_constant(const s_tas
 		context.arguments[3].get_real_buffer_out(),
 		context.arguments[4].get_real_constant_in(),
 		context.arguments[5].get_real_constant_in());
+}
+
+static size_t task_memory_query_delay(const s_task_function_context &context) {
+	return s_buffer_operation_delay::query_memory(
+		context.sample_rate,
+		context.arguments[0].get_real_constant_in());
+}
+
+static void task_initializer_delay(const s_task_function_context &context) {
+	s_buffer_operation_delay::initialize(
+		static_cast<s_buffer_operation_delay *>(context.task_memory),
+		context.sample_rate,
+		context.arguments[0].get_real_constant_in());
+}
+
+static void task_function_delay_buffer(const s_task_function_context &context) {
+	s_buffer_operation_delay::buffer(
+		static_cast<s_buffer_operation_delay *>(context.task_memory),
+		context.buffer_size,
+		context.arguments[1].get_real_buffer_out(),
+		context.arguments[2].get_real_buffer_in());
 }

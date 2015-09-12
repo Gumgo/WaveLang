@@ -105,6 +105,8 @@ enum e_task_function {
 	k_task_function_sampler_loop_phase_shift_constant_bufferio,
 	k_task_function_sampler_loop_phase_shift_constant_constant,
 
+	k_task_function_delay_buffer,
+
 	k_task_function_count
 };
 

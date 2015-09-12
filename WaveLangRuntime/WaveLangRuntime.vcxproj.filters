@@ -129,6 +129,9 @@
     <ClInclude Include="..\WaveLang\source\engine\profiler\profiler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\WaveLang\source\engine\buffer_operations\buffer_operations_delay.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\WaveLang\source\common\asserts.cpp">
@@ -222,6 +225,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\WaveLang\source\engine\profiler\profiler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\WaveLang\source\engine\buffer_operations\buffer_operations_delay.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

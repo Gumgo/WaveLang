@@ -47,11 +47,17 @@ void c_executor::execute(const s_executor_chunk_context &chunk_context) {
 	// Try flipping from terminating to uninitialized
 	int32 old_state = m_state.compare_exchange(k_state_terminating, k_state_uninitialized);
 
-	if (old_state == k_state_terminating) {
-		// We successfully terminated, so signal the main thread
-		m_shutdown_signal.notify();
-	} else if (old_state == k_state_running) {
+	if (old_state == k_state_running) {
 		execute_internal(chunk_context);
+	} else {
+		// Zero buffer if disabled
+		zero_output_buffers(chunk_context.frames, chunk_context.output_channels,
+			chunk_context.sample_format, chunk_context.output_buffers);
+
+		if (old_state == k_state_terminating) {
+			// We successfully terminated, so signal the main thread
+			m_shutdown_signal.notify();
+		}
 	}
 }
 

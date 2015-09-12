@@ -88,3 +88,20 @@ void convert_and_interleave_to_output_buffer(
 		wl_vhalt("Unsupported format");
 	}
 }
+
+void zero_output_buffers(
+	uint32 frames,
+	uint32 output_buffer_count,
+	e_sample_format output_format,
+	void *output_buffers) {
+	switch (output_format) {
+	case k_sample_format_float32:
+	{
+		memset(output_buffers, 0, frames * output_buffer_count * sizeof(real32));
+		break;
+	}
+
+	default:
+		wl_vhalt("Unsupported format");
+	}
+}

@@ -437,6 +437,14 @@ bool get_task_mapping_for_native_module_and_inputs(
 		}
 		break;
 
+	case k_native_module_delay:
+		if (do_native_module_inputs_match(native_module_inputs, "cv")) {
+			static const uint32 k_mapping[] = { 0, 2, 1 };
+			task_mapping_array = c_task_mapping_array::construct(k_mapping);
+			task_function = k_task_function_delay_buffer;
+		}
+		break;
+
 	default:
 		wl_unreachable();
 	}
