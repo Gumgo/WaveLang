@@ -2,7 +2,8 @@
 #include "compiler/ast.h"
 #include "compiler/lexer.h"
 #include "compiler/parser.h"
-#include "execution_graph/native_modules.h"
+#include "execution_graph/native_module.h"
+#include "execution_graph/native_module_registry.h"
 #include <stdexcept>
 
 static const e_ast_data_type k_native_module_argument_type_to_ast_data_type_mapping[] = {
@@ -178,7 +179,7 @@ static void build_native_module_declarations(c_ast_node_scope *global_scope) {
 		c_ast_node_module_declaration *module_declaration = new c_ast_node_module_declaration();
 		module_declaration->set_is_native(true);
 		module_declaration->set_native_module_index(index);
-		module_declaration->set_name(native_module.name);
+		module_declaration->set_name(native_module.name.get_string());
 		module_declaration->set_return_type(k_ast_data_type_void);
 
 		bool first_out_argument_found = false;
@@ -805,59 +806,73 @@ static c_ast_node_module_call *build_binary_operator_call(const c_lr_parse_tree 
 	wl_assert(node_1.get_symbol().is_terminal());
 	switch (node_1.get_symbol().get_index()) {
 	case k_token_type_operator_addition:
-		operator_module_name = c_native_module_registry::k_operator_addition_operator_name;
+		operator_module_name =
+			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_addition);
 		break;
 
 	case k_token_type_operator_subtraction:
-		operator_module_name = c_native_module_registry::k_operator_subtraction_operator_name;
+		operator_module_name =
+			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_subtraction);
 		break;
 
 	case k_token_type_operator_multiplication:
-		operator_module_name = c_native_module_registry::k_operator_multiplication_operator_name;
+		operator_module_name =
+			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_multiplication);
 		break;
 
 	case k_token_type_operator_division:
-		operator_module_name = c_native_module_registry::k_operator_division_name;
+		operator_module_name =
+			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_division);
 		break;
 
 	case k_token_type_operator_modulo:
-		operator_module_name = c_native_module_registry::k_operator_modulo_name;
+		operator_module_name =
+			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_modulo);
 		break;
 
 	case k_token_type_operator_concatenation:
-		operator_module_name = c_native_module_registry::k_operator_concatenation_name;
+		operator_module_name =
+			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_concatenation);
 		break;
 
 	case k_token_type_operator_equal:
-		operator_module_name = c_native_module_registry::k_operator_equal_name;
+		operator_module_name =
+			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_equal);
 		break;
 
 	case k_token_type_operator_not_equal:
-		operator_module_name = c_native_module_registry::k_operator_not_equal_name;
+		operator_module_name =
+			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_not_equal);
 		break;
 
 	case k_token_type_operator_greater:
-		operator_module_name = c_native_module_registry::k_operator_greater_name;
+		operator_module_name =
+			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_greater);
 		break;
 
 	case k_token_type_operator_less:
-		operator_module_name = c_native_module_registry::k_operator_less_name;
+		operator_module_name =
+			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_less);
 		break;
 
 	case k_token_type_operator_greater_equal:
-		operator_module_name = c_native_module_registry::k_operator_greater_equal_name;
+		operator_module_name =
+			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_greater_equal);
 		break;
 
 	case k_token_type_operator_less_equal:
-		operator_module_name = c_native_module_registry::k_operator_less_equal_name;
+		operator_module_name =
+			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_less_equal);
 		break;
 
 	case k_token_type_operator_and:
-		operator_module_name = c_native_module_registry::k_operator_and_name;
+		operator_module_name =
+			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_and);
 		break;
 
 	case k_token_type_operator_or:
-		operator_module_name = c_native_module_registry::k_operator_or_name;
+		operator_module_name =
+			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_or);
 		break;
 
 	default:
@@ -888,15 +903,18 @@ static c_ast_node_module_call *build_unary_operator_call(const c_lr_parse_tree &
 	switch (node_0.get_symbol().get_index()) {
 	case k_token_type_operator_addition:
 		// +x just returns x, and will be optimized away
-		operator_module_name = c_native_module_registry::k_operator_noop_name;
+		operator_module_name =
+			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_noop);
 		break;
 
 	case k_token_type_operator_subtraction:
-		operator_module_name = c_native_module_registry::k_operator_negation_name;
+		operator_module_name =
+			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_negation);
 		break;
 
 	case k_token_type_operator_not:
-		operator_module_name = c_native_module_registry::k_operator_not_name;
+		operator_module_name =
+			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_not);
 		break;
 
 	default:

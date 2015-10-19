@@ -1,0 +1,36 @@
+#ifndef WAVELANG_NATIVE_MODULES_BASIC_H__
+#define WAVELANG_NATIVE_MODULES_BASIC_H__
+
+#include "common/common.h"
+#include "execution_graph/native_module.h"
+
+static const uint32 k_native_modules_basic_library_id = 0;
+extern const s_native_module_uid k_native_module_noop_real_uid;
+extern const s_native_module_uid k_native_module_noop_bool_uid;
+extern const s_native_module_uid k_native_module_noop_string_uid;
+extern const s_native_module_uid k_native_module_negation_uid;
+extern const s_native_module_uid k_native_module_addition_uid;
+extern const s_native_module_uid k_native_module_subtraction_uid;
+extern const s_native_module_uid k_native_module_multiplication_uid;
+extern const s_native_module_uid k_native_module_division_uid;
+extern const s_native_module_uid k_native_module_modulo_uid;
+extern const s_native_module_uid k_native_module_concatenation_uid;
+extern const s_native_module_uid k_native_module_not_uid;
+extern const s_native_module_uid k_native_module_real_equal_uid;
+extern const s_native_module_uid k_native_module_real_not_equal_uid;
+extern const s_native_module_uid k_native_module_bool_equal_uid;
+extern const s_native_module_uid k_native_module_bool_not_equal_uid;
+extern const s_native_module_uid k_native_module_string_equal_uid;
+extern const s_native_module_uid k_native_module_string_not_equal_uid;
+extern const s_native_module_uid k_native_module_greater_uid;
+extern const s_native_module_uid k_native_module_less_uid;
+extern const s_native_module_uid k_native_module_greater_equal_uid;
+extern const s_native_module_uid k_native_module_less_equal_uid;
+extern const s_native_module_uid k_native_module_and_uid;
+extern const s_native_module_uid k_native_module_or_uid;
+extern const s_native_module_uid k_native_module_real_static_select_uid;
+extern const s_native_module_uid k_native_module_string_static_select_uid;
+
+void register_native_modules_basic();
+
+#endif // WAVELANG_NATIVE_MODULES_BASIC_H__

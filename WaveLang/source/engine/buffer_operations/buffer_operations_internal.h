@@ -1,9 +1,11 @@
-#ifndef WAVELANG_BUFFER_OPERATIONS_ARITHMETIC_H__
-#define WAVELANG_BUFFER_OPERATIONS_ARITHMETIC_H__
+#ifndef WAVELANG_BUFFER_OPERATIONS_INTERNAL_H__
+#define WAVELANG_BUFFER_OPERATIONS_INTERNAL_H__
 
 #include "common/common.h"
 #include "engine/buffer.h"
 #include "engine/buffer_operations/buffer_operations.h"
+
+// A set of core buffer operations which are used internally in the executor. These are also wrapped in task functions.
 
 struct s_op_assignment {
 	c_real32_4 operator()(const c_real32_4 &a) const { return a; }
@@ -116,4 +118,4 @@ struct s_buffer_operation_multiplication {
 typedef s_buffer_operation_2_inputs<s_op_division, s_op_division_reverse> s_buffer_operation_division;
 typedef s_buffer_operation_2_inputs<s_op_modulo, s_op_modulo_reverse> s_buffer_operation_modulo;
 
-#endif // WAVELANG_BUFFER_OPERATIONS_ARITHMETIC_H__
+#endif // WAVELANG_BUFFER_OPERATIONS_INTERNAL_H__

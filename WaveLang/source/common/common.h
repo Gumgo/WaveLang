@@ -5,24 +5,15 @@
 #include "common/platform.h"
 #include "common/types.h"
 #include "common/asserts.h"
+#include "common/cast_integer_verify.h"
+#include "common/string.h"
 #include <cctype>
 #include <cstddef>
 #include <cstdint>
-#include <cstring>
+#include <type_traits>
+#include <limits>
 
 // Some utility functions... if this list gets too big, move these somewhere better
-inline bool string_compare_case_insensitive(const char *str_a, const char *str_b) {
-	for (size_t index = 0; true; index++) {
-		if (str_a[index] == '\0' && str_b[index] == '\0') {
-			// Both same length, and we haven't yet found a mismatch
-			return true;
-		} else if (::tolower(str_a[index]) != ::tolower(str_b[index])) {
-			// If either character differs, return false
-			// This will also trigger if one string is shorter than the other, because one character will be \0
-			return false;
-		}
-	}
-}
 
 #define ALIGN_SIZE(size, alignment) ((size) + ((alignment) - 1) & ~((alignment) - 1))
 #define ALIGN_SIZE_DOWN(size, alignment) ((size) & ~((alignment) - 1))

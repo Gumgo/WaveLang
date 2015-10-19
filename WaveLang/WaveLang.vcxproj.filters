@@ -57,9 +57,6 @@
     <ClCompile Include="source\execution_graph\execution_graph.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\execution_graph\native_modules.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="source\driver\driver_interface.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -67,9 +64,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\engine\task_graph.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="source\engine\task_functions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\engine\predecessor_resolver.cpp">
@@ -114,9 +108,6 @@
     <ClCompile Include="source\engine\channel_mixer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\engine\native_module_task_mapping.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="source\common\threading\thread_windows.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -138,16 +129,58 @@
     <ClCompile Include="source\engine\sample\native_samples.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\engine\buffer_operations\buffer_operations_sampler.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="source\engine\profiler\stopwatch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\engine\profiler\profiler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\engine\buffer_operations\buffer_operations_delay.cpp">
+    <ClCompile Include="source\execution_graph\native_module_registry.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\execution_graph\native_module.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\execution_graph\native_modules\native_module_registration.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\execution_graph\native_modules\native_modules_basic.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\execution_graph\native_modules\native_modules_utility.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\execution_graph\native_modules\native_modules_sampler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\execution_graph\native_modules\native_modules_delay.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\execution_graph\native_modules\native_modules_filter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\engine\task_functions\task_function_registration.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\engine\task_function_registry.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\engine\task_function.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\engine\task_functions\task_functions_basic.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\engine\task_functions\task_functions_delay.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\engine\task_functions\task_functions_sampler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\engine\task_functions\task_functions_filter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\engine\task_functions\task_functions_utility.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -197,9 +230,6 @@
     <ClInclude Include="source\execution_graph\execution_graph.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\execution_graph\native_modules.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="source\driver\driver_interface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -207,9 +237,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\engine\task_graph.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\engine\task_functions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\engine\predecessor_resolver.h">
@@ -257,9 +284,6 @@
     <ClInclude Include="source\driver\sample_format.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\engine\buffer_operations\buffer_operations_arithmetic.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="source\engine\buffer_operations\buffer_operations.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -267,12 +291,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\engine\channel_mixer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\engine\native_module_task_mapping.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\engine\buffer_operations\buffer_operations_utility.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\common\utility\string_table.h">
@@ -288,9 +306,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\engine\sample\native_samples.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\engine\buffer_operations\buffer_operations_sampler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\engine\math\math.h">
@@ -317,7 +332,61 @@
     <ClInclude Include="source\engine\profiler\profiler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\engine\buffer_operations\buffer_operations_delay.h">
+    <ClInclude Include="source\execution_graph\native_module_registry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\common\cast_integer_verify.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\execution_graph\native_module.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\execution_graph\native_modules\native_module_registration.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\execution_graph\native_modules\native_modules_basic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\execution_graph\native_modules\native_modules_utility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\execution_graph\native_modules\native_modules_sampler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\execution_graph\native_modules\native_modules_delay.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\execution_graph\native_modules\native_modules_filter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\common\string.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\engine\task_functions\task_function_registration.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\engine\task_function_registry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\engine\task_function.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\engine\task_functions\task_functions_basic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\engine\task_functions\task_functions_delay.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\engine\task_functions\task_functions_filter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\engine\task_functions\task_functions_sampler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\engine\task_functions\task_functions_utility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\engine\buffer_operations\buffer_operations_internal.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -343,12 +412,11 @@
     <None Include="source\engine\math\math_int32_4.inl">
       <Filter>Header Files</Filter>
     </None>
-    <None Include="source\engine\buffer_operations\sinc_window_coefficients.inl">
+    <None Include="source\engine\task_functions\sinc_window_coefficients.inl">
       <Filter>Header Files</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="source\compiler\execution_graph_optimization_rules.txt" />
     <Text Include="source\compiler\parser_rules.txt" />
   </ItemGroup>
   <ItemGroup>

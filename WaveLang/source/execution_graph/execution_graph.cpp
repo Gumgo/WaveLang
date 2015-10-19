@@ -1,4 +1,5 @@
 #include "execution_graph/execution_graph.h"
+#include "execution_graph/native_module_registry.h"
 #include "common/utility/file_utility.h"
 #include <string>
 #include <algorithm>
@@ -39,7 +40,7 @@ e_execution_graph_result c_execution_graph::save(const char *fname) const {
 	write(out, m_globals.max_voices);
 
 	// Write the node count, and also count up all edges
-	uint32 node_count = static_cast<uint32>(m_nodes.size());
+	uint32 node_count = cast_integer_verify<uint32>(m_nodes.size());
 	uint32 edge_count = 0;
 #if PREDEFINED(ASSERTS_ENABLED)
 	uint32 edge_count_verify = 0;
@@ -47,9 +48,9 @@ e_execution_graph_result c_execution_graph::save(const char *fname) const {
 	write(out, node_count);
 	for (uint32 index = 0; index < node_count; index++) {
 		const s_node &node = m_nodes[index];
-		edge_count += static_cast<uint32>(node.outgoing_edge_indices.size());
+		edge_count += cast_integer_verify<uint32>(node.outgoing_edge_indices.size());
 #if PREDEFINED(ASSERTS_ENABLED)
-		edge_count_verify += static_cast<uint32>(node.incoming_edge_indices.size());
+		edge_count_verify += cast_integer_verify<uint32>(node.incoming_edge_indices.size());
 #endif // PREDEFINED(ASSERTS_ENABLED)
 
 		uint32 node_type = static_cast<uint32>(node.type);
@@ -70,7 +71,6 @@ e_execution_graph_result c_execution_graph::save(const char *fname) const {
 			break;
 
 		case k_execution_graph_node_type_native_module_call:
-			wl_assert(node.node_data.native_module_call.native_module_index != k_native_module_noop);
 			write(out, node.node_data.native_module_call.native_module_index);
 			break;
 
@@ -101,7 +101,7 @@ e_execution_graph_result c_execution_graph::save(const char *fname) const {
 	}
 
 	// Write string table
-	uint32 string_table_size = static_cast<uint32>(m_string_table.get_table_size());
+	uint32 string_table_size = cast_integer_verify<uint32>(m_string_table.get_table_size());
 	write(out, string_table_size);
 	out.write(m_string_table.get_table_pointer(), m_string_table.get_table_size());
 
@@ -196,10 +196,6 @@ e_execution_graph_result c_execution_graph::load(const char *fname) {
 				return in.eof() ? k_execution_graph_result_invalid_graph : k_execution_graph_result_failed_to_read;
 			}
 
-			// Don't allow no-ops
-			if (node.node_data.native_module_call.native_module_index == k_native_module_noop) {
-				return k_execution_graph_result_invalid_graph;
-			}
 			break;
 
 		case k_execution_graph_node_type_native_module_input:
@@ -341,7 +337,7 @@ bool c_execution_graph::validate() const {
 }
 
 uint32 c_execution_graph::allocate_node() {
-	uint32 index = static_cast<uint32>(m_nodes.size());
+	uint32 index = cast_integer_verify<uint32>(m_nodes.size());
 	m_nodes.push_back(s_node());
 	ZERO_STRUCT(&m_nodes.back().node_data);
 	return index;
@@ -370,7 +366,8 @@ uint32 c_execution_graph::add_constant_node(const std::string &constant_value) {
 	s_node &node = m_nodes[index];
 	node.type = k_execution_graph_node_type_constant;
 	node.node_data.constant.type = k_native_module_argument_type_string;
-	node.node_data.constant.string_index = static_cast<uint32>(m_string_table.add_string(constant_value.c_str()));
+	node.node_data.constant.string_index = cast_integer_verify<uint32>(
+		m_string_table.add_string(constant_value.c_str()));
 	return index;
 }
 
@@ -869,7 +866,7 @@ void c_execution_graph::remove_unused_strings() {
 			continue;
 		}
 
-		uint32 new_string_index = static_cast<uint32>(new_string_table.add_string(
+		uint32 new_string_index = cast_integer_verify<uint32>(new_string_table.add_string(
 			m_string_table.get_string(node.node_data.constant.string_index)));
 		node.node_data.constant.string_index = new_string_index;
 	}
@@ -878,7 +875,7 @@ void c_execution_graph::remove_unused_strings() {
 }
 
 uint32 c_execution_graph::get_node_count() const {
-	return static_cast<uint32>(m_nodes.size());
+	return cast_integer_verify<uint32>(m_nodes.size());
 }
 
 e_execution_graph_node_type c_execution_graph::get_node_type(uint32 node_index) const {
@@ -1016,7 +1013,7 @@ void c_execution_graph::output_to_file() const {
 		case k_execution_graph_node_type_native_module_call:
 			shape = "box";
 			label = c_native_module_registry::get_native_module(
-				node.node_data.native_module_call.native_module_index).name;
+				node.node_data.native_module_call.native_module_index).name.get_string();
 			break;
 
 		case k_execution_graph_node_type_native_module_input:

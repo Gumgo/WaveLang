@@ -38,7 +38,7 @@ void c_thread_pool::start(const s_thread_pool_settings &settings) {
 		ZERO_STRUCT(&thread_definition.parameter_block);
 		s_worker_thread_context *params = thread_definition.parameter_block.get_memory_typed<s_worker_thread_context>();
 		params->this_ptr = this;
-		params->worker_thread_index = static_cast<uint32>(thread);
+		params->worker_thread_index = cast_integer_verify<uint32>(thread);
 
 		m_threads[thread].start(thread_definition);
 	}

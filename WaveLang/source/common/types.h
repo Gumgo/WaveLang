@@ -23,4 +23,14 @@ static_assert(sizeof(uint64) == 8, "Incorrect primitive type size");
 static_assert(sizeof(real32) == 4, "Incorrect primitive type size");
 static_assert(sizeof(real64) == 8, "Incorrect primitive type size");
 
+template<size_t k_size, bool k_is_unsigned> struct s_integer_type {};
+template<> struct s_integer_type<1, true> { typedef uint8 type; };
+template<> struct s_integer_type<1, false> { typedef int8 type; };
+template<> struct s_integer_type<2, true> { typedef uint16 type; };
+template<> struct s_integer_type<2, false> { typedef int16 type; };
+template<> struct s_integer_type<4, true> { typedef uint32 type; };
+template<> struct s_integer_type<4, false> { typedef int32 type; };
+template<> struct s_integer_type<8, true> { typedef uint64 type; };
+template<> struct s_integer_type<8, false> { typedef int64 type; };
+
 #endif // WAVELANG_TYPES_H__

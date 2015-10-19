@@ -3,7 +3,7 @@
 
 #include "common/common.h"
 #include "common/utility/string_table.h"
-#include "execution_graph/native_modules.h"
+#include "execution_graph/native_module.h"
 #include <vector>
 
 #define EXECUTION_GRAPH_OUTPUT_ENABLED 1

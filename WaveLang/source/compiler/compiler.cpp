@@ -204,7 +204,7 @@ static s_compiler_result read_and_preprocess_source_file(
 
 		if (!source_file_in.is_open()) {
 			result.result = k_compiler_result_failed_to_open_file;
-			result.source_location.source_file_index = static_cast<int32>(source_file_index);
+			result.source_location.source_file_index = cast_integer_verify<int32>(source_file_index);
 			result.message = "Failed to open source file '" + full_filename + "'";
 			return result;
 		}
@@ -212,9 +212,10 @@ static s_compiler_result read_and_preprocess_source_file(
 		std::streampos full_file_size = source_file_in.tellg();
 		source_file_in.seekg(0);
 
+		// cast_integer_verify doesn't work with std::streampos
 		if (full_file_size > static_cast<std::streampos>(std::numeric_limits<int32>::max())) {
 			result.result = k_compiler_result_failed_to_read_file;
-			result.source_location.source_file_index = static_cast<int32>(source_file_index);
+			result.source_location.source_file_index = cast_integer_verify<int32>(source_file_index);
 			result.message = "Source file '" + full_filename + "' is too big";
 			return result;
 		}
@@ -244,7 +245,7 @@ static s_compiler_result read_and_preprocess_source_file(
 		result = c_preprocessor::preprocess(preprocessor_source, preprocessor_output);
 
 		if (result.result != k_compiler_result_success) {
-			result.source_location.source_file_index = static_cast<int32>(source_file_index);
+			result.source_location.source_file_index = cast_integer_verify<int32>(source_file_index);
 			return result;
 		}
 

@@ -31,7 +31,7 @@ bool c_lr_symbol::is_terminal() const {
 }
 
 uint16 c_lr_symbol::get_index() const {
-	return static_cast<uint16>(m_index);
+	return cast_integer_verify<uint16>(m_index);
 }
 
 bool c_lr_symbol::operator==(const c_lr_symbol &other) const {

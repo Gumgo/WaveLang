@@ -12,7 +12,7 @@
 #include "engine/sample/sample_library.h"
 
 class c_task_graph;
-struct s_task_function_description;
+struct s_task_function;
 
 struct s_executor_settings {
 	const c_task_graph *task_graph;

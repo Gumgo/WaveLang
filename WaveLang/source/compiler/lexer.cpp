@@ -134,7 +134,7 @@ s_compiler_result c_lexer::process(const s_compiler_context &context, s_lexer_ou
 	for (size_t source_file_index = 0; source_file_index < context.source_files.size(); source_file_index++) {
 		const s_compiler_source_file &source_file = context.source_files[source_file_index];
 		output.source_file_output.push_back(s_lexer_source_file_output());
-		failed |= !process_source_file(source_file, static_cast<int32>(source_file_index),
+		failed |= !process_source_file(source_file, cast_integer_verify<int32>(source_file_index),
 			output.source_file_output.back(), out_errors);
 	}
 
@@ -188,7 +188,7 @@ static bool process_source_file(
 			while (!eol) {
 				size_t whitespace = compiler_utility::skip_whitespace(line_remaining);
 				line_remaining = line_remaining.advance(whitespace);
-				pos += static_cast<int32>(whitespace);
+				pos += cast_integer_verify<int32>(whitespace);
 
 				if (line_remaining.is_empty()) {
 					eol = true;
@@ -223,7 +223,7 @@ static bool process_source_file(
 						line_remaining = line_remaining.advance(2);
 					}
 
-					pos += static_cast<int32>(token.token_string.get_length());
+					pos += cast_integer_verify<int32>(token.token_string.get_length());
 				}
 			}
 		}

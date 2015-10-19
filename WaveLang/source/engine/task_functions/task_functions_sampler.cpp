@@ -1,4 +1,9 @@
-#include "engine/buffer_operations/buffer_operations_sampler.h"
+#include "engine/task_functions/task_functions_sampler.h"
+#include "execution_graph/native_modules/native_modules_sampler.h"
+#include "engine/task_function_registry.h"
+#include "engine/buffer.h"
+#include "engine/buffer_operations/buffer_operations.h"
+#include "engine/sample/sample.h"
 #include "engine/sample/sample_library.h"
 
 #define GENERATE_SINC_WINDOW 0
@@ -6,6 +11,82 @@
 #if PREDEFINED(GENERATE_SINC_WINDOW)
 #include <fstream>
 #endif // PREDEFINED(GENERATE_SINC_WINDOW)
+
+static const uint32 k_task_functions_sampler_library_id = 2;
+
+static const s_task_function_uid k_task_function_sampler_buffer_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 0);
+static const s_task_function_uid k_task_function_sampler_bufferio_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 1);
+static const s_task_function_uid k_task_function_sampler_constant_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 2);
+
+static const s_task_function_uid k_task_function_sampler_loop_buffer_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 10);
+static const s_task_function_uid k_task_function_sampler_loop_bufferio_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 11);
+static const s_task_function_uid k_task_function_sampler_loop_constant_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 12);
+
+static const s_task_function_uid k_task_function_sampler_loop_phase_shift_buffer_buffer_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 20);
+static const s_task_function_uid k_task_function_sampler_loop_phase_shift_bufferio_buffer_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 21);
+static const s_task_function_uid k_task_function_sampler_loop_phase_shift_buffer_bufferio_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 22);
+static const s_task_function_uid k_task_function_sampler_loop_phase_shift_buffer_constant_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 23);
+static const s_task_function_uid k_task_function_sampler_loop_phase_shift_bufferio_constant_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 24);
+static const s_task_function_uid k_task_function_sampler_loop_phase_shift_constant_buffer_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 25);
+static const s_task_function_uid k_task_function_sampler_loop_phase_shift_constant_bufferio_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 26);
+static const s_task_function_uid k_task_function_sampler_loop_phase_shift_constant_constant_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 27);
+
+struct s_buffer_operation_sampler {
+	static size_t query_memory();
+	static void initialize(c_sample_library_requester *sample_requester,
+		s_buffer_operation_sampler *context, const char *sample, e_sample_loop_mode loop_mode, bool phase_shift_enabled,
+		real32 channel);
+
+	static void buffer(
+		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
+		size_t buffer_size, uint32 sample_rate, c_buffer_out out, c_buffer_in speed);
+	static void bufferio(
+		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
+		size_t buffer_size, uint32 sample_rate, c_buffer_inout speed_out);
+	static void constant(
+		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
+		size_t buffer_size, uint32 sample_rate, c_buffer_out out, real32 speed);
+
+	static void loop_buffer(
+		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
+		size_t buffer_size, uint32 sample_rate, c_buffer_out out, c_buffer_in speed);
+	static void loop_bufferio(
+		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
+		size_t buffer_size, uint32 sample_rate, c_buffer_inout speed_out);
+	static void loop_constant(
+		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
+		size_t buffer_size, uint32 sample_rate, c_buffer_out out, real32 speed);
+
+	static void loop_phase_shift_buffer_buffer(
+		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
+		size_t buffer_size, uint32 sample_rate, c_buffer_out out, c_buffer_in speed, c_buffer_in phase);
+	static void loop_phase_shift_bufferio_buffer(
+		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
+		size_t buffer_size, uint32 sample_rate, c_buffer_inout speed_out, c_buffer_in phase);
+	static void loop_phase_shift_buffer_bufferio(
+		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
+		size_t buffer_size, uint32 sample_rate, c_buffer_in speed, c_buffer_inout phase_out);
+	static void loop_phase_shift_buffer_constant(
+		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
+		size_t buffer_size, uint32 sample_rate, c_buffer_out out, c_buffer_in speed, real32 phase);
+	static void loop_phase_shift_bufferio_constant(
+		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
+		size_t buffer_size, uint32 sample_rate, c_buffer_inout speed_out, real32 phase);
+	static void loop_phase_shift_constant_buffer(
+		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
+		size_t buffer_size, uint32 sample_rate, c_buffer_out out, real32 speed, c_buffer_in phase);
+	static void loop_phase_shift_constant_bufferio(
+		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
+		size_t buffer_size, uint32 sample_rate, real32 speed, c_buffer_inout phase_out);
+	static void loop_phase_shift_constant_constant(
+		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
+		size_t buffer_size, uint32 sample_rate, c_buffer_out out, real32 speed, real32 phase);
+
+	uint32 sample_handle;
+	uint32 channel;
+	real32 time;
+	bool reached_end;
+};
 
 // The size in samples of the sinc window, inclusive of the first and last sample
 static const size_t k_sinc_window_size = 9;
@@ -48,9 +129,9 @@ static void get_sample_time_data(const c_sample *sample,
 // incremented, which can be less than 4 if the sample ends or if the end of the buffer is reached. The time before each
 // increment is stored in out_time. Handles looping/wrapping.
 static size_t increment_time(real32 length, s_buffer_operation_sampler *context,
-	const c_real32_4 &advance, size_t &inout_buffer_samples_remaining, real32 (&out_time)[k_sse_block_elements]);
+	const c_real32_4 &advance, size_t &inout_buffer_samples_remaining, real32(&out_time)[k_sse_block_elements]);
 static size_t increment_time_looping(real32 loop_start_time, real32 loop_end_time, s_buffer_operation_sampler *context,
-	const c_real32_4 &advance, size_t &inout_buffer_samples_remaining, real32 (&out_time)[k_sse_block_elements]);
+	const c_real32_4 &advance, size_t &inout_buffer_samples_remaining, real32(&out_time)[k_sse_block_elements]);
 
 // Fast approximation to log2. Result is divided into integer and fraction parts.
 static c_int32_4 fast_log2(const c_real32_4 &x, c_real32_4 &out_frac);
@@ -136,9 +217,9 @@ void s_buffer_operation_sampler::buffer(
 	real32 *out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_elements);
 	const real32 *speed_ptr = speed->get_data<real32>();
 	for (; out_ptr < out_ptr_end; out_ptr += k_sse_block_elements, speed_ptr += k_sse_block_elements) {
-		c_real32_4 speed_val(speed_ptr);
-		c_real32_4 advance = speed_val / c_real32_4(stream_sample_rate);
-		c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(sample_rate_0) * speed_val;
+		 c_real32_4 speed_val(speed_ptr);
+		 c_real32_4 advance = speed_val / c_real32_4(stream_sample_rate);
+		 c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(sample_rate_0) * speed_val;
 
 		// Increment the time first, storing each intermediate time value
 		ALIGNAS_SSE real32 time[k_sse_block_elements];
@@ -324,9 +405,9 @@ void s_buffer_operation_sampler::loop_buffer(
 	real32 *out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_elements);
 	const real32 *speed_ptr = speed->get_data<real32>();
 	for (; out_ptr < out_ptr_end; out_ptr += k_sse_block_elements, speed_ptr += k_sse_block_elements) {
-		c_real32_4 speed_val(speed_ptr);
-		c_real32_4 advance = speed_val / c_real32_4(stream_sample_rate);
-		c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(sample_rate_0) * speed_val;
+		 c_real32_4 speed_val(speed_ptr);
+		 c_real32_4 advance = speed_val / c_real32_4(stream_sample_rate);
+		 c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(sample_rate_0) * speed_val;
 
 		// Increment the time first, storing each intermediate time value
 		ALIGNAS_SSE real32 time[k_sse_block_elements];
@@ -387,9 +468,9 @@ void s_buffer_operation_sampler::loop_bufferio(
 	real32 *speed_out_ptr = speed_out->get_data<real32>();
 	real32 *speed_out_ptr_end = speed_out_ptr + align_size(buffer_size, k_sse_block_elements);
 	for (; speed_out_ptr < speed_out_ptr_end; speed_out_ptr += k_sse_block_elements) {
-		c_real32_4 speed_val(speed_out_ptr);
-		c_real32_4 advance = speed_val / c_real32_4(stream_sample_rate);
-		c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(sample_rate_0) * speed_val;
+		 c_real32_4 speed_val(speed_out_ptr);
+		 c_real32_4 advance = speed_val / c_real32_4(stream_sample_rate);
+		 c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(sample_rate_0) * speed_val;
 
 		// Increment the time first, storing each intermediate time value
 		ALIGNAS_SSE real32 time[k_sse_block_elements];
@@ -1111,7 +1192,7 @@ static void get_sample_time_data(const c_sample *sample,
 }
 
 static size_t increment_time(real32 length, s_buffer_operation_sampler *context,
-	const c_real32_4 &advance, size_t &inout_buffer_samples_remaining, real32 (&out_time)[k_sse_block_elements]) {
+	const c_real32_4 &advance, size_t &inout_buffer_samples_remaining, real32(&out_time)[k_sse_block_elements]) {
 	// We haven't vectorized this, so extract the reals
 	ALIGNAS_SSE real32 advance_array[k_sse_block_elements];
 	advance.store(advance_array);
@@ -1144,7 +1225,7 @@ static size_t increment_time(real32 length, s_buffer_operation_sampler *context,
 }
 
 static size_t increment_time_looping(real32 loop_start_time, real32 loop_end_time, s_buffer_operation_sampler *context,
-	const c_real32_4 &advance, size_t &inout_buffer_samples_remaining, real32 (&out_time)[k_sse_block_elements]) {
+	const c_real32_4 &advance, size_t &inout_buffer_samples_remaining, real32(&out_time)[k_sse_block_elements]) {
 	// We haven't vectorized this, so extract the reals
 	ALIGNAS_SSE real32 advance_array[k_sse_block_elements];
 	advance.store(advance_array);
@@ -1231,7 +1312,7 @@ static void choose_mipmap_levels(
 	out_mip_index_a = fast_log2(sample_stream_ratio, out_mip_blend_ratio);
 
 	// Clamp to the number of mips actually available
-	c_int32_4 max_mip_index(static_cast<int32>(mip_count - 1));
+	c_int32_4 max_mip_index(cast_integer_verify<int32>(mip_count - 1));
 	out_mip_index_a = min(out_mip_index_a, max_mip_index);
 	out_mip_index_b = min(out_mip_index_a + c_int32_4(1), max_mip_index);
 }
@@ -1288,20 +1369,20 @@ e = first non-sampling sample (i.e. first end padding sample)
 A = earliest time we are allowed to sample
 B = latest time we are allowed to sample from (B can get arbitrarily close to e)
 x = samples required for computing A or B
-			s														e
-	+---+---A---+---+---+---+---+---+---+---+---+---+---+---+---+--B+---+---
+s														e
++---+---A---+---+---+---+---+---+---+---+---+---+---+---+---+--B+---+---
 +-------x-------+									+-------x-------+
-	+-------x-------+									+-------x-------+
-		+-------x-------+									+-------x-------+
-			+-------x-------+									+-------x-------+
++-------x-------+									+-------x-------+
++-------x-------+									+-------x-------+
++-------x-------+									+-------x-------+
 
 Consider computing the following interpolated sample S:
 
-	+-------+-------+-------+-----S-+-------+-------+-------+-------+
-	+---------------A-------------a-+
-			+---------------B-----b---------+
-					+-------------c-C---------------+
-							+-----d---------D---------------+
++-------+-------+-------+-----S-+-------+-------+-------+-------+
++---------------A-------------a-+
++---------------B-----b---------+
++-------------c-C---------------+
++-----d---------D---------------+
 
 The value of S is: samples[A]*sinc[a-A] + samples[B]*sinc[b-B] + samples[C]*sinc[c-C] + samples[D]*sinc[d-D]
 where sample[X] is the value of the sample at time X, and sinc[y] is the windowed sinc value at position y, which can
@@ -1685,3 +1766,304 @@ int main(int argc, char **argv) {
 	return 0;
 }
 #endif // 0
+
+static size_t task_memory_query_sampler(const s_task_function_context &context) {
+	return s_buffer_operation_sampler::query_memory();
+}
+
+static void task_initializer_sampler(const s_task_function_context &context) {
+	const char *name = context.arguments[0].get_string_constant_in();
+	real32 channel = context.arguments[1].get_real_constant_in();
+	s_buffer_operation_sampler::initialize(
+		context.sample_requester,
+		static_cast<s_buffer_operation_sampler *>(context.task_memory),
+		name, k_sample_loop_mode_none, false, channel);
+}
+
+static void task_function_sampler_buffer(const s_task_function_context &context) {
+	s_buffer_operation_sampler::buffer(
+		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
+		context.buffer_size,
+		context.sample_rate,
+		context.arguments[2].get_real_buffer_out(),
+		context.arguments[3].get_real_buffer_in());
+}
+
+static void task_function_sampler_bufferio(const s_task_function_context &context) {
+	s_buffer_operation_sampler::bufferio(
+		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
+		context.buffer_size,
+		context.sample_rate,
+		context.arguments[2].get_real_buffer_inout());
+}
+
+static void task_function_sampler_constant(const s_task_function_context &context) {
+	s_buffer_operation_sampler::constant(
+		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
+		context.buffer_size,
+		context.sample_rate,
+		context.arguments[2].get_real_buffer_out(),
+		context.arguments[3].get_real_constant_in());
+}
+
+static void task_initializer_sampler_loop(const s_task_function_context &context) {
+	const char *name = context.arguments[0].get_string_constant_in();
+	real32 channel = context.arguments[1].get_real_constant_in();
+	bool bidi = context.arguments[2].get_bool_constant_in();
+	e_sample_loop_mode loop_mode = bidi ? k_sample_loop_mode_bidi_loop : k_sample_loop_mode_loop;
+	s_buffer_operation_sampler::initialize(
+		context.sample_requester,
+		static_cast<s_buffer_operation_sampler *>(context.task_memory),
+		name, loop_mode, false, channel);
+}
+
+static void task_function_sampler_loop_buffer(const s_task_function_context &context) {
+	s_buffer_operation_sampler::loop_buffer(
+		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
+		context.buffer_size,
+		context.sample_rate,
+		context.arguments[3].get_real_buffer_out(),
+		context.arguments[4].get_real_buffer_in());
+}
+
+static void task_function_sampler_loop_bufferio(const s_task_function_context &context) {
+	s_buffer_operation_sampler::loop_bufferio(
+		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
+		context.buffer_size,
+		context.sample_rate,
+		context.arguments[3].get_real_buffer_inout());
+}
+
+static void task_function_sampler_loop_constant(const s_task_function_context &context) {
+	s_buffer_operation_sampler::loop_constant(
+		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
+		context.buffer_size,
+		context.sample_rate,
+		context.arguments[3].get_real_buffer_out(),
+		context.arguments[4].get_real_constant_in());
+}
+
+static void task_initializer_sampler_loop_phase_shift(const s_task_function_context &context) {
+	const char *name = context.arguments[0].get_string_constant_in();
+	real32 channel = context.arguments[1].get_real_constant_in();
+	bool bidi = context.arguments[2].get_bool_constant_in();
+	e_sample_loop_mode loop_mode = bidi ? k_sample_loop_mode_bidi_loop : k_sample_loop_mode_loop;
+	s_buffer_operation_sampler::initialize(
+		context.sample_requester,
+		static_cast<s_buffer_operation_sampler *>(context.task_memory),
+		name, loop_mode, true, channel);
+}
+
+static void task_function_sampler_loop_phase_shift_buffer_buffer(const s_task_function_context &context) {
+	s_buffer_operation_sampler::loop_phase_shift_buffer_buffer(
+		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
+		context.buffer_size,
+		context.sample_rate,
+		context.arguments[3].get_real_buffer_out(),
+		context.arguments[4].get_real_buffer_in(),
+		context.arguments[5].get_real_buffer_in());
+}
+
+static void task_function_sampler_loop_phase_shift_bufferio_buffer(const s_task_function_context &context) {
+	s_buffer_operation_sampler::loop_phase_shift_bufferio_buffer(
+		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
+		context.buffer_size,
+		context.sample_rate,
+		context.arguments[3].get_real_buffer_inout(),
+		context.arguments[4].get_real_buffer_in());
+}
+
+static void task_function_sampler_loop_phase_shift_buffer_bufferio(const s_task_function_context &context) {
+	s_buffer_operation_sampler::loop_phase_shift_buffer_bufferio(
+		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
+		context.buffer_size,
+		context.sample_rate,
+		context.arguments[3].get_real_buffer_in(),
+		context.arguments[4].get_real_buffer_inout());
+}
+
+static void task_function_sampler_loop_phase_shift_buffer_constant(const s_task_function_context &context) {
+	s_buffer_operation_sampler::loop_phase_shift_buffer_constant(
+		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
+		context.buffer_size,
+		context.sample_rate,
+		context.arguments[3].get_real_buffer_out(),
+		context.arguments[4].get_real_buffer_in(),
+		context.arguments[5].get_real_constant_in());
+}
+
+static void task_function_sampler_loop_phase_shift_bufferio_constant(const s_task_function_context &context) {
+	s_buffer_operation_sampler::loop_phase_shift_bufferio_constant(
+		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
+		context.buffer_size,
+		context.sample_rate,
+		context.arguments[3].get_real_buffer_inout(),
+		context.arguments[4].get_real_constant_in());
+}
+
+static void task_function_sampler_loop_phase_shift_constant_buffer(const s_task_function_context &context) {
+	s_buffer_operation_sampler::loop_phase_shift_constant_buffer(
+		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
+		context.buffer_size,
+		context.sample_rate,
+		context.arguments[3].get_real_buffer_out(),
+		context.arguments[4].get_real_constant_in(),
+		context.arguments[5].get_real_buffer_in());
+}
+
+static void task_function_sampler_loop_phase_shift_constant_bufferio(const s_task_function_context &context) {
+	s_buffer_operation_sampler::loop_phase_shift_constant_bufferio(
+		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
+		context.buffer_size,
+		context.sample_rate,
+		context.arguments[3].get_real_constant_in(),
+		context.arguments[4].get_real_buffer_inout());
+}
+
+static void task_function_sampler_loop_phase_shift_constant_constant(const s_task_function_context &context) {
+	s_buffer_operation_sampler::loop_phase_shift_constant_constant(
+		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
+		context.buffer_size,
+		context.sample_rate,
+		context.arguments[3].get_real_buffer_out(),
+		context.arguments[4].get_real_constant_in(),
+		context.arguments[5].get_real_constant_in());
+}
+
+void register_task_functions_sampler() {
+	{
+		c_task_function_registry::register_task_function(
+			s_task_function::build(k_task_function_sampler_buffer_uid,
+				task_memory_query_sampler, task_initializer_sampler, task_function_sampler_buffer,
+				s_task_function_argument_list::build(TDT(string_constant_in), TDT(real_constant_in), TDT(real_buffer_out), TDT(real_buffer_in))));
+
+		c_task_function_registry::register_task_function(
+			s_task_function::build(k_task_function_sampler_bufferio_uid,
+				task_memory_query_sampler, task_initializer_sampler, task_function_sampler_bufferio,
+				s_task_function_argument_list::build(TDT(string_constant_in), TDT(real_constant_in), TDT(real_buffer_inout))));
+
+		c_task_function_registry::register_task_function(
+			s_task_function::build(k_task_function_sampler_constant_uid,
+				task_memory_query_sampler, task_initializer_sampler, task_function_sampler_constant,
+				s_task_function_argument_list::build(TDT(string_constant_in), TDT(real_constant_in), TDT(real_buffer_out), TDT(real_constant_in))));
+
+		s_task_function_mapping mappings[] = {
+			s_task_function_mapping::build(k_task_function_sampler_bufferio_uid, "ccb.",
+			s_task_function_native_module_argument_mapping::build(0, 1, 2, 2)),
+
+			s_task_function_mapping::build(k_task_function_sampler_buffer_uid, "ccv.",
+				s_task_function_native_module_argument_mapping::build(0, 1, 3, 2)),
+
+			s_task_function_mapping::build(k_task_function_sampler_constant_uid, "ccc.",
+				s_task_function_native_module_argument_mapping::build(0, 1, 3, 2))
+
+		};
+
+		c_task_function_registry::register_task_function_mapping_list(
+			k_native_module_sampler_uid, c_task_function_mapping_list::construct(mappings));
+	}
+
+	{
+		c_task_function_registry::register_task_function(
+			s_task_function::build(k_task_function_sampler_loop_buffer_uid,
+				task_memory_query_sampler, task_initializer_sampler_loop, task_function_sampler_loop_buffer,
+				s_task_function_argument_list::build(TDT(string_constant_in), TDT(real_constant_in), TDT(bool_constant_in), TDT(real_buffer_out), TDT(real_buffer_in))));
+
+		c_task_function_registry::register_task_function(
+			s_task_function::build(k_task_function_sampler_loop_bufferio_uid,
+				task_memory_query_sampler, task_initializer_sampler_loop, task_function_sampler_loop_bufferio,
+				s_task_function_argument_list::build(TDT(string_constant_in), TDT(real_constant_in), TDT(bool_constant_in), TDT(real_buffer_inout))));
+
+		c_task_function_registry::register_task_function(
+			s_task_function::build(k_task_function_sampler_loop_constant_uid,
+				task_memory_query_sampler, task_initializer_sampler_loop, task_function_sampler_loop_constant,
+				s_task_function_argument_list::build(TDT(string_constant_in), TDT(real_constant_in), TDT(bool_constant_in), TDT(real_buffer_out), TDT(real_constant_in))));
+
+		s_task_function_mapping mappings[] = {
+			s_task_function_mapping::build(k_task_function_sampler_loop_bufferio_uid, "cccb.",
+			s_task_function_native_module_argument_mapping::build(0, 1, 2, 3, 3)),
+
+			s_task_function_mapping::build(k_task_function_sampler_loop_buffer_uid, "cccv.",
+				s_task_function_native_module_argument_mapping::build(0, 1, 2, 4, 3)),
+
+			s_task_function_mapping::build(k_task_function_sampler_loop_constant_uid, "cccc.",
+				s_task_function_native_module_argument_mapping::build(0, 1, 2, 4, 3))
+
+		};
+
+		c_task_function_registry::register_task_function_mapping_list(
+			k_native_module_sampler_loop_uid, c_task_function_mapping_list::construct(mappings));
+	}
+
+	{
+		c_task_function_registry::register_task_function(
+			s_task_function::build(k_task_function_sampler_loop_phase_shift_buffer_buffer_uid,
+				task_memory_query_sampler, task_initializer_sampler_loop_phase_shift, task_function_sampler_loop_phase_shift_buffer_buffer,
+				s_task_function_argument_list::build(TDT(string_constant_in), TDT(real_constant_in), TDT(bool_constant_in), TDT(real_buffer_out), TDT(real_buffer_in), TDT(real_buffer_in))));
+
+		c_task_function_registry::register_task_function(
+			s_task_function::build(k_task_function_sampler_loop_phase_shift_bufferio_buffer_uid,
+				task_memory_query_sampler, task_initializer_sampler_loop_phase_shift, task_function_sampler_loop_phase_shift_bufferio_buffer,
+				s_task_function_argument_list::build(TDT(string_constant_in), TDT(real_constant_in), TDT(bool_constant_in), TDT(real_buffer_inout), TDT(real_buffer_in))));
+
+		c_task_function_registry::register_task_function(
+			s_task_function::build(k_task_function_sampler_loop_phase_shift_buffer_bufferio_uid,
+				task_memory_query_sampler, task_initializer_sampler_loop_phase_shift, task_function_sampler_loop_phase_shift_buffer_bufferio,
+				s_task_function_argument_list::build(TDT(string_constant_in), TDT(real_constant_in), TDT(bool_constant_in), TDT(real_buffer_in), TDT(real_buffer_inout))));
+
+		c_task_function_registry::register_task_function(
+			s_task_function::build(k_task_function_sampler_loop_phase_shift_buffer_constant_uid,
+				task_memory_query_sampler, task_initializer_sampler_loop_phase_shift, task_function_sampler_loop_phase_shift_buffer_constant,
+				s_task_function_argument_list::build(TDT(string_constant_in), TDT(real_constant_in), TDT(bool_constant_in), TDT(real_buffer_out), TDT(real_buffer_in), TDT(real_constant_in))));
+
+		c_task_function_registry::register_task_function(
+			s_task_function::build(k_task_function_sampler_loop_phase_shift_bufferio_constant_uid,
+				task_memory_query_sampler, task_initializer_sampler_loop_phase_shift, task_function_sampler_loop_phase_shift_bufferio_constant,
+				s_task_function_argument_list::build(TDT(string_constant_in), TDT(real_constant_in), TDT(bool_constant_in), TDT(real_buffer_inout), TDT(real_constant_in))));
+
+		c_task_function_registry::register_task_function(
+			s_task_function::build(k_task_function_sampler_loop_phase_shift_constant_buffer_uid,
+				task_memory_query_sampler, task_initializer_sampler_loop_phase_shift, task_function_sampler_loop_phase_shift_constant_buffer,
+				s_task_function_argument_list::build(TDT(string_constant_in), TDT(real_constant_in), TDT(bool_constant_in), TDT(real_buffer_out), TDT(real_constant_in), TDT(real_buffer_in))));
+
+		c_task_function_registry::register_task_function(
+			s_task_function::build(k_task_function_sampler_loop_phase_shift_constant_bufferio_uid,
+				task_memory_query_sampler, task_initializer_sampler_loop_phase_shift, task_function_sampler_loop_phase_shift_constant_bufferio,
+				s_task_function_argument_list::build(TDT(string_constant_in), TDT(real_constant_in), TDT(bool_constant_in), TDT(real_constant_in), TDT(real_buffer_inout))));
+
+		c_task_function_registry::register_task_function(
+			s_task_function::build(k_task_function_sampler_loop_phase_shift_constant_constant_uid,
+				task_memory_query_sampler, task_initializer_sampler_loop_phase_shift, task_function_sampler_loop_phase_shift_constant_constant,
+				s_task_function_argument_list::build(TDT(string_constant_in), TDT(real_constant_in), TDT(bool_constant_in), TDT(real_buffer_out), TDT(real_constant_in), TDT(real_constant_in))));
+
+		s_task_function_mapping mappings[] = {
+			s_task_function_mapping::build(k_task_function_sampler_loop_phase_shift_bufferio_buffer_uid, "cccbv.",
+			s_task_function_native_module_argument_mapping::build(0, 1, 2, 3, 4, 3)),
+
+			s_task_function_mapping::build(k_task_function_sampler_loop_phase_shift_buffer_bufferio_uid, "cccvb.",
+				s_task_function_native_module_argument_mapping::build(0, 1, 2, 3, 4, 4)),
+
+			s_task_function_mapping::build(k_task_function_sampler_loop_phase_shift_buffer_buffer_uid, "cccvv.",
+				s_task_function_native_module_argument_mapping::build(0, 1, 2, 4, 5, 3)),
+
+			s_task_function_mapping::build(k_task_function_sampler_loop_phase_shift_bufferio_constant_uid, "cccbc.",
+				s_task_function_native_module_argument_mapping::build(0, 1, 2, 3, 4, 3)),
+
+			s_task_function_mapping::build(k_task_function_sampler_loop_phase_shift_buffer_constant_uid, "cccvc.",
+				s_task_function_native_module_argument_mapping::build(0, 1, 2, 4, 5, 3)),
+
+			s_task_function_mapping::build(k_task_function_sampler_loop_phase_shift_constant_bufferio_uid, "ccccb.",
+				s_task_function_native_module_argument_mapping::build(0, 1, 2, 3, 4, 4)),
+
+			s_task_function_mapping::build(k_task_function_sampler_loop_phase_shift_constant_buffer_uid, "ccccv.",
+				s_task_function_native_module_argument_mapping::build(0, 1, 2, 4, 5, 3)),
+
+			s_task_function_mapping::build(k_task_function_sampler_loop_phase_shift_constant_constant_uid, "ccccc.",
+				s_task_function_native_module_argument_mapping::build(0, 1, 2, 4, 5, 3))
+
+		};
+
+		c_task_function_registry::register_task_function_mapping_list(
+			k_native_module_sampler_loop_phase_shift_uid, c_task_function_mapping_list::construct(mappings));
+	}
+}

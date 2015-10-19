@@ -1,7 +1,8 @@
 #include "engine/executor.h"
 #include "engine/task_graph.h"
-#include "engine/task_functions.h"
-#include "engine/buffer_operations/buffer_operations_arithmetic.h"
+#include "engine/task_function.h"
+#include "engine/task_function_registry.h"
+#include "engine/buffer_operations/buffer_operations_internal.h"
 #include "engine/channel_mixer.h"
 #include <algorithm>
 
@@ -143,11 +144,11 @@ void c_executor::initialize_internal(const s_executor_settings &settings) {
 
 		size_t required_memory_per_voice = 0;
 		for (uint32 task = 0; task < m_task_graph->get_task_count(); task++) {
-			const s_task_function_description &task_function_description =
-				c_task_function_registry::get_task_function_description(m_task_graph->get_task_function(task));
+			const s_task_function &task_function =
+				c_task_function_registry::get_task_function(m_task_graph->get_task_function_index(task));
 
 			size_t required_memory_for_task = 0;
-			if (task_function_description.memory_query) {
+			if (task_function.memory_query) {
 				// The memory query function will be able to read from the constant inputs.
 				// We don't (currently) support dynamic task memory usage.
 
@@ -188,7 +189,7 @@ void c_executor::initialize_internal(const s_executor_settings &settings) {
 				task_function_context.arguments = c_task_function_arguments(arguments, argument_data.get_count());
 				// $TODO fill in timing info, etc.
 
-				required_memory_for_task = task_function_description.memory_query(task_function_context);
+				required_memory_for_task = task_function.memory_query(task_function_context);
 			}
 
 			if (required_memory_for_task == 0) {
@@ -252,10 +253,10 @@ void c_executor::initialize_internal(const s_executor_settings &settings) {
 		m_sample_library.clear_requested_samples();
 
 		for (uint32 task = 0; task < m_task_graph->get_task_count(); task++) {
-			const s_task_function_description &task_function_description =
-				c_task_function_registry::get_task_function_description(m_task_graph->get_task_function(task));
+			const s_task_function &task_function =
+				c_task_function_registry::get_task_function(m_task_graph->get_task_function_index(task));
 
-			if (task_function_description.initializer) {
+			if (task_function.initializer) {
 				// Set up the arguments
 				s_task_function_argument arguments[k_max_task_function_arguments];
 				c_task_graph_data_array argument_data = m_task_graph->get_task_arguments(task);
@@ -298,7 +299,7 @@ void c_executor::initialize_internal(const s_executor_settings &settings) {
 				for (uint32 voice = 0; voice < m_task_graph->get_globals().max_voices; voice++) {
 					task_function_context.task_memory =
 						m_voice_task_memory_pointers[m_task_graph->get_task_count() * voice + task];
-					task_function_description.initializer(task_function_context);
+					task_function.initializer(task_function_context);
 				}
 			}
 		}
@@ -373,7 +374,7 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 		// Setup each initial task predecessor count
 		for (uint32 task = 0; task < m_task_graph->get_task_count(); task++) {
 			m_task_contexts.get_array()[task].predecessors_remaining.initialize(
-				static_cast<int32>(m_task_graph->get_task_predecessor_count(task)));
+				cast_integer_verify<int32>(m_task_graph->get_task_predecessor_count(task)));
 		}
 
 		// Initially all buffers are unassigned
@@ -383,7 +384,7 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 			buffer_context.usages_remaining.initialize(m_task_graph->get_buffer_usages(buffer)); 
 		}
 
-		m_tasks_remaining.initialize(static_cast<int32>(m_task_graph->get_task_count()));
+		m_tasks_remaining.initialize(cast_integer_verify<int32>(m_task_graph->get_task_count()));
 
 		// Add the initial tasks
 		c_task_graph_task_array initial_tasks = m_task_graph->get_initial_tasks();
@@ -567,9 +568,8 @@ void c_executor::process_task(uint32 thread_index, const s_task_parameters *para
 		m_profiler.begin_task(thread_index, params->task_index);
 	}
 
-	e_task_function task_function = m_task_graph->get_task_function(params->task_index);
-	const s_task_function_description &task_function_description =
-		c_task_function_registry::get_task_function_description(task_function);
+	const s_task_function &task_function =
+		c_task_function_registry::get_task_function(m_task_graph->get_task_function_index(params->task_index));
 
 	allocate_output_buffers(params->task_index);
 
@@ -627,13 +627,13 @@ void c_executor::process_task(uint32 thread_index, const s_task_parameters *para
 		// $TODO fill in timing info, etc.
 
 		// Call the task function
-		wl_assert(task_function_description.function);
+		wl_assert(task_function.function);
 
 		if (m_profiling_enabled) {
 			m_profiler.begin_task_function(thread_index, params->task_index);
 		}
 
-		task_function_description.function(task_function_context);
+		task_function.function(task_function_context);
 
 		if (m_profiling_enabled) {
 			m_profiler.end_task_function(thread_index, params->task_index);

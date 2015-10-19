@@ -16,4 +16,7 @@
 
 #define ZERO_STRUCT(s) memset(s, 0, sizeof(*s))
 
+#define STATIC_MIN(a, b) ((a) < (b) ? (a) : (b))
+#define STATIC_MAX(a, b) ((a) > (b) ? (a) : (b))
+
 #endif // WAVELANG_MACROS_H__

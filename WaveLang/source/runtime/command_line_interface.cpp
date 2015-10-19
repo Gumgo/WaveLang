@@ -1,5 +1,9 @@
 #include "common/common.h"
 #include "runtime/runtime_context.h"
+#include "execution_graph/native_module_registry.h"
+#include "execution_graph/native_modules/native_module_registration.h"
+#include "engine/task_function_registry.h"
+#include "engine/task_functions/task_function_registration.h"
 #include "execution_graph/execution_graph.h"
 
 #include <iostream>
@@ -49,6 +53,12 @@ c_command_line_interface::~c_command_line_interface() {
 }
 
 int c_command_line_interface::main_function() {
+	c_native_module_registry::initialize();
+	c_task_function_registry::initialize();
+
+	register_native_modules(false);
+	register_task_functions();
+
 	{
 		s_driver_result driver_result = runtime_context.driver_interface.initialize();
 		if (driver_result.result != k_driver_result_success) {
@@ -79,6 +89,9 @@ int c_command_line_interface::main_function() {
 
 	runtime_context.driver_interface.stop_stream();
 	runtime_context.driver_interface.shutdown();
+
+	c_task_function_registry::shutdown();
+	c_native_module_registry::shutdown();
 
 	return 0;
 }

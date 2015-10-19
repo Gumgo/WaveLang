@@ -402,7 +402,7 @@ c_wrapped_array_const<real32> c_sample::get_channel_sample_data(uint32 channel) 
 
 uint32 c_sample::get_mipmap_count() const {
 	wl_assert(m_type == k_type_mipmap);
-	return static_cast<uint32>(m_mipmap.size());
+	return cast_integer_verify<uint32>(m_mipmap.size());
 }
 
 const c_sample *c_sample::get_mipmap_sample(uint32 index) const {

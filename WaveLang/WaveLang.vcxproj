@@ -38,8 +38,6 @@
     <ClCompile Include="source\driver\sample_format.cpp" />
     <ClCompile Include="source\engine\buffer_allocator.cpp" />
     <ClCompile Include="source\engine\buffer_operations\buffer_operations.cpp" />
-    <ClCompile Include="source\engine\buffer_operations\buffer_operations_delay.cpp" />
-    <ClCompile Include="source\engine\buffer_operations\buffer_operations_sampler.cpp" />
     <ClCompile Include="source\engine\channel_mixer.cpp" />
     <ClCompile Include="source\engine\profiler\profiler.cpp" />
     <ClCompile Include="source\engine\profiler\stopwatch.cpp" />
@@ -47,19 +45,34 @@
     <ClCompile Include="source\engine\sample\sample.cpp" />
     <ClCompile Include="source\engine\sample\sample_library.cpp" />
     <ClCompile Include="source\engine\executor.cpp" />
-    <ClCompile Include="source\engine\native_module_task_mapping.cpp" />
     <ClCompile Include="source\engine\predecessor_resolver.cpp" />
-    <ClCompile Include="source\engine\task_functions.cpp" />
+    <ClCompile Include="source\engine\task_function.cpp" />
+    <ClCompile Include="source\engine\task_functions\task_functions_basic.cpp" />
+    <ClCompile Include="source\engine\task_functions\task_functions_delay.cpp" />
+    <ClCompile Include="source\engine\task_functions\task_functions_filter.cpp" />
+    <ClCompile Include="source\engine\task_functions\task_functions_sampler.cpp" />
+    <ClCompile Include="source\engine\task_functions\task_functions_utility.cpp" />
+    <ClCompile Include="source\engine\task_functions\task_function_registration.cpp" />
     <ClCompile Include="source\engine\task_graph.cpp" />
+    <ClCompile Include="source\engine\task_function_registry.cpp" />
     <ClCompile Include="source\engine\thread_pool.cpp" />
     <ClCompile Include="source\execution_graph\execution_graph.cpp" />
-    <ClCompile Include="source\execution_graph\native_modules.cpp" />
+    <ClCompile Include="source\execution_graph\native_module.cpp" />
+    <ClCompile Include="source\execution_graph\native_modules\native_modules_basic.cpp" />
+    <ClCompile Include="source\execution_graph\native_modules\native_modules_delay.cpp" />
+    <ClCompile Include="source\execution_graph\native_modules\native_modules_filter.cpp" />
+    <ClCompile Include="source\execution_graph\native_modules\native_modules_sampler.cpp" />
+    <ClCompile Include="source\execution_graph\native_modules\native_modules_utility.cpp" />
+    <ClCompile Include="source\execution_graph\native_modules\native_module_registration.cpp" />
+    <ClCompile Include="source\execution_graph\native_module_registry.cpp" />
     <ClCompile Include="source\runtime\command_line_interface.cpp" />
     <ClCompile Include="source\runtime\runtime_context.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\common\asserts.h" />
+    <ClInclude Include="source\common\cast_integer_verify.h" />
     <ClInclude Include="source\common\macros.h" />
+    <ClInclude Include="source\common\string.h" />
     <ClInclude Include="source\common\threading\atomics.h" />
     <ClInclude Include="source\common\common.h" />
     <ClInclude Include="source\common\platform.h" />
@@ -90,10 +103,7 @@
     <ClInclude Include="source\engine\buffer.h" />
     <ClInclude Include="source\engine\buffer_allocator.h" />
     <ClInclude Include="source\engine\buffer_operations\buffer_operations.h" />
-    <ClInclude Include="source\engine\buffer_operations\buffer_operations_arithmetic.h" />
-    <ClInclude Include="source\engine\buffer_operations\buffer_operations_delay.h" />
-    <ClInclude Include="source\engine\buffer_operations\buffer_operations_sampler.h" />
-    <ClInclude Include="source\engine\buffer_operations\buffer_operations_utility.h" />
+    <ClInclude Include="source\engine\buffer_operations\buffer_operations_internal.h" />
     <ClInclude Include="source\engine\channel_mixer.h" />
     <ClInclude Include="source\engine\executor.h" />
     <ClInclude Include="source\engine\math\math.h" />
@@ -101,18 +111,31 @@
     <ClInclude Include="source\engine\math\math_real32_4.h" />
     <ClInclude Include="source\engine\math\sse.h" />
     <ClInclude Include="source\engine\math\sse_mathfun.h" />
-    <ClInclude Include="source\engine\native_module_task_mapping.h" />
     <ClInclude Include="source\engine\profiler\profiler.h" />
     <ClInclude Include="source\engine\profiler\stopwatch.h" />
     <ClInclude Include="source\engine\sample\native_samples.h" />
     <ClInclude Include="source\engine\predecessor_resolver.h" />
     <ClInclude Include="source\engine\sample\sample.h" />
     <ClInclude Include="source\engine\sample\sample_library.h" />
-    <ClInclude Include="source\engine\task_functions.h" />
+    <ClInclude Include="source\engine\task_function.h" />
+    <ClInclude Include="source\engine\task_functions\task_functions_basic.h" />
+    <ClInclude Include="source\engine\task_functions\task_functions_delay.h" />
+    <ClInclude Include="source\engine\task_functions\task_functions_filter.h" />
+    <ClInclude Include="source\engine\task_functions\task_functions_sampler.h" />
+    <ClInclude Include="source\engine\task_functions\task_functions_utility.h" />
+    <ClInclude Include="source\engine\task_functions\task_function_registration.h" />
     <ClInclude Include="source\engine\task_graph.h" />
+    <ClInclude Include="source\engine\task_function_registry.h" />
     <ClInclude Include="source\engine\thread_pool.h" />
     <ClInclude Include="source\execution_graph\execution_graph.h" />
-    <ClInclude Include="source\execution_graph\native_modules.h" />
+    <ClInclude Include="source\execution_graph\native_module.h" />
+    <ClInclude Include="source\execution_graph\native_modules\native_modules_basic.h" />
+    <ClInclude Include="source\execution_graph\native_modules\native_modules_delay.h" />
+    <ClInclude Include="source\execution_graph\native_modules\native_modules_filter.h" />
+    <ClInclude Include="source\execution_graph\native_modules\native_modules_sampler.h" />
+    <ClInclude Include="source\execution_graph\native_modules\native_modules_utility.h" />
+    <ClInclude Include="source\execution_graph\native_modules\native_module_registration.h" />
+    <ClInclude Include="source\execution_graph\native_module_registry.h" />
     <ClInclude Include="source\runtime\runtime_context.h" />
   </ItemGroup>
   <ItemGroup>
@@ -120,13 +143,12 @@
     <None Include="source\common\threading\atomics_windows.inl" />
     <None Include="source\compiler\compiler_utility.inl" />
     <None Include="source\compiler\lr_parse_tables.inl" />
-    <None Include="source\engine\buffer_operations\sinc_window_coefficients.inl" />
     <None Include="source\engine\math\math_int32_4.inl" />
     <None Include="source\engine\math\math_real32_4.inl" />
     <None Include="source\engine\sample\native_samples.inl" />
+    <None Include="source\engine\task_functions\sinc_window_coefficients.inl" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="source\compiler\execution_graph_optimization_rules.txt" />
     <Text Include="source\compiler\parser_rules.txt" />
   </ItemGroup>
   <ItemGroup>

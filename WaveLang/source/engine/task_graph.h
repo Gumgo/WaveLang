@@ -2,8 +2,7 @@
 #define WAVELANG_TASK_GRAPH_H__
 
 #include "common/common.h"
-#include "engine/task_functions.h"
-#include "engine/native_module_task_mapping.h"
+#include "engine/task_function.h"
 #include "common/utility/string_table.h"
 #include <vector>
 
@@ -78,7 +77,7 @@ public:
 	uint32 get_task_count() const;
 	uint32 get_max_task_concurrency() const;
 
-	e_task_function get_task_function(uint32 task_index) const;
+	uint32 get_task_function_index(uint32 task_index) const;
 	c_task_graph_data_array get_task_arguments(uint32 task_index) const;
 
 	size_t get_task_predecessor_count(uint32 task_index) const;
@@ -96,7 +95,7 @@ public:
 private:
 	struct s_task {
 		// The function to execute during this task
-		e_task_function task_function;
+		uint32 task_function_index;
 
 		// Start index in m_data_lists
 		size_t arguments_start;
@@ -113,7 +112,7 @@ private:
 	bool add_task_for_node(const c_execution_graph &execution_graph, uint32 node_index,
 		std::vector<uint32> &nodes_to_tasks);
 	void setup_task(const c_execution_graph &execution_graph, uint32 node_index,
-		uint32 task_index, e_task_function task_function, const c_task_mapping_array &task_mapping_array);
+		uint32 task_index, const s_task_function_mapping &task_function_mapping);
 	void build_task_successor_lists(const c_execution_graph &execution_graph,
 		const std::vector<uint32> &nodes_to_tasks);
 	void allocate_buffers(const c_execution_graph &execution_graph);

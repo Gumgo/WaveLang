@@ -106,7 +106,7 @@ s_compiler_result c_parser::process(const s_compiler_context &context, const s_l
 		const s_compiler_source_file &source_file = context.source_files[source_file_index];
 		output.source_file_output.push_back(s_parser_source_file_output());
 		failed |= !process_source_file(source_file, input.source_file_output[source_file_index],
-			static_cast<int32>(source_file_index), output.source_file_output.back(), out_errors);
+			cast_integer_verify<int32>(source_file_index), output.source_file_output.back(), out_errors);
 	}
 
 	if (failed) {

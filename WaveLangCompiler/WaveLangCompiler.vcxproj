@@ -35,12 +35,20 @@
     <ClCompile Include="..\WaveLang\source\compiler\preprocessor.cpp" />
     <ClCompile Include="..\WaveLang\source\engine\thread_pool.cpp" />
     <ClCompile Include="..\WaveLang\source\execution_graph\execution_graph.cpp" />
-    <ClCompile Include="..\WaveLang\source\execution_graph\native_modules.cpp" />
+    <ClCompile Include="..\WaveLang\source\execution_graph\native_module.cpp" />
+    <ClCompile Include="..\WaveLang\source\execution_graph\native_modules\native_modules_basic.cpp" />
+    <ClCompile Include="..\WaveLang\source\execution_graph\native_modules\native_modules_delay.cpp" />
+    <ClCompile Include="..\WaveLang\source\execution_graph\native_modules\native_modules_filter.cpp" />
+    <ClCompile Include="..\WaveLang\source\execution_graph\native_modules\native_modules_sampler.cpp" />
+    <ClCompile Include="..\WaveLang\source\execution_graph\native_modules\native_modules_utility.cpp" />
+    <ClCompile Include="..\WaveLang\source\execution_graph\native_modules\native_module_registration.cpp" />
+    <ClCompile Include="..\WaveLang\source\execution_graph\native_module_registry.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\WaveLang\source\common\asserts.h" />
     <ClInclude Include="..\WaveLang\source\common\common.h" />
     <ClInclude Include="..\WaveLang\source\common\platform.h" />
+    <ClInclude Include="..\WaveLang\source\common\string.h" />
     <ClInclude Include="..\WaveLang\source\common\threading\atomics.h" />
     <ClInclude Include="..\WaveLang\source\common\threading\condition_variable.h" />
     <ClInclude Include="..\WaveLang\source\common\threading\lock_free.h" />
@@ -65,7 +73,14 @@
     <ClInclude Include="..\WaveLang\source\compiler\preprocessor.h" />
     <ClInclude Include="..\WaveLang\source\engine\thread_pool.h" />
     <ClInclude Include="..\WaveLang\source\execution_graph\execution_graph.h" />
-    <ClInclude Include="..\WaveLang\source\execution_graph\native_modules.h" />
+    <ClInclude Include="..\WaveLang\source\execution_graph\native_module.h" />
+    <ClInclude Include="..\WaveLang\source\execution_graph\native_modules\native_modules_basic.h" />
+    <ClInclude Include="..\WaveLang\source\execution_graph\native_modules\native_modules_delay.h" />
+    <ClInclude Include="..\WaveLang\source\execution_graph\native_modules\native_modules_filter.h" />
+    <ClInclude Include="..\WaveLang\source\execution_graph\native_modules\native_modules_sampler.h" />
+    <ClInclude Include="..\WaveLang\source\execution_graph\native_modules\native_modules_utility.h" />
+    <ClInclude Include="..\WaveLang\source\execution_graph\native_modules\native_module_registration.h" />
+    <ClInclude Include="..\WaveLang\source\execution_graph\native_module_registry.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\WaveLang\source\common\threading\atomics_fallback.inl" />
@@ -75,7 +90,6 @@
     <None Include="..\WaveLang\source\compiler\lr_parse_tables.inl" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="..\WaveLang\source\compiler\execution_graph_optimization_rules.txt" />
     <Text Include="..\WaveLang\source\compiler\parser_rules.txt" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

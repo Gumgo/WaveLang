@@ -1,5 +1,28 @@
-#include "engine/buffer_operations/buffer_operations_delay.h"
+#include "engine/task_functions/task_functions_delay.h"
+#include "execution_graph/native_modules/native_modules_delay.h"
+#include "engine/task_function_registry.h"
+#include "engine/buffer.h"
+#include "engine/buffer_operations/buffer_operations.h"
 #include <algorithm>
+
+static const uint32 k_task_functions_delay_library_id = 3;
+
+static const s_task_function_uid k_task_function_delay_buffer_uid = s_task_function_uid::build(k_task_functions_delay_library_id, 0);
+
+struct s_buffer_operation_delay {
+	static size_t query_memory(uint32 sample_rate, real32 delay);
+	static void initialize(s_buffer_operation_delay *context, uint32 sample_rate, real32 delay);
+
+	static void buffer(
+		s_buffer_operation_delay *context, size_t buffer_size, c_buffer_out out, c_buffer_in in);
+
+	// The inout buffer version would require an extra intermediate buffer and more copies, so it's not really worth
+	// implementing.
+
+	uint32 delay_samples;
+	size_t delay_buffer_head_index;
+	bool is_constant;
+};
 
 static real32 *get_delay_buffer(s_buffer_operation_delay *context) {
 	// Delay buffer is allocated directly after the context
@@ -119,5 +142,44 @@ void s_buffer_operation_delay::buffer(
 		// 3) If our delay is smaller than our buffer, it means that some input samples will be immediately used in the
 		// output buffer, so copy beginning of input to end of output
 		memcpy(out_ptr + context->delay_samples, in_ptr, (buffer_size - context->delay_samples) * sizeof(real32));
+	}
+}
+
+static size_t task_memory_query_delay(const s_task_function_context &context) {
+	return s_buffer_operation_delay::query_memory(
+		context.sample_rate,
+		context.arguments[0].get_real_constant_in());
+}
+
+static void task_initializer_delay(const s_task_function_context &context) {
+	s_buffer_operation_delay::initialize(
+		static_cast<s_buffer_operation_delay *>(context.task_memory),
+		context.sample_rate,
+		context.arguments[0].get_real_constant_in());
+}
+
+static void task_function_delay_buffer(const s_task_function_context &context) {
+	s_buffer_operation_delay::buffer(
+		static_cast<s_buffer_operation_delay *>(context.task_memory),
+		context.buffer_size,
+		context.arguments[1].get_real_buffer_out(),
+		context.arguments[2].get_real_buffer_in());
+}
+
+void register_task_functions_delay() {
+	{
+		c_task_function_registry::register_task_function(
+			s_task_function::build(k_task_function_delay_buffer_uid,
+				task_memory_query_delay, task_initializer_delay, task_function_delay_buffer,
+				s_task_function_argument_list::build(TDT(real_constant_in), TDT(real_buffer_out), TDT(real_buffer_in))));
+
+		s_task_function_mapping mappings[] = {
+			s_task_function_mapping::build(k_task_function_delay_buffer_uid, "cv.",
+			s_task_function_native_module_argument_mapping::build(0, 2, 1))
+
+		};
+
+		c_task_function_registry::register_task_function_mapping_list(
+			k_native_module_delay_uid, c_task_function_mapping_list::construct(mappings));
 	}
 }

@@ -1,7 +1,8 @@
 #include "compiler/execution_graph_builder.h"
 #include "compiler/ast.h"
 #include "execution_graph/execution_graph.h"
-#include "execution_graph/native_modules.h"
+#include "execution_graph/native_module.h"
+#include "execution_graph/native_module_registry.h"
 #include <map>
 #include <deque>
 #include <stack>
@@ -620,7 +621,7 @@ public:
 				error.source_location = node->get_source_location();
 				error.message = "Invalid repeat loop count: " + std::to_string(loop_count_real);
 				m_errors->push_back(error);
-			} else if (loop_count_real > static_cast<uint32>(k_max_loop_count)) {
+			} else if (loop_count_real > static_cast<real32>(k_max_loop_count)) {
 				s_compiler_result error;
 				error.result = k_compiler_result_invalid_loop_count;
 				error.source_location = node->get_source_location();
@@ -792,7 +793,7 @@ s_compiler_result c_execution_graph_builder::build_execution_graph(
 	for (size_t arg = 0; arg < entry_point_module->get_argument_count(); arg++) {
 		wl_assert(entry_point_module->get_argument(arg)->get_qualifier() == k_ast_qualifier_out);
 
-		uint32 output_node_index = out_execution_graph->add_output_node(static_cast<uint32>(arg));
+		uint32 output_node_index = out_execution_graph->add_output_node(cast_integer_verify<uint32>(arg));
 		uint32 out_argument_node_index = builder.get_out_argument_node_index(arg);
 		out_execution_graph->add_edge(out_argument_node_index, output_node_index);
 	}

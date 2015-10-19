@@ -1,5 +1,5 @@
 #include "engine/channel_mixer.h"
-#include "engine/buffer_operations/buffer_operations_arithmetic.h"
+#include "engine/buffer_operations/buffer_operations_internal.h"
 
 void mix_output_buffers_to_channel_buffers(
 	uint32 frames,

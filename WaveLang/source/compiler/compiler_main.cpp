@@ -1,4 +1,6 @@
 #include "common/common.h"
+#include "execution_graph/native_module_registry.h"
+#include "execution_graph/native_modules/native_module_registration.h"
 #include "compiler/compiler.h"
 #include "execution_graph/execution_graph.h"
 #include <iostream>
@@ -7,6 +9,9 @@
 static const char *k_wavelang_synth_extension = "wls";
 
 int main(int argc, char **argv) {
+	c_native_module_registry::initialize();
+	register_native_modules(true);
+
 	for (int arg = 1; arg < argc; arg++) {
 		std::cout << "Compiling '" << argv[arg] << "'\n";
 		c_execution_graph execution_graph;
@@ -41,5 +46,6 @@ int main(int argc, char **argv) {
 		}
 	}
 
+	c_native_module_registry::shutdown();
 	return 0;
 }

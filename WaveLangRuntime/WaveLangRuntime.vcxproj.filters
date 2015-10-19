@@ -30,12 +30,6 @@
     <ClInclude Include="..\WaveLang\source\execution_graph\execution_graph.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\WaveLang\source\execution_graph\native_modules.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\WaveLang\source\engine\task_functions.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\WaveLang\source\engine\task_graph.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -78,9 +72,6 @@
     <ClInclude Include="..\WaveLang\source\driver\sample_format.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\WaveLang\source\engine\buffer_operations\buffer_operations_arithmetic.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\WaveLang\source\engine\buffer_operations\buffer_operations.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -88,12 +79,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\WaveLang\source\engine\channel_mixer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\WaveLang\source\engine\native_module_task_mapping.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\WaveLang\source\engine\buffer_operations\buffer_operations_utility.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\WaveLang\source\common\utility\string_table.h">
@@ -111,9 +96,6 @@
     <ClInclude Include="..\WaveLang\source\engine\sample\native_samples.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\WaveLang\source\engine\buffer_operations\buffer_operations_sampler.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\WaveLang\source\engine\math\sse.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -129,7 +111,55 @@
     <ClInclude Include="..\WaveLang\source\engine\profiler\profiler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\WaveLang\source\engine\buffer_operations\buffer_operations_delay.h">
+    <ClInclude Include="..\WaveLang\source\execution_graph\native_module.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\WaveLang\source\execution_graph\native_modules\native_module_registration.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\WaveLang\source\execution_graph\native_modules\native_modules_basic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\WaveLang\source\execution_graph\native_modules\native_modules_delay.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\WaveLang\source\execution_graph\native_modules\native_modules_filter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\WaveLang\source\execution_graph\native_modules\native_modules_sampler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\WaveLang\source\execution_graph\native_modules\native_modules_utility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\WaveLang\source\common\string.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\WaveLang\source\engine\task_function.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\WaveLang\source\engine\task_functions\task_functions_basic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\WaveLang\source\engine\task_functions\task_functions_delay.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\WaveLang\source\engine\task_functions\task_functions_filter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\WaveLang\source\engine\task_functions\task_functions_sampler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\WaveLang\source\engine\task_functions\task_functions_utility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\WaveLang\source\engine\task_functions\task_function_registration.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\WaveLang\source\engine\task_function_registry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\WaveLang\source\execution_graph\native_module_registry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -143,13 +173,7 @@
     <ClCompile Include="..\WaveLang\source\execution_graph\execution_graph.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\WaveLang\source\execution_graph\native_modules.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\WaveLang\source\runtime\command_line_interface.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\WaveLang\source\engine\task_functions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\WaveLang\source\engine\task_graph.cpp">
@@ -194,9 +218,6 @@
     <ClCompile Include="..\WaveLang\source\engine\channel_mixer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\WaveLang\source\engine\native_module_task_mapping.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\WaveLang\source\common\threading\thread_windows.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -218,16 +239,58 @@
     <ClCompile Include="..\WaveLang\source\engine\sample\native_samples.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\WaveLang\source\engine\buffer_operations\buffer_operations_sampler.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\WaveLang\source\engine\profiler\stopwatch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\WaveLang\source\engine\profiler\profiler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\WaveLang\source\engine\buffer_operations\buffer_operations_delay.cpp">
+    <ClCompile Include="..\WaveLang\source\execution_graph\native_module.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\WaveLang\source\execution_graph\native_modules\native_module_registration.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\WaveLang\source\execution_graph\native_modules\native_modules_basic.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\WaveLang\source\execution_graph\native_modules\native_modules_delay.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\WaveLang\source\execution_graph\native_modules\native_modules_filter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\WaveLang\source\execution_graph\native_modules\native_modules_sampler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\WaveLang\source\execution_graph\native_modules\native_modules_utility.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\WaveLang\source\engine\task_function.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\WaveLang\source\engine\task_functions\task_functions_basic.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\WaveLang\source\engine\task_functions\task_functions_delay.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\WaveLang\source\engine\task_functions\task_functions_filter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\WaveLang\source\engine\task_functions\task_functions_sampler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\WaveLang\source\engine\task_functions\task_functions_utility.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\WaveLang\source\engine\task_functions\task_function_registration.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\WaveLang\source\engine\task_function_registry.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\WaveLang\source\execution_graph\native_module_registry.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -244,7 +307,7 @@
     <None Include="..\WaveLang\source\engine\sample\native_samples.inl">
       <Filter>Header Files</Filter>
     </None>
-    <None Include="..\WaveLang\source\engine\buffer_operations\sinc_window_coefficients.inl">
+    <None Include="..\WaveLang\source\engine\task_functions\sinc_window_coefficients.inl">
       <Filter>Header Files</Filter>
     </None>
   </ItemGroup>

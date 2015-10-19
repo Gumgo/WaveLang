@@ -29,7 +29,7 @@ static void setup_stream_parameters(const s_driver_settings &settings, uint32 de
 
 	ZERO_STRUCT(&out_output_params);
 	out_output_params.device = device_index;
-	out_output_params.channelCount = static_cast<int>(settings.output_channels);
+	out_output_params.channelCount = cast_integer_verify<int>(settings.output_channels);
 	out_output_params.sampleFormat = get_pa_sample_format(settings.sample_format);
 	out_output_params.suggestedLatency = device_info->defaultLowInputLatency;
 	// $TODO should suggestedLatency be user-provided?
@@ -68,8 +68,8 @@ s_driver_result c_driver_interface::initialize() {
 		return result;
 	}
 
-	m_device_count = static_cast<uint32>(device_count);
-	m_default_device_index = static_cast<uint32>(Pa_GetDefaultOutputDevice());
+	m_device_count = cast_integer_verify<uint32>(device_count);
+	m_default_device_index = cast_integer_verify<uint32>(Pa_GetDefaultOutputDevice());
 
 	m_initialized = true;
 	return result;
@@ -103,7 +103,7 @@ s_device_info c_driver_interface::get_device_info(uint32 device_index) const {
 	s_device_info result;
 	const PaDeviceInfo *device_info = Pa_GetDeviceInfo(static_cast<PaDeviceIndex>(device_index));
 	result.name = device_info->name;
-	result.max_output_channels = static_cast<uint32>(device_info->maxOutputChannels);
+	result.max_output_channels = cast_integer_verify<uint32>(device_info->maxOutputChannels);
 	result.default_low_output_latency = device_info->defaultLowOutputLatency;
 	result.default_high_output_latency = device_info->defaultHighOutputLatency;
 	result.default_sample_rate = device_info->defaultSampleRate;
