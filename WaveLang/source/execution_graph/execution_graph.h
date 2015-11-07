@@ -18,15 +18,15 @@ enum e_execution_graph_node_type {
 	// Represents a constant; can only be used as inputs
 	k_execution_graph_node_type_constant,
 
-	// Has 1 input per in argument pointing to a k_execution_graph_node_type_native_module_input node
-	// Has 1 output per out argument pointing to a k_execution_graph_node_type_native_module_output node
+	// Has 1 input per in argument pointing to a k_execution_graph_node_type_indexed_input node
+	// Has 1 output per out argument pointing to a k_execution_graph_node_type_indexed_output node
 	k_execution_graph_node_type_native_module_call,
 
 	// An input to a native module
-	k_execution_graph_node_type_native_module_input,
+	k_execution_graph_node_type_indexed_input,
 
 	// An output to a native module
-	k_execution_graph_node_type_native_module_output,
+	k_execution_graph_node_type_indexed_output,
 
 	// Takes exactly 1 input
 	k_execution_graph_node_type_output,
@@ -41,6 +41,7 @@ enum e_execution_graph_result {
 	k_execution_graph_result_invalid_header,
 	k_execution_graph_result_version_mismatch,
 	k_execution_graph_result_invalid_graph,
+	k_execution_graph_result_unregistered_native_module,
 
 	k_execution_graph_result_count
 };
@@ -63,6 +64,8 @@ public:
 	uint32 add_constant_node(real32 constant_value);
 	uint32 add_constant_node(bool constant_value);
 	uint32 add_constant_node(const std::string &constant_value);
+	uint32 add_constant_array_node(e_native_module_argument_type element_data_type);
+	void add_constant_array_value(uint32 constant_array_node_index, uint32 value_node_index);
 	uint32 add_native_module_call_node(uint32 native_module_index);
 	uint32 add_output_node(uint32 output_index);
 	void remove_node(uint32 node_index);
@@ -82,6 +85,9 @@ public:
 	uint32 get_node_incoming_edge_index(uint32 node_index, size_t edge) const;
 	size_t get_node_outgoing_edge_count(uint32 node_index) const;
 	uint32 get_node_outgoing_edge_index(uint32 node_index, size_t edge) const;
+
+	bool does_node_use_indexed_inputs(uint32 node_index) const;
+	bool does_node_use_indexed_outputs(uint32 node_index) const;
 
 	void set_globals(const s_execution_graph_globals &globals);
 	const s_execution_graph_globals get_globals() const;
@@ -119,6 +125,8 @@ private:
 		std::vector<uint32> outgoing_edge_indices;
 	};
 
+	static bool does_node_use_indexed_inputs(const s_node &node);
+	static bool does_node_use_indexed_outputs(const s_node &node);
 	uint32 allocate_node();
 	void add_edge_internal(uint32 from_index, uint32 to_index);
 	bool add_edge_for_load(uint32 from_index, uint32 to_index);

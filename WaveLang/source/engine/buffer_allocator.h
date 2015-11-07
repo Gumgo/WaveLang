@@ -24,6 +24,8 @@ public:
 
 	c_buffer *get_buffer(uint32 buffer_handle);
 
+	const c_buffer *get_fast_accessor() const;
+
 private:
 	s_buffer_allocator_settings m_settings;
 

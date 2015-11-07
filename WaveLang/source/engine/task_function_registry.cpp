@@ -238,8 +238,32 @@ static void validate_task_function_mapping(
 				}
 				break;
 
-			default:
+			case k_native_module_argument_type_real_array:
+				if (input_type == k_task_function_mapping_native_module_input_type_constant) {
+					wl_assert(task_function.argument_types[mapping_index] == k_task_data_type_real_array_in);
+				} else {
+					wl_vhalt("Variable real array input not supported");
+				}
 				break;
+
+			case k_native_module_argument_type_bool_array:
+				if (input_type == k_task_function_mapping_native_module_input_type_constant) {
+					wl_assert(task_function.argument_types[mapping_index] == k_task_data_type_bool_array_in);
+				} else {
+					wl_vhalt("Variable bool array input not supported");
+				}
+				break;
+
+			case k_native_module_argument_type_string_array:
+				if (input_type == k_task_function_mapping_native_module_input_type_constant) {
+					wl_assert(task_function.argument_types[mapping_index] == k_task_data_type_string_array_in);
+				} else {
+					wl_vhalt("Variable string array input not supported");
+				}
+				break;
+
+			default:
+				wl_unreachable();
 			}
 
 			wl_assert(!task_argument_input_mappings[mapping_index]);
@@ -265,8 +289,20 @@ static void validate_task_function_mapping(
 				wl_vhalt("String output not supported");
 				break;
 
-			default:
+			case k_native_module_argument_type_real_array:
+				wl_vhalt("Real array output not supported");
 				break;
+
+			case k_native_module_argument_type_bool_array:
+				wl_vhalt("Bool array output not supported");
+				break;
+
+			case k_native_module_argument_type_string_array:
+				wl_vhalt("String array output not supported");
+				break;
+
+			default:
+				wl_unreachable();
 			}
 
 			wl_assert(!task_argument_output_mappings[mapping_index]);
@@ -295,8 +331,11 @@ static void validate_task_function_mapping(
 			break;
 
 		case k_task_data_type_real_constant_in:
+		case k_task_data_type_real_array_in:
 		case k_task_data_type_bool_constant_in:
+		case k_task_data_type_bool_array_in:
 		case k_task_data_type_string_constant_in:
+		case k_task_data_type_string_array_in:
 			wl_assert(in_mapped);
 			wl_assert(!out_mapped);
 			break;

@@ -28,6 +28,9 @@ static const char *k_lexer_token_table[] = {
 	"{",		// k_token_type_left_brace
 	"}",		// k_token_type_right_brace
 
+	"[",		// k_token_type_left_bracket
+	"]",		// k_token_type_right_bracket
+
 	",",		// k_token_type_comma
 	";",		// k_token_type_semicolon
 

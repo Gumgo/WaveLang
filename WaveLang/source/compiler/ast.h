@@ -27,6 +27,9 @@ enum e_ast_data_type {
 	k_ast_data_type_real,
 	k_ast_data_type_bool,
 	k_ast_data_type_string,
+	k_ast_data_type_real_array,
+	k_ast_data_type_bool_array,
+	k_ast_data_type_string_array,
 
 	k_ast_data_type_count
 };
@@ -40,6 +43,9 @@ enum e_ast_qualifier {
 };
 
 const char *get_ast_data_type_string(e_ast_data_type data_type);
+bool is_ast_data_type_array(e_ast_data_type data_type);
+e_ast_data_type get_element_from_array_ast_data_type(e_ast_data_type array_data_type);
+e_ast_data_type get_array_from_element_ast_data_type(e_ast_data_type element_data_type);
 
 // List of all AST nodes
 enum e_ast_node_type {
@@ -179,16 +185,36 @@ public:
 	virtual void iterate(c_ast_node_visitor *visitor);
 	virtual void iterate(c_ast_node_const_visitor *visitor) const;
 
+	void set_is_valid_named_value(bool is_valid_named_value);
+	bool get_is_valid_named_value() const;
+
 	void set_named_value(const std::string &named_value);
 	const std::string &get_named_value() const;
+
+	void set_array_index_expression(c_ast_node_expression *array_index_expression);
+	c_ast_node_expression *get_array_index_expression();
+	const c_ast_node_expression *get_array_index_expression() const;
 
 	void set_expression(c_ast_node_expression *expression);
 	c_ast_node_expression *get_expression();
 	const c_ast_node_expression *get_expression() const;
 
 private:
-	std::string m_named_value;				// Named value to be assigned to
+	// The named value being assigned is expressed with a general purpose expression. This is necessary because we allow
+	// assignment of either direct named values or of array indices, and I was unable to get simple parser rules working
+	// for both of those cases (they conflicted with isolated expression statements). Therefore, the parser rule for
+	// assignment looks like "expression := expression". For a valid named value assignment node, the LHS expression
+	// must be of one of the two forms:
+	// identifier
+	// identifier[expr]
+	// If this isn't true, m_is_valid_named_value should be set to false.
+
+	bool m_is_valid_named_value;			// Whether the named value expression was valid
+	std::string m_named_value;				// Named value to be assigned to, or empty string if anonymous
 	c_ast_node_expression *m_expression;	// Expression to be assigned
+
+	// Expression resolving to an array index, if this named value is an array index assignment; null otherwise
+	c_ast_node_expression *m_array_index_expression;
 };
 
 class c_ast_node_return_statement : public c_ast_node {
@@ -264,6 +290,12 @@ public:
 	void set_string_value(const std::string &value);
 	const std::string &get_string_value() const;
 
+	void set_array(e_ast_data_type element_data_type);
+	void add_array_value(c_ast_node_expression *value);
+	size_t get_array_count() const;
+	c_ast_node_expression *get_array_value(size_t index);
+	const c_ast_node_expression *get_array_value(size_t index) const;
+
 public:
 	e_ast_data_type m_data_type;	// Data type
 	union {
@@ -271,6 +303,9 @@ public:
 		bool m_bool_value;			// The value, if a bool
 	};
 	std::string m_string_value;		// The value, if a string (can't be in the union since it's not POD)
+
+	// The list of values, if an array
+	std::vector<c_ast_node_expression *> m_array_values;
 };
 
 class c_ast_node_named_value : public c_ast_node {
@@ -295,6 +330,9 @@ public:
 	virtual void iterate(c_ast_node_visitor *visitor);
 	virtual void iterate(c_ast_node_const_visitor *visitor) const;
 
+	void set_is_invoked_using_operator(bool is_invoked_using_operator);
+	bool get_is_invoked_using_operator() const;
+
 	void set_name(const std::string &name);
 	const std::string &get_name() const;
 
@@ -304,6 +342,7 @@ public:
 	const c_ast_node_expression *get_argument(size_t index) const;
 
 private:
+	bool m_is_invoked_using_operator;					// Whether this module was invoked by using an operator
 	std::string m_name;									// Name of the module to call
 	std::vector<c_ast_node_expression *> m_arguments;	// An expression for each argument
 };

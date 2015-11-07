@@ -944,8 +944,7 @@ void c_lr_parser::compute_item_sets() {
 
 					// $TODO Better error handling
 					wl_assert(conflict == k_lr_conflict_none);
-				}
-				else {
+				} else {
 					// This is a reduce action
 					e_lr_conflict conflict = m_action_goto_table.set_action(item_set_index, item.lookahead.get_index(),
 						c_lr_action(k_lr_action_type_reduce, item.production_index));

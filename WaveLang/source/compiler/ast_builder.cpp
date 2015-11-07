@@ -7,9 +7,12 @@
 #include <stdexcept>
 
 static const e_ast_data_type k_native_module_argument_type_to_ast_data_type_mapping[] = {
-	k_ast_data_type_real,	// k_native_module_argument_type_real
-	k_ast_data_type_bool,	// k_native_module_argument_type_bool
-	k_ast_data_type_string	// k_native_module_argument_type_string
+	k_ast_data_type_real,			// k_native_module_argument_type_real
+	k_ast_data_type_bool,			// k_native_module_argument_type_bool
+	k_ast_data_type_string,			// k_native_module_argument_type_string
+	k_ast_data_type_real_array,		// k_native_module_argument_type_real_array
+	k_ast_data_type_bool_array,		// k_native_module_argument_type_bool_array
+	k_ast_data_type_string_array	// k_native_module_argument_type_string_array
 };
 static_assert(NUMBEROF(k_native_module_argument_type_to_ast_data_type_mapping) == k_native_module_argument_type_count,
 	"Native module argument type to ast data type mismatch");
@@ -40,17 +43,46 @@ static bool node_is_type(const c_lr_parse_tree_node &node, e_parser_nonterminal 
 	return !node.get_symbol().is_terminal() && node.get_symbol().get_index() == nonterminal_type;
 }
 
-static e_ast_data_type get_data_type_from_node(const c_lr_parse_tree_node &node) {
-	if (node_is_type(node, k_token_type_keyword_void)) {
+static e_ast_data_type get_data_type_from_node(const c_lr_parse_tree &parse_tree, const c_lr_parse_tree_node &node) {
+	const c_lr_parse_tree_node *type_node = &node;
+
+	if (node_is_type(*type_node, k_parser_nonterminal_type_or_void) ||
+		node_is_type(*type_node, k_parser_nonterminal_type)) {
+		type_node = &parse_tree.get_node(type_node->get_child_index());
+	}
+
+	bool is_array = false;
+	if (node_is_type(*type_node, k_token_type_keyword_void)) {
+		// Don't step down another level
+	} else if (node_is_type(*type_node, k_parser_nonterminal_basic_type)) {
+		is_array = false;
+		type_node = &parse_tree.get_node(type_node->get_child_index());
+	} else if (node_is_type(*type_node, k_parser_nonterminal_array_type)) {
+		is_array = true;
+		type_node = &parse_tree.get_node(type_node->get_child_index());
+	} else {
+		wl_unreachable();
+	}
+
+#if PREDEFINED(ASSERTS_ENABLED)
+	if (is_array) {
+		const c_lr_parse_tree_node &left_bracket_node = parse_tree.get_node(type_node->get_sibling_index());
+		const c_lr_parse_tree_node &right_bracket_node = parse_tree.get_node(left_bracket_node.get_sibling_index());
+
+		wl_assert(node_is_type(left_bracket_node, k_token_type_left_bracket));
+		wl_assert(node_is_type(right_bracket_node, k_token_type_right_bracket));
+	}
+#endif // PREDEFINED(ASSERTS_ENABLED)
+
+	if (node_is_type(*type_node, k_token_type_keyword_void)) {
+		wl_assert(!is_array);
 		return k_ast_data_type_void;
-	} else if (node_is_type(node, k_token_type_keyword_module)) {
-		return k_ast_data_type_module;
-	} else if (node_is_type(node, k_token_type_keyword_real)) {
-		return k_ast_data_type_real;
-	} else if (node_is_type(node, k_token_type_keyword_bool)) {
-		return k_ast_data_type_bool;
-	} else if (node_is_type(node, k_token_type_keyword_string)) {
-		return k_ast_data_type_string;
+	} else if (node_is_type(*type_node, k_token_type_keyword_real)) {
+		return is_array ? k_ast_data_type_real_array : k_ast_data_type_real;
+	} else if (node_is_type(*type_node, k_token_type_keyword_bool)) {
+		return is_array ? k_ast_data_type_bool_array : k_ast_data_type_bool;
+	} else if (node_is_type(*type_node, k_token_type_keyword_string)) {
+		return is_array ? k_ast_data_type_string_array : k_ast_data_type_string;
 	} else {
 		wl_unreachable();
 		return k_ast_data_type_count;
@@ -66,6 +98,15 @@ static e_ast_qualifier get_qualifier_from_node(const c_lr_parse_tree_node &node)
 		return k_ast_qualifier_count;
 		wl_unreachable();
 	}
+}
+
+static size_t get_first_token_index(const c_lr_parse_tree &parse_tree, const c_lr_parse_tree_node &node) {
+	const c_lr_parse_tree_node *node_ptr = &node;
+	while (!node_ptr->get_symbol().is_terminal()) {
+		node_ptr = &parse_tree.get_node(node_ptr->get_child_index());
+	}
+
+	return node_ptr->get_token_index();
 }
 
 static std::vector<size_t> build_left_recursive_list(const c_lr_parse_tree &parse_tree, size_t start_node_index,
@@ -96,6 +137,10 @@ static std::vector<c_ast_node *> build_named_value_declaration_and_optional_assi
 static c_ast_node_named_value_assignment *build_named_value_assignment(const c_lr_parse_tree &parse_tree,
 	const s_lexer_source_file_output &tokens, const c_lr_parse_tree_node &named_value_assignment_node);
 
+static bool extract_named_value_assignment_lhs_expression(const c_lr_parse_tree &parse_tree,
+	const s_lexer_source_file_output &tokens, const c_lr_parse_tree_node &named_value_lhs_expression_node,
+	std::string &out_named_value, c_ast_node_expression *&out_array_index_expression);
+
 static c_ast_node_return_statement *build_return_statement(const c_lr_parse_tree &parse_tree,
 	const s_lexer_source_file_output &tokens, const c_lr_parse_tree_node &return_statement_node);
 
@@ -111,7 +156,13 @@ static c_ast_node_module_call *build_binary_operator_call(const c_lr_parse_tree 
 static c_ast_node_module_call *build_unary_operator_call(const c_lr_parse_tree &parse_tree,
 	const s_lexer_source_file_output &tokens, const c_lr_parse_tree_node &node_0);
 
+static c_ast_node_module_call *build_dereference_call(const c_lr_parse_tree &parse_tree,
+	const s_lexer_source_file_output &tokens, const c_lr_parse_tree_node &node_0);
+
 static c_ast_node_module_call *build_module_call(const c_lr_parse_tree &parse_tree,
+	const s_lexer_source_file_output &tokens, const c_lr_parse_tree_node &node_0);
+
+static c_ast_node_constant *build_constant_array(const c_lr_parse_tree &parse_tree,
 	const s_lexer_source_file_output &tokens, const c_lr_parse_tree_node &node_0);
 
 c_ast_node *c_ast_builder::build_ast(const s_lexer_output &lexer_output, const s_parser_output &parser_output) {
@@ -280,8 +331,7 @@ static c_ast_node_module_declaration *build_module_declaration(const c_lr_parse_
 	module_declaration->set_source_location(
 		tokens.tokens[module_keyword_node.get_token_index()].source_location);
 
-	const c_lr_parse_tree_node &return_type_node = parse_tree.get_node(module_return_type_node.get_child_index());
-	e_ast_data_type return_type = get_data_type_from_node(return_type_node);
+	e_ast_data_type return_type = get_data_type_from_node(parse_tree, module_return_type_node);
 
 	module_declaration->set_return_type(return_type);
 	module_declaration->set_name(tokens.tokens[module_name_node.get_token_index()].token_string.to_std_string());
@@ -337,10 +387,7 @@ static c_ast_node_module_declaration *build_module_declaration(const c_lr_parse_
 			wl_assert(argument_qualifier_node.has_child());
 			const c_lr_parse_tree_node &qualifier_node = parse_tree.get_node(argument_qualifier_node.get_child_index());
 			e_ast_qualifier qualifier = get_qualifier_from_node(qualifier_node);
-
-			wl_assert(argument_type_node.has_child());
-			const c_lr_parse_tree_node &type_node = parse_tree.get_node(argument_type_node.get_child_index());
-			e_ast_data_type data_type = get_data_type_from_node(type_node);
+			e_ast_data_type data_type = get_data_type_from_node(parse_tree, argument_type_node);
 
 			argument_declaration->set_source_location(
 				tokens.tokens[qualifier_node.get_token_index()].source_location);
@@ -463,7 +510,7 @@ static std::vector<c_ast_node *> build_named_value_declaration_and_optional_assi
 
 	c_lr_parse_tree_iterator it(parse_tree, named_value_declaration_node.get_child_index());
 
-	// "val", identifier, and assignment node
+	// type, identifier, and assignment node
 
 	const c_lr_parse_tree_node &named_value_type_node = it.get_node();
 	wl_assert(node_is_type(named_value_type_node, k_parser_nonterminal_type));
@@ -472,13 +519,13 @@ static std::vector<c_ast_node *> build_named_value_declaration_and_optional_assi
 	const c_lr_parse_tree_node &name_node = it.get_node();
 	wl_assert(node_is_type(name_node, k_token_type_identifier));
 
-	const c_lr_parse_tree_node &type_node = parse_tree.get_node(named_value_type_node.get_child_index());
-	e_ast_data_type data_type = get_data_type_from_node(type_node);
+	e_ast_data_type data_type = get_data_type_from_node(parse_tree, named_value_type_node);
 
 	std::vector<c_ast_node *> result;
 
 	c_ast_node_named_value_declaration *declaration = new c_ast_node_named_value_declaration();
-	declaration->set_source_location(tokens.tokens[type_node.get_token_index()].source_location);
+	declaration->set_source_location(
+		tokens.tokens[get_first_token_index(parse_tree, named_value_type_node)].source_location);
 
 	declaration->set_data_type(data_type);
 	declaration->set_name(tokens.tokens[name_node.get_token_index()].token_string.to_std_string());
@@ -517,9 +564,13 @@ static c_ast_node_named_value_assignment *build_named_value_assignment(const c_l
 
 	c_lr_parse_tree_iterator it(parse_tree, named_value_assignment_node.get_child_index());
 
-	const c_lr_parse_tree_node &name_node = it.get_node();
-	wl_assert(node_is_type(name_node, k_token_type_identifier));
+	const c_lr_parse_tree_node &named_value_expression_node = it.get_node();
+	wl_assert(node_is_type(named_value_expression_node, k_parser_nonterminal_expression));
 	it.follow_sibling();
+
+	c_ast_node_named_value_assignment *result = new c_ast_node_named_value_assignment();
+	result->set_source_location(
+		tokens.tokens[get_first_token_index(parse_tree, named_value_expression_node)].source_location);
 
 	wl_assert(node_is_type(it.get_node(), k_parser_nonterminal_expression_assignment));
 	wl_assert(!it.has_sibling());
@@ -532,15 +583,97 @@ static c_ast_node_named_value_assignment *build_named_value_assignment(const c_l
 	wl_assert(node_is_type(expression_node, k_parser_nonterminal_expression));
 	wl_assert(!it.has_sibling());
 
-	c_ast_node_named_value_assignment *result = new c_ast_node_named_value_assignment();
-	result->set_source_location(tokens.tokens[name_node.get_token_index()].source_location);
+	std::string named_value;
+	c_ast_node_expression *array_index_expression;
+	bool lhs_expression_is_valid = extract_named_value_assignment_lhs_expression(
+		parse_tree, tokens, named_value_expression_node, named_value, array_index_expression);
 
-	result->set_named_value(tokens.tokens[name_node.get_token_index()].token_string.to_std_string());
+	result->set_is_valid_named_value(lhs_expression_is_valid);
+	if (lhs_expression_is_valid) {
+		result->set_named_value(named_value);
+		if (array_index_expression) {
+			result->set_array_index_expression(array_index_expression);
+		}
+	}
+
 	c_ast_node_expression *expression = build_expression(parse_tree, tokens, expression_node);
 	result->set_expression(expression);
 
 	return result;
+}
 
+static bool extract_named_value_assignment_lhs_expression(const c_lr_parse_tree &parse_tree,
+	const s_lexer_source_file_output &tokens, const c_lr_parse_tree_node &named_value_lhs_expression_node,
+	std::string &out_named_value, c_ast_node_expression *&out_array_index_expression) {
+	// Manually parse the LHS expression, looking for a specific pattern. Gross!
+	wl_assert(node_is_type(named_value_lhs_expression_node, k_parser_nonterminal_expression));
+
+	c_lr_parse_tree_iterator it(parse_tree, named_value_lhs_expression_node.get_child_index());
+	wl_assert(node_is_type(it.get_node(), k_parser_nonterminal_expr_1));
+
+	// Iterate down to expr_8
+	static const e_parser_nonterminal k_expression_chain[] = {
+		k_parser_nonterminal_expr_2, k_parser_nonterminal_expr_3, k_parser_nonterminal_expr_4,
+		k_parser_nonterminal_expr_5, k_parser_nonterminal_expr_6, k_parser_nonterminal_expr_7,
+		k_parser_nonterminal_expr_8
+	};
+
+	for (size_t iter = 0; iter < NUMBEROF(k_expression_chain); iter++) {
+		wl_assert(it.has_child());
+		it.follow_child();
+
+		if (!node_is_type(it.get_node(), k_expression_chain[iter])) {
+			return false;
+		}
+	}
+
+	wl_assert(node_is_type(it.get_node(), k_parser_nonterminal_expr_8));
+	wl_assert(it.has_child());
+	it.follow_child();
+
+	const c_lr_parse_tree_node *array_index_expression_node = nullptr;
+
+	// Check for array dereference
+	if (node_is_type(it.get_node(), k_parser_nonterminal_expr_8)) {
+		c_lr_parse_tree_iterator deref_it(parse_tree, it.get_node_index());
+		it.follow_child();
+		deref_it.follow_sibling();
+		wl_assert(node_is_type(deref_it.get_node(), k_parser_nonterminal_array_dereference));
+		deref_it.follow_child();
+
+		wl_assert(node_is_type(deref_it.get_node(), k_token_type_left_bracket));
+		deref_it.follow_sibling();
+
+		array_index_expression_node = &deref_it.get_node();
+		wl_assert(node_is_type(*array_index_expression_node, k_parser_nonterminal_expression));
+		deref_it.follow_sibling();
+
+		wl_assert(node_is_type(deref_it.get_node(), k_token_type_right_bracket));
+		wl_assert(!deref_it.has_sibling());
+	}
+
+	// We should be at expr_9 now, unless there's a double array dereference, which is invalid
+	if (!node_is_type(it.get_node(), k_parser_nonterminal_expr_9)) {
+		return false;
+	}
+
+	// We expect an identifier
+	wl_assert(it.has_child());
+	it.follow_child();
+
+	if (!node_is_type(it.get_node(), k_token_type_identifier)) {
+		return false;
+	}
+
+	// Success
+	if (array_index_expression_node) {
+		out_array_index_expression = build_expression(parse_tree, tokens, *array_index_expression_node);
+	} else {
+		out_array_index_expression = nullptr;
+	}
+
+	out_named_value = tokens.tokens[it.get_node().get_token_index()].token_string.to_std_string();
+	return true;
 }
 
 static c_ast_node_return_statement *build_return_statement(const c_lr_parse_tree &parse_tree,
@@ -706,7 +839,18 @@ static c_ast_node_expression *build_expression(const c_lr_parse_tree &parse_tree
 				expression_type_found = true;
 			}
 		} else if (node_is_type(*current_node, k_parser_nonterminal_expr_8)) {
-			// expr_8: parens, identifier, module_call, constant
+			// expr_8: array dereference
+
+			const c_lr_parse_tree_node &child_node = parse_tree.get_node(current_node->get_child_index());
+			if (!child_node.has_sibling()) {
+				// Move to expr_9
+				current_node = &child_node;
+			} else {
+				result->set_expression_value(build_dereference_call(parse_tree, tokens, child_node));
+				expression_type_found = true;
+			}
+		} else if (node_is_type(*current_node, k_parser_nonterminal_expr_9)) {
+			// expr_9: parens, identifier, module_call, constant
 
 			const c_lr_parse_tree_node &child_node = parse_tree.get_node(current_node->get_child_index());
 			if (node_is_type(child_node, k_token_type_left_parenthesis)) {
@@ -779,6 +923,11 @@ static c_ast_node_expression *build_expression(const c_lr_parse_tree &parse_tree
 				constant_node->set_source_location(tokens.tokens[child_node.get_token_index()].source_location);
 				constant_node->set_string_value(escaped_string);
 				result->set_expression_value(constant_node);
+				expression_type_found = true;
+			} else if (node_is_type(child_node, k_parser_nonterminal_constant_array)) {
+				// Constant array
+				result->set_expression_value(build_constant_array(parse_tree, tokens,
+					parse_tree.get_node(child_node.get_child_index())));
 				expression_type_found = true;
 			} else {
 				wl_unreachable();
@@ -884,6 +1033,7 @@ static c_ast_node_module_call *build_binary_operator_call(const c_lr_parse_tree 
 
 	c_ast_node_module_call *module_call = new c_ast_node_module_call();
 	module_call->set_source_location(tokens.tokens[node_1.get_token_index()].source_location);
+	module_call->set_is_invoked_using_operator(true);
 	module_call->set_name(operator_module_name);
 	module_call->add_argument(arg_0);
 	module_call->add_argument(arg_1);
@@ -925,8 +1075,43 @@ static c_ast_node_module_call *build_unary_operator_call(const c_lr_parse_tree &
 
 	c_ast_node_module_call *module_call = new c_ast_node_module_call();
 	module_call->set_source_location(tokens.tokens[node_0.get_token_index()].source_location);
+	module_call->set_is_invoked_using_operator(true);
 	module_call->set_name(operator_module_name);
 	module_call->add_argument(arg_0);
+
+	return module_call;
+}
+
+static c_ast_node_module_call *build_dereference_call(const c_lr_parse_tree &parse_tree,
+	const s_lexer_source_file_output &tokens, const c_lr_parse_tree_node &node_0) {
+	// There should be four nodes of the form "expr [ expr ]"
+	c_lr_parse_tree_iterator it(parse_tree, node_0.get_sibling_index());
+	wl_assert(node_is_type(it.get_node(), k_parser_nonterminal_array_dereference));
+	wl_assert(!it.has_sibling());
+	it.follow_child();
+
+	const c_lr_parse_tree_node &left_bracket_node = it.get_node();
+	wl_assert(node_is_type(left_bracket_node, k_token_type_left_bracket));
+	it.follow_sibling();
+
+	const c_lr_parse_tree_node &array_index_expression_node = it.get_node();
+	it.follow_sibling();
+
+	wl_assert(node_is_type(it.get_node(), k_token_type_right_bracket));
+	wl_assert(!it.has_sibling());
+
+	c_ast_node_expression *array_arg = build_expression(parse_tree, tokens, node_0);
+	c_ast_node_expression *index_arg = build_expression(parse_tree, tokens, array_index_expression_node);
+
+	const char *operator_module_name =
+		c_native_module_registry::get_native_module_for_native_operator(k_native_operator_array_dereference);
+
+	c_ast_node_module_call *module_call = new c_ast_node_module_call();
+	module_call->set_source_location(tokens.tokens[left_bracket_node.get_token_index()].source_location);
+	module_call->set_is_invoked_using_operator(true);
+	module_call->set_name(operator_module_name);
+	module_call->add_argument(array_arg);
+	module_call->add_argument(index_arg);
 
 	return module_call;
 }
@@ -976,4 +1161,59 @@ static c_ast_node_module_call *build_module_call(const c_lr_parse_tree &parse_tr
 	}
 
 	return module_call;
+}
+
+static c_ast_node_constant *build_constant_array(const c_lr_parse_tree &parse_tree,
+	const s_lexer_source_file_output &tokens, const c_lr_parse_tree_node &node_0) {
+	c_lr_parse_tree_iterator it(parse_tree, node_0.get_sibling_index());
+
+	c_ast_node_constant *constant_array = new c_ast_node_constant();
+	constant_array->set_source_location(tokens.tokens[get_first_token_index(parse_tree, node_0)].source_location);
+
+	// We expect "array ( optional_expressions )"
+	e_ast_data_type data_type = get_data_type_from_node(parse_tree, node_0);
+
+	// Can't have arrays of arrays
+	wl_assert(is_ast_data_type_array(data_type));
+	constant_array->set_array(get_element_from_array_ast_data_type(data_type));
+
+	wl_assert(node_is_type(it.get_node(), k_token_type_left_parenthesis));
+	it.follow_sibling();
+
+	if (node_is_type(it.get_node(), k_token_type_right_parenthesis)) {
+		wl_assert(!it.has_sibling());
+		// No values
+	} else {
+		const c_lr_parse_tree_node &constant_array_list_node = it.get_node();
+		wl_assert(node_is_type(constant_array_list_node, k_parser_nonterminal_constant_array_list));
+		it.follow_sibling();
+
+		wl_assert(node_is_type(it.get_node(), k_token_type_right_parenthesis));
+		wl_assert(!it.has_sibling());
+
+		// The value list node is either an expression, or a list, comma, and expression
+		std::vector<size_t> value_indices = build_left_recursive_list(parse_tree,
+			constant_array_list_node.get_child_index(), k_parser_nonterminal_constant_array_list);
+
+		// Skip the commas
+		for (size_t index = 0; index < value_indices.size(); index++) {
+			if (index == 0) {
+				wl_assert(node_is_type(parse_tree.get_node(value_indices[index]), k_parser_nonterminal_expression));
+			} else {
+				wl_assert(node_is_type(parse_tree.get_node(value_indices[index]), k_token_type_comma));
+				value_indices[index] = parse_tree.get_node(value_indices[index]).get_sibling_index();
+				wl_assert(node_is_type(parse_tree.get_node(value_indices[index]), k_parser_nonterminal_expression));
+			}
+		}
+
+		// Process arguments
+		for (size_t value_index = 0; value_index < value_indices.size(); value_index++) {
+			c_ast_node_expression *expression =
+				build_expression(parse_tree, tokens, parse_tree.get_node(value_indices[value_index]));
+
+			constant_array->add_array_value(expression);
+		}
+	}
+
+	return constant_array;
 }

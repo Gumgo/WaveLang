@@ -198,6 +198,8 @@ static const char *k_parse_tree_output_terminal_strings[] = {
 	"right-parenthesis",
 	"left-brace",
 	"right-brace",
+	"left-bracket",
+	"right-bracket",
 	"comma",
 	"semicolon",
 	"operator-assignment",
@@ -225,6 +227,8 @@ static const char *k_parse_tree_output_nonterminal_strings[] = {
 	"global-scope",
 	"global-scope-item-list",
 	"global-scope-item",
+	"basic-type",
+	"array-type",
 	"type",
 	"type-or-void",
 	"module-declaration",
@@ -249,8 +253,12 @@ static const char *k_parse_tree_output_nonterminal_strings[] = {
 	"expr-6",
 	"expr-7",
 	"expr-8",
+	"expr-9",
 	"module-call",
-	"module-call-argument-list"
+	"module-call-argument-list",
+	"constant-array",
+	"constant-array-list",
+	"array-dereference"
 };
 static_assert(NUMBEROF(k_parse_tree_output_nonterminal_strings) == k_parser_nonterminal_count, "Incorrect array size");
 
@@ -259,6 +267,7 @@ static_assert(NUMBEROF(k_parse_tree_output_nonterminal_strings) == k_parser_nont
 static void print_parse_tree(std::ofstream &out, const s_lexer_source_file_output &tokens,
 	const c_lr_parse_tree &tree, size_t index) {
 	// For use with http://ironcreek.net/phpsyntaxtree/
+	// $TODO change this to graphviz output
 
 	const c_lr_parse_tree_node &node = tree.get_node(index);
 

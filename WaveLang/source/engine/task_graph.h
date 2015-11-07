@@ -16,7 +16,9 @@ struct s_task_graph_data {
 	e_task_data_type type;
 
 	// Do not access these directly
-	union {
+	union u_data {
+		u_data() {} // Allows for c_wrapped_array
+
 		struct {
 			// Used when building the graph
 			uint32 execution_graph_index_a;
@@ -27,8 +29,13 @@ struct s_task_graph_data {
 		uint32 real_buffer_out;
 		uint32 real_buffer_inout;
 		real32 real_constant_in;
+		c_real_array real_array_in;
+
 		bool bool_constant_in;
+		c_bool_array bool_array_in;
+
 		const char *string_constant_in;
+		c_string_array string_array_in;
 	} data;
 
 	uint32 get_real_buffer_in() const {
@@ -51,14 +58,29 @@ struct s_task_graph_data {
 		return data.real_constant_in;
 	}
 
+	c_real_array get_real_array_in() const {
+		wl_assert(type == k_task_data_type_real_array_in);
+		return data.real_array_in;
+	}
+
 	bool get_bool_constant_in() const {
 		wl_assert(type == k_task_data_type_bool_constant_in);
 		return data.bool_constant_in;
 	}
 
+	c_bool_array get_bool_array_in() const {
+		wl_assert(type == k_task_data_type_bool_array_in);
+		return data.bool_array_in;
+	}
+
 	const char *get_string_constant_in() const {
 		wl_assert(type == k_task_data_type_string_constant_in);
 		return data.string_constant_in;
+	}
+
+	c_string_array get_string_array_in() const {
+		wl_assert(type == k_task_data_type_string_array_in);
+		return data.string_array_in;
 	}
 };
 
@@ -108,11 +130,16 @@ private:
 		size_t successors_count;
 	};
 
+	void resolve_arrays();
 	void resolve_strings();
 	bool add_task_for_node(const c_execution_graph &execution_graph, uint32 node_index,
 		std::vector<uint32> &nodes_to_tasks);
 	void setup_task(const c_execution_graph &execution_graph, uint32 node_index,
 		uint32 task_index, const s_task_function_mapping &task_function_mapping);
+	c_real_array build_real_array(const c_execution_graph &execution_graph, uint32 node_index);
+	c_bool_array build_bool_array(const c_execution_graph &execution_graph, uint32 node_index);
+	c_string_array build_string_array(const c_execution_graph &execution_graph, uint32 node_index);
+	bool is_real_array_constant(c_real_array real_array) const;
 	void build_task_successor_lists(const c_execution_graph &execution_graph,
 		const std::vector<uint32> &nodes_to_tasks);
 	void allocate_buffers(const c_execution_graph &execution_graph);
@@ -127,6 +154,11 @@ private:
 	std::vector<s_task_graph_data> m_data_lists;
 	std::vector<uint32> m_task_lists;
 	c_string_table m_string_table;
+
+	// Arrays
+	std::vector<s_real_array_element> m_real_array_element_lists;
+	std::vector<s_bool_array_element> m_bool_array_element_lists;
+	std::vector<s_string_array_element> m_string_array_element_lists;
 
 	// Total number of unique buffers required
 	uint32 m_buffer_count;

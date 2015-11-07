@@ -54,11 +54,38 @@ enum e_task_data_type {
 	k_task_data_type_real_buffer_out,
 	k_task_data_type_real_buffer_inout,
 	k_task_data_type_real_constant_in,
+	k_task_data_type_real_array_in,
+
 	k_task_data_type_bool_constant_in,
+	k_task_data_type_bool_array_in,
+
 	k_task_data_type_string_constant_in,
+	k_task_data_type_string_array_in,
 
 	k_task_data_type_count
 };
+
+struct s_real_array_element {
+	bool is_constant;
+
+	union {
+		real32 constant_value;
+		uint32 buffer_index_value;
+	};
+};
+
+struct s_bool_array_element {
+	// $TODO could optimize with bitfield
+	bool constant_value;
+};
+
+struct s_string_array_element {
+	const char *constant_value;
+};
+
+typedef c_wrapped_array_const<s_real_array_element> c_real_array;
+typedef c_wrapped_array_const<s_bool_array_element> c_bool_array;
+typedef c_wrapped_array_const<s_string_array_element> c_string_array;
 
 struct s_task_function_argument {
 #if PREDEFINED(ASSERTS_ENABLED)
@@ -66,13 +93,20 @@ struct s_task_function_argument {
 #endif // PREDEFINED(ASSERTS_ENABLED)
 
 	// Do not access these directly
-	union {
+	union u_data {
+		u_data() {} // Allows for c_wrapped_array
+
 		const c_buffer *real_buffer_in;
 		c_buffer *real_buffer_out;
 		c_buffer *real_buffer_inout;
 		real32 real_constant_in;
+		c_real_array real_array_in;
+
 		bool bool_constant_in;
+		c_bool_array bool_array_in;
+
 		const char *string_constant_in;
+		c_string_array string_array_in;
 	} data;
 
 	const c_buffer *get_real_buffer_in() const {
@@ -95,14 +129,29 @@ struct s_task_function_argument {
 		return data.real_constant_in;
 	}
 
+	c_real_array get_real_array_in() const {
+		wl_assert(type == k_task_data_type_real_array_in);
+		return data.real_array_in;
+	}
+
 	bool get_bool_constant_in() const {
 		wl_assert(type == k_task_data_type_bool_constant_in);
 		return data.bool_constant_in;
 	}
 
+	c_bool_array get_bool_array_in() const {
+		wl_assert(type == k_task_data_type_bool_array_in);
+		return data.bool_array_in;
+	}
+
 	const char *get_string_constant_in() const {
 		wl_assert(type == k_task_data_type_string_constant_in);
 		return data.string_constant_in;
+	}
+
+	c_string_array get_string_array_in() const {
+		wl_assert(type == k_task_data_type_string_array_in);
+		return data.string_array_in;
 	}
 };
 
@@ -120,6 +169,10 @@ struct s_task_function_context {
 	// $TODO more things like timing
 
 	c_task_function_arguments arguments;
+
+	// Used to quickly access a buffer by index: fast_real_buffer_accessor[index]
+	// Use with caution!
+	const c_buffer *fast_real_buffer_accessor;
 };
 
 // This function takes a partially-filled-in context and returns the amount of memory the task requires

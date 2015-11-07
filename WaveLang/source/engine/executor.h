@@ -16,6 +16,7 @@ struct s_task_function;
 
 struct s_executor_settings {
 	const c_task_graph *task_graph;
+	uint32 thread_count;
 	uint32 sample_rate;
 	uint32 max_buffer_size;
 	uint32 output_channels;
@@ -83,9 +84,28 @@ private:
 	};
 
 	void initialize_internal(const s_executor_settings &settings);
+	void initialize_thread_pool(const s_executor_settings &settings);
+	void initialize_buffer_allocator(const s_executor_settings &settings);
+	void initialize_task_memory(const s_executor_settings &settings);
+	void initialize_tasks(const s_executor_settings &settings);
+	void initialize_voice_contexts();
+	void initialize_task_contexts();
+	void initialize_buffer_contexts();
+	void initialize_profiler(const s_executor_settings &settings);
+
 	void shutdown_internal();
 
 	void execute_internal(const s_executor_chunk_context &chunk_context);
+	void process_voice(const s_executor_chunk_context &chunk_context, uint32 voice);
+	void swap_output_buffers_with_accumulation_buffers(const s_executor_chunk_context &chunk_context);
+	void add_output_buffers_to_accumulation_buffers(const s_executor_chunk_context &chunk_context);
+#if PREDEFINED(ASSERTS_ENABLED)
+	void assert_all_output_buffers_free();
+#else // PREDEFINED(ASSERTS_ENABLED)
+	void assert_all_output_buffers_free() {}
+#endif // PREDEFINED(ASSERTS_ENABLED)
+	void allocate_and_clear_output_buffers(const s_executor_chunk_context &chunk_context);
+	void mix_accumulation_buffers_to_channel_buffers(const s_executor_chunk_context &chunk_context);
 
 	void add_task(uint32 voice_index, uint32 task_index, uint32 sample_rate, uint32 frames);
 

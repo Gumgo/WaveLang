@@ -6,6 +6,60 @@ const s_native_module_argument s_native_module_argument_list::k_argument_none = 
 	k_native_module_argument_qualifier_count, k_native_module_argument_type_count
 };
 
+bool is_native_module_argument_type_array(e_native_module_argument_type type) {
+	switch (type) {
+	case k_native_module_argument_type_real:
+	case k_native_module_argument_type_bool:
+	case k_native_module_argument_type_string:
+		return false;
+
+	case k_native_module_argument_type_real_array:
+	case k_native_module_argument_type_bool_array:
+	case k_native_module_argument_type_string_array:
+		return true;
+
+	default:
+		wl_unreachable();
+		return false;
+	}
+}
+
+e_native_module_argument_type get_element_from_array_native_module_argument_type(
+	e_native_module_argument_type array_type) {
+	switch (array_type) {
+	case k_native_module_argument_type_real_array:
+		return k_native_module_argument_type_real;
+
+	case k_native_module_argument_type_bool_array:
+		return k_native_module_argument_type_bool;
+
+	case k_native_module_argument_type_string_array:
+		return k_native_module_argument_type_string;
+
+	default:
+		wl_unreachable();
+		return k_native_module_argument_type_count;
+	}
+}
+
+e_native_module_argument_type get_array_from_element_native_module_argument_type(
+	e_native_module_argument_type element_type) {
+	switch (element_type) {
+	case k_native_module_argument_type_real:
+		return k_native_module_argument_type_real_array;
+
+	case k_native_module_argument_type_bool:
+		return k_native_module_argument_type_bool_array;
+
+	case k_native_module_argument_type_string:
+		return k_native_module_argument_type_string_array;
+
+	default:
+		wl_unreachable();
+		return k_native_module_argument_type_count;
+	}
+}
+
 s_native_module_argument_list s_native_module_argument_list::build(
 	s_native_module_argument arg_0,
 	s_native_module_argument arg_1,

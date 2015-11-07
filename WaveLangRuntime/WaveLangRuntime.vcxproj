@@ -108,6 +108,7 @@
     <ClInclude Include="..\WaveLang\source\engine\task_functions\task_functions_delay.h" />
     <ClInclude Include="..\WaveLang\source\engine\task_functions\task_functions_filter.h" />
     <ClInclude Include="..\WaveLang\source\engine\task_functions\task_functions_sampler.h" />
+    <ClInclude Include="..\WaveLang\source\engine\task_functions\task_functions_time.h" />
     <ClInclude Include="..\WaveLang\source\engine\task_functions\task_functions_utility.h" />
     <ClInclude Include="..\WaveLang\source\engine\task_functions\task_function_registration.h" />
     <ClInclude Include="..\WaveLang\source\engine\task_function_registry.h" />
@@ -119,6 +120,7 @@
     <ClInclude Include="..\WaveLang\source\execution_graph\native_modules\native_modules_delay.h" />
     <ClInclude Include="..\WaveLang\source\execution_graph\native_modules\native_modules_filter.h" />
     <ClInclude Include="..\WaveLang\source\execution_graph\native_modules\native_modules_sampler.h" />
+    <ClInclude Include="..\WaveLang\source\execution_graph\native_modules\native_modules_time.h" />
     <ClInclude Include="..\WaveLang\source\execution_graph\native_modules\native_modules_utility.h" />
     <ClInclude Include="..\WaveLang\source\execution_graph\native_modules\native_module_registration.h" />
     <ClInclude Include="..\WaveLang\source\execution_graph\native_module_registry.h" />
@@ -151,6 +153,7 @@
     <ClCompile Include="..\WaveLang\source\engine\task_functions\task_functions_delay.cpp" />
     <ClCompile Include="..\WaveLang\source\engine\task_functions\task_functions_filter.cpp" />
     <ClCompile Include="..\WaveLang\source\engine\task_functions\task_functions_sampler.cpp" />
+    <ClCompile Include="..\WaveLang\source\engine\task_functions\task_functions_time.cpp" />
     <ClCompile Include="..\WaveLang\source\engine\task_functions\task_functions_utility.cpp" />
     <ClCompile Include="..\WaveLang\source\engine\task_functions\task_function_registration.cpp" />
     <ClCompile Include="..\WaveLang\source\engine\task_function_registry.cpp" />
@@ -162,6 +165,7 @@
     <ClCompile Include="..\WaveLang\source\execution_graph\native_modules\native_modules_delay.cpp" />
     <ClCompile Include="..\WaveLang\source\execution_graph\native_modules\native_modules_filter.cpp" />
     <ClCompile Include="..\WaveLang\source\execution_graph\native_modules\native_modules_sampler.cpp" />
+    <ClCompile Include="..\WaveLang\source\execution_graph\native_modules\native_modules_time.cpp" />
     <ClCompile Include="..\WaveLang\source\execution_graph\native_modules\native_modules_utility.cpp" />
     <ClCompile Include="..\WaveLang\source\execution_graph\native_modules\native_module_registration.cpp" />
     <ClCompile Include="..\WaveLang\source\execution_graph\native_module_registry.cpp" />

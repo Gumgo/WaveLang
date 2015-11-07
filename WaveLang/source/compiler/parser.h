@@ -15,6 +15,8 @@ enum e_parser_nonterminal {
 	k_parser_nonterminal_global_scope_item_list,
 	k_parser_nonterminal_global_scope_item,
 
+	k_parser_nonterminal_basic_type,
+	k_parser_nonterminal_array_type,
 	k_parser_nonterminal_type,
 	k_parser_nonterminal_type_or_void,
 
@@ -42,8 +44,14 @@ enum e_parser_nonterminal {
 	k_parser_nonterminal_expr_6,
 	k_parser_nonterminal_expr_7,
 	k_parser_nonterminal_expr_8,
+	k_parser_nonterminal_expr_9,
 	k_parser_nonterminal_module_call,
 	k_parser_nonterminal_module_call_argument_list,
+
+	k_parser_nonterminal_constant_array, // Note: the array values themselves aren't constant, but the array itself is
+	k_parser_nonterminal_constant_array_list,
+
+	k_parser_nonterminal_array_dereference,
 
 	k_parser_nonterminal_count
 };

@@ -51,6 +51,7 @@
     <ClCompile Include="source\engine\task_functions\task_functions_delay.cpp" />
     <ClCompile Include="source\engine\task_functions\task_functions_filter.cpp" />
     <ClCompile Include="source\engine\task_functions\task_functions_sampler.cpp" />
+    <ClCompile Include="source\engine\task_functions\task_functions_time.cpp" />
     <ClCompile Include="source\engine\task_functions\task_functions_utility.cpp" />
     <ClCompile Include="source\engine\task_functions\task_function_registration.cpp" />
     <ClCompile Include="source\engine\task_graph.cpp" />
@@ -62,6 +63,7 @@
     <ClCompile Include="source\execution_graph\native_modules\native_modules_delay.cpp" />
     <ClCompile Include="source\execution_graph\native_modules\native_modules_filter.cpp" />
     <ClCompile Include="source\execution_graph\native_modules\native_modules_sampler.cpp" />
+    <ClCompile Include="source\execution_graph\native_modules\native_modules_time.cpp" />
     <ClCompile Include="source\execution_graph\native_modules\native_modules_utility.cpp" />
     <ClCompile Include="source\execution_graph\native_modules\native_module_registration.cpp" />
     <ClCompile Include="source\execution_graph\native_module_registry.cpp" />
@@ -87,6 +89,7 @@
     <ClInclude Include="source\common\utility\aligned_allocator.h" />
     <ClInclude Include="source\common\utility\file_utility.h" />
     <ClInclude Include="source\common\utility\string_table.h" />
+    <ClInclude Include="source\common\wrapped_array.h" />
     <ClInclude Include="source\compiler\ast.h" />
     <ClInclude Include="source\compiler\ast_builder.h" />
     <ClInclude Include="source\compiler\ast_validator.h" />
@@ -122,6 +125,7 @@
     <ClInclude Include="source\engine\task_functions\task_functions_delay.h" />
     <ClInclude Include="source\engine\task_functions\task_functions_filter.h" />
     <ClInclude Include="source\engine\task_functions\task_functions_sampler.h" />
+    <ClInclude Include="source\engine\task_functions\task_functions_time.h" />
     <ClInclude Include="source\engine\task_functions\task_functions_utility.h" />
     <ClInclude Include="source\engine\task_functions\task_function_registration.h" />
     <ClInclude Include="source\engine\task_graph.h" />
@@ -133,6 +137,7 @@
     <ClInclude Include="source\execution_graph\native_modules\native_modules_delay.h" />
     <ClInclude Include="source\execution_graph\native_modules\native_modules_filter.h" />
     <ClInclude Include="source\execution_graph\native_modules\native_modules_sampler.h" />
+    <ClInclude Include="source\execution_graph\native_modules\native_modules_time.h" />
     <ClInclude Include="source\execution_graph\native_modules\native_modules_utility.h" />
     <ClInclude Include="source\execution_graph\native_modules\native_module_registration.h" />
     <ClInclude Include="source\execution_graph\native_module_registry.h" />

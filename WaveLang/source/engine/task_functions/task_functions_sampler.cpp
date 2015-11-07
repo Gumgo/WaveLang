@@ -6,6 +6,8 @@
 #include "engine/sample/sample.h"
 #include "engine/sample/sample_library.h"
 
+// $TODO tracking time with floats in seconds seems imprecise... track in samples instead maybe?
+
 #define GENERATE_SINC_WINDOW 0
 
 #if PREDEFINED(GENERATE_SINC_WINDOW)

@@ -7,7 +7,10 @@ static const char *k_ast_data_type_strings[] = {
 	"module",
 	"real",
 	"bool",
-	"string"
+	"string",
+	"real[]",
+	"bool[]",
+	"string[]"
 };
 
 static_assert(NUMBEROF(k_ast_data_type_strings) == k_ast_data_type_count, "Data type string mismatch");
@@ -15,6 +18,60 @@ static_assert(NUMBEROF(k_ast_data_type_strings) == k_ast_data_type_count, "Data 
 const char *get_ast_data_type_string(e_ast_data_type data_type) {
 	wl_assert(VALID_INDEX(data_type, k_ast_data_type_count));
 	return k_ast_data_type_strings[data_type];
+}
+
+bool is_ast_data_type_array(e_ast_data_type data_type) {
+	switch (data_type) {
+	case k_ast_data_type_void:
+	case k_ast_data_type_module:
+	case k_ast_data_type_real:
+	case k_ast_data_type_bool:
+	case k_ast_data_type_string:
+		return false;
+
+	case k_ast_data_type_real_array:
+	case k_ast_data_type_bool_array:
+	case k_ast_data_type_string_array:
+		return true;
+
+	default:
+		wl_unreachable();
+		return false;
+	}
+}
+
+e_ast_data_type get_element_from_array_ast_data_type(e_ast_data_type array_data_type) {
+	switch (array_data_type) {
+	case k_ast_data_type_real_array:
+		return k_ast_data_type_real;
+
+	case k_ast_data_type_bool_array:
+		return k_ast_data_type_bool;
+
+	case k_ast_data_type_string_array:
+		return k_ast_data_type_string;
+
+	default:
+		wl_unreachable();
+		return k_ast_data_type_count;
+	}
+}
+
+e_ast_data_type get_array_from_element_ast_data_type(e_ast_data_type element_data_type) {
+	switch (element_data_type) {
+	case k_ast_data_type_real:
+		return k_ast_data_type_real_array;
+
+	case k_ast_data_type_bool:
+		return k_ast_data_type_bool_array;
+
+	case k_ast_data_type_string:
+		return k_ast_data_type_string_array;
+
+	default:
+		wl_unreachable();
+		return k_ast_data_type_count;
+	}
 }
 
 c_ast_node::c_ast_node(e_ast_node_type type)
@@ -250,15 +307,22 @@ e_ast_data_type c_ast_node_named_value_declaration::get_data_type() const {
 
 c_ast_node_named_value_assignment::c_ast_node_named_value_assignment()
 	: c_ast_node(k_ast_node_type_named_value_assignment) {
+	m_is_valid_named_value = true;
 	m_expression = nullptr;
+	m_array_index_expression = nullptr;
 }
 
 c_ast_node_named_value_assignment::~c_ast_node_named_value_assignment() {
 	delete m_expression;
+	delete m_array_index_expression;
 }
 
 void c_ast_node_named_value_assignment::iterate(c_ast_node_visitor *visitor) {
 	if (visitor->begin_visit(this)) {
+		if (m_array_index_expression) {
+			m_array_index_expression->iterate(visitor);
+		}
+
 		wl_assert(m_expression);
 		m_expression->iterate(visitor);
 
@@ -268,6 +332,10 @@ void c_ast_node_named_value_assignment::iterate(c_ast_node_visitor *visitor) {
 
 void c_ast_node_named_value_assignment::iterate(c_ast_node_const_visitor *visitor) const {
 	if (visitor->begin_visit(this)) {
+		if (m_array_index_expression) {
+			m_array_index_expression->iterate(visitor);
+		}
+
 		wl_assert(m_expression);
 		m_expression->iterate(visitor);
 
@@ -275,12 +343,36 @@ void c_ast_node_named_value_assignment::iterate(c_ast_node_const_visitor *visito
 	}
 }
 
+void c_ast_node_named_value_assignment::set_is_valid_named_value(bool is_valid_named_value) {
+	m_is_valid_named_value = is_valid_named_value;
+}
+
+bool c_ast_node_named_value_assignment::get_is_valid_named_value() const {
+	return m_is_valid_named_value;
+}
+
 void c_ast_node_named_value_assignment::set_named_value(const std::string &named_value) {
+	wl_assert(m_is_valid_named_value);
 	m_named_value = named_value;
 }
 
 const std::string &c_ast_node_named_value_assignment::get_named_value() const {
 	return m_named_value;
+}
+
+void c_ast_node_named_value_assignment::set_array_index_expression(c_ast_node_expression *array_index_expression) {
+	wl_assert(!m_array_index_expression);
+	wl_assert(array_index_expression);
+	wl_assert(m_is_valid_named_value);
+	m_array_index_expression = array_index_expression;
+}
+
+c_ast_node_expression *c_ast_node_named_value_assignment::get_array_index_expression() {
+	return m_array_index_expression;
+}
+
+const c_ast_node_expression *c_ast_node_named_value_assignment::get_array_index_expression() const {
+	return m_array_index_expression;
 }
 
 void c_ast_node_named_value_assignment::set_expression(c_ast_node_expression *expression) {
@@ -437,20 +529,36 @@ const c_ast_node *c_ast_node_expression::get_expression_value() const {
 
 c_ast_node_constant::c_ast_node_constant()
 	: c_ast_node(k_ast_node_type_constant) {
-	m_data_type = k_ast_data_type_real;
+	m_data_type = k_ast_data_type_void;
 	m_real_value = 0.0f;
 }
 
-c_ast_node_constant::~c_ast_node_constant() {}
+c_ast_node_constant::~c_ast_node_constant() {
+	for (size_t index = 0; index < m_array_values.size(); index++) {
+		delete m_array_values[index];
+	}
+}
 
 void c_ast_node_constant::iterate(c_ast_node_visitor *visitor) {
 	if (visitor->begin_visit(this)) {
+		wl_assert(m_array_values.empty() || is_ast_data_type_array(m_data_type));
+
+		for (size_t index = 0; index < m_array_values.size(); index++) {
+			m_array_values[index]->iterate(visitor);
+		}
+
 		visitor->end_visit(this);
 	}
 }
 
 void c_ast_node_constant::iterate(c_ast_node_const_visitor *visitor) const {
 	if (visitor->begin_visit(this)) {
+		wl_assert(m_array_values.empty() || is_ast_data_type_array(m_data_type));
+
+		for (size_t index = 0; index < m_array_values.size(); index++) {
+			m_array_values[index]->iterate(visitor);
+		}
+
 		visitor->end_visit(this);
 	}
 }
@@ -460,6 +568,7 @@ e_ast_data_type c_ast_node_constant::get_data_type() const {
 }
 
 void c_ast_node_constant::set_real_value(real32 value) {
+	wl_assert(m_data_type == k_ast_data_type_void);
 	m_data_type = k_ast_data_type_real;
 	m_real_value = value;
 	m_string_value.clear();
@@ -471,6 +580,7 @@ real32 c_ast_node_constant::get_real_value() const {
 }
 
 void c_ast_node_constant::set_bool_value(bool value) {
+	wl_assert(m_data_type == k_ast_data_type_void);
 	m_data_type = k_ast_data_type_bool;
 	m_bool_value = value;
 	m_string_value.clear();
@@ -482,14 +592,41 @@ bool c_ast_node_constant::get_bool_value() const {
 }
 
 void c_ast_node_constant::set_string_value(const std::string &value) {
+	wl_assert(m_data_type == k_ast_data_type_void);
 	m_data_type = k_ast_data_type_string;
 	m_real_value = 0.0f;
-	m_string_value = value;;
+	m_string_value = value;
 }
 
 const std::string &c_ast_node_constant::get_string_value() const {
 	wl_assert(m_data_type == k_ast_data_type_string);
 	return m_string_value;
+}
+
+void c_ast_node_constant::set_array(e_ast_data_type element_data_type) {
+	wl_assert(m_data_type == k_ast_data_type_void);
+	// This should eventually be called in the case of implicit arrays once we resolve the first value's type
+	m_data_type = get_array_from_element_ast_data_type(element_data_type);
+}
+
+void c_ast_node_constant::add_array_value(c_ast_node_expression *value) {
+	wl_assert(is_ast_data_type_array(m_data_type));
+	m_array_values.push_back(value);
+}
+
+size_t c_ast_node_constant::get_array_count() const {
+	wl_assert(is_ast_data_type_array(m_data_type));
+	return m_array_values.size();
+}
+
+c_ast_node_expression *c_ast_node_constant::get_array_value(size_t index) {
+	wl_assert(is_ast_data_type_array(m_data_type));
+	return m_array_values[index];
+}
+
+const c_ast_node_expression *c_ast_node_constant::get_array_value(size_t index) const {
+	wl_assert(is_ast_data_type_array(m_data_type));
+	return m_array_values[index];
 }
 
 c_ast_node_named_value::c_ast_node_named_value()
@@ -518,7 +655,9 @@ const std::string &c_ast_node_named_value::get_name() const {
 }
 
 c_ast_node_module_call::c_ast_node_module_call()
-	: c_ast_node(k_ast_node_type_module_call) {}
+	: c_ast_node(k_ast_node_type_module_call) {
+	m_is_invoked_using_operator = false;
+}
 
 c_ast_node_module_call::~c_ast_node_module_call() {
 	for (size_t index = 0; index < m_arguments.size(); index++) {
@@ -544,6 +683,14 @@ void c_ast_node_module_call::iterate(c_ast_node_const_visitor *visitor) const {
 
 		visitor->end_visit(this);
 	}
+}
+
+void c_ast_node_module_call::set_is_invoked_using_operator(bool is_invoked_using_operator) {
+	m_is_invoked_using_operator = is_invoked_using_operator;
+}
+
+bool c_ast_node_module_call::get_is_invoked_using_operator() const {
+	return m_is_invoked_using_operator;
 }
 
 void c_ast_node_module_call::set_name(const std::string &name) {

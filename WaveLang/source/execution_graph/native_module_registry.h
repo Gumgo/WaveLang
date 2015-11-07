@@ -25,6 +25,7 @@ enum e_native_operator {
 	k_native_operator_greater_equal,
 	k_native_operator_and,
 	k_native_operator_or,
+	k_native_operator_array_dereference,
 
 	k_native_operator_count
 };

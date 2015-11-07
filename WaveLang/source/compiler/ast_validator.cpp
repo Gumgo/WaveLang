@@ -429,6 +429,15 @@ private:
 		m_errors->push_back(error);
 	}
 
+	void dereference_non_array_error(s_compiler_source_location source_location, e_ast_data_type non_array_type) {
+		s_compiler_result error;
+		error.result = k_compiler_result_type_mismatch;
+		error.source_location = source_location;
+		error.message = "Cannot dereference non-array type '" +
+			std::string(get_ast_data_type_string(non_array_type)) + "'";
+		m_errors->push_back(error);
+	}
+
 	void unassigned_named_value_error(s_compiler_source_location source_location, const std::string &name) {
 		s_compiler_result error;
 		error.result = k_compiler_result_unassigned_named_value_used;
@@ -584,7 +593,7 @@ public:
 					m_errors->push_back(error);
 				}
 
-				// $TODO change this when we support inputs
+				// $TODO $INPUT change this when we support inputs
 				bool all_out = true;
 				bool all_real = true;
 				for (size_t arg = 0; all_out && arg < node->get_argument_count(); arg++) {
@@ -672,6 +681,13 @@ public:
 		m_expression_stack.pop();
 		m_last_assigned_expression_result = result;
 
+		s_expression_result array_index_result;
+		if (node->get_array_index_expression()) {
+			// We have an additional result on the stack for the array index expression
+			array_index_result = m_expression_stack.top();
+			m_expression_stack.pop();
+		}
+
 		// If a valid identifier has been provided, update its last used statement
 		const s_identifier *result_identifier = get_identifier(result.identifier_name);
 		if (result_identifier) {
@@ -680,7 +696,13 @@ public:
 			named_value->last_statement_used = m_current_statement;
 		}
 
-		if (node->get_named_value().empty()) {
+		if (!node->get_is_valid_named_value()) {
+			s_compiler_result error;
+			error.result = k_compiler_result_invalid_lhs_named_value_assignment;
+			error.source_location = node->get_source_location();
+			error.message = "Invalid LHS expression for assignment";
+			m_errors->push_back(error);
+		} else if (node->get_named_value().empty()) {
 			// If this assignment node has no name, it means it's just a placeholder for an expression; nothing to do.
 		} else {
 			// First make sure this is actually a named value
@@ -689,27 +711,43 @@ public:
 				undeclared_identifier_error(node->get_source_location(), node->get_named_value());
 			} else if (identifier->ast_node->get_type() != k_ast_node_type_named_value_declaration) {
 				unassignable_type_error(node->get_source_location(), node->get_named_value(), identifier->data_type);
-			} else if (result.type != identifier->data_type) {
-				type_mismatch_error(node->get_source_location(), identifier->data_type, result.type);
-			} else if (!result.has_value) {
-				// The result is a named value which hasn't been assigned yet
-				unassigned_named_value_error(node->get_source_location(), result.identifier_name);
+			} else if (node->get_array_index_expression() && !is_ast_data_type_array(identifier->data_type)) {
+				// We're trying to dereference a non-array type
+				dereference_non_array_error(node->get_source_location(), identifier->data_type);
 			} else {
-				// Look up the context
-				s_named_value *match = get_named_value(identifier->ast_node);
-				// Since we've verified that this is a named value, it must already have a context
-				wl_assert(match);
+				e_ast_data_type expected_type = node->get_array_index_expression() ?
+					expected_type = get_element_from_array_ast_data_type(identifier->data_type) :
+					identifier->data_type;
 
-				if (match->last_statement_assigned == m_current_statement) {
-					// Make sure we're not assigning to a value we used as an output parameter; this is ambiguous
-					// However, it's okay if we used the named value on this same statement, e.g. x := x + 1;
-					s_compiler_result error;
-					error.result = k_compiler_result_ambiguous_named_value_assignment;
-					error.source_location = node->get_source_location();
-					error.message = "Ambiguous assignment for named value '" + node->get_named_value() + "'";
-					m_errors->push_back(error);
+				if (result.type != expected_type) {
+					type_mismatch_error(node->get_source_location(), expected_type, result.type);
+				} else if (!result.has_value) {
+					// The result is a named value which hasn't been assigned yet
+					unassigned_named_value_error(node->get_source_location(), result.identifier_name);
+				} else if (node->get_array_index_expression() && array_index_result.type != k_ast_data_type_real) {
+					// The array index should be a real
+					type_mismatch_error(node->get_array_index_expression()->get_source_location(),
+						k_ast_data_type_real, array_index_result.type);
 				} else {
-					match->last_statement_assigned = m_current_statement;
+					// Look up the context
+					s_named_value *match = get_named_value(identifier->ast_node);
+					// Since we've verified that this is a named value, it must already have a context
+					wl_assert(match);
+
+					if (node->get_array_index_expression() && match->last_statement_assigned < 0) {
+						// If this is an array, we need to have assigned to it before we can dereference it
+						unassigned_named_value_error(node->get_source_location(), node->get_named_value());
+					} else if (match->last_statement_assigned == m_current_statement) {
+						// Make sure we're not assigning to a value we used as an output parameter; this is ambiguous
+						// However, it's okay if we used the named value on this same statement, e.g. x := x + 1;
+						s_compiler_result error;
+						error.result = k_compiler_result_ambiguous_named_value_assignment;
+						error.source_location = node->get_source_location();
+						error.message = "Ambiguous assignment for named value '" + node->get_named_value() + "'";
+						m_errors->push_back(error);
+					} else {
+						match->last_statement_assigned = m_current_statement;
+					}
 				}
 			}
 		}
@@ -820,6 +858,30 @@ public:
 		s_expression_result result;
 		result.type = node->get_data_type();
 		result.has_value = true;
+
+		if (is_ast_data_type_array(result.type)) {
+			e_ast_data_type element_type = get_element_from_array_ast_data_type(result.type);
+
+			// If this is an array, verify that all values are of the correct type
+			std::vector<s_expression_result> value_expression_results(node->get_array_count());
+
+			// Iterate over each argument in reverse, since that is the order they appear on the stack
+			// We don't really need to do this since we're just checking type, but it will make any errors appear in the
+			// correct order
+			for (size_t reverse_index = 0; reverse_index < node->get_array_count(); reverse_index++) {
+				size_t index = node->get_array_count() - reverse_index - 1;
+				value_expression_results[index] = m_expression_stack.top();
+				m_expression_stack.pop();
+			}
+
+			for (size_t index = 0; index < value_expression_results.size(); index++) {
+				e_ast_data_type result_type = value_expression_results[index].type;
+				if (result_type != element_type) {
+					type_mismatch_error(node->get_source_location(), element_type, result_type);
+				}
+			}
+		}
+
 		m_expression_stack.push(result);
 	}
 
@@ -892,7 +954,7 @@ public:
 			const c_ast_node_module_declaration *matching_overload_module_declaration =
 				find_matching_module_overload(identifier, argument_expression_results);
 
-			if (!matching_overload_module_declaration && identifier->overload_count == 1) {
+			if (!matching_overload_module_declaration && identifier->overload_count > 1) {
 				// For overloaded modules, spit out a single catch-all error if we don't find a match
 				s_compiler_result error;
 				error.result = k_compiler_result_missing_import;
@@ -900,7 +962,14 @@ public:
 				error.message = "No overloads for module '" + node->get_name() + "' match the arguments provided";
 				m_errors->push_back(error);
 			} else {
-				module_declaration = matching_overload_module_declaration;
+				// Either we (1) found a valid overload, or (2) the module isn't overloaded. In case (1),
+				// use matching_overload_module_declaration. In case (2), matching_overload_module_declaration may be
+				// null if the argument types don't match for the single instance that exists of this module, so don't
+				// overwrite module_declaration with matching_overload_module_declaration in this case - we will produce
+				// type errors in a moment for module_declaration.
+				if (matching_overload_module_declaration) {
+					module_declaration = matching_overload_module_declaration;
+				}
 
 				// Make sure this module is visible from the file it's being called from. This is kind of a hack/
 				// incomplete solution, but it prevents situations where A imports B, and then B can use modules from A.
@@ -958,6 +1027,7 @@ public:
 						}
 
 						// If this argument has an out qualifier, it must take a direct named value
+						// We currently don't support outputting to an array element directly
 						if (argument->get_qualifier() == k_ast_qualifier_out &&
 							result.identifier_name.empty()) {
 							s_compiler_result error;

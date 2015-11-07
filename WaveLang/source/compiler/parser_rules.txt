@@ -11,19 +11,29 @@ PROD(NS(global_scope_item_list),
 PROD(NS(global_scope_item),
 	NS(module_declaration))
 
-PROD(NS(type),
+PROD(NS(basic_type),
 	TS(keyword_real))
-PROD(NS(type),
+PROD(NS(basic_type),
 	TS(keyword_bool))
-PROD(NS(type),
+PROD(NS(basic_type),
 	TS(keyword_string))
 
+PROD(NS(array_type),
+	TS(keyword_real), TS(left_bracket), TS(right_bracket))
+PROD(NS(array_type),
+	TS(keyword_bool), TS(left_bracket), TS(right_bracket))
+PROD(NS(array_type),
+	TS(keyword_string), TS(left_bracket), TS(right_bracket))
+
+PROD(NS(type),
+	NS(basic_type))
+PROD(NS(type),
+	NS(array_type))
+
 PROD(NS(type_or_void),
-	TS(keyword_real))
+	NS(basic_type))
 PROD(NS(type_or_void),
-	TS(keyword_bool))
-PROD(NS(type_or_void),
-	TS(keyword_string))
+	NS(array_type))
 PROD(NS(type_or_void),
 	TS(keyword_void))
 
@@ -76,7 +86,7 @@ PROD(NS(named_value_declaration),
 	NS(type), TS(identifier), NS(expression_assignment))
 
 PROD(NS(named_value_assignment),
-	TS(identifier), NS(expression_assignment))
+	NS(expression), NS(expression_assignment))
 
 PROD(NS(repeat_loop),
 	TS(keyword_repeat), TS(left_parenthesis), NS(expression), TS(right_parenthesis), NS(scope))
@@ -143,17 +153,24 @@ PROD(NS(expr_7),
 	NS(expr_8))
 
 PROD(NS(expr_8),
+	NS(expr_8), NS(array_dereference))
+PROD(NS(expr_8),
+	NS(expr_9))
+
+PROD(NS(expr_9),
 	TS(left_parenthesis), NS(expression), TS(right_parenthesis))
-PROD(NS(expr_8),
+PROD(NS(expr_9),
 	TS(identifier))
-PROD(NS(expr_8),
+PROD(NS(expr_9),
 	NS(module_call))
-PROD(NS(expr_8),
+PROD(NS(expr_9),
 	TS(constant_real))
-PROD(NS(expr_8),
+PROD(NS(expr_9),
 	TS(constant_bool))
-PROD(NS(expr_8),
+PROD(NS(expr_9),
 	TS(constant_string))
+PROD(NS(expr_9),
+	NS(constant_array))
 
 PROD(NS(module_call),
 	TS(identifier), TS(left_parenthesis), TS(right_parenthesis))
@@ -164,3 +181,16 @@ PROD(NS(module_call_argument_list),
 	NS(expression))
 PROD(NS(module_call_argument_list),
 	NS(module_call_argument_list), TS(comma), NS(expression))
+
+PROD(NS(constant_array),
+	NS(array_type), TS(left_parenthesis), TS(right_parenthesis))
+PROD(NS(constant_array),
+	NS(array_type), TS(left_parenthesis), NS(constant_array_list), TS(right_parenthesis))
+
+PROD(NS(constant_array_list),
+	NS(expression))
+PROD(NS(constant_array_list),
+	NS(constant_array_list), TS(comma), NS(expression))
+
+PROD(NS(array_dereference),
+	TS(left_bracket), NS(expression), TS(right_bracket))

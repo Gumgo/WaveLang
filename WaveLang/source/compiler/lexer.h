@@ -44,6 +44,10 @@ enum e_token_type {
 	k_token_type_left_brace,
 	k_token_type_right_brace,
 
+	// Brackets
+	k_token_type_left_bracket,
+	k_token_type_right_bracket,
+
 	// Comma
 	k_token_type_comma,
 	k_token_type_semicolon,

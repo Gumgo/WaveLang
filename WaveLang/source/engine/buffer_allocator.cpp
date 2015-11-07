@@ -75,3 +75,7 @@ void c_buffer_allocator::free_buffer(uint32 buffer_handle) {
 c_buffer *c_buffer_allocator::get_buffer(uint32 buffer_handle) {
 	return &m_buffers.get_array()[buffer_handle];
 }
+
+const c_buffer *c_buffer_allocator::get_fast_accessor() const {
+	return m_buffers.get_array().get_pointer();
+}

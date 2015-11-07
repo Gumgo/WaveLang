@@ -72,8 +72,19 @@ enum e_native_module_argument_type {
 	k_native_module_argument_type_bool,
 	k_native_module_argument_type_string,
 
+	k_native_module_argument_type_real_array,
+	k_native_module_argument_type_bool_array,
+	k_native_module_argument_type_string_array,
+
 	k_native_module_argument_type_count
 };
+
+bool is_native_module_argument_type_array(e_native_module_argument_type type);
+
+e_native_module_argument_type get_element_from_array_native_module_argument_type(
+	e_native_module_argument_type array_type);
+e_native_module_argument_type get_array_from_element_native_module_argument_type(
+	e_native_module_argument_type element_type);
 
 struct s_native_module_argument {
 	e_native_module_argument_qualifier qualifier;
@@ -100,6 +111,7 @@ struct s_native_module_compile_time_argument {
 		bool bool_value;
 	};
 	std::string string_value;
+	std::vector<uint32> array_value; // Array of value node indices
 
 	// These functions are used to enforce correct usage of input or output
 
@@ -149,6 +161,51 @@ struct s_native_module_compile_time_argument {
 		this->string_value = value;
 		IF_ASSERTS_ENABLED(assigned = true);
 		return string_value;
+	}
+
+	const std::vector<uint32> &get_real_array() const {
+		wl_assert(
+			argument.qualifier == k_native_module_argument_qualifier_in ||
+			argument.qualifier == k_native_module_argument_qualifier_constant);
+		wl_assert(argument.type == k_native_module_argument_type_real_array);
+		return array_value;
+	}
+
+	void set_real_array(const std::vector<uint32> &value) {
+		wl_assert(argument.qualifier == k_native_module_argument_qualifier_out);
+		wl_assert(argument.type == k_native_module_argument_type_real_array);
+		this->array_value = value;
+		IF_ASSERTS_ENABLED(assigned = true);
+	}
+
+	const std::vector<uint32> &get_bool_array() const {
+		wl_assert(
+			argument.qualifier == k_native_module_argument_qualifier_in ||
+			argument.qualifier == k_native_module_argument_qualifier_constant);
+		wl_assert(argument.type == k_native_module_argument_type_bool_array);
+		return array_value;
+	}
+
+	void set_bool_array(const std::vector<uint32> &value) {
+		wl_assert(argument.qualifier == k_native_module_argument_qualifier_out);
+		wl_assert(argument.type == k_native_module_argument_type_bool_array);
+		this->array_value = value;
+		IF_ASSERTS_ENABLED(assigned = true);
+	}
+
+	const std::vector<uint32> &get_string_array() const {
+		wl_assert(
+			argument.qualifier == k_native_module_argument_qualifier_in ||
+			argument.qualifier == k_native_module_argument_qualifier_constant);
+		wl_assert(argument.type == k_native_module_argument_type_string_array);
+		return array_value;
+	}
+
+	void set_string_array(const std::vector<uint32> &value) {
+		wl_assert(argument.qualifier == k_native_module_argument_qualifier_out);
+		wl_assert(argument.type == k_native_module_argument_type_string_array);
+		this->array_value = value;
+		IF_ASSERTS_ENABLED(assigned = true);
 	}
 
 private:
@@ -220,6 +277,7 @@ enum e_native_module_optimization_symbol_type {
 
 	k_native_module_optimization_symbol_type_native_module,
 	k_native_module_optimization_symbol_type_native_module_end,
+	k_native_module_optimization_symbol_type_array_dereference,
 	k_native_module_optimization_symbol_type_variable,
 	k_native_module_optimization_symbol_type_constant,
 	k_native_module_optimization_symbol_type_real_value,
@@ -232,6 +290,8 @@ enum e_native_module_optimization_symbol_type {
 static const size_t k_max_native_module_optimization_pattern_length = 16;
 
 struct s_native_module_optimization_symbol {
+	static const uint32 k_max_matched_symbols = 4;
+
 	e_native_module_optimization_symbol_type type;
 	union {
 		s_native_module_uid native_module_uid;
@@ -259,6 +319,13 @@ struct s_native_module_optimization_symbol {
 		return result;
 	}
 
+	static s_native_module_optimization_symbol build_array_dereference() {
+		s_native_module_optimization_symbol result;
+		ZERO_STRUCT(&result);
+		result.type = k_native_module_optimization_symbol_type_array_dereference;
+		return result;
+	}
+
 	static s_native_module_optimization_symbol build_native_module_end() {
 		s_native_module_optimization_symbol result;
 		ZERO_STRUCT(&result);
@@ -267,6 +334,7 @@ struct s_native_module_optimization_symbol {
 	}
 
 	static s_native_module_optimization_symbol build_variable(uint32 index) {
+		wl_assert(VALID_INDEX(index, k_max_matched_symbols));
 		s_native_module_optimization_symbol result;
 		ZERO_STRUCT(&result);
 		result.type = k_native_module_optimization_symbol_type_variable;
@@ -275,6 +343,7 @@ struct s_native_module_optimization_symbol {
 	}
 
 	static s_native_module_optimization_symbol build_constant(uint32 index) {
+		wl_assert(VALID_INDEX(index, k_max_matched_symbols));
 		s_native_module_optimization_symbol result;
 		ZERO_STRUCT(&result);
 		result.type = k_native_module_optimization_symbol_type_constant;
@@ -346,6 +415,7 @@ struct s_native_module_optimization_rule {
 #define NMO_BEGIN(uid)		s_native_module_optimization_symbol::build_native_module(uid)
 #define NMO_END				s_native_module_optimization_symbol::build_native_module_end()
 #define NMO_NM(uid, ...)	NMO_BEGIN(uid), ##__VA_ARGS__, NMO_END
+#define NMO_DRF(arr, idx)	s_native_module_optimization_symbol::build_array_dereference(), arr, idx
 #define NMO_V(index)		s_native_module_optimization_symbol::build_variable(index)
 #define NMO_C(index)		s_native_module_optimization_symbol::build_constant(index)
 #define NMO_RV(value)		s_native_module_optimization_symbol::build_real_value(value)
