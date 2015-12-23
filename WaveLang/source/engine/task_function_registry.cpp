@@ -206,60 +206,35 @@ static void validate_task_function_mapping(
 			native_module.arguments[arg].qualifier == k_native_module_argument_qualifier_constant) {
 			// Input arguments should have a valid input mapping
 			wl_assert(
-				input_type == k_task_function_mapping_native_module_input_type_constant ||
 				input_type == k_task_function_mapping_native_module_input_type_variable ||
 				input_type == k_task_function_mapping_native_module_input_type_branchless_variable);
 
 			// Make sure the native module argument type matches up with what it's being mapped to
 			switch (native_module.arguments[arg].type) {
 			case k_native_module_argument_type_real:
-				if (input_type == k_task_function_mapping_native_module_input_type_constant) {
-					wl_assert(task_function.argument_types[mapping_index] == k_task_data_type_real_constant_in);
-				} else {
-					wl_assert(
-						task_function.argument_types[mapping_index] == k_task_data_type_real_buffer_in ||
-						task_function.argument_types[mapping_index] == k_task_data_type_real_buffer_inout);
-				}
+				wl_assert(
+					task_function.argument_types[mapping_index] == k_task_data_type_real_in ||
+					task_function.argument_types[mapping_index] == k_task_data_type_real_inout);
 				break;
 
 			case k_native_module_argument_type_bool:
-				if (input_type == k_task_function_mapping_native_module_input_type_constant) {
-					wl_assert(task_function.argument_types[mapping_index] == k_task_data_type_bool_constant_in);
-				} else {
-					wl_vhalt("Variable bool input not (currently) supported");
-				}
+				wl_assert(task_function.argument_types[mapping_index] == k_task_data_type_bool_in);
 				break;
 
 			case k_native_module_argument_type_string:
-				if (input_type == k_task_function_mapping_native_module_input_type_constant) {
-					wl_assert(task_function.argument_types[mapping_index] == k_task_data_type_string_constant_in);
-				} else {
-					wl_vhalt("Variable string input not supported");
-				}
+				wl_assert(task_function.argument_types[mapping_index] == k_task_data_type_string_in);
 				break;
 
 			case k_native_module_argument_type_real_array:
-				if (input_type == k_task_function_mapping_native_module_input_type_constant) {
-					wl_assert(task_function.argument_types[mapping_index] == k_task_data_type_real_array_in);
-				} else {
-					wl_vhalt("Variable real array input not supported");
-				}
+				wl_assert(task_function.argument_types[mapping_index] == k_task_data_type_real_array_in);
 				break;
 
 			case k_native_module_argument_type_bool_array:
-				if (input_type == k_task_function_mapping_native_module_input_type_constant) {
-					wl_assert(task_function.argument_types[mapping_index] == k_task_data_type_bool_array_in);
-				} else {
-					wl_vhalt("Variable bool array input not supported");
-				}
+				wl_assert(task_function.argument_types[mapping_index] == k_task_data_type_bool_array_in);
 				break;
 
 			case k_native_module_argument_type_string_array:
-				if (input_type == k_task_function_mapping_native_module_input_type_constant) {
-					wl_assert(task_function.argument_types[mapping_index] == k_task_data_type_string_array_in);
-				} else {
-					wl_vhalt("Variable string array input not supported");
-				}
+				wl_assert(task_function.argument_types[mapping_index] == k_task_data_type_string_array_in);
 				break;
 
 			default:
@@ -277,8 +252,8 @@ static void validate_task_function_mapping(
 			switch (native_module.arguments[arg].type) {
 			case k_native_module_argument_type_real:
 				wl_assert(
-					task_function.argument_types[mapping_index] == k_task_data_type_real_buffer_out ||
-					task_function.argument_types[mapping_index] == k_task_data_type_real_buffer_inout);
+					task_function.argument_types[mapping_index] == k_task_data_type_real_out ||
+					task_function.argument_types[mapping_index] == k_task_data_type_real_inout);
 				break;
 
 			case k_native_module_argument_type_bool:
@@ -315,26 +290,25 @@ static void validate_task_function_mapping(
 		bool out_mapped = task_argument_output_mappings[task_arg];
 
 		switch (task_function.argument_types[task_arg]) {
-		case k_task_data_type_real_buffer_in:
+		case k_task_data_type_real_in:
 			wl_assert(in_mapped);
 			wl_assert(!out_mapped);
 			break;
 
-		case k_task_data_type_real_buffer_out:
+		case k_task_data_type_real_out:
 			wl_assert(!in_mapped);
 			wl_assert(out_mapped);
 			break;
 
-		case k_task_data_type_real_buffer_inout:
+		case k_task_data_type_real_inout:
 			wl_assert(in_mapped);
 			wl_assert(out_mapped);
 			break;
 
-		case k_task_data_type_real_constant_in:
 		case k_task_data_type_real_array_in:
-		case k_task_data_type_bool_constant_in:
+		case k_task_data_type_bool_in:
 		case k_task_data_type_bool_array_in:
-		case k_task_data_type_string_constant_in:
+		case k_task_data_type_string_in:
 		case k_task_data_type_string_array_in:
 			wl_assert(in_mapped);
 			wl_assert(!out_mapped);

@@ -51,6 +51,7 @@
     <ClCompile Include="source\engine\task_functions\task_functions_delay.cpp" />
     <ClCompile Include="source\engine\task_functions\task_functions_filter.cpp" />
     <ClCompile Include="source\engine\task_functions\task_functions_sampler.cpp" />
+    <ClCompile Include="source\engine\task_functions\task_functions_sampler_offline_helpers.cpp" />
     <ClCompile Include="source\engine\task_functions\task_functions_time.cpp" />
     <ClCompile Include="source\engine\task_functions\task_functions_utility.cpp" />
     <ClCompile Include="source\engine\task_functions\task_function_registration.cpp" />
@@ -74,6 +75,7 @@
     <ClInclude Include="source\common\asserts.h" />
     <ClInclude Include="source\common\cast_integer_verify.h" />
     <ClInclude Include="source\common\macros.h" />
+    <ClInclude Include="source\common\static_array.h" />
     <ClInclude Include="source\common\string.h" />
     <ClInclude Include="source\common\threading\atomics.h" />
     <ClInclude Include="source\common\common.h" />
@@ -125,6 +127,7 @@
     <ClInclude Include="source\engine\task_functions\task_functions_delay.h" />
     <ClInclude Include="source\engine\task_functions\task_functions_filter.h" />
     <ClInclude Include="source\engine\task_functions\task_functions_sampler.h" />
+    <ClInclude Include="source\engine\task_functions\task_functions_sampler_sinc_window.h" />
     <ClInclude Include="source\engine\task_functions\task_functions_time.h" />
     <ClInclude Include="source\engine\task_functions\task_functions_utility.h" />
     <ClInclude Include="source\engine\task_functions\task_function_registration.h" />

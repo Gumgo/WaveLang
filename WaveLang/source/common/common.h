@@ -7,6 +7,7 @@
 #include "common/asserts.h"
 #include "common/cast_integer_verify.h"
 #include "common/string.h"
+#include "common/static_array.h"
 #include "common/wrapped_array.h"
 #include <cctype>
 #include <cstddef>

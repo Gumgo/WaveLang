@@ -7,14 +7,14 @@
 
 static const uint32 k_task_functions_delay_library_id = 3;
 
-static const s_task_function_uid k_task_function_delay_buffer_uid = s_task_function_uid::build(k_task_functions_delay_library_id, 0);
+static const s_task_function_uid k_task_function_delay_in_out_uid = s_task_function_uid::build(k_task_functions_delay_library_id, 0);
 
 struct s_buffer_operation_delay {
 	static size_t query_memory(uint32 sample_rate, real32 delay);
 	static void initialize(s_buffer_operation_delay *context, uint32 sample_rate, real32 delay);
 
-	static void buffer(
-		s_buffer_operation_delay *context, size_t buffer_size, c_buffer_out out, c_buffer_in in);
+	static void in_out(
+		s_buffer_operation_delay *context, size_t buffer_size, c_real_buffer_or_constant_in in, c_real_buffer_out out);
 
 	// The inout buffer version would require an extra intermediate buffer and more copies, so it's not really worth
 	// implementing.
@@ -64,6 +64,45 @@ static void circular_buffer_push(void *circular_buffer, size_t circular_buffer_s
 	}
 }
 
+template<typename t_source>
+static void circular_buffer_push_constant(void *circular_buffer, size_t circular_buffer_size, size_t head_index,
+	t_source source_value, size_t size) {
+	wl_assert(size <= circular_buffer_size);
+	if (head_index < size) {
+		// Need to do 2 copies
+		size_t prev_head_index = (head_index + circular_buffer_size) - size;
+		size_t back_size = circular_buffer_size - prev_head_index;
+		size_t front_size = size - back_size;
+
+		wl_assert(prev_head_index % sizeof(source_value) == 0);
+		wl_assert(back_size % sizeof(source_value) == 0);
+		wl_assert(front_size % sizeof(source_value) == 0);
+
+		t_source *back_start_ptr = static_cast<t_source *>(circular_buffer) + (prev_head_index / sizeof(source_value));
+		t_source *back_end_ptr = back_start_ptr + (back_size / sizeof(source_value));
+		for (t_source *ptr = back_start_ptr; ptr < back_end_ptr; ptr++) {
+			*ptr = source_value;
+		}
+
+		t_source *front_start_ptr = static_cast<t_source *>(circular_buffer);
+		t_source *front_end_ptr = front_start_ptr + (front_size / sizeof(source_value));
+		for (t_source *ptr = front_start_ptr; ptr < front_end_ptr; ptr++) {
+			*ptr = source_value;
+		}
+	} else {
+		size_t prev_head_index = head_index - size;
+
+		wl_assert(prev_head_index % sizeof(source_value) == 0);
+		wl_assert(size % sizeof(source_value) == 0);
+
+		t_source *start_ptr = static_cast<t_source *>(circular_buffer) + (prev_head_index / sizeof(source_value));
+		t_source *end_ptr = start_ptr + (size / sizeof(source_value));
+		for (t_source *ptr = start_ptr; ptr < end_ptr; ptr++) {
+			*ptr = source_value;
+		}
+	}
+}
+
 size_t s_buffer_operation_delay::query_memory(uint32 sample_rate, real32 delay) {
 	if (std::isnan(delay) || std::isinf(delay)) {
 		delay = 0.0f;
@@ -91,35 +130,35 @@ void s_buffer_operation_delay::initialize(s_buffer_operation_delay *context, uin
 	memset(delay_buffer, 0, sizeof(real32) * context->delay_samples);
 }
 
-void s_buffer_operation_delay::buffer(
-	s_buffer_operation_delay *context, size_t buffer_size, c_buffer_out out, c_buffer_in in) {
-	validate_buffer(out);
+void s_buffer_operation_delay::in_out(
+	s_buffer_operation_delay *context, size_t buffer_size, c_real_buffer_or_constant_in in, c_real_buffer_out out) {
 	validate_buffer(in);
+	validate_buffer(out);
 
 	real32 *delay_buffer_ptr = get_delay_buffer(context);
-	const real32 *in_ptr = in->get_data<real32>();
 	real32 *out_ptr = out->get_data<real32>();
 
 	if (context->delay_samples == 0) {
-		if (in->is_constant()) {
-			c_real32_4 in_val(in_ptr);
-			in_val.store(out_ptr);
+		if (in.is_constant()) {
+			*out_ptr = in.get_constant();
 			out->set_constant(true);
 		} else {
+			const real32 *in_ptr = in.get_buffer()->get_data<real32>();
 			memcpy(out_ptr, in_ptr, buffer_size * sizeof(real32));
 			out->set_constant(false);
 		}
 		return;
 	}
 
-	if (in->is_constant() && context->is_constant &&
-		*in_ptr == *delay_buffer_ptr) {
-		// The input and the delay buffer are constant and identical, so the output is constant and the delay buffer
-		// doesn't change
-		c_real32_4 in_val(in_ptr);
-		in_val.store(out_ptr);
-		out->set_constant(true);
-		return;
+	if (in.is_constant() && context->is_constant) {
+		real32 in_val = in.get_constant();
+		if (in_val == *delay_buffer_ptr) {
+			// The input and the delay buffer are constant and identical, so the output is constant and the delay buffer
+			// doesn't change
+			*out_ptr = in_val;
+			out->set_constant(true);
+			return;
+		}
 	}
 
 	// $TODO Keep track of whether we fill the delay buffer with identical constant pushes, so we can set is_constant.
@@ -135,13 +174,29 @@ void s_buffer_operation_delay::buffer(
 		out_ptr, samples_to_process_size);
 
 	// 2) Copy end of input to delay buffer
-	circular_buffer_push(delay_buffer_ptr, delay_samples_size, context->delay_buffer_head_index,
-		in_ptr + (buffer_size - samples_to_process), samples_to_process_size);
+	if (in.is_constant()) {
+		circular_buffer_push_constant(delay_buffer_ptr, delay_samples_size, context->delay_buffer_head_index,
+			in.get_constant(), samples_to_process_size);
+	} else {
+		const real32 *in_ptr = in.get_buffer()->get_data<real32>();
+		circular_buffer_push(delay_buffer_ptr, delay_samples_size, context->delay_buffer_head_index,
+			in_ptr + (buffer_size - samples_to_process), samples_to_process_size);
+	}
 
 	if (context->delay_samples < buffer_size) {
 		// 3) If our delay is smaller than our buffer, it means that some input samples will be immediately used in the
 		// output buffer, so copy beginning of input to end of output
-		memcpy(out_ptr + context->delay_samples, in_ptr, (buffer_size - context->delay_samples) * sizeof(real32));
+		if (in.is_constant()) {
+			real32 in_val = in.get_constant();
+			real32 *out_ptr_start = out_ptr + context->delay_samples;
+			real32 *out_ptr_end = out_ptr_start + (buffer_size - context->delay_samples);
+			for (real32 *ptr = out_ptr_start; ptr < out_ptr_end; ptr++) {
+				*ptr = in_val;
+			}
+		} else {
+			const real32 *in_ptr = in.get_buffer()->get_data<real32>();
+			memcpy(out_ptr + context->delay_samples, in_ptr, (buffer_size - context->delay_samples) * sizeof(real32));
+		}
 	}
 }
 
@@ -158,24 +213,24 @@ static void task_initializer_delay(const s_task_function_context &context) {
 		context.arguments[0].get_real_constant_in());
 }
 
-static void task_function_delay_buffer(const s_task_function_context &context) {
-	s_buffer_operation_delay::buffer(
+static void task_function_delay_in_out(const s_task_function_context &context) {
+	s_buffer_operation_delay::in_out(
 		static_cast<s_buffer_operation_delay *>(context.task_memory),
 		context.buffer_size,
-		context.arguments[1].get_real_buffer_out(),
-		context.arguments[2].get_real_buffer_in());
+		context.arguments[1].get_real_buffer_or_constant_in(),
+		context.arguments[2].get_real_buffer_out());
 }
 
 void register_task_functions_delay() {
 	{
 		c_task_function_registry::register_task_function(
-			s_task_function::build(k_task_function_delay_buffer_uid,
-				task_memory_query_delay, task_initializer_delay, task_function_delay_buffer,
-				s_task_function_argument_list::build(TDT(real_constant_in), TDT(real_buffer_out), TDT(real_buffer_in))));
+			s_task_function::build(k_task_function_delay_in_out_uid,
+				task_memory_query_delay, task_initializer_delay, task_function_delay_in_out,
+				s_task_function_argument_list::build(TDT(real_in), TDT(real_in), TDT(real_out))));
 
 		s_task_function_mapping mappings[] = {
-			s_task_function_mapping::build(k_task_function_delay_buffer_uid, "cv.",
-			s_task_function_native_module_argument_mapping::build(0, 2, 1))
+			s_task_function_mapping::build(k_task_function_delay_in_out_uid, "vv.",
+			s_task_function_native_module_argument_mapping::build(0, 1, 2))
 
 		};
 

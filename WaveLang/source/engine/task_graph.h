@@ -13,74 +13,91 @@ struct s_task_graph_globals {
 };
 
 struct s_task_graph_data {
-	e_task_data_type type;
-
 	// Do not access these directly
-	union u_data {
-		u_data() {} // Allows for c_wrapped_array
+	struct {
+		e_task_data_type type;
+		bool is_constant;
 
-		struct {
-			// Used when building the graph
-			uint32 execution_graph_index_a;
-			uint32 execution_graph_index_b;
-		};
+		union u_value {
+			u_value() {} // Allows for c_wrapped_array
 
-		uint32 real_buffer_in;
-		uint32 real_buffer_out;
-		uint32 real_buffer_inout;
-		real32 real_constant_in;
-		c_real_array real_array_in;
+			struct {
+				// Used when building the graph
+				uint32 execution_graph_index_a;
+				uint32 execution_graph_index_b;
+			};
 
-		bool bool_constant_in;
-		c_bool_array bool_array_in;
+			uint32 real_buffer_in;
+			uint32 real_buffer_out;
+			uint32 real_buffer_inout;
+			real32 real_constant_in;
+			c_real_array real_array_in;
 
-		const char *string_constant_in;
-		c_string_array string_array_in;
+			bool bool_constant_in;
+			c_bool_array bool_array_in;
+
+			const char *string_constant_in;
+			c_string_array string_array_in;
+		} value;
 	} data;
 
+	e_task_data_type get_type() const {
+		return data.type;
+	}
+
+	bool is_constant() const {
+		return data.is_constant;
+	}
+
 	uint32 get_real_buffer_in() const {
-		wl_assert(type == k_task_data_type_real_buffer_in);
-		return data.real_buffer_in;
+		wl_assert(data.type == k_task_data_type_real_in);
+		wl_assert(!is_constant());
+		return data.value.real_buffer_in;
 	}
 
 	uint32 get_real_buffer_out() const {
-		wl_assert(type == k_task_data_type_real_buffer_out);
-		return data.real_buffer_out;
+		wl_assert(data.type == k_task_data_type_real_out);
+		wl_assert(!is_constant());
+		return data.value.real_buffer_out;
 	}
 
 	uint32 get_real_buffer_inout() const {
-		wl_assert(type == k_task_data_type_real_buffer_inout);
-		return data.real_buffer_inout;
+		wl_assert(data.type == k_task_data_type_real_inout);
+		wl_assert(!is_constant());
+		return data.value.real_buffer_inout;
 	}
 
 	real32 get_real_constant_in() const {
-		wl_assert(type == k_task_data_type_real_constant_in);
-		return data.real_constant_in;
+		wl_assert(data.type == k_task_data_type_real_in);
+		wl_assert(is_constant());
+		return data.value.real_constant_in;
 	}
 
 	c_real_array get_real_array_in() const {
-		wl_assert(type == k_task_data_type_real_array_in);
-		return data.real_array_in;
+		wl_assert(data.type == k_task_data_type_real_array_in);
+		return data.value.real_array_in;
 	}
 
 	bool get_bool_constant_in() const {
-		wl_assert(type == k_task_data_type_bool_constant_in);
-		return data.bool_constant_in;
+		wl_assert(data.type == k_task_data_type_bool_in);
+		wl_assert(is_constant());
+		return data.value.bool_constant_in;
 	}
 
 	c_bool_array get_bool_array_in() const {
-		wl_assert(type == k_task_data_type_bool_array_in);
-		return data.bool_array_in;
+		wl_assert(data.type == k_task_data_type_bool_array_in);
+		return data.value.bool_array_in;
 	}
 
 	const char *get_string_constant_in() const {
-		wl_assert(type == k_task_data_type_string_constant_in);
-		return data.string_constant_in;
+		wl_assert(data.type == k_task_data_type_string_in);
+		wl_assert(is_constant());
+		return data.value.string_constant_in;
 	}
 
 	c_string_array get_string_array_in() const {
-		wl_assert(type == k_task_data_type_string_array_in);
-		return data.string_array_in;
+		wl_assert(data.type == k_task_data_type_string_array_in);
+		return data.value.string_array_in;
 	}
 };
 
@@ -136,10 +153,9 @@ private:
 		std::vector<uint32> &nodes_to_tasks);
 	void setup_task(const c_execution_graph &execution_graph, uint32 node_index,
 		uint32 task_index, const s_task_function_mapping &task_function_mapping);
-	c_real_array build_real_array(const c_execution_graph &execution_graph, uint32 node_index);
+	c_real_array build_real_array(const c_execution_graph &execution_graph, uint32 node_index, bool &out_is_constant);
 	c_bool_array build_bool_array(const c_execution_graph &execution_graph, uint32 node_index);
 	c_string_array build_string_array(const c_execution_graph &execution_graph, uint32 node_index);
-	bool is_real_array_constant(c_real_array real_array) const;
 	void build_task_successor_lists(const c_execution_graph &execution_graph,
 		const std::vector<uint32> &nodes_to_tasks);
 	void allocate_buffers(const c_execution_graph &execution_graph);

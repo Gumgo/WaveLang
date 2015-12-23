@@ -4,6 +4,7 @@
 #include "common/macros.h"
 #include "common/types.h"
 #include "common/asserts.h"
+#include <string>
 #include <cstring>
 
 inline bool string_compare_case_insensitive(const char *str_a, const char *str_b) {

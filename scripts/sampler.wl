@@ -16,20 +16,20 @@ module real note_to_frequency(in real note) {
 }
 
 module real sampler_sin(in real frequency) {
-	return __native_sampler_loop("__native_sin", 0, false, frequency_to_speed(440, frequency));
+	return __native_sampler_loop("__native_sin", 0, false, frequency_to_speed(440, frequency), 0);
 }
 
 module real sampler_sawtooth(in real frequency) {
-	return __native_sampler_loop("__native_sawtooth", 0, false, frequency_to_speed(440, frequency));
+	return __native_sampler_loop("__native_sawtooth", 0, false, frequency_to_speed(440, frequency), 0);
 }
 
 module real sampler_triangle(in real frequency) {
-	return __native_sampler_loop("__native_triangle", 0, false, frequency_to_speed(440, frequency));
+	return __native_sampler_loop("__native_triangle", 0, false, frequency_to_speed(440, frequency), 0);
 }
 
 module real sampler_pulse(in real frequency, in real phase) {
-	real a := __native_sampler_loop("__native_sawtooth", 0, false, frequency_to_speed(440, frequency));
-	real b := __native_sampler_loop_phase_shift("__native_sawtooth", 0, false, frequency_to_speed(440, frequency), phase);
+	real a := __native_sampler_loop("__native_sawtooth", 0, false, frequency_to_speed(440, frequency), 0);
+	real b := __native_sampler_loop("__native_sawtooth", 0, false, frequency_to_speed(440, frequency), phase);
 	return a - b + (2*phase) - 1;
 }
 
@@ -39,6 +39,6 @@ module real sampler_square(in real frequency) {
 
 module real sampler(in string sample, in real channel, in bool loop, in bool bidi, in real speed) {
 	return static_select(loop,
-		__native_sampler_loop(sample, channel, bidi, speed),
+		__native_sampler_loop(sample, channel, bidi, speed, 0),
 		__native_sampler(sample, channel, speed));
 }

@@ -574,7 +574,7 @@ void register_native_modules_basic() {
 
 	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
 		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_real_static_select_uid, NMO_BV(false), NMO_V(0), NMO_V(1))),
-		s_native_module_optimization_pattern::build(NMO_V(0))));
+		s_native_module_optimization_pattern::build(NMO_V(1))));
 
 	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
 		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_real_static_select_uid, NMO_BV(true), NMO_C(0), NMO_V(0))),
@@ -582,7 +582,7 @@ void register_native_modules_basic() {
 
 	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
 		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_real_static_select_uid, NMO_BV(false), NMO_C(0), NMO_V(0))),
-		s_native_module_optimization_pattern::build(NMO_V(0))));
+		s_native_module_optimization_pattern::build(NMO_V(1))));
 
 	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
 		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_real_static_select_uid, NMO_BV(true), NMO_V(0), NMO_C(0))),
@@ -590,7 +590,7 @@ void register_native_modules_basic() {
 
 	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
 		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_real_static_select_uid, NMO_BV(false), NMO_V(0), NMO_C(0))),
-		s_native_module_optimization_pattern::build(NMO_C(0))));
+		s_native_module_optimization_pattern::build(NMO_C(1))));
 
 	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
 		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_string_static_select_uid, NMO_BV(true), NMO_V(0), NMO_V(1))),
@@ -598,7 +598,7 @@ void register_native_modules_basic() {
 
 	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
 		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_string_static_select_uid, NMO_BV(false), NMO_V(0), NMO_V(1))),
-		s_native_module_optimization_pattern::build(NMO_V(0))));
+		s_native_module_optimization_pattern::build(NMO_V(1))));
 
 	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
 		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_string_static_select_uid, NMO_BV(true), NMO_C(0), NMO_V(0))),
@@ -606,7 +606,7 @@ void register_native_modules_basic() {
 
 	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
 		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_string_static_select_uid, NMO_BV(false), NMO_C(0), NMO_V(0))),
-		s_native_module_optimization_pattern::build(NMO_V(0))));
+		s_native_module_optimization_pattern::build(NMO_V(1))));
 
 	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
 		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_string_static_select_uid, NMO_BV(true), NMO_V(0), NMO_C(0))),
@@ -614,7 +614,7 @@ void register_native_modules_basic() {
 
 	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
 		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_string_static_select_uid, NMO_BV(false), NMO_V(0), NMO_C(0))),
-		s_native_module_optimization_pattern::build(NMO_C(0))));
+		s_native_module_optimization_pattern::build(NMO_C(1))));
 
 	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
 		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_real_array_dereference_uid, NMO_C(0), NMO_C(1))),

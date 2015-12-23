@@ -91,11 +91,6 @@ s_task_function_mapping s_task_function_mapping::build(
 
 		// Convert characters
 		switch (ch) {
-		case 'c':
-			task_function_mapping.native_module_input_types[index] =
-				k_task_function_mapping_native_module_input_type_constant;
-			break;
-
 		case 'v':
 			task_function_mapping.native_module_input_types[index] =
 				k_task_function_mapping_native_module_input_type_variable;

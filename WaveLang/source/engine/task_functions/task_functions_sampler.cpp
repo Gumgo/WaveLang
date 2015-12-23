@@ -5,33 +5,19 @@
 #include "engine/buffer_operations/buffer_operations.h"
 #include "engine/sample/sample.h"
 #include "engine/sample/sample_library.h"
+#include "engine/task_functions/task_functions_sampler_sinc_window.h"
 
+// $TODO switch to s_static_array
 // $TODO tracking time with floats in seconds seems imprecise... track in samples instead maybe?
-
-#define GENERATE_SINC_WINDOW 0
-
-#if PREDEFINED(GENERATE_SINC_WINDOW)
-#include <fstream>
-#endif // PREDEFINED(GENERATE_SINC_WINDOW)
 
 static const uint32 k_task_functions_sampler_library_id = 2;
 
-static const s_task_function_uid k_task_function_sampler_buffer_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 0);
-static const s_task_function_uid k_task_function_sampler_bufferio_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 1);
-static const s_task_function_uid k_task_function_sampler_constant_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 2);
+static const s_task_function_uid k_task_function_sampler_in_out_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 0);
+static const s_task_function_uid k_task_function_sampler_inout_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 1);
 
-static const s_task_function_uid k_task_function_sampler_loop_buffer_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 10);
-static const s_task_function_uid k_task_function_sampler_loop_bufferio_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 11);
-static const s_task_function_uid k_task_function_sampler_loop_constant_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 12);
-
-static const s_task_function_uid k_task_function_sampler_loop_phase_shift_buffer_buffer_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 20);
-static const s_task_function_uid k_task_function_sampler_loop_phase_shift_bufferio_buffer_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 21);
-static const s_task_function_uid k_task_function_sampler_loop_phase_shift_buffer_bufferio_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 22);
-static const s_task_function_uid k_task_function_sampler_loop_phase_shift_buffer_constant_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 23);
-static const s_task_function_uid k_task_function_sampler_loop_phase_shift_bufferio_constant_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 24);
-static const s_task_function_uid k_task_function_sampler_loop_phase_shift_constant_buffer_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 25);
-static const s_task_function_uid k_task_function_sampler_loop_phase_shift_constant_bufferio_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 26);
-static const s_task_function_uid k_task_function_sampler_loop_phase_shift_constant_constant_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 27);
+static const s_task_function_uid k_task_function_sampler_loop_in_in_out_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 10);
+static const s_task_function_uid k_task_function_sampler_loop_inout_in_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 11);
+static const s_task_function_uid k_task_function_sampler_loop_in_inout_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 12);
 
 struct s_buffer_operation_sampler {
 	static size_t query_memory();
@@ -39,50 +25,48 @@ struct s_buffer_operation_sampler {
 		s_buffer_operation_sampler *context, const char *sample, e_sample_loop_mode loop_mode, bool phase_shift_enabled,
 		real32 channel);
 
-	static void buffer(
+	static void in_out(
 		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-		size_t buffer_size, uint32 sample_rate, c_buffer_out out, c_buffer_in speed);
-	static void bufferio(
+		size_t buffer_size, uint32 sample_rate, c_real_buffer_or_constant_in speed, c_real_buffer_out out);
+	static void inout(
 		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-		size_t buffer_size, uint32 sample_rate, c_buffer_inout speed_out);
-	static void constant(
-		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-		size_t buffer_size, uint32 sample_rate, c_buffer_out out, real32 speed);
+		size_t buffer_size, uint32 sample_rate, c_real_buffer_inout speed_out);
 
-	static void loop_buffer(
+	// Constant versions
+	static void const_out(
 		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-		size_t buffer_size, uint32 sample_rate, c_buffer_out out, c_buffer_in speed);
-	static void loop_bufferio(
-		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-		size_t buffer_size, uint32 sample_rate, c_buffer_inout speed_out);
-	static void loop_constant(
-		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-		size_t buffer_size, uint32 sample_rate, c_buffer_out out, real32 speed);
+		size_t buffer_size, uint32 sample_rate, real32 speed, c_real_buffer_out out);
 
-	static void loop_phase_shift_buffer_buffer(
+	static void loop_in_in_out(
 		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-		size_t buffer_size, uint32 sample_rate, c_buffer_out out, c_buffer_in speed, c_buffer_in phase);
-	static void loop_phase_shift_bufferio_buffer(
+		size_t buffer_size, uint32 sample_rate,
+		c_real_buffer_or_constant_in speed, c_real_buffer_or_constant_in phase, c_real_buffer_out out);
+	static void loop_inout_in(
 		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-		size_t buffer_size, uint32 sample_rate, c_buffer_inout speed_out, c_buffer_in phase);
-	static void loop_phase_shift_buffer_bufferio(
+		size_t buffer_size, uint32 sample_rate, c_real_buffer_inout speed_out, c_real_buffer_or_constant_in phase);
+	static void loop_in_inout(
 		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-		size_t buffer_size, uint32 sample_rate, c_buffer_in speed, c_buffer_inout phase_out);
-	static void loop_phase_shift_buffer_constant(
+		size_t buffer_size, uint32 sample_rate, c_real_buffer_or_constant_in speed, c_real_buffer_inout phase_out);
+
+	// Constant versions
+	static void loop_const_in_out(
 		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-		size_t buffer_size, uint32 sample_rate, c_buffer_out out, c_buffer_in speed, real32 phase);
-	static void loop_phase_shift_bufferio_constant(
+		size_t buffer_size, uint32 sample_rate,
+		real32 speed, c_real_buffer_or_constant_in phase, c_real_buffer_out out);
+	static void loop_in_const_out(
 		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-		size_t buffer_size, uint32 sample_rate, c_buffer_inout speed_out, real32 phase);
-	static void loop_phase_shift_constant_buffer(
+		size_t buffer_size, uint32 sample_rate,
+		c_real_buffer_or_constant_in speed, real32 phase, c_real_buffer_out out);
+	static void loop_const_const_out(
 		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-		size_t buffer_size, uint32 sample_rate, c_buffer_out out, real32 speed, c_buffer_in phase);
-	static void loop_phase_shift_constant_bufferio(
+		size_t buffer_size, uint32 sample_rate,
+		real32 speed, real32 phase, c_real_buffer_out out);
+	static void loop_inout_const(
 		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-		size_t buffer_size, uint32 sample_rate, real32 speed, c_buffer_inout phase_out);
-	static void loop_phase_shift_constant_constant(
+		size_t buffer_size, uint32 sample_rate, c_real_buffer_inout speed_out, real32 phase);
+	static void loop_const_inout(
 		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-		size_t buffer_size, uint32 sample_rate, c_buffer_out out, real32 speed, real32 phase);
+		size_t buffer_size, uint32 sample_rate, real32 speed, c_real_buffer_inout phase_out);
 
 	uint32 sample_handle;
 	uint32 channel;
@@ -90,38 +74,189 @@ struct s_buffer_operation_sampler {
 	bool reached_end;
 };
 
-// The size in samples of the sinc window, inclusive of the first and last sample
-static const size_t k_sinc_window_size = 9;
+// To avoid rewriting the algorithm in multiple variations, we create a base template class and implement the variants
+// using https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern.
 
-// The number of windowed sinc values computed per sample
-// The total number of sinc window samples (excluding padding) is (window_size-1) * resolution
-static const size_t k_sinc_window_sample_resolution = 32;
+template<typename t_derived>
+struct s_sampler_algorithm {
+	// "Overridden" methods:
 
-static_assert(k_sinc_window_size % 2 == 1, "Window must be odd in order to be centered on a sample and symmetrical");
-static_assert(k_sinc_window_size / 2 <= k_max_sample_padding, "Window half-size cannot exceeds max sample padding");
+	//c_real_buffer_out get_out() const;
+	//real32 *get_out_pointer() const;
 
-// To be more cache-friendly, we precompute the slopes and place them adjacent to the values. Otherwise we would need to
-// traverse two arrays in parallel. The cost is that we use 2x memory (which could ultimately hurt caching).
-struct ALIGNAS_SSE s_sinc_window_coefficients {
-	// Four sinc window values, each spaced apart by 1 sample distance
-	real32 values[k_sse_block_elements];
+	//void begin_loop();
+	//bool is_valid() const;
+	//void advance();
+	//void run_loop();
 
-	// Slopes corresponding to each value for linear interpolation
-	real32 slopes[k_sse_block_elements];
+	//c_real32_4 get_advance() const;
+	//c_real32_4 get_speed_adjusted_sample_rate_0() const;
+
+	// Fields available to derived implementations:
+	real32 stream_sample_rate;
+	real32 sample_rate_0;
+
+	// Utility functions for subclasses
+	static c_real32_4 compute_advance(const c_real32_4 &speed_val, real32 stream_sample_rate) {
+		return speed_val / c_real32_4(stream_sample_rate);
+	}
+
+	static c_real32_4 compute_speed_adjusted_sample_rate_0(const c_real32_4 &speed_val, real32 sample_rate_0) {
+		return c_real32_4(sample_rate_0) * speed_val;
+	}
+
+	void run(c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
+		size_t buffer_size, uint32 sample_rate) {
+		// Allows us to call "overridden" methods without inheritance
+		t_derived *this_derived = static_cast<t_derived *>(this);
+
+		const c_sample *sample = sample_accessor->get_sample(context->sample_handle);
+		if (handle_failed_sample(sample, context->channel, this_derived->get_out()) ||
+			handle_reached_end(context->reached_end, this_derived->get_out())) {
+			return;
+		}
+
+		wl_assert(sample->get_loop_mode() == k_sample_loop_mode_none);
+
+		bool is_mipmap = sample->is_mipmap();
+		const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
+		real32 length, loop_start_time, loop_end_time;
+		get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
+
+		stream_sample_rate = static_cast<real32>(sample_rate);
+		sample_rate_0 = static_cast<real32>(sample_0->get_sample_rate());
+
+		size_t samples_written = 0;
+		size_t buffer_samples_remaining = buffer_size;
+		for (this_derived->begin_loop(); this_derived->is_valid(); this_derived->advance()) {
+			this_derived->run_loop();
+			real32 *out_ptr = this_derived->get_out_pointer();
+			c_real32_4 advance = this_derived->get_advance();
+			c_real32_4 speed_adjusted_sample_rate_0 = this_derived->get_speed_adjusted_sample_rate_0();
+
+			// Increment the time first, storing each intermediate time value
+			ALIGNAS_SSE real32 time[k_sse_block_elements];
+			size_t increment_count = increment_time(length, context, advance, buffer_samples_remaining, time);
+			wl_assert(increment_count > 0);
+
+			if (is_mipmap) {
+				fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
+					increment_count, time, out_ptr);
+			} else {
+				for (size_t i = 0; i < increment_count; i++) {
+					out_ptr[i] = fetch_sample(sample, context->channel, time[i]);
+				}
+			}
+
+			samples_written += increment_count;
+			if (context->reached_end) {
+				break;
+			}
+		}
+
+		// If the sample ended before the end of the buffer, fill the rest with 0
+		size_t samples_remaining = buffer_size - samples_written;
+		memset(this_derived->get_out_pointer(), 0, samples_remaining * sizeof(real32));
+		this_derived->get_out()->set_constant(false);
+	}
 };
 
-#include "sinc_window_coefficients.inl"
+template<typename t_derived>
+struct s_sampler_loop_algorithm {
+	// "Overridden" methods:
 
-static_assert(NUMBEROF(k_sinc_window_coefficients) == k_sinc_window_sample_resolution,
-	"Windowed sinc filter coefficient count mismatch");
-static_assert(NUMBEROF(k_sinc_window_coefficients[0]) ==
-	ALIGN_SIZE(k_sinc_window_size - 1, k_sse_block_elements) / k_sse_block_elements,
-	"Windowed sinc filter coefficient count mismatch");
+	//c_real_buffer_out get_out() const;
+	//real32 *get_out_pointer() const;
+
+	//void begin_loop();
+	//bool is_valid() const;
+	//void advance();
+	//void run_loop();
+
+	//c_real32_4 get_advance() const;
+	//c_real32_4 get_speed_adjusted_sample_rate_0() const;
+	//c_real32_4 get_time_offset() const;
+
+	// Fields available to derived implementations:
+	real32 stream_sample_rate;
+	real32 sample_rate_0;
+	c_real32_4 phase_time_multiplier;
+
+	// Utility functions for subclasses
+	static c_real32_4 compute_advance(const c_real32_4 &speed_val, real32 stream_sample_rate) {
+		return speed_val / c_real32_4(stream_sample_rate);
+	}
+
+	static c_real32_4 compute_speed_adjusted_sample_rate_0(const c_real32_4 &speed_val, real32 sample_rate_0) {
+		return c_real32_4(sample_rate_0) * speed_val;
+	}
+
+	static c_real32_4 compute_time_offset(const c_real32_4 &phase_val, const c_real32_4 &phase_time_multiplier) {
+		c_real32_4 clamped_phase = min(max(phase_val, c_real32_4(0.0f)), c_real32_4(1.0f));
+		return clamped_phase * phase_time_multiplier;
+	}
+
+	void run(c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
+		size_t buffer_size, uint32 sample_rate) {
+		// Allows us to call "overridden" methods without inheritance
+		t_derived *this_derived = static_cast<t_derived *>(this);
+
+		const c_sample *sample = sample_accessor->get_sample(context->sample_handle);
+		if (handle_failed_sample(sample, context->channel, this_derived->get_out())) {
+			return;
+		}
+
+		// Bidi loops are preprocessed so at this point they act as normal loops
+		wl_assert(sample->get_loop_mode() != k_sample_loop_mode_none);
+		wl_assert(!context->reached_end);
+
+		bool is_mipmap = sample->is_mipmap();
+		const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
+		real32 length, loop_start_time, loop_end_time;
+		get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
+		phase_time_multiplier = c_real32_4(loop_end_time - loop_start_time);
+
+		stream_sample_rate = static_cast<real32>(sample_rate);
+		sample_rate_0 = static_cast<real32>(sample_0->get_sample_rate());
+
+		size_t buffer_samples_remaining = buffer_size;
+		for (this_derived->begin_loop(); this_derived->is_valid(); this_derived->advance()) {
+			this_derived->run_loop();
+			real32 *out_ptr = this_derived->get_out_pointer();
+			c_real32_4 advance = this_derived->get_advance();
+			c_real32_4 speed_adjusted_sample_rate_0 = this_derived->get_speed_adjusted_sample_rate_0();
+			c_real32_4 time_offset = this_derived->get_time_offset();
+
+			// Increment the time first, storing each intermediate time value
+			ALIGNAS_SSE real32 time[k_sse_block_elements];
+			size_t increment_count = increment_time_looping(loop_start_time, loop_end_time, context, advance,
+				buffer_samples_remaining, time);
+			wl_assert(increment_count > 0);
+
+			c_real32_4 phased_time = c_real32_4(time) + time_offset;
+			phased_time.store(time);
+
+			if (is_mipmap) {
+				fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
+					increment_count, time, out_ptr);
+			} else {
+				for (size_t i = 0; i < increment_count; i++) {
+					out_ptr[i] = fetch_sample(sample, context->channel, time[i]);
+				}
+			}
+		}
+
+		this_derived->get_out()->set_constant(false);
+	}
+};
 
 // Common utility functions used in all versions of the sampler:
 
 // Fills the output buffer with 0s if the sample failed to load or if the channel is invalid
-static bool handle_failed_sample(const c_sample *sample, uint32 channel, c_buffer_out out);
+static bool handle_failed_sample(const c_sample *sample, uint32 channel, c_real_buffer_out out);
+
+// Fills the output buffer with 0s if the end has been reached
+static bool handle_reached_end(bool reached_end, c_real_buffer_out out);
 
 // Converts sample data (frames) to timing data (seconds)
 static void get_sample_time_data(const c_sample *sample,
@@ -178,1002 +313,667 @@ void s_buffer_operation_sampler::initialize(c_sample_library_requester *sample_r
 	context->reached_end = false;
 }
 
-void s_buffer_operation_sampler::buffer(
+void s_buffer_operation_sampler::in_out(
 	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-	size_t buffer_size, uint32 sample_rate, c_buffer_out out, c_buffer_in speed) {
-	validate_buffer(out);
+	size_t buffer_size, uint32 sample_rate, c_real_buffer_or_constant_in speed, c_real_buffer_out out) {
 	validate_buffer(speed);
+	validate_buffer(out);
 
-	if (speed->is_constant()) {
+	if (speed.is_constant()) {
 		// If speed is constant, simply use the constant-speed version
-		const real32 *speed_ptr = speed->get_data<real32>();
-		constant(sample_accessor, context, buffer_size, sample_rate, out, *speed_ptr);
+		real32 speed_constant = speed.get_constant();
+		const_out(sample_accessor, context, buffer_size, sample_rate, speed_constant, out);
 		return;
 	}
 
-	const c_sample *sample = sample_accessor->get_sample(context->sample_handle);
-	if (handle_failed_sample(sample, context->channel, out)) {
-		return;
-	}
+	struct s_sampler_subalgorithm : public s_sampler_algorithm<s_sampler_subalgorithm> {
+		// Fields
+		c_real_buffer_out out;
+		real32 *out_ptr;
+		real32 *out_ptr_end;
+		const real32 *speed_ptr;
+		c_real32_4 advance_val;
+		c_real32_4 speed_adjusted_sample_rate_0_val;
 
-	// Fill with 0 if we got to the end of the sample
-	wl_assert(sample->get_loop_mode() == k_sample_loop_mode_none);
-	if (context->reached_end) {
-		real32 *out_ptr = out->get_data<real32>();
-		c_real32_4(0.0f).store(out_ptr);
-		out->set_constant(true);
-		return;
-	}
-
-	bool is_mipmap = sample->is_mipmap();
-	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
-	real32 length, loop_start_time, loop_end_time;
-	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
-
-	real32 stream_sample_rate = static_cast<real32>(sample_rate);
-	real32 sample_rate_0 = static_cast<real32>(sample_0->get_sample_rate());
-
-	size_t samples_written = 0;
-	size_t buffer_samples_remaining = buffer_size;
-	real32 *out_ptr = out->get_data<real32>();
-	real32 *out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_elements);
-	const real32 *speed_ptr = speed->get_data<real32>();
-	for (; out_ptr < out_ptr_end; out_ptr += k_sse_block_elements, speed_ptr += k_sse_block_elements) {
-		 c_real32_4 speed_val(speed_ptr);
-		 c_real32_4 advance = speed_val / c_real32_4(stream_sample_rate);
-		 c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(sample_rate_0) * speed_val;
-
-		// Increment the time first, storing each intermediate time value
-		ALIGNAS_SSE real32 time[k_sse_block_elements];
-		size_t increment_count = increment_time(length, context, advance, buffer_samples_remaining, time);
-		wl_assert(increment_count > 0);
-
-		if (is_mipmap) {
-			fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
-				increment_count, time, out_ptr);
-		} else {
-			for (size_t i = 0; i < increment_count; i++) {
-				out_ptr[i] = fetch_sample(sample, context->channel, time[i]);
-			}
+		s_sampler_subalgorithm(size_t buffer_size, c_real_buffer_in speed, c_real_buffer_out out) {
+			this->out = out;
+			out_ptr = out->get_data<real32>();
+			out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_elements);
+			speed_ptr = speed->get_data<real32>();
 		}
 
-		samples_written += increment_count;
-	}
+		c_real_buffer_out get_out() const { return out; }
+		real32 *get_out_pointer() const { return out_ptr; }
 
-	// If the sample ended before the end of the buffer, fill the rest with 0
-	size_t samples_remaining = buffer_size - samples_written;
-	memset(out->get_data<real32>() + samples_written, 0, samples_remaining * sizeof(real32));
-	out->set_constant(false);
+		void begin_loop() {}
+		bool is_valid() const { return out_ptr < out_ptr_end; }
+		void advance() { out_ptr += k_sse_block_elements; speed_ptr += k_sse_block_elements; }
+
+		void run_loop() {
+			c_real32_4 speed_val(speed_ptr);
+			advance_val = compute_advance(speed_val, stream_sample_rate);
+			speed_adjusted_sample_rate_0_val = compute_speed_adjusted_sample_rate_0(speed_val, sample_rate_0);
+		}
+
+		c_real32_4 get_advance() const { return advance_val; }
+		c_real32_4 get_speed_adjusted_sample_rate_0() const { return speed_adjusted_sample_rate_0_val; }
+	};
+
+	s_sampler_subalgorithm(buffer_size, speed.get_buffer(), out).
+		run(sample_accessor, context, buffer_size, sample_rate);
 }
 
-void s_buffer_operation_sampler::bufferio(
+void s_buffer_operation_sampler::inout(
 	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-	size_t buffer_size, uint32 sample_rate, c_buffer_inout speed_out) {
+	size_t buffer_size, uint32 sample_rate, c_real_buffer_inout speed_out) {
 	validate_buffer(speed_out);
 
 	if (speed_out->is_constant()) {
 		// If speed is constant, simply use the constant-speed version
 		// We can store the first value of the buffer and then convert it to a pure output buffer
-		const real32 *speed_ptr = speed_out->get_data<real32>();
-		constant(sample_accessor, context, buffer_size, sample_rate, speed_out, *speed_ptr);
+		real32 speed_constant = *speed_out->get_data<real32>();
+		const_out(sample_accessor, context, buffer_size, sample_rate, speed_constant, speed_out);
 		return;
 	}
 
-	const c_sample *sample = sample_accessor->get_sample(context->sample_handle);
-	if (handle_failed_sample(sample, context->channel, speed_out)) {
-		return;
-	}
+	struct s_sampler_subalgorithm : public s_sampler_algorithm<s_sampler_subalgorithm> {
+		// Fields
+		c_real_buffer_out out;
+		real32 *speed_out_ptr;
+		real32 *speed_out_ptr_end;
+		c_real32_4 advance_val;
+		c_real32_4 speed_adjusted_sample_rate_0_val;
 
-	// Fill with 0 if we got to the end of the sample
-	wl_assert(sample->get_loop_mode() == k_sample_loop_mode_none);
-	if (context->reached_end) {
-		real32 *out_ptr = speed_out->get_data<real32>();
-		c_real32_4(0.0f).store(out_ptr);
-		speed_out->set_constant(true);
-		return;
-	}
-
-	bool is_mipmap = sample->is_mipmap();
-	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
-	real32 length, loop_start_time, loop_end_time;
-	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
-
-	real32 stream_sample_rate = static_cast<real32>(sample_rate);
-	real32 sample_rate_0 = static_cast<real32>(sample_0->get_sample_rate());
-
-	size_t samples_written = 0;
-	size_t buffer_samples_remaining = buffer_size;
-	real32 *speed_out_ptr = speed_out->get_data<real32>();
-	real32 *speed_out_ptr_end = speed_out_ptr + align_size(buffer_size, k_sse_block_elements);
-	for (; speed_out_ptr < speed_out_ptr_end; speed_out_ptr += k_sse_block_elements) {
-		c_real32_4 speed_val(speed_out_ptr);
-		c_real32_4 advance = speed_val / c_real32_4(stream_sample_rate);
-		c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(sample_rate_0) * speed_val;
-
-		// Increment the time first, storing each intermediate time value
-		ALIGNAS_SSE real32 time[k_sse_block_elements];
-		size_t increment_count = increment_time(length, context, advance, buffer_samples_remaining, time);
-		wl_assert(increment_count > 0);
-
-		if (is_mipmap) {
-			fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
-				increment_count, time, speed_out_ptr);
-		} else {
-			for (size_t i = 0; i < increment_count; i++) {
-				speed_out_ptr[i] = fetch_sample(sample, context->channel, time[i]);
-			}
+		s_sampler_subalgorithm(size_t buffer_size, c_real_buffer_inout speed_out) {
+			out = speed_out;
+			speed_out_ptr = out->get_data<real32>();
+			speed_out_ptr_end = speed_out_ptr + align_size(buffer_size, k_sse_block_elements);
 		}
 
-		samples_written += increment_count;
-	}
+		c_real_buffer_out get_out() const { return out; }
+		real32 *get_out_pointer() const { return speed_out_ptr; }
 
-	// If the sample ended before the end of the buffer, fill the rest with 0
-	size_t samples_remaining = buffer_size - samples_written;
-	memset(speed_out->get_data<real32>() + samples_written, 0, samples_remaining * sizeof(real32));
-	speed_out->set_constant(false);
+		void begin_loop() {}
+		bool is_valid() const { return speed_out_ptr < speed_out_ptr_end; }
+		void advance() { speed_out_ptr += k_sse_block_elements; }
+
+		void run_loop() {
+			c_real32_4 speed_val(speed_out_ptr);
+			advance_val = compute_advance(speed_val, stream_sample_rate);
+			speed_adjusted_sample_rate_0_val = compute_speed_adjusted_sample_rate_0(speed_val, sample_rate_0);
+		}
+
+		c_real32_4 get_advance() const { return advance_val; }
+		c_real32_4 get_speed_adjusted_sample_rate_0() const { return speed_adjusted_sample_rate_0_val; }
+	};
+
+	s_sampler_subalgorithm(buffer_size, speed_out).
+		run(sample_accessor, context, buffer_size, sample_rate);
 }
 
-void s_buffer_operation_sampler::constant(
+void s_buffer_operation_sampler::const_out(
 	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-	size_t buffer_size, uint32 sample_rate, c_buffer_out out, real32 speed) {
+	size_t buffer_size, uint32 sample_rate, real32 speed, c_real_buffer_out out) {
 	validate_buffer(out);
 
-	const c_sample *sample = sample_accessor->get_sample(context->sample_handle);
-	if (handle_failed_sample(sample, context->channel, out)) {
-		return;
-	}
+	struct s_sampler_subalgorithm : public s_sampler_algorithm<s_sampler_subalgorithm> {
+		// Fields
+		c_real_buffer_out out;
+		real32 *out_ptr;
+		real32 *out_ptr_end;
+		real32 speed_val;
+		c_real32_4 advance_val;
+		c_real32_4 speed_adjusted_sample_rate_0_val;
 
-	// Fill with 0 if we got to the end of the sample
-	wl_assert(sample->get_loop_mode() == k_sample_loop_mode_none);
-	if (context->reached_end) {
-		real32 *out_ptr = out->get_data<real32>();
-		c_real32_4(0.0f).store(out_ptr);
-		out->set_constant(true);
-		return;
-	}
-
-	bool is_mipmap = sample->is_mipmap();
-	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
-	real32 length, loop_start_time, loop_end_time;
-	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
-
-	real32 stream_sample_rate = static_cast<real32>(sample_rate);
-	c_real32_4 speed_val(speed);
-	c_real32_4 advance = speed / c_real32_4(stream_sample_rate);
-	c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(static_cast<real32>(sample_0->get_sample_rate()));
-	speed_adjusted_sample_rate_0 = speed_adjusted_sample_rate_0 * speed_val;
-
-	size_t samples_written = 0;
-	size_t buffer_samples_remaining = buffer_size;
-	real32 *out_ptr = out->get_data<real32>();
-	real32 *out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_elements);
-	for (; out_ptr < out_ptr_end; out_ptr += k_sse_block_elements) {
-		// Increment the time first, storing each intermediate time value
-		ALIGNAS_SSE real32 time[k_sse_block_elements];
-		size_t increment_count = increment_time(length, context, advance, buffer_samples_remaining, time);
-		wl_assert(increment_count > 0);
-
-		if (is_mipmap) {
-			fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
-				increment_count, time, out_ptr);
-		} else {
-			for (size_t i = 0; i < increment_count; i++) {
-				out_ptr[i] = fetch_sample(sample, context->channel, time[i]);
-			}
+		s_sampler_subalgorithm(size_t buffer_size, real32 speed, c_real_buffer_out out) {
+			this->out = out;
+			out_ptr = out->get_data<real32>();
+			out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_elements);
+			speed_val = speed;
 		}
 
-		samples_written += increment_count;
-	}
+		c_real_buffer_out get_out() const { return out; }
+		real32 *get_out_pointer() const { return out_ptr; }
 
-	// If the sample ended before the end of the buffer, fill the rest with 0
-	size_t samples_remaining = buffer_size - samples_written;
-	memset(out->get_data<real32>() + samples_written, 0, samples_remaining * sizeof(real32));
-	out->set_constant(false);
-}
-
-void s_buffer_operation_sampler::loop_buffer(
-	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-	size_t buffer_size, uint32 sample_rate, c_buffer_out out, c_buffer_in speed) {
-	validate_buffer(out);
-	validate_buffer(speed);
-
-	if (speed->is_constant()) {
-		// If speed is constant, simply use the constant-speed version
-		const real32 *speed_ptr = speed->get_data<real32>();
-		loop_constant(sample_accessor, context, buffer_size, sample_rate, out, *speed_ptr);
-		return;
-	}
-
-	const c_sample *sample = sample_accessor->get_sample(context->sample_handle);
-	if (handle_failed_sample(sample, context->channel, out)) {
-		return;
-	}
-
-	// Bidi loops are preprocessed so at this point they act as normal loops
-	wl_assert(sample->get_loop_mode() != k_sample_loop_mode_none);
-	wl_assert(!context->reached_end);
-
-	bool is_mipmap = sample->is_mipmap();
-	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
-	real32 length, loop_start_time, loop_end_time;
-	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
-
-	real32 stream_sample_rate = static_cast<real32>(sample_rate);
-	real32 sample_rate_0 = static_cast<real32>(sample_0->get_sample_rate());
-
-	size_t samples_written = 0;
-	size_t buffer_samples_remaining = buffer_size;
-	real32 *out_ptr = out->get_data<real32>();
-	real32 *out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_elements);
-	const real32 *speed_ptr = speed->get_data<real32>();
-	for (; out_ptr < out_ptr_end; out_ptr += k_sse_block_elements, speed_ptr += k_sse_block_elements) {
-		 c_real32_4 speed_val(speed_ptr);
-		 c_real32_4 advance = speed_val / c_real32_4(stream_sample_rate);
-		 c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(sample_rate_0) * speed_val;
-
-		// Increment the time first, storing each intermediate time value
-		ALIGNAS_SSE real32 time[k_sse_block_elements];
-		size_t increment_count = increment_time_looping(loop_start_time, loop_end_time, context, advance,
-			buffer_samples_remaining, time);
-		wl_assert(increment_count > 0);
-
-		if (is_mipmap) {
-			fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
-				increment_count, time, out_ptr);
-		} else {
-			for (size_t i = 0; i < increment_count; i++) {
-				out_ptr[i] = fetch_sample(sample, context->channel, time[i]);
-			}
+		void begin_loop() {
+			advance_val = compute_advance(c_real32_4(speed_val), stream_sample_rate);
+			speed_adjusted_sample_rate_0_val = compute_speed_adjusted_sample_rate_0(speed_val, sample_rate_0);
 		}
 
-		samples_written += increment_count;
-	}
+		bool is_valid() const { return out_ptr < out_ptr_end; }
+		void advance() { out_ptr += k_sse_block_elements; }
+		void run_loop() {}
 
-	// If the sample ended before the end of the buffer, fill the rest with 0
-	size_t samples_remaining = buffer_size - samples_written;
-	memset(out->get_data<real32>() + samples_written, 0, samples_remaining * sizeof(real32));
-	out->set_constant(false);
+		c_real32_4 get_advance() const { return advance_val; }
+		c_real32_4 get_speed_adjusted_sample_rate_0() const { return speed_adjusted_sample_rate_0_val; }
+	};
+
+	s_sampler_subalgorithm(buffer_size, speed, out).
+		run(sample_accessor, context, buffer_size, sample_rate);
 }
 
-void s_buffer_operation_sampler::loop_bufferio(
+void s_buffer_operation_sampler::loop_in_in_out(
 	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-	size_t buffer_size, uint32 sample_rate, c_buffer_inout speed_out) {
-	validate_buffer(speed_out);
-
-	if (speed_out->is_constant()) {
-		// If speed is constant, simply use the constant-speed version
-		// We can store the first value of the buffer and then convert it to a pure output buffer
-		const real32 *speed_ptr = speed_out->get_data<real32>();
-		constant(sample_accessor, context, buffer_size, sample_rate, speed_out, *speed_ptr);
-		return;
-	}
-
-	const c_sample *sample = sample_accessor->get_sample(context->sample_handle);
-	if (handle_failed_sample(sample, context->channel, speed_out)) {
-		return;
-	}
-
-	// Bidi loops are preprocessed so at this point they act as normal loops
-	wl_assert(sample->get_loop_mode() != k_sample_loop_mode_none);
-	wl_assert(!context->reached_end);
-
-	bool is_mipmap = sample->is_mipmap();
-	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
-	real32 length, loop_start_time, loop_end_time;
-	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
-
-	real32 stream_sample_rate = static_cast<real32>(sample_rate);
-	real32 sample_rate_0 = static_cast<real32>(sample_0->get_sample_rate());
-
-	size_t samples_written = 0;
-	size_t buffer_samples_remaining = buffer_size;
-	real32 *speed_out_ptr = speed_out->get_data<real32>();
-	real32 *speed_out_ptr_end = speed_out_ptr + align_size(buffer_size, k_sse_block_elements);
-	for (; speed_out_ptr < speed_out_ptr_end; speed_out_ptr += k_sse_block_elements) {
-		 c_real32_4 speed_val(speed_out_ptr);
-		 c_real32_4 advance = speed_val / c_real32_4(stream_sample_rate);
-		 c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(sample_rate_0) * speed_val;
-
-		// Increment the time first, storing each intermediate time value
-		ALIGNAS_SSE real32 time[k_sse_block_elements];
-		size_t increment_count = increment_time_looping(loop_start_time, loop_end_time, context, advance,
-			buffer_samples_remaining, time);
-		wl_assert(increment_count > 0);
-
-		if (is_mipmap) {
-			fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
-				increment_count, time, speed_out_ptr);
-		} else {
-			for (size_t i = 0; i < increment_count; i++) {
-				speed_out_ptr[i] = fetch_sample(sample, context->channel, time[i]);
-			}
-		}
-
-		samples_written += increment_count;
-	}
-
-	// If the sample ended before the end of the buffer, fill the rest with 0
-	size_t samples_remaining = buffer_size - samples_written;
-	memset(speed_out->get_data<real32>() + samples_written, 0, samples_remaining * sizeof(real32));
-	speed_out->set_constant(false);
-}
-
-void s_buffer_operation_sampler::loop_constant(
-	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-	size_t buffer_size, uint32 sample_rate, c_buffer_out out, real32 speed) {
-	validate_buffer(out);
-
-	const c_sample *sample = sample_accessor->get_sample(context->sample_handle);
-	if (handle_failed_sample(sample, context->channel, out)) {
-		return;
-	}
-
-	// Bidi loops are preprocessed so at this point they act as normal loops
-	wl_assert(sample->get_loop_mode() != k_sample_loop_mode_none);
-	wl_assert(!context->reached_end);
-
-	bool is_mipmap = sample->is_mipmap();
-	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
-	real32 length, loop_start_time, loop_end_time;
-	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
-
-	real32 stream_sample_rate = static_cast<real32>(sample_rate);
-	c_real32_4 speed_val(speed);
-	c_real32_4 advance = speed / c_real32_4(stream_sample_rate);
-	c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(static_cast<real32>(sample_0->get_sample_rate()));
-	speed_adjusted_sample_rate_0 = speed_adjusted_sample_rate_0 * speed_val;
-
-	size_t samples_written = 0;
-	size_t buffer_samples_remaining = buffer_size;
-	real32 *out_ptr = out->get_data<real32>();
-	real32 *out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_elements);
-	for (; out_ptr < out_ptr_end; out_ptr += k_sse_block_elements) {
-		// Increment the time first, storing each intermediate time value
-		ALIGNAS_SSE real32 time[k_sse_block_elements];
-		size_t increment_count = increment_time_looping(loop_start_time, loop_end_time, context, advance,
-			buffer_samples_remaining, time);
-		wl_assert(increment_count > 0);
-
-		if (is_mipmap) {
-			fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
-				increment_count, time, out_ptr);
-		} else {
-			for (size_t i = 0; i < increment_count; i++) {
-				out_ptr[i] = fetch_sample(sample, context->channel, time[i]);
-			}
-		}
-
-		samples_written += increment_count;
-	}
-
-	// If the sample ended before the end of the buffer, fill the rest with 0
-	size_t samples_remaining = buffer_size - samples_written;
-	memset(out->get_data<real32>() + samples_written, 0, samples_remaining * sizeof(real32));
-	out->set_constant(false);
-}
-
-void s_buffer_operation_sampler::loop_phase_shift_buffer_buffer(
-	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-	size_t buffer_size, uint32 sample_rate, c_buffer_out out, c_buffer_in speed, c_buffer_in phase) {
-	validate_buffer(out);
+	size_t buffer_size, uint32 sample_rate, c_real_buffer_or_constant_in speed, c_real_buffer_or_constant_in phase,
+	c_real_buffer_out out) {
 	validate_buffer(speed);
 	validate_buffer(phase);
+	validate_buffer(out);
 
 	// Identify constant optimizations
-	if (speed->is_constant()) {
-		const real32 *speed_ptr = speed->get_data<real32>();
-		if (phase->is_constant()) {
-			const real32 *phase_ptr = phase->get_data<real32>();
-			loop_phase_shift_constant_constant(sample_accessor, context, buffer_size, sample_rate, out,
-				*speed_ptr, *phase_ptr);
+	if (speed.is_constant()) {
+		real32 speed_constant = speed.get_constant();
+		if (phase.is_constant()) {
+			real32 phase_constant = phase.get_constant();
+			loop_const_const_out(
+				sample_accessor, context, buffer_size, sample_rate, speed_constant, phase_constant, out);
 		} else {
-			loop_phase_shift_constant_buffer(sample_accessor, context, buffer_size, sample_rate, out,
-				*speed_ptr, phase);
+			loop_const_in_out(sample_accessor, context, buffer_size, sample_rate, speed_constant, phase, out);
 		}
 		return;
 	} else {
-		if (phase->is_constant()) {
-			const real32 *phase_ptr = phase->get_data<real32>();
-			loop_phase_shift_buffer_constant(sample_accessor, context, buffer_size, sample_rate, out,
-				speed, *phase_ptr);
+		if (phase.is_constant()) {
+			real32 phase_constant = phase.get_constant();
+			loop_in_const_out(sample_accessor, context, buffer_size, sample_rate, speed, phase_constant, out);
 		}
 		return;
 	}
 
-	const c_sample *sample = sample_accessor->get_sample(context->sample_handle);
-	if (handle_failed_sample(sample, context->channel, out)) {
-		return;
-	}
+	struct s_sampler_loop_subalgorithm : public s_sampler_loop_algorithm<s_sampler_loop_subalgorithm> {
+		// Fields
+		c_real_buffer_out out;
+		real32 *out_ptr;
+		real32 *out_ptr_end;
+		const real32 *speed_ptr;
+		const real32 *phase_ptr;
+		c_real32_4 advance_val;
+		c_real32_4 speed_adjusted_sample_rate_0_val;
+		c_real32_4 time_offset_val;
 
-	// Bidi loops are preprocessed so at this point they act as normal loops
-	wl_assert(sample->get_loop_mode() != k_sample_loop_mode_none);
-	wl_assert(sample->is_phase_shift_enabled());
-	wl_assert(!context->reached_end);
-
-	bool is_mipmap = sample->is_mipmap();
-	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
-	real32 length, loop_start_time, loop_end_time;
-	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
-	c_real32_4 phase_time_multiplier = c_real32_4(loop_end_time - loop_start_time);
-
-	real32 stream_sample_rate = static_cast<real32>(sample_rate);
-	real32 sample_rate_0 = static_cast<real32>(sample_0->get_sample_rate());
-
-	size_t samples_written = 0;
-	size_t buffer_samples_remaining = buffer_size;
-	real32 *out_ptr = out->get_data<real32>();
-	real32 *out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_elements);
-	const real32 *speed_ptr = speed->get_data<real32>();
-	const real32 *phase_ptr = phase->get_data<real32>();
-	for (; out_ptr < out_ptr_end;
-		 out_ptr += k_sse_block_elements, speed_ptr += k_sse_block_elements, phase_ptr += k_sse_block_elements) {
-		c_real32_4 speed_val(speed_ptr);
-		c_real32_4 advance = speed_val / c_real32_4(stream_sample_rate);
-		c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(sample_rate_0) * speed_val;
-
-		c_real32_4 phase_val(phase_ptr);
-		c_real32_4 clamped_phase = min(max(phase_val, c_real32_4(0.0f)), c_real32_4(1.0f));
-		c_real32_4 time_offset = clamped_phase * phase_time_multiplier;
-
-		// Increment the time first, storing each intermediate time value
-		ALIGNAS_SSE real32 time[k_sse_block_elements];
-		size_t increment_count = increment_time_looping(loop_start_time, loop_end_time, context, advance,
-			buffer_samples_remaining, time);
-		wl_assert(increment_count > 0);
-
-		c_real32_4 phased_time = c_real32_4(time) + time_offset;
-		phased_time.store(time);
-
-		if (is_mipmap) {
-			fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
-				increment_count, time, out_ptr);
-		} else {
-			for (size_t i = 0; i < increment_count; i++) {
-				out_ptr[i] = fetch_sample(sample, context->channel, time[i]);
-			}
+		s_sampler_loop_subalgorithm(size_t buffer_size,
+			c_real_buffer_in speed, c_real_buffer_in phase, c_real_buffer_out out) {
+			this->out = out;
+			out_ptr = out->get_data<real32>();
+			out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_elements);
+			speed_ptr = speed->get_data<real32>();
+			phase_ptr = phase->get_data<real32>();
 		}
 
-		samples_written += increment_count;
-	}
+		c_real_buffer_out get_out() const { return out; }
+		real32 *get_out_pointer() const { return out_ptr; }
 
-	// If the sample ended before the end of the buffer, fill the rest with 0
-	size_t samples_remaining = buffer_size - samples_written;
-	memset(out->get_data<real32>() + samples_written, 0, samples_remaining * sizeof(real32));
-	out->set_constant(false);
+		void begin_loop() {}
+		bool is_valid() const { return out_ptr < out_ptr_end; }
+		void advance() {
+			out_ptr += k_sse_block_elements;
+			speed_ptr += k_sse_block_elements;
+			phase_ptr += k_sse_block_elements;
+		}
+
+		void run_loop() {
+			c_real32_4 speed_val(speed_ptr);
+			advance_val = compute_advance(speed_val, stream_sample_rate);
+			speed_adjusted_sample_rate_0_val = compute_speed_adjusted_sample_rate_0(speed_val, sample_rate_0);
+			c_real32_4 phase_val(phase_ptr);
+			time_offset_val = compute_time_offset(phase_val, phase_time_multiplier);
+		}
+
+		c_real32_4 get_advance() const { return advance_val; }
+		c_real32_4 get_speed_adjusted_sample_rate_0() const { return speed_adjusted_sample_rate_0_val; }
+		c_real32_4 get_time_offset() const { return time_offset_val; }
+	};
+
+	s_sampler_loop_subalgorithm(buffer_size, speed.get_buffer(), phase.get_buffer(), out).
+		run(sample_accessor, context, buffer_size, sample_rate);
 }
 
-void s_buffer_operation_sampler::loop_phase_shift_bufferio_buffer(
+void s_buffer_operation_sampler::loop_inout_in(
 	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-	size_t buffer_size, uint32 sample_rate, c_buffer_inout speed_out, c_buffer_in phase) {
-	validate_buffer(speed_out);
+	size_t buffer_size, uint32 sample_rate, c_real_buffer_inout speed_out, c_real_buffer_or_constant_in phase) {
 	validate_buffer(phase);
+	validate_buffer(speed_out);
 
 	// Identify constant optimizations
 	if (speed_out->is_constant()) {
-		const real32 *speed_ptr = speed_out->get_data<real32>();
-		if (phase->is_constant()) {
-			const real32 *phase_ptr = phase->get_data<real32>();
-			loop_phase_shift_constant_constant(sample_accessor, context, buffer_size, sample_rate, speed_out,
-				*speed_ptr, *phase_ptr);
+		real32 speed_constant = *speed_out->get_data<real32>();
+		if (phase.is_constant()) {
+			real32 phase_constant = phase.get_constant();
+			loop_const_const_out(sample_accessor, context, buffer_size, sample_rate,
+				speed_constant, phase_constant, speed_out);
 		} else {
-			loop_phase_shift_constant_buffer(sample_accessor, context, buffer_size, sample_rate, speed_out,
-				*speed_ptr, phase);
+			loop_const_in_out(sample_accessor, context, buffer_size, sample_rate,
+				speed_constant, phase, speed_out);
 		}
 		return;
 	} else {
-		if (phase->is_constant()) {
-			const real32 *phase_ptr = phase->get_data<real32>();
-			loop_phase_shift_bufferio_constant(sample_accessor, context, buffer_size, sample_rate,
-				speed_out, *phase_ptr);
+		if (phase.is_constant()) {
+			real32 phase_constant = phase.get_constant();
+			loop_inout_const(sample_accessor, context, buffer_size, sample_rate,
+				speed_out, phase_constant);
 		}
 		return;
 	}
 
-	const c_sample *sample = sample_accessor->get_sample(context->sample_handle);
-	if (handle_failed_sample(sample, context->channel, speed_out)) {
-		return;
-	}
+	struct s_sampler_loop_subalgorithm : public s_sampler_loop_algorithm<s_sampler_loop_subalgorithm> {
+		// Fields
+		c_real_buffer_out out;
+		real32 *speed_out_ptr;
+		real32 *speed_out_ptr_end;
+		const real32 *phase_ptr;
+		c_real32_4 advance_val;
+		c_real32_4 speed_adjusted_sample_rate_0_val;
+		c_real32_4 time_offset_val;
 
-	// Bidi loops are preprocessed so at this point they act as normal loops
-	wl_assert(sample->get_loop_mode() != k_sample_loop_mode_none);
-	wl_assert(sample->is_phase_shift_enabled());
-	wl_assert(!context->reached_end);
-
-	bool is_mipmap = sample->is_mipmap();
-	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
-	real32 length, loop_start_time, loop_end_time;
-	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
-	c_real32_4 phase_time_multiplier = c_real32_4(loop_end_time - loop_start_time);
-
-	real32 stream_sample_rate = static_cast<real32>(sample_rate);
-	real32 sample_rate_0 = static_cast<real32>(sample_0->get_sample_rate());
-
-	size_t samples_written = 0;
-	size_t buffer_samples_remaining = buffer_size;
-	real32 *speed_out_ptr = speed_out->get_data<real32>();
-	real32 *speed_out_ptr_end = speed_out_ptr + align_size(buffer_size, k_sse_block_elements);
-	const real32 *phase_ptr = phase->get_data<real32>();
-	for (; speed_out_ptr < speed_out_ptr_end;
-		 speed_out_ptr += k_sse_block_elements, phase_ptr += k_sse_block_elements) {
-		c_real32_4 speed_val(speed_out_ptr);
-		c_real32_4 advance = speed_val / c_real32_4(stream_sample_rate);
-		c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(sample_rate_0) * speed_val;
-
-		c_real32_4 phase_val(phase_ptr);
-		c_real32_4 clamped_phase = min(max(phase_val, c_real32_4(0.0f)), c_real32_4(1.0f));
-		c_real32_4 time_offset = clamped_phase * phase_time_multiplier;
-
-		// Increment the time first, storing each intermediate time value
-		ALIGNAS_SSE real32 time[k_sse_block_elements];
-		size_t increment_count = increment_time_looping(loop_start_time, loop_end_time, context, advance,
-			buffer_samples_remaining, time);
-		wl_assert(increment_count > 0);
-
-		c_real32_4 phased_time = c_real32_4(time) + time_offset;
-		phased_time.store(time);
-
-		if (is_mipmap) {
-			fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
-				increment_count, time, speed_out_ptr);
-		} else {
-			for (size_t i = 0; i < increment_count; i++) {
-				speed_out_ptr[i] = fetch_sample(sample, context->channel, time[i]);
-			}
+		s_sampler_loop_subalgorithm(size_t buffer_size,
+			c_real_buffer_inout speed_out, c_real_buffer_in phase) {
+			out = speed_out;
+			speed_out_ptr = speed_out->get_data<real32>();
+			speed_out_ptr_end = speed_out_ptr + align_size(buffer_size, k_sse_block_elements);
+			phase_ptr = phase->get_data<real32>();
 		}
 
-		samples_written += increment_count;
-	}
+		c_real_buffer_out get_out() const { return out; }
+		real32 *get_out_pointer() const { return speed_out_ptr; }
 
-	// If the sample ended before the end of the buffer, fill the rest with 0
-	size_t samples_remaining = buffer_size - samples_written;
-	memset(speed_out->get_data<real32>() + samples_written, 0, samples_remaining * sizeof(real32));
-	speed_out->set_constant(false);
+		void begin_loop() {}
+		bool is_valid() const { return speed_out_ptr < speed_out_ptr_end; }
+		void advance() {
+			speed_out_ptr += k_sse_block_elements;
+			phase_ptr += k_sse_block_elements;
+		}
+
+		void run_loop() {
+			c_real32_4 speed_val(speed_out_ptr);
+			advance_val = compute_advance(speed_val, stream_sample_rate);
+			speed_adjusted_sample_rate_0_val = compute_speed_adjusted_sample_rate_0(speed_val, sample_rate_0);
+			c_real32_4 phase_val(phase_ptr);
+			time_offset_val = compute_time_offset(phase_val, phase_time_multiplier);
+		}
+
+		c_real32_4 get_advance() const { return advance_val; }
+		c_real32_4 get_speed_adjusted_sample_rate_0() const { return speed_adjusted_sample_rate_0_val; }
+		c_real32_4 get_time_offset() const { return time_offset_val; }
+	};
+
+	s_sampler_loop_subalgorithm(buffer_size, speed_out, phase.get_buffer()).
+		run(sample_accessor, context, buffer_size, sample_rate);
 }
 
-void s_buffer_operation_sampler::loop_phase_shift_buffer_bufferio(
+void s_buffer_operation_sampler::loop_in_inout(
 	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-	size_t buffer_size, uint32 sample_rate, c_buffer_in speed, c_buffer_inout phase_out) {
+	size_t buffer_size, uint32 sample_rate, c_real_buffer_or_constant_in speed, c_real_buffer_inout phase_out) {
 	validate_buffer(speed);
 	validate_buffer(phase_out);
 
 	// Identify constant optimizations
-	if (speed->is_constant()) {
-		const real32 *speed_ptr = speed->get_data<real32>();
+	if (speed.is_constant()) {
+		real32 speed_constant = speed.get_constant();
 		if (phase_out->is_constant()) {
-			const real32 *phase_ptr = phase_out->get_data<real32>();
-			loop_phase_shift_constant_constant(sample_accessor, context, buffer_size, sample_rate, phase_out,
-				*speed_ptr, *phase_ptr);
+			real32 phase_constant = *phase_out->get_data<real32>();
+			loop_const_const_out(sample_accessor, context, buffer_size, sample_rate,
+				speed_constant, phase_constant, phase_out);
 		} else {
-			loop_phase_shift_constant_bufferio(sample_accessor, context, buffer_size, sample_rate,
-				*speed_ptr, phase_out);
+			loop_const_inout(sample_accessor, context, buffer_size, sample_rate,
+				speed_constant, phase_out);
 		}
 		return;
 	} else {
 		if (phase_out->is_constant()) {
-			const real32 *phase_ptr = phase_out->get_data<real32>();
-			loop_phase_shift_buffer_constant(sample_accessor, context, buffer_size, sample_rate, phase_out,
-				speed, *phase_ptr);
+			real32 phase_constant = *phase_out->get_data<real32>();
+			loop_in_const_out(sample_accessor, context, buffer_size, sample_rate,
+				speed, phase_constant, phase_out);
 		}
 		return;
 	}
 
-	const c_sample *sample = sample_accessor->get_sample(context->sample_handle);
-	if (handle_failed_sample(sample, context->channel, phase_out)) {
-		return;
-	}
+	struct s_sampler_loop_subalgorithm : public s_sampler_loop_algorithm<s_sampler_loop_subalgorithm> {
+		// Fields
+		c_real_buffer_out out;
+		real32 *phase_out_ptr;
+		real32 *phase_out_ptr_end;
+		const real32 *speed_ptr;
+		c_real32_4 advance_val;
+		c_real32_4 speed_adjusted_sample_rate_0_val;
+		c_real32_4 time_offset_val;
 
-	// Bidi loops are preprocessed so at this point they act as normal loops
-	wl_assert(sample->get_loop_mode() != k_sample_loop_mode_none);
-	wl_assert(sample->is_phase_shift_enabled());
-	wl_assert(!context->reached_end);
-
-	bool is_mipmap = sample->is_mipmap();
-	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
-	real32 length, loop_start_time, loop_end_time;
-	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
-	c_real32_4 phase_time_multiplier = c_real32_4(loop_end_time - loop_start_time);
-
-	real32 stream_sample_rate = static_cast<real32>(sample_rate);
-	real32 sample_rate_0 = static_cast<real32>(sample_0->get_sample_rate());
-
-	size_t samples_written = 0;
-	size_t buffer_samples_remaining = buffer_size;
-	real32 *phase_out_ptr = phase_out->get_data<real32>();
-	real32 *phase_out_ptr_end = phase_out_ptr + align_size(buffer_size, k_sse_block_elements);
-	const real32 *speed_ptr = speed->get_data<real32>();
-	for (; phase_out_ptr < phase_out_ptr_end;
-		 phase_out_ptr += k_sse_block_elements, speed_ptr += k_sse_block_elements) {
-		c_real32_4 speed_val(speed_ptr);
-		c_real32_4 advance = speed_val / c_real32_4(stream_sample_rate);
-		c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(sample_rate_0) * speed_val;
-
-		c_real32_4 phase_val(phase_out_ptr);
-		c_real32_4 clamped_phase = min(max(phase_val, c_real32_4(0.0f)), c_real32_4(1.0f));
-		c_real32_4 time_offset = clamped_phase * phase_time_multiplier;
-
-		// Increment the time first, storing each intermediate time value
-		ALIGNAS_SSE real32 time[k_sse_block_elements];
-		size_t increment_count = increment_time_looping(loop_start_time, loop_end_time, context, advance,
-			buffer_samples_remaining, time);
-		wl_assert(increment_count > 0);
-
-		c_real32_4 phased_time = c_real32_4(time) + time_offset;
-		phased_time.store(time);
-
-		if (is_mipmap) {
-			fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
-				increment_count, time, phase_out_ptr);
-		} else {
-			for (size_t i = 0; i < increment_count; i++) {
-				phase_out_ptr[i] = fetch_sample(sample, context->channel, time[i]);
-			}
+		s_sampler_loop_subalgorithm(size_t buffer_size,
+			c_real_buffer_in speed, c_real_buffer_inout phase_out) {
+			out = phase_out;
+			phase_out_ptr = phase_out->get_data<real32>();
+			phase_out_ptr_end = phase_out_ptr + align_size(buffer_size, k_sse_block_elements);
+			speed_ptr = speed->get_data<real32>();
 		}
 
-		samples_written += increment_count;
-	}
+		c_real_buffer_out get_out() const { return out; }
+		real32 *get_out_pointer() const { return phase_out_ptr; }
 
-	// If the sample ended before the end of the buffer, fill the rest with 0
-	size_t samples_remaining = buffer_size - samples_written;
-	memset(phase_out->get_data<real32>() + samples_written, 0, samples_remaining * sizeof(real32));
-	phase_out->set_constant(false);
+		void begin_loop() {}
+		bool is_valid() const { return phase_out_ptr < phase_out_ptr_end; }
+		void advance() {
+			phase_out_ptr += k_sse_block_elements;
+			speed_ptr += k_sse_block_elements;
+		}
+
+		void run_loop() {
+			c_real32_4 speed_val(speed_ptr);
+			advance_val = compute_advance(speed_val, stream_sample_rate);
+			speed_adjusted_sample_rate_0_val = compute_speed_adjusted_sample_rate_0(speed_val, sample_rate_0);
+			c_real32_4 phase_val(phase_out_ptr);
+			time_offset_val = compute_time_offset(phase_val, phase_time_multiplier);
+		}
+
+		c_real32_4 get_advance() const { return advance_val; }
+		c_real32_4 get_speed_adjusted_sample_rate_0() const { return speed_adjusted_sample_rate_0_val; }
+		c_real32_4 get_time_offset() const { return time_offset_val; }
+	};
+
+	s_sampler_loop_subalgorithm(buffer_size, speed.get_buffer(), phase_out).
+		run(sample_accessor, context, buffer_size, sample_rate);
 }
 
-void s_buffer_operation_sampler::loop_phase_shift_buffer_constant(
+void s_buffer_operation_sampler::loop_in_const_out(
 	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-	size_t buffer_size, uint32 sample_rate, c_buffer_out out, c_buffer_in speed, real32 phase) {
+	size_t buffer_size, uint32 sample_rate, c_real_buffer_or_constant_in speed, real32 phase, c_real_buffer_out out) {
 	validate_buffer(out);
 	validate_buffer(speed);
 
 	// Identify constant optimizations
-	if (speed->is_constant()) {
-		const real32 *speed_ptr = speed->get_data<real32>();
-		loop_phase_shift_constant_constant(sample_accessor, context, buffer_size, sample_rate, out,
-			*speed_ptr, phase);
+	if (speed.is_constant()) {
+		real32 speed_constant = speed.get_constant();
+		loop_const_const_out(sample_accessor, context, buffer_size, sample_rate, speed_constant, phase, out);
 		return;
 	}
 
-	const c_sample *sample = sample_accessor->get_sample(context->sample_handle);
-	if (handle_failed_sample(sample, context->channel, out)) {
-		return;
-	}
+	struct s_sampler_loop_subalgorithm : public s_sampler_loop_algorithm<s_sampler_loop_subalgorithm> {
+		// Fields
+		c_real_buffer_out out;
+		real32 *out_ptr;
+		real32 *out_ptr_end;
+		const real32 *speed_ptr;
+		real32 phase_val;
+		c_real32_4 advance_val;
+		c_real32_4 speed_adjusted_sample_rate_0_val;
+		c_real32_4 time_offset_val;
 
-	// Bidi loops are preprocessed so at this point they act as normal loops
-	wl_assert(sample->get_loop_mode() != k_sample_loop_mode_none);
-	wl_assert(sample->is_phase_shift_enabled());
-	wl_assert(!context->reached_end);
-
-	bool is_mipmap = sample->is_mipmap();
-	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
-	real32 length, loop_start_time, loop_end_time;
-	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
-	real32 phase_time_multiplier = loop_end_time - loop_start_time;
-	real32 clamped_phase = std::min(std::max(phase, 0.0f), 1.0f);
-	c_real32_4 time_offset = c_real32_4(clamped_phase * phase_time_multiplier);
-
-	real32 stream_sample_rate = static_cast<real32>(sample_rate);
-	real32 sample_rate_0 = static_cast<real32>(sample_0->get_sample_rate());
-
-	size_t samples_written = 0;
-	size_t buffer_samples_remaining = buffer_size;
-	real32 *out_ptr = out->get_data<real32>();
-	real32 *out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_elements);
-	const real32 *speed_ptr = speed->get_data<real32>();
-	for (; out_ptr < out_ptr_end; out_ptr += k_sse_block_elements, speed_ptr += k_sse_block_elements) {
-		c_real32_4 speed_val(speed_ptr);
-		c_real32_4 advance = speed_val / c_real32_4(stream_sample_rate);
-		c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(sample_rate_0) * speed_val;
-
-		// Increment the time first, storing each intermediate time value
-		ALIGNAS_SSE real32 time[k_sse_block_elements];
-		size_t increment_count = increment_time_looping(loop_start_time, loop_end_time, context, advance,
-			buffer_samples_remaining, time);
-		wl_assert(increment_count > 0);
-
-		c_real32_4 phased_time = c_real32_4(time) + time_offset;
-		phased_time.store(time);
-
-		if (is_mipmap) {
-			fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
-				increment_count, time, out_ptr);
-		} else {
-			for (size_t i = 0; i < increment_count; i++) {
-				out_ptr[i] = fetch_sample(sample, context->channel, time[i]);
-			}
+		s_sampler_loop_subalgorithm(size_t buffer_size,
+			c_real_buffer_in speed, real32 phase, c_real_buffer_out out) {
+			this->out = out;
+			out_ptr = out->get_data<real32>();
+			out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_elements);
+			speed_ptr = speed->get_data<real32>();
+			phase_val = phase;
 		}
 
-		samples_written += increment_count;
-	}
+		c_real_buffer_out get_out() const { return out; }
+		real32 *get_out_pointer() const { return out_ptr; }
 
-	// If the sample ended before the end of the buffer, fill the rest with 0
-	size_t samples_remaining = buffer_size - samples_written;
-	memset(out->get_data<real32>() + samples_written, 0, samples_remaining * sizeof(real32));
-	out->set_constant(false);
+		void begin_loop() {
+			time_offset_val = compute_time_offset(c_real32_4(phase_val), phase_time_multiplier);
+		}
+
+		bool is_valid() const { return out_ptr < out_ptr_end; }
+		void advance() {
+			out_ptr += k_sse_block_elements;
+			speed_ptr += k_sse_block_elements;
+		}
+
+		void run_loop() {
+			c_real32_4 speed_val(speed_ptr);
+			advance_val = compute_advance(speed_val, stream_sample_rate);
+			speed_adjusted_sample_rate_0_val = compute_speed_adjusted_sample_rate_0(speed_val, sample_rate_0);
+		}
+
+		c_real32_4 get_advance() const { return advance_val; }
+		c_real32_4 get_speed_adjusted_sample_rate_0() const { return speed_adjusted_sample_rate_0_val; }
+		c_real32_4 get_time_offset() const { return time_offset_val; }
+	};
+
+	s_sampler_loop_subalgorithm(buffer_size, speed.get_buffer(), phase, out).
+		run(sample_accessor, context, buffer_size, sample_rate);
 }
 
-void s_buffer_operation_sampler::loop_phase_shift_bufferio_constant(
+void s_buffer_operation_sampler::loop_inout_const(
 	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-	size_t buffer_size, uint32 sample_rate, c_buffer_inout speed_out, real32 phase) {
+	size_t buffer_size, uint32 sample_rate, c_real_buffer_inout speed_out, real32 phase) {
 	validate_buffer(speed_out);
 
 	// Identify constant optimizations
 	if (speed_out->is_constant()) {
-		const real32 *speed_ptr = speed_out->get_data<real32>();
-		loop_phase_shift_constant_constant(sample_accessor, context, buffer_size, sample_rate, speed_out,
-			*speed_ptr, phase);
+		real32 speed_constant = *speed_out->get_data<real32>();
+		loop_const_const_out(sample_accessor, context, buffer_size, sample_rate,
+			speed_constant, phase, speed_out);
 		return;
 	}
 
-	const c_sample *sample = sample_accessor->get_sample(context->sample_handle);
-	if (handle_failed_sample(sample, context->channel, speed_out)) {
-		return;
-	}
+	struct s_sampler_loop_subalgorithm : public s_sampler_loop_algorithm<s_sampler_loop_subalgorithm> {
+		// Fields
+		c_real_buffer_out out;
+		real32 *speed_out_ptr;
+		real32 *speed_out_ptr_end;
+		real32 phase_val;
+		c_real32_4 advance_val;
+		c_real32_4 speed_adjusted_sample_rate_0_val;
+		c_real32_4 time_offset_val;
 
-	// Bidi loops are preprocessed so at this point they act as normal loops
-	wl_assert(sample->get_loop_mode() != k_sample_loop_mode_none);
-	wl_assert(sample->is_phase_shift_enabled());
-	wl_assert(!context->reached_end);
-
-	bool is_mipmap = sample->is_mipmap();
-	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
-	real32 length, loop_start_time, loop_end_time;
-	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
-	real32 phase_time_multiplier = loop_end_time - loop_start_time;
-	real32 clamped_phase = std::min(std::max(phase, 0.0f), 1.0f);
-	c_real32_4 time_offset = c_real32_4(clamped_phase * phase_time_multiplier);
-
-	real32 stream_sample_rate = static_cast<real32>(sample_rate);
-	real32 sample_rate_0 = static_cast<real32>(sample_0->get_sample_rate());
-
-	size_t samples_written = 0;
-	size_t buffer_samples_remaining = buffer_size;
-	real32 *speed_out_ptr = speed_out->get_data<real32>();
-	real32 *speed_out_ptr_end = speed_out_ptr + align_size(buffer_size, k_sse_block_elements);
-	for (; speed_out_ptr < speed_out_ptr_end; speed_out_ptr += k_sse_block_elements) {
-		c_real32_4 speed_val(speed_out_ptr);
-		c_real32_4 advance = speed_val / c_real32_4(stream_sample_rate);
-		c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(sample_rate_0) * speed_val;
-
-		// Increment the time first, storing each intermediate time value
-		ALIGNAS_SSE real32 time[k_sse_block_elements];
-		size_t increment_count = increment_time_looping(loop_start_time, loop_end_time, context, advance,
-			buffer_samples_remaining, time);
-		wl_assert(increment_count > 0);
-
-		c_real32_4 phased_time = c_real32_4(time) + time_offset;
-		phased_time.store(time);
-
-		if (is_mipmap) {
-			fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
-				increment_count, time, speed_out_ptr);
-		} else {
-			for (size_t i = 0; i < increment_count; i++) {
-				speed_out_ptr[i] = fetch_sample(sample, context->channel, time[i]);
-			}
+		s_sampler_loop_subalgorithm(size_t buffer_size,
+			c_real_buffer_inout speed_out, real32 phase) {
+			out = speed_out;
+			speed_out_ptr = speed_out->get_data<real32>();
+			speed_out_ptr_end = speed_out_ptr + align_size(buffer_size, k_sse_block_elements);
+			phase_val = phase;
 		}
 
-		samples_written += increment_count;
-	}
+		c_real_buffer_out get_out() const { return out; }
+		real32 *get_out_pointer() const { return speed_out_ptr; }
 
-	// If the sample ended before the end of the buffer, fill the rest with 0
-	size_t samples_remaining = buffer_size - samples_written;
-	memset(speed_out->get_data<real32>() + samples_written, 0, samples_remaining * sizeof(real32));
-	speed_out->set_constant(false);
+		void begin_loop() {
+			time_offset_val = compute_time_offset(c_real32_4(phase_val), phase_time_multiplier);
+		}
+
+		bool is_valid() const { return speed_out_ptr < speed_out_ptr_end; }
+		void advance() {
+			speed_out_ptr += k_sse_block_elements;
+		}
+
+		void run_loop() {
+			c_real32_4 speed_val(speed_out_ptr);
+			advance_val = compute_advance(speed_val, stream_sample_rate);
+			speed_adjusted_sample_rate_0_val = compute_speed_adjusted_sample_rate_0(speed_val, sample_rate_0);
+		}
+
+		c_real32_4 get_advance() const { return advance_val; }
+		c_real32_4 get_speed_adjusted_sample_rate_0() const { return speed_adjusted_sample_rate_0_val; }
+		c_real32_4 get_time_offset() const { return time_offset_val; }
+	};
+
+	s_sampler_loop_subalgorithm(buffer_size, speed_out, phase).
+		run(sample_accessor, context, buffer_size, sample_rate);
 }
 
-void s_buffer_operation_sampler::loop_phase_shift_constant_buffer(
+void s_buffer_operation_sampler::loop_const_in_out(
 	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-	size_t buffer_size, uint32 sample_rate, c_buffer_out out, real32 speed, c_buffer_in phase) {
-	validate_buffer(out);
+	size_t buffer_size, uint32 sample_rate, real32 speed, c_real_buffer_or_constant_in phase, c_real_buffer_out out) {
 	validate_buffer(phase);
+	validate_buffer(out);
 
 	// Identify constant optimizations
-	if (phase->is_constant()) {
-		const real32 *phase_ptr = phase->get_data<real32>();
-		loop_phase_shift_constant_constant(sample_accessor, context, buffer_size, sample_rate, out,
-			speed, *phase_ptr);
+	if (phase.is_constant()) {
+		real32 phase_constant = phase.get_constant();
+		loop_const_const_out(sample_accessor, context, buffer_size, sample_rate,
+			speed, phase_constant, out);
 		return;
 	}
 
-	const c_sample *sample = sample_accessor->get_sample(context->sample_handle);
-	if (handle_failed_sample(sample, context->channel, out)) {
-		return;
-	}
+	struct s_sampler_loop_subalgorithm : public s_sampler_loop_algorithm<s_sampler_loop_subalgorithm> {
+		// Fields
+		c_real_buffer_out out;
+		real32 *out_ptr;
+		real32 *out_ptr_end;
+		real32 speed_val;
+		const real32 *phase_ptr;
+		c_real32_4 advance_val;
+		c_real32_4 speed_adjusted_sample_rate_0_val;
+		c_real32_4 time_offset_val;
 
-	// Bidi loops are preprocessed so at this point they act as normal loops
-	wl_assert(sample->get_loop_mode() != k_sample_loop_mode_none);
-	wl_assert(sample->is_phase_shift_enabled());
-	wl_assert(!context->reached_end);
-
-	bool is_mipmap = sample->is_mipmap();
-	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
-	real32 length, loop_start_time, loop_end_time;
-	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
-	c_real32_4 phase_time_multiplier = c_real32_4(loop_end_time - loop_start_time);
-
-	real32 stream_sample_rate = static_cast<real32>(sample_rate);
-	c_real32_4 speed_val(speed);
-	c_real32_4 advance = speed / c_real32_4(stream_sample_rate);
-	c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(static_cast<real32>(sample_0->get_sample_rate()));
-	speed_adjusted_sample_rate_0 = speed_adjusted_sample_rate_0 * speed_val;
-
-	size_t samples_written = 0;
-	size_t buffer_samples_remaining = buffer_size;
-	real32 *out_ptr = out->get_data<real32>();
-	real32 *out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_elements);
-	const real32 *phase_ptr = phase->get_data<real32>();
-	for (; out_ptr < out_ptr_end; out_ptr += k_sse_block_elements, phase_ptr += k_sse_block_elements) {
-		c_real32_4 phase_val(phase_ptr);
-		c_real32_4 clamped_phase = min(max(phase_val, c_real32_4(0.0f)), c_real32_4(1.0f));
-		c_real32_4 time_offset = clamped_phase * phase_time_multiplier;
-
-		// Increment the time first, storing each intermediate time value
-		ALIGNAS_SSE real32 time[k_sse_block_elements];
-		size_t increment_count = increment_time_looping(loop_start_time, loop_end_time, context, advance,
-			buffer_samples_remaining, time);
-		wl_assert(increment_count > 0);
-
-		c_real32_4 phased_time = c_real32_4(time) + time_offset;
-		phased_time.store(time);
-
-		if (is_mipmap) {
-			fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
-				increment_count, time, out_ptr);
-		} else {
-			for (size_t i = 0; i < increment_count; i++) {
-				out_ptr[i] = fetch_sample(sample, context->channel, time[i]);
-			}
+		s_sampler_loop_subalgorithm(size_t buffer_size,
+			real32 speed, c_real_buffer_in phase, c_real_buffer_out out) {
+			this->out = out;
+			out_ptr = out->get_data<real32>();
+			out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_elements);
+			speed_val = speed;
+			phase_ptr = phase->get_data<real32>();
 		}
 
-		samples_written += increment_count;
-	}
+		c_real_buffer_out get_out() const { return out; }
+		real32 *get_out_pointer() const { return out_ptr; }
 
-	// If the sample ended before the end of the buffer, fill the rest with 0
-	size_t samples_remaining = buffer_size - samples_written;
-	memset(out->get_data<real32>() + samples_written, 0, samples_remaining * sizeof(real32));
-	out->set_constant(false);
+		void begin_loop() {
+			advance_val = compute_advance(c_real32_4(speed_val), stream_sample_rate);
+			speed_adjusted_sample_rate_0_val = compute_speed_adjusted_sample_rate_0(speed_val, sample_rate_0);
+		}
+
+		bool is_valid() const { return out_ptr < out_ptr_end; }
+		void advance() {
+			out_ptr += k_sse_block_elements;
+			phase_ptr += k_sse_block_elements;
+		}
+
+		void run_loop() {
+			c_real32_4 phase_val(phase_ptr);
+			time_offset_val = compute_time_offset(phase_val, phase_time_multiplier);
+		}
+
+		c_real32_4 get_advance() const { return advance_val; }
+		c_real32_4 get_speed_adjusted_sample_rate_0() const { return speed_adjusted_sample_rate_0_val; }
+		c_real32_4 get_time_offset() const { return time_offset_val; }
+	};
+
+	s_sampler_loop_subalgorithm(buffer_size, speed, phase.get_buffer(), out).
+		run(sample_accessor, context, buffer_size, sample_rate);
 }
 
-void s_buffer_operation_sampler::loop_phase_shift_constant_bufferio(
+void s_buffer_operation_sampler::loop_const_inout(
 	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-	size_t buffer_size, uint32 sample_rate, real32 speed, c_buffer_inout phase_out) {
+	size_t buffer_size, uint32 sample_rate, real32 speed, c_real_buffer_inout phase_out) {
 	validate_buffer(phase_out);
 
 	// Identify constant optimizations
 	if (phase_out->is_constant()) {
-		const real32 *phase_ptr = phase_out->get_data<real32>();
-		loop_phase_shift_constant_constant(sample_accessor, context, buffer_size, sample_rate, phase_out,
-			speed, *phase_ptr);
+		real32 phase_constant = *phase_out->get_data<real32>();
+		loop_const_const_out(sample_accessor, context, buffer_size, sample_rate,
+			speed, phase_constant, phase_out);
 		return;
 	}
 
-	const c_sample *sample = sample_accessor->get_sample(context->sample_handle);
-	if (handle_failed_sample(sample, context->channel, phase_out)) {
-		return;
-	}
+	struct s_sampler_loop_subalgorithm : public s_sampler_loop_algorithm<s_sampler_loop_subalgorithm> {
+		// Fields
+		c_real_buffer_out out;
+		real32 *phase_out_ptr;
+		real32 *phase_out_ptr_end;
+		real32 speed_val;
+		c_real32_4 advance_val;
+		c_real32_4 speed_adjusted_sample_rate_0_val;
+		c_real32_4 time_offset_val;
 
-	// Bidi loops are preprocessed so at this point they act as normal loops
-	wl_assert(sample->get_loop_mode() != k_sample_loop_mode_none);
-	wl_assert(sample->is_phase_shift_enabled());
-	wl_assert(!context->reached_end);
-
-	bool is_mipmap = sample->is_mipmap();
-	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
-	real32 length, loop_start_time, loop_end_time;
-	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
-	c_real32_4 phase_time_multiplier = c_real32_4(loop_end_time - loop_start_time);
-
-	real32 stream_sample_rate = static_cast<real32>(sample_rate);
-	c_real32_4 speed_val(speed);
-	c_real32_4 advance = speed / c_real32_4(stream_sample_rate);
-	c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(static_cast<real32>(sample_0->get_sample_rate()));
-	speed_adjusted_sample_rate_0 = speed_adjusted_sample_rate_0 * speed_val;
-
-	size_t samples_written = 0;
-	size_t buffer_samples_remaining = buffer_size;
-	real32 *phase_out_ptr = phase_out->get_data<real32>();
-	real32 *phase_out_ptr_end = phase_out_ptr + align_size(buffer_size, k_sse_block_elements);
-	for (; phase_out_ptr < phase_out_ptr_end; phase_out_ptr += k_sse_block_elements) {
-		c_real32_4 phase_val(phase_out_ptr);
-		c_real32_4 clamped_phase = min(max(phase_val, c_real32_4(0.0f)), c_real32_4(1.0f));
-		c_real32_4 time_offset = clamped_phase * phase_time_multiplier;
-
-		// Increment the time first, storing each intermediate time value
-		ALIGNAS_SSE real32 time[k_sse_block_elements];
-		size_t increment_count = increment_time_looping(loop_start_time, loop_end_time, context, advance,
-			buffer_samples_remaining, time);
-		wl_assert(increment_count > 0);
-
-		c_real32_4 phased_time = c_real32_4(time) + time_offset;
-		phased_time.store(time);
-
-		if (is_mipmap) {
-			fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
-				increment_count, time, phase_out_ptr);
-		} else {
-			for (size_t i = 0; i < increment_count; i++) {
-				phase_out_ptr[i] = fetch_sample(sample, context->channel, time[i]);
-			}
+		s_sampler_loop_subalgorithm(size_t buffer_size,
+			real32 speed, c_real_buffer_inout phase_out) {
+			out = phase_out;
+			phase_out_ptr = phase_out->get_data<real32>();
+			phase_out_ptr_end = phase_out_ptr + align_size(buffer_size, k_sse_block_elements);
+			speed_val = speed;
 		}
 
-		samples_written += increment_count;
-	}
+		c_real_buffer_out get_out() const { return out; }
+		real32 *get_out_pointer() const { return phase_out_ptr; }
 
-	// If the sample ended before the end of the buffer, fill the rest with 0
-	size_t samples_remaining = buffer_size - samples_written;
-	memset(phase_out->get_data<real32>() + samples_written, 0, samples_remaining * sizeof(real32));
-	phase_out->set_constant(false);
+		void begin_loop() {
+			advance_val = compute_advance(c_real32_4(speed_val), stream_sample_rate);
+			speed_adjusted_sample_rate_0_val = compute_speed_adjusted_sample_rate_0(speed_val, sample_rate_0);
+		}
+
+		bool is_valid() const { return phase_out_ptr < phase_out_ptr_end; }
+		void advance() {
+			phase_out_ptr += k_sse_block_elements;
+		}
+
+		void run_loop() {
+			c_real32_4 phase_val(phase_out_ptr);
+			time_offset_val = compute_time_offset(phase_val, phase_time_multiplier);
+		}
+
+		c_real32_4 get_advance() const { return advance_val; }
+		c_real32_4 get_speed_adjusted_sample_rate_0() const { return speed_adjusted_sample_rate_0_val; }
+		c_real32_4 get_time_offset() const { return time_offset_val; }
+	};
+
+	s_sampler_loop_subalgorithm(buffer_size, speed, phase_out).
+		run(sample_accessor, context, buffer_size, sample_rate);
 }
 
-void s_buffer_operation_sampler::loop_phase_shift_constant_constant(
+void s_buffer_operation_sampler::loop_const_const_out(
 	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-	size_t buffer_size, uint32 sample_rate, c_buffer_out out, real32 speed, real32 phase) {
+	size_t buffer_size, uint32 sample_rate, real32 speed, real32 phase, c_real_buffer_out out) {
 	validate_buffer(out);
 
-	const c_sample *sample = sample_accessor->get_sample(context->sample_handle);
-	if (handle_failed_sample(sample, context->channel, out)) {
-		return;
-	}
+	struct s_sampler_loop_subalgorithm : public s_sampler_loop_algorithm<s_sampler_loop_subalgorithm> {
+		// Fields
+		c_real_buffer_out out;
+		real32 *out_ptr;
+		real32 *out_ptr_end;
+		real32 speed_val;
+		real32 phase_val;
+		c_real32_4 advance_val;
+		c_real32_4 speed_adjusted_sample_rate_0_val;
+		c_real32_4 time_offset_val;
 
-	// Bidi loops are preprocessed so at this point they act as normal loops
-	wl_assert(sample->get_loop_mode() != k_sample_loop_mode_none);
-	wl_assert(sample->is_phase_shift_enabled());
-	wl_assert(!context->reached_end);
-
-	bool is_mipmap = sample->is_mipmap();
-	const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
-	real32 length, loop_start_time, loop_end_time;
-	get_sample_time_data(sample_0, length, loop_start_time, loop_end_time);
-	real32 phase_time_multiplier = loop_end_time - loop_start_time;
-	real32 clamped_phase = std::min(std::max(phase, 0.0f), 1.0f);
-	c_real32_4 time_offset = c_real32_4(clamped_phase * phase_time_multiplier);
-
-	real32 stream_sample_rate = static_cast<real32>(sample_rate);
-	c_real32_4 speed_val(speed);
-	c_real32_4 advance = speed / c_real32_4(stream_sample_rate);
-	c_real32_4 speed_adjusted_sample_rate_0 = c_real32_4(static_cast<real32>(sample_0->get_sample_rate()));
-	speed_adjusted_sample_rate_0 = speed_adjusted_sample_rate_0 * speed_val;
-
-	size_t samples_written = 0;
-	size_t buffer_samples_remaining = buffer_size;
-	real32 *out_ptr = out->get_data<real32>();
-	real32 *out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_elements);
-	for (; out_ptr < out_ptr_end; out_ptr += k_sse_block_elements) {
-		// Increment the time first, storing each intermediate time value
-		ALIGNAS_SSE real32 time[k_sse_block_elements];
-		size_t increment_count = increment_time_looping(loop_start_time, loop_end_time, context, advance,
-			buffer_samples_remaining, time);
-		wl_assert(increment_count > 0);
-
-		c_real32_4 phased_time = c_real32_4(time) + time_offset;
-		phased_time.store(time);
-
-		if (is_mipmap) {
-			fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
-				increment_count, time, out_ptr);
-		} else {
-			for (size_t i = 0; i < increment_count; i++) {
-				out_ptr[i] = fetch_sample(sample, context->channel, time[i]);
-			}
+		s_sampler_loop_subalgorithm(size_t buffer_size,
+			real32 speed, real32 phase, c_real_buffer_out out) {
+			this->out = out;
+			out_ptr = out->get_data<real32>();
+			out_ptr_end = out_ptr + align_size(buffer_size, k_sse_block_elements);
+			speed_val = speed;
+			phase_val = phase;
 		}
 
-		samples_written += increment_count;
-	}
+		c_real_buffer_out get_out() const { return out; }
+		real32 *get_out_pointer() const { return out_ptr; }
 
-	// If the sample ended before the end of the buffer, fill the rest with 0
-	size_t samples_remaining = buffer_size - samples_written;
-	memset(out->get_data<real32>() + samples_written, 0, samples_remaining * sizeof(real32));
-	out->set_constant(false);
+		void begin_loop() {
+			advance_val = compute_advance(c_real32_4(speed_val), stream_sample_rate);
+			speed_adjusted_sample_rate_0_val = compute_speed_adjusted_sample_rate_0(speed_val, sample_rate_0);
+			time_offset_val = compute_time_offset(c_real32_4(phase_val), phase_time_multiplier);
+		}
+
+		bool is_valid() const { return out_ptr < out_ptr_end; }
+		void advance() { out_ptr += k_sse_block_elements; }
+		void run_loop() {}
+
+		c_real32_4 get_advance() const { return advance_val; }
+		c_real32_4 get_speed_adjusted_sample_rate_0() const { return speed_adjusted_sample_rate_0_val; }
+		c_real32_4 get_time_offset() const { return time_offset_val; }
+	};
+
+	s_sampler_loop_subalgorithm(buffer_size, speed, phase, out).
+		run(sample_accessor, context, buffer_size, sample_rate);
 }
 
-static bool handle_failed_sample(const c_sample *sample, uint32 channel, c_buffer_out out) {
+static bool handle_failed_sample(const c_sample *sample, uint32 channel, c_real_buffer_out out) {
 	// If the sample failed, fill with 0
 	if (!sample) {
-		c_real32_4 *out_ptr = out->get_data<c_real32_4>();
-		*out_ptr = c_real32_4(0.0f);
+		*out->get_data<real32>() = 0.0f;
 		out->set_constant(true);
 	}
 
 	return sample == nullptr;
+}
+
+static bool handle_reached_end(bool reached_end, c_real_buffer_out out) {
+	if (reached_end) {
+		*out->get_data<real32>() = 0.0f;
+		out->set_constant(true);
+	}
+
+	return reached_end;
 }
 
 static void get_sample_time_data(const c_sample *sample,
@@ -1288,6 +1088,28 @@ static c_int32_4 fast_log2(const c_real32_4 &x, c_real32_4 &out_frac) {
 	out_frac = (c_real32_4(-0.346555382f) * x_m + c_real32_4(2.03966618f)) * x_m + c_real32_4(-1.69311082f);
 	return x_e;
 }
+
+#if 0
+void test_fast_log2() {
+	for (real32 f = 0.0f; f < 10.0f; f += 0.05f) {
+		c_real32_4 x(f);
+		c_real32_4 frac_part;
+		c_int32_4 int_part = fast_log2(x, frac_part);
+
+		ALIGNAS_SSE real32 frac_out[4];
+		ALIGNAS_SSE int32 int_out[4];
+
+		frac_part.store(frac_out);
+		int_part.store(int_out);
+
+		real32 log2_approx = static_cast<real32>(int_out[0]) + frac_out[0];
+		real32 log2_true = std::log2(f);
+
+		real32 diff = std::abs(log2_approx - log2_true);
+		std::cout << diff << "\n";
+	}
+}
+#endif // 0
 
 static void choose_mipmap_levels(
 	real32 stream_sample_rate, const c_real32_4 &speed_adjusted_sample_rate_0, uint32 mip_count,
@@ -1524,251 +1346,6 @@ static c_real32_4 shift_left_3(const c_real32_4 &a, const c_real32_4 &b) {
 	return shuffle<0, 2, 1, 2>(c, b);
 }
 
-#if PREDEFINED(GENERATE_SINC_WINDOW)
-namespace sinc_window_generator {
-	static const real64 k_pi = 3.1415926535897932384626433832795;
-	static const real64 k_alpha = 3.0;
-
-	real64 i_0(real64 x) {
-		// I_0(x) = sum_{t=0 to inf} ((x/2)^2t / (t!)^2)
-
-		static const int32 k_iterations = 15;
-		real64 half_x = x * 0.5;
-		real64 sum = 0.0;
-		for (int32 t = 0; t < k_iterations; t++) {
-			int64 t_factorial_sum = 1;
-			for (int32 f = 2; f <= t; f++) {
-				t_factorial_sum *= f;
-			}
-
-			real64 t_factorial = static_cast<real64>(t_factorial_sum);
-			sum += pow(half_x, 2.0 * static_cast<real64>(t)) / (t_factorial * t_factorial);
-		}
-
-		return sum;
-	}
-
-	real64 kaiser(real64 alpha, uint32 n, uint32 i) {
-		wl_assert(i >= 0 && i <= n);
-
-		// w(i) = I_0(pi * alpha * sqrt(1 - ((2i)/n - 1)^2)) / I_0(pi * alpha)
-		real64 sqrt_arg = (2.0 * static_cast<real64>(i)) / static_cast<real64>(n) - 1.0;
-		sqrt_arg = 1.0 - (sqrt_arg * sqrt_arg);
-		return i_0(k_pi * alpha * std::sqrt(sqrt_arg)) / i_0(k_pi * alpha);
-	}
-
-	real64 sinc(uint32 n, uint32 i) {
-		wl_assert(i >= 0 && i <= n);
-		real64 x = (static_cast<real64>(2 * i) / static_cast<real64>(n) - 1.0) *
-			static_cast<real64>(k_sinc_window_size / 2);
-		return (x == 0.0) ?
-			1.0 :
-			std::sin(k_pi * x) / (k_pi * x);
-	}
-
-	std::string fixup_real32(real32 v) {
-		std::string str = std::to_string(v);
-		if (str.find_first_of('.') == std::string::npos) {
-			str += ".0";
-		}
-		str.push_back('f');
-		return str;
-	}
-
-	void generate() {
-		std::ofstream out("sinc_window_coefficients.inl");
-
-		// Generate N arrays, one corresponding to each possible resolution offset (range [0,resolution-1])
-		// Each array is window_size-1 in length (rounded up to multiples of SSE)
-
-		size_t sse_array_length = align_size(k_sinc_window_size - 1, k_sse_block_elements) / k_sse_block_elements;
-		uint32 total_values = static_cast<uint32>((k_sinc_window_size - 1) * k_sinc_window_sample_resolution);
-
-		out << "static const s_sinc_window_coefficients k_sinc_window_coefficients[][" << sse_array_length << "] = {\n";
-
-		for (size_t resolution_index = 0; resolution_index < k_sinc_window_sample_resolution; resolution_index++) {
-			size_t sample_index;
-			s_sinc_window_coefficients coefficients;
-			ZERO_STRUCT(&coefficients);
-			size_t sse_index = 0;
-
-			out << "\t{\n";
-
-			for (sample_index = 0; sample_index < k_sinc_window_size - 1; sample_index++) {
-				uint32 window_value_index = static_cast<uint32>(
-					(k_sinc_window_size - 2 - sample_index) * k_sinc_window_sample_resolution + resolution_index);
-
-				real64 curr_value =
-					sinc(total_values, window_value_index) * kaiser(3.0, total_values, window_value_index);
-				real64 next_value =
-					sinc(total_values, window_value_index + 1) * kaiser(3.0, total_values, window_value_index + 1);
-				coefficients.values[sse_index] = static_cast<real32>(curr_value);
-				coefficients.slopes[sse_index] = static_cast<real32>(
-					(next_value - curr_value) / static_cast<real64>(k_sinc_window_sample_resolution));
-
-				sse_index++;
-				// Output if we're a multiple of 4, or if we're the last index
-				if (sse_index == k_sse_block_elements || sample_index == k_sinc_window_size - 1) {
-					out << "\t\t{ " <<
-						fixup_real32(coefficients.values[0]) << ", " <<
-						fixup_real32(coefficients.values[1]) << ", " <<
-						fixup_real32(coefficients.values[2]) << ", " <<
-						fixup_real32(coefficients.values[3]) << ", " <<
-						fixup_real32(coefficients.slopes[0]) << ", " <<
-						fixup_real32(coefficients.slopes[1]) << ", " <<
-						fixup_real32(coefficients.slopes[2]) << ", " <<
-						fixup_real32(coefficients.slopes[3]) << " },\n";
-
-					ZERO_STRUCT(&coefficients);
-					sse_index = 0;
-				}
-			}
-
-			out << "\t},\n";
-		}
-
-		out << "};\n";
-	}
-}
-
-int main(int argc, char **argv) {
-	sinc_window_generator::generate();
-	return 0;
-}
-#endif // PREDEFINED(GENERATE_SINC_WINDOW)
-
-#if 0
-#include <iostream>
-void find_fast_log2_coefficients() {
-	// Let x be a floating point number
-	// x = M * 2^E
-	// log2(x) = log2(M * 2^E)
-	//         = log2(M) + log2(2^E)
-	//         = log2(M) + E
-	// For non-denormalized floats, M is in the range [1,2). For x in this range, log2(x) is in the range [0,1). We
-	// wish to split up the result of log2 into an integer and fraction:
-	// int = E
-	// frac = log2(M)
-	// Thus, we wish to find a fast approximation for log2(M) for M in the range [1,2).
-
-	// We approximate using a 2nd degree polynomial, f(x) = ax^2 + bx + c. We will fix the endpoints (1,0) and (2,1),
-	// add a third point (0,y). This results in three equations:
-	//  a +  b + c = 0
-	// 4a + 2b + c = 1
-	//           c = y
-	// Solving for a, b, c, we determine that:
-	// a = 0.5 + 0.5y
-	// b = -0.5 - 1.5y
-	// c = y
-	// and so our equation becomes f_y(x) = (0.5 + 0.5y)x^2 + (-0.5y - 1.5y)x + y
-
-	// We now wish to find a y such that the maximum value of |f_y(x) - log2(x)| over the range x in [1,2] is minimized.
-	// Let d_y(x) = f_y(x) - log2(x)
-	//            = (0.5 + 0.5y)x^2 + (-0.5 - 1.5y)x + y - log2(x)
-	// Taking the derivative, we obtain
-	// d_y'(x) = (1 + y)x - (0.5 + 1.5y) - 1/(x ln(2))
-	// Solving for d_y'(x) = 0 will give us the x-coordinate of either the d_y(x)'s local minimum or maximum. We find
-	// this by plugging into the quadratic formula to obtain:
-	// r = ((0.5 + 1.5y) +- sqrt((0.5 + 1.5y)^2 + (1 + y)*(4/ln(2)))) / (2 + 2y)
-
-	// Now let err_0(y) = d_y(r_0) and err_1(y) = d_y(r_1). These formulas give the minimum and maximum possible values
-	// of d_y(x) for a given y, i.e. they tell us the minimum and maximum error for a given y in one direction (+ or -).
-	// To find the maximum absolute error, we wish to minimize the function:
-	// err(y) = max(|err_0(y)|, |err_1(x)|)
-
-	// By plotting err(y), we can see that the desired value lies between -1.75 and -1.65, so we will use those as our
-	// bounds and iteratively search for the minimum. We do this by finding the point of intersection between |err_0(y)|
-	// and |err_1(y)|.
-
-	struct s_helper {
-		static real64 err_0(real64 y) {
-			real64 a = 1.0 + y;
-			real64 b = -0.5 - 1.5*y;
-			static const real64 k_c = -1.0 / std::log(2.0);
-
-			real64 r = (-b + std::sqrt(b*b - 4.0*a*k_c)) / (2.0*a);
-			return (0.5 + 0.5*y)*r*r + (-0.5 - 1.5*y)*r + y - std::log2(r);
-		}
-
-		static real64 err_1(real64 y) {
-			real64 a = 1.0 + y;
-			real64 b = -0.5 - 1.5*y;
-			static const real64 k_c = -1.0 / std::log(2.0);
-
-			real64 r = (-b - std::sqrt(b*b - 4.0*a*k_c)) / (2.0*a);
-			return (0.5 + 0.5*y)*r*r + (-0.5 - 1.5*y)*r + y - std::log2(r);
-		}
-	};
-
-	real64 left_bound = -1.75;
-	real64 right_bound = -1.65;
-	real64 y = 0.0;
-	static const size_t k_iterations = 1000;
-	for (size_t i = 0; i < k_iterations; i++) {
-		y = (left_bound + right_bound) * 0.5;
-
-		real64 left_err_0 = std::abs(s_helper::err_0(left_bound));
-		real64 left_err_1 = std::abs(s_helper::err_1(left_bound));
-		real64 y_err_0 = std::abs(s_helper::err_0(y));
-		real64 y_err_1 = std::abs(s_helper::err_1(y));
-
-		// The two functions intersect exactly once. Therefore, if the ordering is the same on one bound as it is in the
-		// center, the intersection point must be on the other side.
-		bool left_order = (left_err_0 > left_err_1);
-		bool y_order = (y_err_0 > y_err_1);
-
-		if (left_order == y_order) {
-			// Shift to the right
-			left_bound = y;
-		} else {
-			// Shift to the left
-			right_bound = y;
-		}
-	}
-
-	std::cout << y << "\n";
-
-	// Determine a, b, c
-	real64 a = 0.5 + 0.5*y;
-	real64 b = -0.5 - 1.5*y;
-	real64 c = y;
-
-	real32 a_32 = static_cast<real32>(a);
-	real32 b_32 = static_cast<real32>(b);
-	real32 c_32 = static_cast<real32>(c);
-
-	std::cout << a_32 << "\n";
-	std::cout << b_32 << "\n";
-	std::cout << c_32 << "\n";
-}
-
-void test_fast_log2() {
-	for (real32 f = 0.0f; f < 10.0f; f += 0.05f) {
-		c_real32_4 x(f);
-		c_real32_4 frac_part;
-		c_int32_4 int_part = fast_log2(x, frac_part);
-
-		ALIGNAS_SSE real32 frac_out[4];
-		ALIGNAS_SSE int32 int_out[4];
-
-		frac_part.store(frac_out);
-		int_part.store(int_out);
-
-		real32 log2_approx = static_cast<real32>(int_out[0]) + frac_out[0];
-		real32 log2_true = std::log2(f);
-
-		real32 diff = std::abs(log2_approx - log2_true);
-		std::cout << diff << "\n";
-	}
-}
-
-int main(int argc, char **argv) {
-	find_fast_log2_coefficients();
-	test_fast_log2();
-	return 0;
-}
-#endif // 0
-
 static size_t task_memory_query_sampler(const s_task_function_context &context) {
 	return s_buffer_operation_sampler::query_memory();
 }
@@ -1782,70 +1359,62 @@ static void task_initializer_sampler(const s_task_function_context &context) {
 		name, k_sample_loop_mode_none, false, channel);
 }
 
-static void task_function_sampler_buffer(const s_task_function_context &context) {
-	s_buffer_operation_sampler::buffer(
+static void task_function_sampler_in_out(const s_task_function_context &context) {
+	s_buffer_operation_sampler::in_out(
 		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
 		context.buffer_size,
 		context.sample_rate,
-		context.arguments[2].get_real_buffer_out(),
-		context.arguments[3].get_real_buffer_in());
+		context.arguments[2].get_real_buffer_or_constant_in(),
+		context.arguments[3].get_real_buffer_out());
 }
 
-static void task_function_sampler_bufferio(const s_task_function_context &context) {
-	s_buffer_operation_sampler::bufferio(
+static void task_function_sampler_inout(const s_task_function_context &context) {
+	s_buffer_operation_sampler::inout(
 		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
 		context.buffer_size,
 		context.sample_rate,
 		context.arguments[2].get_real_buffer_inout());
 }
 
-static void task_function_sampler_constant(const s_task_function_context &context) {
-	s_buffer_operation_sampler::constant(
-		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
-		context.buffer_size,
-		context.sample_rate,
-		context.arguments[2].get_real_buffer_out(),
-		context.arguments[3].get_real_constant_in());
-}
-
-static void task_initializer_sampler_loop(const s_task_function_context &context) {
+static void task_initializer_sampler_loop_in_in_out(const s_task_function_context &context) {
 	const char *name = context.arguments[0].get_string_constant_in();
 	real32 channel = context.arguments[1].get_real_constant_in();
 	bool bidi = context.arguments[2].get_bool_constant_in();
+	real32 phase = context.arguments[4].is_constant() ?
+		context.arguments[4].get_real_buffer_or_constant_in().get_constant() : 0.0f;
+	phase = clamp(phase, 0.0f, 1.0f);
 	e_sample_loop_mode loop_mode = bidi ? k_sample_loop_mode_bidi_loop : k_sample_loop_mode_loop;
 	s_buffer_operation_sampler::initialize(
 		context.sample_requester,
 		static_cast<s_buffer_operation_sampler *>(context.task_memory),
-		name, loop_mode, false, channel);
+		name, loop_mode, (phase != 0.0f), channel);
 }
 
-static void task_function_sampler_loop_buffer(const s_task_function_context &context) {
-	s_buffer_operation_sampler::loop_buffer(
+static void task_function_sampler_loop_in_in_out(const s_task_function_context &context) {
+	s_buffer_operation_sampler::loop_in_in_out(
 		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
 		context.buffer_size,
 		context.sample_rate,
-		context.arguments[3].get_real_buffer_out(),
-		context.arguments[4].get_real_buffer_in());
+		context.arguments[3].get_real_buffer_or_constant_in(),
+		context.arguments[4].get_real_buffer_or_constant_in(),
+		context.arguments[5].get_real_buffer_out());
 }
 
-static void task_function_sampler_loop_bufferio(const s_task_function_context &context) {
-	s_buffer_operation_sampler::loop_bufferio(
+static void task_initializer_sampler_loop_inout_in(const s_task_function_context &context) {
+	// Same as the in_in_out version, because the out argument is shared with time, not phase
+	task_initializer_sampler_loop_in_in_out(context);
+}
+
+static void task_function_sampler_loop_inout_in(const s_task_function_context &context) {
+	s_buffer_operation_sampler::loop_inout_in(
 		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
 		context.buffer_size,
 		context.sample_rate,
-		context.arguments[3].get_real_buffer_inout());
+		context.arguments[3].get_real_buffer_inout(),
+		context.arguments[4].get_real_buffer_or_constant_in());
 }
 
-static void task_function_sampler_loop_constant(const s_task_function_context &context) {
-	s_buffer_operation_sampler::loop_constant(
-		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
-		context.buffer_size,
-		context.sample_rate,
-		context.arguments[3].get_real_buffer_out(),
-		context.arguments[4].get_real_constant_in());
-}
-
-static void task_initializer_sampler_loop_phase_shift(const s_task_function_context &context) {
+static void task_initializer_sampler_loop_in_inout(const s_task_function_context &context) {
 	const char *name = context.arguments[0].get_string_constant_in();
 	real32 channel = context.arguments[1].get_real_constant_in();
 	bool bidi = context.arguments[2].get_bool_constant_in();
@@ -1856,108 +1425,33 @@ static void task_initializer_sampler_loop_phase_shift(const s_task_function_cont
 		name, loop_mode, true, channel);
 }
 
-static void task_function_sampler_loop_phase_shift_buffer_buffer(const s_task_function_context &context) {
-	s_buffer_operation_sampler::loop_phase_shift_buffer_buffer(
+static void task_function_sampler_loop_in_inout(const s_task_function_context &context) {
+	s_buffer_operation_sampler::loop_in_inout(
 		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
 		context.buffer_size,
 		context.sample_rate,
-		context.arguments[3].get_real_buffer_out(),
-		context.arguments[4].get_real_buffer_in(),
-		context.arguments[5].get_real_buffer_in());
-}
-
-static void task_function_sampler_loop_phase_shift_bufferio_buffer(const s_task_function_context &context) {
-	s_buffer_operation_sampler::loop_phase_shift_bufferio_buffer(
-		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
-		context.buffer_size,
-		context.sample_rate,
-		context.arguments[3].get_real_buffer_inout(),
-		context.arguments[4].get_real_buffer_in());
-}
-
-static void task_function_sampler_loop_phase_shift_buffer_bufferio(const s_task_function_context &context) {
-	s_buffer_operation_sampler::loop_phase_shift_buffer_bufferio(
-		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
-		context.buffer_size,
-		context.sample_rate,
-		context.arguments[3].get_real_buffer_in(),
+		context.arguments[3].get_real_buffer_or_constant_in(),
 		context.arguments[4].get_real_buffer_inout());
-}
-
-static void task_function_sampler_loop_phase_shift_buffer_constant(const s_task_function_context &context) {
-	s_buffer_operation_sampler::loop_phase_shift_buffer_constant(
-		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
-		context.buffer_size,
-		context.sample_rate,
-		context.arguments[3].get_real_buffer_out(),
-		context.arguments[4].get_real_buffer_in(),
-		context.arguments[5].get_real_constant_in());
-}
-
-static void task_function_sampler_loop_phase_shift_bufferio_constant(const s_task_function_context &context) {
-	s_buffer_operation_sampler::loop_phase_shift_bufferio_constant(
-		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
-		context.buffer_size,
-		context.sample_rate,
-		context.arguments[3].get_real_buffer_inout(),
-		context.arguments[4].get_real_constant_in());
-}
-
-static void task_function_sampler_loop_phase_shift_constant_buffer(const s_task_function_context &context) {
-	s_buffer_operation_sampler::loop_phase_shift_constant_buffer(
-		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
-		context.buffer_size,
-		context.sample_rate,
-		context.arguments[3].get_real_buffer_out(),
-		context.arguments[4].get_real_constant_in(),
-		context.arguments[5].get_real_buffer_in());
-}
-
-static void task_function_sampler_loop_phase_shift_constant_bufferio(const s_task_function_context &context) {
-	s_buffer_operation_sampler::loop_phase_shift_constant_bufferio(
-		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
-		context.buffer_size,
-		context.sample_rate,
-		context.arguments[3].get_real_constant_in(),
-		context.arguments[4].get_real_buffer_inout());
-}
-
-static void task_function_sampler_loop_phase_shift_constant_constant(const s_task_function_context &context) {
-	s_buffer_operation_sampler::loop_phase_shift_constant_constant(
-		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
-		context.buffer_size,
-		context.sample_rate,
-		context.arguments[3].get_real_buffer_out(),
-		context.arguments[4].get_real_constant_in(),
-		context.arguments[5].get_real_constant_in());
 }
 
 void register_task_functions_sampler() {
 	{
 		c_task_function_registry::register_task_function(
-			s_task_function::build(k_task_function_sampler_buffer_uid,
-				task_memory_query_sampler, task_initializer_sampler, task_function_sampler_buffer,
-				s_task_function_argument_list::build(TDT(string_constant_in), TDT(real_constant_in), TDT(real_buffer_out), TDT(real_buffer_in))));
+			s_task_function::build(k_task_function_sampler_in_out_uid,
+				task_memory_query_sampler, task_initializer_sampler, task_function_sampler_in_out,
+				s_task_function_argument_list::build(TDT(string_in), TDT(real_in), TDT(real_in), TDT(real_out))));
 
 		c_task_function_registry::register_task_function(
-			s_task_function::build(k_task_function_sampler_bufferio_uid,
-				task_memory_query_sampler, task_initializer_sampler, task_function_sampler_bufferio,
-				s_task_function_argument_list::build(TDT(string_constant_in), TDT(real_constant_in), TDT(real_buffer_inout))));
-
-		c_task_function_registry::register_task_function(
-			s_task_function::build(k_task_function_sampler_constant_uid,
-				task_memory_query_sampler, task_initializer_sampler, task_function_sampler_constant,
-				s_task_function_argument_list::build(TDT(string_constant_in), TDT(real_constant_in), TDT(real_buffer_out), TDT(real_constant_in))));
+			s_task_function::build(k_task_function_sampler_inout_uid,
+				task_memory_query_sampler, task_initializer_sampler, task_function_sampler_inout,
+				s_task_function_argument_list::build(TDT(string_in), TDT(real_in), TDT(real_inout))));
 
 		s_task_function_mapping mappings[] = {
-			s_task_function_mapping::build(k_task_function_sampler_bufferio_uid, "ccb.",
-			s_task_function_native_module_argument_mapping::build(0, 1, 2, 2)),
+			s_task_function_mapping::build(k_task_function_sampler_inout_uid, "vvb.",
+				s_task_function_native_module_argument_mapping::build(0, 1, 2, 2)),
 
-			s_task_function_mapping::build(k_task_function_sampler_buffer_uid, "ccv.",
-				s_task_function_native_module_argument_mapping::build(0, 1, 3, 2)),
-
-			s_task_function_mapping::build(k_task_function_sampler_constant_uid, "ccc.",
-				s_task_function_native_module_argument_mapping::build(0, 1, 3, 2))
+			s_task_function_mapping::build(k_task_function_sampler_in_out_uid, "vvv.",
+				s_task_function_native_module_argument_mapping::build(0, 1, 2, 3)),
 
 		};
 
@@ -1967,105 +1461,32 @@ void register_task_functions_sampler() {
 
 	{
 		c_task_function_registry::register_task_function(
-			s_task_function::build(k_task_function_sampler_loop_buffer_uid,
-				task_memory_query_sampler, task_initializer_sampler_loop, task_function_sampler_loop_buffer,
-				s_task_function_argument_list::build(TDT(string_constant_in), TDT(real_constant_in), TDT(bool_constant_in), TDT(real_buffer_out), TDT(real_buffer_in))));
+			s_task_function::build(k_task_function_sampler_loop_in_in_out_uid,
+				task_memory_query_sampler, task_initializer_sampler_loop_in_in_out, task_function_sampler_loop_in_in_out,
+				s_task_function_argument_list::build(TDT(string_in), TDT(real_in), TDT(bool_in), TDT(real_in), TDT(real_in), TDT(real_out))));
 
 		c_task_function_registry::register_task_function(
-			s_task_function::build(k_task_function_sampler_loop_bufferio_uid,
-				task_memory_query_sampler, task_initializer_sampler_loop, task_function_sampler_loop_bufferio,
-				s_task_function_argument_list::build(TDT(string_constant_in), TDT(real_constant_in), TDT(bool_constant_in), TDT(real_buffer_inout))));
+			s_task_function::build(k_task_function_sampler_loop_inout_in_uid,
+				task_memory_query_sampler, task_initializer_sampler_loop_inout_in, task_function_sampler_loop_inout_in,
+				s_task_function_argument_list::build(TDT(string_in), TDT(real_in), TDT(bool_in), TDT(real_inout), TDT(real_in))));
 
 		c_task_function_registry::register_task_function(
-			s_task_function::build(k_task_function_sampler_loop_constant_uid,
-				task_memory_query_sampler, task_initializer_sampler_loop, task_function_sampler_loop_constant,
-				s_task_function_argument_list::build(TDT(string_constant_in), TDT(real_constant_in), TDT(bool_constant_in), TDT(real_buffer_out), TDT(real_constant_in))));
+			s_task_function::build(k_task_function_sampler_loop_in_inout_uid,
+				task_memory_query_sampler, task_initializer_sampler_loop_in_inout, task_function_sampler_loop_in_inout,
+				s_task_function_argument_list::build(TDT(string_in), TDT(real_in), TDT(bool_in), TDT(real_in), TDT(real_inout))));
 
 		s_task_function_mapping mappings[] = {
-			s_task_function_mapping::build(k_task_function_sampler_loop_bufferio_uid, "cccb.",
-			s_task_function_native_module_argument_mapping::build(0, 1, 2, 3, 3)),
+			s_task_function_mapping::build(k_task_function_sampler_loop_inout_in_uid, "vvvbv.",
+			s_task_function_native_module_argument_mapping::build(0, 1, 2, 3, 4, 3)),
 
-			s_task_function_mapping::build(k_task_function_sampler_loop_buffer_uid, "cccv.",
-				s_task_function_native_module_argument_mapping::build(0, 1, 2, 4, 3)),
+			s_task_function_mapping::build(k_task_function_sampler_loop_in_inout_uid, "vvvvb.",
+				s_task_function_native_module_argument_mapping::build(0, 1, 2, 3, 4, 4)),
 
-			s_task_function_mapping::build(k_task_function_sampler_loop_constant_uid, "cccc.",
-				s_task_function_native_module_argument_mapping::build(0, 1, 2, 4, 3))
-
+			s_task_function_mapping::build(k_task_function_sampler_loop_in_in_out_uid, "vvvvv.",
+				s_task_function_native_module_argument_mapping::build(0, 1, 2, 3, 4, 5)),
 		};
 
 		c_task_function_registry::register_task_function_mapping_list(
 			k_native_module_sampler_loop_uid, c_task_function_mapping_list::construct(mappings));
-	}
-
-	{
-		c_task_function_registry::register_task_function(
-			s_task_function::build(k_task_function_sampler_loop_phase_shift_buffer_buffer_uid,
-				task_memory_query_sampler, task_initializer_sampler_loop_phase_shift, task_function_sampler_loop_phase_shift_buffer_buffer,
-				s_task_function_argument_list::build(TDT(string_constant_in), TDT(real_constant_in), TDT(bool_constant_in), TDT(real_buffer_out), TDT(real_buffer_in), TDT(real_buffer_in))));
-
-		c_task_function_registry::register_task_function(
-			s_task_function::build(k_task_function_sampler_loop_phase_shift_bufferio_buffer_uid,
-				task_memory_query_sampler, task_initializer_sampler_loop_phase_shift, task_function_sampler_loop_phase_shift_bufferio_buffer,
-				s_task_function_argument_list::build(TDT(string_constant_in), TDT(real_constant_in), TDT(bool_constant_in), TDT(real_buffer_inout), TDT(real_buffer_in))));
-
-		c_task_function_registry::register_task_function(
-			s_task_function::build(k_task_function_sampler_loop_phase_shift_buffer_bufferio_uid,
-				task_memory_query_sampler, task_initializer_sampler_loop_phase_shift, task_function_sampler_loop_phase_shift_buffer_bufferio,
-				s_task_function_argument_list::build(TDT(string_constant_in), TDT(real_constant_in), TDT(bool_constant_in), TDT(real_buffer_in), TDT(real_buffer_inout))));
-
-		c_task_function_registry::register_task_function(
-			s_task_function::build(k_task_function_sampler_loop_phase_shift_buffer_constant_uid,
-				task_memory_query_sampler, task_initializer_sampler_loop_phase_shift, task_function_sampler_loop_phase_shift_buffer_constant,
-				s_task_function_argument_list::build(TDT(string_constant_in), TDT(real_constant_in), TDT(bool_constant_in), TDT(real_buffer_out), TDT(real_buffer_in), TDT(real_constant_in))));
-
-		c_task_function_registry::register_task_function(
-			s_task_function::build(k_task_function_sampler_loop_phase_shift_bufferio_constant_uid,
-				task_memory_query_sampler, task_initializer_sampler_loop_phase_shift, task_function_sampler_loop_phase_shift_bufferio_constant,
-				s_task_function_argument_list::build(TDT(string_constant_in), TDT(real_constant_in), TDT(bool_constant_in), TDT(real_buffer_inout), TDT(real_constant_in))));
-
-		c_task_function_registry::register_task_function(
-			s_task_function::build(k_task_function_sampler_loop_phase_shift_constant_buffer_uid,
-				task_memory_query_sampler, task_initializer_sampler_loop_phase_shift, task_function_sampler_loop_phase_shift_constant_buffer,
-				s_task_function_argument_list::build(TDT(string_constant_in), TDT(real_constant_in), TDT(bool_constant_in), TDT(real_buffer_out), TDT(real_constant_in), TDT(real_buffer_in))));
-
-		c_task_function_registry::register_task_function(
-			s_task_function::build(k_task_function_sampler_loop_phase_shift_constant_bufferio_uid,
-				task_memory_query_sampler, task_initializer_sampler_loop_phase_shift, task_function_sampler_loop_phase_shift_constant_bufferio,
-				s_task_function_argument_list::build(TDT(string_constant_in), TDT(real_constant_in), TDT(bool_constant_in), TDT(real_constant_in), TDT(real_buffer_inout))));
-
-		c_task_function_registry::register_task_function(
-			s_task_function::build(k_task_function_sampler_loop_phase_shift_constant_constant_uid,
-				task_memory_query_sampler, task_initializer_sampler_loop_phase_shift, task_function_sampler_loop_phase_shift_constant_constant,
-				s_task_function_argument_list::build(TDT(string_constant_in), TDT(real_constant_in), TDT(bool_constant_in), TDT(real_buffer_out), TDT(real_constant_in), TDT(real_constant_in))));
-
-		s_task_function_mapping mappings[] = {
-			s_task_function_mapping::build(k_task_function_sampler_loop_phase_shift_bufferio_buffer_uid, "cccbv.",
-			s_task_function_native_module_argument_mapping::build(0, 1, 2, 3, 4, 3)),
-
-			s_task_function_mapping::build(k_task_function_sampler_loop_phase_shift_buffer_bufferio_uid, "cccvb.",
-				s_task_function_native_module_argument_mapping::build(0, 1, 2, 3, 4, 4)),
-
-			s_task_function_mapping::build(k_task_function_sampler_loop_phase_shift_buffer_buffer_uid, "cccvv.",
-				s_task_function_native_module_argument_mapping::build(0, 1, 2, 4, 5, 3)),
-
-			s_task_function_mapping::build(k_task_function_sampler_loop_phase_shift_bufferio_constant_uid, "cccbc.",
-				s_task_function_native_module_argument_mapping::build(0, 1, 2, 3, 4, 3)),
-
-			s_task_function_mapping::build(k_task_function_sampler_loop_phase_shift_buffer_constant_uid, "cccvc.",
-				s_task_function_native_module_argument_mapping::build(0, 1, 2, 4, 5, 3)),
-
-			s_task_function_mapping::build(k_task_function_sampler_loop_phase_shift_constant_bufferio_uid, "ccccb.",
-				s_task_function_native_module_argument_mapping::build(0, 1, 2, 3, 4, 4)),
-
-			s_task_function_mapping::build(k_task_function_sampler_loop_phase_shift_constant_buffer_uid, "ccccv.",
-				s_task_function_native_module_argument_mapping::build(0, 1, 2, 4, 5, 3)),
-
-			s_task_function_mapping::build(k_task_function_sampler_loop_phase_shift_constant_constant_uid, "ccccc.",
-				s_task_function_native_module_argument_mapping::build(0, 1, 2, 4, 5, 3))
-
-		};
-
-		c_task_function_registry::register_task_function_mapping_list(
-			k_native_module_sampler_loop_phase_shift_uid, c_task_function_mapping_list::construct(mappings));
 	}
 }

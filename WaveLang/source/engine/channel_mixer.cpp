@@ -17,40 +17,40 @@ void mix_output_buffers_to_channel_buffers(
 		// Mix mono to N channels
 		c_buffer *output_buffer = buffer_allocator.get_buffer(output_buffers[0]);
 		for (size_t index = 0; index < channel_buffer_count; index++) {
-			s_buffer_operation_assignment::buffer(
+			s_buffer_operation_assignment::in_out(
 				frames,
-				buffer_allocator.get_buffer(channel_buffers[index]),
-				output_buffer);
+				output_buffer,
+				buffer_allocator.get_buffer(channel_buffers[index]));
 		}
 	} else if (channel_buffer_count == 1) {
 		// Mix N channels to mono
 		// Add the first 2 directly
-		s_buffer_operation_addition::buffer_buffer(
+		s_buffer_operation_addition::in_in_out(
 			frames,
-			buffer_allocator.get_buffer(channel_buffers[0]),
 			buffer_allocator.get_buffer(output_buffers[0]),
-			buffer_allocator.get_buffer(output_buffers[1]));
+			buffer_allocator.get_buffer(output_buffers[1]),
+			buffer_allocator.get_buffer(channel_buffers[0]));
 
 		// Accumulate the remaining buffers
 		for (size_t index = 2; index < channel_buffer_count; index++) {
-			s_buffer_operation_addition::bufferio_buffer(
+			s_buffer_operation_addition::inout_in(
 				frames,
 				buffer_allocator.get_buffer(channel_buffers[0]),
 				buffer_allocator.get_buffer(output_buffers[index]));
 		}
 
 		// Scale the result
-		s_buffer_operation_multiplication::bufferio_constant(
+		s_buffer_operation_multiplication::inout_in(
 			frames,
 			buffer_allocator.get_buffer(channel_buffers[0]),
 			1.0f / static_cast<real32>(output_buffers.get_count()));
 	} else {
 		// $TODO unsupported, for now zero the channel buffers
 		for (size_t index = 0; index < channel_buffer_count; index++) {
-			s_buffer_operation_assignment::constant(
+			s_buffer_operation_assignment::in_out(
 				frames,
-				buffer_allocator.get_buffer(channel_buffers[index]),
-				0.0f);
+				c_real_buffer_or_constant_in(0.0f),
+				buffer_allocator.get_buffer(channel_buffers[index]));
 		}
 	}
 }

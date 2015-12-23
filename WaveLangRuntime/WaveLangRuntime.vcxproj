@@ -76,6 +76,7 @@
     <ClInclude Include="..\WaveLang\source\common\asserts.h" />
     <ClInclude Include="..\WaveLang\source\common\common.h" />
     <ClInclude Include="..\WaveLang\source\common\platform.h" />
+    <ClInclude Include="..\WaveLang\source\common\static_array.h" />
     <ClInclude Include="..\WaveLang\source\common\string.h" />
     <ClInclude Include="..\WaveLang\source\common\threading\atomics.h" />
     <ClInclude Include="..\WaveLang\source\common\threading\condition_variable.h" />
@@ -153,6 +154,7 @@
     <ClCompile Include="..\WaveLang\source\engine\task_functions\task_functions_delay.cpp" />
     <ClCompile Include="..\WaveLang\source\engine\task_functions\task_functions_filter.cpp" />
     <ClCompile Include="..\WaveLang\source\engine\task_functions\task_functions_sampler.cpp" />
+    <ClCompile Include="..\WaveLang\source\engine\task_functions\task_functions_sampler_offline_helpers.cpp" />
     <ClCompile Include="..\WaveLang\source\engine\task_functions\task_functions_time.cpp" />
     <ClCompile Include="..\WaveLang\source\engine\task_functions\task_functions_utility.cpp" />
     <ClCompile Include="..\WaveLang\source\engine\task_functions\task_function_registration.cpp" />

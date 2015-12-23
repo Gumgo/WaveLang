@@ -1059,8 +1059,9 @@ static void deduplicate_nodes(c_execution_graph *execution_graph) {
 
 			if (equal) {
 				// Redirect node B's outputs as outputs of node A
-				for (size_t edge = 0; edge < execution_graph->get_node_outgoing_edge_count(node_b_index); edge++) {
-					uint32 to_node_index = execution_graph->get_node_outgoing_edge_index(node_b_index, edge);
+				while (execution_graph->get_node_outgoing_edge_count(node_b_index) > 0) {
+					uint32 to_node_index = execution_graph->get_node_outgoing_edge_index(node_b_index,
+						execution_graph->get_node_outgoing_edge_count(node_b_index) - 1);
 					execution_graph->remove_edge(node_b_index, to_node_index);
 					execution_graph->add_edge(node_a_index, to_node_index);
 				}
@@ -1150,21 +1151,18 @@ static void deduplicate_nodes(c_execution_graph *execution_graph) {
 							uint32 output_node_a = execution_graph->get_node_outgoing_edge_index(node_a_index, edge);
 							uint32 output_node_b = execution_graph->get_node_outgoing_edge_index(node_b_index, edge);
 
-							for (size_t output = 0;
-								 output < execution_graph->get_node_outgoing_edge_count(output_node_b);
-								 output++) {
-								uint32 to_node_index =
-									execution_graph->get_node_outgoing_edge_index(output_node_b, output);
+							while (execution_graph->get_node_outgoing_edge_count(output_node_b) > 0) {
+								uint32 to_node_index = execution_graph->get_node_outgoing_edge_index(output_node_b,
+									execution_graph->get_node_outgoing_edge_count(output_node_b) - 1);
 								execution_graph->remove_edge(output_node_b, to_node_index);
 								execution_graph->add_edge(output_node_a, to_node_index);
 							}
 						}
 					} else {
 						// Directly remap outputs
-						for (size_t edge = 0;
-							 edge < execution_graph->get_node_outgoing_edge_count(node_a_index);
-							 edge++) {
-							uint32 to_node_index = execution_graph->get_node_outgoing_edge_index(node_b_index, edge);
+						while (execution_graph->get_node_outgoing_edge_count(node_b_index) > 0) {
+							uint32 to_node_index = execution_graph->get_node_outgoing_edge_index(node_b_index,
+								execution_graph->get_node_outgoing_edge_count(node_b_index) - 1);
 							execution_graph->remove_edge(node_b_index, to_node_index);
 							execution_graph->add_edge(node_a_index, to_node_index);
 						}

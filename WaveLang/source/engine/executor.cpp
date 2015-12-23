@@ -95,7 +95,7 @@ void c_executor::initialize_buffer_allocator(const s_executor_settings &settings
 	// Allocate an additional buffer for each constant output. The task graph doesn't require buffers for these, but
 	// at this point we do.
 	for (uint32 output = 0; output < outputs.get_count(); output++) {
-		if (outputs[output].type == k_task_data_type_real_constant_in) {
+		if (outputs[output].data.is_constant) {
 			buffer_allocator_settings.buffer_count++;
 		}
 	}
@@ -109,7 +109,7 @@ void c_executor::initialize_buffer_allocator(const s_executor_settings &settings
 		uint32 unique_buffer_outputs = 0;
 		for (uint32 output = 0; output < outputs.get_count(); output++) {
 
-			if (outputs[output].type == k_task_data_type_real_buffer_in) {
+			if (!outputs[output].data.is_constant) {
 				uint32 output_buffer_index = outputs[output].get_real_buffer_in();
 				if (std::find(buffer_deduplicator.begin(), buffer_deduplicator.end(), output_buffer_index) ==
 					buffer_deduplicator.end()) {
@@ -166,36 +166,39 @@ void c_executor::initialize_task_memory(const s_executor_settings &settings) {
 
 			for (size_t arg = 0; arg < argument_data.get_count(); arg++) {
 				s_task_function_argument &argument = arguments[arg];
-				IF_ASSERTS_ENABLED(argument.type = argument_data[arg].type);
+				ZERO_STRUCT(&argument);
+				IF_ASSERTS_ENABLED(argument.data.type = argument_data[arg].data.type);
+				argument.data.is_constant = argument_data[arg].is_constant();
 
-				switch (argument_data[arg].type) {
-				case k_task_data_type_real_buffer_in:
-				case k_task_data_type_real_buffer_out:
-				case k_task_data_type_real_buffer_inout:
+				switch (argument_data[arg].data.type) {
+				case k_task_data_type_real_in:
+					if (argument.data.is_constant) {
+						argument.data.value.real_constant_in = argument_data[arg].get_real_constant_in();
+					}
 					break;
 
-				case k_task_data_type_real_constant_in:
-					argument.data.real_constant_in = argument_data[arg].get_real_constant_in();
+				case k_task_data_type_real_out:
+				case k_task_data_type_real_inout:
 					break;
 
 				case k_task_data_type_real_array_in:
-					argument.data.real_array_in = argument_data[arg].get_real_array_in();
+					argument.data.value.real_array_in = argument_data[arg].get_real_array_in();
 					break;
 
-				case k_task_data_type_bool_constant_in:
-					argument.data.bool_constant_in = argument_data[arg].get_bool_constant_in();
+				case k_task_data_type_bool_in:
+					argument.data.value.bool_constant_in = argument_data[arg].get_bool_constant_in();
 					break;
 
 				case k_task_data_type_bool_array_in:
-					argument.data.bool_array_in = argument_data[arg].get_bool_array_in();
+					argument.data.value.bool_array_in = argument_data[arg].get_bool_array_in();
 					break;
 
-				case k_task_data_type_string_constant_in:
-					argument.data.string_constant_in = argument_data[arg].get_string_constant_in();
+				case k_task_data_type_string_in:
+					argument.data.value.string_constant_in = argument_data[arg].get_string_constant_in();
 					break;
 
 				case k_task_data_type_string_array_in:
-					argument.data.string_array_in = argument_data[arg].get_string_array_in();
+					argument.data.value.string_array_in = argument_data[arg].get_string_array_in();
 					break;
 
 				default:
@@ -283,36 +286,39 @@ void c_executor::initialize_tasks(const s_executor_settings &settings) {
 
 			for (size_t arg = 0; arg < argument_data.get_count(); arg++) {
 				s_task_function_argument &argument = arguments[arg];
-				IF_ASSERTS_ENABLED(argument.type = argument_data[arg].type);
+				ZERO_STRUCT(&argument);
+				IF_ASSERTS_ENABLED(argument.data.type = argument_data[arg].data.type);
+				argument.data.is_constant = argument_data[arg].is_constant();
 
-				switch (argument_data[arg].type) {
-				case k_task_data_type_real_buffer_in:
-				case k_task_data_type_real_buffer_out:
-				case k_task_data_type_real_buffer_inout:
+				switch (argument_data[arg].data.type) {
+				case k_task_data_type_real_in:
+					if (argument.data.is_constant) {
+						argument.data.value.real_constant_in = argument_data[arg].get_real_constant_in();
+					}
 					break;
 
-				case k_task_data_type_real_constant_in:
-					argument.data.real_constant_in = argument_data[arg].get_real_constant_in();
+				case k_task_data_type_real_out:
+				case k_task_data_type_real_inout:
 					break;
 
 				case k_task_data_type_real_array_in:
-					argument.data.real_array_in = argument_data[arg].get_real_array_in();
+					argument.data.value.real_array_in = argument_data[arg].get_real_array_in();
 					break;
 
-				case k_task_data_type_bool_constant_in:
-					argument.data.bool_constant_in = argument_data[arg].get_bool_constant_in();
+				case k_task_data_type_bool_in:
+					argument.data.value.bool_constant_in = argument_data[arg].get_bool_constant_in();
 					break;
 
 				case k_task_data_type_bool_array_in:
-					argument.data.bool_array_in = argument_data[arg].get_bool_array_in();
+					argument.data.value.bool_array_in = argument_data[arg].get_bool_array_in();
 					break;
 
-				case k_task_data_type_string_constant_in:
-					argument.data.string_constant_in = argument_data[arg].get_string_constant_in();
+				case k_task_data_type_string_in:
+					argument.data.value.string_constant_in = argument_data[arg].get_string_constant_in();
 					break;
 
 				case k_task_data_type_string_array_in:
-					argument.data.string_array_in = argument_data[arg].get_string_array_in();
+					argument.data.value.string_array_in = argument_data[arg].get_string_array_in();
 					break;
 
 				default:
@@ -491,7 +497,15 @@ void c_executor::swap_output_buffers_with_accumulation_buffers(const s_executor_
 
 	for (uint32 output = 0; output < outputs.get_count(); output++) {
 		wl_assert(m_voice_output_accumulation_buffers[output] == k_lock_free_invalid_handle);
-		if (outputs[output].type == k_task_data_type_real_buffer_in) {
+		wl_assert(outputs[output].get_type() == k_task_data_type_real_in);
+		if (outputs[output].is_constant()) {
+			uint32 buffer_handle = m_buffer_allocator.allocate_buffer();
+			m_voice_output_accumulation_buffers[output] = buffer_handle;
+			s_buffer_operation_assignment::in_out(
+				chunk_context.frames,
+				c_real_buffer_or_constant_in(outputs[output].get_real_constant_in()),
+				m_buffer_allocator.get_buffer(buffer_handle));
+		} else {
 			// Swap out the buffer
 			s_buffer_context &buffer_context =
 				m_buffer_contexts.get_array()[outputs[output].get_real_buffer_in()];
@@ -509,19 +523,11 @@ void c_executor::swap_output_buffers_with_accumulation_buffers(const s_executor_
 				// accumulations.
 				uint32 buffer_handle = m_buffer_allocator.allocate_buffer();
 				m_voice_output_accumulation_buffers[output] = buffer_handle;
-				s_buffer_operation_assignment::buffer(
+				s_buffer_operation_assignment::in_out(
 					chunk_context.frames,
-					m_buffer_allocator.get_buffer(buffer_handle),
-					m_buffer_allocator.get_buffer(buffer_context.handle));
+					c_real_buffer_or_constant_in(m_buffer_allocator.get_buffer(buffer_context.handle)),
+					m_buffer_allocator.get_buffer(buffer_handle));
 			}
-		} else {
-			wl_assert(outputs[output].type == k_task_data_type_real_constant_in);
-			uint32 buffer_handle = m_buffer_allocator.allocate_buffer();
-			m_voice_output_accumulation_buffers[output] = buffer_handle;
-			s_buffer_operation_assignment::constant(
-				chunk_context.frames,
-				m_buffer_allocator.get_buffer(buffer_handle),
-				outputs[output].get_real_constant_in());
 		}
 	}
 }
@@ -533,24 +539,24 @@ void c_executor::add_output_buffers_to_accumulation_buffers(const s_executor_chu
 	for (uint32 output = 0; output < outputs.get_count(); output++) {
 		uint32 accumulation_buffer_handle = m_voice_output_accumulation_buffers[output];
 		wl_assert(accumulation_buffer_handle != k_lock_free_invalid_handle);
-		if (outputs[output].type == k_task_data_type_real_buffer_in) {
-			uint32 output_buffer_handle = outputs[output].get_real_buffer_in();
-			s_buffer_operation_addition::bufferio_buffer(
+		wl_assert(outputs[output].get_type() == k_task_data_type_real_in);
+		if (outputs[output].is_constant()) {
+			s_buffer_operation_addition::inout_in(
 				chunk_context.frames,
 				m_buffer_allocator.get_buffer(accumulation_buffer_handle),
-				m_buffer_allocator.get_buffer(output_buffer_handle));
+				c_real_buffer_or_constant_in(outputs[output].get_real_constant_in()));
 		} else {
-			wl_assert(outputs[output].type == k_task_data_type_real_constant_in);
-			s_buffer_operation_assignment::constant(
+			uint32 output_buffer_handle = outputs[output].get_real_buffer_in();
+			s_buffer_operation_addition::inout_in(
 				chunk_context.frames,
 				m_buffer_allocator.get_buffer(accumulation_buffer_handle),
-				outputs[output].get_real_constant_in());
+				c_real_buffer_or_constant_in(m_buffer_allocator.get_buffer(output_buffer_handle)));
 		}
 	}
 
 	// Free the output buffers
 	for (size_t index = 0; index < outputs.get_count(); index++) {
-		if (outputs[index].type == k_task_data_type_real_buffer_in) {
+		if (!outputs[index].is_constant()) {
 			uint32 buffer_index = outputs[index].get_real_buffer_in();
 			decrement_buffer_usage(buffer_index);
 		}
@@ -577,10 +583,10 @@ void c_executor::allocate_and_clear_output_buffers(const s_executor_chunk_contex
 		wl_assert(m_voice_output_accumulation_buffers[output] == k_lock_free_invalid_handle);
 		uint32 buffer_handle = m_buffer_allocator.allocate_buffer();
 		m_voice_output_accumulation_buffers[output] = buffer_handle;
-		s_buffer_operation_assignment::constant(
+		s_buffer_operation_assignment::in_out(
 			chunk_context.frames,
-			m_buffer_allocator.get_buffer(buffer_handle),
-			0.0f);
+			c_real_buffer_or_constant_in(0.0f),
+			m_buffer_allocator.get_buffer(buffer_handle));
 	}
 }
 
@@ -641,46 +647,47 @@ void c_executor::process_task(uint32 thread_index, const s_task_parameters *para
 
 		for (size_t arg = 0; arg < argument_data.get_count(); arg++) {
 			s_task_function_argument &argument = arguments[arg];
-			IF_ASSERTS_ENABLED(argument.type = argument_data[arg].type);
+			IF_ASSERTS_ENABLED(argument.data.type = argument_data[arg].data.type);
+			argument.data.is_constant = argument_data[arg].is_constant();
 
-			switch (argument_data[arg].type) {
-			case k_task_data_type_real_buffer_in:
-				argument.data.real_buffer_in = m_buffer_allocator.get_buffer(
-					m_buffer_contexts.get_array()[argument_data[arg].get_real_buffer_in()].handle);
+			switch (argument_data[arg].data.type) {
+			case k_task_data_type_real_in:
+				if (argument.data.is_constant) {
+					argument.data.value.real_constant_in = argument_data[arg].get_real_constant_in();
+				} else {
+					argument.data.value.real_buffer_in = m_buffer_allocator.get_buffer(
+						m_buffer_contexts.get_array()[argument_data[arg].get_real_buffer_in()].handle);
+				}
 				break;
 
-			case k_task_data_type_real_buffer_out:
-				argument.data.real_buffer_out = m_buffer_allocator.get_buffer(
+			case k_task_data_type_real_out:
+				argument.data.value.real_buffer_out = m_buffer_allocator.get_buffer(
 					m_buffer_contexts.get_array()[argument_data[arg].get_real_buffer_out()].handle);
 				break;
 
-			case k_task_data_type_real_buffer_inout:
-				argument.data.real_buffer_inout = m_buffer_allocator.get_buffer(
+			case k_task_data_type_real_inout:
+				argument.data.value.real_buffer_inout = m_buffer_allocator.get_buffer(
 					m_buffer_contexts.get_array()[argument_data[arg].get_real_buffer_inout()].handle);
 				break;
 
-			case k_task_data_type_real_constant_in:
-				argument.data.real_constant_in = argument_data[arg].get_real_constant_in();
-				break;
-
 			case k_task_data_type_real_array_in:
-				argument.data.real_array_in = argument_data[arg].get_real_array_in();
+				argument.data.value.real_array_in = argument_data[arg].get_real_array_in();
 				break;
 
-			case k_task_data_type_bool_constant_in:
-				argument.data.bool_constant_in = argument_data[arg].get_bool_constant_in();
+			case k_task_data_type_bool_in:
+				argument.data.value.bool_constant_in = argument_data[arg].get_bool_constant_in();
 				break;
 
 			case k_task_data_type_bool_array_in:
-				argument.data.bool_array_in = argument_data[arg].get_bool_array_in();
+				argument.data.value.bool_array_in = argument_data[arg].get_bool_array_in();
 				break;
 
-			case k_task_data_type_string_constant_in:
-				argument.data.string_constant_in = argument_data[arg].get_string_constant_in();
+			case k_task_data_type_string_in:
+				argument.data.value.string_constant_in = argument_data[arg].get_string_constant_in();
 				break;
 
 			case k_task_data_type_string_array_in:
-				argument.data.string_array_in = argument_data[arg].get_string_array_in();
+				argument.data.value.string_array_in = argument_data[arg].get_string_array_in();
 				break;
 
 			default:
@@ -747,14 +754,16 @@ void c_executor::allocate_output_buffers(uint32 task_index) {
 	for (size_t index = 0; index < arguments.get_count(); index++) {
 		const s_task_graph_data &argument = arguments[index];
 
-		switch (argument.type) {
-		case k_task_data_type_real_buffer_in:
-			// Any input buffers should already be allocated
-			wl_assert(m_buffer_contexts.get_array()[argument.get_real_buffer_in()].handle !=
-				k_lock_free_invalid_handle);
+		switch (argument.data.type) {
+		case k_task_data_type_real_in:
+			if (!argument.is_constant()) {
+				// Any input buffers should already be allocated
+				wl_assert(m_buffer_contexts.get_array()[argument.get_real_buffer_in()].handle !=
+					k_lock_free_invalid_handle);
+			}
 			break;
 
-		case k_task_data_type_real_buffer_out:
+		case k_task_data_type_real_out:
 		{
 			// Allocate output buffers
 			uint32 buffer_index = argument.get_real_buffer_out();
@@ -763,17 +772,16 @@ void c_executor::allocate_output_buffers(uint32 task_index) {
 			break;
 		}
 
-		case k_task_data_type_real_buffer_inout:
+		case k_task_data_type_real_inout:
 			// Any input buffers should already be allocated
 			wl_assert(m_buffer_contexts.get_array()[argument.get_real_buffer_inout()].handle !=
 				k_lock_free_invalid_handle);
 			break;
 
-		case k_task_data_type_real_constant_in:
 		case k_task_data_type_real_array_in:
-		case k_task_data_type_bool_constant_in:
+		case k_task_data_type_bool_in:
 		case k_task_data_type_bool_array_in:
-		case k_task_data_type_string_constant_in:
+		case k_task_data_type_string_in:
 		case k_task_data_type_string_array_in:
 			// Nothing to do
 			break;
@@ -791,40 +799,37 @@ void c_executor::decrement_buffer_usages(uint32 task_index) {
 	for (size_t index = 0; index < arguments.get_count(); index++) {
 		const s_task_graph_data &argument = arguments[index];
 
-		switch (argument.type) {
-		case k_task_data_type_real_buffer_in:
-			decrement_buffer_usage(argument.get_real_buffer_in());
+		switch (argument.data.type) {
+		case k_task_data_type_real_in:
+			if (!argument.is_constant()) {
+				decrement_buffer_usage(argument.get_real_buffer_in());
+			}
 			break;
 
-		case k_task_data_type_real_buffer_out:
+		case k_task_data_type_real_out:
 			decrement_buffer_usage(argument.get_real_buffer_out());
 			break;
 
-		case k_task_data_type_real_buffer_inout:
+		case k_task_data_type_real_inout:
 			decrement_buffer_usage(argument.get_real_buffer_inout());
 			break;
 
-		case k_task_data_type_real_constant_in:
-			// Nothing to do
-			break;
-
 		case k_task_data_type_real_array_in:
-		{
-			// $TODO $PERF seems unavoidable if there are any buffers, but we could detect constant-only arrays and skip
-			// iterating them entirely
-			c_real_array real_array = argument.get_real_array_in();
-			for (size_t index = 0; index < real_array.get_count(); index++) {
-				const s_real_array_element &element = real_array[index];
-				if (!element.is_constant) {
-					decrement_buffer_usage(element.buffer_index_value);
+			if (!argument.is_constant())
+			{
+				c_real_array real_array = argument.get_real_array_in();
+				for (size_t index = 0; index < real_array.get_count(); index++) {
+					const s_real_array_element &element = real_array[index];
+					if (!element.is_constant) {
+						decrement_buffer_usage(element.buffer_index_value);
+					}
 				}
 			}
 			break;
-		}
 
-		case k_task_data_type_bool_constant_in:
+		case k_task_data_type_bool_in:
 		case k_task_data_type_bool_array_in:
-		case k_task_data_type_string_constant_in:
+		case k_task_data_type_string_in:
 		case k_task_data_type_string_array_in:
 			// Nothing to do
 			break;

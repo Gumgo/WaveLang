@@ -1,0 +1,71 @@
+- Error reporting for streams
+	- Provide interface on the context to report an error message
+		- Failed to load sample
+		- Invalid delay time (e.g. negative)
+		- Etc.
+	- Best performance is probably to push to lockless queue and read the errors on the main thread
+		- Downside: can run out of space and drop error messages
+		- Alternative is user callback, but that risks the user grabbing a lock
+
+- Divorce driver chunk size from processing chunk size
+	- Processing chunk size is always fixed, and defined as an execution graph global in the synth source file
+		- Defaults to 0
+		- If 0, will use the driver chunk size (which can be variable), but is incompatible with certain effects which require fixed size chunk processing
+	- Cases to handle:
+		- Processing chunk size 0
+			- Processing chunk size set to always match driver chunk size (possibly variable)
+		- Processing chunk size nonzero, driver chunk size variable
+			- Accumulator with delay
+		- Processing chunk size nonzero, driver chunk size fixed
+			- Driver chunk size is multiple of processing chunk size
+				- Process exactly (driver chunk size) / (processing chunk size) processing chunks per driver update
+			- Driver chunk size is not multiple of processing chunk size
+				- Accumulator with delay
+	- Explanation of "accumulator with delay"
+		- Instead of immediately processing a chunk, it is added to an accumulator and delayed by the processing chunk size
+		- Once the accumulator fills up to the chunk size it is processed and discarded
+		- This avoids situations where we need to fill the driver buffer but don't have enough input samples to process a full (fixed-size) chunk
+
+- Delay types
+	- Delay
+		- Takes input, returns delayed output
+	- Feedback with decay
+		- Signal feeds back on itself but multiplied by a decay factor
+		- Special-case of general purpose feedback, but common
+	- Feedback (general purpose)
+		- Split into two functions:
+			- void write_feedback(string identifier, real value)
+			- real read_feedback(string identifier)
+		- Similar to delay but allows the reads to occur BEFORE the writes
+		- Unique identifier is used to associate a read and write
+			- Emit error on initialization if a single read is associated with multiple writes, or if a single write is associated with multiple reads
+		- During initialization, reads/writes
+		- Constraint: decay time must be at least as big as chunk processing size
+			- Emit error on initialize if this is not true
+
+- Plugin system ($PLUGIN)
+	- Allow users to register their own native modules and tasks
+	- Restrict library ID to anything but the 0-255 range
+
+- Audio input stream ($INPUT)
+	- Support input parameters to the main module taken from an audio input source
+
+- MIDI input support ($MIDI)
+	- Convert to intermediate format so we're not tied to MIDI
+
+- Upsampled buffer operations ($UPSAMPLE)
+	- Upsampled types:
+		- real@2x, real@8x, etc.
+		- type@Nx means "upsampled by a factor of N"
+		- Constants are compatible with any sampling rate factor
+	- Upsampled operations:
+		- module_name@2x(...)
+		- module_name@Nx(...) executes the module at N times the stream sample rate
+			- Expects all inputs and outputs to be upsampled by N as well
+	- Upsampling and downsampling functions:
+		- module real __native_resample(in real signal, const bool filter_nyquist)
+		- Special-case logic: "signal" can have any sampling rate factor and is not affected by @Nx
+		- In practice:
+			- module real@Nx __native_resample@Nx(in real@Mx signal)
+			- N and M are independent
+		- When downsampling, if filter_nyquist is true, a filter is applied at the nyquist frequency

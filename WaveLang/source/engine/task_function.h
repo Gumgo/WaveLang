@@ -3,8 +3,8 @@
 
 #include "common/common.h"
 #include "execution_graph/native_module.h"
+#include "engine/buffer.h"
 
-class c_buffer;
 class c_sample_library_accessor;
 class c_sample_library_requester;
 
@@ -50,16 +50,15 @@ struct s_task_function_uid {
 };
 
 enum e_task_data_type {
-	k_task_data_type_real_buffer_in,
-	k_task_data_type_real_buffer_out,
-	k_task_data_type_real_buffer_inout,
-	k_task_data_type_real_constant_in,
+	k_task_data_type_real_in,
+	k_task_data_type_real_out,
+	k_task_data_type_real_inout,
 	k_task_data_type_real_array_in,
 
-	k_task_data_type_bool_constant_in,
+	k_task_data_type_bool_in,
 	k_task_data_type_bool_array_in,
 
-	k_task_data_type_string_constant_in,
+	k_task_data_type_string_in,
 	k_task_data_type_string_array_in,
 
 	k_task_data_type_count
@@ -88,70 +87,93 @@ typedef c_wrapped_array_const<s_bool_array_element> c_bool_array;
 typedef c_wrapped_array_const<s_string_array_element> c_string_array;
 
 struct s_task_function_argument {
-#if PREDEFINED(ASSERTS_ENABLED)
-	e_task_data_type type;
-#endif // PREDEFINED(ASSERTS_ENABLED)
-
 	// Do not access these directly
-	union u_data {
-		u_data() {} // Allows for c_wrapped_array
+	struct {
+#if PREDEFINED(ASSERTS_ENABLED)
+		e_task_data_type type;
+#endif // PREDEFINED(ASSERTS_ENABLED)
+		bool is_constant;
 
-		const c_buffer *real_buffer_in;
-		c_buffer *real_buffer_out;
-		c_buffer *real_buffer_inout;
-		real32 real_constant_in;
-		c_real_array real_array_in;
+		union u_value {
+			u_value() {} // Allows for c_wrapped_array
 
-		bool bool_constant_in;
-		c_bool_array bool_array_in;
+			const c_buffer *real_buffer_in;
+			c_buffer *real_buffer_out;
+			c_buffer *real_buffer_inout;
+			real32 real_constant_in;
+			c_real_array real_array_in;
 
-		const char *string_constant_in;
-		c_string_array string_array_in;
+			bool bool_constant_in;
+			c_bool_array bool_array_in;
+
+			const char *string_constant_in;
+			c_string_array string_array_in;
+		} value;
 	} data;
 
+	bool is_constant() const {
+		return data.is_constant;
+	}
+
 	const c_buffer *get_real_buffer_in() const {
-		wl_assert(type == k_task_data_type_real_buffer_in);
-		return data.real_buffer_in;
+		wl_assert(data.type == k_task_data_type_real_in);
+		wl_assert(!is_constant());
+		return data.value.real_buffer_in;
 	}
 
 	c_buffer *get_real_buffer_out() const {
-		wl_assert(type == k_task_data_type_real_buffer_out);
-		return data.real_buffer_out;
+		wl_assert(data.type == k_task_data_type_real_out);
+		wl_assert(!is_constant());
+		return data.value.real_buffer_out;
 	}
 
 	c_buffer *get_real_buffer_inout() const {
-		wl_assert(type == k_task_data_type_real_buffer_inout);
-		return data.real_buffer_inout;
+		wl_assert(data.type == k_task_data_type_real_inout);
+		wl_assert(!is_constant());
+		return data.value.real_buffer_inout;
 	}
 
 	real32 get_real_constant_in() const {
-		wl_assert(type == k_task_data_type_real_constant_in);
-		return data.real_constant_in;
+		wl_assert(data.type == k_task_data_type_real_in);
+		wl_assert(is_constant());
+		return data.value.real_constant_in;
+	}
+
+	c_real_const_buffer_or_constant get_real_buffer_or_constant_in() const {
+		wl_assert(data.type == k_task_data_type_real_in);
+
+		if (data.is_constant) {
+			return c_real_const_buffer_or_constant(data.value.real_constant_in);
+		} else {
+			return c_real_const_buffer_or_constant(data.value.real_buffer_in);
+		}
 	}
 
 	c_real_array get_real_array_in() const {
-		wl_assert(type == k_task_data_type_real_array_in);
-		return data.real_array_in;
+		wl_assert(data.type == k_task_data_type_real_array_in);
+		return data.value.real_array_in;
 	}
 
 	bool get_bool_constant_in() const {
-		wl_assert(type == k_task_data_type_bool_constant_in);
-		return data.bool_constant_in;
+		wl_assert(data.type == k_task_data_type_bool_in);
+		wl_assert(is_constant());
+		return data.value.bool_constant_in;
 	}
 
 	c_bool_array get_bool_array_in() const {
-		wl_assert(type == k_task_data_type_bool_array_in);
-		return data.bool_array_in;
+		wl_assert(data.type == k_task_data_type_bool_array_in);
+		return data.value.bool_array_in;
 	}
 
 	const char *get_string_constant_in() const {
-		wl_assert(type == k_task_data_type_string_constant_in);
-		return data.string_constant_in;
+		wl_assert(data.type == k_task_data_type_string_in);
+		wl_assert(is_constant());
+		return data.value.string_constant_in;
 	}
 
 	c_string_array get_string_array_in() const {
-		wl_assert(type == k_task_data_type_string_array_in);
-		return data.string_array_in;
+		wl_assert(data.type == k_task_data_type_string_array_in);
+		return data.value.string_array_in;
 	}
 };
 
@@ -244,10 +266,7 @@ struct s_task_function {
 
 // The following describe the possible types of input arguments for a native module
 enum e_task_function_mapping_native_module_input_type {
-	// The input is a constant
-	k_task_function_mapping_native_module_input_type_constant,
-
-	// The input is a variable (non-constant)
+	// The input is a variable
 	k_task_function_mapping_native_module_input_type_variable,
 
 	// The input is a variable which is not used as any other input
@@ -259,10 +278,9 @@ enum e_task_function_mapping_native_module_input_type {
 	k_task_function_mapping_native_module_input_type_count
 };
 
-// A single native module can map to many different tasks - e.g. for performance reasons, we have different tasks for a
-// native module call taking two variable inputs versus one taking a variable and a constant input. In addition, for
-// memory optimization (and performance) we also have the "branchless" distinction because if an input is only used
-// once, we can directly modify that buffer in-place and reuse it as the output.
+// A single native module can map to many different tasks. For memory optimization (and performance) we have the
+// "branchless" distinction because if an input is only used once, we can directly modify that buffer in-place and reuse
+// it as the output.
 
 struct s_task_function_native_module_argument_mapping {
 	static const uint32 k_argument_none = static_cast<uint32>(-1);
@@ -297,7 +315,6 @@ struct s_task_function_mapping {
 
 	// We use a string shorthand notation to represent possible native module arguments. The Nth character in the string
 	// represents the Nth argument to the native module. The possible input types are:
-	// - c: a constant input
 	// - v: a variable input
 	// - b: a variable input which does not branch; i.e. this variable is only used in this input and nowhere else
 	// - .: this argument is an output and should be ignored
