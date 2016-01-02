@@ -22,9 +22,8 @@ public:
 	uint32 allocate_buffer();
 	void free_buffer(uint32 buffer_handle);
 
-	c_buffer *get_buffer(uint32 buffer_handle);
-
-	const c_buffer *get_fast_accessor() const;
+	inline c_buffer *get_buffer(uint32 buffer_handle);
+	inline const c_buffer *get_buffer(uint32 buffer_handle) const;
 
 private:
 	s_buffer_allocator_settings m_settings;
@@ -40,5 +39,13 @@ private:
 	// The buffers themselves
 	c_lock_free_aligned_allocator<c_buffer> m_buffers;
 };
+
+inline c_buffer *c_buffer_allocator::get_buffer(uint32 buffer_handle) {
+	return &m_buffers.get_array()[buffer_handle];
+}
+
+inline const c_buffer *c_buffer_allocator::get_buffer(uint32 buffer_handle) const {
+	return &m_buffers.get_array()[buffer_handle];
+}
 
 #endif // WAVELANG_BUFFER_ALLOCATOR_H__

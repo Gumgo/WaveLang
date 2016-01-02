@@ -12,6 +12,7 @@
 #include "engine/sample/sample_library.h"
 
 class c_task_graph;
+class c_buffer;
 struct s_task_function;
 
 struct s_executor_settings {
@@ -115,6 +116,10 @@ private:
 	void allocate_output_buffers(uint32 task_index);
 	void decrement_buffer_usages(uint32 task_index);
 	void decrement_buffer_usage(uint32 buffer_index);
+
+	// Used for array dereference
+	friend struct s_task_function_context;
+	const c_buffer *get_buffer_by_index(uint32 buffer_index) const;
 
 	// Used to enable/disable the executor in a thread-safe manner
 	c_atomic_int32 m_state;

@@ -7,6 +7,7 @@
 
 class c_sample_library_accessor;
 class c_sample_library_requester;
+class c_executor;
 
 // Unique identifier for each task function
 struct s_task_function_uid {
@@ -192,9 +193,12 @@ struct s_task_function_context {
 
 	c_task_function_arguments arguments;
 
-	// Used to quickly access a buffer by index: fast_real_buffer_accessor[index]
-	// Use with caution!
-	const c_buffer *fast_real_buffer_accessor;
+	// Used for dynamic array dereference
+	const c_buffer *get_buffer_by_index(uint32 buffer_index) const;
+
+private:
+	friend class c_executor;
+	const c_executor *executor;
 };
 
 // This function takes a partially-filled-in context and returns the amount of memory the task requires

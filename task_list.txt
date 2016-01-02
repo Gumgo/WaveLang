@@ -69,3 +69,9 @@
 			- module real@Nx __native_resample@Nx(in real@Mx signal)
 			- N and M are independent
 		- When downsampling, if filter_nyquist is true, a filter is applied at the nyquist frequency
+
+- Complete type support ($TYPE)
+	- Type is a class, not just an enum - basic type is still enum (includes real, bool, string, etc.)
+	- Type class has a set of generic properties, e.g. is_array(), is_constant(), is_runtime_static(), etc.
+	- Get rid of most of the switch statements, instead query the generic properties
+	- Support bool buffers using bitvectors

@@ -704,8 +704,10 @@ void c_executor::process_task(uint32 thread_index, const s_task_parameters *para
 		task_function_context.task_memory =
 			m_voice_task_memory_pointers[m_task_graph->get_task_count() * params->voice_index + params->task_index];
 		task_function_context.arguments = c_task_function_arguments(arguments, argument_data.get_count());
-		task_function_context.fast_real_buffer_accessor = m_buffer_allocator.get_fast_accessor();
 		// $TODO fill in timing info, etc.
+
+		// Needed for array dereference
+		task_function_context.executor = this;
 
 		// Call the task function
 		wl_assert(task_function.function);
@@ -850,4 +852,9 @@ void c_executor::decrement_buffer_usage(uint32 buffer_index) {
 		m_buffer_allocator.free_buffer(buffer_context.handle);
 		buffer_context.handle = k_lock_free_invalid_handle;
 	}
+}
+
+const c_buffer *c_executor::get_buffer_by_index(uint32 buffer_index) const {
+	const s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer_index];
+	return m_buffer_allocator.get_buffer(buffer_context.handle);
 }
