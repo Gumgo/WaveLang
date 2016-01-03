@@ -37,4 +37,13 @@
 		</DisplayString>
 	</Type>
 
+  <Type Name="c_compiler_string">
+    <DisplayString>{m_str,[m_length]s}</DisplayString>
+
+    <Expand>
+      <Item Name="[value]">m_str,[m_length]s</Item>
+      <Item Name="[length]">m_length</Item>
+    </Expand>
+  </Type>
+
 </AutoVisualizer>

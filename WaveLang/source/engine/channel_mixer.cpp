@@ -60,12 +60,12 @@ void convert_and_interleave_to_output_buffer(
 	c_buffer_allocator &buffer_allocator,
 	c_wrapped_array_const<uint32> output_buffers,
 	e_sample_format output_format,
-	void *output_buffer) {
+	c_wrapped_array<uint8> output_buffer) {
 	size_t channel_count = output_buffers.get_count();
 	switch (output_format) {
 	case k_sample_format_float32:
 	{
-		real32 *typed_output_buffer = reinterpret_cast<real32 *>(output_buffer);
+		real32 *typed_output_buffer = reinterpret_cast<real32 *>(output_buffer.get_pointer());
 		for (size_t channel = 0; channel < channel_count; channel++) {
 			c_buffer *buffer = buffer_allocator.get_buffer(output_buffers[channel]);
 			const real32 *channel_buffer = buffer->get_data<real32>();
@@ -93,11 +93,12 @@ void zero_output_buffers(
 	uint32 frames,
 	uint32 output_buffer_count,
 	e_sample_format output_format,
-	void *output_buffers) {
+	c_wrapped_array<uint8> output_buffers) {
 	switch (output_format) {
 	case k_sample_format_float32:
 	{
-		memset(output_buffers, 0, frames * output_buffer_count * sizeof(real32));
+		wl_assert(output_buffers.get_count() == (frames * output_buffer_count * sizeof(real32)));
+		memset(output_buffers.get_pointer(), 0, output_buffers.get_count());
 		break;
 	}
 

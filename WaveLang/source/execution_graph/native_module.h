@@ -4,14 +4,6 @@
 #include "common/common.h"
 #include <vector>
 
-// List of native modules available at compile time
-// INSTRUCTIONS FOR ADDING A NEW NATIVE MODULE:
-// 1) Add the native module to this enum and create a definition for it in native_modules.cpp.
-// 2) If the function can be resolved at compile time given constant inputs, write a compile_time_call function.
-// 3) If the native module has optimizations (e.g. x + 0 => x), add these to execution_graph_optimization_rules.txt.
-// 4) Add a set of tasks for the native module in task_function.h/cpp.
-// 5) Modify the task mapping function in native_module_task_mapping.cpp to include the new native module and tasks.
-
 static const size_t k_max_native_module_name_length = 64;
 static const size_t k_max_native_module_arguments = 10;
 

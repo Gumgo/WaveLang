@@ -17,12 +17,15 @@
 
 // Some utility functions... if this list gets too big, move these somewhere better
 
+// Alignment must be a power of 2 for all alignment functions
+
 #define ALIGN_SIZE(size, alignment) ((size) + ((alignment) - 1) & ~((alignment) - 1))
 #define ALIGN_SIZE_DOWN(size, alignment) ((size) & ~((alignment) - 1))
 #define IS_SIZE_ALIGNED(size, alignment) ((size) & ((alignment) - 1) == 0)
 
-// $TODO make alignment a template parameter, because we should never need runtime-custom alignment sizes
-// alignment must be a power of 2
+// Note: could make alignment a template parameter, because we should never need runtime-custom alignment sizes.
+// However, since these functions are inlined, the constant alignment parameters will almost certainly optimize to the
+// same result.
 template<typename t_size, typename t_alignment> t_size align_size(t_size size, t_alignment alignment) {
 	return (size + (alignment - 1)) & ~(alignment - 1);
 }

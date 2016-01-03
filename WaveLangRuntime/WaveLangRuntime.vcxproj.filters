@@ -171,6 +171,9 @@
     <ClInclude Include="..\WaveLang\source\common\static_array.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\WaveLang\source\common\utility\graphviz_generator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\WaveLang\source\common\asserts.cpp">
@@ -309,6 +312,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\WaveLang\source\engine\task_functions\task_functions_sampler_offline_helpers.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\WaveLang\source\common\utility\graphviz_generator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

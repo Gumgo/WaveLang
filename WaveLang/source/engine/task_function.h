@@ -213,6 +213,7 @@ typedef void (*f_task_initializer)(const s_task_function_context &context);
 // Function executed for the task
 typedef void (*f_task_function)(const s_task_function_context &context);
 
+static const size_t k_max_task_function_name_length = 64;
 static const size_t k_max_task_function_arguments = 10;
 
 struct s_task_function_argument_list {
@@ -239,6 +240,9 @@ struct s_task_function {
 	// Unique identifier for this task function
 	s_task_function_uid uid;
 
+	// Name of the task function
+	c_static_string<k_max_task_function_name_length> name;
+
 	// Memory query function, or null
 	f_task_memory_query memory_query;
 
@@ -256,6 +260,7 @@ struct s_task_function {
 
 	static s_task_function build(
 		s_task_function_uid uid,
+		const char *name,
 		f_task_memory_query memory_query,
 		f_task_initializer initializer,
 		f_task_function function,

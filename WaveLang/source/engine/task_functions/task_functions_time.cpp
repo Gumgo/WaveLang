@@ -77,6 +77,7 @@ void register_task_functions_time() {
 	{
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_time_period_out_uid,
+				"time_period_out",
 				task_memory_query_time_period, task_initializer_time_period, task_function_time_period_out,
 				s_task_function_argument_list::build(TDT(real_in), TDT(real_out))));
 

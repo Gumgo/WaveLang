@@ -1,6 +1,9 @@
 #include "engine/profiler/profiler.h"
+#include "engine/task_function_registry.h"
 #include <algorithm>
 #include <fstream>
+#include <sstream>
+#include <iomanip>
 
 static real64 nanoseconds_to_milliseconds(int64 nanoseconds) {
 	return static_cast<real64>(k_milliseconds_per_second * nanoseconds) / static_cast<real64>(k_nanoseconds_per_second);
@@ -12,8 +15,8 @@ bool output_profiler_report(const char *filename, const s_profiler_report &repor
 		return false;
 	}
 
-	out << "-,Total avg,Total min,Total max,Task avg,Task min,Task max,Overhead avg,Overhead min,Overhead max\n";
-	out << "Execution," <<
+	out << "-,-,-,Total avg,Total min,Total max,Task avg,Task min,Task max,Overhead avg,Overhead min,Overhead max\n";
+	out << ",,Execution," <<
 		nanoseconds_to_milliseconds(report.execution_total_time.average_time) << "," <<
 		nanoseconds_to_milliseconds(report.execution_total_time.min_time) << "," <<
 		nanoseconds_to_milliseconds(report.execution_total_time.max_time) << "," <<
@@ -24,11 +27,21 @@ bool output_profiler_report(const char *filename, const s_profiler_report &repor
 		nanoseconds_to_milliseconds(report.execution_overhead_time.min_time) << "," <<
 		nanoseconds_to_milliseconds(report.execution_overhead_time.max_time) << "\n";
 
-	out << "Task,Total avg,Total min,Total max,Function avg,Function min,Function max,"
+	out << "Task Index,Task UID,Task name,Total avg,Total min,Total max,Function avg,Function min,Function max,"
 		"Overhead avg,Overhead min,Overhead max\n";
 	for (uint32 task_index = 0; task_index < report.tasks.size(); task_index++) {
 		const s_profiler_report::s_task &task = report.tasks[task_index];
+		const s_task_function &task_function = c_task_function_registry::get_task_function(task.task_function_index);
+
+		std::stringstream uid_stream;
+		uid_stream << "0x" << std::setfill('0') << std::setw(2) << std::hex;
+		for (size_t b = 0; b < NUMBEROF(task_function.uid.data); b++) {
+			uid_stream << static_cast<uint32>(task_function.uid.data[b]);
+		}
+
 		out << task_index << "," <<
+			uid_stream.str() << "," <<
+			task_function.name.get_string() << "," <<
 			nanoseconds_to_milliseconds(task.task_total_time.average_time) << "," <<
 			nanoseconds_to_milliseconds(task.task_total_time.min_time) << "," <<
 			nanoseconds_to_milliseconds(task.task_total_time.max_time) << "," <<
@@ -114,6 +127,7 @@ void c_profiler::get_report(s_profiler_report &out_report) const {
 	out_report.tasks.resize(m_tasks.get_array().get_count());
 	for (size_t index = 0; index < m_tasks.get_array().get_count(); index++) {
 		const s_task &task = m_tasks.get_array()[index];
+		out_report.tasks[index].task_function_index = task.task_function_index;
 		out_report.tasks[index].task_total_time = task.total_time;
 		out_report.tasks[index].task_function_time = task.function_time;
 		out_report.tasks[index].task_overhead_time = task.overhead_time;
@@ -160,8 +174,10 @@ void c_profiler::end_execution() {
 	m_execution.instance_count++;
 }
 
-void c_profiler::begin_task(uint32 worker_thread, uint32 task_index) {
+void c_profiler::begin_task(uint32 worker_thread, uint32 task_index, uint32 task_function_index) {
 	s_thread_context &thread_context = m_thread_contexts.get_array()[worker_thread];
+	s_task &task = m_tasks.get_array()[task_index];
+	task.task_function_index = task_function_index;
 	thread_context.stopwatch.reset();
 }
 

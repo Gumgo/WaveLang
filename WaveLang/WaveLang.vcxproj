@@ -21,6 +21,7 @@
     <ClCompile Include="source\common\threading\thread_fallback.cpp" />
     <ClCompile Include="source\common\threading\thread_windows.cpp" />
     <ClCompile Include="source\common\utility\file_utility.cpp" />
+    <ClCompile Include="source\common\utility\graphviz_generator.cpp" />
     <ClCompile Include="source\common\utility\string_table.cpp" />
     <ClCompile Include="source\compiler\ast.cpp" />
     <ClCompile Include="source\compiler\ast_builder.cpp" />
@@ -90,6 +91,7 @@
     <ClInclude Include="source\common\types.h" />
     <ClInclude Include="source\common\utility\aligned_allocator.h" />
     <ClInclude Include="source\common\utility\file_utility.h" />
+    <ClInclude Include="source\common\utility\graphviz_generator.h" />
     <ClInclude Include="source\common\utility\string_table.h" />
     <ClInclude Include="source\common\wrapped_array.h" />
     <ClInclude Include="source\compiler\ast.h" />

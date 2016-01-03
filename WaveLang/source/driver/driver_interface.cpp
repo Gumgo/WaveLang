@@ -23,7 +23,7 @@ static void setup_stream_parameters(const s_driver_settings &settings, uint32 de
 	const PaDeviceInfo *device_info = Pa_GetDeviceInfo(device_index);
 	wl_assert(device_info);
 
-	// $TODO fill these out eventually if we want to support line-in processing
+	// $TODO $INPUT fill these out eventually if we want to support line-in processing
 	ZERO_STRUCT(&out_input_params);
 	out_input_params.device = paNoDevice;
 
@@ -118,7 +118,7 @@ bool c_driver_interface::are_settings_supported(const s_driver_settings &setting
 	PaStreamParameters output_params;
 	setup_stream_parameters(settings, m_device_count, input_params, output_params);
 
-	// $TODO pass in input_params if we ever want to support line-in processing
+	// $TODO $INPUT pass in input_params if we ever want to support line-in processing
 	PaError result = Pa_IsFormatSupported(nullptr, &output_params, settings.sample_rate);
 	return (result == paFormatIsSupported);
 }
@@ -142,7 +142,7 @@ s_driver_result c_driver_interface::start_stream(const s_driver_settings &settin
 
 	PaError error = Pa_OpenStream(
 		&m_stream,
-		nullptr, // $TODO pass in input_params if we want to support line-in processing
+		nullptr, // $TODO $INPUT pass in input_params if we want to support line-in processing
 		&output_params,
 		settings.sample_rate,
 		settings.frames_per_buffer,

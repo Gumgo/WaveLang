@@ -225,6 +225,7 @@ void register_task_functions_delay() {
 	{
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_delay_in_out_uid,
+				"delay_in_out",
 				task_memory_query_delay, task_initializer_delay, task_function_delay_in_out,
 				s_task_function_argument_list::build(TDT(real_in), TDT(real_in), TDT(real_out))));
 

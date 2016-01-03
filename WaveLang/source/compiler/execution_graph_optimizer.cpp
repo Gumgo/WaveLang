@@ -285,10 +285,6 @@ s_compiler_result c_execution_graph_optimizer::optimize_graph(c_execution_graph 
 	deduplicate_nodes(execution_graph);
 	execution_graph->remove_unused_nodes_and_reassign_node_indices();
 
-#if PREDEFINED(EXECUTION_GRAPH_OUTPUT_ENABLED)
-	execution_graph->output_to_file();
-#endif // PREDEFINED(EXECUTION_GRAPH_OUTPUT_ENABLED)
-
 	validate_optimized_constants(execution_graph, out_errors);
 	if (!out_errors.empty()) {
 		result.result = k_compiler_result_graph_error;

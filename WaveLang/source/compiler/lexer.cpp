@@ -348,9 +348,13 @@ static s_token read_next_token(
 			}
 		}
 
+		if (!found_end_quote) {
+			error = true;
+		}
+
 		// Set the token string even if we detect an error
 		// Leave off the start and end quotes
-		result.token_string = str.substr(1, index - (found_end_quote ? 1 : 0));
+		result.token_string = str.substr(1, index - 1);
 
 		if (error) {
 			result.token_type = k_token_type_invalid;

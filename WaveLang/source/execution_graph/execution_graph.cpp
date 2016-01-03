@@ -1,6 +1,7 @@
 #include "execution_graph/execution_graph.h"
 #include "execution_graph/native_module_registry.h"
 #include "common/utility/file_utility.h"
+#include "common/utility/graphviz_generator.h"
 #include <string>
 #include <algorithm>
 #include <fstream>
@@ -8,6 +9,25 @@
 static const char k_format_identifier[] = { 'w', 'a', 'v', 'e', 'l', 'a', 'n', 'g' };
 
 const uint32 c_execution_graph::k_invalid_index;
+
+static std::string format_real_for_graph_output(real32 value) {
+	std::string str = std::to_string(value);
+
+	// Trim trailing zeros
+	size_t decimal_pos = str.find_first_of('.');
+	if (decimal_pos != std::string::npos) {
+		while (str.back() == '0') {
+			str.pop_back();
+		}
+
+		// If we've removed all the zeros, remove the dot
+		if (str.back() == '.') {
+			str.pop_back();
+		}
+	}
+
+	return str;
+}
 
 c_execution_graph::c_execution_graph() {
 	ZERO_STRUCT(&m_globals);
@@ -1120,45 +1140,111 @@ void c_execution_graph::remove_unused_nodes_and_reassign_node_indices() {
 	remove_unused_strings();
 }
 
-#if PREDEFINED(EXECUTION_GRAPH_OUTPUT_ENABLED)
-void c_execution_graph::output_to_file() const {
-	std::ofstream out("execution_graph.txt");
+bool c_execution_graph::generate_graphviz_file(const char *fname, bool condense_large_arrays) const {
+	static const uint32 k_large_array_limit = 8;
 
-	out << "digraph ExecutionGraph {\n";
+	std::vector<bool> arrays_to_condense;
+	std::vector<bool> nodes_to_skip;
+
+	if (condense_large_arrays) {
+		arrays_to_condense.resize(m_nodes.size());
+		nodes_to_skip.resize(m_nodes.size());
+
+		// Find and mark all large constant arrays
+		for (size_t index = 0; index < m_nodes.size(); index++) {
+			const s_node &node = m_nodes[index];
+
+			if (node.type == k_execution_graph_node_type_constant) {
+				if ((node.node_data.constant.type == k_native_module_argument_type_real_array ||
+					node.node_data.constant.type == k_native_module_argument_type_bool_array ||
+					node.node_data.constant.type == k_native_module_argument_type_string_array) &&
+					node.incoming_edge_indices.size() >= k_large_array_limit) {
+					// Check if all inputs are constants
+					bool all_constant = true;
+					for (size_t input = 0; all_constant && input < node.incoming_edge_indices.size(); input++) {
+						uint32 input_node_index = node.incoming_edge_indices[input];
+						uint32 source_node_index = m_nodes[input_node_index].incoming_edge_indices[0];
+						all_constant = (m_nodes[source_node_index].type == k_execution_graph_node_type_constant);
+					}
+
+					if (all_constant) {
+						arrays_to_condense[index] = true;
+
+						// Mark each input as an array to condense so that checking the constants below is easier. Also
+						// mark it as a node to skip, so we skip it during output.
+						for (size_t input = 0; input < node.incoming_edge_indices.size(); input++) {
+							uint32 input_node_index = node.incoming_edge_indices[input];
+							arrays_to_condense[input_node_index] = true;
+							nodes_to_skip[input_node_index] = true;
+						}
+					}
+				}
+			}
+		}
+
+		// Find and mark all constants which are inputs to only the nodes we just marked
+		for (size_t index = 0; index < m_nodes.size(); index++) {
+			const s_node &node = m_nodes[index];
+
+			if (node.type == k_execution_graph_node_type_constant) {
+				bool all_outputs_marked = true;
+				for (size_t output = 0; all_outputs_marked && output < node.outgoing_edge_indices.size(); output++) {
+					uint32 output_node_index = node.outgoing_edge_indices[output];
+					all_outputs_marked = arrays_to_condense[output_node_index];
+				}
+
+				if (all_outputs_marked) {
+					nodes_to_skip[index] = true;
+				}
+			}
+		}
+	}
+
+	c_graphviz_generator graph;
+	graph.set_graph_name("execution_graph");
+
+	size_t condensed_nodes = 0;
 
 	// Declare the nodes
 	for (size_t index = 0; index < m_nodes.size(); index++) {
 		const s_node &node = m_nodes[index];
-		const char *shape = nullptr;
-		std::string label;
-		bool skip = false;
+		c_graphviz_node graph_node;
+
+		if (condense_large_arrays && nodes_to_skip[index]) {
+			// This is a node which has been condensed - skip it
+			continue;
+		}
 
 		switch (node.type) {
 		case k_execution_graph_node_type_constant:
-			shape = "ellipse";
+			graph_node.set_shape("ellipse");
 			switch (node.node_data.constant.type) {
 			case k_native_module_argument_type_real:
-				label = std::to_string(node.node_data.constant.real_value);
+				graph_node.set_label(format_real_for_graph_output(node.node_data.constant.real_value).c_str());
 				break;
 
 			case k_native_module_argument_type_bool:
-				label = node.node_data.constant.bool_value ? "true" : "false";
+				graph_node.set_label(node.node_data.constant.bool_value ? "true" : "false");
 				break;
 
 			case k_native_module_argument_type_string:
-				label = "\\\"" + std::string(m_string_table.get_string(node.node_data.constant.string_index)) + "\\\"";
+			{
+				std::string label =
+					"\\\"" + std::string(m_string_table.get_string(node.node_data.constant.string_index)) + "\\\"";
+				graph_node.set_label(label.c_str());
 				break;
+			}
 
 			case k_native_module_argument_type_real_array:
-				label = "real[]";
+				graph_node.set_label("real[]");
 				break;
 
 			case k_native_module_argument_type_bool_array:
-				label = "bool[]";
+				graph_node.set_label("bool[]");
 				break;
 
 			case k_native_module_argument_type_string_array:
-				label = "string[]";
+				graph_node.set_label("string[]");
 				break;
 
 			default:
@@ -1167,9 +1253,9 @@ void c_execution_graph::output_to_file() const {
 			break;
 
 		case k_execution_graph_node_type_native_module_call:
-			shape = "box";
-			label = c_native_module_registry::get_native_module(
-				node.node_data.native_module_call.native_module_index).name.get_string();
+			graph_node.set_shape("box");
+			graph_node.set_label(c_native_module_registry::get_native_module(
+				node.node_data.native_module_call.native_module_index).name.get_string());
 			break;
 
 		case k_execution_graph_node_type_indexed_input:
@@ -1184,8 +1270,10 @@ void c_execution_graph::output_to_file() const {
 			}
 
 			wl_assert(VALID_INDEX(input_index, root_node.incoming_edge_indices.size()));
-			shape = "ellipse";
-			label = "in " + std::to_string(input_index);
+			graph_node.set_shape("house");
+			graph_node.set_orientation(180.0f);
+			graph_node.set_margin(0.0f, 0.0f);
+			graph_node.set_label((std::to_string(input_index)).c_str());
 			break;
 		}
 
@@ -1201,38 +1289,63 @@ void c_execution_graph::output_to_file() const {
 			}
 
 			wl_assert(VALID_INDEX(output_index, root_node.outgoing_edge_indices.size()));
-			shape = "ellipse";
-			label = "out " + std::to_string(output_index);
+			graph_node.set_shape("house");
+			graph_node.set_margin(0.0f, 0.0f);
+			graph_node.set_label((std::to_string(output_index)).c_str());
 			break;
 		}
 
 		case k_execution_graph_node_type_output:
-			shape = "box";
-			label = "output " + std::to_string(node.node_data.output.output_index);
+			graph_node.set_shape("box");
+			graph_node.set_label(("output " + std::to_string(node.node_data.output.output_index)).c_str());
+			graph_node.set_style("rounded");
 			break;
 
 		default:
-			// Don't add a node
-			skip = true;
+			wl_unreachable();
 		}
 
-		if (!skip) {
-			out << "node [shape=" << shape << ", label=\"" << label << "\"]; node_" << index << ";\n";
+		std::string node_name = "node_" + std::to_string(index);
+		graph_node.set_name(node_name.c_str());
+		graph.add_node(graph_node);
+
+		if (arrays_to_condense[index]) {
+			// Add an extra "condensed" node for this array
+			std::string condensed_array_node_name = "condensed_array_" + std::to_string(condensed_nodes);
+			c_graphviz_node condensed_array_node;
+			condensed_array_node.set_name(condensed_array_node_name.c_str());
+			condensed_array_node.set_shape("ellipse");
+			condensed_array_node.set_peripheries(2);
+			condensed_array_node.set_label(("[" + std::to_string(node.incoming_edge_indices.size()) + "]").c_str());
+			graph.add_node(condensed_array_node);
+
+			condensed_nodes++;
+
+			// Add the edge
+			graph.add_edge(condensed_array_node_name.c_str(), node_name.c_str());
 		}
 	}
 
 	// Declare the edges
 	for (uint32 index = 0; index < m_nodes.size(); index++) {
+		if (condense_large_arrays && nodes_to_skip[index]) {
+			// This is a node which has been condensed - skip it
+			continue;
+		}
+
 		const s_node &node = m_nodes[index];
 		for (size_t edge = 0; edge < node.outgoing_edge_indices.size(); edge++) {
 			uint32 to_index = node.outgoing_edge_indices[edge];
+			if (condense_large_arrays && nodes_to_skip[to_index]) {
+				// This is a node which has been condensed - skip it
+				continue;
+			}
 
-			out << "node_" << index << " -> node_" << to_index << ";\n";
+			graph.add_edge(
+				("node_" + std::to_string(index)).c_str(),
+				("node_" + std::to_string(to_index)).c_str());
 		}
 	}
 
-	//out << "overlap=false\n";
-
-	out << "}\n";
+	return graph.output_to_file(fname);
 }
-#endif // PREDEFINED(EXECUTION_GRAPH_OUTPUT_ENABLED)

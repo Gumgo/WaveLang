@@ -6,8 +6,6 @@
 #include "execution_graph/native_module.h"
 #include <vector>
 
-#define EXECUTION_GRAPH_OUTPUT_ENABLED 1
-
 // Bump this number when anything changes
 static const uint32 k_execution_graph_format_version = 0;
 
@@ -94,9 +92,7 @@ public:
 
 	void remove_unused_nodes_and_reassign_node_indices();
 
-#if PREDEFINED(EXECUTION_GRAPH_OUTPUT_ENABLED)
-	void output_to_file() const;
-#endif // PREDEFINED(EXECUTION_GRAPH_OUTPUT_ENABLED)
+	bool generate_graphviz_file(const char *fname, bool condense_large_arrays) const;
 
 private:
 	struct s_node {

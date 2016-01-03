@@ -1438,11 +1438,13 @@ void register_task_functions_sampler() {
 	{
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_sampler_in_out_uid,
+				"sampler_in_out",
 				task_memory_query_sampler, task_initializer_sampler, task_function_sampler_in_out,
 				s_task_function_argument_list::build(TDT(string_in), TDT(real_in), TDT(real_in), TDT(real_out))));
 
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_sampler_inout_uid,
+				"sampler_inout",
 				task_memory_query_sampler, task_initializer_sampler, task_function_sampler_inout,
 				s_task_function_argument_list::build(TDT(string_in), TDT(real_in), TDT(real_inout))));
 
@@ -1462,16 +1464,19 @@ void register_task_functions_sampler() {
 	{
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_sampler_loop_in_in_out_uid,
+				"sampler_loop_in_in_out",
 				task_memory_query_sampler, task_initializer_sampler_loop_in_in_out, task_function_sampler_loop_in_in_out,
 				s_task_function_argument_list::build(TDT(string_in), TDT(real_in), TDT(bool_in), TDT(real_in), TDT(real_in), TDT(real_out))));
 
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_sampler_loop_inout_in_uid,
+				"sampler_loop_inout_in",
 				task_memory_query_sampler, task_initializer_sampler_loop_inout_in, task_function_sampler_loop_inout_in,
 				s_task_function_argument_list::build(TDT(string_in), TDT(real_in), TDT(bool_in), TDT(real_inout), TDT(real_in))));
 
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_sampler_loop_in_inout_uid,
+				"sampler_loop_in_inout",
 				task_memory_query_sampler, task_initializer_sampler_loop_in_inout, task_function_sampler_loop_in_inout,
 				s_task_function_argument_list::build(TDT(string_in), TDT(real_in), TDT(bool_in), TDT(real_in), TDT(real_inout))));
 

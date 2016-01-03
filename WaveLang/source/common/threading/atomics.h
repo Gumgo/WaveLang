@@ -47,7 +47,6 @@ public:
 	// Decrements the value
 	inline int32 decrement();
 
-	// $TODO fix these names
 	// ANDs the value with x
 	inline int32 bitwise_and(int32 x);
 

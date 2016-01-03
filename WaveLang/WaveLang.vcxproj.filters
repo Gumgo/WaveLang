@@ -192,6 +192,9 @@
     <ClCompile Include="source\engine\task_functions\task_functions_sampler_offline_helpers.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\common\utility\graphviz_generator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\common\asserts.h">
@@ -411,6 +414,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\engine\task_functions\task_functions_sampler_sinc_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\common\utility\graphviz_generator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

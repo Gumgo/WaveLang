@@ -33,8 +33,7 @@ struct s_executor_chunk_context {
 	e_sample_format sample_format;
 	uint32 frames;
 
-	// $TODO make this a wrapped array
-	void *output_buffers;
+	c_wrapped_array<uint8> output_buffers;
 };
 
 class c_executor {

@@ -23,6 +23,7 @@ s_task_function_argument_list s_task_function_argument_list::build(
 
 s_task_function s_task_function::build(
 	s_task_function_uid uid,
+	const char *name,
 	f_task_memory_query memory_query,
 	f_task_initializer initializer,
 	f_task_function function,
@@ -32,6 +33,9 @@ s_task_function s_task_function::build(
 	ZERO_STRUCT(&task_function);
 
 	task_function.uid = uid;
+
+	// Copy the name with size assert validation
+	task_function.name.set_verify(name);
 
 	wl_assert(function);
 

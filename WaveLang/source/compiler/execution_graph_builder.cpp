@@ -694,10 +694,6 @@ s_compiler_result c_execution_graph_builder::build_execution_graph(
 	globals.max_voices = 1;
 	out_execution_graph->set_globals(globals);
 
-#if PREDEFINED(EXECUTION_GRAPH_OUTPUT_ENABLED)
-	out_execution_graph->output_to_file();
-#endif // PREDEFINED(EXECUTION_GRAPH_OUTPUT_ENABLED)
-
 	if (!out_errors.empty()) {
 		// Don't associate the error with a particular file, those errors are collected through out_errors
 		result.result = k_compiler_result_graph_error;

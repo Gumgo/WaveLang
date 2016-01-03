@@ -322,11 +322,13 @@ void register_task_functions_basic() {
 	{
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_negation_in_out_uid,
+				"negation_in_out",
 				nullptr, nullptr, task_function_negation_in_out,
 				s_task_function_argument_list::build(TDT(real_in), TDT(real_out))));
 
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_negation_inout_uid,
+				"negation_inout",
 				nullptr, nullptr, task_function_negation_inout,
 				s_task_function_argument_list::build(TDT(real_inout))));
 
@@ -345,11 +347,13 @@ void register_task_functions_basic() {
 	{
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_addition_in_in_out_uid,
+				"addition_in_in_out",
 				nullptr, nullptr, task_function_addition_in_in_out,
 				s_task_function_argument_list::build(TDT(real_in), TDT(real_in), TDT(real_out))));
 
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_addition_inout_in_uid,
+				"addition_inout_in",
 				nullptr, nullptr, task_function_addition_inout_in,
 				s_task_function_argument_list::build(TDT(real_inout), TDT(real_in))));
 
@@ -371,16 +375,19 @@ void register_task_functions_basic() {
 	{
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_subtraction_in_in_out_uid,
+				"subtraction_in_in_out",
 				nullptr, nullptr, task_function_subtraction_in_in_out,
 				s_task_function_argument_list::build(TDT(real_in), TDT(real_in), TDT(real_out))));
 
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_subtraction_inout_in_uid,
+				"subtraction_inout_in",
 				nullptr, nullptr, task_function_subtraction_inout_in,
 				s_task_function_argument_list::build(TDT(real_inout), TDT(real_in))));
 
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_subtraction_in_inout_uid,
+				"subtraction_in_inout",
 				nullptr, nullptr, task_function_subtraction_in_inout,
 				s_task_function_argument_list::build(TDT(real_in), TDT(real_inout))));
 
@@ -402,11 +409,13 @@ void register_task_functions_basic() {
 	{
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_multiplication_in_in_out_uid,
+				"multiplication_in_in_out",
 				nullptr, nullptr, task_function_multiplication_in_in_out,
 				s_task_function_argument_list::build(TDT(real_in), TDT(real_in), TDT(real_out))));
 
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_multiplication_inout_in_uid,
+				"multiplication_inout_in",
 				nullptr, nullptr, task_function_multiplication_inout_in,
 				s_task_function_argument_list::build(TDT(real_inout), TDT(real_in))));
 
@@ -428,16 +437,19 @@ void register_task_functions_basic() {
 	{
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_division_in_in_out_uid,
+				"division_in_in_out",
 				nullptr, nullptr, task_function_division_in_in_out,
 				s_task_function_argument_list::build(TDT(real_in), TDT(real_in), TDT(real_out))));
 
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_division_inout_in_uid,
+				"division_inout_in",
 				nullptr, nullptr, task_function_division_inout_in,
 				s_task_function_argument_list::build(TDT(real_inout), TDT(real_in))));
 
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_division_in_inout_uid,
+				"division_in_inout",
 				nullptr, nullptr, task_function_division_in_inout,
 				s_task_function_argument_list::build(TDT(real_in), TDT(real_inout))));
 
@@ -459,16 +471,19 @@ void register_task_functions_basic() {
 	{
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_modulo_in_in_out_uid,
+				"modulo_in_in_out",
 				nullptr, nullptr, task_function_modulo_in_in_out,
 				s_task_function_argument_list::build(TDT(real_in), TDT(real_in), TDT(real_out))));
 
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_modulo_inout_in_uid,
+				"modulo_inout_in",
 				nullptr, nullptr, task_function_modulo_inout_in,
 				s_task_function_argument_list::build(TDT(real_inout), TDT(real_in))));
 
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_modulo_in_inout_uid,
+				"modulo_in_inout",
 				nullptr, nullptr, task_function_modulo_in_inout,
 				s_task_function_argument_list::build(TDT(real_in), TDT(real_inout))));
 
@@ -490,11 +505,13 @@ void register_task_functions_basic() {
 	{
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_real_array_dereference_in_out_uid,
+				"real_array_dereference_in_out",
 				nullptr, nullptr, task_function_real_array_dereference_in_out,
 				s_task_function_argument_list::build(TDT(real_array_in), TDT(real_in), TDT(real_out))));
 
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_real_array_dereference_inout_uid,
+				"real_array_dereference_inout",
 				nullptr, nullptr, task_function_real_array_dereference_inout,
 				s_task_function_argument_list::build(TDT(real_array_in), TDT(real_inout))));
 

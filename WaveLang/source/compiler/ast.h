@@ -5,19 +5,6 @@
 #include "compiler/compiler_utility.h"
 #include <vector>
 
-// $TODO array support:
-// Arrays must be of fixed size
-// Each element is a separately-tracked basic type
-// Constant-dereference resolves to a no-op and directly accesses that value
-// Variable-dereference:
-//   Create a new argument type in execution/task graph
-//   Its value consists of an array of node indices
-//   The node indices are known constants at compile time, so these objects can be precomputed
-//   Select sub-value
-// Pass arrays to modules
-//   Pass by value - copy-on-write semantics (just like all "tracked" values currently are)
-//   i.e. a different "array" value exists for each dereference call
-
 extern const char *k_entry_point_name;
 
 // List of types

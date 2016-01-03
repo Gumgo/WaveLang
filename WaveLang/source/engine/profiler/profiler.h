@@ -19,6 +19,7 @@ struct s_profiler_record {
 
 struct s_profiler_report {
 	struct s_task {
+		uint32 task_function_index;
 		s_profiler_record task_total_time;
 		s_profiler_record task_function_time;
 		s_profiler_record task_overhead_time;
@@ -49,7 +50,7 @@ public:
 	void end_execution_tasks();
 	void end_execution();
 
-	void begin_task(uint32 worker_thread, uint32 task_index);
+	void begin_task(uint32 worker_thread, uint32 task_index, uint32 task_function_index);
 	void begin_task_function(uint32 worker_thread, uint32 task_index);
 	void end_task_function(uint32 worker_thread, uint32 task_index);
 	void end_task(uint32 worker_thread, uint32 task_index);
@@ -86,6 +87,7 @@ private:
 	};
 
 	struct ALIGNAS_LOCK_FREE s_task {
+		uint32 task_function_index;
 		uint32 instance_count;
 		s_profiler_record total_time;
 		s_profiler_record function_time;

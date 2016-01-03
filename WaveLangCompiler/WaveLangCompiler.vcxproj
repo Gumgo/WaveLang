@@ -20,6 +20,7 @@
     <ClCompile Include="..\WaveLang\source\common\threading\thread_fallback.cpp" />
     <ClCompile Include="..\WaveLang\source\common\threading\thread_windows.cpp" />
     <ClCompile Include="..\WaveLang\source\common\utility\file_utility.cpp" />
+    <ClCompile Include="..\WaveLang\source\common\utility\graphviz_generator.cpp" />
     <ClCompile Include="..\WaveLang\source\common\utility\string_table.cpp" />
     <ClCompile Include="..\WaveLang\source\compiler\ast.cpp" />
     <ClCompile Include="..\WaveLang\source\compiler\ast_builder.cpp" />
@@ -61,6 +62,7 @@
     <ClInclude Include="..\WaveLang\source\common\types.h" />
     <ClInclude Include="..\WaveLang\source\common\utility\aligned_allocator.h" />
     <ClInclude Include="..\WaveLang\source\common\utility\file_utility.h" />
+    <ClInclude Include="..\WaveLang\source\common\utility\graphviz_generator.h" />
     <ClInclude Include="..\WaveLang\source\common\utility\string_table.h" />
     <ClInclude Include="..\WaveLang\source\compiler\ast.h" />
     <ClInclude Include="..\WaveLang\source\compiler\ast_builder.h" />
@@ -125,11 +127,13 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>$(SolutionDir)bin\</OutDir>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)WaveLang\source\;</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)WaveLang\source\;C:\Program Files (no install)\getopt\getopt</IncludePath>
+    <LibraryPath>C:\Program Files (no install)\getopt\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)bin\</OutDir>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)WaveLang\source\;</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)WaveLang\source\;C:\Program Files (no install)\getopt\getopt</IncludePath>
+    <LibraryPath>C:\Program Files (no install)\getopt\Release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

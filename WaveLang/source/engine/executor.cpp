@@ -632,7 +632,8 @@ void c_executor::process_task_wrapper(uint32 thread_index, const s_thread_parame
 
 void c_executor::process_task(uint32 thread_index, const s_task_parameters *params) {
 	if (m_profiling_enabled) {
-		m_profiler.begin_task(thread_index, params->task_index);
+		m_profiler.begin_task(thread_index, params->task_index,
+			m_task_graph->get_task_function_index(params->task_index));
 	}
 
 	const s_task_function &task_function =
