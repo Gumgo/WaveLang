@@ -900,24 +900,9 @@ static c_ast_node_expression *build_expression(const c_lr_parse_tree &parse_tree
 			} else if (node_is_type(child_node, k_token_type_constant_string)) {
 				// This is a string
 				c_compiler_string unescaped_string = tokens.tokens[child_node.get_token_index()].token_string;
-				std::string escaped_string;
-
-				// Go through each character and resolve escape sequences
-				for (size_t index = 0; index < unescaped_string.get_length(); index++) {
-					char ch = unescaped_string[index];
-					if (ch == '\\') {
-						index++;
-						char escape_result;
-						size_t advance = compiler_utility::resolve_escape_sequence(
-							unescaped_string.advance(index), &escape_result);
-						wl_vassert(advance > 0, "We should have already caught this in the lexer");
-
-						index += advance;
-						escaped_string.push_back(escape_result);
-					} else {
-						escaped_string.push_back(ch);
-					}
-				}
+				// We should always successfully escape the string because the lexer will have failed if any of the
+				// escape sequences were invalid.
+				std::string escaped_string = compiler_utility::escape_string(unescaped_string);
 
 				c_ast_node_constant *constant_node = new c_ast_node_constant();
 				constant_node->set_source_location(tokens.tokens[child_node.get_token_index()].source_location);

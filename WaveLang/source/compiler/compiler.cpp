@@ -1,5 +1,6 @@
 #include "compiler/compiler.h"
 #include "compiler/preprocessor.h"
+#include "compiler/execution_graph_globals_parser.h"
 #include "compiler/lexer.h"
 #include "compiler/parser.h"
 #include "compiler/ast.h"
@@ -53,17 +54,33 @@ s_compiler_result c_compiler::compile(const char *root_path, const char *source_
 		first_source_file.imports.push_back(true);
 	}
 
-	// While we keep resolving #import lines, keep processing source files
-	// The list will grow as we are looping over it
-	for (size_t index = 0; index < context.source_files.size(); index++) {
-		result = read_and_preprocess_source_file(context, index);
-		if (result.result != k_compiler_result_success) {
-			output_error(context, result);
-			return result;
+	// We need to initialize the lexer early because it is used by the preprocessor
+	c_lexer::initialize_lexer();
+	c_preprocessor::initialize_preprocessor();
+
+	s_execution_graph_globals execution_graph_globals;
+	{
+		s_execution_graph_globals_context execution_graph_globals_context;
+		execution_graph_globals_context.globals = &execution_graph_globals;
+		execution_graph_globals_context.clear();
+
+		c_execution_graph_globals_parser::register_preprocessor_commands(&execution_graph_globals_context);
+
+		// While we keep resolving #import lines, keep processing source files
+		// The list will grow as we are looping over it
+		for (size_t index = 0; index < context.source_files.size(); index++) {
+			result = read_and_preprocess_source_file(context, index);
+			if (result.result != k_compiler_result_success) {
+				output_error(context, result);
+				return result;
+			}
 		}
 	}
 
-	c_lexer::initialize_lexer();
+	c_preprocessor::shutdown_preprocessor();
+
+	// Store the globals in the graph so they are accessible in future compilation phases
+	out_execution_graph->set_globals(execution_graph_globals);
 
 	// Run the lexer on the preprocessed files
 	s_lexer_output lexer_output;
@@ -242,7 +259,8 @@ static s_compiler_result read_and_preprocess_source_file(
 	if (!source_file.source.empty()) {
 		c_compiler_string preprocessor_source(&source_file.source.front(), source_file.source.size());
 		c_preprocessor_output preprocessor_output;
-		result = c_preprocessor::preprocess(preprocessor_source, preprocessor_output);
+		result = c_preprocessor::preprocess(
+			preprocessor_source, static_cast<int32>(source_file_index), preprocessor_output);
 
 		if (result.result != k_compiler_result_success) {
 			result.source_location.source_file_index = cast_integer_verify<int32>(source_file_index);
@@ -251,7 +269,7 @@ static s_compiler_result read_and_preprocess_source_file(
 
 		// Check to see if there are any new imports
 		for (size_t index = 0; index < preprocessor_output.imports.size(); index++) {
-			std::string import_path = preprocessor_output.imports[index].to_std_string();
+			const std::string &import_path = preprocessor_output.imports[index];
 			std::string full_import_path;
 			if (is_path_relative(import_path.c_str())) {
 				full_import_path = context.root_path + import_path;

@@ -689,11 +689,6 @@ s_compiler_result c_execution_graph_builder::build_execution_graph(
 		out_execution_graph->add_edge(out_argument_node_index, output_node_index);
 	}
 
-	// $TODO Get real data for this:
-	s_execution_graph_globals globals;
-	globals.max_voices = 1;
-	out_execution_graph->set_globals(globals);
-
 	if (!out_errors.empty()) {
 		// Don't associate the error with a particular file, those errors are collected through out_errors
 		result.result = k_compiler_result_graph_error;

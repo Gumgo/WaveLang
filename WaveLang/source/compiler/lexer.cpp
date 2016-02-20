@@ -150,6 +150,10 @@ s_compiler_result c_lexer::process(const s_compiler_context &context, s_lexer_ou
 	return result;
 }
 
+s_token c_lexer::read_next_token(c_compiler_string str) {
+	return ::read_next_token(str);
+}
+
 static bool process_source_file(
 	const s_compiler_source_file &source_file,
 	int32 source_file_index,
@@ -247,6 +251,8 @@ static bool process_source_file(
 
 static s_token read_next_token(
 	c_compiler_string str) {
+	wl_assert(g_lexer_initialized);
+
 	// The algorithm is as follows:
 	// 1) Detect identifiers, read up to any non-identifier symbol
 	// 2) Detect constants, read up to any non-constant symbol

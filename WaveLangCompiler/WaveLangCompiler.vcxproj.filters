@@ -120,6 +120,9 @@
     <ClCompile Include="..\WaveLang\source\common\utility\stopwatch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\WaveLang\source\compiler\execution_graph_globals_parser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\WaveLang\source\common\asserts.h">
@@ -240,6 +243,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\WaveLang\source\common\utility\stopwatch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\WaveLang\source\compiler\execution_graph_globals_parser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,11 +1,17 @@
-- Error reporting for streams
-	- Provide interface on the context to report an error message
-		- Failed to load sample
-		- Invalid delay time (e.g. negative)
-		- Etc.
-	- Best performance is probably to push to lockless queue and read the errors on the main thread
-		- Downside: can run out of space and drop error messages
-		- Alternative is user callback, but that risks the user grabbing a lock
+- Synth globals
+	- Defined in source code with #property syntax; examples:
+		- #sample_rate 22050 44100 48000 96000
+		- #chunk_size 256
+	- Each can be defined at most once
+
+- Targeted builds
+	- Certain constant values can only be known at runtime, e.g. get_sample_rate()
+	- However, we still want these values to be optimized to constants so they can be used in e.g. delay timing calculations
+	- To do this, optional targeted builds. Syntax example:
+		- #sample_rate 44100
+		- #sample_rate 22050 44100 48000 96000
+	- When building, the source code is compiled once for each target
+	- When loading, select synth based on stream settings
 
 - Divorce driver chunk size from processing chunk size
 	- Processing chunk size is always fixed, and defined as an execution graph global in the synth source file

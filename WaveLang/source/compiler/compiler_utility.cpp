@@ -161,3 +161,26 @@ size_t compiler_utility::resolve_escape_sequence(c_compiler_string str, char *ou
 
 	return advance;
 }
+
+std::string compiler_utility::escape_string(c_compiler_string unescaped_string) {
+	std::string escaped_string;
+
+	// Go through each character and resolve escape sequences
+	for (size_t index = 0; index < unescaped_string.get_length(); index++) {
+		char ch = unescaped_string[index];
+		if (ch == '\\') {
+			index++;
+			char escape_result;
+			size_t advance = compiler_utility::resolve_escape_sequence(
+				unescaped_string.advance(index), &escape_result);
+			wl_vassert(advance > 0, "Invalid escape sequence");
+
+			index += advance;
+			escaped_string.push_back(escape_result);
+		} else {
+			escaped_string.push_back(ch);
+		}
+	}
+
+	return escaped_string;
+}

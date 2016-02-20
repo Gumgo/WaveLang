@@ -13,6 +13,8 @@ enum e_compiler_result {
 
 	k_compiler_result_preprocessor_error,
 
+	k_compiler_result_invalid_globals,
+
 	k_compiler_result_lexer_error,
 	k_compiler_result_invalid_token,
 
@@ -133,6 +135,9 @@ namespace compiler_utility {
 	// characters used in the sequence is returned (e.g. \xab returns 3, \t returns 1). If no matching escape sequence
 	// is found, 0 is returned.
 	size_t resolve_escape_sequence(c_compiler_string str, char *out_result);
+
+	// All escape sequences must be valid, enforced with asserts
+	std::string escape_string(c_compiler_string unescaped_string);
 }
 
 #include "compiler_utility.inl"

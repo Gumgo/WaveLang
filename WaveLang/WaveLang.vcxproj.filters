@@ -213,6 +213,9 @@
     <ClCompile Include="source\engine\events\event_console.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\compiler\execution_graph_globals_parser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\common\asserts.h">
@@ -450,6 +453,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\console\console_commands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\compiler\execution_graph_globals_parser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

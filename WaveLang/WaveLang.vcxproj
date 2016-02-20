@@ -30,6 +30,7 @@
     <ClCompile Include="source\compiler\compiler_main.cpp" />
     <ClCompile Include="source\compiler\compiler_utility.cpp" />
     <ClCompile Include="source\compiler\execution_graph_builder.cpp" />
+    <ClCompile Include="source\compiler\execution_graph_globals_parser.cpp" />
     <ClCompile Include="source\compiler\execution_graph_optimizer.cpp" />
     <ClCompile Include="source\compiler\lexer.cpp" />
     <ClCompile Include="source\compiler\lr_parser.cpp" />
@@ -106,6 +107,7 @@
     <ClInclude Include="source\compiler\compiler.h" />
     <ClInclude Include="source\compiler\compiler_utility.h" />
     <ClInclude Include="source\compiler\execution_graph_builder.h" />
+    <ClInclude Include="source\compiler\execution_graph_globals_parser.h" />
     <ClInclude Include="source\compiler\execution_graph_optimizer.h" />
     <ClInclude Include="source\compiler\lexer.h" />
     <ClInclude Include="source\compiler\lr_parser.h" />
