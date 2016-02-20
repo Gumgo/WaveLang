@@ -66,6 +66,7 @@ void c_executor::initialize_internal(const s_executor_settings &settings) {
 	m_task_graph = settings.task_graph;
 	m_max_buffer_size = settings.max_buffer_size;
 
+	initialize_events(settings);
 	initialize_thread_pool(settings);
 	initialize_buffer_allocator(settings);
 	initialize_task_memory(settings);
@@ -74,6 +75,21 @@ void c_executor::initialize_internal(const s_executor_settings &settings) {
 	initialize_task_contexts();
 	initialize_buffer_contexts();
 	initialize_profiler(settings);
+}
+
+void c_executor::initialize_events(const s_executor_settings &settings) {
+	m_event_console.start();
+
+	if (!m_async_event_handler.is_initialized()) {
+		s_async_event_handler_settings event_handler_settings;
+		event_handler_settings.set_default();
+		event_handler_settings.event_handler = handle_event_wrapper;
+		event_handler_settings.event_handler_context = this;
+		m_async_event_handler.initialize(event_handler_settings);
+	}
+	m_async_event_handler.begin_event_handling();
+
+	m_event_interface.initialize(&m_async_event_handler);
 }
 
 void c_executor::initialize_thread_pool(const s_executor_settings &settings) {
@@ -208,6 +224,7 @@ void c_executor::initialize_task_memory(const s_executor_settings &settings) {
 
 			s_task_function_context task_function_context;
 			ZERO_STRUCT(&task_function_context);
+			task_function_context.event_interface = &m_event_interface;
 			task_function_context.sample_rate = settings.sample_rate;
 			task_function_context.arguments = c_task_function_arguments(arguments, argument_data.get_count());
 			// $TODO fill in timing info, etc.
@@ -329,6 +346,7 @@ void c_executor::initialize_tasks(const s_executor_settings &settings) {
 			c_sample_library_requester sample_library_requester(m_sample_library);
 			s_task_function_context task_function_context;
 			ZERO_STRUCT(&task_function_context);
+			task_function_context.event_interface = &m_event_interface;
 			task_function_context.sample_requester = &sample_library_requester;
 			task_function_context.sample_rate = settings.sample_rate;
 			task_function_context.arguments = c_task_function_arguments(arguments, argument_data.get_count());
@@ -377,6 +395,9 @@ void c_executor::initialize_profiler(const s_executor_settings &settings) {
 void c_executor::shutdown_internal() {
 	IF_ASSERTS_ENABLED(uint32 unexecuted_tasks = ) m_thread_pool.stop();
 	wl_assert(unexecuted_tasks == 0);
+
+	m_async_event_handler.end_event_handling();
+	m_event_console.stop();
 
 	if (m_profiling_enabled) {
 		m_profiler.stop();
@@ -698,6 +719,7 @@ void c_executor::process_task(uint32 thread_index, const s_task_parameters *para
 
 		c_sample_library_accessor sample_library_accessor(m_sample_library);
 		s_task_function_context task_function_context;
+		task_function_context.event_interface = &m_event_interface;
 		task_function_context.sample_accessor = &sample_library_accessor;
 		task_function_context.sample_requester = nullptr;
 		task_function_context.sample_rate = params->sample_rate;
@@ -858,4 +880,46 @@ void c_executor::decrement_buffer_usage(uint32 buffer_index) {
 const c_buffer *c_executor::get_buffer_by_index(uint32 buffer_index) const {
 	const s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer_index];
 	return m_buffer_allocator.get_buffer(buffer_context.handle);
+}
+
+void c_executor::handle_event_wrapper(void *context, size_t event_size, const void *event_data) {
+	static_cast<c_executor *>(context)->handle_event(event_size, event_data);
+}
+
+void c_executor::handle_event(size_t event_size, const void *event_data) {
+	if (m_event_console.is_running()) {
+		c_event_string event_string;
+		e_event_level event_level = c_event_interface::build_event_string(event_size, event_data, event_string);
+
+		event_string.truncate_to_length(event_string.get_max_length() - 1);
+		event_string.append_verify("\n");
+
+		e_console_color color = k_console_color_white;
+		switch (event_level) {
+		case k_event_level_verbose:
+			color = k_console_color_gray;
+			break;
+
+		case k_event_level_message:
+			color = k_console_color_white;
+			break;
+
+		case k_event_level_warning:
+			color = k_console_color_yellow;
+			break;
+
+		case k_event_level_error:
+			color = k_console_color_red;
+			break;
+
+		case k_event_level_critical:
+			color = k_console_color_pink;
+			break;
+
+		default:
+			wl_unreachable();
+		}
+
+		m_event_console.print_to_console(event_string.get_string(), color);
+	}
 }

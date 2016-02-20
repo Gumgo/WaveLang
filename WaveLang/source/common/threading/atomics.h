@@ -126,6 +126,10 @@ private:
 
 static_assert(sizeof(c_atomic_int32) == sizeof(int32), "c_atomic_int64 not 64 bits?");
 
+inline void read_write_barrier();
+inline void read_barrier();
+inline void write_barrier();
+
 #if PREDEFINED(USE_ATOMICS_IMPLEMENTATION_WINDOWS)
 #include "common/threading/atomics_windows.inl"
 #else // fallback

@@ -43,7 +43,7 @@ struct s_driver_stream_callback_context {
 	void *user_data;
 };
 
-typedef void(*f_driver_stream_callback)(const s_driver_stream_callback_context &context);
+typedef void (*f_driver_stream_callback)(const s_driver_stream_callback_context &context);
 
 struct s_driver_settings {
 	// Index of the device to use for the stream

@@ -4,6 +4,7 @@
 #define OUTPUT_PARSE_TREE_ENABLED 1
 
 #if PREDEFINED(OUTPUT_PARSE_TREE_ENABLED)
+#include "common/utility/graphviz_generator.h"
 #include <fstream>
 #endif // PREDEFINED(OUTPUT_PARSE_TREE_ENABLED)
 
@@ -54,8 +55,9 @@ static bool process_source_file(
 	std::vector<s_compiler_result> &out_errors);
 
 #if PREDEFINED(OUTPUT_PARSE_TREE_ENABLED)
-static void print_parse_tree(std::ofstream &out, const s_lexer_source_file_output &tokens,
-	const c_lr_parse_tree &tree, size_t index);
+static const char *k_parse_tree_output_filename = "parse_tree.gv";
+static void print_parse_tree(c_graphviz_generator &graph, const s_lexer_source_file_output &tokens,
+	const c_lr_parse_tree &tree, size_t index, size_t parent_index = static_cast<size_t>(-1));
 #endif // PREDEFINED(OUTPUT_PARSE_TREE_ENABLED)
 
 void c_parser::initialize_parser() {
@@ -97,7 +99,7 @@ s_compiler_result c_parser::process(const s_compiler_context &context, const s_l
 #if PREDEFINED(OUTPUT_PARSE_TREE_ENABLED)
 	{
 		// Clear the tree output
-		std::ofstream out("parse_tree.txt");
+		std::ofstream out(k_parse_tree_output_filename);
 	}
 #endif // PREDEFINED(OUTPUT_PARSE_TREE_ENABLED)
 
@@ -154,10 +156,11 @@ static bool process_source_file(
 		error_tokens);
 #if PREDEFINED(OUTPUT_PARSE_TREE_ENABLED)
 	if (error_tokens.empty()) {
-		std::ofstream out("parse_tree.txt", std::ios::app);
-		print_parse_tree(out, source_file_input,
+		c_graphviz_generator parse_tree_graph;
+		parse_tree_graph.set_graph_name("parse_tree");
+		print_parse_tree(parse_tree_graph, source_file_input,
 			source_file_output.parse_tree, source_file_output.parse_tree.get_root_node_index());
-		out << "\n";
+		parse_tree_graph.output_to_file(k_parse_tree_output_filename);
 	}
 #endif // PREDEFINED(OUTPUT_PARSE_TREE_ENABLED)
 
@@ -264,33 +267,42 @@ static_assert(NUMBEROF(k_parse_tree_output_nonterminal_strings) == k_parser_nont
 
 #define PRINT_TERMINAL_STRINGS 1
 
-static void print_parse_tree(std::ofstream &out, const s_lexer_source_file_output &tokens,
-	const c_lr_parse_tree &tree, size_t index) {
-	// For use with http://ironcreek.net/phpsyntaxtree/
-	// $TODO change this to graphviz output
-
+static void print_parse_tree(c_graphviz_generator &graph, const s_lexer_source_file_output &tokens,
+	const c_lr_parse_tree &tree, size_t index, size_t parent_index) {
 	const c_lr_parse_tree_node &node = tree.get_node(index);
 
-	out << "[";
+	c_graphviz_node graph_node;
+
+	std::string node_name = "node_" + std::to_string(index);
+	graph_node.set_name(node_name.c_str());
+	graph_node.set_shape("box");
+
 	if (node.get_symbol().is_terminal()) {
+		graph_node.set_style("rounded");
 #if PREDEFINED(PRINT_TERMINAL_STRINGS)
-		out << tokens.tokens[node.get_token_index()].token_string.to_std_string();
+		graph_node.set_label(c_graphviz_generator::escape_string(
+			tokens.tokens[node.get_token_index()].token_string.to_std_string().c_str()).c_str());
 #else PREDEFINED(PRINT_TERMINAL_STRINGS)
-		out << k_parse_tree_output_terminal_strings[node.get_symbol().get_index()];
+		graph_node.set_label(k_parse_tree_output_terminal_strings[node.get_symbol().get_index()]);
 #endif // PREDEFINED(PRINT_TERMINAL_STRINGS)
 	} else {
-		out << k_parse_tree_output_nonterminal_strings[node.get_symbol().get_index()];
+		graph_node.set_label(k_parse_tree_output_nonterminal_strings[node.get_symbol().get_index()]);
+	}
+
+	graph.add_node(graph_node);
+
+	if (parent_index != static_cast<size_t>(-1)) {
+		graph.add_edge(
+			("node_" + std::to_string(parent_index)).c_str(),
+			node_name.c_str());
 	}
 
 	if (node.get_child_index() != c_lr_parse_tree::k_invalid_index) {
-		out << " ";
-		print_parse_tree(out, tokens, tree, node.get_child_index());
+		print_parse_tree(graph, tokens, tree, node.get_child_index(), index);
 	}
 
-	out << "]";
-
 	if (node.get_sibling_index() != c_lr_parse_tree::k_invalid_index) {
-		print_parse_tree(out, tokens, tree, node.get_sibling_index());
+		print_parse_tree(graph, tokens, tree, node.get_sibling_index(), parent_index);
 	}
 }
 #endif // PREDEFINED(OUTPUT_PARSE_TREE_ENABLED)

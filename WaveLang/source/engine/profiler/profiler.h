@@ -3,7 +3,7 @@
 
 #include "common/common.h"
 #include "common/threading/lock_free.h"
-#include "engine/profiler/stopwatch.h"
+#include "common/utility/stopwatch.h"
 #include <vector>
 
 struct s_profiler_settings {

@@ -12,6 +12,7 @@ public:
 	~c_condition_variable();
 
 	void wait(c_scoped_lock &scoped_lock);
+	void wait(c_scoped_lock &scoped_lock, uint32 timeout_ms);
 	void notify_one();
 	void notify_all();
 

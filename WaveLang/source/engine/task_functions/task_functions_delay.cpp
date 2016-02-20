@@ -3,6 +3,7 @@
 #include "engine/task_function_registry.h"
 #include "engine/buffer.h"
 #include "engine/buffer_operations/buffer_operations.h"
+#include "engine/events/event_interface.h"
 #include <algorithm>
 
 static const uint32 k_task_functions_delay_library_id = 3;
@@ -11,7 +12,8 @@ static const s_task_function_uid k_task_function_delay_in_out_uid = s_task_funct
 
 struct s_buffer_operation_delay {
 	static size_t query_memory(uint32 sample_rate, real32 delay);
-	static void initialize(s_buffer_operation_delay *context, uint32 sample_rate, real32 delay);
+	static void initialize(c_event_interface *event_interface,
+		s_buffer_operation_delay *context, uint32 sample_rate, real32 delay);
 
 	static void in_out(
 		s_buffer_operation_delay *context, size_t buffer_size, c_real_buffer_or_constant_in in, c_real_buffer_out out);
@@ -115,8 +117,10 @@ size_t s_buffer_operation_delay::query_memory(uint32 sample_rate, real32 delay) 
 	return sizeof(s_buffer_operation_delay) + (delay_samples * sizeof(real32));
 }
 
-void s_buffer_operation_delay::initialize(s_buffer_operation_delay *context, uint32 sample_rate, real32 delay) {
+void s_buffer_operation_delay::initialize(c_event_interface *event_interface,
+	s_buffer_operation_delay *context, uint32 sample_rate, real32 delay) {
 	if (std::isnan(delay) || std::isinf(delay)) {
+		event_interface->submit(EVENT_WARNING << "Invalid delay duration, defaulting to 0");
 		delay = 0.0f;
 	}
 
@@ -208,6 +212,7 @@ static size_t task_memory_query_delay(const s_task_function_context &context) {
 
 static void task_initializer_delay(const s_task_function_context &context) {
 	s_buffer_operation_delay::initialize(
+		context.event_interface,
 		static_cast<s_buffer_operation_delay *>(context.task_memory),
 		context.sample_rate,
 		context.arguments[0].get_real_constant_in());

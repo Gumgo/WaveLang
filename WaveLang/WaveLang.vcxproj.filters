@@ -129,9 +129,6 @@
     <ClCompile Include="source\engine\sample\native_samples.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\engine\profiler\stopwatch.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="source\engine\profiler\profiler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -193,6 +190,27 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\common\utility\graphviz_generator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\engine\events\async_event_handler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\common\utility\stopwatch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\engine\events\event_interface.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\engine\events\event_data_types.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\engine\events\event_console_windows.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\console\console_main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\engine\events\event_console.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -338,9 +356,6 @@
     <ClInclude Include="source\common\utility\aligned_allocator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\engine\profiler\stopwatch.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="source\engine\profiler\profiler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -417,6 +432,24 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\common\utility\graphviz_generator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\engine\events\async_event_handler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\common\utility\stopwatch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\engine\events\event_interface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\engine\events\event_data_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\engine\events\event_console.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\console\console_commands.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

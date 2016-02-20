@@ -17,7 +17,12 @@ public:
 	// Returns time from reset in nanoseconds
 	int64 query();
 
+	// Returns time from reset in milliseconds
+	int64 query_ms();
+
 private:
+	int64 query_internal();
+
 	int64 m_frequency;
 	int64 m_start_time;
 };

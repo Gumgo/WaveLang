@@ -5,6 +5,7 @@
 #include "execution_graph/native_module.h"
 #include "engine/buffer.h"
 
+class c_event_interface;
 class c_sample_library_accessor;
 class c_sample_library_requester;
 class c_executor;
@@ -181,9 +182,9 @@ struct s_task_function_argument {
 typedef c_wrapped_array_const<s_task_function_argument> c_task_function_arguments;
 
 struct s_task_function_context {
+	c_event_interface *event_interface;
 	c_sample_library_accessor *sample_accessor;
 	c_sample_library_requester *sample_requester;
-	// $TODO error reporting interface
 
 	uint32 sample_rate;
 	uint32 buffer_size;

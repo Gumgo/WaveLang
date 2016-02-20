@@ -125,3 +125,15 @@ inline int64 c_atomic_int64::bitwise_or(int64 x) {
 inline int64 c_atomic_int64::bitwise_xor(int64 x) {
 	return m_value.fetch_xor(x);
 }
+
+inline void read_write_barrier() {
+	std::atomic_thread_fence(std::memory_order_acq_rel);
+}
+
+inline void read_barrier() {
+	std::atomic_thread_fence(std::memory_order_acquire);
+}
+
+inline void write_barrier() {
+	std::atomic_thread_fence(std::memory_order_release);
+}

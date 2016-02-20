@@ -150,3 +150,21 @@ inline int64 c_atomic_int64::bitwise_or(int64 x) {
 inline int64 c_atomic_int64::bitwise_xor(int64 x) {
 	return InterlockedXor(to_dst64(&m_value), to_src64(x));
 }
+
+// MemoryBarrier() performs the actual CPU memory barrier. _[Read][Write]Barrier are compiler intrinsics that prevent
+// instruction reordering.
+
+inline void read_write_barrier() {
+	MemoryBarrier();
+	_ReadWriteBarrier();
+}
+
+inline void read_barrier() {
+	MemoryBarrier();
+	_ReadBarrier();
+}
+
+inline void write_barrier() {
+	MemoryBarrier();
+	_WriteBarrier();
+}

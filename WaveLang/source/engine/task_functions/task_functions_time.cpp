@@ -3,6 +3,7 @@
 #include "engine/task_function_registry.h"
 #include "engine/buffer.h"
 #include "engine/buffer_operations/buffer_operations.h"
+#include "engine/events/event_interface.h"
 
 static const uint32 k_task_functions_time_library_id = 5;
 
@@ -10,7 +11,7 @@ static const s_task_function_uid k_task_function_time_period_out_uid = s_task_fu
 
 struct s_buffer_operation_time_period {
 	static size_t query_memory();
-	static void initialize(s_buffer_operation_time_period *context);
+	static void initialize(c_event_interface *event_interface, s_buffer_operation_time_period *context, real32 period);
 
 	static void out(
 		s_buffer_operation_time_period *context, size_t buffer_size, uint32 sample_rate, real32 period,
@@ -23,7 +24,11 @@ size_t s_buffer_operation_time_period::query_memory() {
 	return sizeof(s_buffer_operation_time_period);
 }
 
-void s_buffer_operation_time_period::initialize(s_buffer_operation_time_period *context) {
+void s_buffer_operation_time_period::initialize(c_event_interface *event_interface,
+	s_buffer_operation_time_period *context, real32 period) {
+	if (std::isnan(period) || std::isinf(period) || period <= 0.0f) {
+		event_interface->submit(EVENT_WARNING << "Invalid time period, defaulting to 0");
+	}
 	context->current_sample = 0.0f;
 }
 
@@ -61,7 +66,10 @@ static size_t task_memory_query_time_period(const s_task_function_context &conte
 }
 
 static void task_initializer_time_period(const s_task_function_context &context) {
-	s_buffer_operation_time_period::initialize(static_cast<s_buffer_operation_time_period *>(context.task_memory));
+	s_buffer_operation_time_period::initialize(
+		context.event_interface,
+		static_cast<s_buffer_operation_time_period *>(context.task_memory),
+		context.arguments[0].get_real_constant_in());
 }
 
 static void task_function_time_period_out(const s_task_function_context &context) {

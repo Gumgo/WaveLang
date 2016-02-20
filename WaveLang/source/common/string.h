@@ -63,12 +63,34 @@ public:
 		m_buffer[offset + index] = '\0';
 	}
 
+	void truncate_to_length(size_t new_length) {
+		if (new_length >= k_buffer_size) {
+			return;
+		}
+
+		// If the string is already shorter, this will have no effect
+		m_buffer[new_length] = '\0';
+	}
+
 	const char *get_string() const {
+		return m_buffer;
+	}
+
+	// Returns non-const pointer to the string - if using this function, be careful of buffer overruns!
+	char *get_string_unsafe() {
 		return m_buffer;
 	}
 
 	size_t get_length() const {
 		return strlen(m_buffer);
+	}
+
+	size_t get_max_length() const {
+		return k_buffer_size - 1;
+	}
+
+	size_t get_buffer_size() const {
+		return k_buffer_size;
 	}
 
 	bool is_empty() const {

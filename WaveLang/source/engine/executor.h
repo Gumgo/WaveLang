@@ -10,6 +10,9 @@
 #include "engine/profiler/profiler.h"
 #include "driver/sample_format.h"
 #include "engine/sample/sample_library.h"
+#include "engine/events/async_event_handler.h"
+#include "engine/events/event_console.h"
+#include "engine/events/event_interface.h"
 
 class c_task_graph;
 class c_buffer;
@@ -22,6 +25,7 @@ struct s_executor_settings {
 	uint32 max_buffer_size;
 	uint32 output_channels;
 
+	bool event_console_enabled;
 	bool profiling_enabled;
 };
 
@@ -84,6 +88,7 @@ private:
 	};
 
 	void initialize_internal(const s_executor_settings &settings);
+	void initialize_events(const s_executor_settings &settings);
 	void initialize_thread_pool(const s_executor_settings &settings);
 	void initialize_buffer_allocator(const s_executor_settings &settings);
 	void initialize_task_memory(const s_executor_settings &settings);
@@ -119,6 +124,9 @@ private:
 	// Used for array dereference
 	friend struct s_task_function_context;
 	const c_buffer *get_buffer_by_index(uint32 buffer_index) const;
+
+	static void handle_event_wrapper(void *context, size_t event_size, const void *event_data);
+	void handle_event(size_t event_size, const void *event_data);
 
 	// Used to enable/disable the executor in a thread-safe manner
 	c_atomic_int32 m_state;
@@ -165,6 +173,15 @@ private:
 
 	// Sample library
 	c_sample_library m_sample_library;
+
+	// Sends events from the stream threads to the event handling thread
+	c_async_event_handler m_async_event_handler;
+
+	// Event console
+	c_event_console m_event_console;
+
+	// The event interface passed into tasks
+	c_event_interface m_event_interface;
 
 	// Used to measure execution time
 	bool m_profiling_enabled;

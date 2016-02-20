@@ -92,8 +92,12 @@ static void task_function_modulo_in_inout(const s_task_function_context &context
 }
 
 static uint32 get_index_or_invalid(uint32 array_count, real32 real_index) {
-	// $TODO optimize
-	int32 is_invalid = std::isnan(real_index) | std::isinf(real_index);
+	// If the value is NaN or infinity, all bits in the exponent are 1. To avoid two function calls, we can just use a
+	// quick bitwise test.
+	//int32 is_invalid = std::isnan(real_index) | std::isinf(real_index);
+	static const uint32 k_exponent_mask = 0x7f800000;
+	uint32 real_index_bits = *reinterpret_cast<const uint32 *>(&real_index);
+	int32 is_invalid = (real_index_bits & k_exponent_mask) == k_exponent_mask;
 
 	// If is_invalid is true, this might have an undefined value, but that's fine
 	int32 index = static_cast<int32>(std::floor(real_index));

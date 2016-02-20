@@ -46,6 +46,8 @@ public:
 
 	bool output_to_file(const char *fname);
 
+	static std::string escape_string(const char *str);
+
 private:
 	std::string m_graph_name;
 	std::vector<c_graphviz_node> m_nodes;

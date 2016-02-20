@@ -4,16 +4,6 @@
 #include <stack>
 #include <array>
 
-// $TODO move/rewrite this comment?
-// Each optimization rule consists of two descriptions, "from" and "to"
-// Each describes a possible node pattern that could be found in the graph
-// If the "from" pattern is identified, it is replaced with the "to" pattern
-// The descriptions consist of a list of module calls and placeholders, e.g.
-// ADD( X1, NEG( X2 ) ) => SUB( X1, X2 )
-// Internally, these are represented as two lists:
-// ADD, X1, NEG, X2, END, END
-// SUB, X1, X2, END
-
 static void build_array_value(const c_execution_graph *execution_graph, uint32 array_node_index,
 	std::vector<uint32> &out_array_value);
 static bool sanitize_array_index(const c_execution_graph *execution_graph, uint32 array_node_index, real32 array_index,

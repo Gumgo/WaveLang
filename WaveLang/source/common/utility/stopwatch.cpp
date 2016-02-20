@@ -1,4 +1,4 @@
-#include "engine/profiler/stopwatch.h"
+#include "common/utility/stopwatch.h"
 
 #if PREDEFINED(PLATFORM_WINDOWS)
 
@@ -24,12 +24,20 @@ void c_stopwatch::reset() {
 }
 
 int64 c_stopwatch::query() {
+	int64 duration = query_internal();
+	return (duration * k_nanoseconds_per_second) / m_frequency;
+}
+
+int64 c_stopwatch::query_ms() {
+	int64 duration = query_internal();
+	return (duration * k_milliseconds_per_second) / m_frequency;
+}
+
+int64 c_stopwatch::query_internal() {
 	wl_vassert(m_frequency > 0, "Not initialized");
 	LARGE_INTEGER time;
 	QueryPerformanceCounter(&time);
-	int64 duration = time.QuadPart - m_start_time;
-
-	return (duration * k_nanoseconds_per_second) / m_frequency;
+	return time.QuadPart - m_start_time;
 }
 
 #else // PREDEFINED(PLATFORM_WINDOWS)

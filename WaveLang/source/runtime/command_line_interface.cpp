@@ -5,6 +5,7 @@
 #include "engine/task_function_registry.h"
 #include "engine/task_functions/task_function_registration.h"
 #include "execution_graph/execution_graph.h"
+#include "engine/events/event_data_types.h"
 
 #include <iostream>
 #include <string>
@@ -67,6 +68,8 @@ int c_command_line_interface::main_function() {
 		}
 	}
 
+	initialize_event_data_types();
+
 	// None active initially
 	runtime_context.active_task_graph = -1;
 
@@ -87,6 +90,7 @@ int c_command_line_interface::main_function() {
 		}
 	}
 
+	runtime_context.executor.shutdown();
 	runtime_context.driver_interface.stop_stream();
 	runtime_context.driver_interface.shutdown();
 
@@ -301,6 +305,7 @@ void c_command_line_interface::process_command_load_synth(const s_command &comma
 			settings.sample_rate = static_cast<uint32>(runtime_context.driver_interface.get_settings().sample_rate);
 			settings.max_buffer_size = runtime_context.driver_interface.get_settings().frames_per_buffer;
 			settings.output_channels = runtime_context.driver_interface.get_settings().output_channels;
+			settings.event_console_enabled = true;
 			settings.profiling_enabled = true;
 			runtime_context.executor.initialize(settings);
 		}

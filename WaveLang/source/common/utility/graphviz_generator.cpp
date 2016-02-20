@@ -147,3 +147,30 @@ bool c_graphviz_generator::output_to_file(const char *fname) {
 
 	return true;
 }
+
+std::string c_graphviz_generator::escape_string(const char *str) {
+	std::string result;
+
+	for (const char *c = str; *c != '\0'; c++) {
+		char ch = *c;
+
+		if (ch == '"') {
+			result += "&quot;";
+		} else if (ch == '&') {
+			result += "&amp;";
+		} else if (ch == '<') {
+			result += "&lt;";
+		} else if (ch == '>') {
+			result += "&gt;";
+		} else if (ch >= 32 && ch <= 126) {
+			result.push_back(ch);
+		} else {
+			// Use the numeric ASCII code
+			result.push_back('&');
+			result += std::to_string(static_cast<uint8>(ch));
+			result.push_back(';');
+		}
+	}
+
+	return result;
+}
