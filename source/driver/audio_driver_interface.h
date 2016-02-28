@@ -1,5 +1,5 @@
-#ifndef WAVELANG_DRIVER_INTERFACE_H__
-#define WAVELANG_DRIVER_INTERFACE_H__
+#ifndef WAVELANG_AUDIO_DRIVER_INTERFACE_H__
+#define WAVELANG_AUDIO_DRIVER_INTERFACE_H__
 
 #include "common/common.h"
 #include "driver/sample_format.h"
@@ -12,40 +12,40 @@ typedef void PaStream;
 struct PaStreamCallbackTimeInfo;
 typedef unsigned long PaStreamCallbackFlags;
 
-enum e_driver_result {
-	k_driver_result_success,
-	k_driver_result_initialization_failed,
-	k_driver_result_failed_to_query_devices,
-	k_driver_result_settings_not_supported,
-	k_driver_result_failed_to_open_stream,
-	k_driver_result_failed_to_start_stream,
+enum e_audio_driver_result {
+	k_audio_driver_result_success,
+	k_audio_driver_result_initialization_failed,
+	k_audio_driver_result_failed_to_query_devices,
+	k_audio_driver_result_settings_not_supported,
+	k_audio_driver_result_failed_to_open_stream,
+	k_audio_driver_result_failed_to_start_stream,
 
-	k_driver_result_count
+	k_audio_driver_result_count
 };
 
-struct s_driver_result {
-	e_driver_result result;
+struct s_audio_driver_result {
+	e_audio_driver_result result;
 	std::string message;
 
 	inline void clear() {
-		result = k_driver_result_success;
+		result = k_audio_driver_result_success;
 		message.clear();
 	}
 };
 
-struct s_driver_settings;
+struct s_audio_driver_settings;
 
-struct s_driver_stream_callback_context {
-	const s_driver_settings *driver_settings;
+struct s_audio_driver_stream_callback_context {
+	const s_audio_driver_settings *driver_settings;
 	void *output_buffers;
 	// $TODO add more data
 
 	void *user_data;
 };
 
-typedef void (*f_driver_stream_callback)(const s_driver_stream_callback_context &context);
+typedef void (*f_audio_driver_stream_callback)(const s_audio_driver_stream_callback_context &context);
 
-struct s_driver_settings {
+struct s_audio_driver_settings {
 	// Index of the device to use for the stream
 	uint32 device_index;
 
@@ -62,7 +62,7 @@ struct s_driver_settings {
 	uint32 frames_per_buffer;
 
 	// Stream callback
-	f_driver_stream_callback stream_callback;
+	f_audio_driver_stream_callback stream_callback;
 	void *stream_callback_user_data;
 
 	void set_default() {
@@ -76,7 +76,7 @@ struct s_driver_settings {
 	}
 };
 
-struct s_device_info {
+struct s_audio_device_info {
 	const char *name;
 	// $TODO host API identifier?
 	uint32 max_output_channels;
@@ -85,24 +85,24 @@ struct s_device_info {
 	real64 default_sample_rate;
 };
 
-class c_driver_interface {
+class c_audio_driver_interface {
 public:
-	c_driver_interface();
-	~c_driver_interface();
+	c_audio_driver_interface();
+	~c_audio_driver_interface();
 
-	s_driver_result initialize();
+	s_audio_driver_result initialize();
 	void shutdown();
 
 	uint32 get_device_count() const;
 	uint32 get_default_device_index() const;
-	s_device_info get_device_info(uint32 device_index) const;
+	s_audio_device_info get_device_info(uint32 device_index) const;
 
-	bool are_settings_supported(const s_driver_settings &settings) const;
+	bool are_settings_supported(const s_audio_driver_settings &settings) const;
 
-	s_driver_result start_stream(const s_driver_settings &settings);
+	s_audio_driver_result start_stream(const s_audio_driver_settings &settings);
 	void stop_stream();
 	bool is_stream_running() const;
-	const s_driver_settings &get_settings() const;
+	const s_audio_driver_settings &get_settings() const;
 
 private:
 	static int stream_callback_internal(
@@ -114,7 +114,7 @@ private:
 	uint32 m_device_count;
 	uint32 m_default_device_index;
 	PaStream *m_stream;
-	s_driver_settings m_settings;
+	s_audio_driver_settings m_settings;
 };
 
-#endif // WAVELANG_DRIVER_INTERFACE_H__
+#endif // WAVELANG_AUDIO_DRIVER_INTERFACE_H__

@@ -2,15 +2,19 @@
 #define WAVELANG_RUNTIME_CONTEXT_H__
 
 #include "common/common.h"
-#include "driver/driver_interface.h"
+#include "driver/audio_driver_interface.h"
+#include "driver/controller_driver_interface.h"
 #include "engine/task_graph.h"
 #include "engine/executor.h"
 
 struct s_runtime_context {
-	static void stream_callback(const s_driver_stream_callback_context &context);
+	static void stream_callback(const s_audio_driver_stream_callback_context &context);
 
 	// Interface for the audio driver
-	c_driver_interface driver_interface;
+	c_audio_driver_interface audio_driver_interface;
+
+	// Interface for controller driver
+	c_controller_driver_interface controller_driver_interface;
 
 	// Executes the synth logic
 	c_executor executor;

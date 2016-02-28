@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Projects>
+	<Project Name="WaveLangCompiler">
+		<SourceDir Path="common" />
+		<SourceDir Path="compiler" />
+		<SourceDir Path="execution_graph" />
+		<SourceDir Path="natvis" />
+
+		<IncludeDir Path="C:\Program Files (no install)\getopt\getopt" />
+
+		<DebugLibraryDir Path="C:\Program Files (no install)\getopt\Debug" />
+		<ReleaseLibraryDir Path="C:\Program Files (no install)\getopt\Release" />
+	</Project>
+
+	<Project Name="WaveLangConsole">
+		<SourceDir Path="common" />
+		<SourceDir Path="console" />
+		<SourceDir Path="natvis" />
+	</Project>
+
+	<Project Name="WaveLangRuntime">
+		<SourceDir Path="common" />
+		<SourceDir Path="driver" />
+		<SourceDir Path="engine" />
+		<SourceDir Path="execution_graph\" />
+		<SourceDir Path="runtime" />
+		<SourceDir Path="natvis" />
+
+		<IncludeDir Path="C:\Program Files (no install)\portaudio\pa_stable_v19_20140130\portaudio\include" />
+		<IncludeDir Path="C:\Program Files (no install)\rtmidi-2.1.1" />
+
+		<DebugLibraryDir Path="C:\Program Files (no install)\portaudio\pa_stable_v19_20140130\portaudio\build\msvc\Win32\Debug" />
+		<ReleaseLibraryDir Path="C:\Program Files (no install)\portaudio\pa_stable_v19_20140130\portaudio\build\msvc\Win32\Release" />
+		<DebugLibraryDir Path="C:\Program Files (no install)\rtmidi-2.1.1\lib" />
+		<ReleaseLibraryDir Path="C:\Program Files (no install)\rtmidi-2.1.1\lib" />
+	</Project>
+</Projects>

@@ -1,4 +1,4 @@
-#include "driver/driver_interface.h"
+#include "driver/audio_driver_interface.h"
 
 #include <portaudio.h>
 #pragma comment(lib, "portaudio_x86.lib")
@@ -14,7 +14,7 @@ static PaSampleFormat get_pa_sample_format(e_sample_format sample_format) {
 	}
 }
 
-static void setup_stream_parameters(const s_driver_settings &settings, uint32 device_count,
+static void setup_stream_parameters(const s_audio_driver_settings &settings, uint32 device_count,
 	PaStreamParameters &out_input_params, PaStreamParameters &out_output_params) {
 	wl_assert(VALID_INDEX(settings.device_index, device_count));
 	wl_assert(settings.frames_per_buffer > 0);
@@ -35,34 +35,34 @@ static void setup_stream_parameters(const s_driver_settings &settings, uint32 de
 	// $TODO should suggestedLatency be user-provided?
 }
 
-c_driver_interface::c_driver_interface() {
+c_audio_driver_interface::c_audio_driver_interface() {
 	m_initialized = false;
 	m_device_count = 0;
 	m_default_device_index = 0;
 	m_stream = nullptr;
 }
 
-c_driver_interface::~c_driver_interface() {
+c_audio_driver_interface::~c_audio_driver_interface() {
 	shutdown();
 }
 
-s_driver_result c_driver_interface::initialize() {
+s_audio_driver_result c_audio_driver_interface::initialize() {
 	wl_assert(!m_initialized);
 
-	s_driver_result result;
+	s_audio_driver_result result;
 	result.clear();
 
 	PaError error = Pa_Initialize();
 	if (error != paNoError) {
 		m_initialized = true;
-		result.result = k_driver_result_initialization_failed;
+		result.result = k_audio_driver_result_initialization_failed;
 		result.message = Pa_GetErrorText(error);
 		return result;
 	}
 
 	int32 device_count = Pa_GetDeviceCount();
 	if (device_count < 0) {
-		result.result = k_driver_result_failed_to_query_devices;
+		result.result = k_audio_driver_result_failed_to_query_devices;
 		result.message = Pa_GetErrorText(device_count);
 		Pa_Terminate();
 		return result;
@@ -75,7 +75,7 @@ s_driver_result c_driver_interface::initialize() {
 	return result;
 }
 
-void c_driver_interface::shutdown() {
+void c_audio_driver_interface::shutdown() {
 	wl_assert(!m_stream);
 
 	if (!m_initialized) {
@@ -86,21 +86,21 @@ void c_driver_interface::shutdown() {
 	m_initialized = false;
 }
 
-uint32 c_driver_interface::get_device_count() const {
+uint32 c_audio_driver_interface::get_device_count() const {
 	wl_assert(m_initialized);
 	return m_device_count;
 }
 
-uint32 c_driver_interface::get_default_device_index() const {
+uint32 c_audio_driver_interface::get_default_device_index() const {
 	wl_assert(m_initialized);
 	return m_default_device_index;
 }
 
-s_device_info c_driver_interface::get_device_info(uint32 device_index) const {
+s_audio_device_info c_audio_driver_interface::get_device_info(uint32 device_index) const {
 	wl_assert(m_initialized);
 	wl_assert(VALID_INDEX(device_index, m_device_count));
 
-	s_device_info result;
+	s_audio_device_info result;
 	const PaDeviceInfo *device_info = Pa_GetDeviceInfo(static_cast<PaDeviceIndex>(device_index));
 	result.name = device_info->name;
 	result.max_output_channels = cast_integer_verify<uint32>(device_info->maxOutputChannels);
@@ -111,7 +111,7 @@ s_device_info c_driver_interface::get_device_info(uint32 device_index) const {
 	return result;
 }
 
-bool c_driver_interface::are_settings_supported(const s_driver_settings &settings) const {
+bool c_audio_driver_interface::are_settings_supported(const s_audio_driver_settings &settings) const {
 	wl_assert(m_initialized);
 
 	PaStreamParameters input_params;
@@ -123,15 +123,15 @@ bool c_driver_interface::are_settings_supported(const s_driver_settings &setting
 	return (result == paFormatIsSupported);
 }
 
-s_driver_result c_driver_interface::start_stream(const s_driver_settings &settings) {
+s_audio_driver_result c_audio_driver_interface::start_stream(const s_audio_driver_settings &settings) {
 	wl_assert(m_initialized);
 	wl_assert(!m_stream);
 
-	s_driver_result result;
+	s_audio_driver_result result;
 	result.clear();
 
 	if (!are_settings_supported(settings)) {
-		result.result = k_driver_result_settings_not_supported;
+		result.result = k_audio_driver_result_settings_not_supported;
 		result.message = "Settings not supported";
 		return result;
 	}
@@ -151,14 +151,14 @@ s_driver_result c_driver_interface::start_stream(const s_driver_settings &settin
 		this);
 	if (error != paNoError) {
 		wl_assert(!m_stream);
-		result.result = k_driver_result_failed_to_open_stream;
+		result.result = k_audio_driver_result_failed_to_open_stream;
 		result.message = Pa_GetErrorText(error);
 		return result;
 	}
 
 	error = Pa_StartStream(m_stream);
 	if (error != paNoError) {
-		result.result = k_driver_result_failed_to_start_stream;
+		result.result = k_audio_driver_result_failed_to_start_stream;
 		result.message = Pa_GetErrorText(error);
 
 		// Clean up the stream
@@ -176,7 +176,7 @@ s_driver_result c_driver_interface::start_stream(const s_driver_settings &settin
 	return result;
 }
 
-void c_driver_interface::stop_stream() {
+void c_audio_driver_interface::stop_stream() {
 	if (!m_stream) {
 		return;
 	}
@@ -192,23 +192,23 @@ void c_driver_interface::stop_stream() {
 	m_stream = nullptr;
 }
 
-bool c_driver_interface::is_stream_running() const {
+bool c_audio_driver_interface::is_stream_running() const {
 	return m_stream != nullptr;
 }
 
-const s_driver_settings &c_driver_interface::get_settings() const {
+const s_audio_driver_settings &c_audio_driver_interface::get_settings() const {
 	wl_assert(is_stream_running());
 	return m_settings;
 }
 
-int c_driver_interface::stream_callback_internal(
+int c_audio_driver_interface::stream_callback_internal(
 	const void *input, void *output, unsigned long frame_count,
 	const PaStreamCallbackTimeInfo *time_info, PaStreamCallbackFlags status_flags, void *user_data) {
-	c_driver_interface *this_ptr = static_cast<c_driver_interface *>(user_data);
+	c_audio_driver_interface *this_ptr = static_cast<c_audio_driver_interface *>(user_data);
 
 	wl_assert(frame_count == this_ptr->m_settings.frames_per_buffer);
 
-	s_driver_stream_callback_context context;
+	s_audio_driver_stream_callback_context context;
 	context.driver_settings = &this_ptr->m_settings;
 	context.output_buffers = output;
 	context.user_data = this_ptr->m_settings.stream_callback_user_data;

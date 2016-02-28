@@ -32,6 +32,7 @@ private:
 	static bool is_whitespace(char c);
 
 	void process_command_init_stream(const s_command &command);
+	void process_command_init_controller(const s_command &command);
 	void process_command_load_synth(const s_command &command);
 
 	s_runtime_context runtime_context;
@@ -61,8 +62,16 @@ int c_command_line_interface::main_function() {
 	register_task_functions();
 
 	{
-		s_driver_result driver_result = runtime_context.driver_interface.initialize();
-		if (driver_result.result != k_driver_result_success) {
+		s_audio_driver_result driver_result = runtime_context.audio_driver_interface.initialize();
+		if (driver_result.result != k_audio_driver_result_success) {
+			std::cout << driver_result.message << "\n";
+			return 1;
+		}
+	}
+
+	{
+		s_controller_driver_result driver_result = runtime_context.controller_driver_interface.initialize();
+		if (driver_result.result != k_controller_driver_result_success) {
 			std::cout << driver_result.message << "\n";
 			return 1;
 		}
@@ -83,6 +92,8 @@ int c_command_line_interface::main_function() {
 			done = true;
 		} else if (command.command == "init_stream") {
 			process_command_init_stream(command);
+		} else if (command.command == "init_controller") {
+			process_command_init_controller(command);
 		} else if (command.command == "load_synth") {
 			process_command_load_synth(command);
 		} else {
@@ -91,8 +102,9 @@ int c_command_line_interface::main_function() {
 	}
 
 	runtime_context.executor.shutdown();
-	runtime_context.driver_interface.stop_stream();
-	runtime_context.driver_interface.shutdown();
+	runtime_context.controller_driver_interface.shutdown();
+	runtime_context.audio_driver_interface.stop_stream();
+	runtime_context.audio_driver_interface.shutdown();
 
 	c_task_function_registry::shutdown();
 	c_native_module_registry::shutdown();
@@ -192,28 +204,28 @@ bool c_command_line_interface::is_whitespace(char c) {
 }
 
 void c_command_line_interface::process_command_init_stream(const s_command &command) {
-	s_driver_settings settings;
+	s_audio_driver_settings settings;
 	bool valid_settings = false;
 	bool read_settings = true;
 
 	if (command.arguments.size() == 1) {
 		if (command.arguments[0] == "list") {
-			for (size_t index = 0; index < runtime_context.driver_interface.get_device_count(); index++) {
-				s_device_info device_info = runtime_context.driver_interface.get_device_info(index);
+			for (size_t index = 0; index < runtime_context.audio_driver_interface.get_device_count(); index++) {
+				s_audio_device_info device_info = runtime_context.audio_driver_interface.get_device_info(index);
 				std::cout << index << ": " << device_info.name << "\n";
 			}
 			return;
 		} else if (command.arguments[0] == "default") {
-			if (!VALID_INDEX(runtime_context.driver_interface.get_default_device_index(),
-				runtime_context.driver_interface.get_device_count())) {
-				std::cout << "No default device\n";
+			if (!VALID_INDEX(runtime_context.audio_driver_interface.get_default_device_index(),
+				runtime_context.audio_driver_interface.get_device_count())) {
+				std::cout << "No default audio device\n";
 				return;
 			}
 
-			s_device_info device_info = runtime_context.driver_interface.get_device_info(
-				runtime_context.driver_interface.get_default_device_index());
+			s_audio_device_info device_info = runtime_context.audio_driver_interface.get_device_info(
+				runtime_context.audio_driver_interface.get_default_device_index());
 
-			settings.device_index = runtime_context.driver_interface.get_default_device_index();
+			settings.device_index = runtime_context.audio_driver_interface.get_default_device_index();
 			settings.sample_rate = device_info.default_sample_rate;
 			settings.output_channels = std::min(2u, device_info.max_output_channels);
 			settings.sample_format = k_sample_format_float32;
@@ -227,8 +239,8 @@ void c_command_line_interface::process_command_init_stream(const s_command &comm
 		if (command.arguments.size() == 5) {
 			try {
 				settings.device_index = std::stoul(command.arguments[0]);
-				if (!VALID_INDEX(settings.device_index, runtime_context.driver_interface.get_device_count())) {
-					throw std::invalid_argument("Invalid device index");
+				if (!VALID_INDEX(settings.device_index, runtime_context.audio_driver_interface.get_device_count())) {
+					throw std::invalid_argument("Invalid audio device index");
 				}
 
 				settings.sample_rate = std::stod(command.arguments[1]);
@@ -254,12 +266,74 @@ void c_command_line_interface::process_command_init_stream(const s_command &comm
 
 	if (valid_settings) {
 		// Stop the old stream
-		runtime_context.driver_interface.stop_stream();
+		runtime_context.audio_driver_interface.stop_stream();
 
 		settings.stream_callback = runtime_context.stream_callback;
 		settings.stream_callback_user_data = &runtime_context;
-		s_driver_result result = runtime_context.driver_interface.start_stream(settings);
-		if (result.result != k_driver_result_success) {
+		s_audio_driver_result result = runtime_context.audio_driver_interface.start_stream(settings);
+		if (result.result != k_audio_driver_result_success) {
+			std::cout << result.message << "\n";
+		}
+
+		return;
+	}
+
+	std::cout << "Invalid command\n";
+}
+
+void c_command_line_interface::process_command_init_controller(const s_command &command) {
+	s_controller_driver_settings settings;
+	bool valid_settings = false;
+	bool read_settings = true;
+
+	if (command.arguments.size() == 1) {
+		if (command.arguments[0] == "list") {
+			for (size_t index = 0; index < runtime_context.controller_driver_interface.get_device_count(); index++) {
+				s_controller_device_info device_info =
+					runtime_context.controller_driver_interface.get_device_info(index);
+				std::cout << index << ": " << device_info.name << "\n";
+			}
+			return;
+		} else if (command.arguments[0] == "default") {
+			if (!VALID_INDEX(runtime_context.controller_driver_interface.get_default_device_index(),
+				runtime_context.controller_driver_interface.get_device_count())) {
+				std::cout << "No default controller device\n";
+				return;
+			}
+
+			s_controller_device_info device_info = runtime_context.controller_driver_interface.get_device_info(
+				runtime_context.controller_driver_interface.get_default_device_index());
+
+			settings.device_index = runtime_context.controller_driver_interface.get_default_device_index();
+			valid_settings = true;
+			read_settings = false;
+		}
+	}
+
+	if (read_settings) {
+		if (command.arguments.size() == 1) {
+			try {
+				settings.device_index = std::stoul(command.arguments[0]);
+				if (!VALID_INDEX(settings.device_index,
+					runtime_context.controller_driver_interface.get_device_count())) {
+					throw std::invalid_argument("Invalid controller device index");
+				}
+
+				// If we've gotten to this point, we will attempt to open the stream
+				valid_settings = true;
+			} catch (const std::invalid_argument &) {
+			}
+		}
+	}
+
+	if (valid_settings) {
+		// Stop the old stream
+		runtime_context.controller_driver_interface.stop_stream();
+
+		//settings.stream_callback = runtime_context.stream_callback;
+		//settings.stream_callback_user_data = &runtime_context;
+		s_controller_driver_result result = runtime_context.controller_driver_interface.start_stream(settings);
+		if (result.result != k_controller_driver_result_success) {
 			std::cout << result.message << "\n";
 		}
 
@@ -295,16 +369,17 @@ void c_command_line_interface::process_command_load_synth(const s_command &comma
 			return;
 		}
 
-		if (runtime_context.driver_interface.is_stream_running()) {
+		if (runtime_context.audio_driver_interface.is_stream_running()) {
 			// Set up the executor with the new graph
 			runtime_context.executor.shutdown();
 
 			s_executor_settings settings;
 			settings.task_graph = &task_graph;
 			settings.thread_count = 1; // $TODO don't hardcode
-			settings.sample_rate = static_cast<uint32>(runtime_context.driver_interface.get_settings().sample_rate);
-			settings.max_buffer_size = runtime_context.driver_interface.get_settings().frames_per_buffer;
-			settings.output_channels = runtime_context.driver_interface.get_settings().output_channels;
+			settings.sample_rate =
+				static_cast<uint32>(runtime_context.audio_driver_interface.get_settings().sample_rate);
+			settings.max_buffer_size = runtime_context.audio_driver_interface.get_settings().frames_per_buffer;
+			settings.output_channels = runtime_context.audio_driver_interface.get_settings().output_channels;
 			settings.event_console_enabled = true;
 			settings.profiling_enabled = true;
 			runtime_context.executor.initialize(settings);
