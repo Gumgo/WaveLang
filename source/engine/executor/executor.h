@@ -5,7 +5,9 @@
 #include "common/threading/lock_free.h"
 #include "common/threading/semaphore.h"
 #include "common/threading/atomics.h"
-#include "engine/buffer_allocator.h"
+#include "engine/executor/buffer_manager.h"
+#include "engine/executor/controller_event_manager.h"
+#include "engine/executor/voice_allocator.h"
 #include "engine/thread_pool.h"
 #include "engine/profiler/profiler.h"
 #include "driver/sample_format.h"
@@ -18,12 +20,19 @@ class c_task_graph;
 class c_buffer;
 struct s_task_function;
 
+typedef size_t (*f_process_controller_events)(
+	void *context, c_wrapped_array<s_timestamped_controller_event> controller_events, int64 buffer_duration_ns);
+
 struct s_executor_settings {
 	const c_task_graph *task_graph;
 	uint32 thread_count;
 	uint32 sample_rate;
 	uint32 max_buffer_size;
 	uint32 output_channels;
+
+	size_t controller_event_queue_size;
+	f_process_controller_events process_controller_events;
+	void *process_controller_events_context;
 
 	bool event_console_enabled;
 	bool profiling_enabled;
@@ -37,7 +46,7 @@ struct s_executor_chunk_context {
 	e_sample_format sample_format;
 	uint32 frames;
 
-	c_wrapped_array<uint8> output_buffers;
+	c_wrapped_array<uint8> output_buffer;
 };
 
 class c_executor {
@@ -66,17 +75,8 @@ private:
 		k_state_count
 	};
 
-	struct s_voice_context {
-		bool active;
-	};
-
 	struct ALIGNAS_LOCK_FREE s_task_context {
 		c_atomic_int32 predecessors_remaining;
-	};
-
-	struct ALIGNAS_LOCK_FREE s_buffer_context {
-		c_atomic_int32 usages_remaining;
-		uint32 handle;
 	};
 
 	struct s_task_parameters {
@@ -88,29 +88,20 @@ private:
 	};
 
 	void initialize_internal(const s_executor_settings &settings);
-	void initialize_events(const s_executor_settings &settings);
-	void initialize_thread_pool(const s_executor_settings &settings);
-	void initialize_buffer_allocator(const s_executor_settings &settings);
-	void initialize_task_memory(const s_executor_settings &settings);
-	void initialize_tasks(const s_executor_settings &settings);
-	void initialize_voice_contexts();
+	void initialize_events();
+	void initialize_thread_pool();
+	void initialize_buffer_manager();
+	void initialize_task_memory();
+	void initialize_tasks();
+	void initialize_voice_allocator();
+	void initialize_controller_event_manager();
 	void initialize_task_contexts();
-	void initialize_buffer_contexts();
-	void initialize_profiler(const s_executor_settings &settings);
+	void initialize_profiler();
 
 	void shutdown_internal();
 
 	void execute_internal(const s_executor_chunk_context &chunk_context);
-	void process_voice(const s_executor_chunk_context &chunk_context, uint32 voice);
-	void swap_output_buffers_with_accumulation_buffers(const s_executor_chunk_context &chunk_context);
-	void add_output_buffers_to_accumulation_buffers(const s_executor_chunk_context &chunk_context);
-#if PREDEFINED(ASSERTS_ENABLED)
-	void assert_all_output_buffers_free();
-#else // PREDEFINED(ASSERTS_ENABLED)
-	void assert_all_output_buffers_free() {}
-#endif // PREDEFINED(ASSERTS_ENABLED)
-	void allocate_and_clear_output_buffers(const s_executor_chunk_context &chunk_context);
-	void mix_accumulation_buffers_to_channel_buffers(const s_executor_chunk_context &chunk_context);
+	void process_voice(const s_executor_chunk_context &chunk_context, uint32 voice_index);
 
 	void add_task(uint32 voice_index, uint32 task_index, uint32 sample_rate, uint32 frames);
 
@@ -119,7 +110,6 @@ private:
 
 	void allocate_output_buffers(uint32 task_index);
 	void decrement_buffer_usages(uint32 task_index);
-	void decrement_buffer_usage(uint32 buffer_index);
 
 	// Used for array dereference
 	friend struct s_task_function_context;
@@ -132,17 +122,14 @@ private:
 	c_atomic_int32 m_state;
 	c_semaphore m_shutdown_signal;
 
-	// The source task graph
-	const c_task_graph *m_task_graph;
-
-	// Max frames we can process at a time
-	uint32 m_max_buffer_size;
+	// Settings for the executor
+	s_executor_settings m_settings;
 
 	// Pool of worker threads
 	c_thread_pool m_thread_pool;
 
-	// Used to allocate buffers for processing
-	c_buffer_allocator m_buffer_allocator;
+	// Manages lifetime of various buffers used during processing
+	c_buffer_manager m_buffer_manager;
 
 	// Allocator for task-persistent memory
 	c_lock_free_aligned_allocator<uint8> m_task_memory_allocator;
@@ -150,20 +137,14 @@ private:
 	// Pointer to each task's persistent memory for each voice
 	std::vector<void *> m_voice_task_memory_pointers;
 
-	// Context for each voice
-	std::vector<s_voice_context> m_voice_contexts;
+	// Manages which voices are active
+	c_voice_allocator m_voice_allocator;
+
+	// Processes controller events and generates buffers for parameters
+	c_controller_event_manager m_controller_event_manager;
 
 	// Context for each task for the currently processing voice
 	c_lock_free_aligned_allocator<s_task_context> m_task_contexts;
-
-	// Context for each buffer for the currently processing voice
-	c_lock_free_aligned_allocator<s_buffer_context> m_buffer_contexts;
-
-	// Buffers to accumulate the final result into
-	std::vector<uint32> m_voice_output_accumulation_buffers;
-
-	// Buffers to mix to output channels
-	std::vector<uint32> m_channel_mix_buffers;
 
 	// Total number of tasks remaining for the currently processing voice
 	ALIGNAS_LOCK_FREE c_atomic_int32 m_tasks_remaining;
@@ -184,7 +165,6 @@ private:
 	c_event_interface m_event_interface;
 
 	// Used to measure execution time
-	bool m_profiling_enabled;
 	c_profiler m_profiler;
 };
 

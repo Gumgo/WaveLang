@@ -12,7 +12,8 @@ public:
 	c_controller_driver_midi();
 	~c_controller_driver_midi();
 
-	s_controller_driver_result initialize();
+	s_controller_driver_result initialize(
+		f_submit_controller_event submit_controller_event, void *submit_controller_event_context);
 	void shutdown();
 
 	uint32 get_device_count() const;
@@ -31,6 +32,8 @@ private:
 	void message_callback(real64 time_stamp, c_wrapped_array_const<uint8> message);
 
 	bool m_initialized;
+	f_submit_controller_event m_submit_controller_event;
+	void *m_submit_controller_event_context;
 	RtMidiIn *m_midi_in;
 	std::vector<std::string> m_port_names;
 	bool m_stream_running;

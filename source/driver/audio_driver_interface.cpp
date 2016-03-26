@@ -210,7 +210,12 @@ int c_audio_driver_interface::stream_callback_internal(
 
 	s_audio_driver_stream_callback_context context;
 	context.driver_settings = &this_ptr->m_settings;
-	context.output_buffers = output;
+
+	size_t output_buffer_size =
+		context.driver_settings->output_channels *
+		frame_count *
+		get_sample_format_size(context.driver_settings->sample_format);
+	context.output_buffer = c_wrapped_array<uint8>(static_cast<uint8 *>(output), output_buffer_size);
 	context.user_data = this_ptr->m_settings.stream_callback_user_data;
 	// $TODO fill in the rest
 

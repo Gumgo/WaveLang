@@ -17,8 +17,13 @@ c_controller_driver_midi::~c_controller_driver_midi() {
 	shutdown();
 }
 
-s_controller_driver_result c_controller_driver_midi::initialize() {
+s_controller_driver_result c_controller_driver_midi::initialize(
+	f_submit_controller_event submit_controller_event, void *submit_controller_event_context) {
 	wl_assert(!m_initialized);
+
+	wl_assert(submit_controller_event);
+	m_submit_controller_event = submit_controller_event;
+	m_submit_controller_event_context = submit_controller_event_context;
 
 	s_controller_driver_result result;
 	result.clear();
@@ -118,6 +123,97 @@ void c_controller_driver_midi::message_callback_wrapper(
 }
 
 void c_controller_driver_midi::message_callback(real64 time_stamp, c_wrapped_array_const<uint8> message) {
-	// $TODO temporary! not thread safe
-	std::cout << time_stamp << " " << message.get_count() << "\n";
+	// Process MIDI messages here
+	// $TODO support more messages
+
+	if (message.get_count() < 1) {
+		return;
+	}
+
+	uint8 message_id = (message[0] & 0xf0) >> 4;
+	uint8 channel = (message[0] & 0x0f);
+
+	if (channel != 0) {
+		// $TODO support multiple channels eventually?
+		return;
+	}
+
+	switch (message_id) {
+	case 0x08:
+	{
+		// Note off
+		if (message.get_count() != 3) {
+			return;
+		}
+
+		s_controller_event controller_event;
+		controller_event.event_type = k_controller_event_type_note_off;
+		s_controller_event_data_note_off *event_data = controller_event.get_data<s_controller_event_data_note_off>();
+		event_data->note_id = message[1];
+		event_data->velocity = static_cast<real32>(message[2]) * (1.0f / 127.0f);
+		m_submit_controller_event(m_submit_controller_event_context, controller_event);
+		break;
+	}
+
+	case 0x09:
+	{
+		// Note on
+		if (message.get_count() != 3) {
+			return;
+		}
+
+		s_controller_event controller_event;
+		controller_event.event_type = k_controller_event_type_note_on;
+		s_controller_event_data_note_on *event_data = controller_event.get_data<s_controller_event_data_note_on>();
+		event_data->note_id = message[1];
+		event_data->velocity = static_cast<real32>(message[2]) * (1.0f / 127.0f);
+		m_submit_controller_event(m_submit_controller_event_context, controller_event);
+		break;
+	}
+
+	case 0x0a:
+	{
+		// $TODO Polyphonic key pressure
+		return;
+	}
+
+	case 0x0b:
+	{
+		// Controller value
+		if (message.get_count() != 3) {
+			return;
+		}
+
+		s_controller_event controller_event;
+		controller_event.event_type = k_controller_event_type_parameter_change;
+		s_controller_event_data_parameter_change *event_data =
+			controller_event.get_data<s_controller_event_data_parameter_change>();
+		event_data->parameter_id = message[1];
+		event_data->value = static_cast<real32>(message[2]) * (1.0f / 127.0f);
+		m_submit_controller_event(m_submit_controller_event_context, controller_event);
+		break;
+	}
+
+	case 0x0c:
+	{
+		// $TODO Program change
+		break;
+	}
+
+	case 0x0d:
+	{
+		// $TODO Channel pressure
+		return;
+	}
+
+	case 0x0e:
+	{
+		// $TODO Pitch bend
+		return;
+	}
+
+	default:
+		// Unknown message ID
+		return;
+	}
 }

@@ -3,7 +3,7 @@
 
 #include "common/common.h"
 #include "driver/sample_format.h"
-#include "engine/buffer_allocator.h"
+#include "engine/executor/buffer_allocator.h"
 
 void mix_output_buffers_to_channel_buffers(
 	uint32 frames,

@@ -76,7 +76,7 @@ class c_event {
 public:
 	c_event(e_event_level event_level) {
 		wl_assert(VALID_INDEX(event_level, k_event_level_count));
-		IF_ASSERTS_ENABLED(bool success =) m_event_data_stack.try_append(static_cast<uint8>(event_level));
+		IF_ASSERTS_ENABLED(bool success = ) m_event_data_stack.try_append(static_cast<uint8>(event_level));
 		wl_assert(success);
 	}
 

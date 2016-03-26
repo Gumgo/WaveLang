@@ -37,7 +37,7 @@ struct s_audio_driver_settings;
 
 struct s_audio_driver_stream_callback_context {
 	const s_audio_driver_settings *driver_settings;
-	void *output_buffers;
+	c_wrapped_array<uint8> output_buffer;
 	// $TODO add more data
 
 	void *user_data;

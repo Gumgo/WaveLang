@@ -95,7 +95,7 @@ void c_event_console::stop_platform() {
 
 	// Wait for the process to close
 	{
-		IF_ASSERTS_ENABLED(DWORD wait_result =) WaitForSingleObject(m_process, INFINITE);
+		IF_ASSERTS_ENABLED(DWORD wait_result = ) WaitForSingleObject(m_process, INFINITE);
 		wl_assert(wait_result != WAIT_TIMEOUT);
 	}
 

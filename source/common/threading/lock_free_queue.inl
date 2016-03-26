@@ -142,3 +142,88 @@ bool c_lock_free_queue<t_element>::pop(t_element &out_element) {
 		}
 	} while (true);
 }
+
+template<typename t_element>
+bool c_lock_free_queue<t_element>::pop() {
+	do {
+		s_lock_free_handle_data front;
+		s_lock_free_handle_data back;
+		s_lock_free_handle_data front_next;
+		s_lock_free_handle_data front_verify;
+
+		// Read the front, back, and front next handles, and then the front handle again to check for consistency
+		front.data = m_front.handle.get();
+		back.data = m_back.handle.get();
+		front_next.data = m_queue[front.handle].handle.get();
+		front_verify.data = m_front.handle.get();
+
+		if (front.data == front_verify.data) {
+			// Check if queue is empty or back is falling behind
+			// Back could fall behind because we update it after we tack on a node
+			if (front.handle == back.handle) {
+				if (front_next.handle == k_lock_free_invalid_handle) {
+					// Queue is actually empty
+					return false;
+				} else {
+					// Back is falling behind, try to advance it and then loop again. If we didn't do this, we would
+					// have to rely on another thread to advance, which would effectively be a lock.
+					s_lock_free_handle_data new_back;
+					new_back.tag = back.tag + 1;
+					new_back.handle = front_next.handle;
+					m_back.handle.compare_exchange(back.data, new_back.data);
+				}
+			} else {
+				// Try to move front to next
+				s_lock_free_handle_data new_front;
+				new_front.tag = front.tag + 1;
+				new_front.handle = front_next.handle;
+				if (m_front.handle.compare_exchange(front.data, new_front.data) == front.data) {
+					m_free_list.free(front.handle);
+					return true;
+				}
+			}
+		}
+	} while (true);
+}
+
+template<typename t_element>
+bool c_lock_free_queue<t_element>::peek(t_element &out_element) {
+	do {
+		s_lock_free_handle_data front;
+		s_lock_free_handle_data back;
+		s_lock_free_handle_data front_next;
+		s_lock_free_handle_data front_verify;
+
+		// Read the front, back, and front next handles, and then the front handle again to check for consistency
+		front.data = m_front.handle.get();
+		back.data = m_back.handle.get();
+		front_next.data = m_queue[front.handle].handle.get();
+		front_verify.data = m_front.handle.get();
+
+		if (front.data == front_verify.data) {
+			// Check if queue is empty or back is falling behind
+			// Back could fall behind because we update it after we tack on a node
+			if (front.handle == back.handle) {
+				if (front_next.handle == k_lock_free_invalid_handle) {
+					// Queue is actually empty
+					return false;
+				} else {
+					// Back is falling behind, try to advance it and then loop again. If we didn't do this, we would
+					// have to rely on another thread to advance, which would effectively be a lock.
+					s_lock_free_handle_data new_back;
+					new_back.tag = back.tag + 1;
+					new_back.handle = front_next.handle;
+					m_back.handle.compare_exchange(back.data, new_back.data);
+				}
+			} else {
+				// Copy the value into our output; we may have to copy multiple times
+				memcpy(&out_element, &m_elements[front_next.handle], sizeof(t_element));
+
+				// If the front handle did not change, then our memcpy was safe
+				if (m_front.handle.get() == front.data) {
+					return true;
+				}
+			}
+		}
+	} while (true);
+}

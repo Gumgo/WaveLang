@@ -15,9 +15,6 @@ static size_t g_preprocessor_command_executor_count = 0;
 static s_compiler_result preprocessor_command_import(
 	void *context, const c_preprocessor_command_arguments &arguments, c_preprocessor_output &output);
 
-// nocheckin Kill
-static bool process_import(c_compiler_string line, c_compiler_string &out_import_string);
-
 void c_preprocessor::initialize_preprocessor() {
 	g_preprocessor_command_executor_count = 0;
 
@@ -238,46 +235,4 @@ static s_compiler_result preprocessor_command_import(
 	std::string escaped_import_path = compiler_utility::escape_string(arguments.get_argument(0).token_string);
 	output.imports.push_back(escaped_import_path);
 	return result;
-}
-
-
-static bool process_import(c_compiler_string line, c_compiler_string &out_import_string) {
-	// 1) Skip whitespace
-	size_t leading_whitespace = compiler_utility::skip_whitespace(line);
-	line = line.advance(leading_whitespace);
-
-	// 2) Next character must be "
-	if (line.get_length() == 0 || line[0] != '"') {
-		return false;
-	}
-
-	line = line.advance(1);
-
-	// 3) Read until another "
-	bool found = false;
-	size_t end_index;
-	for (end_index = 0; end_index < line.get_length(); end_index++) {
-		if (line[end_index] == '"') {
-			found = true;
-			break;
-		}
-	}
-
-	if (!found) {
-		return false;
-	}
-
-	out_import_string = line.substr(0, end_index);
-
-	line = line.advance(end_index + 1);
-
-	// 4) All following characters must be whitespace
-	line = line.advance(compiler_utility::skip_whitespace(line));
-
-	// The line should now be empty - if not, it means there were non-whitespace characters
-	if (!line.is_empty()) {
-		return false;
-	}
-
-	return true;
 }

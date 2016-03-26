@@ -282,6 +282,11 @@ void c_command_line_interface::process_command_init_stream(const s_command &comm
 }
 
 void c_command_line_interface::process_command_init_controller(const s_command &command) {
+	if (runtime_context.audio_driver_interface.is_stream_running()) {
+		std::cout << "Stop stream first to avoid race condition\n";
+		return;
+	}
+
 	s_controller_driver_settings settings;
 	bool valid_settings = false;
 	bool read_settings = true;
@@ -305,6 +310,7 @@ void c_command_line_interface::process_command_init_controller(const s_command &
 				runtime_context.controller_driver_interface.get_default_device_index());
 
 			settings.device_index = runtime_context.controller_driver_interface.get_default_device_index();
+			settings.controller_event_queue_size = 1024; // $TODO don't hardcode
 			valid_settings = true;
 			read_settings = false;
 		}
@@ -318,6 +324,8 @@ void c_command_line_interface::process_command_init_controller(const s_command &
 					runtime_context.controller_driver_interface.get_device_count())) {
 					throw std::invalid_argument("Invalid controller device index");
 				}
+
+				settings.controller_event_queue_size = 1024; // $TODO don't hardcode
 
 				// If we've gotten to this point, we will attempt to open the stream
 				valid_settings = true;
@@ -380,6 +388,9 @@ void c_command_line_interface::process_command_load_synth(const s_command &comma
 				static_cast<uint32>(runtime_context.audio_driver_interface.get_settings().sample_rate);
 			settings.max_buffer_size = runtime_context.audio_driver_interface.get_settings().frames_per_buffer;
 			settings.output_channels = runtime_context.audio_driver_interface.get_settings().output_channels;
+			settings.controller_event_queue_size = 1024; // $TODO don't hardcode
+			settings.process_controller_events = s_runtime_context::process_controller_events_callback;
+			settings.process_controller_events_context = &runtime_context;
 			settings.event_console_enabled = true;
 			settings.profiling_enabled = true;
 			runtime_context.executor.initialize(settings);

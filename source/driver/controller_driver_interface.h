@@ -2,6 +2,9 @@
 #define WAVELANG_CONTROLLER_DRIVER_INTERFACE_H__
 
 #include "common/common.h"
+#include "common/utility/stopwatch.h"
+#include "common/threading/lock_free_queue.h"
+
 #include "driver/controller_driver.h"
 #include "driver/controller_driver_midi.h"
 
@@ -24,9 +27,28 @@ public:
 	bool is_stream_running() const;
 	const s_controller_driver_settings &get_settings() const;
 
+	// Returns event count
+	size_t process_controller_events(
+		c_wrapped_array<s_timestamped_controller_event> controller_events,
+		int64 buffer_duration_ns);
+
 private:
+	struct ALIGNAS_LOCK_FREE s_controller_event_queue_element : public s_timestamped_controller_event {};
+
+	static void submit_controller_event_wrapper(void *context, const s_controller_event &controller_event);
+	void submit_controller_event(const s_controller_event &controller_event);
+
 	c_controller_driver_midi m_controller_driver_midi;
 	// c_controller_driver_osc m_controller_driver_osc; // $TODO
+
+	// Queue of controller events from the stream
+	c_lock_free_queue<s_controller_event_queue_element> m_controller_event_queue;
+	c_lock_free_aligned_allocator<s_controller_event_queue_element> m_controller_event_queue_element_memory;
+	c_lock_free_aligned_allocator<s_aligned_lock_free_handle> m_controller_event_queue_queue_memory;
+	c_lock_free_aligned_allocator<s_aligned_lock_free_handle> m_controller_event_queue_free_list_memory;
+
+	// Stopwatch for tracking timestamps
+	c_stopwatch m_timestamp_stopwatch;
 };
 
 #endif // WAVELANG_CONTROLLER_DRIVER_INTERFACE_H__
