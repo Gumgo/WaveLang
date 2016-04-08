@@ -12,12 +12,13 @@ static const s_task_function_uid k_task_function_time_period_out_uid = s_task_fu
 struct s_buffer_operation_time_period {
 	static size_t query_memory();
 	static void initialize(c_event_interface *event_interface, s_buffer_operation_time_period *context, real32 period);
+	static void voice_initialize(s_buffer_operation_time_period *context);
 
 	static void out(
 		s_buffer_operation_time_period *context, size_t buffer_size, uint32 sample_rate, real32 period,
 		c_real_buffer_out out);
 
-	real32 current_sample;
+	real64 current_sample;
 };
 
 size_t s_buffer_operation_time_period::query_memory() {
@@ -29,7 +30,11 @@ void s_buffer_operation_time_period::initialize(c_event_interface *event_interfa
 	if (std::isnan(period) || std::isinf(period) || period <= 0.0f) {
 		event_interface->submit(EVENT_WARNING << "Invalid time period, defaulting to 0");
 	}
-	context->current_sample = 0.0f;
+	context->current_sample = 0.0;
+}
+
+void s_buffer_operation_time_period::voice_initialize(s_buffer_operation_time_period *context) {
+	context->current_sample = 0.0;
 }
 
 void s_buffer_operation_time_period::out(
@@ -44,19 +49,20 @@ void s_buffer_operation_time_period::out(
 		out->set_constant(true);
 	} else {
 		// $TODO could optimize with SSE
-		real32 sample_rate_real = static_cast<real32>(sample_rate);
-		real32 period_samples = period * sample_rate_real;
-		real32 inv_sample_rate = 1.0f / sample_rate_real;
+		real64 sample_rate_real = static_cast<real64>(sample_rate);
+		real64 period_samples = period * sample_rate_real;
+		real64 inv_sample_rate = 1.0 / sample_rate_real;
 
-		real32 sample = context->current_sample;
+		real64 sample = context->current_sample;
 		for (size_t index = 0; index < buffer_size; index++) {
-			out_ptr[index] = sample * inv_sample_rate;
-			sample += 1.0f;
+			out_ptr[index] = static_cast<real32>(sample * inv_sample_rate);
+			sample += 1.0;
 			if (sample >= period) {
 				sample = fmod(sample, period_samples);
 			}
 		}
 
+		out->set_constant(false);
 		context->current_sample = sample;
 	}
 }
@@ -70,6 +76,11 @@ static void task_initializer_time_period(const s_task_function_context &context)
 		context.event_interface,
 		static_cast<s_buffer_operation_time_period *>(context.task_memory),
 		context.arguments[0].get_real_constant_in());
+}
+
+static void task_voice_initializer_time_period(const s_task_function_context &context) {
+	s_buffer_operation_time_period::voice_initialize(
+		static_cast<s_buffer_operation_time_period *>(context.task_memory));
 }
 
 static void task_function_time_period_out(const s_task_function_context &context) {
@@ -86,13 +97,12 @@ void register_task_functions_time() {
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_time_period_out_uid,
 				"time_period_out",
-				task_memory_query_time_period, task_initializer_time_period, task_function_time_period_out,
+				task_memory_query_time_period, task_initializer_time_period, task_voice_initializer_time_period, task_function_time_period_out,
 				s_task_function_argument_list::build(TDT(real_in), TDT(real_out))));
 
 		s_task_function_mapping mappings[] = {
 			s_task_function_mapping::build(k_task_function_time_period_out_uid, "v.",
-			s_task_function_native_module_argument_mapping::build(0, 1))
-
+				s_task_function_native_module_argument_mapping::build(0, 1))
 		};
 
 		c_task_function_registry::register_task_function_mapping_list(

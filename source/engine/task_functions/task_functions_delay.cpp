@@ -14,6 +14,7 @@ struct s_buffer_operation_delay {
 	static size_t query_memory(uint32 sample_rate, real32 delay);
 	static void initialize(c_event_interface *event_interface,
 		s_buffer_operation_delay *context, uint32 sample_rate, real32 delay);
+	static void voice_initialize(s_buffer_operation_delay *context);
 
 	static void in_out(
 		s_buffer_operation_delay *context, size_t buffer_size, c_real_buffer_or_constant_in in, c_real_buffer_out out);
@@ -134,6 +135,15 @@ void s_buffer_operation_delay::initialize(c_event_interface *event_interface,
 	memset(delay_buffer, 0, sizeof(real32) * context->delay_samples);
 }
 
+void s_buffer_operation_delay::voice_initialize(s_buffer_operation_delay *context) {
+	context->delay_buffer_head_index = 0;
+	context->is_constant = true;
+
+	// Zero out the delay buffer
+	real32 *delay_buffer = get_delay_buffer(context);
+	memset(delay_buffer, 0, sizeof(real32) * context->delay_samples);
+}
+
 void s_buffer_operation_delay::in_out(
 	s_buffer_operation_delay *context, size_t buffer_size, c_real_buffer_or_constant_in in, c_real_buffer_out out) {
 	validate_buffer(in);
@@ -218,6 +228,10 @@ static void task_initializer_delay(const s_task_function_context &context) {
 		context.arguments[0].get_real_constant_in());
 }
 
+static void task_voice_initializer_delay(const s_task_function_context &context) {
+	s_buffer_operation_delay::voice_initialize(static_cast<s_buffer_operation_delay *>(context.task_memory));
+}
+
 static void task_function_delay_in_out(const s_task_function_context &context) {
 	s_buffer_operation_delay::in_out(
 		static_cast<s_buffer_operation_delay *>(context.task_memory),
@@ -231,7 +245,7 @@ void register_task_functions_delay() {
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_delay_in_out_uid,
 				"delay_in_out",
-				task_memory_query_delay, task_initializer_delay, task_function_delay_in_out,
+				task_memory_query_delay, task_initializer_delay, task_voice_initializer_delay, task_function_delay_in_out,
 				s_task_function_argument_list::build(TDT(real_in), TDT(real_in), TDT(real_out))));
 
 		s_task_function_mapping mappings[] = {

@@ -5,6 +5,7 @@
 #include "common/threading/lock_free.h"
 #include "common/threading/semaphore.h"
 #include "common/threading/atomics.h"
+#include "engine/task_function.h"
 #include "engine/executor/buffer_manager.h"
 #include "engine/executor/controller_event_manager.h"
 #include "engine/executor/voice_allocator.h"
@@ -15,6 +16,7 @@
 #include "engine/events/async_event_handler.h"
 #include "engine/events/event_console.h"
 #include "engine/events/event_interface.h"
+#include "engine/voice_interface/voice_interface.h"
 
 class c_task_graph;
 class c_buffer;
@@ -107,6 +109,8 @@ private:
 
 	static void process_task_wrapper(uint32 thread_index, const s_thread_parameter_block *params);
 	void process_task(uint32 thread_index, const s_task_parameters *params);
+	size_t setup_task_arguments(uint32 task_index, bool include_dynamic_arguments,
+		s_static_array<s_task_function_argument, k_max_task_function_arguments> &out_arguments);
 
 	void allocate_output_buffers(uint32 task_index);
 	void decrement_buffer_usages(uint32 task_index);
@@ -139,6 +143,9 @@ private:
 
 	// Manages which voices are active
 	c_voice_allocator m_voice_allocator;
+
+	// Interface for accessing voice data, e.g. which note ID is pressed
+	c_voice_interface m_voice_interface;
 
 	// Processes controller events and generates buffers for parameters
 	c_controller_event_manager m_controller_event_manager;

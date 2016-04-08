@@ -8,6 +8,7 @@
 class c_event_interface;
 class c_sample_library_accessor;
 class c_sample_library_requester;
+class c_voice_interface;
 class c_executor;
 
 // Unique identifier for each task function
@@ -185,6 +186,7 @@ struct s_task_function_context {
 	c_event_interface *event_interface;
 	c_sample_library_accessor *sample_accessor;
 	c_sample_library_requester *sample_requester;
+	c_voice_interface *voice_interface;
 
 	uint32 sample_rate;
 	uint32 buffer_size;
@@ -200,6 +202,9 @@ struct s_task_function_context {
 private:
 	friend class c_executor;
 	const c_executor *executor;
+	// $TODO $PLUGIN change get_buffer_by_index to be another interface like voice_interface. Then, all of these
+	// interfaces could be grouped into a common folder of interfaces which are exposed to the plugin API, rather than
+	// scattered around the codebase
 };
 
 // This function takes a partially-filled-in context and returns the amount of memory the task requires
@@ -210,6 +215,9 @@ typedef size_t (*f_task_memory_query)(const s_task_function_context &context);
 // Basic data such as sample rate is available, as well as any constant arguments - any buffer arguments are null
 // In addition, this is the time where samples should be requested, as that interface is provided on the context
 typedef void (*f_task_initializer)(const s_task_function_context &context);
+
+// Called when a voice becomes active
+typedef void (*f_task_voice_initializer)(const s_task_function_context &context);
 
 // Function executed for the task
 typedef void (*f_task_function)(const s_task_function_context &context);
@@ -250,6 +258,9 @@ struct s_task_function {
 	// Function for initializing task memory
 	f_task_initializer initializer;
 
+	// Function for initializing task memory when a voice becomes active
+	f_task_voice_initializer voice_initializer;
+
 	// Function to execute
 	f_task_function function;
 
@@ -264,6 +275,7 @@ struct s_task_function {
 		const char *name,
 		f_task_memory_query memory_query,
 		f_task_initializer initializer,
+		f_task_voice_initializer voice_initializer,
 		f_task_function function,
 		const s_task_function_argument_list &arguments);
 };

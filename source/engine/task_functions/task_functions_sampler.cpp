@@ -11,6 +11,7 @@
 
 // $TODO switch to s_static_array
 // $TODO tracking time with floats in seconds seems imprecise... track in samples instead maybe?
+// $TODO add initial_delay parameter
 
 static const uint32 k_task_functions_sampler_library_id = 2;
 
@@ -26,6 +27,7 @@ struct s_buffer_operation_sampler {
 	static void initialize(c_event_interface *event_interface, c_sample_library_requester *sample_requester,
 		s_buffer_operation_sampler *context, const char *sample, e_sample_loop_mode loop_mode, bool phase_shift_enabled,
 		real32 channel);
+	static void voice_initialize(s_buffer_operation_sampler *context);
 
 	static void in_out(
 		c_event_interface *event_interface, const char *sample_name,
@@ -328,7 +330,12 @@ void s_buffer_operation_sampler::initialize(c_event_interface *event_interface,
 		event_interface->submit(EVENT_ERROR << "Invalid sample channel '" << channel << "'");
 	}
 	context->channel = static_cast<uint32>(channel);
-	context->time = 0;
+	context->time = 0.0f;
+	context->reached_end = false;
+}
+
+void s_buffer_operation_sampler::voice_initialize(s_buffer_operation_sampler *context) {
+	context->time = 0.0f;
 	context->reached_end = false;
 }
 
@@ -1401,6 +1408,10 @@ static void task_initializer_sampler(const s_task_function_context &context) {
 		name, k_sample_loop_mode_none, false, channel);
 }
 
+static void task_voice_initializer_sampler(const s_task_function_context &context) {
+	s_buffer_operation_sampler::voice_initialize(static_cast<s_buffer_operation_sampler *>(context.task_memory));
+}
+
 static void task_function_sampler_in_out(const s_task_function_context &context) {
 	s_buffer_operation_sampler::in_out(
 		context.event_interface, context.arguments[0].get_string_constant_in(),
@@ -1488,13 +1499,13 @@ void register_task_functions_sampler() {
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_sampler_in_out_uid,
 				"sampler_in_out",
-				task_memory_query_sampler, task_initializer_sampler, task_function_sampler_in_out,
+				task_memory_query_sampler, task_initializer_sampler, task_voice_initializer_sampler, task_function_sampler_in_out,
 				s_task_function_argument_list::build(TDT(string_in), TDT(real_in), TDT(real_in), TDT(real_out))));
 
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_sampler_inout_uid,
 				"sampler_inout",
-				task_memory_query_sampler, task_initializer_sampler, task_function_sampler_inout,
+				task_memory_query_sampler, task_initializer_sampler, task_voice_initializer_sampler, task_function_sampler_inout,
 				s_task_function_argument_list::build(TDT(string_in), TDT(real_in), TDT(real_inout))));
 
 		s_task_function_mapping mappings[] = {
@@ -1514,19 +1525,19 @@ void register_task_functions_sampler() {
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_sampler_loop_in_in_out_uid,
 				"sampler_loop_in_in_out",
-				task_memory_query_sampler, task_initializer_sampler_loop_in_in_out, task_function_sampler_loop_in_in_out,
+				task_memory_query_sampler, task_initializer_sampler_loop_in_in_out, task_voice_initializer_sampler, task_function_sampler_loop_in_in_out,
 				s_task_function_argument_list::build(TDT(string_in), TDT(real_in), TDT(bool_in), TDT(real_in), TDT(real_in), TDT(real_out))));
 
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_sampler_loop_inout_in_uid,
 				"sampler_loop_inout_in",
-				task_memory_query_sampler, task_initializer_sampler_loop_inout_in, task_function_sampler_loop_inout_in,
+				task_memory_query_sampler, task_initializer_sampler_loop_inout_in, task_voice_initializer_sampler, task_function_sampler_loop_inout_in,
 				s_task_function_argument_list::build(TDT(string_in), TDT(real_in), TDT(bool_in), TDT(real_inout), TDT(real_in))));
 
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_sampler_loop_in_inout_uid,
 				"sampler_loop_in_inout",
-				task_memory_query_sampler, task_initializer_sampler_loop_in_inout, task_function_sampler_loop_in_inout,
+				task_memory_query_sampler, task_initializer_sampler_loop_in_inout, task_voice_initializer_sampler, task_function_sampler_loop_in_inout,
 				s_task_function_argument_list::build(TDT(string_in), TDT(real_in), TDT(bool_in), TDT(real_in), TDT(real_inout))));
 
 		s_task_function_mapping mappings[] = {

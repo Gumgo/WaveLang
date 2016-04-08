@@ -26,6 +26,7 @@ s_task_function s_task_function::build(
 	const char *name,
 	f_task_memory_query memory_query,
 	f_task_initializer initializer,
+	f_task_voice_initializer voice_initializer,
 	f_task_function function,
 	const s_task_function_argument_list &arguments) {
 	// First, zero-initialize
@@ -41,6 +42,7 @@ s_task_function s_task_function::build(
 
 	task_function.memory_query = memory_query;
 	task_function.initializer = initializer;
+	task_function.voice_initializer = voice_initializer;
 	task_function.function = function;
 
 	for (task_function.argument_count = 0;

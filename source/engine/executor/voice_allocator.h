@@ -13,8 +13,11 @@ public:
 	struct s_voice {
 		bool active;					// Whether this voice is currently active
 		bool activated_this_chunk;		// Whether this voice became active this chunk
+		bool released;					// Whether this note has been released
 		uint32 chunk_offset_samples;	// When this voice starts in the current chunk
 		int32 note_id;					// The ID of the note being played for the voice
+		real32 note_velocity;			// Velocity at which the note is played
+		int32 note_release_sample;		// Offset into the chunk at which this note is released, or -1
 	};
 
 	c_voice_allocator();

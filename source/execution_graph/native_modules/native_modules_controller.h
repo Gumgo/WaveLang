@@ -1,0 +1,15 @@
+#ifndef WAVELANG_NATIVE_MODULES_CONTROLLER_H__
+#define WAVELANG_NATIVE_MODULES_CONTROLLER_H__
+
+#include "common/common.h"
+#include "execution_graph/native_module.h"
+
+static const uint32 k_native_modules_controller_library_id = 6;
+extern const s_native_module_uid k_native_module_controller_get_note_id_uid;
+extern const s_native_module_uid k_native_module_controller_get_note_velocity_uid;
+extern const s_native_module_uid k_native_module_controller_get_note_press_duration_uid;
+extern const s_native_module_uid k_native_module_controller_get_note_release_duration_uid;
+
+void register_native_modules_controller();
+
+#endif // WAVELANG_NATIVE_MODULES_CONTROLLER_H__

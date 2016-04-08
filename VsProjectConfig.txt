@@ -28,6 +28,7 @@
 
 		<IncludeDir Path="C:\Program Files (no install)\portaudio\pa_stable_v19_20140130\portaudio\include" />
 		<IncludeDir Path="C:\Program Files (no install)\rtmidi-2.1.1" />
+		<IncludeDir Path="C:\Program Files (no install)\rapidxml-1.13" />
 
 		<DebugLibraryDir Path="C:\Program Files (no install)\portaudio\pa_stable_v19_20140130\portaudio\build\msvc\Win32\Debug" />
 		<ReleaseLibraryDir Path="C:\Program Files (no install)\portaudio\pa_stable_v19_20140130\portaudio\build\msvc\Win32\Release" />

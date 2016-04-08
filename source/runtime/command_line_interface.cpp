@@ -1,5 +1,6 @@
 #include "common/common.h"
 #include "runtime/runtime_context.h"
+#include "runtime/runtime_config.h"
 #include "execution_graph/native_module_registry.h"
 #include "execution_graph/native_modules/native_module_registration.h"
 #include "engine/task_function_registry.h"
@@ -12,12 +13,14 @@
 #include <vector>
 #include <algorithm>
 
+static const char *k_runtime_config_filename = "wavelang_runtime_config.xml";
+
 class c_command_line_interface {
 public:
 	c_command_line_interface(int argc, char **argv);
 	~c_command_line_interface();
 
-	int main_function();
+	int main_function(bool list_mode);
 
 private:
 	struct s_command {
@@ -31,10 +34,11 @@ private:
 	static size_t skip_to_quote(const std::string &str, size_t pos, std::string &out_result);
 	static bool is_whitespace(char c);
 
-	void process_command_init_stream(const s_command &command);
-	void process_command_init_controller(const s_command &command);
+	void list_devices();
+	void initialize_from_runtime_config();
 	void process_command_load_synth(const s_command &command);
 
+	c_runtime_config runtime_config;
 	s_runtime_context runtime_context;
 };
 
@@ -42,7 +46,9 @@ int main(int argc, char **argv) {
 	int result;
 	{
 		c_command_line_interface cli(argc, argv);
-		result = cli.main_function();
+		// $TODO add real command line argument parsing
+		bool list_mode = (argc == 2 && strcmp(argv[1], "-list") == 0);
+		result = cli.main_function(list_mode);
 	}
 	return result;
 }
@@ -54,7 +60,7 @@ c_command_line_interface::~c_command_line_interface() {
 
 }
 
-int c_command_line_interface::main_function() {
+int c_command_line_interface::main_function(bool list_mode) {
 	c_native_module_registry::initialize();
 	c_task_function_registry::initialize();
 
@@ -77,27 +83,33 @@ int c_command_line_interface::main_function() {
 		}
 	}
 
-	initialize_event_data_types();
+	if (list_mode) {
+		list_devices();
+	} else {
+		runtime_config.read_settings(
+			&runtime_context.audio_driver_interface,
+			&runtime_context.controller_driver_interface,
+			k_runtime_config_filename);
 
-	// None active initially
-	runtime_context.active_task_graph = -1;
+		initialize_event_data_types();
+		initialize_from_runtime_config();
 
-	bool done = false;
-	while (!done) {
-		s_command command = process_command();
+		// None active initially
+		runtime_context.active_task_graph = -1;
 
-		if (command.command.empty()) {
-			std::cout << "Invalid command\n";
-		} else if (command.command == "exit") {
-			done = true;
-		} else if (command.command == "init_stream") {
-			process_command_init_stream(command);
-		} else if (command.command == "init_controller") {
-			process_command_init_controller(command);
-		} else if (command.command == "load_synth") {
-			process_command_load_synth(command);
-		} else {
-			std::cout << "Invalid command\n";
+		bool done = false;
+		while (!done) {
+			s_command command = process_command();
+
+			if (command.command.empty()) {
+				std::cout << "Invalid command\n";
+			} else if (command.command == "exit") {
+				done = true;
+			} else if (command.command == "load_synth") {
+				process_command_load_synth(command);
+			} else {
+				std::cout << "Invalid command\n";
+			}
 		}
 	}
 
@@ -203,152 +215,53 @@ bool c_command_line_interface::is_whitespace(char c) {
 	return (c == ' ' || c == '\t' || c == '\n');
 }
 
-void c_command_line_interface::process_command_init_stream(const s_command &command) {
-	s_audio_driver_settings settings;
-	bool valid_settings = false;
-	bool read_settings = true;
-
-	if (command.arguments.size() == 1) {
-		if (command.arguments[0] == "list") {
-			for (size_t index = 0; index < runtime_context.audio_driver_interface.get_device_count(); index++) {
-				s_audio_device_info device_info = runtime_context.audio_driver_interface.get_device_info(index);
-				std::cout << index << ": " << device_info.name << "\n";
-			}
-			return;
-		} else if (command.arguments[0] == "default") {
-			if (!VALID_INDEX(runtime_context.audio_driver_interface.get_default_device_index(),
-				runtime_context.audio_driver_interface.get_device_count())) {
-				std::cout << "No default audio device\n";
-				return;
-			}
-
-			s_audio_device_info device_info = runtime_context.audio_driver_interface.get_device_info(
-				runtime_context.audio_driver_interface.get_default_device_index());
-
-			settings.device_index = runtime_context.audio_driver_interface.get_default_device_index();
-			settings.sample_rate = device_info.default_sample_rate;
-			settings.output_channels = std::min(2u, device_info.max_output_channels);
-			settings.sample_format = k_sample_format_float32;
-			settings.frames_per_buffer = 512; // $TODO how do I choose this?
-			valid_settings = true;
-			read_settings = false;
-		}
+void c_command_line_interface::list_devices() {
+	std::cout << "Audio devices:\n";
+	for (size_t index = 0; index < runtime_context.audio_driver_interface.get_device_count(); index++) {
+		s_audio_device_info device_info = runtime_context.audio_driver_interface.get_device_info(index);
+		std::cout << index << ": " << device_info.name << "\n";
 	}
 
-	if (read_settings) {
-		if (command.arguments.size() == 5) {
-			try {
-				settings.device_index = std::stoul(command.arguments[0]);
-				if (!VALID_INDEX(settings.device_index, runtime_context.audio_driver_interface.get_device_count())) {
-					throw std::invalid_argument("Invalid audio device index");
-				}
-
-				settings.sample_rate = std::stod(command.arguments[1]);
-				settings.output_channels = std::stoul(command.arguments[2]);
-
-				// This static assert will fire if we add or remove a format
-				static_assert(k_sample_format_count == 1, "Update sample format parse logic");
-				if (command.arguments[3] == "float32") {
-					settings.sample_format = k_sample_format_float32;
-				} else {
-					throw std::invalid_argument("Invalid format");
-				}
-
-				settings.frames_per_buffer = std::stoul(command.arguments[4]);
-
-				// If we've gotten to this point, we will attempt to open the stream
-				valid_settings = true;
-			} catch (const std::invalid_argument &) {
-			} catch (const std::out_of_range &) {
-			}
-		}
+	std::cout << "Controller devices:\n";
+	for (size_t index = 0; index < runtime_context.controller_driver_interface.get_device_count(); index++) {
+		s_controller_device_info device_info = runtime_context.controller_driver_interface.get_device_info(index);
+		std::cout << index << ": " << device_info.name << "\n";
 	}
+}
 
-	if (valid_settings) {
-		// Stop the old stream
-		runtime_context.audio_driver_interface.stop_stream();
+void c_command_line_interface::initialize_from_runtime_config() {
+	const c_runtime_config::s_settings &config_settings = runtime_config.get_settings();
+
+	// Initialize audio stream
+	{
+		s_audio_driver_settings settings;
+		settings.device_index = config_settings.audio_device_index;
+		settings.sample_rate = config_settings.audio_sample_rate;
+		//settings.input_channels = config_settings.audio_input_channels; // $TODO $INPUT
+		settings.output_channels = config_settings.audio_output_channels;
+		settings.sample_format = config_settings.audio_sample_format;
+		settings.frames_per_buffer = config_settings.audio_frames_per_buffer;
 
 		settings.stream_callback = runtime_context.stream_callback;
 		settings.stream_callback_user_data = &runtime_context;
+
 		s_audio_driver_result result = runtime_context.audio_driver_interface.start_stream(settings);
 		if (result.result != k_audio_driver_result_success) {
 			std::cout << result.message << "\n";
 		}
-
-		return;
 	}
 
-	std::cout << "Invalid command\n";
-}
+	// Initialize the controller
+	if (config_settings.controller_enabled) {
+		s_controller_driver_settings settings;
+		settings.device_index = config_settings.controller_device_index;
+		settings.controller_event_queue_size = config_settings.controller_event_queue_size;
 
-void c_command_line_interface::process_command_init_controller(const s_command &command) {
-	if (runtime_context.audio_driver_interface.is_stream_running()) {
-		std::cout << "Stop stream first to avoid race condition\n";
-		return;
-	}
-
-	s_controller_driver_settings settings;
-	bool valid_settings = false;
-	bool read_settings = true;
-
-	if (command.arguments.size() == 1) {
-		if (command.arguments[0] == "list") {
-			for (size_t index = 0; index < runtime_context.controller_driver_interface.get_device_count(); index++) {
-				s_controller_device_info device_info =
-					runtime_context.controller_driver_interface.get_device_info(index);
-				std::cout << index << ": " << device_info.name << "\n";
-			}
-			return;
-		} else if (command.arguments[0] == "default") {
-			if (!VALID_INDEX(runtime_context.controller_driver_interface.get_default_device_index(),
-				runtime_context.controller_driver_interface.get_device_count())) {
-				std::cout << "No default controller device\n";
-				return;
-			}
-
-			s_controller_device_info device_info = runtime_context.controller_driver_interface.get_device_info(
-				runtime_context.controller_driver_interface.get_default_device_index());
-
-			settings.device_index = runtime_context.controller_driver_interface.get_default_device_index();
-			settings.controller_event_queue_size = 1024; // $TODO don't hardcode
-			valid_settings = true;
-			read_settings = false;
-		}
-	}
-
-	if (read_settings) {
-		if (command.arguments.size() == 1) {
-			try {
-				settings.device_index = std::stoul(command.arguments[0]);
-				if (!VALID_INDEX(settings.device_index,
-					runtime_context.controller_driver_interface.get_device_count())) {
-					throw std::invalid_argument("Invalid controller device index");
-				}
-
-				settings.controller_event_queue_size = 1024; // $TODO don't hardcode
-
-				// If we've gotten to this point, we will attempt to open the stream
-				valid_settings = true;
-			} catch (const std::invalid_argument &) {
-			}
-		}
-	}
-
-	if (valid_settings) {
-		// Stop the old stream
-		runtime_context.controller_driver_interface.stop_stream();
-
-		//settings.stream_callback = runtime_context.stream_callback;
-		//settings.stream_callback_user_data = &runtime_context;
 		s_controller_driver_result result = runtime_context.controller_driver_interface.start_stream(settings);
 		if (result.result != k_controller_driver_result_success) {
 			std::cout << result.message << "\n";
 		}
-
-		return;
 	}
-
-	std::cout << "Invalid command\n";
 }
 
 void c_command_line_interface::process_command_load_synth(const s_command &command) {
@@ -381,18 +294,18 @@ void c_command_line_interface::process_command_load_synth(const s_command &comma
 			// Set up the executor with the new graph
 			runtime_context.executor.shutdown();
 
+			const c_runtime_config::s_settings &runtime_config_settings = runtime_config.get_settings();
 			s_executor_settings settings;
 			settings.task_graph = &task_graph;
-			settings.thread_count = 1; // $TODO don't hardcode
-			settings.sample_rate =
-				static_cast<uint32>(runtime_context.audio_driver_interface.get_settings().sample_rate);
-			settings.max_buffer_size = runtime_context.audio_driver_interface.get_settings().frames_per_buffer;
-			settings.output_channels = runtime_context.audio_driver_interface.get_settings().output_channels;
-			settings.controller_event_queue_size = 1024; // $TODO don't hardcode
+			settings.thread_count = runtime_config_settings.executor_thread_count;
+			settings.sample_rate = runtime_config_settings.audio_sample_rate;
+			settings.max_buffer_size = runtime_config_settings.audio_frames_per_buffer;
+			settings.output_channels = runtime_config_settings.audio_output_channels;
+			settings.controller_event_queue_size = runtime_config_settings.controller_event_queue_size;
 			settings.process_controller_events = s_runtime_context::process_controller_events_callback;
 			settings.process_controller_events_context = &runtime_context;
-			settings.event_console_enabled = true;
-			settings.profiling_enabled = true;
+			settings.event_console_enabled = runtime_config_settings.executor_console_enabled;
+			settings.profiling_enabled = runtime_config_settings.executor_profiling_enabled;
 			runtime_context.executor.initialize(settings);
 		}
 

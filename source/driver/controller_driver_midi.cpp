@@ -1,8 +1,8 @@
 #include "driver/controller_driver_midi.h"
 
 #include <RtMidi.h>
-#pragma comment(lib, "rtmidid.lib")
 #ifdef _DEBUG
+#pragma comment(lib, "rtmidid.lib")
 #else // _DEBUG
 #pragma comment(lib, "rtmidi.lib")
 #endif // _DEBUG
