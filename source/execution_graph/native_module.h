@@ -49,48 +49,81 @@ struct s_native_module_uid {
 	static const s_native_module_uid k_invalid;
 };
 
-enum e_native_module_argument_qualifier {
-	k_native_module_argument_qualifier_in,
-	k_native_module_argument_qualifier_out,
+enum e_native_module_qualifier {
+	k_native_module_qualifier_in,
+	k_native_module_qualifier_out,
 
 	// Same as input argument, except the value must resolve to a compile-time constant
-	k_native_module_argument_qualifier_constant,
+	k_native_module_qualifier_constant,
 
-	k_native_module_argument_qualifier_count
+	k_native_module_qualifier_count
 };
 
-enum e_native_module_argument_type {
-	k_native_module_argument_type_real,
-	k_native_module_argument_type_bool,
-	k_native_module_argument_type_string,
+// Many cases accept both "in" and "constant", so use this utility function for those
+inline bool native_module_qualifier_is_input(e_native_module_qualifier qualifier) {
+	return (qualifier == k_native_module_qualifier_in) || (qualifier == k_native_module_qualifier_constant);
+}
 
-	k_native_module_argument_type_real_array,
-	k_native_module_argument_type_bool_array,
-	k_native_module_argument_type_string_array,
+enum e_native_module_primitive_type {
+	k_native_module_primitive_type_real,
+	k_native_module_primitive_type_bool,
+	k_native_module_primitive_type_string,
 
-	k_native_module_argument_type_count
+	k_native_module_primitive_type_count
 };
 
-bool is_native_module_argument_type_array(e_native_module_argument_type type);
+struct s_native_module_primitive_type_traits {
+	bool is_dynamic;	// Whether this is a runtime-dynamic type
+};
 
-e_native_module_argument_type get_element_from_array_native_module_argument_type(
-	e_native_module_argument_type array_type);
-e_native_module_argument_type get_array_from_element_native_module_argument_type(
-	e_native_module_argument_type element_type);
+class c_native_module_data_type {
+public:
+	c_native_module_data_type();
+	c_native_module_data_type(e_native_module_primitive_type primitive_type, bool is_array = false);
+	static c_native_module_data_type invalid();
+
+	bool is_valid() const;
+
+	e_native_module_primitive_type get_primitive_type() const;
+	const s_native_module_primitive_type_traits &get_primitive_type_traits() const;
+	bool is_array() const;
+	c_native_module_data_type get_element_type() const;
+	c_native_module_data_type get_array_type() const;
+
+	bool operator==(const c_native_module_data_type &other) const;
+	bool operator!=(const c_native_module_data_type &other) const;
+
+	uint32 write() const;
+	bool read(uint32 data);
+
+private:
+	enum e_flag {
+		k_flag_is_array,
+
+		k_flag_count
+	};
+
+	e_native_module_primitive_type m_primitive_type;
+	uint32 m_flags;
+};
+
+const s_native_module_primitive_type_traits &get_native_module_primitive_type_traits(
+	e_native_module_primitive_type primitive_type);
 
 struct s_native_module_argument {
-	e_native_module_argument_qualifier qualifier;
-	e_native_module_argument_type type;
+	e_native_module_qualifier qualifier;
+	c_native_module_data_type type;
 
 	static s_native_module_argument build(
-		e_native_module_argument_qualifier qualifier,
-		e_native_module_argument_type type) {
+		e_native_module_qualifier qualifier,
+		c_native_module_data_type type) {
 		s_native_module_argument result = { qualifier, type };
 		return result;
 	}
  };
 
 // Return value for a compile-time native module call
+// $TODO do we want to expose std::vector for arrays? Consider making a wrapper around it
 struct s_native_module_compile_time_argument {
 #if PREDEFINED(ASSERTS_ENABLED)
 	s_native_module_argument argument;
@@ -108,94 +141,82 @@ struct s_native_module_compile_time_argument {
 	// These functions are used to enforce correct usage of input or output
 
 	real32 get_real() const {
-		wl_assert(
-			argument.qualifier == k_native_module_argument_qualifier_in ||
-			argument.qualifier == k_native_module_argument_qualifier_constant);
-		wl_assert(argument.type == k_native_module_argument_type_real);
+		wl_assert(native_module_qualifier_is_input(argument.qualifier));
+		wl_assert(argument.type == c_native_module_data_type(k_native_module_primitive_type_real));
 		return real_value;
 	}
 
 	real32 operator=(real32 value) {
-		wl_assert(argument.qualifier == k_native_module_argument_qualifier_out);
-		wl_assert(argument.type == k_native_module_argument_type_real);
+		wl_assert(argument.qualifier == k_native_module_qualifier_out);
+		wl_assert(argument.type == c_native_module_data_type(k_native_module_primitive_type_real));
 		this->real_value = value;
 		IF_ASSERTS_ENABLED(assigned = true);
 		return value;
 	}
 
 	bool get_bool() const {
-		wl_assert(
-			argument.qualifier == k_native_module_argument_qualifier_in ||
-			argument.qualifier == k_native_module_argument_qualifier_constant);
-		wl_assert(argument.type == k_native_module_argument_type_bool);
+		wl_assert(native_module_qualifier_is_input(argument.qualifier));
+		wl_assert(argument.type == c_native_module_data_type(k_native_module_primitive_type_bool));
 		return bool_value;
 	}
 
 	bool operator=(bool value) {
-		wl_assert(argument.qualifier == k_native_module_argument_qualifier_out);
-		wl_assert(argument.type == k_native_module_argument_type_bool);
+		wl_assert(argument.qualifier == k_native_module_qualifier_out);
+		wl_assert(argument.type == c_native_module_data_type(k_native_module_primitive_type_bool));
 		this->bool_value = value;
 		IF_ASSERTS_ENABLED(assigned = true);
 		return value;
 	}
 
 	const std::string &get_string() const {
-		wl_assert(
-			argument.qualifier == k_native_module_argument_qualifier_in ||
-			argument.qualifier == k_native_module_argument_qualifier_constant);
-		wl_assert(argument.type == k_native_module_argument_type_string);
+		wl_assert(native_module_qualifier_is_input(argument.qualifier));
+		wl_assert(argument.type == c_native_module_data_type(k_native_module_primitive_type_string));
 		return string_value;
 	}
 
 	const std::string &operator=(const std::string &value) {
-		wl_assert(argument.qualifier == k_native_module_argument_qualifier_out);
-		wl_assert(argument.type == k_native_module_argument_type_string);
+		wl_assert(argument.qualifier == k_native_module_qualifier_out);
+		wl_assert(argument.type == c_native_module_data_type(k_native_module_primitive_type_real));
 		this->string_value = value;
 		IF_ASSERTS_ENABLED(assigned = true);
 		return string_value;
 	}
 
 	const std::vector<uint32> &get_real_array() const {
-		wl_assert(
-			argument.qualifier == k_native_module_argument_qualifier_in ||
-			argument.qualifier == k_native_module_argument_qualifier_constant);
-		wl_assert(argument.type == k_native_module_argument_type_real_array);
+		wl_assert(native_module_qualifier_is_input(argument.qualifier));
+		wl_assert(argument.type == c_native_module_data_type(k_native_module_primitive_type_real, true));
 		return array_value;
 	}
 
 	void set_real_array(const std::vector<uint32> &value) {
-		wl_assert(argument.qualifier == k_native_module_argument_qualifier_out);
-		wl_assert(argument.type == k_native_module_argument_type_real_array);
+		wl_assert(argument.qualifier == k_native_module_qualifier_out);
+		wl_assert(argument.type == c_native_module_data_type(k_native_module_primitive_type_real, true));
 		this->array_value = value;
 		IF_ASSERTS_ENABLED(assigned = true);
 	}
 
 	const std::vector<uint32> &get_bool_array() const {
-		wl_assert(
-			argument.qualifier == k_native_module_argument_qualifier_in ||
-			argument.qualifier == k_native_module_argument_qualifier_constant);
-		wl_assert(argument.type == k_native_module_argument_type_bool_array);
+		wl_assert(native_module_qualifier_is_input(argument.qualifier));
+		wl_assert(argument.type == c_native_module_data_type(k_native_module_primitive_type_bool, true));
 		return array_value;
 	}
 
 	void set_bool_array(const std::vector<uint32> &value) {
-		wl_assert(argument.qualifier == k_native_module_argument_qualifier_out);
-		wl_assert(argument.type == k_native_module_argument_type_bool_array);
+		wl_assert(argument.qualifier == k_native_module_qualifier_out);
+		wl_assert(argument.type == c_native_module_data_type(k_native_module_primitive_type_bool, true));
 		this->array_value = value;
 		IF_ASSERTS_ENABLED(assigned = true);
 	}
 
 	const std::vector<uint32> &get_string_array() const {
-		wl_assert(
-			argument.qualifier == k_native_module_argument_qualifier_in ||
-			argument.qualifier == k_native_module_argument_qualifier_constant);
-		wl_assert(argument.type == k_native_module_argument_type_string_array);
+		wl_assert(native_module_qualifier_is_input(argument.qualifier));
+		wl_assert(argument.type == c_native_module_data_type(k_native_module_primitive_type_string, true));
 		return array_value;
 	}
 
 	void set_string_array(const std::vector<uint32> &value) {
-		wl_assert(argument.qualifier == k_native_module_argument_qualifier_out);
-		wl_assert(argument.type == k_native_module_argument_type_string_array);
+		wl_assert(argument.qualifier == k_native_module_qualifier_out);
+		wl_assert(argument.type == c_native_module_data_type(k_native_module_primitive_type_string, true));
 		this->array_value = value;
 		IF_ASSERTS_ENABLED(assigned = true);
 	}
@@ -206,12 +227,14 @@ private:
 };
 
 // A function which can be called at compile-time to resolve the value(s) of native module calls with constant inputs
-typedef std::vector<s_native_module_compile_time_argument> c_native_module_compile_time_argument_list;
-typedef void (*f_native_module_compile_time_call)(c_native_module_compile_time_argument_list &arguments);
+typedef c_wrapped_array<s_native_module_compile_time_argument> c_native_module_compile_time_argument_list;
+typedef void (*f_native_module_compile_time_call)(c_native_module_compile_time_argument_list arguments);
 
 // Shorthand for argument specification
 #define NMA(qualifier, type) s_native_module_argument::build( \
-	k_native_module_argument_qualifier_ ## qualifier, k_native_module_argument_type_ ## type)
+	k_native_module_qualifier_ ## qualifier, c_native_module_data_type(k_native_module_primitive_type_ ## type))
+#define NMA_ARRAY(qualifier, type) s_native_module_argument::build( \
+	k_native_module_qualifier_ ## qualifier, c_native_module_data_type(k_native_module_primitive_type_ ## type, true))
 
 struct s_native_module_argument_list {
 	static const s_native_module_argument k_argument_none;

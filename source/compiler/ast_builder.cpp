@@ -6,33 +6,32 @@
 #include "execution_graph/native_module_registry.h"
 #include <stdexcept>
 
-static const e_ast_data_type k_native_module_argument_type_to_ast_data_type_mapping[] = {
-	k_ast_data_type_real,			// k_native_module_argument_type_real
-	k_ast_data_type_bool,			// k_native_module_argument_type_bool
-	k_ast_data_type_string,			// k_native_module_argument_type_string
-	k_ast_data_type_real_array,		// k_native_module_argument_type_real_array
-	k_ast_data_type_bool_array,		// k_native_module_argument_type_bool_array
-	k_ast_data_type_string_array	// k_native_module_argument_type_string_array
+static const e_ast_primitive_type k_native_module_primitive_type_to_ast_primitive_type_mapping[] = {
+	k_ast_primitive_type_real,	// k_native_module_primitive_type_real
+	k_ast_primitive_type_bool,	// k_native_module_primitive_type_bool
+	k_ast_primitive_type_string	// k_native_module_primitive_type_string
 };
-static_assert(NUMBEROF(k_native_module_argument_type_to_ast_data_type_mapping) == k_native_module_argument_type_count,
-	"Native module argument type to ast data type mismatch");
+static_assert(NUMBEROF(k_native_module_primitive_type_to_ast_primitive_type_mapping) ==
+	k_native_module_primitive_type_count,
+	"Native module argument primitive type to ast primitive type mismatch");
 
-static const e_ast_qualifier k_native_module_argument_qualifier_to_ast_qualifier_mapping[] = {
-	k_ast_qualifier_in,		// k_native_module_argument_qualifier_in
-	k_ast_qualifier_out,	// k_native_module_argument_qualifier_out
-	k_ast_qualifier_in		// k_native_module_argument_qualifier_constant
+static const e_ast_qualifier k_native_module_qualifier_to_ast_qualifier_mapping[] = {
+	k_ast_qualifier_in,		// k_native_module_qualifier_in
+	k_ast_qualifier_out,	// k_native_module_qualifier_out
+	k_ast_qualifier_in		// k_native_module_qualifier_constant
 };
-static_assert(NUMBEROF(k_native_module_argument_qualifier_to_ast_qualifier_mapping) ==
-	k_native_module_argument_qualifier_count, "Native module argument qualifier to ast qualifier mismatch");
+static_assert(NUMBEROF(k_native_module_qualifier_to_ast_qualifier_mapping) ==
+	k_native_module_qualifier_count, "Native module qualifier to ast qualifier mismatch");
 
-static e_ast_data_type get_ast_data_type(e_native_module_argument_type type) {
-	wl_assert(VALID_INDEX(type, k_native_module_argument_type_count));
-	return k_native_module_argument_type_to_ast_data_type_mapping[type];
+static c_ast_data_type get_ast_data_type(c_native_module_data_type type) {
+	return c_ast_data_type(
+		k_native_module_primitive_type_to_ast_primitive_type_mapping[type.get_primitive_type()],
+		type.is_array());
 }
 
-static e_ast_qualifier get_ast_qualifier(e_native_module_argument_qualifier qualifier) {
-	wl_assert(VALID_INDEX(qualifier, k_native_module_argument_qualifier_count));
-	return k_native_module_argument_qualifier_to_ast_qualifier_mapping[qualifier];
+static e_ast_qualifier get_ast_qualifier(e_native_module_qualifier qualifier) {
+	wl_assert(VALID_INDEX(qualifier, k_native_module_qualifier_count));
+	return k_native_module_qualifier_to_ast_qualifier_mapping[qualifier];
 }
 
 static bool node_is_type(const c_lr_parse_tree_node &node, e_token_type terminal_type) {
@@ -43,7 +42,7 @@ static bool node_is_type(const c_lr_parse_tree_node &node, e_parser_nonterminal 
 	return !node.get_symbol().is_terminal() && node.get_symbol().get_index() == nonterminal_type;
 }
 
-static e_ast_data_type get_data_type_from_node(const c_lr_parse_tree &parse_tree, const c_lr_parse_tree_node &node) {
+static c_ast_data_type get_data_type_from_node(const c_lr_parse_tree &parse_tree, const c_lr_parse_tree_node &node) {
 	const c_lr_parse_tree_node *type_node = &node;
 
 	if (node_is_type(*type_node, k_parser_nonterminal_type_or_void) ||
@@ -74,19 +73,22 @@ static e_ast_data_type get_data_type_from_node(const c_lr_parse_tree &parse_tree
 	}
 #endif // PREDEFINED(ASSERTS_ENABLED)
 
+	c_ast_data_type result;
+
 	if (node_is_type(*type_node, k_token_type_keyword_void)) {
 		wl_assert(!is_array);
-		return k_ast_data_type_void;
+		result = c_ast_data_type(k_ast_primitive_type_void);
 	} else if (node_is_type(*type_node, k_token_type_keyword_real)) {
-		return is_array ? k_ast_data_type_real_array : k_ast_data_type_real;
+		result = c_ast_data_type(k_ast_primitive_type_real, is_array);
 	} else if (node_is_type(*type_node, k_token_type_keyword_bool)) {
-		return is_array ? k_ast_data_type_bool_array : k_ast_data_type_bool;
+		result = c_ast_data_type(k_ast_primitive_type_bool, is_array);
 	} else if (node_is_type(*type_node, k_token_type_keyword_string)) {
-		return is_array ? k_ast_data_type_string_array : k_ast_data_type_string;
+		result = c_ast_data_type(k_ast_primitive_type_string, is_array);
 	} else {
 		wl_unreachable();
-		return k_ast_data_type_count;
 	}
+
+	return result;
 }
 
 static e_ast_qualifier get_qualifier_from_node(const c_lr_parse_tree_node &node) {
@@ -231,13 +233,13 @@ static void build_native_module_declarations(c_ast_node_scope *global_scope) {
 		module_declaration->set_is_native(true);
 		module_declaration->set_native_module_index(index);
 		module_declaration->set_name(native_module.name.get_string());
-		module_declaration->set_return_type(k_ast_data_type_void);
+		module_declaration->set_return_type(c_ast_data_type(k_ast_primitive_type_void));
 
 		bool first_out_argument_found = false;
 		for (size_t arg = 0; arg < native_module.argument_count; arg++) {
 			s_native_module_argument argument = native_module.arguments[arg];
 			if (native_module.first_output_is_return &&
-				argument.qualifier == k_native_module_argument_qualifier_out &&
+				argument.qualifier == k_native_module_qualifier_out &&
 				!first_out_argument_found) {
 				// The first out argument is routed through the return value, so don't add a declaration for it
 				module_declaration->set_return_type(get_ast_data_type(argument.type));
@@ -331,7 +333,7 @@ static c_ast_node_module_declaration *build_module_declaration(const c_lr_parse_
 	module_declaration->set_source_location(
 		tokens.tokens[module_keyword_node.get_token_index()].source_location);
 
-	e_ast_data_type return_type = get_data_type_from_node(parse_tree, module_return_type_node);
+	c_ast_data_type return_type = get_data_type_from_node(parse_tree, module_return_type_node);
 
 	module_declaration->set_return_type(return_type);
 	module_declaration->set_name(tokens.tokens[module_name_node.get_token_index()].token_string.to_std_string());
@@ -387,7 +389,7 @@ static c_ast_node_module_declaration *build_module_declaration(const c_lr_parse_
 			wl_assert(argument_qualifier_node.has_child());
 			const c_lr_parse_tree_node &qualifier_node = parse_tree.get_node(argument_qualifier_node.get_child_index());
 			e_ast_qualifier qualifier = get_qualifier_from_node(qualifier_node);
-			e_ast_data_type data_type = get_data_type_from_node(parse_tree, argument_type_node);
+			c_ast_data_type data_type = get_data_type_from_node(parse_tree, argument_type_node);
 
 			argument_declaration->set_source_location(
 				tokens.tokens[qualifier_node.get_token_index()].source_location);
@@ -519,7 +521,7 @@ static std::vector<c_ast_node *> build_named_value_declaration_and_optional_assi
 	const c_lr_parse_tree_node &name_node = it.get_node();
 	wl_assert(node_is_type(name_node, k_token_type_identifier));
 
-	e_ast_data_type data_type = get_data_type_from_node(parse_tree, named_value_type_node);
+	c_ast_data_type data_type = get_data_type_from_node(parse_tree, named_value_type_node);
 
 	std::vector<c_ast_node *> result;
 
@@ -1156,11 +1158,11 @@ static c_ast_node_constant *build_constant_array(const c_lr_parse_tree &parse_tr
 	constant_array->set_source_location(tokens.tokens[get_first_token_index(parse_tree, node_0)].source_location);
 
 	// We expect "array ( optional_expressions )"
-	e_ast_data_type data_type = get_data_type_from_node(parse_tree, node_0);
+	c_ast_data_type data_type = get_data_type_from_node(parse_tree, node_0);
 
 	// Can't have arrays of arrays
-	wl_assert(is_ast_data_type_array(data_type));
-	constant_array->set_array(get_element_from_array_ast_data_type(data_type));
+	wl_assert(data_type.is_array());
+	constant_array->set_array(data_type.get_element_type());
 
 	wl_assert(node_is_type(it.get_node(), k_token_type_left_parenthesis));
 	it.follow_sibling();

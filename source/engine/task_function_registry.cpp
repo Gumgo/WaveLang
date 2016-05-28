@@ -44,6 +44,21 @@ static void validate_task_function_mapping(
 	const s_native_module &native_module, const s_task_function_mapping &task_function_mapping);
 #endif // PREDEFINED(ASSERTS_ENABLED)
 
+static const e_task_primitive_type k_native_module_primitive_type_to_task_primitive_type_mapping[] = {
+	k_task_primitive_type_real,		// k_native_module_primitive_type_real
+	k_task_primitive_type_bool,		// k_native_module_primitive_type_bool
+	k_task_primitive_type_string	// k_native_module_primitive_type_string
+};
+static_assert(NUMBEROF(k_native_module_primitive_type_to_task_primitive_type_mapping) ==
+	k_native_module_primitive_type_count,
+	"Native module primitive type to task primitive type mismatch");
+
+static e_task_primitive_type convert_native_module_primitive_type_to_task_primitive_type(
+	e_native_module_primitive_type native_module_primitive_type) {
+	wl_assert(VALID_INDEX(native_module_primitive_type, k_native_module_primitive_type_count));
+	return k_native_module_primitive_type_to_task_primitive_type_mapping[native_module_primitive_type];
+}
+
 void c_task_function_registry::initialize() {
 	wl_assert(g_task_function_registry_state == k_task_function_registry_state_uninitialized);
 	g_task_function_registry_state = k_task_function_registry_state_initialized;
@@ -93,7 +108,8 @@ bool c_task_function_registry::register_task_function(const s_task_function &tas
 	wl_assert(task_function.argument_count <= k_max_task_function_arguments);
 #if PREDEFINED(ASSERTS_ENABLED)
 	for (size_t arg = 0; arg < task_function.argument_count; arg++) {
-		wl_assert(VALID_INDEX(task_function.argument_types[arg], k_task_data_type_count));
+		wl_assert(task_function.argument_types[arg].is_valid());
+		wl_assert(task_function.argument_types[arg].is_legal());
 	}
 #endif // PREDEFINED(ASSERTS_ENABLED)
 
@@ -202,83 +218,35 @@ static void validate_task_function_mapping(
 		uint32 mapping_index = task_function_mapping.native_module_argument_mapping.mapping[arg];
 		wl_assert(VALID_INDEX(mapping_index, task_function.argument_count));
 
-		if (native_module.arguments[arg].qualifier == k_native_module_argument_qualifier_in ||
-			native_module.arguments[arg].qualifier == k_native_module_argument_qualifier_constant) {
+		c_native_module_data_type native_module_type = native_module.arguments[arg].type;
+		c_task_data_type task_type = task_function.argument_types[mapping_index];
+
+		// For all qualifier types, the primitive type and whether it's an array must match
+		wl_assert(task_type.get_primitive_type() ==
+			convert_native_module_primitive_type_to_task_primitive_type(native_module_type.get_primitive_type()));
+		wl_assert(task_type.is_array() == native_module_type.is_array());
+
+		if (native_module_qualifier_is_input(native_module.arguments[arg].qualifier)) {
 			// Input arguments should have a valid input mapping
 			wl_assert(
 				input_type == k_task_function_mapping_native_module_input_type_variable ||
 				input_type == k_task_function_mapping_native_module_input_type_branchless_variable);
 
 			// Make sure the native module argument type matches up with what it's being mapped to
-			switch (native_module.arguments[arg].type) {
-			case k_native_module_argument_type_real:
-				wl_assert(
-					task_function.argument_types[mapping_index] == k_task_data_type_real_in ||
-					task_function.argument_types[mapping_index] == k_task_data_type_real_inout);
-				break;
-
-			case k_native_module_argument_type_bool:
-				wl_assert(task_function.argument_types[mapping_index] == k_task_data_type_bool_in);
-				break;
-
-			case k_native_module_argument_type_string:
-				wl_assert(task_function.argument_types[mapping_index] == k_task_data_type_string_in);
-				break;
-
-			case k_native_module_argument_type_real_array:
-				wl_assert(task_function.argument_types[mapping_index] == k_task_data_type_real_array_in);
-				break;
-
-			case k_native_module_argument_type_bool_array:
-				wl_assert(task_function.argument_types[mapping_index] == k_task_data_type_bool_array_in);
-				break;
-
-			case k_native_module_argument_type_string_array:
-				wl_assert(task_function.argument_types[mapping_index] == k_task_data_type_string_array_in);
-				break;
-
-			default:
-				wl_unreachable();
-			}
+			wl_assert(task_type.get_qualifier() == k_task_qualifier_in ||
+				task_type.get_qualifier() == k_task_qualifier_inout);
 
 			wl_assert(!task_argument_input_mappings[mapping_index]);
 			task_argument_input_mappings[mapping_index] = true;
 		} else {
-			wl_assert(native_module.arguments[arg].qualifier == k_native_module_argument_qualifier_out);
+			wl_assert(native_module.arguments[arg].qualifier == k_native_module_qualifier_out);
 			// Output arguments should be "ignored" in the mapping
 			wl_assert(input_type == k_task_function_mapping_native_module_input_type_none);
 
 			// Make sure the native module argument type matches up with what it's being mapped to
-			switch (native_module.arguments[arg].type) {
-			case k_native_module_argument_type_real:
-				wl_assert(
-					task_function.argument_types[mapping_index] == k_task_data_type_real_out ||
-					task_function.argument_types[mapping_index] == k_task_data_type_real_inout);
-				break;
-
-			case k_native_module_argument_type_bool:
-				wl_vhalt("Bool output not (currently) supported");
-				break;
-
-			case k_native_module_argument_type_string:
-				wl_vhalt("String output not supported");
-				break;
-
-			case k_native_module_argument_type_real_array:
-				wl_vhalt("Real array output not supported");
-				break;
-
-			case k_native_module_argument_type_bool_array:
-				wl_vhalt("Bool array output not supported");
-				break;
-
-			case k_native_module_argument_type_string_array:
-				wl_vhalt("String array output not supported");
-				break;
-
-			default:
-				wl_unreachable();
-			}
+			wl_assert(!native_module_type.is_array());
+			wl_assert(task_type.get_qualifier() == k_task_qualifier_out ||
+				task_type.get_qualifier() == k_task_qualifier_inout);
 
 			wl_assert(!task_argument_output_mappings[mapping_index]);
 			task_argument_output_mappings[mapping_index] = true;
@@ -289,29 +257,21 @@ static void validate_task_function_mapping(
 		bool in_mapped = task_argument_input_mappings[task_arg];
 		bool out_mapped = task_argument_output_mappings[task_arg];
 
-		switch (task_function.argument_types[task_arg]) {
-		case k_task_data_type_real_in:
+		c_task_data_type type = task_function.argument_types[task_arg];
+		switch (task_function.argument_types[task_arg].get_qualifier()) {
+		case k_task_qualifier_in:
 			wl_assert(in_mapped);
 			wl_assert(!out_mapped);
 			break;
 
-		case k_task_data_type_real_out:
+		case k_task_qualifier_out:
 			wl_assert(!in_mapped);
 			wl_assert(out_mapped);
 			break;
 
-		case k_task_data_type_real_inout:
+		case k_task_qualifier_inout:
 			wl_assert(in_mapped);
 			wl_assert(out_mapped);
-			break;
-
-		case k_task_data_type_real_array_in:
-		case k_task_data_type_bool_in:
-		case k_task_data_type_bool_array_in:
-		case k_task_data_type_string_in:
-		case k_task_data_type_string_array_in:
-			wl_assert(in_mapped);
-			wl_assert(!out_mapped);
 			break;
 
 		default:

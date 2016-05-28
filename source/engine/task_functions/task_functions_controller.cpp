@@ -163,7 +163,7 @@ void register_task_functions_controller() {
 			s_task_function::build(k_task_function_controller_get_note_id_out_uid,
 				"controller_get_note_id",
 				nullptr, nullptr, nullptr, task_function_controller_get_note_id_out,
-				s_task_function_argument_list::build(TDT(real_out))));
+				s_task_function_argument_list::build(TDT(out, real))));
 
 		s_task_function_mapping mappings[] = {
 			s_task_function_mapping::build(k_task_function_controller_get_note_id_out_uid, ".",
@@ -179,7 +179,7 @@ void register_task_functions_controller() {
 			s_task_function::build(k_task_function_controller_get_note_velocity_out_uid,
 				"controller_get_note_velocity",
 				nullptr, nullptr, nullptr, task_function_controller_get_note_velocity_out,
-				s_task_function_argument_list::build(TDT(real_out))));
+				s_task_function_argument_list::build(TDT(out, real))));
 
 		s_task_function_mapping mappings[] = {
 			s_task_function_mapping::build(k_task_function_controller_get_note_velocity_out_uid, ".",
@@ -195,7 +195,7 @@ void register_task_functions_controller() {
 			s_task_function::build(k_task_function_controller_get_note_press_duration_out_uid,
 				"controller_get_note_press_duration",
 				task_memory_query_controller_get_note_press_duration_out, nullptr, task_voice_initialize_controller_get_note_press_duration_out, task_function_controller_get_note_press_duration_out,
-				s_task_function_argument_list::build(TDT(real_out))));
+				s_task_function_argument_list::build(TDT(out, real))));
 
 		s_task_function_mapping mappings[] = {
 			s_task_function_mapping::build(k_task_function_controller_get_note_press_duration_out_uid, ".",
@@ -211,7 +211,7 @@ void register_task_functions_controller() {
 			s_task_function::build(k_task_function_controller_get_note_release_duration_out_uid,
 				"controller_get_note_release_duration",
 				task_memory_query_controller_get_note_release_duration_out, nullptr, task_voice_initialize_controller_get_note_release_duration_out, task_function_controller_get_note_release_duration_out,
-				s_task_function_argument_list::build(TDT(real_out))));
+				s_task_function_argument_list::build(TDT(out, real))));
 
 		s_task_function_mapping mappings[] = {
 			s_task_function_mapping::build(k_task_function_controller_get_note_release_duration_out_uid, ".",

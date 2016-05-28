@@ -246,7 +246,7 @@ void register_task_functions_delay() {
 			s_task_function::build(k_task_function_delay_in_out_uid,
 				"delay_in_out",
 				task_memory_query_delay, task_initializer_delay, task_voice_initializer_delay, task_function_delay_in_out,
-				s_task_function_argument_list::build(TDT(real_in), TDT(real_in), TDT(real_out))));
+				s_task_function_argument_list::build(TDT(in, real), TDT(in, real), TDT(out, real))));
 
 		s_task_function_mapping mappings[] = {
 			s_task_function_mapping::build(k_task_function_delay_in_out_uid, "vv.",

@@ -110,8 +110,8 @@ bool c_native_module_registry::register_native_module(const s_native_module &nat
 	wl_assert(!native_module.first_output_is_return || native_module.out_argument_count > 0);
 #if PREDEFINED(ASSERTS_ENABLED)
 	for (size_t arg = 0; arg < native_module.argument_count; arg++) {
-		wl_assert(VALID_INDEX(native_module.arguments[arg].qualifier, k_native_module_argument_qualifier_count));
-		wl_assert(VALID_INDEX(native_module.arguments[arg].type, k_native_module_argument_type_count));
+		wl_assert(VALID_INDEX(native_module.arguments[arg].qualifier, k_native_module_qualifier_count));
+		wl_assert(native_module.arguments[arg].type.is_valid());
 	}
 #endif // PREDEFINED(ASSERTS_ENABLED)
 
@@ -222,14 +222,14 @@ static bool do_native_modules_conflict(const s_native_module &native_module_a, c
 		// Skip the first output argument we find if it's used as a return value
 
 		if (native_module_a.first_output_is_return &&
-			native_module_a.arguments[arg_a_index].qualifier == k_native_module_argument_qualifier_out &&
+			native_module_a.arguments[arg_a_index].qualifier == k_native_module_qualifier_out &&
 			!first_out_arg_found_a) {
 			arg_a_index++;
 			first_out_arg_found_a = true;
 		}
 
 		if (native_module_b.first_output_is_return &&
-			native_module_b.arguments[arg_b_index].qualifier == k_native_module_argument_qualifier_out &&
+			native_module_b.arguments[arg_b_index].qualifier == k_native_module_qualifier_out &&
 			!first_out_arg_found_b) {
 			arg_b_index++;
 			first_out_arg_found_b = true;

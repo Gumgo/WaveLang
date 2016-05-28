@@ -62,7 +62,7 @@ public:
 	uint32 add_constant_node(real32 constant_value);
 	uint32 add_constant_node(bool constant_value);
 	uint32 add_constant_node(const std::string &constant_value);
-	uint32 add_constant_array_node(e_native_module_argument_type element_data_type);
+	uint32 add_constant_array_node(c_native_module_data_type element_data_type);
 	void add_constant_array_value(uint32 constant_array_node_index, uint32 value_node_index);
 	uint32 add_native_module_call_node(uint32 native_module_index);
 	uint32 add_output_node(uint32 output_index);
@@ -73,7 +73,7 @@ public:
 
 	uint32 get_node_count() const;
 	e_execution_graph_node_type get_node_type(uint32 node_index) const;
-	e_native_module_argument_type get_constant_node_data_type(uint32 node_index) const;
+	c_native_module_data_type get_constant_node_data_type(uint32 node_index) const;
 	real32 get_constant_node_real_value(uint32 node_index) const;
 	bool get_constant_node_bool_value(uint32 node_index) const;
 	const char *get_constant_node_string_value(uint32 node_index) const;
@@ -92,18 +92,22 @@ public:
 
 	void remove_unused_nodes_and_reassign_node_indices();
 
-	bool generate_graphviz_file(const char *fname, bool condense_large_arrays) const;
+	// If collapse_large_arrays is true, constant arrays with at least k_large_array_limit elements will be collapsed
+	// into a single node labeled "[n]", where n is the number of elements.
+	bool generate_graphviz_file(const char *fname, bool collapse_large_arrays) const;
 
 private:
 	struct s_node {
 		e_execution_graph_node_type type;
-		union {
+		union u_node_data {
+			u_node_data() {}
+
 			struct {
 				uint32 native_module_index;
 			} native_module_call;
 
 			struct {
-				e_native_module_argument_type type;
+				c_native_module_data_type type;
 
 				union {
 					real32 real_value;
@@ -115,8 +119,9 @@ private:
 			struct {
 				uint32 output_index;
 			} output;
-		} node_data;
+		};
 
+		u_node_data node_data;
 		std::vector<uint32> incoming_edge_indices;
 		std::vector<uint32> outgoing_edge_indices;
 	};
@@ -132,7 +137,7 @@ private:
 	bool validate_edge(uint32 from_index, uint32 to_index) const;
 	bool validate_constants() const;
 	bool validate_string_table() const;
-	bool get_type_from_node(uint32 node_index, e_native_module_argument_type &out_type) const;
+	bool get_type_from_node(uint32 node_index, c_native_module_data_type &out_type) const;
 
 	bool visit_node_for_cycle_detection(uint32 node_index,
 		std::vector<bool> &nodes_visited, std::vector<bool> &nodes_marked) const;

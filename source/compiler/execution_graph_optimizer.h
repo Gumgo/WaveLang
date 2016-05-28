@@ -12,7 +12,7 @@
 class c_execution_graph_constant_evaluator {
 public:
 	struct s_result {
-		e_native_module_argument_type type;
+		c_native_module_data_type type;
 
 		union {
 			real32 real_value;
@@ -47,9 +47,9 @@ private:
 
 	void try_evaluate_node(uint32 node_index);
 	bool build_module_call_arguments(const s_native_module &native_module, uint32 native_module_node_index,
-		c_native_module_compile_time_argument_list &out_arg_list);
+		std::vector<s_native_module_compile_time_argument> &out_arg_list);
 	void store_native_module_call_results(const s_native_module &native_module, uint32 native_module_node_index,
-		const c_native_module_compile_time_argument_list &arg_list);
+		const std::vector<s_native_module_compile_time_argument> &arg_list);
 };
 
 class c_execution_graph_optimizer {

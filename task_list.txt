@@ -80,4 +80,6 @@
 	- Type is a class, not just an enum - basic type is still enum (includes real, bool, string, etc.)
 	- Type class has a set of generic properties, e.g. is_array(), is_constant(), is_runtime_static(), etc.
 	- Get rid of most of the switch statements, instead query the generic properties
-	- Support bool buffers using bitvectors
+	- Support bool buffers using bitvectors ($BOOL)
+
+- Compiler command line option to list all native modules with documentation

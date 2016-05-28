@@ -1500,13 +1500,13 @@ void register_task_functions_sampler() {
 			s_task_function::build(k_task_function_sampler_in_out_uid,
 				"sampler_in_out",
 				task_memory_query_sampler, task_initializer_sampler, task_voice_initializer_sampler, task_function_sampler_in_out,
-				s_task_function_argument_list::build(TDT(string_in), TDT(real_in), TDT(real_in), TDT(real_out))));
+				s_task_function_argument_list::build(TDT(in, string), TDT(in, real), TDT(in, real), TDT(out, real))));
 
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_sampler_inout_uid,
 				"sampler_inout",
 				task_memory_query_sampler, task_initializer_sampler, task_voice_initializer_sampler, task_function_sampler_inout,
-				s_task_function_argument_list::build(TDT(string_in), TDT(real_in), TDT(real_inout))));
+				s_task_function_argument_list::build(TDT(in, string), TDT(in, real), TDT(inout, real))));
 
 		s_task_function_mapping mappings[] = {
 			s_task_function_mapping::build(k_task_function_sampler_inout_uid, "vvb.",
@@ -1526,19 +1526,19 @@ void register_task_functions_sampler() {
 			s_task_function::build(k_task_function_sampler_loop_in_in_out_uid,
 				"sampler_loop_in_in_out",
 				task_memory_query_sampler, task_initializer_sampler_loop_in_in_out, task_voice_initializer_sampler, task_function_sampler_loop_in_in_out,
-				s_task_function_argument_list::build(TDT(string_in), TDT(real_in), TDT(bool_in), TDT(real_in), TDT(real_in), TDT(real_out))));
+				s_task_function_argument_list::build(TDT(in, string), TDT(in, real), TDT(in, bool), TDT(in, real), TDT(in, real), TDT(out, real))));
 
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_sampler_loop_inout_in_uid,
 				"sampler_loop_inout_in",
 				task_memory_query_sampler, task_initializer_sampler_loop_inout_in, task_voice_initializer_sampler, task_function_sampler_loop_inout_in,
-				s_task_function_argument_list::build(TDT(string_in), TDT(real_in), TDT(bool_in), TDT(real_inout), TDT(real_in))));
+				s_task_function_argument_list::build(TDT(in, string), TDT(in, real), TDT(in, bool), TDT(inout, real), TDT(in, real))));
 
 		c_task_function_registry::register_task_function(
 			s_task_function::build(k_task_function_sampler_loop_in_inout_uid,
 				"sampler_loop_in_inout",
 				task_memory_query_sampler, task_initializer_sampler_loop_in_inout, task_voice_initializer_sampler, task_function_sampler_loop_in_inout,
-				s_task_function_argument_list::build(TDT(string_in), TDT(real_in), TDT(bool_in), TDT(real_in), TDT(real_inout))));
+				s_task_function_argument_list::build(TDT(in, string), TDT(in, real), TDT(in, bool), TDT(in, real), TDT(inout, real))));
 
 		s_task_function_mapping mappings[] = {
 			s_task_function_mapping::build(k_task_function_sampler_loop_inout_in_uid, "vvvbv.",

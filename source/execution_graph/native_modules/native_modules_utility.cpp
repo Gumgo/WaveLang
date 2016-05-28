@@ -14,53 +14,53 @@ const s_native_module_uid k_native_module_log_uid	= s_native_module_uid::build(k
 const s_native_module_uid k_native_module_sqrt_uid	= s_native_module_uid::build(k_native_modules_utility_library_id, 8);
 const s_native_module_uid k_native_module_pow_uid	= s_native_module_uid::build(k_native_modules_utility_library_id, 9);
 
-static void native_module_abs(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 2);
+static void native_module_abs(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 2);
 	arguments[1] = std::abs(arguments[0].get_real());
 }
 
-static void native_module_floor(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 2);
+static void native_module_floor(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 2);
 	arguments[1] = std::floor(arguments[0].get_real());
 }
 
-static void native_module_ceil(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 2);
+static void native_module_ceil(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 2);
 	arguments[1] = std::ceil(arguments[0].get_real());
 }
 
-static void native_module_round(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 2);
+static void native_module_round(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 2);
 	arguments[1] = std::round(arguments[0].get_real());
 }
 
-static void native_module_min(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_min(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2] = std::fmin(arguments[0].get_real(), arguments[1].get_real());
 }
 
-static void native_module_max(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_max(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2] = std::fmax(arguments[0].get_real(), arguments[1].get_real());
 }
 
-static void native_module_exp(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 2);
+static void native_module_exp(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 2);
 	arguments[1] = std::exp(arguments[0].get_real());
 }
 
-static void native_module_log(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 2);
+static void native_module_log(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 2);
 	arguments[1] = std::log(arguments[0].get_real());
 }
 
-static void native_module_sqrt(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 2);
+static void native_module_sqrt(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 2);
 	arguments[1] = std::sqrt(arguments[0].get_real());
 }
 
-static void native_module_pow(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_pow(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2] = std::pow(arguments[0].get_real(), arguments[1].get_real());
 }
 

@@ -3,36 +3,10 @@
 
 #include "common/common.h"
 #include "compiler/compiler_utility.h"
+#include "compiler/ast_data_type.h"
 #include <vector>
 
 extern const char *k_entry_point_name;
-
-// List of types
-enum e_ast_data_type {
-	k_ast_data_type_void,
-	k_ast_data_type_module,
-	k_ast_data_type_real,
-	k_ast_data_type_bool,
-	k_ast_data_type_string,
-	k_ast_data_type_real_array,
-	k_ast_data_type_bool_array,
-	k_ast_data_type_string_array,
-
-	k_ast_data_type_count
-};
-
-enum e_ast_qualifier {
-	k_ast_qualifier_none,
-	k_ast_qualifier_in,
-	k_ast_qualifier_out,
-
-	k_ast_qualifier_count
-};
-
-const char *get_ast_data_type_string(e_ast_data_type data_type);
-bool is_ast_data_type_array(e_ast_data_type data_type);
-e_ast_data_type get_element_from_array_ast_data_type(e_ast_data_type array_data_type);
-e_ast_data_type get_array_from_element_ast_data_type(e_ast_data_type element_data_type);
 
 // List of all AST nodes
 enum e_ast_node_type {
@@ -118,8 +92,8 @@ public:
 	void set_name(const std::string &name);
 	const std::string &get_name() const;
 
-	void set_return_type(e_ast_data_type return_type);
-	e_ast_data_type get_return_type() const;
+	void set_return_type(c_ast_data_type return_type);
+	c_ast_data_type get_return_type() const;
 
 	void add_argument(c_ast_node_named_value_declaration *argument);
 	size_t get_argument_count() const;
@@ -134,7 +108,7 @@ private:
 	bool m_is_native;												// Whether this module is native
 	uint32 m_native_module_index;									// Native module index, if native
 	std::string m_name;												// Name of this module
-	e_ast_data_type m_return_type;									// Module return type
+	c_ast_data_type m_return_type;									// Module return type
 	std::vector<c_ast_node_named_value_declaration *> m_arguments;	// List of arguments for this module
 	c_ast_node_scope *m_scope;										// The scope of this module
 };
@@ -152,13 +126,13 @@ public:
 	void set_qualifier(e_ast_qualifier qualifier);
 	e_ast_qualifier get_qualifier() const;
 
-	void set_data_type(e_ast_data_type data_type);
-	e_ast_data_type get_data_type() const;
+	void set_data_type(c_ast_data_type data_type);
+	c_ast_data_type get_data_type() const;
 
 private:
 	std::string m_name;				// Name of the value
 	e_ast_qualifier m_qualifier;	// Value's qualifier
-	e_ast_data_type m_data_type;	// Type of data
+	c_ast_data_type m_data_type;	// Type of data
 };
 
 class c_ast_node_named_value_assignment : public c_ast_node {
@@ -266,7 +240,7 @@ public:
 	virtual void iterate(c_ast_node_visitor *visitor);
 	virtual void iterate(c_ast_node_const_visitor *visitor) const;
 
-	e_ast_data_type get_data_type() const;
+	c_ast_data_type get_data_type() const;
 
 	void set_real_value(real32 value);
 	real32 get_real_value() const;
@@ -277,14 +251,14 @@ public:
 	void set_string_value(const std::string &value);
 	const std::string &get_string_value() const;
 
-	void set_array(e_ast_data_type element_data_type);
+	void set_array(c_ast_data_type element_data_type);
 	void add_array_value(c_ast_node_expression *value);
 	size_t get_array_count() const;
 	c_ast_node_expression *get_array_value(size_t index);
 	const c_ast_node_expression *get_array_value(size_t index) const;
 
 public:
-	e_ast_data_type m_data_type;	// Data type
+	c_ast_data_type m_data_type;	// Data type
 	union {
 		real32 m_real_value;		// The value, if a real
 		bool m_bool_value;			// The value, if a bool

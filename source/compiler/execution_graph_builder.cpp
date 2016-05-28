@@ -11,11 +11,30 @@
 // Set a cap to prevent crazy things from happening if a user tries to loop billions of times
 static const uint32 k_max_loop_count = 10000;
 
+static const e_native_module_primitive_type k_ast_primitive_type_to_native_module_primitive_type_mapping[] = {
+	k_native_module_primitive_type_count,	// k_ast_primitive_type_void (invalid)
+	k_native_module_primitive_type_count,	// k_ast_primitive_type_module (invalid)
+	k_native_module_primitive_type_real,	// k_ast_primitive_type_real
+	k_native_module_primitive_type_bool,	// k_ast_primitive_type_bool
+	k_native_module_primitive_type_string	// k_ast_primitive_type_string
+};
+static_assert(NUMBEROF(k_ast_primitive_type_to_native_module_primitive_type_mapping) == k_ast_primitive_type_count,
+	"Ast primitive type to native module primitive type mismatch");
+
+static e_native_module_primitive_type convert_ast_primitive_type_to_native_module_primitive_type(
+	e_ast_primitive_type ast_primitive_type) {
+	wl_assert(VALID_INDEX(ast_primitive_type, k_ast_primitive_type_count));
+	e_native_module_primitive_type result =
+		k_ast_primitive_type_to_native_module_primitive_type_mapping[ast_primitive_type];
+	wl_assert(result != k_native_module_primitive_type_count);
+	return result;
+}
+
 class c_execution_graph_module_builder : public c_ast_node_const_visitor {
 private:
 	struct s_expression_result {
 		// Type of data
-		e_ast_data_type type;
+		c_ast_data_type type;
 		// Node index in which the returned value is stored
 		uint32 node_index;
 		// If non-empty, this result contains an assignable named value and can be used as an out argument
@@ -26,7 +45,7 @@ private:
 	struct s_identifier {
 		static const size_t k_invalid_argument = static_cast<size_t>(-1);
 
-		e_ast_data_type data_type;			// Data type associated with this identifier
+		c_ast_data_type data_type;			// Data type associated with this identifier
 		uint32 current_value_node_index;	// Index of the node holding the most recent value
 		size_t argument_index;				// Argument index, if this identifier is an argument
 	};
@@ -70,7 +89,7 @@ private:
 	c_execution_graph_constant_evaluator m_constant_evaluator;
 
 	// Adds initially unassigned identifier
-	void add_identifier_to_scope(const std::string &name, e_ast_data_type data_type) {
+	void add_identifier_to_scope(const std::string &name, c_ast_data_type data_type) {
 #if PREDEFINED(ASSERTS_ENABLED)
 		for (size_t index = 0; index < m_scope_stack.size(); index++) {
 			wl_assert(m_scope_stack[index].identifiers.find(name) == m_scope_stack[index].identifiers.end());
@@ -120,12 +139,12 @@ private:
 		// Create a new array with all values identical except for the one specified
 		wl_assert(m_execution_graph->get_node_type(identifier->current_value_node_index) ==
 			k_execution_graph_node_type_constant);
-		e_native_module_argument_type array_type =
+		c_native_module_data_type array_type =
 			m_execution_graph->get_constant_node_data_type(identifier->current_value_node_index);
-		wl_assert(is_native_module_argument_type_array(array_type));
+		wl_assert(array_type.is_array());
 
 		uint32 new_array_node_index = m_execution_graph->add_constant_array_node(
-			get_element_from_array_native_module_argument_type(array_type));
+			array_type.get_element_type());
 
 		// Add the identical array values for all indices except the specified one
 		size_t array_count = m_execution_graph->get_node_incoming_edge_count(identifier->current_value_node_index);
@@ -187,7 +206,7 @@ public:
 	}
 
 	uint32 get_return_value_node_index() const {
-		wl_assert(m_module_declaration->get_return_type() != k_ast_data_type_void);
+		wl_assert(m_module_declaration->get_return_type() != c_ast_data_type(k_ast_primitive_type_void));
 		return m_return_node_index;
 	}
 
@@ -277,7 +296,8 @@ public:
 			uint32 native_module_index = node->get_native_module_index();
 			const s_native_module &native_module = c_native_module_registry::get_native_module(native_module_index);
 
-			wl_assert(native_module.first_output_is_return == (node->get_return_type() != k_ast_data_type_void));
+			wl_assert(native_module.first_output_is_return ==
+				(node->get_return_type() != c_ast_data_type(k_ast_primitive_type_void)));
 
 			// Create a native module call node
 			uint32 native_module_call_node_index = m_execution_graph->add_native_module_call_node(native_module_index);
@@ -391,7 +411,8 @@ public:
 					m_errors->push_back(error);
 				} else {
 					// We should have caught this with a type mismatch error in the validator
-					wl_assert(m_constant_evaluator.get_result().type == k_native_module_argument_type_real);
+					wl_assert(m_constant_evaluator.get_result().type ==
+						c_native_module_data_type(k_native_module_primitive_type_real));
 
 					real32 array_index_real = m_constant_evaluator.get_result().real_value;
 					if (std::isnan(array_index_real) ||
@@ -456,7 +477,7 @@ public:
 	}
 
 	virtual bool begin_visit(const c_ast_node_repeat_loop *node) {
-		wl_assert(m_last_assigned_expression_result.type == k_ast_data_type_real);
+		wl_assert(m_last_assigned_expression_result.type == c_ast_data_type(k_ast_primitive_type_real));
 
 		// Try to evaluate the expression down to a constant
 		if (!m_constant_evaluator.evaluate_constant(m_last_assigned_expression_result.node_index)) {
@@ -467,7 +488,8 @@ public:
 			m_errors->push_back(error);
 		} else {
 			// We should have caught this with a type mismatch error in the validator
-			wl_assert(m_constant_evaluator.get_result().type == k_native_module_argument_type_real);
+			wl_assert(m_constant_evaluator.get_result().type ==
+				c_native_module_data_type(k_native_module_primitive_type_real));
 
 			real32 loop_count_real = m_constant_evaluator.get_result().real_value;
 			if (std::isnan(loop_count_real) ||
@@ -526,42 +548,34 @@ public:
 
 	virtual void end_visit(const c_ast_node_constant *node) {
 		// Add a constant node and return it through the expression stack
-		bool is_array = false;
 		uint32 constant_node_index;
-		switch (node->get_data_type()) {
-		case k_ast_data_type_real:
-			constant_node_index = m_execution_graph->add_constant_node(node->get_real_value());
-			break;
+		if (node->get_data_type().is_array()) {
+			e_ast_primitive_type ast_primitive_type = node->get_data_type().get_primitive_type();
+			e_native_module_primitive_type native_module_primitive_type =
+				convert_ast_primitive_type_to_native_module_primitive_type(ast_primitive_type);
+			constant_node_index = m_execution_graph->add_constant_array_node(
+				c_native_module_data_type(native_module_primitive_type));
+		} else {
+			switch (node->get_data_type().get_primitive_type()) {
+			case k_ast_primitive_type_real:
+				constant_node_index = m_execution_graph->add_constant_node(node->get_real_value());
+				break;
 
-		case k_ast_data_type_bool:
-			constant_node_index = m_execution_graph->add_constant_node(node->get_bool_value());
-			break;
+			case k_ast_primitive_type_bool:
+				constant_node_index = m_execution_graph->add_constant_node(node->get_bool_value());
+				break;
 
-		case k_ast_data_type_string:
-			constant_node_index = m_execution_graph->add_constant_node(node->get_string_value());
-			break;
+			case k_ast_primitive_type_string:
+				constant_node_index = m_execution_graph->add_constant_node(node->get_string_value());
+				break;
 
-		case k_ast_data_type_real_array:
-			constant_node_index = m_execution_graph->add_constant_array_node(k_native_module_argument_type_real);
-			is_array = true;
-			break;
-
-		case k_ast_data_type_bool_array:
-			constant_node_index = m_execution_graph->add_constant_array_node(k_native_module_argument_type_bool);
-			is_array = true;
-			break;
-
-		case k_ast_data_type_string_array:
-			constant_node_index = m_execution_graph->add_constant_array_node(k_native_module_argument_type_string);
-			is_array = true;
-			break;
-
-		default:
-			constant_node_index = c_execution_graph::k_invalid_index;
-			wl_unreachable();
+			default:
+				constant_node_index = c_execution_graph::k_invalid_index;
+				wl_unreachable();
+			}
 		}
 
-		if (is_array) {
+		if (node->get_data_type().is_array()) {
 			// Add the array values from the expression results on the stack - they are in reverse order
 			std::vector<s_expression_result> value_expression_results(node->get_array_count());
 
@@ -656,7 +670,7 @@ public:
 		// Push this module call's result onto the stack
 		s_expression_result result;
 		result.type = module_call_declaration->get_return_type();
-		if (module_call_declaration->get_return_type() != k_ast_data_type_void) {
+		if (module_call_declaration->get_return_type() != c_ast_data_type(k_ast_primitive_type_void)) {
 			result.node_index = module_builder.get_return_value_node_index();
 			wl_assert(result.node_index != c_execution_graph::k_invalid_index);
 		} else {
@@ -675,7 +689,7 @@ s_compiler_result c_execution_graph_builder::build_execution_graph(
 	// Find the entry point to start iteration
 	const c_ast_node_module_declaration *entry_point_module =
 		c_execution_graph_module_builder::find_module_declaration_single(ast, k_entry_point_name);
-	wl_assert(entry_point_module->get_return_type() == k_ast_data_type_void);
+	wl_assert(entry_point_module->get_return_type() == c_ast_data_type(k_ast_primitive_type_void));
 
 	c_execution_graph_module_builder builder(&out_errors, ast, out_execution_graph, entry_point_module);
 	entry_point_module->iterate(&builder);

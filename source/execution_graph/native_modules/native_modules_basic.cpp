@@ -66,123 +66,123 @@ static const char *k_native_operator_names[] = {
 
 static_assert(NUMBEROF(k_native_operator_names) == k_native_operator_count, "Native operator count mismatch");
 
-static void native_module_noop_real(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 2);
+static void native_module_noop_real(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 2);
 	arguments[1] = arguments[0].get_real();
 }
 
-static void native_module_noop_bool(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 2);
+static void native_module_noop_bool(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 2);
 	arguments[1] = arguments[0].get_bool();
 }
 
-static void native_module_noop_string(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 2);
+static void native_module_noop_string(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 2);
 	arguments[1] = arguments[0].get_string();
 }
 
-static void native_module_negation(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 2);
+static void native_module_negation(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 2);
 	arguments[1] = -arguments[0].get_real();
 }
 
-static void native_module_addition(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_addition(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2] = arguments[0].get_real() + arguments[1].get_real();
 }
 
-static void native_module_subtraction(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_subtraction(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2] = arguments[0].get_real() - arguments[1].get_real();
 }
 
-static void native_module_multiplication(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_multiplication(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2] = arguments[0].get_real() * arguments[1].get_real();
 }
 
-static void native_module_division(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_division(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2] = arguments[0].get_real() / arguments[1].get_real();
 }
 
-static void native_module_modulo(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_modulo(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2] = std::fmod(arguments[0].get_real(), arguments[1].get_real());
 }
 
-static void native_module_concatenation(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_concatenation(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2] = arguments[0].get_string() + arguments[1].get_string();
 }
 
-static void native_module_not(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 2);
+static void native_module_not(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 2);
 	arguments[1] = !arguments[0].get_bool();
 }
 
-static void native_module_real_equal(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_real_equal(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2] = arguments[0].get_real() == arguments[1].get_real();
 }
 
-static void native_module_real_not_equal(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_real_not_equal(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2] = arguments[0].get_real() != arguments[1].get_real();
 }
 
-static void native_module_bool_equal(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_bool_equal(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2] = arguments[0].get_bool() == arguments[1].get_bool();
 }
 
-static void native_module_bool_not_equal(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_bool_not_equal(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2] = arguments[0].get_bool() != arguments[1].get_bool();
 }
 
-static void native_module_string_equal(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_string_equal(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2] = arguments[0].get_string() == arguments[1].get_string();
 }
 
-static void native_module_string_not_equal(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_string_not_equal(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2] = arguments[0].get_string() != arguments[1].get_string();
 }
 
-static void native_module_greater(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_greater(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2] = arguments[0].get_real() > arguments[1].get_real();
 }
 
-static void native_module_less(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_less(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2] = arguments[0].get_real() < arguments[1].get_real();
 }
 
-static void native_module_greater_equal(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_greater_equal(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2] = arguments[0].get_real() >= arguments[1].get_real();
 }
 
-static void native_module_less_equal(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_less_equal(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2] = arguments[0].get_real() <= arguments[1].get_real();
 }
 
-static void native_module_and(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_and(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2] = arguments[0].get_bool() && arguments[1].get_bool();
 }
 
-static void native_module_or(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_or(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2] = arguments[0].get_bool() || arguments[1].get_bool();
 }
 
-static void native_module_real_static_select(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 4);
+static void native_module_real_static_select(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 4);
 	if (arguments[0].get_bool()) {
 		arguments[3] = arguments[1].get_real();
 	} else {
@@ -190,8 +190,8 @@ static void native_module_real_static_select(c_native_module_compile_time_argume
 	}
 }
 
-static void native_module_string_static_select(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 4);
+static void native_module_string_static_select(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 4);
 	if (arguments[0].get_bool()) {
 		arguments[3] = arguments[1].get_string();
 	} else {
@@ -220,63 +220,63 @@ static std::vector<uint32> array_repeat(const std::vector<uint32> &arr, real32 r
 	return result;
 }
 
-static void native_module_real_array_count(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 2);
+static void native_module_real_array_count(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 2);
 	arguments[1] = static_cast<real32>(arguments[0].get_real_array().size());
 }
 
-static void native_module_real_array_combine(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_real_array_combine(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2].set_real_array(array_combine(arguments[0].get_real_array(), arguments[1].get_real_array()));
 }
 
-static void native_module_real_array_repeat(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_real_array_repeat(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2].set_real_array(array_repeat(arguments[0].get_real_array(), arguments[1].get_real()));
 }
 
-static void native_module_real_array_repeat_rev(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_real_array_repeat_rev(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2].set_real_array(array_repeat(arguments[1].get_real_array(), arguments[0].get_real()));
 }
 
-static void native_module_bool_array_count(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 2);
+static void native_module_bool_array_count(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 2);
 	arguments[1] = static_cast<real32>(arguments[0].get_bool_array().size());
 }
 
-static void native_module_bool_array_combine(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_bool_array_combine(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2].set_bool_array(array_combine(arguments[0].get_bool_array(), arguments[1].get_bool_array()));
 }
 
-static void native_module_bool_array_repeat(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_bool_array_repeat(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2].set_bool_array(array_repeat(arguments[0].get_bool_array(), arguments[1].get_real()));
 }
 
-static void native_module_bool_array_repeat_rev(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_bool_array_repeat_rev(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2].set_bool_array(array_repeat(arguments[1].get_bool_array(), arguments[0].get_real()));
 }
 
-static void native_module_string_array_count(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 2);
+static void native_module_string_array_count(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 2);
 	arguments[1] = static_cast<real32>(arguments[0].get_string_array().size());
 }
 
-static void native_module_string_array_combine(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_string_array_combine(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2].set_string_array(array_combine(arguments[0].get_string_array(), arguments[1].get_string_array()));
 }
 
-static void native_module_string_array_repeat(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_string_array_repeat(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2].set_string_array(array_repeat(arguments[0].get_string_array(), arguments[1].get_real()));
 }
 
-static void native_module_string_array_repeat_rev(c_native_module_compile_time_argument_list &arguments) {
-	wl_assert(arguments.size() == 3);
+static void native_module_string_array_repeat_rev(c_native_module_compile_time_argument_list arguments) {
+	wl_assert(arguments.get_count() == 3);
 	arguments[2].set_string_array(array_repeat(arguments[1].get_string_array(), arguments[0].get_real()));
 }
 
@@ -410,77 +410,77 @@ void register_native_modules_basic() {
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_real_array_dereference_uid, k_native_operator_names[k_native_operator_array_dereference],
-		true, s_native_module_argument_list::build(NMA(constant, real_array), NMA(in, real), NMA(out, real)),
+		true, s_native_module_argument_list::build(NMA_ARRAY(constant, real), NMA(in, real), NMA(out, real)),
 		nullptr));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_real_array_count_uid, NATIVE_PREFIX "array_count",
-		true, s_native_module_argument_list::build(NMA(constant, real_array), NMA(out, real)),
+		true, s_native_module_argument_list::build(NMA_ARRAY(constant, real), NMA(out, real)),
 		native_module_real_array_count));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_real_array_combine_uid, k_native_operator_names[k_native_operator_addition],
-		true, s_native_module_argument_list::build(NMA(constant, real_array), NMA(constant, real_array), NMA(out, real_array)),
+		true, s_native_module_argument_list::build(NMA_ARRAY(constant, real), NMA_ARRAY(constant, real), NMA_ARRAY(out, real)),
 		native_module_real_array_combine));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_real_array_repeat_uid, k_native_operator_names[k_native_operator_multiplication],
-		true, s_native_module_argument_list::build(NMA(constant, real_array), NMA(constant, real), NMA(out, real_array)),
+		true, s_native_module_argument_list::build(NMA_ARRAY(constant, real), NMA(constant, real), NMA_ARRAY(out, real)),
 		native_module_real_array_repeat));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_real_array_repeat_rev_uid, k_native_operator_names[k_native_operator_multiplication],
-		true, s_native_module_argument_list::build(NMA(constant, real), NMA(constant, real_array), NMA(out, real_array)),
+		true, s_native_module_argument_list::build(NMA(constant, real), NMA_ARRAY(constant, real), NMA_ARRAY(out, real)),
 		native_module_real_array_repeat_rev));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_bool_array_dereference_uid, k_native_operator_names[k_native_operator_array_dereference],
-		true, s_native_module_argument_list::build(NMA(constant, bool_array), NMA(in, real), NMA(out, bool)),
+		true, s_native_module_argument_list::build(NMA_ARRAY(constant, bool), NMA(in, real), NMA(out, bool)),
 		nullptr));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_bool_array_count_uid, NATIVE_PREFIX "array_count",
-		true, s_native_module_argument_list::build(NMA(constant, bool_array), NMA(out, real)),
+		true, s_native_module_argument_list::build(NMA_ARRAY(constant, bool), NMA(out, real)),
 		native_module_bool_array_count));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_bool_array_combine_uid, k_native_operator_names[k_native_operator_addition],
-		true, s_native_module_argument_list::build(NMA(constant, bool_array), NMA(constant, bool_array), NMA(out, bool_array)),
+		true, s_native_module_argument_list::build(NMA_ARRAY(constant, bool), NMA_ARRAY(constant, bool), NMA_ARRAY(out, bool)),
 		native_module_bool_array_combine));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_bool_array_repeat_uid, k_native_operator_names[k_native_operator_multiplication],
-		true, s_native_module_argument_list::build(NMA(constant, bool_array), NMA(constant, real), NMA(out, bool_array)),
+		true, s_native_module_argument_list::build(NMA_ARRAY(constant, bool), NMA(constant, real), NMA_ARRAY(out, bool)),
 		native_module_bool_array_repeat));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_bool_array_repeat_rev_uid, k_native_operator_names[k_native_operator_multiplication],
-		true, s_native_module_argument_list::build(NMA(constant, real), NMA(constant, bool_array), NMA(out, bool_array)),
+		true, s_native_module_argument_list::build(NMA(constant, real), NMA_ARRAY(constant, bool), NMA_ARRAY(out, bool)),
 		native_module_bool_array_repeat_rev));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_string_array_dereference_uid, k_native_operator_names[k_native_operator_array_dereference],
-		true, s_native_module_argument_list::build(NMA(constant, string_array), NMA(in, real), NMA(out, string)),
+		true, s_native_module_argument_list::build(NMA_ARRAY(constant, string), NMA(in, real), NMA(out, string)),
 		nullptr));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_string_array_count_uid, NATIVE_PREFIX "array_count",
-		true, s_native_module_argument_list::build(NMA(constant, string_array), NMA(out, real)),
+		true, s_native_module_argument_list::build(NMA_ARRAY(constant, string), NMA(out, real)),
 		native_module_string_array_count));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_string_array_combine_uid, k_native_operator_names[k_native_operator_addition],
-		true, s_native_module_argument_list::build(NMA(constant, string_array), NMA(constant, string_array), NMA(out, string_array)),
+		true, s_native_module_argument_list::build(NMA_ARRAY(constant, string), NMA_ARRAY(constant, string), NMA_ARRAY(out, string)),
 		native_module_string_array_combine));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_string_array_repeat_uid, k_native_operator_names[k_native_operator_multiplication],
-		true, s_native_module_argument_list::build(NMA(constant, string_array), NMA(constant, real), NMA(out, string_array)),
+		true, s_native_module_argument_list::build(NMA_ARRAY(constant, string), NMA(constant, real), NMA_ARRAY(out, string)),
 		native_module_string_array_repeat));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_string_array_repeat_rev_uid, k_native_operator_names[k_native_operator_multiplication],
-		true, s_native_module_argument_list::build(NMA(constant, real), NMA(constant, string_array), NMA(out, string_array)),
+		true, s_native_module_argument_list::build(NMA(constant, real), NMA_ARRAY(constant, string), NMA_ARRAY(out, string)),
 		native_module_string_array_repeat_rev));
 
 	// Register optimizations

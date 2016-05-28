@@ -16,7 +16,7 @@ public:
 private:
 	struct s_expression_result {
 		// Type which the expression resolved to
-		e_ast_data_type type;
+		c_ast_data_type type;
 		// If non-empty, this result contains an assignable named value and can be used as an out argument
 		std::string identifier_name;
 		// This is false if the result represents a named value which hasn't yet been assigned
@@ -25,7 +25,7 @@ private:
 
 	struct s_identifier {
 		// The type this identifier represents
-		e_ast_data_type data_type;
+		c_ast_data_type data_type;
 
 		// Node associated with the identifier
 		const c_ast_node *ast_node;
@@ -174,7 +174,7 @@ private:
 	}
 
 	// Adds an identifier to the top scope if it does not exist in this scope or lower
-	bool add_identifier_to_scope(const std::string &name, const c_ast_node *node, e_ast_data_type data_type) {
+	bool add_identifier_to_scope(const std::string &name, const c_ast_node *node, c_ast_data_type data_type) {
 		bool found = false;
 		for (size_t index = 0; !found && index < m_scope_stack.size(); index++) {
 			const s_scope &scope = m_scope_stack[index];
@@ -237,12 +237,12 @@ private:
 
 		if (!match) {
 			s_identifier identifier;
-			identifier.data_type = k_ast_data_type_module;
+			identifier.data_type = c_ast_data_type(k_ast_primitive_type_module);
 			identifier.ast_node = node;
 			identifier.overload_count = 1;
 			m_scope_stack.front().identifiers.insert(std::make_pair(name, identifier));
 			added = true;
-		} else if (match->data_type != k_ast_data_type_module) {
+		} else if (match->data_type != c_ast_data_type(k_ast_primitive_type_module)) {
 			s_compiler_result error;
 			error.result = k_compiler_result_duplicate_identifier;
 			error.source_location = node->get_source_location();
@@ -261,7 +261,7 @@ private:
 					std::string overload_name = name + '$' + std::to_string(overload);
 					const s_identifier *overload_identifier = get_identifier(overload_name);
 					wl_assert(overload_identifier);
-					wl_assert(overload_identifier->data_type == k_ast_data_type_module);
+					wl_assert(overload_identifier->data_type == c_ast_data_type(k_ast_primitive_type_module));
 
 					conflict = do_module_arguments_conflict_for_overload(
 						node, static_cast<const c_ast_node_module_declaration *>(overload_identifier->ast_node));
@@ -278,14 +278,14 @@ private:
 				if (match->overload_count == 1) {
 					// Store the existing module in the overloaded way
 					s_identifier identifier;
-					identifier.data_type = k_ast_data_type_module;
+					identifier.data_type = c_ast_data_type(k_ast_primitive_type_module);
 					identifier.ast_node = match->ast_node;
 					identifier.overload_count = 1;
 					m_scope_stack.front().identifiers.insert(std::make_pair(name + "$0", identifier));
 				}
 
 				s_identifier identifier;
-				identifier.data_type = k_ast_data_type_module;
+				identifier.data_type = c_ast_data_type(k_ast_primitive_type_module);
 				identifier.ast_node = node;
 				identifier.overload_count = 1;
 				std::string overload_name = name + '$' + std::to_string(match->overload_count);
@@ -302,7 +302,7 @@ private:
 	const c_ast_node_module_declaration *find_matching_module_overload(const s_identifier *identifier,
 		const std::vector<s_expression_result> &argument_types) {
 		wl_assert(identifier);
-		wl_assert(identifier->data_type == k_ast_data_type_module);
+		wl_assert(identifier->data_type == c_ast_data_type(k_ast_primitive_type_module));
 		for (uint32 overload = 0; overload < identifier->overload_count; overload++) {
 			const s_identifier *overload_identifier;
 			if (identifier->overload_count == 1) {
@@ -399,42 +399,37 @@ private:
 	}
 
 	void unassignable_type_error(s_compiler_source_location source_location, const std::string &name,
-		e_ast_data_type type) {
+		c_ast_data_type type) {
 		s_compiler_result error;
 		error.result = k_compiler_result_type_mismatch;
 		error.source_location = source_location;
-		error.message = "Identifier '" + name + "' of type '" + std::string(get_ast_data_type_string(type)) +
-			"' is not assignable";
+		error.message = "Identifier '" + name + "' of type '" + type.get_string() + "' is not assignable";
 		m_errors->push_back(error);
 	}
 
 	void uncallable_type_error(s_compiler_source_location source_location, const std::string &name,
-		e_ast_data_type type) {
+		c_ast_data_type type) {
 		s_compiler_result error;
 		error.result = k_compiler_result_type_mismatch;
 		error.source_location = source_location;
-		error.message = "Identifier '" + name + "' of type '" + std::string(get_ast_data_type_string(type)) +
-			"' is not callable";
+		error.message = "Identifier '" + name + "' of type '" + type.get_string() + "' is not callable";
 		m_errors->push_back(error);
 	}
 
 	void type_mismatch_error(s_compiler_source_location source_location,
-		e_ast_data_type expected, e_ast_data_type actual) {
+		c_ast_data_type expected, c_ast_data_type actual) {
 		s_compiler_result error;
 		error.result = k_compiler_result_type_mismatch;
 		error.source_location = source_location;
-		error.message = "Type mismatch: expected '" +
-			std::string(get_ast_data_type_string(expected)) + "', got '" +
-			std::string(get_ast_data_type_string(actual)) + "'";
+		error.message = "Type mismatch: expected '" + expected.get_string() + "', got '" + actual.get_string() + "'";
 		m_errors->push_back(error);
 	}
 
-	void dereference_non_array_error(s_compiler_source_location source_location, e_ast_data_type non_array_type) {
+	void dereference_non_array_error(s_compiler_source_location source_location, c_ast_data_type non_array_type) {
 		s_compiler_result error;
 		error.result = k_compiler_result_type_mismatch;
 		error.source_location = source_location;
-		error.message = "Cannot dereference non-array type '" +
-			std::string(get_ast_data_type_string(non_array_type)) + "'";
+		error.message = "Cannot dereference non-array type '" + non_array_type.get_string() + "'";
 		m_errors->push_back(error);
 	}
 
@@ -525,7 +520,7 @@ public:
 			wl_assert(scope.module_for_scope);
 
 			// Make sure a return statement was found if necessary
-			if (scope.module_for_scope->get_return_type() != k_ast_data_type_void &&
+			if (scope.module_for_scope->get_return_type() != c_ast_data_type(k_ast_primitive_type_void) &&
 				scope.return_statement < 0) {
 				s_compiler_result error;
 				error.result = k_compiler_result_missing_return_statement;
@@ -585,7 +580,7 @@ public:
 				m_entry_point_found = true;
 
 				// Should have no return value and only out arguments
-				if (node->get_return_type() != k_ast_data_type_void) {
+				if (node->get_return_type() != c_ast_data_type(k_ast_primitive_type_void)) {
 					s_compiler_result error;
 					error.result = k_compiler_result_invalid_entry_point;
 					error.source_location = node->get_source_location();
@@ -601,7 +596,7 @@ public:
 						all_out = false;
 					}
 
-					if (node->get_argument(arg)->get_data_type() != k_ast_data_type_real) {
+					if (node->get_argument(arg)->get_data_type() != c_ast_data_type(k_ast_primitive_type_real)) {
 						all_real = false;
 					}
 				}
@@ -711,12 +706,12 @@ public:
 				undeclared_identifier_error(node->get_source_location(), node->get_named_value());
 			} else if (identifier->ast_node->get_type() != k_ast_node_type_named_value_declaration) {
 				unassignable_type_error(node->get_source_location(), node->get_named_value(), identifier->data_type);
-			} else if (node->get_array_index_expression() && !is_ast_data_type_array(identifier->data_type)) {
+			} else if (node->get_array_index_expression() && !identifier->data_type.is_array()) {
 				// We're trying to dereference a non-array type
 				dereference_non_array_error(node->get_source_location(), identifier->data_type);
 			} else {
-				e_ast_data_type expected_type = node->get_array_index_expression() ?
-					expected_type = get_element_from_array_ast_data_type(identifier->data_type) :
+				c_ast_data_type expected_type = node->get_array_index_expression() ?
+					expected_type = identifier->data_type.get_element_type() :
 					identifier->data_type;
 
 				if (result.type != expected_type) {
@@ -724,10 +719,11 @@ public:
 				} else if (!result.has_value) {
 					// The result is a named value which hasn't been assigned yet
 					unassigned_named_value_error(node->get_source_location(), result.identifier_name);
-				} else if (node->get_array_index_expression() && array_index_result.type != k_ast_data_type_real) {
+				} else if (node->get_array_index_expression() &&
+					array_index_result.type != c_ast_data_type(k_ast_primitive_type_real)) {
 					// The array index should be a real
 					type_mismatch_error(node->get_array_index_expression()->get_source_location(),
-						k_ast_data_type_real, array_index_result.type);
+						c_ast_data_type(k_ast_primitive_type_real), array_index_result.type);
 				} else {
 					// Look up the context
 					s_named_value *match = get_named_value(identifier->ast_node);
@@ -762,9 +758,9 @@ public:
 		detect_statements_after_return(scope, node);
 
 		// Validate that the loop expression type is correct - a named value assignment node immediately preceded this
-		if (m_last_assigned_expression_result.type != k_ast_data_type_real) {
+		if (m_last_assigned_expression_result.type != c_ast_data_type(k_ast_primitive_type_real)) {
 			type_mismatch_error(node->get_source_location(),
-				m_last_assigned_expression_result.type, k_ast_data_type_real);
+				m_last_assigned_expression_result.type, c_ast_data_type(k_ast_primitive_type_real));
 		} else if (!m_last_assigned_expression_result.has_value) {
 			unassigned_named_value_error(node->get_source_location(),
 				m_last_assigned_expression_result.identifier_name);
@@ -801,7 +797,7 @@ public:
 			m_errors->push_back(error);
 		}
 
-		if (scope.module_for_scope->get_return_type() == k_ast_data_type_void) {
+		if (scope.module_for_scope->get_return_type() == c_ast_data_type(k_ast_primitive_type_void)) {
 			s_compiler_result error;
 			error.result = k_compiler_result_extraneous_return_statement;
 			error.source_location = node->get_source_location();
@@ -859,8 +855,8 @@ public:
 		result.type = node->get_data_type();
 		result.has_value = true;
 
-		if (is_ast_data_type_array(result.type)) {
-			e_ast_data_type element_type = get_element_from_array_ast_data_type(result.type);
+		if (result.type.is_array()) {
+			c_ast_data_type element_type = result.type.get_element_type();
 
 			// If this is an array, verify that all values are of the correct type
 			std::vector<s_expression_result> value_expression_results(node->get_array_count());
@@ -875,7 +871,7 @@ public:
 			}
 
 			for (size_t index = 0; index < value_expression_results.size(); index++) {
-				e_ast_data_type result_type = value_expression_results[index].type;
+				c_ast_data_type result_type = value_expression_results[index].type;
 				if (result_type != element_type) {
 					type_mismatch_error(node->get_source_location(), element_type, result_type);
 				}
@@ -891,7 +887,7 @@ public:
 
 	virtual void end_visit(const c_ast_node_named_value *node) {
 		s_expression_result result;
-		result.type = k_ast_data_type_void;
+		result.type = c_ast_data_type(k_ast_primitive_type_void);
 		result.identifier_name = node->get_name();
 		result.has_value = true;
 
@@ -925,7 +921,7 @@ public:
 	virtual void end_visit(const c_ast_node_module_call *node) {
 		// If there is an error, this is the default result we will push
 		s_expression_result result;
-		result.type = k_ast_data_type_void;
+		result.type = c_ast_data_type(k_ast_primitive_type_void);
 
 		// The result always has a value (even if it's void)
 		result.has_value = true;

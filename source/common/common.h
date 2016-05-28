@@ -94,6 +94,19 @@ template<typename t_value> t_value big_to_native_endian(t_value value) {
 #error Unknown endianness
 #endif // endianness
 
+template<uint32 k_bit, typename t_storage>
+void set_bit(t_storage &inout_storage, bool value) {
+	static const t_storage k_mask = static_cast<t_storage>(1 << k_bit);
+	inout_storage = value ?
+		(inout_storage | k_mask) :
+		(inout_storage & ~k_mask);
+}
+
+template<uint32 k_bit, typename t_storage>
+bool test_bit(t_storage storage) {
+	static const t_storage k_mask = static_cast<t_storage>(1 << k_bit);
+	return (storage & k_mask) != 0;
+}
 
 class c_uncopyable {
 public:

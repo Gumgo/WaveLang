@@ -224,7 +224,7 @@ void c_buffer_manager::swap_output_buffers_with_voice_accumulation_buffers(uint3
 
 	for (uint32 output = 0; output < outputs.get_count(); output++) {
 		wl_assert(m_voice_accumulation_buffers[output] == k_lock_free_invalid_handle);
-		wl_assert(outputs[output].get_type() == k_task_data_type_real_in);
+		wl_assert(outputs[output].get_type() == c_task_data_type(k_task_primitive_type_real, k_task_qualifier_in));
 		if (outputs[output].is_constant()) {
 			uint32 buffer_handle = m_buffer_allocator.allocate_buffer();
 			m_voice_accumulation_buffers[output] = buffer_handle;
@@ -283,7 +283,7 @@ void c_buffer_manager::add_output_buffers_to_voice_accumulation_buffers(uint32 v
 	for (uint32 output = 0; output < outputs.get_count(); output++) {
 		uint32 accumulation_buffer_handle = m_voice_accumulation_buffers[output];
 		wl_assert(accumulation_buffer_handle != k_lock_free_invalid_handle);
-		wl_assert(outputs[output].get_type() == k_task_data_type_real_in);
+		wl_assert(outputs[output].get_type() == c_task_data_type(k_task_primitive_type_real, k_task_qualifier_in));
 		if (outputs[output].is_constant()) {
 			if (voice_sample_offset == 0) {
 				s_buffer_operation_addition::inout_in(
