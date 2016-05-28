@@ -107,12 +107,18 @@ void c_lr_production_set::add_production(
 	c_lr_symbol rhs_8,
 	c_lr_symbol rhs_9) {
 	// Add the production to the list
-	s_lr_production production = {
-		lhs,
-		{
-			rhs_0, rhs_1, rhs_2, rhs_3, rhs_4, rhs_5, rhs_6, rhs_7, rhs_8, rhs_9
-		}
-	};
+	s_lr_production production;
+	production.lhs = lhs;
+	production.rhs[0] = rhs_0;
+	production.rhs[1] = rhs_1;
+	production.rhs[2] = rhs_2;
+	production.rhs[3] = rhs_3;
+	production.rhs[4] = rhs_4;
+	production.rhs[5] = rhs_5;
+	production.rhs[6] = rhs_6;
+	production.rhs[7] = rhs_7;
+	production.rhs[8] = rhs_8;
+	production.rhs[9] = rhs_9;
 
 	add_production(production);
 }

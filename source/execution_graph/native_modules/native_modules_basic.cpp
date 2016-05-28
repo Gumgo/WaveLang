@@ -2,6 +2,7 @@
 #include "execution_graph/native_module_registry.h"
 #include <algorithm>
 
+static const char *k_native_modules_basic_library_name = "basic";
 const s_native_module_uid k_native_module_noop_real_uid					= s_native_module_uid::build(k_native_modules_basic_library_id, 0);
 const s_native_module_uid k_native_module_noop_bool_uid					= s_native_module_uid::build(k_native_modules_basic_library_id, 1);
 const s_native_module_uid k_native_module_noop_string_uid				= s_native_module_uid::build(k_native_modules_basic_library_id, 2);
@@ -281,206 +282,209 @@ static void native_module_string_array_repeat_rev(c_native_module_compile_time_a
 }
 
 void register_native_modules_basic() {
+	c_native_module_registry::register_native_module_library(
+		k_native_modules_basic_library_id, k_native_modules_basic_library_name);
+
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_noop_real_uid, k_native_operator_names[k_native_operator_noop],
-		true, s_native_module_argument_list::build(NMA(in, real), NMA(out, real)),
+		true, s_native_module_argument_list::build(NMA(in, real, "x"), NMA(out, real, "")),
 		native_module_noop_real));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_noop_bool_uid, k_native_operator_names[k_native_operator_noop],
-		true, s_native_module_argument_list::build(NMA(in, bool), NMA(out, bool)),
+		true, s_native_module_argument_list::build(NMA(in, bool, "x"), NMA(out, bool, "")),
 		native_module_noop_bool));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_noop_string_uid, k_native_operator_names[k_native_operator_noop],
-		true, s_native_module_argument_list::build(NMA(in, string), NMA(out, string)),
+		true, s_native_module_argument_list::build(NMA(in, string, "x"), NMA(out, string, "")),
 		native_module_noop_string));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_negation_uid, k_native_operator_names[k_native_operator_negation],
-		true, s_native_module_argument_list::build(NMA(in, real), NMA(out, real)),
+		true, s_native_module_argument_list::build(NMA(in, real, "x"), NMA(out, real, "")),
 		native_module_negation));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_addition_uid, k_native_operator_names[k_native_operator_addition],
-		true, s_native_module_argument_list::build(NMA(in, real), NMA(in, real), NMA(out, real)),
+		true, s_native_module_argument_list::build(NMA(in, real, "x"), NMA(in, real, "y"), NMA(out, real, "")),
 		native_module_addition));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_subtraction_uid, k_native_operator_names[k_native_operator_subtraction],
-		true, s_native_module_argument_list::build(NMA(in, real), NMA(in, real), NMA(out, real)),
+		true, s_native_module_argument_list::build(NMA(in, real, "x"), NMA(in, real, "y"), NMA(out, real, "")),
 		native_module_subtraction));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_multiplication_uid, k_native_operator_names[k_native_operator_multiplication],
-		true, s_native_module_argument_list::build(NMA(in, real), NMA(in, real), NMA(out, real)),
+		true, s_native_module_argument_list::build(NMA(in, real, "x"), NMA(in, real, "y"), NMA(out, real, "")),
 		native_module_multiplication));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_division_uid, k_native_operator_names[k_native_operator_division],
-		true, s_native_module_argument_list::build(NMA(in, real), NMA(in, real), NMA(out, real)),
+		true, s_native_module_argument_list::build(NMA(in, real, "x"), NMA(in, real, "y"), NMA(out, real, "")),
 		native_module_division));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_modulo_uid, k_native_operator_names[k_native_operator_modulo],
-		true, s_native_module_argument_list::build(NMA(in, real), NMA(in, real), NMA(out, real)),
+		true, s_native_module_argument_list::build(NMA(in, real, "x"), NMA(in, real, "y"), NMA(out, real, "")),
 		native_module_modulo));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_concatenation_uid, k_native_operator_names[k_native_operator_concatenation],
-		true, s_native_module_argument_list::build(NMA(in, string), NMA(in, string), NMA(out, string)),
+		true, s_native_module_argument_list::build(NMA(in, string, "x"), NMA(in, string, "y"), NMA(out, string, "")),
 		native_module_concatenation));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_not_uid, k_native_operator_names[k_native_operator_not],
-		true, s_native_module_argument_list::build(NMA(constant, bool), NMA(out, bool)),
+		true, s_native_module_argument_list::build(NMA(constant, bool, "x"), NMA(out, bool, "y")),
 		native_module_not));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_real_equal_uid, k_native_operator_names[k_native_operator_equal],
-		true, s_native_module_argument_list::build(NMA(constant, real), NMA(constant, real), NMA(out, bool)),
+		true, s_native_module_argument_list::build(NMA(constant, real, "x"), NMA(constant, real, "y"), NMA(out, bool, "")),
 		native_module_real_equal));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_real_not_equal_uid, k_native_operator_names[k_native_operator_not_equal],
-		true, s_native_module_argument_list::build(NMA(constant, real), NMA(constant, real), NMA(out, bool)),
+		true, s_native_module_argument_list::build(NMA(constant, real, "x"), NMA(constant, real, "y"), NMA(out, bool, "")),
 		native_module_real_not_equal));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_bool_equal_uid, k_native_operator_names[k_native_operator_equal],
-		true, s_native_module_argument_list::build(NMA(constant, bool), NMA(constant, bool), NMA(out, bool)),
+		true, s_native_module_argument_list::build(NMA(constant, bool, "x"), NMA(constant, bool, "y"), NMA(out, bool, "")),
 		native_module_bool_equal));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_bool_not_equal_uid, k_native_operator_names[k_native_operator_not_equal],
-		true, s_native_module_argument_list::build(NMA(constant, bool), NMA(constant, bool), NMA(out, bool)),
+		true, s_native_module_argument_list::build(NMA(constant, bool, "x"), NMA(constant, bool, "y"), NMA(out, bool, "")),
 		native_module_bool_not_equal));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_string_equal_uid, k_native_operator_names[k_native_operator_equal],
-		true, s_native_module_argument_list::build(NMA(constant, string), NMA(constant, string), NMA(out, bool)),
+		true, s_native_module_argument_list::build(NMA(constant, string, "x"), NMA(constant, string, "y"), NMA(out, bool, "")),
 		native_module_string_equal));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_string_not_equal_uid, k_native_operator_names[k_native_operator_not_equal],
-		true, s_native_module_argument_list::build(NMA(constant, string), NMA(constant, string), NMA(out, bool)),
+		true, s_native_module_argument_list::build(NMA(constant, string, "x"), NMA(constant, string, "y"), NMA(out, bool, "")),
 		native_module_string_not_equal));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_greater_uid, k_native_operator_names[k_native_operator_greater],
-		true, s_native_module_argument_list::build(NMA(constant, real), NMA(constant, real), NMA(out, bool)),
+		true, s_native_module_argument_list::build(NMA(constant, real, "x"), NMA(constant, real, "y"), NMA(out, bool, "")),
 		native_module_greater));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_less_uid, k_native_operator_names[k_native_operator_less],
-		true, s_native_module_argument_list::build(NMA(constant, real), NMA(constant, real), NMA(out, bool)),
+		true, s_native_module_argument_list::build(NMA(constant, real, "x"), NMA(constant, real, "y"), NMA(out, bool, "")),
 		native_module_less));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_greater_equal_uid, k_native_operator_names[k_native_operator_greater_equal],
-		true, s_native_module_argument_list::build(NMA(constant, real), NMA(constant, real), NMA(out, bool)),
+		true, s_native_module_argument_list::build(NMA(constant, real, "x"), NMA(constant, real, "y"), NMA(out, bool, "")),
 		native_module_greater_equal));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_less_equal_uid, k_native_operator_names[k_native_operator_less_equal],
-		true, s_native_module_argument_list::build(NMA(constant, real), NMA(constant, real), NMA(out, bool)),
+		true, s_native_module_argument_list::build(NMA(constant, real, "x"), NMA(constant, real, "y"), NMA(out, bool, "")),
 		native_module_less_equal));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_and_uid, k_native_operator_names[k_native_operator_and],
-		true, s_native_module_argument_list::build(NMA(constant, bool), NMA(constant, bool), NMA(out, bool)),
+		true, s_native_module_argument_list::build(NMA(constant, bool, "x"), NMA(constant, bool, "y"), NMA(out, bool, "")),
 		native_module_and));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_or_uid, k_native_operator_names[k_native_operator_or],
-		true, s_native_module_argument_list::build(NMA(constant, bool), NMA(constant, bool), NMA(out, bool)),
+		true, s_native_module_argument_list::build(NMA(constant, bool, "x"), NMA(constant, bool, "y"), NMA(out, bool, "")),
 		native_module_or));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_real_static_select_uid, NATIVE_PREFIX "static_select",
-		true, s_native_module_argument_list::build(NMA(constant, bool), NMA(in, real), NMA(in, real), NMA(out, real)),
+		true, s_native_module_argument_list::build(NMA(constant, bool, "condition"), NMA(in, real, "true_value"), NMA(in, real, "false_value"), NMA(out, real, "")),
 		native_module_real_static_select));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_string_static_select_uid, NATIVE_PREFIX "static_select",
-		true, s_native_module_argument_list::build(NMA(constant, bool), NMA(in, string), NMA(in, string), NMA(out, string)),
+		true, s_native_module_argument_list::build(NMA(constant, bool, "condition"), NMA(in, string, "true_value"), NMA(in, string, "false_value"), NMA(out, string, "")),
 		native_module_string_static_select));
 
 	// Array dereference has no compile-time function because constant-index dereference is optimized away
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_real_array_dereference_uid, k_native_operator_names[k_native_operator_array_dereference],
-		true, s_native_module_argument_list::build(NMA_ARRAY(constant, real), NMA(in, real), NMA(out, real)),
+		true, s_native_module_argument_list::build(NMA_ARRAY(constant, real, "array"), NMA(in, real, "index"), NMA(out, real, "")),
 		nullptr));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_real_array_count_uid, NATIVE_PREFIX "array_count",
-		true, s_native_module_argument_list::build(NMA_ARRAY(constant, real), NMA(out, real)),
+		true, s_native_module_argument_list::build(NMA_ARRAY(constant, real, "array"), NMA(out, real, "")),
 		native_module_real_array_count));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_real_array_combine_uid, k_native_operator_names[k_native_operator_addition],
-		true, s_native_module_argument_list::build(NMA_ARRAY(constant, real), NMA_ARRAY(constant, real), NMA_ARRAY(out, real)),
+		true, s_native_module_argument_list::build(NMA_ARRAY(constant, real, "x"), NMA_ARRAY(constant, real, "y"), NMA_ARRAY(out, real, "")),
 		native_module_real_array_combine));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_real_array_repeat_uid, k_native_operator_names[k_native_operator_multiplication],
-		true, s_native_module_argument_list::build(NMA_ARRAY(constant, real), NMA(constant, real), NMA_ARRAY(out, real)),
+		true, s_native_module_argument_list::build(NMA_ARRAY(constant, real, "x"), NMA(constant, real, "y"), NMA_ARRAY(out, real, "")),
 		native_module_real_array_repeat));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_real_array_repeat_rev_uid, k_native_operator_names[k_native_operator_multiplication],
-		true, s_native_module_argument_list::build(NMA(constant, real), NMA_ARRAY(constant, real), NMA_ARRAY(out, real)),
+		true, s_native_module_argument_list::build(NMA(constant, real, "x"), NMA_ARRAY(constant, real, "y"), NMA_ARRAY(out, real, "")),
 		native_module_real_array_repeat_rev));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_bool_array_dereference_uid, k_native_operator_names[k_native_operator_array_dereference],
-		true, s_native_module_argument_list::build(NMA_ARRAY(constant, bool), NMA(in, real), NMA(out, bool)),
+		true, s_native_module_argument_list::build(NMA_ARRAY(constant, bool, "array"), NMA(in, real, "index"), NMA(out, bool, "")),
 		nullptr));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_bool_array_count_uid, NATIVE_PREFIX "array_count",
-		true, s_native_module_argument_list::build(NMA_ARRAY(constant, bool), NMA(out, real)),
+		true, s_native_module_argument_list::build(NMA_ARRAY(constant, bool, "array"), NMA(out, real, "")),
 		native_module_bool_array_count));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_bool_array_combine_uid, k_native_operator_names[k_native_operator_addition],
-		true, s_native_module_argument_list::build(NMA_ARRAY(constant, bool), NMA_ARRAY(constant, bool), NMA_ARRAY(out, bool)),
+		true, s_native_module_argument_list::build(NMA_ARRAY(constant, bool, "x"), NMA_ARRAY(constant, bool, "y"), NMA_ARRAY(out, bool, "")),
 		native_module_bool_array_combine));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_bool_array_repeat_uid, k_native_operator_names[k_native_operator_multiplication],
-		true, s_native_module_argument_list::build(NMA_ARRAY(constant, bool), NMA(constant, real), NMA_ARRAY(out, bool)),
+		true, s_native_module_argument_list::build(NMA_ARRAY(constant, bool, "x"), NMA(constant, real, "y"), NMA_ARRAY(out, bool, "")),
 		native_module_bool_array_repeat));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_bool_array_repeat_rev_uid, k_native_operator_names[k_native_operator_multiplication],
-		true, s_native_module_argument_list::build(NMA(constant, real), NMA_ARRAY(constant, bool), NMA_ARRAY(out, bool)),
+		true, s_native_module_argument_list::build(NMA(constant, real, "x"), NMA_ARRAY(constant, bool, "y"), NMA_ARRAY(out, bool, "")),
 		native_module_bool_array_repeat_rev));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_string_array_dereference_uid, k_native_operator_names[k_native_operator_array_dereference],
-		true, s_native_module_argument_list::build(NMA_ARRAY(constant, string), NMA(in, real), NMA(out, string)),
+		true, s_native_module_argument_list::build(NMA_ARRAY(constant, string, "array"), NMA(in, real, "index"), NMA(out, string, "")),
 		nullptr));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_string_array_count_uid, NATIVE_PREFIX "array_count",
-		true, s_native_module_argument_list::build(NMA_ARRAY(constant, string), NMA(out, real)),
+		true, s_native_module_argument_list::build(NMA_ARRAY(constant, string, "array"), NMA(out, real, "")),
 		native_module_string_array_count));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_string_array_combine_uid, k_native_operator_names[k_native_operator_addition],
-		true, s_native_module_argument_list::build(NMA_ARRAY(constant, string), NMA_ARRAY(constant, string), NMA_ARRAY(out, string)),
+		true, s_native_module_argument_list::build(NMA_ARRAY(constant, string, "x"), NMA_ARRAY(constant, string, "y"), NMA_ARRAY(out, string, "")),
 		native_module_string_array_combine));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_string_array_repeat_uid, k_native_operator_names[k_native_operator_multiplication],
-		true, s_native_module_argument_list::build(NMA_ARRAY(constant, string), NMA(constant, real), NMA_ARRAY(out, string)),
+		true, s_native_module_argument_list::build(NMA_ARRAY(constant, string, "x"), NMA(constant, real, "y"), NMA_ARRAY(out, string, "")),
 		native_module_string_array_repeat));
 
 	c_native_module_registry::register_native_module(s_native_module::build(
 		k_native_module_string_array_repeat_rev_uid, k_native_operator_names[k_native_operator_multiplication],
-		true, s_native_module_argument_list::build(NMA(constant, real), NMA_ARRAY(constant, string), NMA_ARRAY(out, string)),
+		true, s_native_module_argument_list::build(NMA(constant, real, "x"), NMA_ARRAY(constant, string, "y"), NMA_ARRAY(out, string, "")),
 		native_module_string_array_repeat_rev));
 
 	// Register optimizations

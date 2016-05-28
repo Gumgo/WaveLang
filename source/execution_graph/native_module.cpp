@@ -3,8 +3,9 @@
 const s_native_module_uid s_native_module_uid::k_invalid = s_native_module_uid::build(0xffffffff, 0xffffffff);
 
 // The invalid qualifier value signifies "none"
-const s_native_module_argument s_native_module_argument_list::k_argument_none = {
-	k_native_module_qualifier_count, c_native_module_data_type::invalid()
+const s_native_module_named_argument s_native_module_argument_list::k_argument_none = {
+	s_native_module_argument::build(k_native_module_qualifier_count, c_native_module_data_type::invalid()),
+	c_static_string<k_max_native_module_argument_name_length>::construct_empty()
 };
 
 static const s_native_module_primitive_type_traits k_native_module_primitive_type_traits[] = {
@@ -123,20 +124,28 @@ const s_native_module_primitive_type_traits &get_native_module_primitive_type_tr
 }
 
 s_native_module_argument_list s_native_module_argument_list::build(
-	s_native_module_argument arg_0,
-	s_native_module_argument arg_1,
-	s_native_module_argument arg_2,
-	s_native_module_argument arg_3,
-	s_native_module_argument arg_4,
-	s_native_module_argument arg_5,
-	s_native_module_argument arg_6,
-	s_native_module_argument arg_7,
-	s_native_module_argument arg_8,
-	s_native_module_argument arg_9) {
+	s_native_module_named_argument arg_0,
+	s_native_module_named_argument arg_1,
+	s_native_module_named_argument arg_2,
+	s_native_module_named_argument arg_3,
+	s_native_module_named_argument arg_4,
+	s_native_module_named_argument arg_5,
+	s_native_module_named_argument arg_6,
+	s_native_module_named_argument arg_7,
+	s_native_module_named_argument arg_8,
+	s_native_module_named_argument arg_9) {
 	static_assert(k_max_native_module_arguments == 10, "Max native module arguments changed");
-	s_native_module_argument_list result = {
-		arg_0, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9
-	};
+	s_native_module_argument_list result;
+	result.arguments[0] = arg_0;
+	result.arguments[1] = arg_1;
+	result.arguments[2] = arg_2;
+	result.arguments[3] = arg_3;
+	result.arguments[4] = arg_4;
+	result.arguments[5] = arg_5;
+	result.arguments[6] = arg_6;
+	result.arguments[7] = arg_7;
+	result.arguments[8] = arg_8;
+	result.arguments[9] = arg_9;
 	return result;
 }
 
@@ -161,14 +170,16 @@ s_native_module s_native_module::build(
 	for (native_module.argument_count = 0;
 		 native_module.argument_count < k_max_native_module_arguments;
 		 native_module.argument_count++) {
-		s_native_module_argument arg = arguments.arguments[native_module.argument_count];
+		const s_native_module_named_argument &arg = arguments.arguments[native_module.argument_count];
 		// Loop until we find an k_native_module_qualifier_count
-		if (arg.qualifier != k_native_module_qualifier_count) {
-			wl_assert(VALID_INDEX(arg.qualifier, k_native_module_qualifier_count));
-			wl_assert(arg.type.is_valid());
-			native_module.arguments[native_module.argument_count] = arg;
+		if (arg.argument.qualifier != k_native_module_qualifier_count) {
+			wl_assert(VALID_INDEX(arg.argument.qualifier, k_native_module_qualifier_count));
+			wl_assert(arg.argument.type.is_valid());
+			native_module.arguments[native_module.argument_count] = arg.argument;
+			arg.name.validate();
+			native_module.argument_names[native_module.argument_count].set_verify(arg.name.get_string());
 
-			if (native_module_qualifier_is_input(arg.qualifier)) {
+			if (native_module_qualifier_is_input(arg.argument.qualifier)) {
 				native_module.in_argument_count++;
 			} else {
 				native_module.out_argument_count++;

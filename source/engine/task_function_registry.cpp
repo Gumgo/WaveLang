@@ -204,8 +204,8 @@ static void validate_task_function_mapping(
 
 	// Keep track of whether each task argument has been mapped to. Inout arguments are mapped to twice, which is why we
 	// use two arrays.
-	bool task_argument_input_mappings[k_max_task_function_arguments];
-	bool task_argument_output_mappings[k_max_task_function_arguments];
+	s_static_array<bool, k_max_task_function_arguments> task_argument_input_mappings;
+	s_static_array<bool, k_max_task_function_arguments> task_argument_output_mappings;
 	ZERO_STRUCT(&task_argument_input_mappings);
 	ZERO_STRUCT(&task_argument_output_mappings);
 

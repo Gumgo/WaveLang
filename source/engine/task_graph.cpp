@@ -9,6 +9,9 @@ static const uint32 k_invalid_task = static_cast<uint32>(-1);
 
 const uint32 c_task_graph::k_invalid_buffer;
 
+typedef s_static_array<e_task_function_mapping_native_module_input_type, k_max_native_module_arguments>
+	s_task_function_mapping_native_module_input_type_array;
+
 // Array helpers
 static size_t get_task_data_array_count(const s_task_graph_data &data);
 static bool is_task_data_array_element_constant(const s_task_graph_data &data, size_t index);
@@ -16,7 +19,7 @@ static uint32 get_task_data_array_element_buffer_const(const s_task_graph_data &
 
 // Fills out the input types for the given native module call node
 static void get_native_module_call_input_types(const c_execution_graph &execution_graph, uint32 node_index,
-	e_task_function_mapping_native_module_input_type (&out_input_types)[k_max_native_module_arguments]);
+	s_task_function_mapping_native_module_input_type_array &out_input_types);
 
 // Returns true if the given input is used as more than once. This indicates that the input cannot be used as an inout
 // because overwriting the buffer would invalidate its second usage as an input.
@@ -25,12 +28,12 @@ static bool does_native_module_call_input_branch(const c_execution_graph &execut
 
 static bool do_native_module_inputs_match(
 	size_t argument_count,
-	const e_task_function_mapping_native_module_input_type (&native_module_inputs)[k_max_native_module_arguments],
-	const e_task_function_mapping_native_module_input_type (&inputs_to_match)[k_max_native_module_arguments]);
+	const s_task_function_mapping_native_module_input_type_array &native_module_inputs,
+	const s_task_function_mapping_native_module_input_type_array &inputs_to_match);
 
 const s_task_function_mapping *get_task_mapping_for_native_module_and_inputs(
 	uint32 native_module_index,
-	e_task_function_mapping_native_module_input_type (&native_module_inputs)[k_max_native_module_arguments]);
+	const s_task_function_mapping_native_module_input_type_array &native_module_inputs);
 
 struct s_build_real_array_settings {
 	typedef s_real_array_element t_element;
@@ -420,7 +423,7 @@ static uint32 get_task_data_array_element_buffer_const(const s_task_graph_data &
 }
 
 static void get_native_module_call_input_types(const c_execution_graph &execution_graph, uint32 node_index,
-	e_task_function_mapping_native_module_input_type (&out_input_types)[k_max_native_module_arguments]) {
+	s_task_function_mapping_native_module_input_type_array &out_input_types) {
 	wl_assert(execution_graph.get_node_type(node_index) == k_execution_graph_node_type_native_module_call);
 
 	const s_native_module &native_module = c_native_module_registry::get_native_module(
@@ -476,8 +479,8 @@ static bool does_native_module_call_input_branch(const c_execution_graph &execut
 
 static bool do_native_module_inputs_match(
 	size_t argument_count,
-	const e_task_function_mapping_native_module_input_type (&native_module_inputs)[k_max_native_module_arguments],
-	const e_task_function_mapping_native_module_input_type (&inputs_to_match)[k_max_native_module_arguments]) {
+	const s_task_function_mapping_native_module_input_type_array &native_module_inputs,
+	const s_task_function_mapping_native_module_input_type_array &inputs_to_match) {
 	for (size_t arg = 0; arg < argument_count; arg++) {
 		e_task_function_mapping_native_module_input_type native_module_input = native_module_inputs[arg];
 		e_task_function_mapping_native_module_input_type input_to_match = inputs_to_match[arg];
@@ -509,7 +512,7 @@ static bool do_native_module_inputs_match(
 
 static const s_task_function_mapping *get_task_mapping_for_native_module_and_inputs(
 	uint32 native_module_index,
-	e_task_function_mapping_native_module_input_type (&native_module_inputs)[k_max_native_module_arguments]) {
+	const s_task_function_mapping_native_module_input_type_array &native_module_inputs) {
 	const s_native_module &native_module = c_native_module_registry::get_native_module(native_module_index);
 	c_task_function_mapping_list task_function_mapping_list =
 		c_task_function_registry::get_task_function_mapping_list(native_module_index);
@@ -622,7 +625,7 @@ bool c_task_graph::add_task_for_node(const c_execution_graph &execution_graph, u
 	nodes_to_tasks[node_index] = task_index;
 
 	// Construct string representing inputs - 1 extra character for null terminator
-	e_task_function_mapping_native_module_input_type input_types[k_max_native_module_arguments];
+	s_task_function_mapping_native_module_input_type_array input_types;
 	get_native_module_call_input_types(execution_graph, node_index, input_types);
 
 	uint32 native_module_index = execution_graph.get_native_module_call_native_module_index(node_index);

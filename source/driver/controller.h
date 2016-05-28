@@ -17,7 +17,7 @@ struct s_controller_event {
 		"Max event data size not a multiple of 4");
 
 	e_controller_event_type event_type;
-	uint32 event_data[k_max_controller_event_data_size / sizeof(uint32)];
+	s_static_array<uint32, k_max_controller_event_data_size / sizeof(uint32)> event_data;
 
 	template<typename t_data> void set_data(const t_data *data) {
 		static_assert(sizeof(t_data) <= sizeof(event_data), "Event data too big");
@@ -28,13 +28,13 @@ struct s_controller_event {
 	template<typename t_data> const t_data *get_data() const {
 		static_assert(sizeof(t_data) <= sizeof(event_data), "Event data too big");
 		static_assert(alignof(t_data) <= alignof(uint32), "Event data alignment too big");
-		return reinterpret_cast<const t_data *>(event_data);
+		return reinterpret_cast<const t_data *>(event_data.get_elements());
 	}
 
 	template<typename t_data> t_data *get_data() {
 		static_assert(sizeof(t_data) <= sizeof(event_data), "Event data too big");
 		static_assert(alignof(t_data) <= alignof(uint32), "Event data alignment too big");
-		return reinterpret_cast<t_data *>(event_data);
+		return reinterpret_cast<t_data *>(event_data.get_elements());
 	}
 };
 

@@ -4,8 +4,10 @@
 #include "common/common.h"
 #include <vector>
 
+static const size_t k_max_native_module_library_name_length = 64;
 static const size_t k_max_native_module_name_length = 64;
 static const size_t k_max_native_module_arguments = 10;
+static const size_t k_max_native_module_argument_name_length = 16;
 
 #define NATIVE_PREFIX "__native_"
 
@@ -122,6 +124,22 @@ struct s_native_module_argument {
 	}
  };
 
+struct s_native_module_named_argument {
+	s_native_module_argument argument;
+	c_static_string<k_max_native_module_argument_name_length> name;
+
+	static s_native_module_named_argument build(
+		e_native_module_qualifier qualifier,
+		c_native_module_data_type type,
+		const char *name) {
+		s_native_module_named_argument result = {
+			s_native_module_argument::build(qualifier, type),
+			c_static_string<k_max_native_module_argument_name_length>::construct_verify(name)
+		};
+		return result;
+	}
+};
+
 // Return value for a compile-time native module call
 // $TODO do we want to expose std::vector for arrays? Consider making a wrapper around it
 struct s_native_module_compile_time_argument {
@@ -231,26 +249,30 @@ typedef c_wrapped_array<s_native_module_compile_time_argument> c_native_module_c
 typedef void (*f_native_module_compile_time_call)(c_native_module_compile_time_argument_list arguments);
 
 // Shorthand for argument specification
-#define NMA(qualifier, type) s_native_module_argument::build( \
-	k_native_module_qualifier_ ## qualifier, c_native_module_data_type(k_native_module_primitive_type_ ## type))
-#define NMA_ARRAY(qualifier, type) s_native_module_argument::build( \
-	k_native_module_qualifier_ ## qualifier, c_native_module_data_type(k_native_module_primitive_type_ ## type, true))
+#define NMA(qualifier, type, name) s_native_module_named_argument::build(	\
+	k_native_module_qualifier_ ## qualifier,								\
+	c_native_module_data_type(k_native_module_primitive_type_ ## type),		\
+	name)
+#define NMA_ARRAY(qualifier, type, name) s_native_module_named_argument::build(	\
+	k_native_module_qualifier_ ## qualifier,									\
+	c_native_module_data_type(k_native_module_primitive_type_ ## type, true),	\
+	name)
 
 struct s_native_module_argument_list {
-	static const s_native_module_argument k_argument_none;
-	s_native_module_argument arguments[k_max_native_module_arguments];
+	static const s_native_module_named_argument k_argument_none;
+	s_static_array<s_native_module_named_argument, k_max_native_module_arguments> arguments;
 
 	static s_native_module_argument_list build(
-		s_native_module_argument arg_0 = k_argument_none,
-		s_native_module_argument arg_1 = k_argument_none,
-		s_native_module_argument arg_2 = k_argument_none,
-		s_native_module_argument arg_3 = k_argument_none,
-		s_native_module_argument arg_4 = k_argument_none,
-		s_native_module_argument arg_5 = k_argument_none,
-		s_native_module_argument arg_6 = k_argument_none,
-		s_native_module_argument arg_7 = k_argument_none,
-		s_native_module_argument arg_8 = k_argument_none,
-		s_native_module_argument arg_9 = k_argument_none);
+		s_native_module_named_argument arg_0 = k_argument_none,
+		s_native_module_named_argument arg_1 = k_argument_none,
+		s_native_module_named_argument arg_2 = k_argument_none,
+		s_native_module_named_argument arg_3 = k_argument_none,
+		s_native_module_named_argument arg_4 = k_argument_none,
+		s_native_module_named_argument arg_5 = k_argument_none,
+		s_native_module_named_argument arg_6 = k_argument_none,
+		s_native_module_named_argument arg_7 = k_argument_none,
+		s_native_module_named_argument arg_8 = k_argument_none,
+		s_native_module_named_argument arg_9 = k_argument_none);
 };
 
 struct s_native_module {
@@ -269,7 +291,9 @@ struct s_native_module {
 	size_t out_argument_count;
 
 	// List of arguments
-	s_native_module_argument arguments[k_max_native_module_arguments];
+	s_static_array<s_native_module_argument, k_max_native_module_arguments> arguments;
+	s_static_array<c_static_string<k_max_native_module_argument_name_length>, k_max_native_module_arguments>
+		argument_names;
 
 	// Function to resolve the module at compile time if all inputs are constant, or null if this is not possible
 	f_native_module_compile_time_call compile_time_call;
@@ -384,7 +408,7 @@ struct s_native_module_optimization_symbol {
 };
 
 struct s_native_module_optimization_pattern {
-	s_native_module_optimization_symbol symbols[k_max_native_module_optimization_pattern_length];
+	s_static_array<s_native_module_optimization_symbol, k_max_native_module_optimization_pattern_length> symbols;
 
 	static s_native_module_optimization_pattern build(
 		s_native_module_optimization_symbol sym_0 = s_native_module_optimization_symbol::invalid(),
@@ -404,10 +428,23 @@ struct s_native_module_optimization_pattern {
 		s_native_module_optimization_symbol sym_14 = s_native_module_optimization_symbol::invalid(),
 		s_native_module_optimization_symbol sym_15 = s_native_module_optimization_symbol::invalid()) {
 		static_assert(k_max_native_module_optimization_pattern_length == 16, "Max optimization pattern length changed");
-		s_native_module_optimization_pattern result = {
-			sym_0, sym_1, sym_2, sym_3, sym_4, sym_5, sym_6, sym_7,
-			sym_8, sym_9, sym_10, sym_11, sym_12, sym_13, sym_14, sym_15
-		};
+		s_native_module_optimization_pattern result;
+		result.symbols[0] = sym_0;
+		result.symbols[1] = sym_1;
+		result.symbols[2] = sym_2;
+		result.symbols[3] = sym_3;
+		result.symbols[4] = sym_4;
+		result.symbols[5] = sym_5;
+		result.symbols[6] = sym_6;
+		result.symbols[7] = sym_7;
+		result.symbols[8] = sym_8;
+		result.symbols[9] = sym_9;
+		result.symbols[10] = sym_10;
+		result.symbols[11] = sym_11;
+		result.symbols[12] = sym_12;
+		result.symbols[13] = sym_13;
+		result.symbols[14] = sym_14;
+		result.symbols[15] = sym_15;
 		return result;
 	}
 };

@@ -268,7 +268,7 @@ static const size_t k_max_task_function_arguments = 10;
 
 struct s_task_function_argument_list {
 	static const c_task_data_type k_argument_none;
-	c_task_data_type arguments[k_max_task_function_arguments];
+	s_static_array<c_task_data_type, k_max_task_function_arguments> arguments;
 
 	static s_task_function_argument_list build(
 		c_task_data_type arg_0 = k_argument_none,
@@ -310,7 +310,7 @@ struct s_task_function {
 	uint32 argument_count;
 
 	// Type of each argument
-	c_task_data_type argument_types[k_max_task_function_arguments];
+	s_static_array<c_task_data_type, k_max_task_function_arguments> argument_types;
 
 	static s_task_function build(
 		s_task_function_uid uid,
@@ -349,7 +349,7 @@ enum e_task_function_mapping_native_module_input_type {
 struct s_task_function_native_module_argument_mapping {
 	static const uint32 k_argument_none = static_cast<uint32>(-1);
 
-	uint32 mapping[k_max_native_module_arguments];
+	s_static_array<uint32, k_max_native_module_arguments> mapping;
 
 	static s_task_function_native_module_argument_mapping build(
 		uint32 arg_0 = k_argument_none,
@@ -372,7 +372,8 @@ struct s_task_function_mapping {
 	s_task_function_uid task_function_uid;
 
 	// The pattern of argument types that must be matched for the native module in order for this mapping to be used
-	e_task_function_mapping_native_module_input_type native_module_input_types[k_max_native_module_arguments];
+	s_static_array<e_task_function_mapping_native_module_input_type, k_max_native_module_arguments>
+		native_module_input_types;
 
 	// Maps each native module argument to a task function in/out/inout argument
 	s_task_function_native_module_argument_mapping native_module_argument_mapping;

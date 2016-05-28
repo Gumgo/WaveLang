@@ -60,7 +60,7 @@ struct s_lr_symbol_properties {
 
 struct s_lr_production {
 	c_lr_symbol lhs;
-	c_lr_symbol rhs[k_max_production_rhs_symbol_count];
+	s_static_array<c_lr_symbol, k_max_production_rhs_symbol_count> rhs;
 
 	bool rhs_index_valid(size_t index) const {
 		// We stop at the first epsilon symbol

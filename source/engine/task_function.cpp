@@ -122,9 +122,17 @@ s_task_function_argument_list s_task_function_argument_list::build(
 	c_task_data_type arg_8,
 	c_task_data_type arg_9) {
 	static_assert(k_max_task_function_arguments == 10, "Max task function arguments changed");
-	s_task_function_argument_list result = {
-		arg_0, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9
-	};
+	s_task_function_argument_list result;
+	result.arguments[0] = arg_0;
+	result.arguments[1] = arg_1;
+	result.arguments[2] = arg_2;
+	result.arguments[3] = arg_3;
+	result.arguments[4] = arg_4;
+	result.arguments[5] = arg_5;
+	result.arguments[6] = arg_6;
+	result.arguments[7] = arg_7;
+	result.arguments[8] = arg_8;
+	result.arguments[9] = arg_9;
 	return result;
 }
 
@@ -180,9 +188,17 @@ s_task_function_native_module_argument_mapping s_task_function_native_module_arg
 	uint32 arg_8,
 	uint32 arg_9) {
 	static_assert(k_max_native_module_arguments == 10, "Max native module arguments changed");
-	s_task_function_native_module_argument_mapping result = {
-		arg_0, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9
-	};
+	s_task_function_native_module_argument_mapping result;
+	result.mapping[0] = arg_0;
+	result.mapping[1] = arg_1;
+	result.mapping[2] = arg_2;
+	result.mapping[3] = arg_3;
+	result.mapping[4] = arg_4;
+	result.mapping[5] = arg_5;
+	result.mapping[6] = arg_6;
+	result.mapping[7] = arg_7;
+	result.mapping[8] = arg_8;
+	result.mapping[9] = arg_9;
 	return result;
 }
 

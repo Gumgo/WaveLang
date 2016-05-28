@@ -49,6 +49,10 @@
 		- Constraint: decay time must be at least as big as chunk processing size
 			- Emit error on initialize if this is not true
 
+- Fix sampler
+	- Use doubles for keeping track of time
+	- Don't convert time to second values, just keep as samples
+
 - Plugin system ($PLUGIN)
 	- Allow users to register their own native modules and tasks
 	- Restrict library ID to anything but the 0-255 range
@@ -81,5 +85,3 @@
 	- Type class has a set of generic properties, e.g. is_array(), is_constant(), is_runtime_static(), etc.
 	- Get rid of most of the switch statements, instead query the generic properties
 	- Support bool buffers using bitvectors ($BOOL)
-
-- Compiler command line option to list all native modules with documentation

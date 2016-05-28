@@ -9,7 +9,8 @@ struct s_preprocessor_command_executor {
 
 static const size_t k_max_preprocessor_command_executors = 8;
 
-static s_preprocessor_command_executor g_preprocessor_command_executors[k_max_preprocessor_command_executors];
+static s_static_array<s_preprocessor_command_executor, k_max_preprocessor_command_executors>
+	g_preprocessor_command_executors;
 static size_t g_preprocessor_command_executor_count = 0;
 
 static s_compiler_result preprocessor_command_import(

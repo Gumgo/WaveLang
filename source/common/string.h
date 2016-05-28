@@ -25,6 +25,24 @@ class c_static_string {
 public:
 	static_assert(k_buffer_size > 0, "c_static_string must have a nonzero buffer size");
 
+	static c_static_string<k_buffer_size> construct_empty() {
+		c_static_string<k_buffer_size> result;
+		result.clear();
+		return result;
+	}
+
+	static c_static_string<k_buffer_size> construct_truncate(const char *str) {
+		c_static_string<k_buffer_size> result;
+		result.set_truncate(str);
+		return result;
+	}
+
+	static c_static_string<k_buffer_size> construct_verify(const char *str) {
+		c_static_string<k_buffer_size> result;
+		result.set_verify(str);
+		return result;
+	}
+
 	void clear() {
 		m_buffer[0] = '\0';
 	}

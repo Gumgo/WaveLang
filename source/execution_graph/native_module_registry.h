@@ -39,6 +39,9 @@ public:
 	static void begin_registration(bool optimizations_enabled);
 	static bool end_registration();
 
+	// Registers a library which native modules are grouped under
+	static bool register_native_module_library(uint32 library_id, const char *library_name);
+
 	// Registers a native module - returns whether successful
 	static bool register_native_module(const s_native_module &native_module);
 
@@ -56,6 +59,8 @@ public:
 
 	static uint32 get_optimization_rule_count();
 	static const s_native_module_optimization_rule &get_optimization_rule(uint32 index);
+
+	static bool output_registered_native_modules(const char *filename);
 };
 
 #endif // WAVELANG_NATIVE_MODULE_REGISTRY_H__

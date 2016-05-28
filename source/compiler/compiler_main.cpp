@@ -18,11 +18,14 @@
 // $TODO move somewhere better?
 static const char *k_wavelang_synth_extension = "wls";
 
+static const char *k_documentation_filename = "registered_native_modules.txt";
+
 int main(int argc, char **argv) {
 	c_native_module_registry::initialize();
 	register_native_modules(true);
 
 	// Command line options
+	bool output_documentation = false;
 	bool output_execution_graph = false;
 	bool condense_large_arrays = false;
 	bool command_line_option_error = false;
@@ -32,8 +35,12 @@ int main(int argc, char **argv) {
 		// Read the command line options
 		int32 getopt_result;
 		extern int optind;
-		while ((getopt_result = getopt(argc, argv, "gG")) != -1) {
+		while ((getopt_result = getopt(argc, argv, "dgG")) != -1) {
 			switch (getopt_result) {
+			case 'd':
+				output_documentation = true;
+				break;
+
 			case 'g':
 				output_execution_graph = true;
 				break;
@@ -56,13 +63,18 @@ int main(int argc, char **argv) {
 		first_file_argument_index = optind;
 	}
 
-	if (first_file_argument_index >= argc) {
+	if (first_file_argument_index >= argc &&
+		!output_documentation) { // No compilation necessary if we're outputting documentation
 		command_line_option_error = true;
 	}
 
 	if (command_line_option_error) {
-		std::cerr << "usage: " << argv[0] << " [-g] fname1 [fname2 ...]\n";
+		std::cerr << "usage: " << argv[0] << " [-d] [-g] [-G] fname1 [fname2 ...]\n";
 		return 1;
+	}
+
+	if (output_documentation) {
+		c_native_module_registry::output_registered_native_modules(k_documentation_filename);
 	}
 
 	// Compile each input file

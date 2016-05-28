@@ -1,6 +1,27 @@
 #include "execution_graph/native_module_registry.h"
 #include <vector>
 #include <unordered_map>
+#include <fstream>
+#include <algorithm>
+
+// Strings for native module registry output
+static const char *k_native_module_no_return_type_string = "void";
+
+static const char *k_native_module_primitive_type_strings[] = {
+	"real",		// k_native_module_primitive_type_real
+	"bool",		// k_native_module_primitive_type_bool
+	"string"	// k_native_module_primitive_type_string
+};
+static_assert(NUMBEROF(k_native_module_primitive_type_strings) == k_native_module_primitive_type_count,
+	"Native module primitive type string mismatch");
+
+static const char *k_native_module_qualifier_strings[] = {
+	"in",	// k_native_module_qualifier_in
+	"out",	// k_native_module_qualifier_out
+	"const"	// k_native_module_qualifier_constant
+};
+static_assert(NUMBEROF(k_native_module_qualifier_strings) == k_native_module_qualifier_count,
+	"Native module qualifier string mismatch");
 
 // $TODO $PLUGIN error reporting for registration errors. Important when we have plugins - we will want a global error
 // reporting system for that.
@@ -12,6 +33,10 @@ enum e_native_module_registry_state {
 	k_native_module_registry_state_finalized,
 
 	k_native_module_registry_state_count,
+};
+
+struct s_native_module_library {
+	c_static_string<k_max_native_module_library_name_length> library_name;
 };
 
 struct s_native_operator {
@@ -26,9 +51,11 @@ struct std::hash<s_native_module_uid> {
 };
 
 struct s_native_module_registry_data {
+	std::unordered_map<uint32, s_native_module_library> native_module_libraries;
+
 	std::vector<s_native_module> native_modules;
 	std::unordered_map<s_native_module_uid, uint32> native_module_uids_to_indices;
-	s_native_operator native_operators[k_native_operator_count];
+	s_static_array<s_native_operator, k_native_operator_count> native_operators;
 
 	bool optimizations_enabled;
 	std::vector<s_native_module_optimization_rule> optimization_rules;
@@ -58,6 +85,7 @@ void c_native_module_registry::shutdown() {
 	wl_assert(g_native_module_registry_state != k_native_module_registry_state_uninitialized);
 
 	// Clear and free all memory
+	g_native_module_registry_data.native_module_libraries.clear();
 	g_native_module_registry_data.native_modules.clear();
 	g_native_module_registry_data.native_modules.shrink_to_fit();
 	g_native_module_registry_data.native_module_uids_to_indices.clear();
@@ -99,6 +127,21 @@ bool c_native_module_registry::end_registration() {
 	return true;
 }
 
+bool c_native_module_registry::register_native_module_library(uint32 library_id, const char *library_name) {
+	wl_assert(g_native_module_registry_state == k_native_module_registry_state_registering);
+
+	// Make sure there isn't already a library registered with this ID
+	auto it = g_native_module_registry_data.native_module_libraries.find(library_id);
+	if (it != g_native_module_registry_data.native_module_libraries.end()) {
+		return false;
+	}
+
+	s_native_module_library library;
+	library.library_name.set_verify(library_name);
+	g_native_module_registry_data.native_module_libraries.insert(std::make_pair(library_id, library));
+	return true;
+}
+
 bool c_native_module_registry::register_native_module(const s_native_module &native_module) {
 	wl_assert(g_native_module_registry_state == k_native_module_registry_state_registering);
 
@@ -114,6 +157,14 @@ bool c_native_module_registry::register_native_module(const s_native_module &nat
 		wl_assert(native_module.arguments[arg].type.is_valid());
 	}
 #endif // PREDEFINED(ASSERTS_ENABLED)
+
+	// Check that the library referenced by the UID is registered
+	{
+		auto it = g_native_module_registry_data.native_module_libraries.find(native_module.uid.get_library_id());
+		if (it == g_native_module_registry_data.native_module_libraries.end()) {
+			return false;
+		}
+	}
 
 	// Check that the UID isn't already in use
 	if (g_native_module_registry_data.native_module_uids_to_indices.find(native_module.uid) !=
@@ -192,6 +243,152 @@ uint32 c_native_module_registry::get_optimization_rule_count() {
 const s_native_module_optimization_rule &c_native_module_registry::get_optimization_rule(uint32 index) {
 	wl_assert(VALID_INDEX(index, get_optimization_rule_count()));
 	return g_native_module_registry_data.optimization_rules[index];
+}
+
+bool c_native_module_registry::output_registered_native_modules(const char *filename) {
+	std::ofstream out(filename);
+
+	if (!out.is_open()) {
+		return false;
+	}
+
+	struct s_output_item {
+		enum e_type {
+			k_type_library,
+			k_type_native_module,
+
+			k_type_count
+		};
+
+		e_type type;
+		s_native_module_uid uid; // Doubles as just library ID if this is a library
+
+		bool operator<(const s_output_item &other) const {
+			if (uid.get_library_id() != other.uid.get_library_id()) {
+				return uid.get_library_id() < other.uid.get_library_id();
+			} else {
+				if (type == k_type_native_module && other.type == k_type_native_module) {
+					return uid.get_module_id() < other.uid.get_module_id();
+				} else {
+					// The library always comes first
+					return (other.type == k_type_native_module);
+				}
+			}
+		}
+	};
+
+	std::vector<s_output_item> output_items;
+	output_items.reserve(g_native_module_registry_data.native_module_libraries.size() +
+		g_native_module_registry_data.native_modules.size());
+
+	for (auto it = g_native_module_registry_data.native_module_libraries.begin();
+		 it != g_native_module_registry_data.native_module_libraries.end();
+		 it++) {
+		s_output_item item;
+		item.type = s_output_item::k_type_library;
+		item.uid = s_native_module_uid::build(it->first, 0);
+		output_items.push_back(item);
+	}
+
+	for (size_t index = 0; index < g_native_module_registry_data.native_modules.size(); index++) {
+		s_output_item item;
+		item.type = s_output_item::k_type_native_module;
+		item.uid = g_native_module_registry_data.native_modules[index].uid;
+		output_items.push_back(item);
+	}
+
+	std::sort(output_items.begin(), output_items.end());
+
+	bool first_output = false;
+	for (size_t index = 0; index < output_items.size(); index++) {
+		const s_output_item &item = output_items[index];
+
+		switch (item.type) {
+		case s_output_item::k_type_library:
+		{
+			if (!first_output) {
+				out << "\n";
+			}
+
+			const s_native_module_library &library =
+				g_native_module_registry_data.native_module_libraries[item.uid.get_library_id()];
+			out << library.library_name.get_string() << ":\n";
+			break;
+		}
+
+		case s_output_item::k_type_native_module:
+		{
+			uint32 native_module_index = get_native_module_index(item.uid);
+			const s_native_module &native_module = get_native_module(native_module_index);
+
+			out << "\t";
+
+			if (!native_module.first_output_is_return) {
+				// Return type of void is a special case
+				out << k_native_module_no_return_type_string;
+			} else {
+				wl_assert(native_module.out_argument_count > 0);
+				for (size_t arg = 0; arg < native_module.argument_count; arg++) {
+					const s_native_module_argument &argument = native_module.arguments[arg];
+					if (argument.qualifier == k_native_module_qualifier_out) {
+						out << k_native_module_primitive_type_strings[argument.type.get_primitive_type()];
+						if (argument.type.is_array()) {
+							out << "[]";
+						}
+						break;
+					}
+				}
+			}
+
+			out << " " << native_module.name.get_string() << "(";
+
+			bool first_argument = true;
+			bool return_type_argument_found = false;
+			for (size_t arg = 0; arg < native_module.argument_count; arg++) {
+				const s_native_module_argument &argument = native_module.arguments[arg];
+
+				if (native_module.first_output_is_return &&
+					!return_type_argument_found &&
+					argument.qualifier == k_native_module_qualifier_out) {
+					// Skip it - this argument is the return type
+					return_type_argument_found = true;
+					continue;
+				}
+
+				if (!first_argument) {
+					out << ", ";
+				}
+
+				out << k_native_module_qualifier_strings[argument.qualifier] << " " <<
+					k_native_module_primitive_type_strings[argument.type.get_primitive_type()];
+				if (argument.type.is_array()) {
+					out << "[]";
+				}
+
+				if (!native_module.argument_names[arg].is_empty()) {
+					out << " " << native_module.argument_names[arg].get_string();
+				}
+
+				first_argument = false;
+			}
+
+			out << ")\n";
+
+			break;
+		}
+
+		default:
+			wl_unreachable();
+		}
+
+		first_output = false;
+	}
+
+	if (out.fail()) {
+		return false;
+	}
+
+	return true;
 }
 
 static bool do_native_modules_conflict(const s_native_module &native_module_a, const s_native_module &native_module_b) {
