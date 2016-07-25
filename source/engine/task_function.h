@@ -86,6 +86,7 @@ public:
 	bool is_array() const;
 	c_task_data_type get_element_type() const;
 	c_task_data_type get_array_type() const;
+	c_task_data_type get_with_qualifier(e_task_qualifier qualifier) const;
 
 	bool operator==(const c_task_data_type &other) const;
 	bool operator!=(const c_task_data_type &other) const;
@@ -116,8 +117,12 @@ struct s_real_array_element {
 };
 
 struct s_bool_array_element {
-	// $TODO could optimize with bitfield
-	bool constant_value;
+	bool is_constant;
+
+	union {
+		bool constant_value;
+		uint32 buffer_index_value;
+	};
 };
 
 struct s_string_array_element {
@@ -147,6 +152,9 @@ struct s_task_function_argument {
 			real32 real_constant_in;
 			c_real_array real_array_in;
 
+			const c_buffer *bool_buffer_in;
+			c_buffer *bool_buffer_out;
+			c_buffer *bool_buffer_inout;
 			bool bool_constant_in;
 			c_bool_array bool_array_in;
 
@@ -198,10 +206,38 @@ struct s_task_function_argument {
 		return data.value.real_array_in;
 	}
 
+	const c_buffer *get_bool_buffer_in() const {
+		wl_assert(data.type == c_task_data_type(k_task_primitive_type_bool, k_task_qualifier_in));
+		wl_assert(!is_constant());
+		return data.value.bool_buffer_in;
+	}
+
+	c_buffer *get_bool_buffer_out() const {
+		wl_assert(data.type == c_task_data_type(k_task_primitive_type_bool, k_task_qualifier_out));
+		wl_assert(!is_constant());
+		return data.value.bool_buffer_out;
+	}
+
+	c_buffer *get_bool_buffer_inout() const {
+		wl_assert(data.type == c_task_data_type(k_task_primitive_type_bool, k_task_qualifier_inout));
+		wl_assert(!is_constant());
+		return data.value.bool_buffer_inout;
+	}
+
 	bool get_bool_constant_in() const {
 		wl_assert(data.type == c_task_data_type(k_task_primitive_type_bool, k_task_qualifier_in));
 		wl_assert(is_constant());
 		return data.value.bool_constant_in;
+	}
+
+	c_bool_const_buffer_or_constant get_bool_buffer_or_constant_in() const {
+		wl_assert(data.type == c_task_data_type(k_task_primitive_type_bool, k_task_qualifier_in));
+
+		if (data.is_constant) {
+			return c_bool_const_buffer_or_constant(data.value.bool_constant_in);
+		} else {
+			return c_bool_const_buffer_or_constant(data.value.bool_buffer_in);
+		}
 	}
 
 	c_bool_array get_bool_array_in() const {

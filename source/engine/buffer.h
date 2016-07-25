@@ -4,9 +4,11 @@
 #include "common/common.h"
 #include "common/threading/lock_free.h"
 
-// $TODO bool buffers?
+#define BOOL_BUFFER_INT32_COUNT(element_count) (((element_count) + 31) / 32)
+
 enum e_buffer_type {
 	k_buffer_type_real,
+	k_buffer_type_bool,
 
 	k_buffer_type_count
 };
@@ -34,15 +36,16 @@ private:
 
 	friend class c_buffer_allocator;
 
-	void *m_data;		// Pointer to the data
-	bool m_constant;	// Whether this buffer consists of a single value across all elements
+	void *m_data;			// Pointer to the data
+	bool m_constant;		// Whether this buffer consists of a single value across all elements
+	uint32 m_pool_index;	// Which pool this buffer was allocated from
 };
 
 // Can be either:
 // - Constant (single value)
 // - Constant buffer (ignore all but first value)
 // - Non-constant buffer
-template<typename t_buffer, typename t_constant>
+template<typename t_buffer, typename t_constant, typename t_constant_accessor>
 class c_buffer_or_constant_base {
 public:
 	c_buffer_or_constant_base(t_buffer *buffer) {
@@ -80,7 +83,7 @@ public:
 			return m_constant;
 		} else {
 			wl_assert(m_buffer->is_constant());
-			return *m_buffer->get_data<t_constant>();
+			return t_constant_accessor()(m_buffer);
 		}
 	}
 
@@ -93,7 +96,22 @@ private:
 	};
 };
 
-typedef c_buffer_or_constant_base<c_buffer, real32> c_real_buffer_or_constant;
-typedef c_buffer_or_constant_base<const c_buffer, real32> c_real_const_buffer_or_constant;
+struct s_constant_accessor_real {
+	real32 operator()(const c_buffer *buffer) const {
+		return *buffer->get_data<real32>();
+	}
+};
+
+struct s_constant_accessor_bool {
+	bool operator()(const c_buffer *buffer) const {
+		return ((*buffer->get_data<uint32>()) & 1) != 0;
+	}
+};
+
+typedef c_buffer_or_constant_base<c_buffer, real32, s_constant_accessor_real> c_real_buffer_or_constant;
+typedef c_buffer_or_constant_base<const c_buffer, real32, s_constant_accessor_real> c_real_const_buffer_or_constant;
+
+typedef c_buffer_or_constant_base<c_buffer, bool, s_constant_accessor_bool> c_bool_buffer_or_constant;
+typedef c_buffer_or_constant_base<const c_buffer, bool, s_constant_accessor_bool> c_bool_const_buffer_or_constant;
 
 #endif // WAVELANG_BUFFER_H__

@@ -87,44 +87,56 @@ struct s_op_pow_constant_base {
 	c_real32_4 operator()(const c_real32_4 &b) const { return exp(log_a * b); }
 };
 
-typedef s_buffer_operation_real<s_op_abs> s_buffer_operation_abs;
-typedef s_buffer_operation_real <s_op_floor> s_buffer_operation_floor;
-typedef s_buffer_operation_real <s_op_ceil> s_buffer_operation_ceil;
-typedef s_buffer_operation_real<s_op_round> s_buffer_operation_round;
-typedef s_buffer_operation_real_real<s_op_min> s_buffer_operation_min;
-typedef s_buffer_operation_real_real<s_op_max> s_buffer_operation_max;
-typedef s_buffer_operation_real<s_op_exp> s_buffer_operation_exp;
-typedef s_buffer_operation_real<s_op_log > s_buffer_operation_log;
-typedef s_buffer_operation_real<s_op_sqrt> s_buffer_operation_sqrt;
-//typedef s_buffer_operation_2_inputs<s_op_pow, s_op_pow_reverse> s_buffer_operation_pow;
+typedef s_buffer_operation_real_real<s_op_abs> s_buffer_operation_abs;
+typedef s_buffer_operation_real_real<s_op_floor> s_buffer_operation_floor;
+typedef s_buffer_operation_real_real<s_op_ceil> s_buffer_operation_ceil;
+typedef s_buffer_operation_real_real<s_op_round> s_buffer_operation_round;
+typedef s_buffer_operation_real_real_real<s_op_min> s_buffer_operation_min;
+typedef s_buffer_operation_real_real_real<s_op_max> s_buffer_operation_max;
+typedef s_buffer_operation_real_real<s_op_exp> s_buffer_operation_exp;
+typedef s_buffer_operation_real_real<s_op_log > s_buffer_operation_log;
+typedef s_buffer_operation_real_real<s_op_sqrt> s_buffer_operation_sqrt;
+//typedef s_buffer_operation_real_real_real<s_op_pow> s_buffer_operation_pow;
 
 // Exponentiation is special because it is cheaper if the base is constant
 struct s_buffer_operation_pow {
-	static void in_in_out(size_t buffer_size, c_real_buffer_or_constant_in in_a, c_real_buffer_or_constant_in in_b,
-		c_real_buffer_out out) {
-		if (in_a.is_constant()) {
-			real32 base = in_a.get_constant();
-			buffer_operator_real_in_real_out(s_op_pow_constant_base(base), buffer_size, in_b, out);
+	static void in_in_out(size_t buffer_size,
+		c_real_buffer_or_constant_in a, c_real_buffer_or_constant_in b, c_real_buffer_out c) {
+		if (a.is_constant()) {
+			real32 base = a.get_constant();
+			buffer_operator_in_out(s_op_pow_constant_base(base), buffer_size,
+				c_iterable_buffer_real_in(b),
+				c_iterable_buffer_real_out(c));
 		} else {
-			buffer_operator_real_in_real_in_real_out(s_op_pow(), buffer_size, in_a, in_b, out);
+			buffer_operator_in_in_out(s_op_pow(), buffer_size,
+				c_iterable_buffer_real_in(a),
+				c_iterable_buffer_real_in(b),
+				c_iterable_buffer_real_out(c));
 		}
 	}
 
-	static void inout_in(size_t buffer_size, c_real_buffer_inout inout, c_real_buffer_or_constant_in in) {
-		if (inout->is_constant()) {
-			real32 base = *inout->get_data<real32>();
-			buffer_operator_real_in_real_out(s_op_pow_constant_base(base), buffer_size, in, inout);
+	static void inout_in(size_t buffer_size, c_real_buffer_inout a, c_real_buffer_or_constant_in b) {
+		if (a->is_constant()) {
+			real32 base = *a->get_data<real32>();
+			buffer_operator_in_out(s_op_pow_constant_base(base), buffer_size,
+				c_iterable_buffer_real_in(b),
+				c_iterable_buffer_real_out(a));
 		} else {
-			buffer_operator_real_inout_real_in(s_op_pow(), buffer_size, inout, in);
+			buffer_operator_inout_in(s_op_pow(), buffer_size,
+				c_iterable_buffer_real_inout(a),
+				c_iterable_buffer_real_in(b));
 		}
 	}
 
-	static void in_inout(size_t buffer_size, c_real_buffer_or_constant_in in, c_real_buffer_inout inout) {
-		if (in.is_constant()) {
-			real32 base = in.get_constant();
-			buffer_operator_real_inout(s_op_pow_constant_base(base), buffer_size, inout);
+	static void in_inout(size_t buffer_size, c_real_buffer_or_constant_in a, c_real_buffer_inout b) {
+		if (a.is_constant()) {
+			real32 base = a.get_constant();
+			buffer_operator_inout(s_op_pow_constant_base(base), buffer_size,
+				c_iterable_buffer_real_inout(b));
 		} else {
-			buffer_operator_real_inout_real_in(s_op_pow_reverse(), buffer_size, inout, in);
+			buffer_operator_inout_in(s_op_pow_reverse(), buffer_size,
+				c_iterable_buffer_real_inout(b),
+				c_iterable_buffer_real_in(a));
 		}
 	}
 };

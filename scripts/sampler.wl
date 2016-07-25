@@ -38,7 +38,8 @@ module real sampler_square(in real frequency) {
 }
 
 module real sampler(in string sample, in real channel, in bool loop, in bool bidi, in real speed) {
-	return static_select(loop,
+	__native_enforce_const(loop);
+	return select(loop,
 		__native_sampler_loop(sample, channel, bidi, speed, 0),
 		__native_sampler(sample, channel, speed));
 }

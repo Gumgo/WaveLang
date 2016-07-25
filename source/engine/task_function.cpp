@@ -9,7 +9,7 @@ const c_task_data_type s_task_function_argument_list::k_argument_none = c_task_d
 static const s_task_primitive_type_traits k_task_primitive_type_traits[] = {
 	//	is_dynamic
 	{ true },	// real
-	{ false },	// bool
+	{ true },	// bool
 	{ false }	// string
 };
 
@@ -75,6 +75,11 @@ c_task_data_type c_task_data_type::get_array_type() const {
 	wl_assert(is_valid());
 	wl_assert(!is_array());
 	return c_task_data_type(m_primitive_type, m_qualifier, true);
+}
+
+c_task_data_type c_task_data_type::get_with_qualifier(e_task_qualifier qualifier) const {
+	wl_assert(is_valid());
+	return c_task_data_type(m_primitive_type, qualifier, is_array());
 }
 
 bool c_task_data_type::operator==(const c_task_data_type &other) const {

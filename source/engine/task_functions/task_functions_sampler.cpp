@@ -343,9 +343,6 @@ void s_buffer_operation_sampler::in_out(
 	c_event_interface *event_interface, const char *sample_name,
 	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
 	size_t buffer_size, uint32 sample_rate, c_real_buffer_or_constant_in speed, c_real_buffer_out out) {
-	validate_buffer(speed);
-	validate_buffer(out);
-
 	if (speed.is_constant()) {
 		// If speed is constant, simply use the constant-speed version
 		real32 speed_constant = speed.get_constant();
@@ -488,10 +485,6 @@ void s_buffer_operation_sampler::loop_in_in_out(
 	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
 	size_t buffer_size, uint32 sample_rate, c_real_buffer_or_constant_in speed, c_real_buffer_or_constant_in phase,
 	c_real_buffer_out out) {
-	validate_buffer(speed);
-	validate_buffer(phase);
-	validate_buffer(out);
-
 	// Identify constant optimizations
 	if (speed.is_constant()) {
 		real32 speed_constant = speed.get_constant();
@@ -565,9 +558,6 @@ void s_buffer_operation_sampler::loop_inout_in(
 	c_event_interface *event_interface, const char *sample_name,
 	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
 	size_t buffer_size, uint32 sample_rate, c_real_buffer_inout speed_out, c_real_buffer_or_constant_in phase) {
-	validate_buffer(phase);
-	validate_buffer(speed_out);
-
 	// Identify constant optimizations
 	if (speed_out->is_constant()) {
 		real32 speed_constant = *speed_out->get_data<real32>();
@@ -638,9 +628,6 @@ void s_buffer_operation_sampler::loop_in_inout(
 	c_event_interface *event_interface, const char *sample_name,
 	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
 	size_t buffer_size, uint32 sample_rate, c_real_buffer_or_constant_in speed, c_real_buffer_inout phase_out) {
-	validate_buffer(speed);
-	validate_buffer(phase_out);
-
 	// Identify constant optimizations
 	if (speed.is_constant()) {
 		real32 speed_constant = speed.get_constant();
@@ -711,9 +698,6 @@ void s_buffer_operation_sampler::loop_in_const_out(
 	c_event_interface *event_interface, const char *sample_name,
 	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
 	size_t buffer_size, uint32 sample_rate, c_real_buffer_or_constant_in speed, real32 phase, c_real_buffer_out out) {
-	validate_buffer(out);
-	validate_buffer(speed);
-
 	// Identify constant optimizations
 	if (speed.is_constant()) {
 		real32 speed_constant = speed.get_constant();
@@ -833,9 +817,6 @@ void s_buffer_operation_sampler::loop_const_in_out(
 	c_event_interface *event_interface, const char *sample_name,
 	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
 	size_t buffer_size, uint32 sample_rate, real32 speed, c_real_buffer_or_constant_in phase, c_real_buffer_out out) {
-	validate_buffer(phase);
-	validate_buffer(out);
-
 	// Identify constant optimizations
 	if (phase.is_constant()) {
 		real32 phase_constant = phase.get_constant();

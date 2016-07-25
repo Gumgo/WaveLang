@@ -106,6 +106,46 @@ inline c_int32_4 c_int32_4::shift_right_unsigned(const c_int32_4 &rhs) const {
 	return _mm_srl_epi32(m_value, rhs);
 }
 
+inline c_int32_4 operator==(const c_int32_4 &lhs, const c_int32_4 &rhs) {
+	return _mm_cmpeq_epi32(lhs, rhs);
+}
+
+inline c_int32_4 operator!=(const c_int32_4 &lhs, const c_int32_4 &rhs) {
+	return ~c_int32_4(_mm_cmpeq_epi32(lhs, rhs));
+}
+
+inline c_int32_4 operator>(const c_int32_4 &lhs, const c_int32_4 &rhs) {
+	return _mm_cmpgt_epi32(lhs, rhs);
+}
+
+inline c_int32_4 operator<(const c_int32_4 &lhs, const c_int32_4 &rhs) {
+	return _mm_cmplt_epi32(lhs, rhs);
+}
+
+inline c_int32_4 operator>=(const c_int32_4 &lhs, const c_int32_4 &rhs) {
+	return ~c_int32_4(_mm_cmplt_epi32(lhs, rhs));
+}
+
+inline c_int32_4 operator<=(const c_int32_4 &lhs, const c_int32_4 &rhs) {
+	return ~c_int32_4(_mm_cmpgt_epi32(lhs, rhs));
+}
+
+inline c_int32_4 greater_unsigned(const c_int32_4 &lhs, const c_int32_4 &rhs) {
+	return ~less_equal_unsigned(lhs, rhs);
+}
+
+inline c_int32_4 less_unsigned(const c_int32_4 &lhs, const c_int32_4 &rhs) {
+	return ~greater_equal_unsigned(lhs, rhs);
+}
+
+inline c_int32_4 greater_equal_unsigned(const c_int32_4 &lhs, const c_int32_4 &rhs) {
+	return _mm_cmpeq_epi32(lhs, _mm_max_epu32(lhs, rhs)); // (a == max(a,b)) == (a >= b)
+}
+
+inline c_int32_4 less_equal_unsigned(const c_int32_4 &lhs, const c_int32_4 &rhs) {
+	return _mm_cmpeq_epi32(lhs, _mm_min_epu32(lhs, rhs)); // (a == min(a,b)) == (a <= b)
+}
+
 inline c_int32_4 abs(const c_int32_4 &v) {
 	return _mm_abs_epi32(v);
 }
@@ -130,12 +170,48 @@ inline c_int32_4 max_unsigned(const c_int32_4 &a, const c_int32_4 &b) {
 	return _mm_max_epu32(a, b);
 }
 
+inline int32 mask_from_msb(const c_int32_4 &v) {
+	return _mm_movemask_ps(v.real32_4_from_bits());
+}
+
+inline c_int32_4 single_element(const c_int32_4 &v, int32 pos) {
+	wl_assert(VALID_INDEX(pos, 4));
+	switch (pos) {
+	case 0:
+		return _mm_shuffle_epi32(v, 0);
+
+	case 1:
+		return _mm_shuffle_epi32(v, (1 | (1 << 2) | (1 << 4) | (1 << 6)));
+
+	case 2:
+		return _mm_shuffle_epi32(v, (2 | (2 << 2) | (2 << 4) | (2 << 6)));
+
+	case 3:
+		return _mm_shuffle_epi32(v, (3 | (3 << 2) | (3 << 4) | (3 << 6)));
+
+	default:
+		wl_unreachable();
+		return c_int32_4(0);
+	}
+}
+
 template<int32 k_pos_0, int32 k_pos_1, int32 k_pos_2, int32 k_pos_3>
-c_real32_4 shuffle(const c_real32_4 &a, const c_real32_4 &b) {
+c_int32_4 shuffle(const c_int32_4 &v) {
 	static_assert(VALID_INDEX(k_pos_0, k_sse_block_elements), "Must be in range [0,3]");
 	static_assert(VALID_INDEX(k_pos_1, k_sse_block_elements), "Must be in range [0,3]");
 	static_assert(VALID_INDEX(k_pos_2, k_sse_block_elements), "Must be in range [0,3]");
 	static_assert(VALID_INDEX(k_pos_3, k_sse_block_elements), "Must be in range [0,3]");
 	static const int32 k_shuffle_pos = k_pos_0 | (k_pos_1 << 2) | (k_pos_2 << 4) | (k_pos_3 << 6);
-	return _mm_shuffle_ps(a, b, k_shuffle_pos);
+	return _mm_shuffle_epi32(v, k_shuffle_pos);
+}
+
+template<int32 k_pos_0, int32 k_pos_1, int32 k_pos_2, int32 k_pos_3>
+c_int32_4 shuffle(const c_int32_4 &a, const c_int32_4 &b) {
+	static_assert(VALID_INDEX(k_pos_0, k_sse_block_elements), "Must be in range [0,3]");
+	static_assert(VALID_INDEX(k_pos_1, k_sse_block_elements), "Must be in range [0,3]");
+	static_assert(VALID_INDEX(k_pos_2, k_sse_block_elements), "Must be in range [0,3]");
+	static_assert(VALID_INDEX(k_pos_3, k_sse_block_elements), "Must be in range [0,3]");
+	static const int32 k_shuffle_pos = k_pos_0 | (k_pos_1 << 2) | (k_pos_2 << 4) | (k_pos_3 << 6);
+	return c_real32_4(_mm_shuffle_ps(
+		a.real32_4_from_bits(), b.real32_4_from_bits(), k_shuffle_pos)).int32_4_from_bits();
 }

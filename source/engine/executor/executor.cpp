@@ -570,8 +570,16 @@ void c_executor::decrement_buffer_usages(uint32 task_index) {
 			}
 
 			case k_task_primitive_type_bool:
-				wl_unreachable(); // Non-constant string arrays not supported ($BOOL)
+			{
+				c_bool_array bool_array = argument.get_bool_array_in();
+				for (size_t index = 0; index < bool_array.get_count(); index++) {
+					const s_bool_array_element &element = bool_array[index];
+					if (!element.is_constant) {
+						m_buffer_manager.decrement_buffer_usage(element.buffer_index_value);
+					}
+				}
 				break;
+			}
 
 			case k_task_primitive_type_string:
 				wl_unreachable(); // Non-constant string arrays not supported

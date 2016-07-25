@@ -3,71 +3,99 @@
 
 static_assert(CACHE_LINE_SIZE >= SSE_ALIGNMENT, "Cache line too small for SSE");
 
+static const size_t k_bits_per_buffer_element[] = {
+	32,	// k_buffer_type_real
+	1	// k_buffer_type_bool
+};
+static_assert(NUMBEROF(k_bits_per_buffer_element) == k_buffer_type_count, "Buffer type bits mismatch");
+
+static size_t calculate_aligned_padded_buffer_size(e_buffer_type type, size_t element_count) {
+	size_t buffer_size_bits = k_bits_per_buffer_element[type] * element_count;
+	size_t buffer_size_bytes = (buffer_size_bits + 7) / 8;
+	// Accounts for both SSE alignment and cache alignment
+	return align_size(buffer_size_bits, CACHE_LINE_SIZE);
+}
+
 c_buffer_allocator::c_buffer_allocator() {
 }
 
 void c_buffer_allocator::initialize(const s_buffer_allocator_settings &settings) {
-	m_settings = settings;
+	size_t total_buffer_count = 0;
+	size_t total_buffer_bytes = 0;
+	m_buffer_pools.clear();
+	m_buffer_pools.resize(settings.buffer_pool_descriptions.get_count());
+
+	for (uint32 pool_index = 0; pool_index < settings.buffer_pool_descriptions.get_count(); pool_index++) {
+		s_buffer_pool &pool = m_buffer_pools[pool_index];
+		pool.description = settings.buffer_pool_descriptions[pool_index];
+		pool.first_buffer_handle = cast_integer_verify<uint32>(total_buffer_count);
+		total_buffer_count += pool.description.count;
+
+		// Calculate the total amount of buffer backing memory we need
+		size_t aligned_padded_buffer_size =
+			calculate_aligned_padded_buffer_size(pool.description.type, pool.description.size);
+		total_buffer_bytes += aligned_padded_buffer_size * pool.description.count;
+	}
 
 	// Initialize the pool
 	m_buffer_pool_free_list_memory.free();
-	m_buffer_pool_free_list_memory.allocate(settings.buffer_count);
-	m_buffer_pool.initialize(m_buffer_pool_free_list_memory.get_array());
-
-	// Calculate the total amount of buffer backing memory we need
-
-	// Determine the size of each individual element
-	size_t element_size = 0;
-	switch (settings.buffer_type) {
-	case k_buffer_type_real:
-		element_size = 4;
-		break;
-
-	default:
-		wl_unreachable();
-	}
-
-	// Round the number of elements up to a multiple of 4. This is because SSE instructions work on groups of 4.
-	size_t element_count = align_size(settings.buffer_size, k_sse_block_size);
-
-	// Calculate the size of a single buffer, which should be both cache aligned, for threading, and 16-byte aligned,
-	// for SSE
-	m_aligned_padded_buffer_size = align_size(element_size * element_count, CACHE_LINE_SIZE);
-
-	// All bytes for all buffers
-	size_t total_bytes = m_aligned_padded_buffer_size * settings.buffer_count;
+	m_buffer_pool_free_list_memory.allocate(total_buffer_count);
 
 	m_buffer_memory.free();
-	m_buffer_memory.allocate(total_bytes);
+	m_buffer_memory.allocate(total_buffer_bytes);
 
 	m_buffers.free();
-	m_buffers.allocate(settings.buffer_count);
+	m_buffers.allocate(total_buffer_count);
 
 	// Initialize each buffer
-	for (size_t index = 0; index < settings.buffer_count; index++) {
-		// We don't initialize buffers so it cannot be assumed to be constant
-		c_buffer &buffer = m_buffers.get_array()[index];
-		buffer.m_constant = false;
+	size_t buffer_memory_offset = 0;
+	c_wrapped_array<uint8> buffer_memory_array = m_buffer_memory.get_array();
+	for (uint32 pool_index = 0; pool_index < settings.buffer_pool_descriptions.get_count(); pool_index++) {
+		s_buffer_pool &pool = m_buffer_pools[pool_index];
+		pool.buffer_pool.initialize(c_lock_free_handle_array(
+			&m_buffer_pool_free_list_memory.get_array()[pool.first_buffer_handle],
+			pool.description.count));
 
-		// Calculate the memory offset for this buffer
-		c_wrapped_array<uint8> buffer_memory_array = m_buffer_memory.get_array();
-		size_t start_offset = index * m_aligned_padded_buffer_size;
-		buffer.m_data = buffer_memory_array.get_pointer() + start_offset;
-		wl_assert(buffer.m_data <=
-			buffer_memory_array.get_pointer() + (buffer_memory_array.get_count() - m_aligned_padded_buffer_size));
+		size_t aligned_padded_buffer_size =
+			calculate_aligned_padded_buffer_size(pool.description.type, pool.description.size);
+
+		for (uint32 pool_buffer_index = 0; pool_buffer_index < pool.description.count; pool_buffer_index++) {
+			uint32 buffer_index = pool.first_buffer_handle + pool_buffer_index;
+			c_buffer &buffer = m_buffers.get_array()[buffer_index];
+
+			// We don't initialize buffers so it cannot be assumed to be constant
+			buffer.m_constant = false;
+			buffer.m_data = &buffer_memory_array[buffer_memory_offset];
+			buffer.m_pool_index = pool_index;
+
+			buffer_memory_offset += aligned_padded_buffer_size;
+			wl_assert(buffer_memory_offset <= buffer_memory_array.get_count());
+		}
 	}
 }
 
-const s_buffer_allocator_settings &c_buffer_allocator::get_settings() const {
-	return m_settings;
+uint32 c_buffer_allocator::get_buffer_pool_count() const {
+	return cast_integer_verify<uint32>(m_buffer_pools.size());
 }
 
-uint32 c_buffer_allocator::allocate_buffer() {
-	uint32 buffer_handle = m_buffer_pool.allocate();
+const s_buffer_pool_description &c_buffer_allocator::get_buffer_pool_description(uint32 pool_index) const {
+	return m_buffer_pools[pool_index].description;
+}
+
+uint32 c_buffer_allocator::allocate_buffer(uint32 pool_index) {
+	s_buffer_pool &pool = m_buffer_pools[pool_index];
+	uint32 buffer_handle = pool.buffer_pool.allocate();
 	wl_vassert(buffer_handle != k_lock_free_invalid_handle, "Out of buffers");
-	return buffer_handle;
+	return pool.first_buffer_handle + buffer_handle;
 }
 
 void c_buffer_allocator::free_buffer(uint32 buffer_handle) {
-	m_buffer_pool.free(buffer_handle);
+	wl_assert(buffer_handle != k_lock_free_invalid_handle);
+	uint32 pool_index = m_buffers.get_array()[buffer_handle].m_pool_index;
+	s_buffer_pool &pool = m_buffer_pools[pool_index];
+
+	// Make sure the buffer handle is in the pool's handle range
+	wl_assert(buffer_handle >= pool.first_buffer_handle &&
+		buffer_handle < pool.first_buffer_handle + pool.description.count);
+	pool.buffer_pool.free(buffer_handle - pool.first_buffer_handle);
 }

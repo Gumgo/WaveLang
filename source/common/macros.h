@@ -19,4 +19,6 @@
 #define STATIC_MIN(a, b) ((a) < (b) ? (a) : (b))
 #define STATIC_MAX(a, b) ((a) > (b) ? (a) : (b))
 
+#define SIZEOF_BITS(x) (sizeof(x) * 8)
+
 #endif // WAVELANG_MACROS_H__

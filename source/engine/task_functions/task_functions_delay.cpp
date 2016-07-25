@@ -146,9 +146,6 @@ void s_buffer_operation_delay::voice_initialize(s_buffer_operation_delay *contex
 
 void s_buffer_operation_delay::in_out(
 	s_buffer_operation_delay *context, size_t buffer_size, c_real_buffer_or_constant_in in, c_real_buffer_out out) {
-	validate_buffer(in);
-	validate_buffer(out);
-
 	real32 *delay_buffer_ptr = get_delay_buffer(context);
 	real32 *out_ptr = out->get_data<real32>();
 

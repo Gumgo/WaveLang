@@ -29,6 +29,7 @@ public:
 private:
 	struct ALIGNAS_LOCK_FREE s_buffer_context {
 		c_atomic_int32 usages_remaining;
+		uint32 pool_index;
 		uint32 handle;
 		bool shifted_samples;
 		bool swapped_into_voice_accumulation_buffer;
@@ -50,6 +51,9 @@ private:
 
 	// Allocator for buffers used during processing
 	c_buffer_allocator m_buffer_allocator;
+
+	// Pool index of real buffers
+	uint32 m_real_buffer_pool_index;
 
 	// Context for each buffer for the currently processing voice
 	c_lock_free_aligned_allocator<s_buffer_context> m_buffer_contexts;

@@ -72,27 +72,28 @@ struct s_build_bool_array_settings {
 	static const e_native_module_primitive_type k_native_module_primitive_type = k_native_module_primitive_type_bool;
 	std::vector<t_element> *element_lists;
 
-	// $BOOL
-
-	bool is_element_constant(const t_element &element) { return true; }
+	bool is_element_constant(const t_element &element) { return element.is_constant; }
 
 	void set_element_constant(
 		t_element &element, const c_execution_graph &execution_graph, uint32 constant_node_index) {
+		element.is_constant = true;
 		element.constant_value = execution_graph.get_constant_node_bool_value(constant_node_index);
 	}
 
 	void set_element_buffer_index_value(t_element &element, uint32 buffer_index_value) {
-		wl_unreachable();
+		element.is_constant = false;
+		element.buffer_index_value = buffer_index_value;
 	}
 
 	bool compare_element_to_constant_node(
 		const t_element &element, const c_execution_graph &execution_graph, uint32 constant_node_index) {
+		wl_assert(element.is_constant);
 		return element.constant_value == execution_graph.get_constant_node_bool_value(constant_node_index);
 	}
 
 	uint32 get_element_buffer_index_value(const t_element &element) {
-		wl_unreachable();
-		return c_execution_graph::k_invalid_index;
+		wl_assert(!element.is_constant);
+		return element.buffer_index_value;
 	}
 };
 
@@ -127,95 +128,128 @@ struct s_build_string_array_settings {
 	}
 };
 
-class c_task_buffer_iterator {
-public:
-	c_task_buffer_iterator(c_task_graph_data_array data_array) {
-		m_data_array = data_array;
-		m_argument_index = static_cast<size_t>(-1);
-		m_array_index = static_cast<size_t>(-1);
-		next();
+c_task_buffer_iterator::c_task_buffer_iterator(
+	c_task_graph_data_array data_array, c_task_data_type type_mask) {
+	m_data_array = data_array;
+	m_type_mask = type_mask;
+	m_argument_index = static_cast<size_t>(-1);
+	m_array_index = static_cast<size_t>(-1);
+	next();
+}
+
+bool c_task_buffer_iterator::is_valid() const {
+	return m_argument_index < m_data_array.get_count();
+}
+
+void c_task_buffer_iterator::next() {
+	if (m_argument_index == static_cast<size_t>(-1)) {
+		wl_assert(m_array_index == static_cast<size_t>(-1));
+	} else {
+		wl_assert(is_valid());
 	}
 
-	bool is_valid() const {
-		return m_argument_index < m_data_array.get_count();
-	}
-
-	void next() {
+	bool advance;
+	do {
 		if (m_argument_index == static_cast<size_t>(-1)) {
-			wl_assert(m_array_index == static_cast<size_t>(-1));
+			m_argument_index = 0;
+			m_array_index = 0;
 		} else {
-			wl_assert(is_valid());
-		}
-
-		bool advance;
-		do {
-			if (m_argument_index == static_cast<size_t>(-1)) {
-				m_argument_index = 0;
-				m_array_index = 0;
-			} else {
-				const s_task_graph_data &current_data = m_data_array[m_argument_index];
-				size_t current_array_count = 1;
-				if (current_data.data.type.is_array()) {
-					current_array_count = get_task_data_array_count(current_data);
-				}
-
-				if (m_array_index + 1 < current_array_count) {
-					m_array_index++;
-				} else {
-					m_argument_index++;
-					m_array_index = 0;
-				}
+			const s_task_graph_data &current_data = m_data_array[m_argument_index];
+			size_t current_array_count = 1;
+			if (current_data.data.type.is_array()) {
+				current_array_count = get_task_data_array_count(current_data);
 			}
 
-			if (!is_valid()) {
-				advance = false;
+			if (m_array_index + 1 < current_array_count) {
+				m_array_index++;
 			} else {
-				const s_task_graph_data &new_data = m_data_array[m_argument_index];
+				m_argument_index++;
+				m_array_index = 0;
+			}
+		}
 
-				// Keep skipping past constants
-				advance = new_data.data.is_constant;
+		if (!is_valid()) {
+			advance = false;
+		} else {
+			const s_task_graph_data &new_data = m_data_array[m_argument_index];
 
-				if (advance) {
-					if (new_data.data.type.is_array()) {
-						size_t new_array_count = get_task_data_array_count(new_data);
+			// Keep skipping past constants
+			advance = new_data.data.is_constant;
 
-						if (new_array_count == 0) {
-							// Skip past 0-sized arrays
+			if (advance) {
+				if (new_data.data.type.is_array()) {
+					size_t new_array_count = get_task_data_array_count(new_data);
+
+					if (new_array_count == 0) {
+						// Skip past 0-sized arrays
+						advance = true;
+					} else {
+						advance = is_task_data_array_element_constant(new_data, m_array_index);
+
+						if (!advance &&
+							m_type_mask.is_valid() &&
+							get_buffer_type().get_with_qualifier(m_type_mask.get_qualifier()) != m_type_mask) {
+							// Skip buffers which are not of the mask type
 							advance = true;
-						} else {
-							advance = is_task_data_array_element_constant(new_data, m_array_index);
 						}
 					}
 				}
 			}
-		} while (advance);
-	}
-
-	uint32 get_buffer_index() const {
-		uint32 buffer_index = c_task_graph::k_invalid_buffer;
-
-		const s_task_graph_data &data = m_data_array[m_argument_index];
-		wl_assert(!data.data.is_constant);
-
-		if (data.data.type.is_array()) {
-			buffer_index = get_task_data_array_element_buffer_const(data, m_array_index);
-		} else {
-			buffer_index = data.data.value.buffer;
 		}
+	} while (advance);
+}
 
-		return buffer_index;
+uint32 c_task_buffer_iterator::get_buffer_index() const {
+	uint32 buffer_index = c_task_graph::k_invalid_buffer;
+
+	const s_task_graph_data &data = m_data_array[m_argument_index];
+	wl_assert(!data.data.is_constant);
+
+	if (data.data.type.is_array()) {
+		buffer_index = get_task_data_array_element_buffer_const(data, m_array_index);
+	} else {
+		buffer_index = data.data.value.buffer;
 	}
 
-private:
-	c_task_graph_data_array m_data_array;
-	size_t m_argument_index;
-	size_t m_array_index;
-};
+	return buffer_index;
+}
+
+uint32 c_task_buffer_iterator::get_node_index() const {
+	uint32 buffer_index = c_task_graph::k_invalid_buffer;
+
+	const s_task_graph_data &data = m_data_array[m_argument_index];
+	wl_assert(!data.data.is_constant);
+
+	if (data.data.type.is_array()) {
+		buffer_index = get_task_data_array_element_buffer_const(data, m_array_index);
+	} else {
+		buffer_index = data.data.value.execution_graph_index_a;
+	}
+
+	return buffer_index;
+}
+
+c_task_data_type c_task_buffer_iterator::get_buffer_type() const {
+	const s_task_graph_data &data = m_data_array[m_argument_index];
+	wl_assert(!data.data.is_constant);
+
+	c_task_data_type result = data.data.type;
+	if (result.is_array()) {
+		result = result.get_element_type();
+	}
+
+	return result;
+}
+
+const s_task_graph_data &c_task_buffer_iterator::get_task_graph_data() const {
+	const s_task_graph_data &data = m_data_array[m_argument_index];
+	wl_assert(!data.data.is_constant);
+	return data;
+}
 
 c_task_graph::c_task_graph() {
 	m_buffer_count = 0;
 	m_max_task_concurrency = 0;
-	m_max_buffer_concurrency = 0;
 	m_initial_tasks_start = 0;
 	m_initial_tasks_count = 0;
 	m_outputs_start = 0;
@@ -274,8 +308,10 @@ uint32 c_task_graph::get_buffer_count() const {
 	return m_buffer_count;
 }
 
-uint32 c_task_graph::get_max_buffer_concurrency() const {
-	return m_max_buffer_concurrency;
+c_wrapped_array_const<c_task_graph::s_buffer_usage_info> c_task_graph::get_buffer_usage_info() const {
+	return c_wrapped_array_const<c_task_graph::s_buffer_usage_info>(
+		m_buffer_usage_info.empty() ? nullptr : &m_buffer_usage_info.front(),
+		m_buffer_usage_info.size());
 }
 
 uint32 c_task_graph::get_buffer_usages(uint32 buffer_index) const {
@@ -295,7 +331,7 @@ bool c_task_graph::build(const c_execution_graph &execution_graph) {
 	m_buffer_count = 0;
 	m_buffer_usages.clear();
 	m_max_task_concurrency = 0;
-	m_max_buffer_concurrency = 0;
+	m_buffer_usage_info.clear();
 	m_initial_tasks_start = 0;
 	m_initial_tasks_count = 0;
 	m_outputs_start = 0;
@@ -339,7 +375,7 @@ bool c_task_graph::build(const c_execution_graph &execution_graph) {
 		m_buffer_count = 0;
 		m_buffer_usages.clear();
 		m_max_task_concurrency = 0;
-		m_max_buffer_concurrency = 0;
+		m_buffer_usage_info.clear();
 		m_initial_tasks_start = 0;
 		m_initial_tasks_count = 0;
 		m_outputs_start = 0;
@@ -383,7 +419,7 @@ static bool is_task_data_array_element_constant(const s_task_graph_data &data, s
 		break;
 
 	case k_task_primitive_type_bool:
-		result = true; // $BOOL
+		result = data.data.value.bool_array_in[index].is_constant;
 		break;
 
 	case k_task_primitive_type_string:
@@ -408,7 +444,7 @@ static uint32 get_task_data_array_element_buffer_const(const s_task_graph_data &
 		break;
 
 	case k_task_primitive_type_bool:
-		result = c_task_graph::k_invalid_buffer; // $BOOL
+		result = data.data.value.bool_array_in[index].buffer_index_value;
 		break;
 
 	case k_task_primitive_type_string:
@@ -729,7 +765,6 @@ void c_task_graph::setup_task(const c_execution_graph &execution_graph, uint32 n
 					argument_data.data.value.bool_constant_in =
 						execution_graph.get_constant_node_bool_value(source_node_index);
 				} else {
-					wl_vhalt("Not yet implemented"); // $BOOL
 					is_buffer = true;
 				}
 				break;
@@ -846,8 +881,11 @@ uint32 *c_task_graph::get_task_data_array_element_buffer(const s_task_graph_data
 	}
 
 	case k_task_primitive_type_bool:
-		result = nullptr; // $BOOL
+	{
+		size_t element_index = &data.data.value.bool_array_in[index] - &m_bool_array_element_lists.front();
+		result = &m_bool_array_element_lists[element_index].buffer_index_value;
 		break;
+	}
 
 	case k_task_primitive_type_string:
 		result = nullptr;
@@ -1050,42 +1088,30 @@ void c_task_graph::allocate_buffers(const c_execution_graph &execution_graph) {
 		const s_task &task = m_tasks[task_index];
 		const s_task_function &task_function = c_task_function_registry::get_task_function(task.task_function_index);
 
-		for (size_t arg = 0; arg < task_function.argument_count; arg++) {
-			s_task_graph_data &argument = m_data_lists[task.arguments_start + arg];
+		c_task_graph_data_array arguments = get_task_arguments(task_index);
+		for (c_task_buffer_iterator it(arguments); it.is_valid(); it.next()) {
+#if PREDEFINED(ASSERTS_ENABLED)
+			const s_task_graph_data &argument = it.get_task_graph_data();
+			wl_assert(!argument.data.is_constant);
 
-			// For each buffer, find all attached nodes and create a mapping
-			if (argument.data.type.is_array()) {
-				size_t array_count = get_task_data_array_count(argument);
-				for (size_t index = 0; index < array_count; index++) {
-					if (!is_task_data_array_element_constant(argument, index)) {
-						uint32 node_index = get_task_data_array_element_buffer_const(argument, index);
-						if (nodes_to_buffers[node_index] != k_invalid_buffer) {
-							// Already allocated, skip this one
-						} else {
-							assign_buffer_to_related_nodes(execution_graph, node_index,
-								inout_connections, nodes_to_buffers, m_buffer_count);
-							m_buffer_count++;
-						}
-					}
-				}
-			} else if (!argument.data.is_constant) {
-				if (argument.data.type.get_qualifier() == k_task_qualifier_inout) {
-					// Inout buffers should have both nodes filled in
-					wl_assert(argument.data.value.execution_graph_index_b != c_execution_graph::k_invalid_index);
-					// This mapping should always be equal because this is an inout buffer - there is only one buffer
-					wl_assert(nodes_to_buffers[argument.data.value.execution_graph_index_a] ==
-						nodes_to_buffers[argument.data.value.execution_graph_index_b]);
-				} else {
-					wl_assert(argument.data.value.execution_graph_index_b == c_execution_graph::k_invalid_index);
-				}
+			if (argument.data.type.get_qualifier() == k_task_qualifier_inout) {
+				// Inout buffers should have both nodes filled in
+				wl_assert(argument.data.value.execution_graph_index_b != c_execution_graph::k_invalid_index);
+				// This mapping should always be equal because this is an inout buffer - there is only one buffer
+				wl_assert(nodes_to_buffers[argument.data.value.execution_graph_index_a] ==
+					nodes_to_buffers[argument.data.value.execution_graph_index_b]);
+			} else {
+				wl_assert(argument.data.value.execution_graph_index_b == c_execution_graph::k_invalid_index);
+			}
+#endif // PREDEFINED(ASSERTS_ENABLED)
 
-				if (nodes_to_buffers[argument.data.value.execution_graph_index_a] != k_invalid_buffer) {
-					// Already allocated, skip this one
-				} else {
-					assign_buffer_to_related_nodes(execution_graph, argument.data.value.execution_graph_index_a,
-						inout_connections, nodes_to_buffers, m_buffer_count);
-					m_buffer_count++;
-				}
+			uint32 node_index = it.get_node_index();
+			if (nodes_to_buffers[node_index] != k_invalid_buffer) {
+				// Already allocated, skip this one
+			} else {
+				assign_buffer_to_related_nodes(
+					execution_graph, node_index, inout_connections, nodes_to_buffers, m_buffer_count);
+				m_buffer_count++;
 			}
 		}
 	}
@@ -1270,6 +1296,34 @@ void c_task_graph::calculate_max_concurrency() {
 	// 2) Determine which buffers are concurrent. This means that it is possible or necessary for the buffers to exist
 	// at the same time.
 
+	// Each buffer type can only be concurrent with other buffers of its same type, so first we identify all the
+	// different buffer types that exist
+
+	for (uint32 task_index = 0; task_index < m_tasks.size(); task_index++) {
+		for (c_task_buffer_iterator it(get_task_arguments(task_index)); it.is_valid(); it.next()) {
+			c_task_data_type buffer_type = it.get_buffer_type().get_with_qualifier(k_task_qualifier_in);
+
+			// Skip if we've already calculated for this type
+			size_t found = false;
+			for (size_t info_index = 0; info_index < m_buffer_usage_info.size(); info_index++) {
+				if (m_buffer_usage_info[info_index].type == buffer_type) {
+					found = true;
+					break;
+				}
+			}
+
+			if (!found) {
+				m_buffer_usage_info.push_back(s_buffer_usage_info());
+				s_buffer_usage_info &info = m_buffer_usage_info.back();
+				info.type = buffer_type;
+				info.max_concurrency = calculate_max_buffer_concurrency(predecessor_resolver, buffer_type);
+			}
+		}
+	}
+}
+
+uint32 c_task_graph::calculate_max_buffer_concurrency(
+	const c_predecessor_resolver &task_predecessor_resolver, c_task_data_type type) const {
 	// To determine whether two tasks (a,b) can be parallel, we just ask whether (a !precedes b) and (b !precedes a).
 	// The predecessor resolver provides this data.
 
@@ -1277,11 +1331,21 @@ void c_task_graph::calculate_max_concurrency() {
 	// buffers can exist in parallel. We can convert task concurrency data to buffer concurrency data.
 	std::vector<bool> buffer_concurrency(m_buffer_count * m_buffer_count, false);
 
-	// For any task, all buffer pairs are concurrent
+	// Not all buffers are of the correct type - this bitvector masks out invalid buffers
+	std::vector<bool> buffer_type_mask(m_buffer_count, false);
+	uint32 valid_buffer_count = 0;
+
+	// For any task, all buffer pairs of the same type are concurrent
 	for (uint32 task_index = 0; task_index < m_tasks.size(); task_index++) {
-		for (c_task_buffer_iterator it_a(get_task_arguments(task_index)); it_a.is_valid(); it_a.next()) {
+		for (c_task_buffer_iterator it_a(get_task_arguments(task_index), type); it_a.is_valid(); it_a.next()) {
 			uint32 buffer_a = it_a.get_buffer_index();
-			for (c_task_buffer_iterator it_b(get_task_arguments(task_index)); it_b.is_valid(); it_b.next()) {
+
+			if (!buffer_type_mask[buffer_a]) {
+				buffer_type_mask[buffer_a] = true;
+				valid_buffer_count++;
+			}
+
+			for (c_task_buffer_iterator it_b(get_task_arguments(task_index), type); it_b.is_valid(); it_b.next()) {
 				uint32 buffer_b = it_b.get_buffer_index();
 				buffer_concurrency[buffer_a * m_buffer_count + buffer_b] = true;
 				buffer_concurrency[buffer_b * m_buffer_count + buffer_a] = true;
@@ -1292,13 +1356,15 @@ void c_task_graph::calculate_max_concurrency() {
 	// For any pair of concurrent tasks, all buffer pairs between the two tasks are concurrent
 	for (uint32 task_a_index = 0; task_a_index < m_tasks.size(); task_a_index++) {
 		for (uint32 task_b_index = task_a_index + 1; task_b_index < m_tasks.size(); task_b_index++) {
-			if (!predecessor_resolver.are_a_b_concurrent(task_a_index, task_b_index)) {
+			if (!task_predecessor_resolver.are_a_b_concurrent(task_a_index, task_b_index)) {
 				continue;
 			}
 
-			for (c_task_buffer_iterator it_a(get_task_arguments(task_a_index)); it_a.is_valid(); it_a.next()) {
+			for (c_task_buffer_iterator it_a(get_task_arguments(task_a_index), type); it_a.is_valid(); it_a.next()) {
 				uint32 buffer_a = it_a.get_buffer_index();
-				for (c_task_buffer_iterator it_b(get_task_arguments(task_b_index)); it_b.is_valid(); it_b.next()) {
+				for (c_task_buffer_iterator it_b(get_task_arguments(task_b_index), type);
+					 it_b.is_valid();
+					 it_b.next()) {
 					uint32 buffer_b = it_b.get_buffer_index();
 					buffer_concurrency[buffer_a * m_buffer_count + buffer_b] = true;
 					buffer_concurrency[buffer_b * m_buffer_count + buffer_a] = true;
@@ -1331,9 +1397,29 @@ void c_task_graph::calculate_max_concurrency() {
 		}
 	}
 
-	// 3) Merge buffers which are not concurrent. To merge buffer x with buffers S=(a,b,c,...), buffer x must not be
+	// Reduce the matrix down to only valid buffers. The actual indices no longer matter at this point.
+	std::vector<bool> reduced_buffer_concurrency;
+	reduced_buffer_concurrency.reserve(valid_buffer_count * valid_buffer_count);
+
+	for (uint32 buffer_a_index = 0; buffer_a_index < m_buffer_count; buffer_a_index++) {
+		if (!buffer_type_mask[buffer_a_index]) {
+			continue;
+		}
+
+		for (uint32 buffer_b_index = 0; buffer_b_index < m_buffer_count; buffer_b_index++) {
+			if (!buffer_type_mask[buffer_b_index]) {
+				continue;
+			}
+
+			reduced_buffer_concurrency.push_back(buffer_concurrency[buffer_a_index * m_buffer_count + buffer_b_index]);
+		}
+	}
+
+	wl_assert(reduced_buffer_concurrency.size() == valid_buffer_count * valid_buffer_count);
+
+	// Merge buffers which are not concurrent. To merge buffer x with buffers S=(a,b,c,...), buffer x must not be
 	// concurrent with any buffers in S.
-	m_max_buffer_concurrency = estimate_max_concurrency(m_buffer_count, buffer_concurrency);
+	return estimate_max_concurrency(valid_buffer_count, reduced_buffer_concurrency);
 }
 
 uint32 c_task_graph::estimate_max_concurrency(uint32 node_count, const std::vector<bool> &concurrency_matrix) const {

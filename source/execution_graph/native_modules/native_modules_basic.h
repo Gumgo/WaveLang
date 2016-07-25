@@ -28,8 +28,9 @@ extern const s_native_module_uid k_native_module_greater_equal_uid;
 extern const s_native_module_uid k_native_module_less_equal_uid;
 extern const s_native_module_uid k_native_module_and_uid;
 extern const s_native_module_uid k_native_module_or_uid;
-extern const s_native_module_uid k_native_module_real_static_select_uid;
-extern const s_native_module_uid k_native_module_string_static_select_uid;
+extern const s_native_module_uid k_native_module_real_select_uid;
+extern const s_native_module_uid k_native_module_bool_select_uid;
+extern const s_native_module_uid k_native_module_string_select_uid;
 extern const s_native_module_uid k_native_module_real_array_dereference_uid;
 extern const s_native_module_uid k_native_module_real_array_count_uid;
 extern const s_native_module_uid k_native_module_real_array_combine_uid;
@@ -45,6 +46,9 @@ extern const s_native_module_uid k_native_module_string_array_count_uid;
 extern const s_native_module_uid k_native_module_string_array_combine_uid;
 extern const s_native_module_uid k_native_module_string_array_repeat_uid;
 extern const s_native_module_uid k_native_module_string_array_repeat_rev_uid;
+extern const s_native_module_uid k_native_module_real_enforce_const_uid; // $TODO this is broken! optimizer deletes it before it is enforced!
+extern const s_native_module_uid k_native_module_bool_enforce_const_uid; // $TODO this is broken! optimizer deletes it before it is enforced!
+extern const s_native_module_uid k_native_module_string_enforce_const_uid; // $TODO this is broken! optimizer deletes it before it is enforced!
 
 void register_native_modules_basic();
 

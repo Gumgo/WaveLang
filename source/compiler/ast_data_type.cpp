@@ -5,7 +5,7 @@ static const s_ast_primitive_type_traits k_ast_primitive_type_traits[] = {
 	{	"void",		false,		false,		true	},
 	{	"module",	false,		false,		false	},
 	{	"real",		true,		true,		true	},
-	{	"bool",		true,		false,		true	},
+	{	"bool",		true,		true,		true	},
 	{	"string",	true,		false,		true	}
 };
 

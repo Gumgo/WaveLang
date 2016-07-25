@@ -11,7 +11,7 @@ const s_native_module_named_argument s_native_module_argument_list::k_argument_n
 static const s_native_module_primitive_type_traits k_native_module_primitive_type_traits[] = {
 	//	is_dynamic
 	{	true	},	// real
-	{	false	},	// bool
+	{	true	},	// bool
 	{	false	}	// string
 };
 

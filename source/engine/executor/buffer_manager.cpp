@@ -10,10 +10,62 @@ void c_buffer_manager::initialize(const c_task_graph *task_graph, uint32 max_buf
 
 	m_task_graph = task_graph;
 
-	s_buffer_allocator_settings buffer_allocator_settings;
-	buffer_allocator_settings.buffer_type = k_buffer_type_real;
-	buffer_allocator_settings.buffer_size = max_buffer_size;
-	buffer_allocator_settings.buffer_count = task_graph->get_max_buffer_concurrency();
+	std::vector<s_buffer_pool_description> buffer_pool_descriptions;
+
+	c_wrapped_array_const<c_task_graph::s_buffer_usage_info> buffer_usage_info = task_graph->get_buffer_usage_info();
+
+	m_real_buffer_pool_index = static_cast<uint32>(-1);
+	//m_bool_buffer_pool_index = static_cast<uint32>(-1);
+	for (size_t index = 0; index < buffer_usage_info.get_count(); index++) {
+		const c_task_graph::s_buffer_usage_info &info = buffer_usage_info[index];
+		s_buffer_pool_description desc;
+
+		wl_assert(!info.type.is_array());
+		wl_assert(info.type.get_primitive_type_traits().is_dynamic);
+		switch (info.type.get_primitive_type()) {
+		case k_task_primitive_type_real:
+			desc.type = k_buffer_type_real;
+			m_real_buffer_pool_index = index;
+			break;
+
+		case k_task_primitive_type_bool:
+			desc.type = k_buffer_type_bool;
+			//m_bool_buffer_pool_index = index;
+			break;
+
+		case k_task_primitive_type_string:
+			wl_unreachable();
+			break;
+
+		default:
+			wl_unreachable();
+		}
+
+		desc.size = max_buffer_size;
+		desc.count = info.max_concurrency;
+
+		buffer_pool_descriptions.push_back(desc);
+	}
+
+	// Add a slot for real buffers and bool buffers if they don't exist already
+
+	if (m_real_buffer_pool_index == static_cast<uint32>(-1)) {
+		m_real_buffer_pool_index = buffer_pool_descriptions.size();
+		s_buffer_pool_description desc;
+		desc.type = k_buffer_type_real;
+		desc.size = max_buffer_size;
+		desc.count = 0;
+		buffer_pool_descriptions.push_back(desc);
+	}
+
+	//if (m_bool_buffer_pool_index == static_cast<uint32>(-1)) {
+	//	m_bool_buffer_pool_index = buffer_pool_descriptions.size();
+	//	s_buffer_pool_description desc;
+	//	desc.type = k_buffer_type_bool;
+	//	desc.size = max_buffer_size;
+	//	desc.count = 0;
+	//	buffer_pool_descriptions.push_back(desc);
+	//}
 
 	c_task_graph_data_array outputs = task_graph->get_outputs();
 
@@ -21,7 +73,7 @@ void c_buffer_manager::initialize(const c_task_graph *task_graph, uint32 max_buf
 	// this point we do.
 	for (uint32 output = 0; output < outputs.get_count(); output++) {
 		if (outputs[output].data.is_constant) {
-			buffer_allocator_settings.buffer_count++;
+			buffer_pool_descriptions[m_real_buffer_pool_index].count++;
 		}
 	}
 
@@ -47,23 +99,61 @@ void c_buffer_manager::initialize(const c_task_graph *task_graph, uint32 max_buf
 		}
 
 		uint32 duplicated_buffer_outputs = total_buffer_outputs - unique_buffer_outputs;
-		buffer_allocator_settings.buffer_count += duplicated_buffer_outputs;
+		buffer_pool_descriptions[m_real_buffer_pool_index].count += duplicated_buffer_outputs;
 	}
 
 	// If we support multiple voices, we need buffers to accumulate the final result into
 	if (task_graph->get_globals().max_voices > 1) {
-		buffer_allocator_settings.buffer_count += outputs.get_count();
+		buffer_pool_descriptions[m_real_buffer_pool_index].count += outputs.get_count();
 	}
 
 	// If the output count differs from the channel count, we'll need additional buffers to perform mixing
 	if (output_channels != outputs.get_count()) {
-		buffer_allocator_settings.buffer_count += output_channels;
+		buffer_pool_descriptions[m_real_buffer_pool_index].count += output_channels;
 	}
+
+	s_buffer_allocator_settings buffer_allocator_settings;
+	buffer_allocator_settings.buffer_pool_descriptions = c_wrapped_array_const<s_buffer_pool_description>(
+		&buffer_pool_descriptions.front(), buffer_pool_descriptions.size());
 
 	m_buffer_allocator.initialize(buffer_allocator_settings);
 
 	m_buffer_contexts.free();
 	m_buffer_contexts.allocate(task_graph->get_buffer_count());
+
+	// Assign pool indices to each buffer context so we know where to allocate from when the time comes
+#if PREDEFINED(ASSERTS_ENABLED)
+	for (size_t index = 0; index < m_buffer_contexts.get_array().get_count(); index++) {
+		m_buffer_contexts.get_array()[index].pool_index = static_cast<uint32>(-1);
+	}
+#endif // PREDEFINED(ASSERTS_ENABLED)
+
+	// Iterate through each buffer in each task and assign it a pool
+	for (uint32 task_index = 0; task_index < task_graph->get_task_count(); task_index++) {
+		c_task_graph_data_array arguments = task_graph->get_task_arguments(task_index);
+
+		for (c_task_buffer_iterator it(arguments); it.is_valid(); it.next()) {
+			c_task_data_type type_to_match = it.get_buffer_type().get_with_qualifier(k_task_qualifier_in);
+
+			// Find the pool for this buffer (or buffers, in the case of arrays)
+			uint32 pool_index;
+			for (pool_index = 0; pool_index < buffer_usage_info.get_count(); pool_index++) {
+				if (buffer_usage_info[pool_index].type == type_to_match) {
+					break;
+				}
+			}
+
+			wl_assert(pool_index != buffer_usage_info.get_count());
+			m_buffer_contexts.get_array()[it.get_buffer_index()].pool_index = pool_index;
+		}
+	}
+
+#if PREDEFINED(ASSERTS_ENABLED)
+	for (size_t index = 0; index < m_buffer_contexts.get_array().get_count(); index++) {
+		// Make sure all buffers got pool assignments
+		wl_assert(VALID_INDEX(m_buffer_contexts.get_array()[index].pool_index, buffer_usage_info.get_count()));
+	}
+#endif // PREDEFINED(ASSERTS_ENABLED)
 
 	m_voice_accumulation_buffers.resize(outputs.get_count());
 	m_channel_mix_buffers.resize(output_channels);
@@ -73,7 +163,7 @@ void c_buffer_manager::initialize(const c_task_graph *task_graph, uint32 max_buf
 }
 
 void c_buffer_manager::begin_chunk(uint32 chunk_size) {
-	wl_assert(chunk_size <= m_buffer_allocator.get_settings().buffer_size);
+	wl_assert(chunk_size <= m_buffer_allocator.get_buffer_pool_description(m_real_buffer_pool_index).size);
 	m_chunk_size = chunk_size;
 
 	m_voices_processed = 0;
@@ -129,7 +219,8 @@ void c_buffer_manager::mix_voice_accumulation_buffers_to_output_buffer(
 
 void c_buffer_manager::allocate_buffer(uint32 buffer_index) {
 	wl_assert(!is_buffer_allocated(buffer_index));
-	m_buffer_contexts.get_array()[buffer_index].handle = m_buffer_allocator.allocate_buffer();
+	s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer_index];
+	buffer_context.handle = m_buffer_allocator.allocate_buffer(buffer_context.pool_index);
 }
 
 void c_buffer_manager::decrement_buffer_usage(uint32 buffer_index) {
@@ -226,7 +317,7 @@ void c_buffer_manager::swap_output_buffers_with_voice_accumulation_buffers(uint3
 		wl_assert(m_voice_accumulation_buffers[output] == k_lock_free_invalid_handle);
 		wl_assert(outputs[output].get_type() == c_task_data_type(k_task_primitive_type_real, k_task_qualifier_in));
 		if (outputs[output].is_constant()) {
-			uint32 buffer_handle = m_buffer_allocator.allocate_buffer();
+			uint32 buffer_handle = m_buffer_allocator.allocate_buffer(m_real_buffer_pool_index);
 			m_voice_accumulation_buffers[output] = buffer_handle;
 			if (voice_sample_offset == 0) {
 				s_buffer_operation_assignment::in_out(
@@ -258,7 +349,7 @@ void c_buffer_manager::swap_output_buffers_with_voice_accumulation_buffers(uint3
 				// This case occurs when a single buffer is used for multiple outputs, and the buffer was already
 				// swapped to an accumulation slot. In this case, we must actually allocate an additional buffer and
 				// copy to it, because we need to keep the data separate both accumulations.
-				uint32 buffer_handle = m_buffer_allocator.allocate_buffer();
+				uint32 buffer_handle = m_buffer_allocator.allocate_buffer(m_real_buffer_pool_index);
 				m_voice_accumulation_buffers[output] = buffer_handle;
 				s_buffer_operation_assignment::in_out(
 					m_chunk_size,
@@ -323,7 +414,7 @@ void c_buffer_manager::mix_voice_accumulation_buffers_to_channel_buffers() {
 		// We have no data, simply allocate zero'd buffers for the channel buffers
 		for (uint32 channel = 0; channel < m_channel_mix_buffers.size(); channel++) {
 			wl_assert(m_channel_mix_buffers[channel] == k_lock_free_invalid_handle);
-			uint32 buffer_handle = m_buffer_allocator.allocate_buffer();
+			uint32 buffer_handle = m_buffer_allocator.allocate_buffer(m_real_buffer_pool_index);
 			m_channel_mix_buffers[channel] = buffer_handle;
 			s_buffer_operation_assignment::in_out(
 				m_chunk_size,
@@ -339,7 +430,7 @@ void c_buffer_manager::mix_voice_accumulation_buffers_to_channel_buffers() {
 		// Allocate channel buffers
 		for (uint32 channel = 0; channel < m_channel_mix_buffers.size(); channel++) {
 			wl_assert(m_channel_mix_buffers[channel] == k_lock_free_invalid_handle);
-			m_channel_mix_buffers[channel] = m_buffer_allocator.allocate_buffer();
+			m_channel_mix_buffers[channel] = m_buffer_allocator.allocate_buffer(m_real_buffer_pool_index);
 		}
 
 		c_wrapped_array_const<uint32> accumulation_buffers(
