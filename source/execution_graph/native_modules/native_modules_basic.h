@@ -1,5 +1,5 @@
-#ifndef WAVELANG_NATIVE_MODULES_BASIC_H__
-#define WAVELANG_NATIVE_MODULES_BASIC_H__
+#ifndef WAVELANG_EXECUTION_GRAPH_NATIVE_MODULES_NATIVE_MODULES_BASIC_H__
+#define WAVELANG_EXECUTION_GRAPH_NATIVE_MODULES_NATIVE_MODULES_BASIC_H__
 
 #include "common/common.h"
 
@@ -53,4 +53,4 @@ extern const s_native_module_uid k_native_module_string_enforce_const_uid; // $T
 
 void register_native_modules_basic();
 
-#endif // WAVELANG_NATIVE_MODULES_BASIC_H__
+#endif // WAVELANG_EXECUTION_GRAPH_NATIVE_MODULES_NATIVE_MODULES_BASIC_H__

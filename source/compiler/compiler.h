@@ -1,5 +1,5 @@
-#ifndef WAVELANG_COMPILER_H__
-#define WAVELANG_COMPILER_H__
+#ifndef WAVELANG_COMPILER_COMPILER_H__
+#define WAVELANG_COMPILER_COMPILER_H__
 
 #include "common/common.h"
 
@@ -15,4 +15,4 @@ public:
 		c_execution_graph *out_execution_graph);
 };
 
-#endif // WAVELANG_COMPILER_H__
+#endif // WAVELANG_COMPILER_COMPILER_H__

@@ -1,5 +1,5 @@
-#ifndef WAVELANG_TASK_FUNCTIONS_SAMPLER_SINC_WINDOW_H__
-#define WAVELANG_TASK_FUNCTIONS_SAMPLER_SINC_WINDOW_H__
+#ifndef WAVELANG_ENGINE_TASK_FUNCTIONS_TASK_FUNCTIONS_SAMPLER_SINC_WINDOW_H__
+#define WAVELANG_ENGINE_TASK_FUNCTIONS_TASK_FUNCTIONS_SAMPLER_SINC_WINDOW_H__
 
 #include "common/common.h"
 
@@ -34,4 +34,4 @@ static_assert(NUMBEROF(k_sinc_window_coefficients[0]) ==
 	ALIGN_SIZE(k_sinc_window_size - 1, k_sse_block_elements) / k_sse_block_elements,
 	"Windowed sinc filter coefficient count mismatch");
 
-#endif // WAVELANG_TASK_FUNCTIONS_SAMPLER_SINC_WINDOW_H__
+#endif // WAVELANG_ENGINE_TASK_FUNCTIONS_TASK_FUNCTIONS_SAMPLER_SINC_WINDOW_H__

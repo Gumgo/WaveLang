@@ -1,5 +1,5 @@
-#ifndef WAVELANG_MUTEX_H__
-#define WAVELANG_MUTEX_H__
+#ifndef WAVELANG_COMMON_THREADING_MUTEX_H__
+#define WAVELANG_COMMON_THREADING_MUTEX_H__
 
 #include "common/common.h"
 
@@ -33,4 +33,4 @@ private:
 	std::unique_lock<std::mutex> m_unique_lock;
 };
 
-#endif // WAVELANG_MUTEX_H__
+#endif // WAVELANG_COMMON_THREADING_MUTEX_H__

@@ -1,5 +1,5 @@
-#ifndef WAVELANG_CAST_INTEGER_VERIFY_H__
-#define WAVELANG_CAST_INTEGER_VERIFY_H__
+#ifndef WAVELANG_COMMON_CAST_INTEGER_VERIFY_H__
+#define WAVELANG_COMMON_CAST_INTEGER_VERIFY_H__
 
 #include "common/asserts.h"
 #include "common/types.h"
@@ -68,4 +68,4 @@ template<typename t_to, typename t_from> t_to cast_integer_verify(t_from value) 
 	return static_cast<t_to>(value);
 }
 
-#endif // WAVELANG_CAST_INTEGER_VERIFY_H__
+#endif // WAVELANG_COMMON_CAST_INTEGER_VERIFY_H__

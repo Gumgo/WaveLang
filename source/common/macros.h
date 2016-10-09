@@ -1,5 +1,5 @@
-#ifndef WAVELANG_MACROS_H__
-#define WAVELANG_MACROS_H__
+#ifndef WAVELANG_COMMON_MACROS_H__
+#define WAVELANG_COMMON_MACROS_H__
 
 // No-op statement which is optimized away
 #define NOOP do {} while (0)
@@ -21,4 +21,4 @@
 
 #define SIZEOF_BITS(x) (sizeof(x) * 8)
 
-#endif // WAVELANG_MACROS_H__
+#endif // WAVELANG_COMMON_MACROS_H__

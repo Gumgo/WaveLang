@@ -1,5 +1,5 @@
-#ifndef WAVELANG_BUFFER_MANAGER_H__
-#define WAVELANG_BUFFER_MANAGER_H__
+#ifndef WAVELANG_ENGINE_EXECUTOR_BUFFER_MANAGER_H__
+#define WAVELANG_ENGINE_EXECUTOR_BUFFER_MANAGER_H__
 
 #include "common/common.h"
 #include "common/threading/lock_free.h"
@@ -73,4 +73,4 @@ private:
 	uint32 m_voices_processed;
 };
 
-#endif // WAVELANG_BUFFER_MANAGER_H__
+#endif // WAVELANG_ENGINE_EXECUTOR_BUFFER_MANAGER_H__

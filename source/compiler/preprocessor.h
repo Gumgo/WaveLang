@@ -1,5 +1,5 @@
-#ifndef WAVELANG_PREPROCESSOR_H__
-#define WAVELANG_PREPROCESSOR_H__
+#ifndef WAVELANG_COMPILER_PREPROCESSOR_H__
+#define WAVELANG_COMPILER_PREPROCESSOR_H__
 
 #include "common/common.h"
 
@@ -59,4 +59,4 @@ public:
 	static bool is_valid_preprocessor_line(c_compiler_string line);
 };
 
-#endif // WAVELANG_PREPROCESSOR_H__
+#endif // WAVELANG_COMPILER_PREPROCESSOR_H__

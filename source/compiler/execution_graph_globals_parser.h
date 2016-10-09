@@ -1,5 +1,5 @@
-#ifndef WAVELANG_EXECUTION_GRAPH_GLOBALS_PARSER_H__
-#define WAVELANG_EXECUTION_GRAPH_GLOBALS_PARSER_H__
+#ifndef WAVELANG_COMPILER_EXECUTION_GRAPH_GLOBALS_PARSER_H__
+#define WAVELANG_COMPILER_EXECUTION_GRAPH_GLOBALS_PARSER_H__
 
 #include "common/common.h"
 
@@ -21,4 +21,4 @@ public:
 	static void register_preprocessor_commands(s_execution_graph_globals_context *globals_context);
 };
 
-#endif // WAVELANG_EXECUTION_GRAPH_GLOBALS_PARSER_H__
+#endif // WAVELANG_COMPILER_EXECUTION_GRAPH_GLOBALS_PARSER_H__

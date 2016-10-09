@@ -1,5 +1,5 @@
-#ifndef WAVELANG_MATH_REAL32_4_H__
-#define WAVELANG_MATH_REAL32_4_H__
+#ifndef WAVELANG_ENGINE_MATH_MATH_REAL32_4_H__
+#define WAVELANG_ENGINE_MATH_MATH_REAL32_4_H__
 
 #include "common/common.h"
 
@@ -72,4 +72,4 @@ c_real32_4 shuffle(const c_real32_4 &v);
 template<int32 k_pos_0, int32 k_pos_1, int32 k_pos_2, int32 k_pos_3>
 c_real32_4 shuffle(const c_real32_4 &a, const c_real32_4 &b);
 
-#endif // WAVELANG_MATH_REAL32_4_H__
+#endif // WAVELANG_ENGINE_MATH_MATH_REAL32_4_H__

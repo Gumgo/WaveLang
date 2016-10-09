@@ -1,5 +1,5 @@
-#ifndef WAVELANG_EXECUTION_GRAPH_BUILDER_H__
-#define WAVELANG_EXECUTION_GRAPH_BUILDER_H__
+#ifndef WAVELANG_COMPILER_EXECUTION_GRAPH_BUILDER_H__
+#define WAVELANG_COMPILER_EXECUTION_GRAPH_BUILDER_H__
 
 #include "common/common.h"
 
@@ -16,4 +16,4 @@ public:
 		std::vector<s_compiler_result> &out_errors);
 };
 
-#endif // WAVELANG_EXECUTION_GRAPH_BUILDER_H__
+#endif // WAVELANG_COMPILER_EXECUTION_GRAPH_BUILDER_H__

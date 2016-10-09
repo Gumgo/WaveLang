@@ -1,5 +1,5 @@
-#ifndef WAVELANG_SSE_H__
-#define WAVELANG_SSE_H__
+#ifndef WAVELANG_ENGINE_MATH_SSE_H__
+#define WAVELANG_ENGINE_MATH_SSE_H__
 
 #include "common/common.h"
 
@@ -29,4 +29,4 @@ static const size_t k_sse_block_size = SSE_BLOCK_SIZE;
 #pragma warning(default:4838)
 #endif // WAVELANG_SSE_MATHFUN_H__
 
-#endif // WAVELANG_SSE_H__
+#endif // WAVELANG_ENGINE_MATH_SSE_H__

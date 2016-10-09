@@ -1,5 +1,5 @@
-#ifndef WAVELANG_TASK_GRAPH_H__
-#define WAVELANG_TASK_GRAPH_H__
+#ifndef WAVELANG_ENGINE_TASK_GRAPH_H__
+#define WAVELANG_ENGINE_TASK_GRAPH_H__
 
 #include "common/common.h"
 #include "common/utility/string_table.h"
@@ -253,4 +253,4 @@ private:
 	s_task_graph_globals m_globals;
 };
 
-#endif // WAVELANG_TASK_GRAPH_H__
+#endif // WAVELANG_ENGINE_TASK_GRAPH_H__

@@ -1,5 +1,5 @@
-#ifndef WAVELANG_TASK_FUNCTION_H__
-#define WAVELANG_TASK_FUNCTION_H__
+#ifndef WAVELANG_ENGINE_TASK_FUNCTION_H__
+#define WAVELANG_ENGINE_TASK_FUNCTION_H__
 
 #include "common/common.h"
 
@@ -444,4 +444,4 @@ struct s_task_function_mapping {
 // optimization should come first.
 typedef c_wrapped_array_const<s_task_function_mapping> c_task_function_mapping_list;
 
-#endif // WAVELANG_TASK_FUNCTION_H__
+#endif // WAVELANG_ENGINE_TASK_FUNCTION_H__

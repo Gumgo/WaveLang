@@ -1,5 +1,5 @@
-#ifndef WAVELANG_TYPES_H__
-#define WAVELANG_TYPES_H__
+#ifndef WAVELANG_COMMON_TYPES_H__
+#define WAVELANG_COMMON_TYPES_H__
 
 typedef signed char int8;
 typedef unsigned char uint8;
@@ -33,4 +33,4 @@ template<> struct s_integer_type<4, false> { typedef int32 type; };
 template<> struct s_integer_type<8, true> { typedef uint64 type; };
 template<> struct s_integer_type<8, false> { typedef int64 type; };
 
-#endif // WAVELANG_TYPES_H__
+#endif // WAVELANG_COMMON_TYPES_H__

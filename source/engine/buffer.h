@@ -1,5 +1,5 @@
-#ifndef WAVELANG_BUFFER_H__
-#define WAVELANG_BUFFER_H__
+#ifndef WAVELANG_ENGINE_BUFFER_H__
+#define WAVELANG_ENGINE_BUFFER_H__
 
 #include "common/common.h"
 #include "common/threading/lock_free.h"
@@ -114,4 +114,4 @@ typedef c_buffer_or_constant_base<const c_buffer, real32, s_constant_accessor_re
 typedef c_buffer_or_constant_base<c_buffer, bool, s_constant_accessor_bool> c_bool_buffer_or_constant;
 typedef c_buffer_or_constant_base<const c_buffer, bool, s_constant_accessor_bool> c_bool_const_buffer_or_constant;
 
-#endif // WAVELANG_BUFFER_H__
+#endif // WAVELANG_ENGINE_BUFFER_H__

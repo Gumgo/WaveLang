@@ -1,5 +1,5 @@
-#ifndef WAVELANG_LOCK_FREE_H__
-#define WAVELANG_LOCK_FREE_H__
+#ifndef WAVELANG_COMMON_THREADING_LOCK_FREE_H__
+#define WAVELANG_COMMON_THREADING_LOCK_FREE_H__
 
 #include "common/common.h"
 #include "common/threading/atomics.h"
@@ -46,4 +46,4 @@ struct s_lock_free_handle_data {
 void lock_free_list_push(c_lock_free_handle_array &node_storage, s_lock_free_handle &list_head, uint32 handle);
 uint32 lock_free_list_pop(c_lock_free_handle_array &node_storage, s_lock_free_handle &list_head);
 
-#endif // WAVELANG_LOCK_FREE_H__
+#endif // WAVELANG_COMMON_THREADING_LOCK_FREE_H__

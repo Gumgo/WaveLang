@@ -1,5 +1,5 @@
-#ifndef WAVELANG_AST_VALIDATOR_H__
-#define WAVELANG_AST_VALIDATOR_H__
+#ifndef WAVELANG_COMPILER_AST_VALIDATOR_H__
+#define WAVELANG_COMPILER_AST_VALIDATOR_H__
 
 #include "common/common.h"
 
@@ -14,4 +14,4 @@ public:
 		std::vector<s_compiler_result> &out_errors);
 };
 
-#endif // WAVELANG_AST_VALIDATOR_H__
+#endif // WAVELANG_COMPILER_AST_VALIDATOR_H__

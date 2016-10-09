@@ -1,5 +1,5 @@
-#ifndef WAVELANG_CONTROLLER_DRIVER_INTERFACE_H__
-#define WAVELANG_CONTROLLER_DRIVER_INTERFACE_H__
+#ifndef WAVELANG_DRIVER_CONTROLLER_DRIVER_INTERFACE_H__
+#define WAVELANG_DRIVER_CONTROLLER_DRIVER_INTERFACE_H__
 
 #include "common/common.h"
 #include "common/threading/lock_free_queue.h"
@@ -51,4 +51,4 @@ private:
 	c_stopwatch m_timestamp_stopwatch;
 };
 
-#endif // WAVELANG_CONTROLLER_DRIVER_INTERFACE_H__
+#endif // WAVELANG_DRIVER_CONTROLLER_DRIVER_INTERFACE_H__

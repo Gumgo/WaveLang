@@ -1,5 +1,5 @@
-#ifndef WAVELANG_CONDITION_VARIABLE_H__
-#define WAVELANG_CONDITION_VARIABLE_H__
+#ifndef WAVELANG_COMMON_THREADING_CONDITION_VARIABLE_H__
+#define WAVELANG_COMMON_THREADING_CONDITION_VARIABLE_H__
 
 #include "common/common.h"
 
@@ -21,4 +21,4 @@ private:
 	std::condition_variable m_condition_variable;
 };
 
-#endif // WAVELANG_MUTEX_H__
+#endif // WAVELANG_COMMON_THREADING_CONDITION_VARIABLE_H__

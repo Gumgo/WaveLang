@@ -1,5 +1,5 @@
-#ifndef WAVELANG_EXECUTOR_H__
-#define WAVELANG_EXECUTOR_H__
+#ifndef WAVELANG_ENGINE_EXECUTOR_EXECUTOR_H__
+#define WAVELANG_ENGINE_EXECUTOR_EXECUTOR_H__
 
 #include "common/common.h"
 #include "common/threading/atomics.h"
@@ -177,4 +177,4 @@ private:
 	c_profiler m_profiler;
 };
 
-#endif // WAVELANG_EXECUTOR_H__
+#endif // WAVELANG_ENGINE_EXECUTOR_EXECUTOR_H__

@@ -1,5 +1,5 @@
-#ifndef WAVELANG_COMMON_H__
-#define WAVELANG_COMMON_H__
+#ifndef WAVELANG_COMMON_COMMON_H__
+#define WAVELANG_COMMON_COMMON_H__
 
 #include "common/asserts.h"
 #include "common/cast_integer_verify.h"
@@ -119,4 +119,4 @@ private:
 	c_uncopyable &operator=(const c_uncopyable &other);
 };
 
-#endif // WAVELANG_COMMON_H__
+#endif // WAVELANG_COMMON_COMMON_H__

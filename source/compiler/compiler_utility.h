@@ -1,5 +1,5 @@
-#ifndef WAVELANG_COMPILER_UTILITY_H__
-#define WAVELANG_COMPILER_UTILITY_H__
+#ifndef WAVELANG_COMPILER_COMPILER_UTILITY_H__
+#define WAVELANG_COMPILER_COMPILER_UTILITY_H__
 
 #include "common/common.h"
 
@@ -143,4 +143,4 @@ namespace compiler_utility {
 
 #include "compiler_utility.inl"
 
-#endif // WAVELANG_COMPILER_UTILITY_H__
+#endif // WAVELANG_COMPILER_COMPILER_UTILITY_H__

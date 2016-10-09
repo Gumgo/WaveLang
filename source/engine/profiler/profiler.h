@@ -1,5 +1,5 @@
-#ifndef WAVELANG_PROFILER_H__
-#define WAVELANG_PROFILER_H__
+#ifndef WAVELANG_ENGINE_PROFILER_PROFILER_H__
+#define WAVELANG_ENGINE_PROFILER_PROFILER_H__
 
 #include "common/common.h"
 #include "common/threading/lock_free.h"
@@ -101,4 +101,4 @@ private:
 	c_lock_free_aligned_allocator<s_task> m_tasks;
 };
 
-#endif // WAVELANG_PROFILER_H__
+#endif // WAVELANG_ENGINE_PROFILER_PROFILER_H__

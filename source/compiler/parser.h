@@ -1,5 +1,5 @@
-#ifndef WAVELANG_PARSER_H__
-#define WAVELANG_PARSER_H__
+#ifndef WAVELANG_COMPILER_PARSER_H__
+#define WAVELANG_COMPILER_PARSER_H__
 
 #include "common/common.h"
 
@@ -78,4 +78,4 @@ public:
 		s_parser_output &output, std::vector<s_compiler_result> &out_errors);
 };
 
-#endif // WAVELANG_PARSER_H__
+#endif // WAVELANG_COMPILER_PARSER_H__

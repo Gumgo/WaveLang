@@ -1,5 +1,5 @@
-#ifndef WAVELANG_PLATFORM_H__
-#define WAVELANG_PLATFORM_H__
+#ifndef WAVELANG_COMMON_PLATFORM_H__
+#define WAVELANG_COMMON_PLATFORM_H__
 
 #include "common/macros.h"
 
@@ -71,4 +71,4 @@
 #error Cache line size not defined
 #endif // CACHE_LINE_SIZE
 
-#endif // WAVELANG_PLATFORM_H__
+#endif // WAVELANG_COMMON_PLATFORM_H__

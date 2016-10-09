@@ -1,5 +1,5 @@
-#ifndef WAVELANG_NATIVE_SAMPLES_DEFINED__
-#define WAVELANG_NATIVE_SAMPLES_DEFINED__
+#ifndef WAVELANG_ENGINE_SAMPLE_NATIVE_SAMPLES_H__
+#define WAVELANG_ENGINE_SAMPLE_NATIVE_SAMPLES_H__
 
 #include "common/common.h"
 
@@ -17,4 +17,4 @@ const char *get_native_sample_prefix();
 const char *get_native_sample_name(uint32 native_sample);
 c_sample *build_native_sample(uint32 native_sample);
 
-#endif // WAVELANG_NATIVE_SAMPLES_DEFINED__
+#endif // WAVELANG_ENGINE_SAMPLE_NATIVE_SAMPLES_H__

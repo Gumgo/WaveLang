@@ -1,5 +1,5 @@
-#ifndef WAVELANG_CONTROLLER_EVENT_MANAGER_H__
-#define WAVELANG_CONTROLLER_EVENT_MANAGER_H__
+#ifndef WAVELANG_ENGINE_EXECUTOR_CONTROLLER_EVENT_MANAGER_H__
+#define WAVELANG_ENGINE_EXECUTOR_CONTROLLER_EVENT_MANAGER_H__
 
 #include "common/common.h"
 
@@ -22,4 +22,4 @@ private:
 	c_wrapped_array_const<s_timestamped_controller_event> m_note_events;
 };
 
-#endif // WAVELANG_CONTROLLER_EVENT_MANAGER_H__
+#endif // WAVELANG_ENGINE_EXECUTOR_CONTROLLER_EVENT_MANAGER_H__

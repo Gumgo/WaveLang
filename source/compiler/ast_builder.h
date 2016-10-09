@@ -1,5 +1,5 @@
-#ifndef WAVELANG_AST_BUILDER_H__
-#define WAVELANG_AST_BUILDER_H__
+#ifndef WAVELANG_COMPILER_AST_BUILDER_H__
+#define WAVELANG_COMPILER_AST_BUILDER_H__
 
 #include "common/common.h"
 
@@ -14,4 +14,4 @@ public:
 	static c_ast_node *build_ast(const s_lexer_output &lexer_output, const s_parser_output &parser_output);
 };
 
-#endif // WAVELANG_AST_BUILDER_H__
+#endif // WAVELANG_COMPILER_AST_BUILDER_H__

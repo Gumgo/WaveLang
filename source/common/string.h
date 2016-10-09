@@ -1,5 +1,5 @@
-#ifndef WAVELANG_STRING_H__
-#define WAVELANG_STRING_H__
+#ifndef WAVELANG_COMMON_STRING_H__
+#define WAVELANG_COMMON_STRING_H__
 
 #include "common/asserts.h"
 #include "common/macros.h"
@@ -160,4 +160,4 @@ private:
 	char m_buffer[k_buffer_size];
 };
 
-#endif // WAVELANG_STRING_H__
+#endif // WAVELANG_COMMON_STRING_H__

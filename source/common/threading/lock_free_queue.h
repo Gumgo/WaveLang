@@ -1,5 +1,5 @@
-#ifndef WAVELANG_LOCK_FREE_QUEUE_H__
-#define WAVELANG_LOCK_FREE_QUEUE_H__
+#ifndef WAVELANG_COMMON_THREADING_LOCK_FREE_QUEUE_H__
+#define WAVELANG_COMMON_THREADING_LOCK_FREE_QUEUE_H__
 
 #include "common/common.h"
 #include "common/threading/lock_free.h"
@@ -47,4 +47,4 @@ private:
 
 #include "common/threading/lock_free_queue.inl"
 
-#endif // WAVELANG_LOCK_FREE_QUEUE_H__
+#endif // WAVELANG_COMMON_THREADING_LOCK_FREE_QUEUE_H__

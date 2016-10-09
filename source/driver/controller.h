@@ -1,5 +1,5 @@
-#ifndef WAVELANG_CONTROLLER_H__
-#define WAVELANG_CONTROLLER_H__
+#ifndef WAVELANG_DRIVER_CONTROLLER_H__
+#define WAVELANG_DRIVER_CONTROLLER_H__
 
 #include "common/common.h"
 
@@ -58,4 +58,4 @@ struct s_controller_event_data_parameter_change {
 	real32 value;
 };
 
-#endif // WAVELANG_CONTROLLER_H__
+#endif // WAVELANG_DRIVER_CONTROLLER_H__

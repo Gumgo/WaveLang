@@ -1,5 +1,5 @@
-#ifndef WAVELANG_WRAPPED_ARRAY_H__
-#define WAVELANG_WRAPPED_ARRAY_H__
+#ifndef WAVELANG_COMMON_WRAPPED_ARRAY_H__
+#define WAVELANG_COMMON_WRAPPED_ARRAY_H__
 
 #include "common/asserts.h"
 #include "common/macros.h"
@@ -93,4 +93,4 @@ private:
 	size_t m_count;
 };
 
-#endif // WAVELANG_WRAPPED_ARRAY_H__
+#endif // WAVELANG_COMMON_WRAPPED_ARRAY_H__

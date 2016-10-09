@@ -1,5 +1,5 @@
-#ifndef WAVELANG_NATIVE_MODULE_REGISTRY_H__
-#define WAVELANG_NATIVE_MODULE_REGISTRY_H__
+#ifndef WAVELANG_EXECUTION_GRAPH_NATIVE_MODULE_REGISTRY_H__
+#define WAVELANG_EXECUTION_GRAPH_NATIVE_MODULE_REGISTRY_H__
 
 #include "common/common.h"
 
@@ -64,4 +64,4 @@ public:
 	static bool output_registered_native_modules(const char *filename);
 };
 
-#endif // WAVELANG_NATIVE_MODULE_REGISTRY_H__
+#endif // WAVELANG_EXECUTION_GRAPH_NATIVE_MODULE_REGISTRY_H__

@@ -1,5 +1,5 @@
-#ifndef WAVELANG_LR_PARSER_H__
-#define WAVELANG_LR_PARSER_H__
+#ifndef WAVELANG_COMPILER_LR_PARSER_H__
+#define WAVELANG_COMPILER_LR_PARSER_H__
 
 #include "common/common.h"
 
@@ -316,4 +316,4 @@ private:
 #endif // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 };
 
-#endif // WAVELANG_LR_PARSER_H__
+#endif // WAVELANG_COMPILER_LR_PARSER_H__

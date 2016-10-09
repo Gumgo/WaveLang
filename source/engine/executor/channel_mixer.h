@@ -1,5 +1,5 @@
-#ifndef WAVELANG_CHANNEL_MIXER_H__
-#define WAVELANG_CHANNEL_MIXER_H__
+#ifndef WAVELANG_ENGINE_EXECUTOR_CHANNEL_MIXER_H__
+#define WAVELANG_ENGINE_EXECUTOR_CHANNEL_MIXER_H__
 
 #include "common/common.h"
 
@@ -26,4 +26,4 @@ void zero_output_buffers(
 	e_sample_format output_format,
 	c_wrapped_array<uint8> output_buffers);
 
-#endif // WAVELANG_CHANNEL_MIXER_H__
+#endif // WAVELANG_ENGINE_EXECUTOR_CHANNEL_MIXER_H__

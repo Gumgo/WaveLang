@@ -1,5 +1,5 @@
-#ifndef WAVELANG_EVENT_CONSOLE_H__
-#define WAVELANG_EVENT_CONSOLE_H__
+#ifndef WAVELANG_ENGINE_EVENTS_EVENT_CONSOLE_H__
+#define WAVELANG_ENGINE_EVENTS_EVENT_CONSOLE_H__
 
 #include "common/common.h"
 
@@ -38,4 +38,4 @@ private:
 #endif // platform
 };
 
-#endif // WAVELANG_EVENT_CONSOLE_H__
+#endif // WAVELANG_ENGINE_EVENTS_EVENT_CONSOLE_H__

@@ -1,5 +1,5 @@
-#ifndef WAVELANG_SAMPLE_H__
-#define WAVELANG_SAMPLE_H__
+#ifndef WAVELANG_ENGINE_SAMPLE_SAMPLE_H__
+#define WAVELANG_ENGINE_SAMPLE_SAMPLE_H__
 
 #include "common/common.h"
 #include "common/utility/aligned_allocator.h"
@@ -102,4 +102,4 @@ private:
 	std::vector<c_sample *> m_mipmap;
 };
 
-#endif // WAVELANG_SAMPLE_H__
+#endif // WAVELANG_ENGINE_SAMPLE_SAMPLE_H__

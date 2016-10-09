@@ -1,5 +1,5 @@
-#ifndef WAVELANG_FILE_UTILITY_H__
-#define WAVELANG_FILE_UTILITY_H__
+#ifndef WAVELANG_COMMON_UTILITY_FILE_UTILITY_H__
+#define WAVELANG_COMMON_UTILITY_FILE_UTILITY_H__
 
 #include "common/common.h"
 
@@ -18,4 +18,4 @@ template<typename t_value> bool read(std::ifstream &in, t_value &value) {
 	return !in.fail();
 }
 
-#endif // WAVELANG_FILE_UTILITY_H__
+#endif // WAVELANG_COMMON_UTILITY_FILE_UTILITY_H__

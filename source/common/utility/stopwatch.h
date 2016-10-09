@@ -1,5 +1,5 @@
-#ifndef WAVELANG_STOPWATCH_H__
-#define WAVELANG_STOPWATCH_H__
+#ifndef WAVELANG_COMMON_UTILITY_STOPWATCH_H__
+#define WAVELANG_COMMON_UTILITY_STOPWATCH_H__
 
 #include "common/common.h"
 
@@ -27,4 +27,4 @@ private:
 	int64 m_start_time;
 };
 
-#endif // WAVELANG_STOPWATCH_H__
+#endif // WAVELANG_COMMON_UTILITY_STOPWATCH_H__

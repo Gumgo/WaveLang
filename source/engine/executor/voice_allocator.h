@@ -1,5 +1,5 @@
-#ifndef WAVELANG_VOICE_ALLOCATOR_H__
-#define WAVELANG_VOICE_ALLOCATOR_H__
+#ifndef WAVELANG_ENGINE_EXECUTOR_VOICE_ALLOCATOR_H__
+#define WAVELANG_ENGINE_EXECUTOR_VOICE_ALLOCATOR_H__
 
 #include "common/common.h"
 #include "common/utility/linked_array.h"
@@ -62,4 +62,4 @@ private:
 	c_linked_array m_voice_list_nodes;
 };
 
-#endif // WAVELANG_VOICE_ALLOCATOR_H__
+#endif // WAVELANG_ENGINE_EXECUTOR_VOICE_ALLOCATOR_H__

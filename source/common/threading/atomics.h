@@ -1,5 +1,5 @@
-#ifndef WAVELANG_ATOMICS_H__
-#define WAVELANG_ATOMICS_H__
+#ifndef WAVELANG_COMMON_THREADING_ATOMICS_H__
+#define WAVELANG_COMMON_THREADING_ATOMICS_H__
 
 #include "common/common.h"
 
@@ -136,5 +136,4 @@ inline void write_barrier();
 #include "common/threading/atomics_fallback.inl"
 #endif // fallback
 
-
-#endif // WAVELANG_ATOMICS_H__
+#endif // WAVELANG_COMMON_THREADING_ATOMICS_H__

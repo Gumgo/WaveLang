@@ -1,5 +1,5 @@
-#ifndef WAVELANG_BUFFER_OPERATIONS_INTERNAL_H__
-#define WAVELANG_BUFFER_OPERATIONS_INTERNAL_H__
+#ifndef WAVELANG_ENGINE_BUFFER_OPERATIONS_BUFFER_OPERATIONS_INTERNAL_H__
+#define WAVELANG_ENGINE_BUFFER_OPERATIONS_BUFFER_OPERATIONS_INTERNAL_H__
 
 #include "common/common.h"
 
@@ -88,4 +88,4 @@ struct s_buffer_operation_multiplication {
 typedef s_buffer_operation_real_real_real<s_op_division> s_buffer_operation_division;
 typedef s_buffer_operation_real_real_real<s_op_modulo> s_buffer_operation_modulo;
 
-#endif // WAVELANG_BUFFER_OPERATIONS_INTERNAL_H__
+#endif // WAVELANG_ENGINE_BUFFER_OPERATIONS_BUFFER_OPERATIONS_INTERNAL_H__

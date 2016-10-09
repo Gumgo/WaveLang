@@ -1,5 +1,5 @@
-#ifndef WAVELANG_CONTROLLER_DRIVER_MIDI_H__
-#define WAVELANG_CONTROLLER_DRIVER_MIDI_H__
+#ifndef WAVELANG_DRIVER_CONTROLLER_DRIVER_MIDI_H__
+#define WAVELANG_DRIVER_CONTROLLER_DRIVER_MIDI_H__
 
 #include "common/common.h"
 
@@ -42,4 +42,4 @@ private:
 	s_controller_driver_settings m_settings;
 };
 
-#endif // WAVELANG_CONTROLLER_DRIVER_MIDI_H__
+#endif // WAVELANG_DRIVER_CONTROLLER_DRIVER_MIDI_H__

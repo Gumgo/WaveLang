@@ -1,5 +1,5 @@
-#ifndef WAVELANG_CONSOLE_COMMANDS_H__
-#define WAVELANG_CONSOLE_COMMANDS_H__
+#ifndef WAVELANG_CONSOLE_CONSOLE_COMMANDS_H__
+#define WAVELANG_CONSOLE_CONSOLE_COMMANDS_H__
 
 #include "common/common.h"
 
@@ -33,4 +33,4 @@ enum e_console_color {
 	k_console_color_count
 };
 
-#endif // WAVELANG_CONSOLE_COMMANDS_H__
+#endif // WAVELANG_CONSOLE_CONSOLE_COMMANDS_H__

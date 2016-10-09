@@ -1,5 +1,5 @@
-#ifndef WAVELANG_AST_H__
-#define WAVELANG_AST_H__
+#ifndef WAVELANG_COMPILER_AST_H__
+#define WAVELANG_COMPILER_AST_H__
 
 #include "common/common.h"
 
@@ -384,4 +384,4 @@ public:
 	virtual bool begin_visit(const type *node) { return true; }	\
 	virtual void end_visit(const type *node) {}
 
-#endif // WAVELANG_AST_H__
+#endif // WAVELANG_COMPILER_AST_H__

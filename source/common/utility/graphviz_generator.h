@@ -1,5 +1,5 @@
-#ifndef WAVELANG_GRAPHVIZ_GENERATOR_H__
-#define WAVELANG_GRAPHVIZ_GENERATOR_H__
+#ifndef WAVELANG_COMMON_UTILITY_GRAPHVIZ_GENERATOR_H__
+#define WAVELANG_COMMON_UTILITY_GRAPHVIZ_GENERATOR_H__
 
 #include "common/common.h"
 
@@ -55,4 +55,4 @@ private:
 	std::vector<std::pair<std::string, std::string>> m_edges;
 };
 
-#endif // WAVELANG_GRAPHVIZ_GENERATOR_H__
+#endif // WAVELANG_COMMON_UTILITY_GRAPHVIZ_GENERATOR_H__

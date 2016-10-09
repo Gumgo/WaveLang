@@ -1,5 +1,5 @@
-#ifndef WAVELANG_NATIVE_MODULE_H__
-#define WAVELANG_NATIVE_MODULE_H__
+#ifndef WAVELANG_EXECUTION_GRAPH_NATIVE_MODULE_H__
+#define WAVELANG_EXECUTION_GRAPH_NATIVE_MODULE_H__
 
 #include "common/common.h"
 
@@ -474,4 +474,4 @@ struct s_native_module_optimization_rule {
 #define NMO_RV(value)		s_native_module_optimization_symbol::build_real_value(value)
 #define NMO_BV(value)		s_native_module_optimization_symbol::build_bool_value(value)
 
-#endif // WAVELANG_NATIVE_MODULE_H__
+#endif // WAVELANG_EXECUTION_GRAPH_NATIVE_MODULE_H__

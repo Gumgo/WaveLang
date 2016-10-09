@@ -1,5 +1,5 @@
-#ifndef WAVELANG_EXECUTION_GRAPH_H__
-#define WAVELANG_EXECUTION_GRAPH_H__
+#ifndef WAVELANG_EXECUTION_GRAPH_EXECUTION_GRAPH_H__
+#define WAVELANG_EXECUTION_GRAPH_EXECUTION_GRAPH_H__
 
 #include "common/common.h"
 #include "common/utility/string_table.h"
@@ -152,4 +152,4 @@ private:
 	c_string_table m_string_table;
 };
 
-#endif // WAVELANG_EXECUTION_GRAPH_H__
+#endif // WAVELANG_EXECUTION_GRAPH_EXECUTION_GRAPH_H__

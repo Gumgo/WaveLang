@@ -1,5 +1,5 @@
-#ifndef WAVELANG_MERGE_SORT_H__
-#define WAVELANG_MERGE_SORT_H__
+#ifndef WAVELANG_COMMON_UTILITY_MERGE_SORT_H__
+#define WAVELANG_COMMON_UTILITY_MERGE_SORT_H__
 
 #include "common/common.h"
 
@@ -58,4 +58,4 @@ void merge_sort(c_wrapped_array<t_value> values, c_wrapped_array<t_value> scratc
 	}
 }
 
-#endif // WAVELANG_MERGE_SORT_H__
+#endif // WAVELANG_COMMON_UTILITY_MERGE_SORT_H__
