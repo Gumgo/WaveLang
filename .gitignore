@@ -1,8 +1,18 @@
-*.o
-/bin
+# Ignore any directory called bin or obj
+**/bin
+**/obj
+
+# Ignore objects
 /obj
-/VsProjectFiles
-/VsProjectGenerator/VsProjectGenerator/bin
-/VsProjectGenerator/VsProjectGenerator/obj
-/VsProjectGenerator/VsProjectGenerator/*.user
+
+# Ignore the app directory
+/app
+
+# Per-user VS files
 /VsProjectGenerator/.vs
+
+# Ignore generated VS projects but don't ignore the jam/batch files required to generate them
+/projects/vs_projects/*
+!/projects/vs_projects/Jamfile.jam
+!/projects/vs_projects/clean_vs_projects.bat
+!/projects/vs_projects/generate_vs_projects.bat

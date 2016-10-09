@@ -309,7 +309,7 @@ uint32 c_lr_action_goto_table::get_state_count() const {
 #if PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
 	return m_action_table.size() / m_terminal_count;
 #else // PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
-	return m_action_table.get_count() / m_terminal_count;
+	return static_cast<uint32>(m_action_table.get_count() / m_terminal_count);
 #endif // PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
 }
 

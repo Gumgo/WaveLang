@@ -4,16 +4,8 @@
 #include "compiler/compiler.h"
 #include "execution_graph/execution_graph.h"
 #include "common/utility/graphviz_generator.h"
+#include "compiler/getopt/getopt.h"
 #include <iostream>
-#include <getopt.h>
-
-#if PREDEFINED(PLATFORM_WINDOWS)
-#ifdef _DEBUG
-#pragma comment(lib, "getopt_d.lib")
-#else // _DEBUG
-#pragma comment(lib, "getopt.lib")
-#endif // _DEBUG
-#endif // PREDEFINED(PLATFORM_WINDOWS)
 
 // $TODO move somewhere better?
 static const char *k_wavelang_synth_extension = "wls";

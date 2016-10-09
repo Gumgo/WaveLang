@@ -324,8 +324,8 @@ void c_sample::initialize(c_wrapped_array_const<c_sample *> mipmap) {
 
 	uint32 loop_padding = k_max_sample_padding;
 	m_mipmap.resize(mipmap.get_count());
-	for (uint32 index = 0; index < mipmap.get_count(); index++) {
-		uint32 reverse_index = mipmap.get_count() - index - 1;
+	for (size_t index = 0; index < mipmap.get_count(); index++) {
+		size_t reverse_index = mipmap.get_count() - index - 1;
 		c_sample *mip_sample = mipmap[reverse_index];
 		m_mipmap[reverse_index] = mip_sample;
 
@@ -451,7 +451,8 @@ void c_sample::initialize_data_with_padding(uint32 channel_count, uint32 frame_c
 
 	// Add padding to the beginning and end
 	// Round up to account for SSE padding
-	m_total_frame_count = align_size(m_sampling_frame_count + (2 * edge_padding), k_sse_block_elements);
+	m_total_frame_count = align_size(m_sampling_frame_count + (2 * edge_padding),
+		static_cast<uint32>(k_sse_block_elements));
 	if (m_phase_shift_enabled) {
 		m_total_frame_count += loop_frame_count;
 	}
@@ -537,7 +538,7 @@ void c_sample::initialize_data_with_padding(uint32 channel_count, uint32 frame_c
 		}
 
 		// Pad with 0 for SSE alignment
-		uint32 sse_padding_count = align_size(dst_offset, k_sse_block_elements) - dst_offset;
+		uint32 sse_padding_count = align_size(dst_offset, static_cast<uint32>(k_sse_block_elements)) - dst_offset;
 		for (uint32 index = 0; index < sse_padding_count; index++) {
 			sample_data_array[dst_offset] = 0.0f;
 			dst_offset++;

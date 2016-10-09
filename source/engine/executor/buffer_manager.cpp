@@ -16,7 +16,7 @@ void c_buffer_manager::initialize(const c_task_graph *task_graph, uint32 max_buf
 
 	m_real_buffer_pool_index = static_cast<uint32>(-1);
 	//m_bool_buffer_pool_index = static_cast<uint32>(-1);
-	for (size_t index = 0; index < buffer_usage_info.get_count(); index++) {
+	for (uint32 index = 0; index < buffer_usage_info.get_count(); index++) {
 		const c_task_graph::s_buffer_usage_info &info = buffer_usage_info[index];
 		s_buffer_pool_description desc;
 
@@ -50,7 +50,7 @@ void c_buffer_manager::initialize(const c_task_graph *task_graph, uint32 max_buf
 	// Add a slot for real buffers and bool buffers if they don't exist already
 
 	if (m_real_buffer_pool_index == static_cast<uint32>(-1)) {
-		m_real_buffer_pool_index = buffer_pool_descriptions.size();
+		m_real_buffer_pool_index = static_cast<uint32>(buffer_pool_descriptions.size());
 		s_buffer_pool_description desc;
 		desc.type = k_buffer_type_real;
 		desc.size = max_buffer_size;

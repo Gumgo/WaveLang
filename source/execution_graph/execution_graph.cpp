@@ -374,7 +374,7 @@ bool c_execution_graph::validate() const {
 	std::vector<bool> nodes_marked(m_nodes.size());
 	while (true) {
 		// Find an unvisited node
-		size_t index;
+		uint32 index;
 		for (index = 0; index < m_nodes.size(); index++) {
 			if (!nodes_visited[index]) {
 				break;
@@ -1107,10 +1107,10 @@ const s_execution_graph_globals c_execution_graph::get_globals() const {
 }
 
 void c_execution_graph::remove_unused_nodes_and_reassign_node_indices() {
-	std::vector<size_t> old_to_new_indices(m_nodes.size(), k_invalid_index);
+	std::vector<uint32> old_to_new_indices(m_nodes.size(), k_invalid_index);
 
-	size_t next_new_index = 0;
-	for (size_t old_index = 0; old_index < m_nodes.size(); old_index++) {
+	uint32 next_new_index = 0;
+	for (uint32 old_index = 0; old_index < m_nodes.size(); old_index++) {
 		if (m_nodes[old_index].type == k_execution_graph_node_type_invalid) {
 			// This node was removed, don't assign it a new index
 		} else {
@@ -1127,11 +1127,11 @@ void c_execution_graph::remove_unused_nodes_and_reassign_node_indices() {
 	// Remap edge indices
 	for (size_t old_index = 0; old_index < m_nodes.size(); old_index++) {
 		s_node &node = m_nodes[old_index];
-		for (size_t in = 0; in < node.incoming_edge_indices.size(); in++) {
+		for (uint32 in = 0; in < node.incoming_edge_indices.size(); in++) {
 			node.incoming_edge_indices[in] = old_to_new_indices[node.incoming_edge_indices[in]];
 			wl_assert(node.incoming_edge_indices[in] != k_invalid_index);
 		}
-		for (size_t out = 0; out < node.outgoing_edge_indices.size(); out++) {
+		for (uint32 out = 0; out < node.outgoing_edge_indices.size(); out++) {
 			node.outgoing_edge_indices[out] = old_to_new_indices[node.outgoing_edge_indices[out]];
 			wl_assert(node.outgoing_edge_indices[out] != k_invalid_index);
 		}

@@ -1,7 +1,6 @@
 #include "driver/audio_driver_interface.h"
 
 #include <portaudio.h>
-#pragma comment(lib, "portaudio_x86.lib")
 
 static PaSampleFormat get_pa_sample_format(e_sample_format sample_format) {
 	switch (sample_format) {

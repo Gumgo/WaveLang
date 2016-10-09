@@ -84,10 +84,10 @@ c_sample *build_native_sample(uint32 native_sample) {
 		// This sample consists of a single array of sample data
 		wl_assert(data.sample_data.get_count() > 0);
 
-		uint32 sample_rate = data.sample_data.get_count() * k_native_sample_frequency;
-		sample->initialize(sample_rate, 1, data.sample_data.get_count(),
-			k_sample_loop_mode_loop, 0, data.sample_data.get_count(), data.phase_shift_enabled,
-			data.sample_data);
+		uint32 sample_rate = cast_integer_verify<uint32>(data.sample_data.get_count()) * k_native_sample_frequency;
+		sample->initialize(sample_rate, 1, cast_integer_verify<uint32>(data.sample_data.get_count()),
+			k_sample_loop_mode_loop, 0, cast_integer_verify<uint32>(data.sample_data.get_count()),
+			data.phase_shift_enabled, data.sample_data);
 	} else {
 		// This sample consists of a mipmap of sample data arrays. Construct sub-samples for each one, and place them
 		// into a wrapped array to be passed to the owner mipmap sample.
@@ -99,10 +99,10 @@ c_sample *build_native_sample(uint32 native_sample) {
 			c_sample *sub_sample = new c_sample();
 
 			c_sample_data_array sub_sample_data = data.mipmap_data[index];
-			uint32 sample_rate = sub_sample_data.get_count() * k_native_sample_frequency;
-			sub_sample->initialize_for_mipmap(sample_rate, 1, sub_sample_data.get_count(),
-				k_sample_loop_mode_loop, 0, sub_sample_data.get_count(), data.phase_shift_enabled,
-				sub_sample_data);
+			uint32 sample_rate = cast_integer_verify<uint32>(sub_sample_data.get_count()) * k_native_sample_frequency;
+			sub_sample->initialize_for_mipmap(sample_rate, 1, cast_integer_verify<uint32>(sub_sample_data.get_count()),
+				k_sample_loop_mode_loop, 0, cast_integer_verify<uint32>(sub_sample_data.get_count()),
+				data.phase_shift_enabled, sub_sample_data);
 
 			sub_samples[index] = sub_sample;
 		}

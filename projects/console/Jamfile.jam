@@ -1,0 +1,65 @@
+# Console - An error console for the runtime, which is another process because we cannot spawn multiple command line windows in the same process
+
+import path ;
+import sequence ;
+import vs-project-generator ;
+	
+local project-name = console ;
+
+local defines = ;
+
+local features = ;
+
+local source-dir = $(TOP)/source ;
+
+local all-files = [ path.glob-tree
+	### Source paths:
+	$(source-dir)/common
+	$(source-dir)/console
+	$(source-dir)/natvis
+	:
+	### Search patterns:
+	$(GLOB_PATTERNS)
+	:
+	### Exclude patterns:
+	] ;
+
+local include-directories =
+	$(source-dir) ;
+
+local libraries = ;
+
+if $(GENERATE_VS_PROJECTS) = 1
+{
+	# Don't declare any targets when generating VS project files
+	local local-files = [ get-local-source-files $(all-files) ] ;
+	vs-project-generator.setup-vs-project-config $(TOP) : $(project-name) : $(defines) : $(features) : $(local-files) : $(include-directories) ;
+}
+else
+{
+	# Add include directories to features
+	features += <include>$(include-directories) ;
+
+	# Determine the set of source files
+	local source-files = [ sequence.filter is-c-or-cpp-file : $(all-files) ] ;
+
+	# Declare obj files for each one
+	local obj-targets ;
+	for local source-file in $(source-files)
+	{
+		local obj-target = [ get-obj-file-from-source-file $(project-name) : $(source-file) ] ;
+		obj-targets += $(obj-target) ;
+		obj $(obj-target) : $(source-file) : $(features) ;
+	}
+
+	# Declare the executable
+	exe $(project-name) : $(obj-targets) $(libraries) : $(features) ;
+
+	# Install to the app directory
+	local install-dir = [ get-app-dir ] ;
+	install $(project-name)-install : $(project-name) :
+		<variant>debug,<address-model>32:<location>$(install-dir)/debug_32
+		<variant>debug,<address-model>64:<location>$(install-dir)/debug_64
+		<variant>release,<address-model>32:<location>$(install-dir)/release_32
+		<variant>release,<address-model>64:<location>$(install-dir)/release_64 ;
+}

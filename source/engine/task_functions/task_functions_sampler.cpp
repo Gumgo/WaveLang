@@ -1262,7 +1262,7 @@ static real32 fetch_sample(const c_sample *sample, uint32 channel, real32 time) 
 	// perform some shifting.
 
 	uint32 start_sse_index = align_size_down(start_window_sample_index, k_sse_block_elements);
-	uint32 end_sse_index = align_size(end_window_sample_index, k_sse_block_elements);
+	uint32 end_sse_index = align_size(end_window_sample_index, static_cast<uint32>(k_sse_block_elements));
 	c_wrapped_array_const<real32> sample_data = sample->get_channel_sample_data(channel);
 	const real32 *sample_ptr = &sample_data[start_sse_index];
 	// Don't dereference the array directly because we may want a pointer to the very end, which is not a valid element

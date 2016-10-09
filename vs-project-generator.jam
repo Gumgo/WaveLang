@@ -1,0 +1,138 @@
+import string ;
+import path ;
+import sequence ;
+
+rule null-if-empty ( values * )
+{
+	if $(values)
+	{
+		return $(values) ;
+	}
+	else
+	{
+		return "" ;
+	}
+}
+
+rule setup-vs-project-config ( top-dir : project-name : defines * : features * : source-files * : include-directories * )
+{
+	local output-dir = [ path.native $(top-dir)/bin ] ;
+	local native-include-directories = [ sequence.transform path.native : $(include-directories) ] ;
+
+	local configurations = Debug Release ;
+	local platforms = Win32 x64 ;
+
+	for local configuration in $(configurations)
+	{
+		local is-debug = 0 ;
+		if $(configuration) = Debug
+		{
+			local is-debug = 1 ;
+		}
+
+		for local platform in $(platforms)
+		{
+			local is-64-bit = 0 ;
+			if $(platform) = x64
+			{
+				local is-64-bit = 1 ;
+			}
+
+			local build-command = [ get-base-build-command $(top-dir) : $(project-name) : $(configuration) : $(platform) ] ;
+
+			setup-vs-project-config-internal
+				$(top-dir) :
+				$(project-name) :
+				$(configuration) :
+				$(platform) :
+				$(build-command) :
+				[ string.join $(build-command) --clean : " " ] :
+				[ string.join $(build-command) -a : " " ] :
+				$(output-dir) :
+				$(defines) :
+				$(source-files) :
+				$(native-include-directories) :
+				$(is-64-bit) :
+				$(is-debug) ;
+		}
+	}
+}
+
+local rule get-base-build-command ( top-dir : project-name : configuration : platform )
+{
+	local working-dir = [ path.native $(top-dir) ] ;
+	local target-name = $(project-name)-install ;
+	local target = projects/$(project-name)//$(target-name) ;
+
+	local variant ;
+	if $(configuration) = Debug
+	{
+		variant = variant=debug ;
+	}
+	else if $(configuration) = Release
+	{
+		variant = variant=release ;
+	}
+
+	local address-model ;
+	if $(platform) = Win32
+	{
+		address-model = address-model=32 ;
+	}
+	else if $(platform) = x64
+	{
+		address-model = address-model=64 ;
+	}
+
+	local cd-command = "cd " [ string.join "\"" $(working-dir) "\"" ] ;
+	local b2-command = "b2 " [ string.join $(variant) $(address-model) $(target) : " " ] ;
+	local full-command = [ string.join $(cd-command) " && " $(b2-command) ] ;
+
+	return $(full-command) ;
+}
+
+local rule setup-vs-project-config-internal (
+	top-dir :
+	project-name :
+	configuration :
+	platform :
+	build-command :
+	clean-command :
+	rebuild-command :
+	output-dir :
+	defines * :
+	source-files * :
+	include-directories * :
+	is-64-bit :
+	is-debug )
+{
+	local project-configuration-platform = $(project-name)_$(configuration)_$(platform) ;
+	echo "Generating VS project config for" $(project-configuration-platform) ;
+	local filename = [ path.native $(top-dir)/projects/vs_projects/$(project-configuration-platform).vs_project_config ] ;
+	local contents = [ string.join
+		$(project-name)
+		$(configuration)
+		$(platform)
+		$(build-command)
+		$(clean-command)
+		$(rebuild-command)
+		$(output-dir)
+		[ null-if-empty [ string.join $(defines) : ";" ] ]
+		[ null-if-empty [ string.join $(source-files) : ";" ] ]
+		[ null-if-empty [ string.join $(include-directories) : ";" ] ]
+		$(is-64-bit)
+		$(is-debug) :
+		"\n" ] ;
+	local unused = @($(filename):E=$(contents)) ;
+}
+
+rule setup-vs-solution-config ( top-dir : solution-name )
+{
+	echo "Generating VS solution config for" $(solution-name) ;
+	local contents = [ string.join
+		$(solution-name)
+		"..\\.." : # Source root directory relative to solution directory
+		"\n" ] ;
+	local filename = [ path.native $(top-dir)/projects/vs_projects/$(solution-name).vs_solution_config ] ;
+	local unused = @($(filename):E=$(contents)) ;
+}

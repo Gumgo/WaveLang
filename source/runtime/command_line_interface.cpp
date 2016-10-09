@@ -217,13 +217,13 @@ bool c_command_line_interface::is_whitespace(char c) {
 
 void c_command_line_interface::list_devices() {
 	std::cout << "Audio devices:\n";
-	for (size_t index = 0; index < runtime_context.audio_driver_interface.get_device_count(); index++) {
+	for (uint32 index = 0; index < runtime_context.audio_driver_interface.get_device_count(); index++) {
 		s_audio_device_info device_info = runtime_context.audio_driver_interface.get_device_info(index);
 		std::cout << index << ": " << device_info.name << "\n";
 	}
 
 	std::cout << "Controller devices:\n";
-	for (size_t index = 0; index < runtime_context.controller_driver_interface.get_device_count(); index++) {
+	for (uint32 index = 0; index < runtime_context.controller_driver_interface.get_device_count(); index++) {
 		s_controller_device_info device_info = runtime_context.controller_driver_interface.get_device_info(index);
 		std::cout << index << ": " << device_info.name << "\n";
 	}

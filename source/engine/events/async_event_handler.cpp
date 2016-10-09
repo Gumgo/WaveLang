@@ -223,7 +223,7 @@ void c_async_event_handler::flush() {
 				event_size, buffer.get_pointer() + current_position.read + sizeof(uint32));
 
 			// Advance the read position, making sure we first align the size
-			uint32 read_advance = align_size(sizeof(uint32) + event_size, k_buffer_alignment);
+			uint32 read_advance = static_cast<uint32>(align_size(sizeof(uint32) + event_size, k_buffer_alignment));
 
 			// Clear the buffer we just read from to 0 so we don't accidentally read it again
 			memset(buffer.get_pointer() + current_position.read, 0, read_advance);

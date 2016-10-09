@@ -85,7 +85,7 @@ static void task_function_real_array_dereference_in_out(const s_task_function_co
 			}
 		} else {
 			// The array has some buffers as values. We haven't completely removed branching in this case.
-			for (size_t index = 0; index < context.buffer_size; index++) {
+			for (uint32 index = 0; index < context.buffer_size; index++) {
 				uint32 array_index = get_index_or_invalid(array_count, index_ptr[index]);
 				int32 array_index_is_valid = (array_index != 0xffffffff);
 				// 0 if the index is invalid, 0xffffffff otherwise
@@ -188,7 +188,7 @@ static void task_function_real_array_dereference_inout(const s_task_function_con
 			}
 		} else {
 			// The array has some buffers as values. We haven't completely removed branching in this case.
-			for (size_t index = 0; index < context.buffer_size; index++) {
+			for (uint32 index = 0; index < context.buffer_size; index++) {
 				uint32 array_index = get_index_or_invalid(array_count, index_out_ptr[index]);
 				int32 array_index_is_valid = (array_index != 0xffffffff);
 				// 0 if the index is invalid, 0xffffffff otherwise
@@ -273,10 +273,10 @@ static void task_function_bool_array_dereference_in_out(const s_task_function_co
 	} else {
 		if (context.arguments[0].is_constant()) {
 			// The entire array is constant values. This case is optimized to avoid branching.
-			for (size_t index_outer = 0; index_outer < context.buffer_size; index_outer += 32) {
+			for (uint32 index_outer = 0; index_outer < context.buffer_size; index_outer += 32) {
 				int32 value = 0;
 
-				for (size_t index = index_outer; index < index_outer + 32 && index < context.buffer_size; index++) {
+				for (uint32 index = index_outer; index < index_outer + 32 && index < context.buffer_size; index++) {
 					uint32 array_index = get_index_or_invalid(array_count, index_ptr[index]);
 					int32 array_index_is_valid = (array_index != 0xffffffff);
 					// 0 if the index is invalid, 0xffffffff otherwise
@@ -298,10 +298,10 @@ static void task_function_bool_array_dereference_in_out(const s_task_function_co
 			}
 		} else {
 			// The array has some buffers as values. We haven't completely removed branching in this case.
-			for (size_t index_outer = 0; index_outer < context.buffer_size; index_outer += 32) {
+			for (uint32 index_outer = 0; index_outer < context.buffer_size; index_outer += 32) {
 				int32 value = 0;
 
-				for (size_t index = index_outer; index < index_outer + 32 && index < context.buffer_size; index++) {
+				for (uint32 index = index_outer; index < index_outer + 32 && index < context.buffer_size; index++) {
 					uint32 array_index = get_index_or_invalid(array_count, index_ptr[index]);
 					int32 array_index_is_valid = (array_index != 0xffffffff);
 					// 0 if the index is invalid, 0xffffffff otherwise

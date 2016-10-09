@@ -101,7 +101,7 @@ uint32 c_sample_library::request_sample(const char *filename, e_sample_loop_mode
 					previous_requested_sample.loop_mode == loop_mode &&
 					previous_requested_sample.phase_shift_enabled == phase_shift_enabled) {
 					// Move from the previous to the current list
-					result = m_requested_samples.size();
+					result = static_cast<uint32>(m_requested_samples.size());
 					m_requested_samples.push_back(s_requested_sample());
 					std::swap(previous_requested_sample, m_previous_requested_samples.back());
 					std::swap(m_requested_samples.back(), m_previous_requested_samples.back());
@@ -112,7 +112,7 @@ uint32 c_sample_library::request_sample(const char *filename, e_sample_loop_mode
 		}
 
 		if (!found) {
-			result = m_requested_samples.size();
+			result = static_cast<uint32>(m_requested_samples.size());
 			m_requested_samples.push_back(s_requested_sample());
 			s_requested_sample &new_request = m_requested_samples.back();
 			new_request.file_path = full_path;

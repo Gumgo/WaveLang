@@ -160,7 +160,7 @@ static bool read_platform(uint32 bytes_to_read, void *buffer) {
 
 static void print_platform(const char *text) {
 	DWORD chars_written;
-	WriteConsole(g_console, text, strlen(text), &chars_written, nullptr);
+	WriteConsole(g_console, text, static_cast<DWORD>(strlen(text)), &chars_written, nullptr);
 }
 
 static void set_text_color_platform(e_console_color color) {

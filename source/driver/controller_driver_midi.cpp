@@ -1,11 +1,6 @@
 #include "driver/controller_driver_midi.h"
 
 #include <RtMidi.h>
-#ifdef _DEBUG
-#pragma comment(lib, "rtmidid.lib")
-#else // _DEBUG
-#pragma comment(lib, "rtmidi.lib")
-#endif // _DEBUG
 
 c_controller_driver_midi::c_controller_driver_midi() {
 	m_initialized = false;

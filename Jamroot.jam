@@ -1,0 +1,71 @@
+################################
+# Syntax Style Guide
+#
+# rule my-rule-name ( parameter )
+# constant MY_CONSTANT ;
+# local my-local ;
+################################
+
+path-constant TOP : . ;
+
+project : build-dir $(TOP)/bin ;
+
+rule load-root-module ( module )
+{
+	import modules ;
+	modules.load $(module) : : $(TOP) ;
+}
+
+load-root-module vs-project-generator ;
+
+import os ;
+import path ;
+import regex ;
+
+rule to-bool ( value * )
+{
+	if $(value)
+	{
+		return 1 ;
+	}
+	else
+	{
+		return 0 ;
+	}
+}
+
+# Constants accessible to all projects
+constant GLOB_PATTERNS : *.c *.cpp *.h *.inl *.natvis ;
+
+# Grab variables set from the command line
+constant GENERATE_VS_PROJECTS : [ to-bool [ os.environ GENERATE_VS_PROJECTS ] ] ;
+
+rule get-local-source-files ( source-files * )
+{
+	local relative-dir = [ path.make $(TOP) ] ;
+	local local-source-files ;
+
+	for local source-file in $(source-files)
+	{
+		local-source-files += [ path.relative-to $(relative-dir) $(source-file) ] ;
+	}
+
+	return $(local-source-files) ;
+}
+
+rule is-c-or-cpp-file ( file )
+{
+	return [ regex.match "([.](c|(cpp))$)" : $(file) ] ;
+}
+
+rule get-obj-file-from-source-file ( project : source-file )
+{
+	local local-source-file = [ get-local-source-files $(source-file) ] ;
+	local obj-file = $(project)/$(local-source-file) ;
+	return $(obj-file) ;
+}
+
+rule get-app-dir ( )
+{
+	return $(TOP)/app ;
+}

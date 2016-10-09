@@ -177,7 +177,7 @@ void s_buffer_operation_delay::in_out(
 	context->is_constant = false;
 
 	size_t delay_samples_size = context->delay_samples * sizeof(real32);
-	size_t samples_to_process = std::min(context->delay_samples, buffer_size);
+	size_t samples_to_process = std::min(static_cast<size_t>(context->delay_samples), buffer_size);
 	size_t samples_to_process_size = samples_to_process * sizeof(real32);
 
 	// 1) Copy delay buffer to beginning of output
