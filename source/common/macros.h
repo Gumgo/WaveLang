@@ -8,7 +8,7 @@
 #define MACRO_BLOCK(x) do { x } while (0)
 
 // Causes an error if x is used before it has been defined
-#define PREDEFINED(opt, ...) (1 / defined opt##__VA_ARGS__ && opt)
+#define IS_TRUE(opt, ...) (1 / defined opt##__VA_ARGS__ && opt)
 
 #define NUMBEROF(x) (sizeof(x) / (sizeof(x[0])))
 

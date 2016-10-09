@@ -3,7 +3,9 @@
 
 #include "common/common.h"
 #include "common/utility/aligned_allocator.h"
+
 #include "engine/math/sse.h"
+
 #include <vector>
 
 enum e_sample_loop_mode {

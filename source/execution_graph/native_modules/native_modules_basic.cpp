@@ -1,5 +1,6 @@
-#include "execution_graph/native_modules/native_modules_basic.h"
 #include "execution_graph/native_module_registry.h"
+#include "execution_graph/native_modules/native_modules_basic.h"
+
 #include <algorithm>
 
 static const char *k_native_modules_basic_library_name = "basic";

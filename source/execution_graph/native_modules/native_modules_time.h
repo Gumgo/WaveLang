@@ -2,6 +2,7 @@
 #define WAVELANG_NATIVE_MODULES_TIME_H__
 
 #include "common/common.h"
+
 #include "execution_graph/native_module.h"
 
 static const uint32 k_native_modules_time_library_id = 5;

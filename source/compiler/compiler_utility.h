@@ -2,6 +2,7 @@
 #define WAVELANG_COMPILER_UTILITY_H__
 
 #include "common/common.h"
+
 #include <string>
 #include <vector>
 

@@ -2,6 +2,7 @@
 #define WAVELANG_GRAPHVIZ_GENERATOR_H__
 
 #include "common/common.h"
+
 #include <vector>
 
 extern const char *k_graphviz_file_extension;

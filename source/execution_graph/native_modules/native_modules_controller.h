@@ -2,6 +2,7 @@
 #define WAVELANG_NATIVE_MODULES_CONTROLLER_H__
 
 #include "common/common.h"
+
 #include "execution_graph/native_module.h"
 
 static const uint32 k_native_modules_controller_library_id = 6;

@@ -64,10 +64,10 @@ void c_linked_array::insert_node_into_list(
 	s_node &node = m_nodes[node_index];
 	wl_assert(!is_node_either_free_or_in_any_list(node_index));
 
-#if PREDEFINED(SLOW_LINKED_ARRAY_ASSERTS_ENABLED)
+#if IS_TRUE(SLOW_LINKED_ARRAY_ASSERTS_ENABLED)
 	wl_assert(insert_before_this_node_index == k_invalid_linked_array_index ||
 		is_node_in_list_slow(list, insert_before_this_node_index));
-#endif // PREDEFINED(SLOW_LINKED_ARRAY_ASSERTS_ENABLED)
+#endif // IS_TRUE(SLOW_LINKED_ARRAY_ASSERTS_ENABLED)
 
 	size_t insert_after_this_node_index;
 	if (insert_before_this_node_index == k_invalid_linked_array_index) {
@@ -114,9 +114,9 @@ void c_linked_array::remove_node_from_list(s_linked_array_list &list, size_t nod
 
 	wl_assert(is_node_either_free_or_in_any_list(node_index));
 
-#if PREDEFINED(SLOW_LINKED_ARRAY_ASSERTS_ENABLED)
+#if IS_TRUE(SLOW_LINKED_ARRAY_ASSERTS_ENABLED)
 	wl_assert(is_node_in_list_slow(list, node_index));
-#endif // PREDEFINED(SLOW_LINKED_ARRAY_ASSERTS_ENABLED)
+#endif // IS_TRUE(SLOW_LINKED_ARRAY_ASSERTS_ENABLED)
 
 	if (node.prev == node_index) {
 		// This node is the list front

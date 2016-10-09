@@ -28,7 +28,28 @@ local all-files = [ path.glob-tree
 local include-directories =
 	$(source-dir) ;
 
-local libraries = ;
+# Configuration-dependent libraries: is there a better way to do this?
+alias libraries-msvc-debug-32 :
+	$(WINDOWS_SDK_DIR)/Lib/winv6.3/um/x86/ShLwApi.Lib :
+	<toolset>msvc <variant>debug <address-model>32 ;
+
+alias libraries-msvc-debug-64 :
+	$(WINDOWS_SDK_DIR)/Lib/winv6.3/um/x64/ShLwApi.Lib :
+	<toolset>msvc <variant>debug <address-model>64 ;
+
+alias libraries-msvc-release-32 :
+	$(WINDOWS_SDK_DIR)/Lib/winv6.3/um/x86/ShLwApi.Lib :
+	<toolset>msvc <variant>release <address-model>32 ;
+
+alias libraries-msvc-release-64 :
+	$(WINDOWS_SDK_DIR)/Lib/winv6.3/um/x64/ShLwApi.Lib :
+	<toolset>msvc <variant>release <address-model>64 ;
+
+local libraries =
+	libraries-msvc-debug-32
+	libraries-msvc-debug-64
+	libraries-msvc-release-32
+	libraries-msvc-release-64 ;
 
 if $(GENERATE_VS_PROJECTS) = 1
 {

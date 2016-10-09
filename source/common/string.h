@@ -1,11 +1,12 @@
 #ifndef WAVELANG_STRING_H__
 #define WAVELANG_STRING_H__
 
+#include "common/asserts.h"
 #include "common/macros.h"
 #include "common/types.h"
-#include "common/asserts.h"
-#include <string>
+
 #include <cstring>
+#include <string>
 
 inline bool string_compare_case_insensitive(const char *str_a, const char *str_b) {
 	for (size_t index = 0; true; index++) {
@@ -143,7 +144,7 @@ public:
 
 	// Makes sure the string has a null terminator
 	void validate() const {
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 		bool null_terminator_found = false;
 		for (size_t index = 0; !null_terminator_found && index < k_buffer_size; index++) {
 			if (m_buffer[index] == '\0') {
@@ -152,7 +153,7 @@ public:
 		}
 
 		wl_assert(null_terminator_found);
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 	}
 
 private:

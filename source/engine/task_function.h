@@ -2,8 +2,10 @@
 #define WAVELANG_TASK_FUNCTION_H__
 
 #include "common/common.h"
-#include "execution_graph/native_module.h"
+
 #include "engine/buffer.h"
+
+#include "execution_graph/native_module.h"
 
 class c_event_interface;
 class c_sample_library_accessor;
@@ -136,9 +138,9 @@ typedef c_wrapped_array_const<s_string_array_element> c_string_array;
 struct s_task_function_argument {
 	// Do not access these directly
 	struct {
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 		c_task_data_type type;
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 		bool is_constant;
 
 		union u_value {

@@ -1,5 +1,7 @@
-#include "engine/executor/voice_allocator.h"
 #include "common/utility/stopwatch.h"
+
+#include "engine/executor/voice_allocator.h"
+
 #include <algorithm>
 
 c_voice_allocator::c_voice_allocator() {

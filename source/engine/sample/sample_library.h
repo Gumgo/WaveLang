@@ -2,7 +2,9 @@
 #define WAVELANG_SAMPLE_LIBRARY_H__
 
 #include "common/common.h"
+
 #include "engine/sample/sample.h"
+
 #include <filesystem>
 #include <string>
 #include <vector>

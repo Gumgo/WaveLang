@@ -2,8 +2,9 @@
 #define WAVELANG_TASK_FUNCTIONS_SAMPLER_SINC_WINDOW_H__
 
 #include "common/common.h"
-#include "engine/sample/sample.h"
+
 #include "engine/math/math.h"
+#include "engine/sample/sample.h"
 
 // The size in samples of the sinc window, inclusive of the first and last sample
 static const size_t k_sinc_window_size = 9;

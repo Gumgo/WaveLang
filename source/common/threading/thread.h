@@ -7,14 +7,14 @@
 
 #define USE_THREAD_IMPLEMENTATION_WINDOWS 0
 
-#if !PREDEFINED(PREFER_THREAD_IMPLEMENTATION_FALLBACK)
-	#if PREDEFINED(PLATFORM_WINDOWS)
+#if !IS_TRUE(PREFER_THREAD_IMPLEMENTATION_FALLBACK)
+	#if IS_TRUE(PLATFORM_WINDOWS)
 		#undef USE_THREAD_IMPLEMENTATION_WINDOWS
 		#define USE_THREAD_IMPLEMENTATION_WINDOWS 1
 	#endif // implementation
-#endif // !PREDEFINED(PREFER_THREAD_IMPLEMENTATION_FALLBACK)
+#endif // !IS_TRUE(PREFER_THREAD_IMPLEMENTATION_FALLBACK)
 
-#if PREDEFINED(USE_THREAD_IMPLEMENTATION_WINDOWS)
+#if IS_TRUE(USE_THREAD_IMPLEMENTATION_WINDOWS)
 // No additional includes
 #else // fallback
 #include <thread>
@@ -66,7 +66,7 @@ struct s_thread_definition {
 // Class encapsulating a thread
 class c_thread : private c_uncopyable {
 public:
-#if PREDEFINED(USE_THREAD_IMPLEMENTATION_WINDOWS)
+#if IS_TRUE(USE_THREAD_IMPLEMENTATION_WINDOWS)
 	typedef uint32 t_thread_id;
 #else // fallback
 	typedef std::thread::id t_thread_id;
@@ -106,7 +106,7 @@ private:
 	t_thread_id m_thread_id;
 
 	// Implementation-specific thread handle
-#if PREDEFINED(USE_THREAD_IMPLEMENTATION_WINDOWS)
+#if IS_TRUE(USE_THREAD_IMPLEMENTATION_WINDOWS)
 	HANDLE m_thread_handle;
 	static DWORD WINAPI thread_entry_point(LPVOID param);
 #else // fallback

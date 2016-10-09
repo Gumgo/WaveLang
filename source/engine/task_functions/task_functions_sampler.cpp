@@ -1,13 +1,14 @@
-#include "engine/task_functions/task_functions_sampler.h"
-#include "execution_graph/native_modules/native_modules_sampler.h"
-#include "engine/task_function_registry.h"
 #include "engine/buffer.h"
+#include "engine/task_function_registry.h"
 #include "engine/buffer_operations/buffer_operations.h"
+#include "engine/events/event_data_types.h"
+#include "engine/events/event_interface.h"
 #include "engine/sample/sample.h"
 #include "engine/sample/sample_library.h"
+#include "engine/task_functions/task_functions_sampler.h"
 #include "engine/task_functions/task_functions_sampler_sinc_window.h"
-#include "engine/events/event_interface.h"
-#include "engine/events/event_data_types.h"
+
+#include "execution_graph/native_modules/native_modules_sampler.h"
 
 // $TODO switch to s_static_array
 // $TODO tracking time with floats in seconds seems imprecise... track in samples instead maybe?

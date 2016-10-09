@@ -1,5 +1,6 @@
-#include "runtime/runtime_context.h"
 #include "engine/events/event_interface.h"
+
+#include "runtime/runtime_context.h"
 
 void s_runtime_context::stream_callback(const s_audio_driver_stream_callback_context &context) {
 	// Pipe into the executor

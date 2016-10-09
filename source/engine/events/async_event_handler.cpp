@@ -1,4 +1,5 @@
 #include "engine/events/async_event_handler.h"
+
 #include <algorithm>
 
 // Flush if we wake up and we're within this window of time until the next flush

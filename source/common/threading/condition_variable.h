@@ -2,6 +2,7 @@
 #define WAVELANG_CONDITION_VARIABLE_H__
 
 #include "common/common.h"
+
 #include <condition_variable>
 
 class c_scoped_lock;

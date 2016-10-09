@@ -1,17 +1,20 @@
 #include "common/common.h"
-#include "runtime/runtime_context.h"
-#include "runtime/runtime_config.h"
-#include "execution_graph/native_module_registry.h"
-#include "execution_graph/native_modules/native_module_registration.h"
+
+#include "engine/events/event_data_types.h"
 #include "engine/task_function_registry.h"
 #include "engine/task_functions/task_function_registration.h"
-#include "execution_graph/execution_graph.h"
-#include "engine/events/event_data_types.h"
 
+#include "execution_graph/execution_graph.h"
+#include "execution_graph/native_module_registry.h"
+#include "execution_graph/native_modules/native_module_registration.h"
+
+#include "runtime/runtime_config.h"
+#include "runtime/runtime_context.h"
+
+#include <algorithm>
 #include <iostream>
 #include <string>
 #include <vector>
-#include <algorithm>
 
 static const char *k_runtime_config_filename = "wavelang_runtime_config.xml";
 

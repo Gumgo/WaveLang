@@ -1,6 +1,7 @@
-#include "engine/task_graph.h"
-#include "engine/task_function_registry.h"
 #include "engine/predecessor_resolver.h"
+#include "engine/task_function_registry.h"
+#include "engine/task_graph.h"
+
 #include "execution_graph/native_module.h"
 #include "execution_graph/native_module_registry.h"
 #include "execution_graph/execution_graph.h"
@@ -695,14 +696,14 @@ void c_task_graph::setup_task(const c_execution_graph &execution_graph, uint32 n
 	IF_ASSERTS_ENABLED(size_t old_size = m_data_lists.size());
 	m_data_lists.resize(m_data_lists.size() + task_function.argument_count);
 
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 	for (size_t index = old_size; index < m_data_lists.size(); index++) {
 		// Fill with 0xffffffff so we can assert that we don't set a value twice
 		m_data_lists[index].data.type = c_task_data_type::invalid();
 		m_data_lists[index].data.value.execution_graph_index_a = c_execution_graph::k_invalid_index;
 		m_data_lists[index].data.value.execution_graph_index_b = c_execution_graph::k_invalid_index;
 	}
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 	// Map each input and output to its defined location in the task
 	size_t input_output_count =
@@ -859,12 +860,12 @@ void c_task_graph::setup_task(const c_execution_graph &execution_graph, uint32 n
 		}
 	}
 
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 	for (size_t index = old_size; index < m_data_lists.size(); index++) {
 		// Make sure we have filled in all values
 		wl_assert(m_data_lists[index].data.type.is_valid());
 	}
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 }
 
 uint32 *c_task_graph::get_task_data_array_element_buffer(const s_task_graph_data &data, size_t index) {
@@ -1090,7 +1091,7 @@ void c_task_graph::allocate_buffers(const c_execution_graph &execution_graph) {
 
 		c_task_graph_data_array arguments = get_task_arguments(task_index);
 		for (c_task_buffer_iterator it(arguments); it.is_valid(); it.next()) {
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 			const s_task_graph_data &argument = it.get_task_graph_data();
 			wl_assert(!argument.data.is_constant);
 
@@ -1103,7 +1104,7 @@ void c_task_graph::allocate_buffers(const c_execution_graph &execution_graph) {
 			} else {
 				wl_assert(argument.data.value.execution_graph_index_b == c_execution_graph::k_invalid_index);
 			}
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 			uint32 node_index = it.get_node_index();
 			if (nodes_to_buffers[node_index] != k_invalid_buffer) {
@@ -1157,11 +1158,11 @@ void c_task_graph::allocate_buffers(const c_execution_graph &execution_graph) {
 	m_outputs_start = m_data_lists.size();
 	m_data_lists.resize(m_data_lists.size() + m_outputs_count);
 
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 	for (size_t index = m_outputs_start; index < m_data_lists.size(); index++) {
 		m_data_lists[index].data.type = c_task_data_type::invalid();
 	}
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 	for (uint32 node_index = 0; node_index < execution_graph.get_node_count(); node_index++) {
 		if (execution_graph.get_node_type(node_index) == k_execution_graph_node_type_output) {
@@ -1186,12 +1187,12 @@ void c_task_graph::allocate_buffers(const c_execution_graph &execution_graph) {
 		}
 	}
 
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 	// Verify that we assigned all outputs
 	for (size_t index = m_outputs_start; index < m_data_lists.size(); index++) {
 		wl_assert(m_data_lists[index].data.type.is_valid());
 	}
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 }
 
 void c_task_graph::assign_buffer_to_related_nodes(const c_execution_graph &execution_graph, uint32 node_index,

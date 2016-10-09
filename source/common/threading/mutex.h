@@ -2,6 +2,7 @@
 #define WAVELANG_MUTEX_H__
 
 #include "common/common.h"
+
 #include <mutex>
 
 class c_mutex : private c_uncopyable {

@@ -2,6 +2,7 @@
 #define WAVELANG_BUFFER_ITERATORS_H__
 
 #include "common/common.h"
+
 #include "engine/buffer.h"
 #include "engine/math/math.h"
 

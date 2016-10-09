@@ -2,6 +2,7 @@
 #define WAVELANG_COMPILER_H__
 
 #include "common/common.h"
+
 #include "compiler/compiler_utility.h"
 
 // The entry point to the wavelang compiler

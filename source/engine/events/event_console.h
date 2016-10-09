@@ -2,6 +2,7 @@
 #define WAVELANG_EVENT_CONSOLE_H__
 
 #include "common/common.h"
+
 #include "console/console_commands.h"
 
 class c_event_console {
@@ -29,7 +30,7 @@ private:
 
 	e_console_color m_last_color;
 
-#if PREDEFINED(PLATFORM_WINDOWS)
+#if IS_TRUE(PLATFORM_WINDOWS)
 	HANDLE m_pipe;
 	HANDLE m_process;
 #else // platform

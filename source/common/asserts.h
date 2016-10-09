@@ -9,7 +9,7 @@
 #define ASSERTS_ENABLED 0
 #endif // _DEBUG
 
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 
 #define IF_ASSERTS_ENABLED(x) x
 
@@ -33,7 +33,7 @@
 
 void handle_assert(const char *message);
 
-#else // PREDEFINED(ASSERTS_ENABLED)
+#else // IS_TRUE(ASSERTS_ENABLED)
 
 #define IF_ASSERTS_ENABLED(x)
 #define wl_assert(expression)			NOOP
@@ -42,6 +42,6 @@ void handle_assert(const char *message);
 #define wl_vhalt(message)				NOOP
 #define wl_unreachable()				NOOP
 
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 #endif // WAVELANG_ASSERTS_H__

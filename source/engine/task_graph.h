@@ -2,8 +2,10 @@
 #define WAVELANG_TASK_GRAPH_H__
 
 #include "common/common.h"
-#include "engine/task_function.h"
 #include "common/utility/string_table.h"
+
+#include "engine/task_function.h"
+
 #include <vector>
 
 class c_execution_graph;

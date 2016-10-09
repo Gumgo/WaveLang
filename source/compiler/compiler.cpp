@@ -1,20 +1,23 @@
-#include "compiler/compiler.h"
-#include "compiler/preprocessor.h"
-#include "compiler/execution_graph_globals_parser.h"
-#include "compiler/lexer.h"
-#include "compiler/parser.h"
+#include "common/utility/file_utility.h"
+
 #include "compiler/ast.h"
 #include "compiler/ast_builder.h"
 #include "compiler/ast_validator.h"
-#include "execution_graph/execution_graph.h"
+#include "compiler/compiler.h"
 #include "compiler/execution_graph_builder.h"
+#include "compiler/execution_graph_globals_parser.h"
 #include "compiler/execution_graph_optimizer.h"
-#include "common/utility/file_utility.h"
+#include "compiler/lexer.h"
+#include "compiler/parser.h"
+#include "compiler/preprocessor.h"
+
+#include "execution_graph/execution_graph.h"
+
 #include <algorithm>
-#include <vector>
-#include <memory>
 #include <fstream>
 #include <iostream>
+#include <memory>
+#include <vector>
 
 static void output_error(const s_compiler_context &context, const s_compiler_result &result);
 

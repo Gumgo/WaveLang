@@ -1,9 +1,11 @@
-#include "compiler/ast_builder.h"
 #include "compiler/ast.h"
+#include "compiler/ast_builder.h"
 #include "compiler/lexer.h"
 #include "compiler/parser.h"
+
 #include "execution_graph/native_module.h"
 #include "execution_graph/native_module_registry.h"
+
 #include <stdexcept>
 
 static const e_ast_primitive_type k_native_module_primitive_type_to_ast_primitive_type_mapping[] = {
@@ -63,7 +65,7 @@ static c_ast_data_type get_data_type_from_node(const c_lr_parse_tree &parse_tree
 		wl_unreachable();
 	}
 
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 	if (is_array) {
 		const c_lr_parse_tree_node &left_bracket_node = parse_tree.get_node(type_node->get_sibling_index());
 		const c_lr_parse_tree_node &right_bracket_node = parse_tree.get_node(left_bracket_node.get_sibling_index());
@@ -71,7 +73,7 @@ static c_ast_data_type get_data_type_from_node(const c_lr_parse_tree &parse_tree
 		wl_assert(node_is_type(left_bracket_node, k_token_type_left_bracket));
 		wl_assert(node_is_type(right_bracket_node, k_token_type_right_bracket));
 	}
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 	c_ast_data_type result;
 

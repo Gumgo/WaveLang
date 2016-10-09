@@ -1,5 +1,5 @@
-#include "engine/task_function.h"
 #include "engine/executor/executor.h"
+#include "engine/task_function.h"
 
 const s_task_function_uid s_task_function_uid::k_invalid = s_task_function_uid::build(0xffffffff, 0xffffffff);
 
@@ -248,14 +248,14 @@ s_task_function_mapping s_task_function_mapping::build(
 	}
 
 	// Validate that the two provided arrays have the same amount of data
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 	for (uint32 verify_index = 0; verify_index < k_max_native_module_arguments; verify_index++) {
 		// Arguments must not be "none" before index, and must be "none" after it
 		wl_assert(
 			(verify_index < index) ==
 			(mapping.mapping[verify_index] != s_task_function_native_module_argument_mapping::k_argument_none));
 	}
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 	// Fill the remaining pattern with an invalid value
 	for (; index < k_max_native_module_arguments; index++) {

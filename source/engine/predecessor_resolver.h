@@ -2,6 +2,7 @@
 #define WAVELANG_PREDECESSOR_RESOLVER_H__
 
 #include "common/common.h"
+
 #include <vector>
 
 // Utility class used to fully resolve predecessors in a graph

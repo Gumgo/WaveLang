@@ -2,8 +2,8 @@
 #define WAVELANG_CONTROLLER_DRIVER_INTERFACE_H__
 
 #include "common/common.h"
-#include "common/utility/stopwatch.h"
 #include "common/threading/lock_free_queue.h"
+#include "common/utility/stopwatch.h"
 
 #include "driver/controller_driver.h"
 #include "driver/controller_driver_midi.h"

@@ -1,5 +1,5 @@
-#include "engine/events/event_interface.h"
 #include "engine/events/async_event_handler.h"
+#include "engine/events/event_interface.h"
 
 // Initialized to zero
 static f_build_event_string g_event_string_builders[256];

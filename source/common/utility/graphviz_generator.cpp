@@ -1,4 +1,5 @@
 #include "common/utility/graphviz_generator.h"
+
 #include <fstream>
 
 const char *k_graphviz_file_extension = "gv";

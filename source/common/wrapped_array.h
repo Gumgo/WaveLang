@@ -1,9 +1,9 @@
 #ifndef WAVELANG_WRAPPED_ARRAY_H__
 #define WAVELANG_WRAPPED_ARRAY_H__
 
-#include "common/types.h"
 #include "common/asserts.h"
 #include "common/macros.h"
+#include "common/types.h"
 
 // Wrapped arrays can safely be ZERO_STRUCT'd
 // $TODO consider switching to s_wrapped_array and making them POD

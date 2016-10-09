@@ -2,6 +2,7 @@
 #define WAVELANG_NATIVE_MODULE_H__
 
 #include "common/common.h"
+
 #include <vector>
 
 static const size_t k_max_native_module_library_name_length = 64;
@@ -143,10 +144,10 @@ struct s_native_module_named_argument {
 // Return value for a compile-time native module call
 // $TODO do we want to expose std::vector for arrays? Consider making a wrapper around it
 struct s_native_module_compile_time_argument {
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 	s_native_module_argument argument;
 	bool assigned;
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 	// Don't use these directly
 	union {

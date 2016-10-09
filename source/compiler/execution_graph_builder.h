@@ -2,7 +2,9 @@
 #define WAVELANG_EXECUTION_GRAPH_BUILDER_H__
 
 #include "common/common.h"
+
 #include "compiler/compiler_utility.h"
+
 #include <vector>
 
 class c_ast_node;

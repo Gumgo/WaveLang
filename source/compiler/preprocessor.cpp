@@ -1,5 +1,5 @@
-#include "compiler/preprocessor.h"
 #include "compiler/lexer.h"
+#include "compiler/preprocessor.h"
 
 struct s_preprocessor_command_executor {
 	const char *command_name;

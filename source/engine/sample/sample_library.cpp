@@ -1,7 +1,8 @@
-#include "engine/sample/sample_library.h"
-#include "engine/sample/sample.h"
-#include "engine/sample/native_samples.h"
 #include "common/utility/file_utility.h"
+
+#include "engine/sample/native_samples.h"
+#include "engine/sample/sample.h"
+#include "engine/sample/sample_library.h"
 
 const uint32 c_sample_library::k_invalid_handle;
 static const uint32 k_native_sample_handle_mask = 0x80000000;

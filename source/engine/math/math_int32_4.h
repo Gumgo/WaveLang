@@ -2,6 +2,7 @@
 #define WAVELANG_MATH_INT32_4_H__
 
 #include "common/common.h"
+
 #include "engine/math/sse.h"
 
 class c_real32_4;

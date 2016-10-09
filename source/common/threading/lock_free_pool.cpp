@@ -3,12 +3,12 @@
 // Lock-free handle lists are aligned to the cache line size which is larger than the handles themselves, so we can use
 // the space in-between the handles for extra validation. When a node is allocated, we will write a '1' after it, and
 // when it is freed we will write a '0'.
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 #define ALLOCATION_VERIFICATION_ENABLED 1
 static_assert(sizeof(s_aligned_lock_free_handle) > sizeof(s_lock_free_handle), "Not enough space for verification");
-#else // PREDEFINED(ASSERTS_ENABLED)
+#else // IS_TRUE(ASSERTS_ENABLED)
 #define ALLOCATION_VERIFICATION_ENABLED 0
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 c_lock_free_pool::c_lock_free_pool()
 	: m_free_list(nullptr, 0) {
@@ -28,10 +28,10 @@ void c_lock_free_pool::initialize(c_lock_free_handle_array free_list_memory) {
 		return;
 	}
 
-#if PREDEFINED(ALLOCATION_VERIFICATION_ENABLED)
+#if IS_TRUE(ALLOCATION_VERIFICATION_ENABLED)
 	// If we are verifying allocations, clear all the "used" bits to 0 initially.
 	memset(free_list_memory.get_pointer(), 0, sizeof(s_aligned_lock_free_handle) * free_list_memory.get_count());
-#endif // PREDEFINED(ALLOCATION_VERIFICATION_ENABLED)
+#endif // IS_TRUE(ALLOCATION_VERIFICATION_ENABLED)
 
 	m_free_list = free_list_memory;
 	for (uint32 index = 0; index < m_free_list.get_count() - 1; index++) {
@@ -56,7 +56,7 @@ void c_lock_free_pool::initialize(c_lock_free_handle_array free_list_memory) {
 uint32 c_lock_free_pool::allocate() {
 	uint32 handle = lock_free_list_pop(m_free_list, m_free_list_head);
 
-#if PREDEFINED(ALLOCATION_VERIFICATION_ENABLED)
+#if IS_TRUE(ALLOCATION_VERIFICATION_ENABLED)
 	// This thread now owns this node, so we can safely set the bit without atomics
 	uint8 *handle_ptr = reinterpret_cast<uint8 *>(&m_free_list[handle]);
 	// Offset by the non-aligned size - there is some extra space behind the handle which we can use
@@ -64,13 +64,13 @@ uint32 c_lock_free_pool::allocate() {
 	// Verify that this node was previously free, and mark it as used
 	wl_vassert(*verification_ptr == 0, "Attempted to allocate an already-allocated node");
 	*verification_ptr = 1;
-#endif // PREDEFINED(ALLOCATION_VERIFICATION_ENABLED)
+#endif // IS_TRUE(ALLOCATION_VERIFICATION_ENABLED)
 
 	return handle;
 }
 
 void c_lock_free_pool::free(uint32 handle) {
-#if PREDEFINED(ALLOCATION_VERIFICATION_ENABLED)
+#if IS_TRUE(ALLOCATION_VERIFICATION_ENABLED)
 	// This thread still owns this node, so we can safely set the bit without atomics
 	uint8 *handle_ptr = reinterpret_cast<uint8 *>(&m_free_list[handle]);
 	// Offset by the non-aligned size - there is some extra space behind the handle which we can use
@@ -78,7 +78,7 @@ void c_lock_free_pool::free(uint32 handle) {
 	// Verify that this node was previously used, and mark it as free
 	wl_vassert(*verification_ptr == 1, "Attempted to free an already-free node");
 	*verification_ptr = 0;
-#endif // PREDEFINED(ALLOCATION_VERIFICATION_ENABLED)
+#endif // IS_TRUE(ALLOCATION_VERIFICATION_ENABLED)
 
 	lock_free_list_push(m_free_list, m_free_list_head, handle);
 }

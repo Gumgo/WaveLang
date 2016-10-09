@@ -2,7 +2,9 @@
 #define WAVELANG_AUDIO_DRIVER_INTERFACE_H__
 
 #include "common/common.h"
+
 #include "driver/sample_format.h"
+
 #include <string>
 
 // $TODO VST integration will eventually just act as another driver

@@ -1,6 +1,6 @@
 #include "common/threading/thread.h"
 
-#if !PREDEFINED(USE_THREAD_IMPLEMENTATION_WINDOWS)
+#if !IS_TRUE(USE_THREAD_IMPLEMENTATION_WINDOWS)
 
 c_thread::c_thread() {
 }
@@ -55,4 +55,4 @@ void c_thread::thread_entry_point(const c_thread *this_ptr) {
 	this_ptr->m_thread_entry_point(&this_ptr->m_thread_parameter_block);
 }
 
-#endif // !PREDEFINED(USE_THREAD_IMPLEMENTATION_WINDOWS)
+#endif // !IS_TRUE(USE_THREAD_IMPLEMENTATION_WINDOWS)

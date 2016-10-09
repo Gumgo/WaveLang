@@ -1,6 +1,6 @@
 #include "common/threading/thread.h"
 
-#if PREDEFINED(USE_THREAD_IMPLEMENTATION_WINDOWS)
+#if IS_TRUE(USE_THREAD_IMPLEMENTATION_WINDOWS)
 
 c_thread::c_thread() {
 	m_thread_handle = nullptr;
@@ -97,4 +97,4 @@ DWORD WINAPI c_thread::thread_entry_point(LPVOID param) {
 	return 0;
 }
 
-#endif // PREDEFINED(USE_THREAD_IMPLEMENTATION_WINDOWS)
+#endif // IS_TRUE(USE_THREAD_IMPLEMENTATION_WINDOWS)

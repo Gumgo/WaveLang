@@ -1,5 +1,5 @@
-#include "execution_graph/native_modules/native_modules_controller.h"
 #include "execution_graph/native_module_registry.h"
+#include "execution_graph/native_modules/native_modules_controller.h"
 
 static const char *k_native_modules_controller_library_name = "controller";
 const s_native_module_uid k_native_module_controller_get_note_id_uid				= s_native_module_uid::build(k_native_modules_controller_library_id, 0);

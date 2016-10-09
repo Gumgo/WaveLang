@@ -2,7 +2,9 @@
 #define WAVELANG_CHANNEL_MIXER_H__
 
 #include "common/common.h"
+
 #include "driver/sample_format.h"
+
 #include "engine/executor/buffer_allocator.h"
 
 void mix_output_buffers_to_channel_buffers(

@@ -1,8 +1,9 @@
 #include "execution_graph/native_module_registry.h"
+
+#include <algorithm>
+#include <fstream>
 #include <vector>
 #include <unordered_map>
-#include <fstream>
-#include <algorithm>
 
 // Strings for native module registry output
 static const char *k_native_module_no_return_type_string = "void";
@@ -66,11 +67,11 @@ static s_native_module_registry_data g_native_module_registry_data;
 
 static bool do_native_modules_conflict(const s_native_module &native_module_a, const s_native_module &native_module_b);
 
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 static void validate_optimization_rule(const s_native_module_optimization_rule &optimization_rule);
-#else // PREDEFINED(ASSERTS_ENABLED)
+#else // IS_TRUE(ASSERTS_ENABLED)
 static void validate_optimization_rule(const s_native_module_optimization_rule &optimization_rule) {}
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 void c_native_module_registry::initialize() {
 	wl_assert(g_native_module_registry_state == k_native_module_registry_state_uninitialized);
@@ -151,12 +152,12 @@ bool c_native_module_registry::register_native_module(const s_native_module &nat
 	wl_assert(native_module.argument_count <= k_max_native_module_arguments);
 	wl_assert(native_module.argument_count == native_module.in_argument_count + native_module.out_argument_count);
 	wl_assert(!native_module.first_output_is_return || native_module.out_argument_count > 0);
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 	for (size_t arg = 0; arg < native_module.argument_count; arg++) {
 		wl_assert(VALID_INDEX(native_module.arguments[arg].qualifier, k_native_module_qualifier_count));
 		wl_assert(native_module.arguments[arg].type.is_valid());
 	}
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 	// Check that the library referenced by the UID is registered
 	{
@@ -443,8 +444,8 @@ static bool do_native_modules_conflict(const s_native_module &native_module_a, c
 	return all_match;
 }
 
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 static void validate_optimization_rule(const s_native_module_optimization_rule &optimization_rule) {
 	// $TODO $PLUGIN validation
 }
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)

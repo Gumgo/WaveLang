@@ -1,8 +1,10 @@
 #include "compiler/execution_graph_optimizer.h"
+
 #include "execution_graph/native_module.h"
 #include "execution_graph/native_module_registry.h"
-#include <stack>
+
 #include <array>
+#include <stack>
 
 static void build_array_value(const c_execution_graph *execution_graph, uint32 array_node_index,
 	std::vector<uint32> &out_array_value);
@@ -148,10 +150,10 @@ bool c_execution_graph_constant_evaluator::build_module_call_arguments(const s_n
 	for (size_t arg = 0; arg < native_module.argument_count; arg++) {
 		s_native_module_argument argument = native_module.arguments[arg];
 		s_native_module_compile_time_argument &compile_time_argument = out_arg_list[arg];
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 		compile_time_argument.assigned = false;
 		compile_time_argument.argument = argument;
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 		if (native_module_qualifier_is_input(argument.qualifier)) {
 			uint32 input_node_index = m_execution_graph->get_node_incoming_edge_index(
@@ -380,10 +382,10 @@ static bool optimize_native_module_call(c_execution_graph *execution_graph, uint
 			for (size_t arg = 0; arg < native_module.argument_count; arg++) {
 				s_native_module_argument argument = native_module.arguments[arg];
 				s_native_module_compile_time_argument compile_time_argument;
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 				compile_time_argument.assigned = false;
 				compile_time_argument.argument = argument;
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 				if (native_module_qualifier_is_input(argument.qualifier)) {
 					uint32 input_node_index = execution_graph->get_node_incoming_edge_index(node_index, next_input);

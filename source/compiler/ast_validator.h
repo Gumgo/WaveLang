@@ -2,8 +2,10 @@
 #define WAVELANG_AST_VALIDATOR_H__
 
 #include "common/common.h"
+
 #include "compiler/ast.h"
 #include "compiler/compiler_utility.h"
+
 #include <vector>
 
 class c_ast_validator {

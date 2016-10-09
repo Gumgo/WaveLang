@@ -2,9 +2,11 @@
 #define WAVELANG_EVENT_DATA_TYPES_H__
 
 #include "common/common.h"
+
 #include "engine/events/event_interface.h"
-#include <cstdio>
+
 #include <cinttypes>
+#include <cstdio>
 
 // Event type declarations
 

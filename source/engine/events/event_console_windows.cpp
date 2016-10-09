@@ -1,8 +1,8 @@
 #include "engine/events/event_console.h"
 
-#if PREDEFINED(PLATFORM_WINDOWS)
+#if IS_TRUE(PLATFORM_WINDOWS)
 
-static const char *k_event_console_executable_name = "WaveLangConsole.exe";
+static const char *k_event_console_executable_name = "console.exe";
 
 void c_event_console::initialize_platform() {
 	m_pipe = INVALID_HANDLE_VALUE;
@@ -116,4 +116,4 @@ void c_event_console::write_platform(uint32 bytes, const void *buffer) {
 	WriteFile(m_pipe, buffer, static_cast<DWORD>(bytes), &bytes_written, nullptr);
 }
 
-#endif // PREDEFINED(PLATFORM_WINDOWS)
+#endif // IS_TRUE(PLATFORM_WINDOWS)

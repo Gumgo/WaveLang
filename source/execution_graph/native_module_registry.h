@@ -2,6 +2,7 @@
 #define WAVELANG_NATIVE_MODULE_REGISTRY_H__
 
 #include "common/common.h"
+
 #include "execution_graph/native_module.h"
 
 static const uint32 k_invalid_native_module_index = static_cast<uint32>(-1);

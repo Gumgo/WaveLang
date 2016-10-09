@@ -1,13 +1,14 @@
-#include "runtime/runtime_config.h"
 #include "driver/audio_driver_interface.h"
 #include "driver/controller_driver_interface.h"
 
+#include "runtime/runtime_config.h"
+
 #include <rapidxml.hpp>
 
+#include <algorithm>
+#include <fstream>
 #include <iostream>
 #include <vector>
-#include <fstream>
-#include <algorithm>
 
 static const char *k_sample_format_strings[] = {
 	"float32"

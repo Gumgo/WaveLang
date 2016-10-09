@@ -3,7 +3,9 @@
 
 #include "common/common.h"
 #include "common/utility/string_table.h"
+
 #include "execution_graph/native_module.h"
+
 #include <vector>
 
 // Bump this number when anything changes

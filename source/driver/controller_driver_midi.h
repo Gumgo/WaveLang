@@ -2,7 +2,9 @@
 #define WAVELANG_CONTROLLER_DRIVER_MIDI_H__
 
 #include "common/common.h"
+
 #include "driver/controller_driver.h"
+
 #include <vector>
 
 class RtMidiIn;

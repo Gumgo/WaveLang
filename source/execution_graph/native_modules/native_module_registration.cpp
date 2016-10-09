@@ -1,5 +1,5 @@
-#include "execution_graph/native_modules/native_module_registration.h"
 #include "execution_graph/native_module_registry.h"
+#include "execution_graph/native_modules/native_module_registration.h"
 
 #include "execution_graph/native_modules/native_modules_basic.h"
 #include "execution_graph/native_modules/native_modules_utility.h"

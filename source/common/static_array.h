@@ -1,9 +1,9 @@
 #ifndef WAVELANG_STATIC_ARRAY_H__
 #define WAVELANG_STATIC_ARRAY_H__
 
-#include "common/types.h"
 #include "common/asserts.h"
 #include "common/macros.h"
+#include "common/types.h"
 
 template<typename t_element, size_t k_element_count>
 class s_static_array {

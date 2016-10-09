@@ -1,5 +1,5 @@
-#include "engine/task_functions/task_function_registration.h"
 #include "engine/task_function_registry.h"
+#include "engine/task_functions/task_function_registration.h"
 
 #include "engine/task_functions/task_functions_basic.h"
 #include "engine/task_functions/task_functions_utility.h"

@@ -2,8 +2,10 @@
 #define WAVELANG_AST_H__
 
 #include "common/common.h"
-#include "compiler/compiler_utility.h"
+
 #include "compiler/ast_data_type.h"
+#include "compiler/compiler_utility.h"
+
 #include <vector>
 
 extern const char *k_entry_point_name;

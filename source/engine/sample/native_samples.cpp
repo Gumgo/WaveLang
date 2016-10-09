@@ -3,9 +3,9 @@
 
 #define GENERATE_NATIVE_SAMPLES 0
 
-#if PREDEFINED(GENERATE_NATIVE_SAMPLES)
+#if IS_TRUE(GENERATE_NATIVE_SAMPLES)
 #include <fstream>
-#endif // PREDEFINED(GENERATE_NATIVE_SAMPLES)
+#endif // IS_TRUE(GENERATE_NATIVE_SAMPLES)
 
 #define NATIVE_SAMPLE_PREFIX "__native_"
 
@@ -114,7 +114,7 @@ c_sample *build_native_sample(uint32 native_sample) {
 	return sample;
 }
 
-#if PREDEFINED(GENERATE_NATIVE_SAMPLES)
+#if IS_TRUE(GENERATE_NATIVE_SAMPLES)
 namespace native_sample_generator {
 	static const uint32 k_native_sample_size = 256;
 	static const uint32 k_native_sample_min_size = 4;
@@ -234,4 +234,4 @@ int main(int argc, char **argv) {
 
 	return 0;
 }
-#endif // PREDEFINED(GENERATE_NATIVE_SAMPLES)
+#endif // IS_TRUE(GENERATE_NATIVE_SAMPLES)

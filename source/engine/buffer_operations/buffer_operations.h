@@ -2,10 +2,11 @@
 #define WAVELANG_BUFFER_OPERATIONS_H__
 
 #include "common/common.h"
+
 #include "engine/buffer.h"
-#include "engine/math/math.h"
-#include "engine/buffer_operations/buffer_iterators.h"
 #include "engine/task_function.h"
+#include "engine/buffer_operations/buffer_iterators.h"
+#include "engine/math/math.h"
 
 typedef c_buffer *c_real_buffer_out;
 typedef c_buffer *c_real_buffer_inout;

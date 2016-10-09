@@ -1,5 +1,6 @@
 #include "compiler/execution_graph_globals_parser.h"
 #include "compiler/preprocessor.h"
+
 #include "execution_graph/execution_graph.h"
 
 void s_execution_graph_globals_context::clear() {

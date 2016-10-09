@@ -2,6 +2,7 @@
 #define WAVELANG_TASK_FUNCTION_REGISTRY_H__
 
 #include "common/common.h"
+
 #include "engine/task_function.h"
 
 static const uint32 k_invalid_task_function_index = static_cast<uint32>(-1);

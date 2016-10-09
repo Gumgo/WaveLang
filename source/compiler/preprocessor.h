@@ -2,8 +2,10 @@
 #define WAVELANG_PREPROCESSOR_H__
 
 #include "common/common.h"
+
 #include "compiler/compiler_utility.h"
 #include "compiler/lexer.h"
+
 #include <vector>
 
 struct c_preprocessor_output {

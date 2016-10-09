@@ -1,5 +1,7 @@
 #include "engine/task_function_registry.h"
+
 #include "execution_graph/native_module_registry.h"
+
 #include <vector>
 #include <unordered_map>
 
@@ -39,10 +41,10 @@ struct s_task_function_registry_data {
 static e_task_function_registry_state g_task_function_registry_state = k_task_function_registry_state_uninitialized;
 static s_task_function_registry_data g_task_function_registry_data;
 
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 static void validate_task_function_mapping(
 	const s_native_module &native_module, const s_task_function_mapping &task_function_mapping);
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 static const e_task_primitive_type k_native_module_primitive_type_to_task_primitive_type_mapping[] = {
 	k_task_primitive_type_real,		// k_native_module_primitive_type_real
@@ -106,12 +108,12 @@ bool c_task_function_registry::register_task_function(const s_task_function &tas
 	// We don't need a memory query or initializer, but all task functions must have something to execute
 	wl_assert(task_function.function);
 	wl_assert(task_function.argument_count <= k_max_task_function_arguments);
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 	for (size_t arg = 0; arg < task_function.argument_count; arg++) {
 		wl_assert(task_function.argument_types[arg].is_valid());
 		wl_assert(task_function.argument_types[arg].is_legal());
 	}
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 	// Check that the UID isn't already in use
 	if (g_task_function_registry_data.task_function_uids_to_indices.find(task_function.uid) !=
@@ -147,13 +149,13 @@ bool c_task_function_registry::register_task_function_mapping_list(
 	// Don't double-register
 	wl_assert(list.mapping_count == 0);
 
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 	const s_native_module &native_module = c_native_module_registry::get_native_module(native_module_index);
 	// Validate each mapping
 	for (size_t index = 0; index < task_function_mapping_list.get_count(); index++) {
 		validate_task_function_mapping(native_module, task_function_mapping_list[index]);
 	}
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 	// Append to the global list of mappings
 	list.first_mapping_index = g_task_function_registry_data.task_function_mappings.size();
@@ -193,7 +195,7 @@ c_task_function_mapping_list c_task_function_registry::get_task_function_mapping
 		list.mapping_count);
 }
 
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 static void validate_task_function_mapping(
 	const s_native_module &native_module, const s_task_function_mapping &task_function_mapping) {
 	uint32 task_function_index =
@@ -279,4 +281,4 @@ static void validate_task_function_mapping(
 		}
 	}
 }
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)

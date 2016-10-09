@@ -13,11 +13,11 @@ static const size_t k_sse_alignment = SSE_ALIGNMENT;
 static const size_t k_sse_block_elements = SSE_BLOCK_ELEMENTS;
 static const size_t k_sse_block_size = SSE_BLOCK_SIZE;
 
-#if PREDEFINED(COMPILER_MSVC)
+#if IS_TRUE(COMPILER_MSVC)
 #include <intrin.h>
-#else // PREDEFINED(COMPILER_MSVC)
+#else // IS_TRUE(COMPILER_MSVC)
 #include <x86intrin.h>
-#endif // PREDEFINED(COMPILER_MSVC)
+#endif // IS_TRUE(COMPILER_MSVC)
 
 #ifndef WAVELANG_SSE_MATHFUN_H__
 #define WAVELANG_SSE_MATHFUN_H__

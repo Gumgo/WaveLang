@@ -1,4 +1,5 @@
 #include "driver/controller_driver_interface.h"
+
 #include <algorithm>
 
 // Pad by 1 ms - allow events 1ms before the beginning of the buffer to be included

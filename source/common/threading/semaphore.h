@@ -2,8 +2,8 @@
 #define WAVELANG_SEMAPHORE_H__
 
 #include "common/common.h"
-#include "common/threading/mutex.h"
 #include "common/threading/condition_variable.h"
+#include "common/threading/mutex.h"
 
 class c_semaphore : private c_uncopyable {
 public:

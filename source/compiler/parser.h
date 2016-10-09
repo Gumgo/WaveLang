@@ -2,8 +2,10 @@
 #define WAVELANG_PARSER_H__
 
 #include "common/common.h"
+
 #include "compiler/compiler_utility.h"
 #include "compiler/lr_parser.h"
+
 #include <vector>
 
 // Defines the specific parser rules for this language

@@ -1,9 +1,10 @@
 #include "engine/profiler/profiler.h"
 #include "engine/task_function_registry.h"
+
 #include <algorithm>
 #include <fstream>
-#include <sstream>
 #include <iomanip>
+#include <sstream>
 
 static real64 nanoseconds_to_milliseconds(int64 nanoseconds) {
 	return static_cast<real64>(k_milliseconds_per_second * nanoseconds) / static_cast<real64>(k_nanoseconds_per_second);

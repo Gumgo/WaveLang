@@ -2,6 +2,7 @@
 #define WAVELANG_CONTROLLER_EVENT_MANAGER_H__
 
 #include "common/common.h"
+
 #include "driver/controller.h"
 
 #include <vector>

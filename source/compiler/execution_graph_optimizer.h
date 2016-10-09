@@ -2,11 +2,14 @@
 #define WAVELANG_EXECUTION_GRAPH_OPTIMIZER_H__
 
 #include "common/common.h"
-#include "execution_graph/execution_graph.h"
+
 #include "compiler/compiler_utility.h"
-#include <vector>
-#include <stack>
+
+#include "execution_graph/execution_graph.h"
+
 #include <map>
+#include <stack>
+#include <vector>
 
 // Used to evaluate constants in a partially-built graph. Necessary for building repeat loops.
 class c_execution_graph_constant_evaluator {

@@ -2,20 +2,22 @@
 #define WAVELANG_EXECUTOR_H__
 
 #include "common/common.h"
+#include "common/threading/atomics.h"
 #include "common/threading/lock_free.h"
 #include "common/threading/semaphore.h"
-#include "common/threading/atomics.h"
-#include "engine/task_function.h"
-#include "engine/executor/buffer_manager.h"
-#include "engine/executor/controller_event_manager.h"
-#include "engine/executor/voice_allocator.h"
-#include "engine/thread_pool.h"
-#include "engine/profiler/profiler.h"
+
 #include "driver/sample_format.h"
-#include "engine/sample/sample_library.h"
+
+#include "engine/task_function.h"
+#include "engine/thread_pool.h"
 #include "engine/events/async_event_handler.h"
 #include "engine/events/event_console.h"
 #include "engine/events/event_interface.h"
+#include "engine/executor/buffer_manager.h"
+#include "engine/executor/controller_event_manager.h"
+#include "engine/executor/voice_allocator.h"
+#include "engine/profiler/profiler.h"
+#include "engine/sample/sample_library.h"
 #include "engine/voice_interface/voice_interface.h"
 
 class c_task_graph;

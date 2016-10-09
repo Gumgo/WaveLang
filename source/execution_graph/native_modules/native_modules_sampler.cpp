@@ -1,5 +1,5 @@
-#include "execution_graph/native_modules/native_modules_sampler.h"
 #include "execution_graph/native_module_registry.h"
+#include "execution_graph/native_modules/native_modules_sampler.h"
 
 static const char *k_native_modules_sampler_library_name = "sampler";
 const s_native_module_uid k_native_module_sampler_uid		= s_native_module_uid::build(k_native_modules_sampler_library_id, 0);

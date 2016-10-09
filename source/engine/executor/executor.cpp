@@ -1,7 +1,8 @@
-#include "engine/executor/executor.h"
 #include "engine/task_graph.h"
-#include "engine/task_function_registry.h"
 #include "engine/executor/channel_mixer.h"
+#include "engine/executor/executor.h"
+#include "engine/task_function_registry.h"
+
 #include <algorithm>
 
 c_executor::c_executor() {
@@ -178,12 +179,12 @@ void c_executor::initialize_task_memory() {
 		memset(m_task_memory_allocator.get_array().get_pointer(), 0,
 			m_task_memory_allocator.get_array().get_count());
 	} else {
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 		// All pointers should be invalid
 		for (size_t index = 0; index < m_voice_task_memory_pointers.size(); index++) {
 			wl_assert(m_voice_task_memory_pointers[index] == reinterpret_cast<void *>(k_invalid_memory_pointer));
 		}
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 		// All point to null
 		m_voice_task_memory_pointers.clear();

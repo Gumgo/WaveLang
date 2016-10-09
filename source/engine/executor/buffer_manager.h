@@ -3,8 +3,10 @@
 
 #include "common/common.h"
 #include "common/threading/lock_free.h"
-#include "engine/executor/buffer_allocator.h"
+
 #include "driver/sample_format.h"
+
+#include "engine/executor/buffer_allocator.h"
 
 #include <vector>
 
@@ -41,11 +43,11 @@ private:
 	void mix_voice_accumulation_buffers_to_channel_buffers();
 	void free_channel_buffers();
 
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 	void assert_all_output_buffers_free() const;
-#else // PREDEFINED(ASSERTS_ENABLED)
+#else // IS_TRUE(ASSERTS_ENABLED)
 	void assert_all_output_buffers_free() const {}
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 	const c_task_graph *m_task_graph;
 

@@ -2,6 +2,7 @@
 #define WAVELANG_RUNTIME_CONFIG_H__
 
 #include "common/common.h"
+
 #include "driver/sample_format.h"
 
 class c_audio_driver_interface;

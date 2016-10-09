@@ -1,12 +1,13 @@
 #include "compiler/lr_parser.h"
-#include <stack>
+
 #include <limits>
+#include <stack>
 
 const uint32 c_lr_action_goto_table::k_invalid_state_index;
 
-#if PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+#if IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 #include <fstream>
-#endif // PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+#endif // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 
 c_lr_symbol::c_lr_symbol() {
 	m_index = 0;
@@ -165,7 +166,7 @@ size_t c_lr_production_set::get_first_nonterminal_index() const {
 	return 1 + m_terminal_count;
 }
 
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 void c_lr_production_set::validate_symbol(const c_lr_symbol &symbol, bool can_be_epsilon) const {
 	wl_assert(
 		(can_be_epsilon && symbol.is_epsilon()) ||
@@ -190,7 +191,7 @@ void c_lr_production_set::validate_production(const s_lr_production &production)
 		}
 	}
 }
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 bool s_lr_item::operator==(const s_lr_item &other) const {
 	return production_index == other.production_index &&
@@ -306,11 +307,11 @@ c_lr_action_goto_table::c_lr_action_goto_table() {
 }
 
 uint32 c_lr_action_goto_table::get_state_count() const {
-#if PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+#if IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 	return m_action_table.size() / m_terminal_count;
-#else // PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+#else // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 	return static_cast<uint32>(m_action_table.get_count() / m_terminal_count);
-#endif // PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+#endif // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 }
 
 
@@ -328,7 +329,7 @@ uint32 c_lr_action_goto_table::get_goto(uint32 state_index, uint16 nonterminal_i
 	return m_goto_table[index];
 }
 
-#if PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+#if IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 
 void c_lr_action_goto_table::initialize(uint16 terminal_count, uint16 nonterminal_count) {
 	m_terminal_count = terminal_count;
@@ -428,7 +429,7 @@ void c_lr_action_goto_table::output_action_goto_tables() const {
 	out << "};\n";
 }
 
-#else // PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+#else // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 
 void c_lr_action_goto_table::initialize(uint16 terminal_count, uint16 nonterminal_count,
 	c_wrapped_array_const<c_lr_action> action_table, c_wrapped_array_const<uint32> goto_table) {
@@ -439,7 +440,7 @@ void c_lr_action_goto_table::initialize(uint16 terminal_count, uint16 nontermina
 	m_goto_table = goto_table;
 }
 
-#endif // PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+#endif // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 
 c_lr_symbol c_lr_parse_tree_node::get_symbol() const {
 	return m_symbol;
@@ -537,7 +538,7 @@ const c_lr_parse_tree_node &c_lr_parse_tree_iterator::get_node() const {
 	return m_parse_tree.get_node(m_current_node_index);
 }
 
-#if PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+#if IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 
 void c_lr_parser::initialize(const c_lr_production_set &production_set) {
 	create_augmented_production_set(production_set);
@@ -546,7 +547,7 @@ void c_lr_parser::initialize(const c_lr_production_set &production_set) {
 	m_action_goto_table.output_action_goto_tables();
 }
 
-#else // PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+#else // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 
 void c_lr_parser::initialize(const c_lr_production_set &production_set,
 	c_wrapped_array_const<c_lr_action> action_table, c_wrapped_array_const<uint32> goto_table) {
@@ -555,7 +556,7 @@ void c_lr_parser::initialize(const c_lr_production_set &production_set,
 		action_table, goto_table);
 }
 
-#endif // PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+#endif // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 
 c_lr_parse_tree c_lr_parser::parse_token_stream(t_lr_parser_get_next_token get_next_token, void *context,
 	std::vector<size_t> &out_error_tokens) const {
@@ -646,10 +647,10 @@ void c_lr_parser::create_augmented_production_set(const c_lr_production_set &pro
 	}
 
 	uint32 start_nonterminal_index = production_set.get_nonterminal_count();
-#if PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+#if IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 	m_start_nonterminal_index = start_nonterminal_index;
 	m_start_production_index = m_production_set.get_production_count();
-#endif PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+#endif IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 
 	// Add the new start production, which yields the original start symbol
 	m_production_set.add_production(
@@ -657,7 +658,7 @@ void c_lr_parser::create_augmented_production_set(const c_lr_production_set &pro
 		c_lr_symbol(false, 0)); // Maps to the user-provided start symbol, which is implicitly index 0
 }
 
-#if PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+#if IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 
 void c_lr_parser::compute_symbols_properties() {
 	// Calculate properties for all the symbols
@@ -1061,4 +1062,4 @@ c_lr_item_set c_lr_parser::compute_goto(const c_lr_item_set &item_set, c_lr_symb
 	return closed_result;
 }
 
-#endif // PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+#endif // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)

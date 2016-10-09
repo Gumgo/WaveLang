@@ -2,6 +2,7 @@
 #define WAVELANG_FILE_UTILITY_H__
 
 #include "common/common.h"
+
 #include <fstream>
 
 bool are_file_paths_equivalent(const char *path_a, const char *path_b);

@@ -1,5 +1,7 @@
 #include "common/common.h"
+
 #include "console/console_commands.h"
+
 #include <iostream>
 #include <vector>
 
@@ -96,7 +98,7 @@ static bool process_next_command() {
 	return false;
 }
 
-#if PREDEFINED(PLATFORM_WINDOWS)
+#if IS_TRUE(PLATFORM_WINDOWS)
 
 static HANDLE g_pipe = INVALID_HANDLE_VALUE;
 static HANDLE g_console = INVALID_HANDLE_VALUE;

@@ -1,8 +1,9 @@
 #include "compiler/ast_validator.h"
+
+#include <algorithm>
 #include <deque>
 #include <map>
 #include <stack>
-#include <algorithm>
 
 class c_ast_validator_visitor : public c_ast_node_const_visitor {
 public:

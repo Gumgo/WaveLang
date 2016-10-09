@@ -2,6 +2,7 @@
 #define WAVELANG_CONTROLLER_DRIVER_H__
 
 #include "common/common.h"
+
 #include "driver/controller.h"
 
 enum e_controller_driver_result {

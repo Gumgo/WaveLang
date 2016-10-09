@@ -1,8 +1,8 @@
 #ifndef WAVELANG_CAST_INTEGER_VERIFY_H__
 #define WAVELANG_CAST_INTEGER_VERIFY_H__
 
-#include "common/types.h"
 #include "common/asserts.h"
+#include "common/types.h"
 
 template<typename t_to, typename t_from, bool to_unsigned, bool from_unsigned>
 struct s_cast_integer_verify_internal {};

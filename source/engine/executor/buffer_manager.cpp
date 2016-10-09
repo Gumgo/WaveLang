@@ -1,7 +1,7 @@
+#include "engine/task_graph.h"
+#include "engine/buffer_operations/buffer_operations_internal.h"
 #include "engine/executor/buffer_manager.h"
 #include "engine/executor/channel_mixer.h"
-#include "engine/buffer_operations/buffer_operations_internal.h"
-#include "engine/task_graph.h"
 
 void c_buffer_manager::initialize(const c_task_graph *task_graph, uint32 max_buffer_size, uint32 output_channels) {
 	wl_assert(task_graph);
@@ -122,11 +122,11 @@ void c_buffer_manager::initialize(const c_task_graph *task_graph, uint32 max_buf
 	m_buffer_contexts.allocate(task_graph->get_buffer_count());
 
 	// Assign pool indices to each buffer context so we know where to allocate from when the time comes
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 	for (size_t index = 0; index < m_buffer_contexts.get_array().get_count(); index++) {
 		m_buffer_contexts.get_array()[index].pool_index = static_cast<uint32>(-1);
 	}
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 	// Iterate through each buffer in each task and assign it a pool
 	for (uint32 task_index = 0; task_index < task_graph->get_task_count(); task_index++) {
@@ -148,12 +148,12 @@ void c_buffer_manager::initialize(const c_task_graph *task_graph, uint32 max_buf
 		}
 	}
 
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 	for (size_t index = 0; index < m_buffer_contexts.get_array().get_count(); index++) {
 		// Make sure all buffers got pool assignments
 		wl_assert(VALID_INDEX(m_buffer_contexts.get_array()[index].pool_index, buffer_usage_info.get_count()));
 	}
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 	m_voice_accumulation_buffers.resize(outputs.get_count());
 	m_channel_mix_buffers.resize(output_channels);
@@ -453,7 +453,7 @@ void c_buffer_manager::free_channel_buffers() {
 	}
 }
 
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 void c_buffer_manager::assert_all_output_buffers_free() const {
 	// All buffers should have been freed
 	for (size_t buffer = 0; buffer < m_buffer_contexts.get_array().get_count(); buffer++) {
@@ -462,4 +462,4 @@ void c_buffer_manager::assert_all_output_buffers_free() const {
 		wl_assert(buffer_context.usages_remaining.get_unsafe() == 0);
 	}
 }
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)

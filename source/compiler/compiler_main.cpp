@@ -1,10 +1,13 @@
 #include "common/common.h"
+#include "common/utility/graphviz_generator.h"
+
+#include "compiler/compiler.h"
+#include "compiler/getopt/getopt.h"
+
+#include "execution_graph/execution_graph.h"
 #include "execution_graph/native_module_registry.h"
 #include "execution_graph/native_modules/native_module_registration.h"
-#include "compiler/compiler.h"
-#include "execution_graph/execution_graph.h"
-#include "common/utility/graphviz_generator.h"
-#include "compiler/getopt/getopt.h"
+
 #include <iostream>
 
 // $TODO move somewhere better?

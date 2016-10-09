@@ -1,10 +1,12 @@
-#include "execution_graph/execution_graph.h"
-#include "execution_graph/native_module_registry.h"
 #include "common/utility/file_utility.h"
 #include "common/utility/graphviz_generator.h"
-#include <string>
+
+#include "execution_graph/execution_graph.h"
+#include "execution_graph/native_module_registry.h"
+
 #include <algorithm>
 #include <fstream>
+#include <string>
 
 static const char k_format_identifier[] = { 'w', 'a', 'v', 'e', 'l', 'a', 'n', 'g' };
 
@@ -42,12 +44,12 @@ c_execution_graph::c_execution_graph() {
 e_execution_graph_result c_execution_graph::save(const char *fname) const {
 	wl_assert(validate());
 
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 	// Make sure there are no invalid nodes
 	for (size_t index = 0; index < m_nodes.size(); index++) {
 		wl_assert(m_nodes[index].type != k_execution_graph_node_type_invalid);
 	}
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 	std::ofstream out(fname, std::ios::binary);
 	if (!out.is_open()) {
@@ -66,16 +68,16 @@ e_execution_graph_result c_execution_graph::save(const char *fname) const {
 	// Write the node count, and also count up all edges
 	uint32 node_count = cast_integer_verify<uint32>(m_nodes.size());
 	uint32 edge_count = 0;
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 	uint32 edge_count_verify = 0;
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 	write(out, node_count);
 	for (uint32 index = 0; index < node_count; index++) {
 		const s_node &node = m_nodes[index];
 		edge_count += cast_integer_verify<uint32>(node.outgoing_edge_indices.size());
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 		edge_count_verify += cast_integer_verify<uint32>(node.incoming_edge_indices.size());
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 		uint32 node_type = static_cast<uint32>(node.type);
 		write(out, node_type);
@@ -363,11 +365,11 @@ bool c_execution_graph::validate() const {
 	}
 
 	// We should have found exactly n unique outputs
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 	for (size_t index = 0; index < output_nodes_found.size(); index++) {
 		wl_assert(output_nodes_found[index]);
 	}
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 	// Check for cycles
 	std::vector<bool> nodes_visited(m_nodes.size());
@@ -489,7 +491,7 @@ uint32 c_execution_graph::add_constant_array_node(c_native_module_data_type elem
 }
 
 void c_execution_graph::add_constant_array_value(uint32 constant_array_node_index, uint32 value_node_index) {
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 	const s_node &constant_array_node = m_nodes[constant_array_node_index];
 	wl_assert(constant_array_node.type == k_execution_graph_node_type_constant);
 	// Will assert if this is not an array type
@@ -499,7 +501,7 @@ void c_execution_graph::add_constant_array_value(uint32 constant_array_node_inde
 	bool obtained_type = get_type_from_node(value_node_index, value_node_type);
 	wl_assert(obtained_type);
 	wl_assert(element_type == value_node_type);
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 	// Create an indexed input node to represent this array index
 	uint32 input_node_index = allocate_node();
@@ -585,14 +587,14 @@ void c_execution_graph::remove_node(uint32 node_index) {
 }
 
 void c_execution_graph::add_edge(uint32 from_index, uint32 to_index) {
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 	// The user-facing function should never touch nodes which use indexed inputs/outputs directly. Instead, the user
 	// should always be creating edges to/from indexed inputs/outputs.
 	const s_node &to_node = m_nodes[to_index];
 	const s_node &from_node = m_nodes[from_index];
 	wl_assert(!does_node_use_indexed_inputs(to_node));
 	wl_assert(!does_node_use_indexed_outputs(from_node));
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 	add_edge_internal(from_index, to_index);
 }
@@ -611,7 +613,7 @@ void c_execution_graph::add_edge_internal(uint32 from_index, uint32 to_index) {
 		}
 	}
 
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 	bool validate_exists = false;
 	for (size_t to_in_index = 0;
 		 !validate_exists && to_in_index < to_node.incoming_edge_indices.size();
@@ -622,7 +624,7 @@ void c_execution_graph::add_edge_internal(uint32 from_index, uint32 to_index) {
 	}
 
 	wl_assert(exists == validate_exists);
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 	if (!exists) {
 		wl_assert(validate_edge(from_index, to_index));
@@ -646,12 +648,12 @@ bool c_execution_graph::add_edge_for_load(uint32 from_index, uint32 to_index) {
 		}
 	}
 
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 	for (size_t to_in_index = 0; to_in_index < to_node.incoming_edge_indices.size(); to_in_index++) {
 		// Validate that it doesn't exist in both directions
 		wl_assert(to_node.incoming_edge_indices[to_in_index] != from_index);
 	}
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 	from_node.outgoing_edge_indices.push_back(to_index);
 	to_node.incoming_edge_indices.push_back(from_index);
@@ -659,14 +661,14 @@ bool c_execution_graph::add_edge_for_load(uint32 from_index, uint32 to_index) {
 }
 
 void c_execution_graph::remove_edge(uint32 from_index, uint32 to_index) {
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 	// The user-facing function should never touch nodes which use indexed inputs/outputs directly. Instead, the user
 	// should always be creating edges to/from indexed inputs/outputs.
 	const s_node &to_node = m_nodes[to_index];
 	const s_node &from_node = m_nodes[from_index];
 	wl_assert(!does_node_use_indexed_inputs(to_node));
 	wl_assert(!does_node_use_indexed_outputs(from_node));
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 	remove_edge_internal(from_index, to_index);
 }

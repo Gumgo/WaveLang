@@ -2,6 +2,7 @@
 #define WAVELANG_ALIGNED_ALLOCATOR_H__
 
 #include "common/common.h"
+
 #include <memory>
 
 template<typename t_element, size_t k_alignment>

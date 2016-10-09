@@ -1,5 +1,6 @@
-#include "engine/executor/controller_event_manager.h"
 #include "common/utility/merge_sort.h"
+
+#include "engine/executor/controller_event_manager.h"
 
 void c_controller_event_manager::initialize(size_t max_controller_events) {
 	wl_assert(max_controller_events > 0);

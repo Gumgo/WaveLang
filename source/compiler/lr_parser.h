@@ -2,6 +2,7 @@
 #define WAVELANG_LR_PARSER_H__
 
 #include "common/common.h"
+
 #include <vector>
 
 #ifdef _DEBUG
@@ -102,13 +103,13 @@ public:
 	size_t get_first_terminal_index() const;
 	size_t get_first_nonterminal_index() const;
 
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 	void validate_symbol(const c_lr_symbol &symbol, bool can_be_epsilon) const;
 	void validate_production(const s_lr_production &production) const;
-#else // PREDEFINED(ASSERTS_ENABLED)
+#else // IS_TRUE(ASSERTS_ENABLED)
 	void validate_symbol(const c_lr_symbol &symbol, bool can_be_epsilon) const {}
 	void validate_production(const s_lr_production &production) const {}
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 private:
 	uint16 m_terminal_count;
@@ -193,29 +194,29 @@ public:
 	c_lr_action get_action(uint32 state_index, uint16 terminal_index) const;
 	uint32 get_goto(uint32 state_index, uint16 nonterminal_index) const;
 
-#if PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+#if IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 	void initialize(uint16 terminal_count, uint16 nonterminal_count);
 	void add_state();
 	e_lr_conflict set_action(uint32 state_index, uint16 terminal_index, c_lr_action action);
 	void set_goto(uint32 state_index, uint16 nonterminal_index, uint32 goto_index);
 
 	void output_action_goto_tables() const;
-#else // PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+#else // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 	void initialize(uint16 terminal_count, uint16 nonterminal_count,
 		c_wrapped_array_const<c_lr_action> action_table, c_wrapped_array_const<uint32> goto_table);
-#endif // PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+#endif // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 
 private:
 	uint16 m_terminal_count;
 	uint16 m_nonterminal_count;
 
-#if PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+#if IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 	std::vector<c_lr_action> m_action_table;
 	std::vector<uint32> m_goto_table;
-#else // PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+#else // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 	c_wrapped_array_const<c_lr_action> m_action_table;
 	c_wrapped_array_const<uint32> m_goto_table;
-#endif // PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+#endif // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 };
 
 class c_lr_parse_tree_node {
@@ -276,12 +277,12 @@ typedef bool (*t_lr_parser_get_next_token)(void *context, uint16 &out_token);
 
 class c_lr_parser {
 public:
-#if PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+#if IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 	void initialize(const c_lr_production_set &production_set);
-#else // PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+#else // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 	void initialize(const c_lr_production_set &production_set,
 		c_wrapped_array_const<c_lr_action> action_table, c_wrapped_array_const<uint32> goto_table);
-#endif // PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+#endif // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 
 	c_lr_parse_tree parse_token_stream(t_lr_parser_get_next_token get_next_token, void *context,
 		std::vector<size_t> &out_error_tokens) const;
@@ -294,7 +295,7 @@ private:
 
 	void create_augmented_production_set(const c_lr_production_set &production_set);
 
-#if PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+#if IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 	uint16 m_start_nonterminal_index;
 	size_t m_start_production_index;
 
@@ -312,7 +313,7 @@ private:
 	void compute_item_sets();
 	c_lr_item_set compute_closure(const c_lr_item_set &item_set) const;
 	c_lr_item_set compute_goto(const c_lr_item_set &item_set, c_lr_symbol symbol) const;
-#endif // PREDEFINED(LR_PARSE_TABLE_GENERATION_ENABLED)
+#endif // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 };
 
 #endif // WAVELANG_LR_PARSER_H__

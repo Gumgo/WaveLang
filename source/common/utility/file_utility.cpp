@@ -1,19 +1,18 @@
 #include "common/utility/file_utility.h"
 
-#if PREDEFINED(PLATFORM_WINDOWS)
+#if IS_TRUE(PLATFORM_WINDOWS)
 #include <Shlwapi.h>
-#pragma comment(lib, "Shlwapi.lib")
-#else // PREDEFINED(PLATFORM_WINDOWS)
-#include <sys/types.h>
+#else // IS_TRUE(PLATFORM_WINDOWS)
 #include <sys/stat.h>
-#endif // PREDEFINED(PLATFORM_WINDOWS)
+#include <sys/types.h>
+#endif // IS_TRUE(PLATFORM_WINDOWS)
 
 bool are_file_paths_equivalent(const char *path_a, const char *path_b) {
 	if (strcmp(path_a, path_b) == 0) {
 		return true;
 	}
 
-#if PREDEFINED(PLATFORM_WINDOWS)
+#if IS_TRUE(PLATFORM_WINDOWS)
 	{
 		bool result = false;
 
@@ -45,7 +44,7 @@ bool are_file_paths_equivalent(const char *path_a, const char *path_b) {
 
 		return result;
 	}
-#else // PREDEFINED(PLATFORM_WINDOWS)
+#else // IS_TRUE(PLATFORM_WINDOWS)
 	{
 		struct s_stat stat_buffer_a;
 		struct s_stat stat_buffer_b;
@@ -59,22 +58,22 @@ bool are_file_paths_equivalent(const char *path_a, const char *path_b) {
 
 		return stat_buffer_a.st_ino == stat_buffer_b.st_ino;
 	}
-#endif // PREDEFINED(PLATFORM_WINDOWS)
+#endif // IS_TRUE(PLATFORM_WINDOWS)
 }
 
 bool is_path_relative(const char *path) {
-#if PREDEFINED(PLATFORM_WINDOWS)
+#if IS_TRUE(PLATFORM_WINDOWS)
 	return PathIsRelative(path) == TRUE;
-#else // PREDEFINED(PLATFORM_WINDOWS)
+#else // IS_TRUE(PLATFORM_WINDOWS)
 	// Absolute paths start with /, and otherwise it is relative
 	return *path != '/';
-#endif // PREDEFINED(PLATFORM_WINDOWS)
+#endif // IS_TRUE(PLATFORM_WINDOWS)
 }
 
 bool get_file_last_modified_timestamp(const char *path, uint64 &out_timestamp) {
 	bool result = false;
 
-#if PREDEFINED(PLATFORM_WINDOWS)
+#if IS_TRUE(PLATFORM_WINDOWS)
 	HANDLE file_handle = CreateFile(path, 0, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
 		OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
@@ -94,13 +93,13 @@ bool get_file_last_modified_timestamp(const char *path, uint64 &out_timestamp) {
 	if (file_handle != INVALID_HANDLE_VALUE) {
 		CloseHandle(file_handle);
 	}
-#else // PREDEFINED(PLATFORM_WINDOWS)
+#else // IS_TRUE(PLATFORM_WINDOWS)
 	struct s_stat stat_buffer;
 	if (get_stat(path, &stat_buffer) == 0) {
 		out_timestamp = stat_buffer.st_mtime;
 		result = true;
 	}
-#endif // PREDEFINED(PLATFORM_WINDOWS)
+#endif // IS_TRUE(PLATFORM_WINDOWS)
 
 	return result;
 }

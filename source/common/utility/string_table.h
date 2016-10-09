@@ -2,6 +2,7 @@
 #define WAVELANG_STRING_TABLE_H__
 
 #include "common/common.h"
+
 #include <vector>
 
 class c_string_table {

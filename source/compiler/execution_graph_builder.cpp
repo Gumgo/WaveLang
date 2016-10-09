@@ -1,11 +1,13 @@
-#include "compiler/execution_graph_builder.h"
 #include "compiler/ast.h"
+#include "compiler/execution_graph_builder.h"
 #include "compiler/execution_graph_optimizer.h"
+
 #include "execution_graph/execution_graph.h"
 #include "execution_graph/native_module.h"
 #include "execution_graph/native_module_registry.h"
-#include <map>
+
 #include <deque>
+#include <map>
 #include <stack>
 
 // Set a cap to prevent crazy things from happening if a user tries to loop billions of times
@@ -90,11 +92,11 @@ private:
 
 	// Adds initially unassigned identifier
 	void add_identifier_to_scope(const std::string &name, c_ast_data_type data_type) {
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 		for (size_t index = 0; index < m_scope_stack.size(); index++) {
 			wl_assert(m_scope_stack[index].identifiers.find(name) == m_scope_stack[index].identifiers.end());
 		}
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 		s_identifier identifier;
 		identifier.data_type = data_type;

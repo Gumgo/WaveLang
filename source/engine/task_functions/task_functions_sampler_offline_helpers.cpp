@@ -1,14 +1,15 @@
 #include "common/common.h"
+
 #include "engine/task_functions/task_functions_sampler_sinc_window.h"
 
 #define GENERATE_SINC_WINDOW 0
 #define FIND_FAST_LOG2_COEFFICIENTS 0
 
-#if PREDEFINED(GENERATE_SINC_WINDOW)
+#if IS_TRUE(GENERATE_SINC_WINDOW)
 #include <fstream>
-#endif // PREDEFINED(GENERATE_SINC_WINDOW)
+#endif // IS_TRUE(GENERATE_SINC_WINDOW)
 
-#if PREDEFINED(GENERATE_SINC_WINDOW)
+#if IS_TRUE(GENERATE_SINC_WINDOW)
 namespace sinc_window_generator {
 	static const real64 k_pi = 3.1415926535897932384626433832795;
 	static const real64 k_alpha = 3.0;
@@ -119,7 +120,7 @@ int main(int argc, char **argv) {
 	sinc_window_generator::generate();
 	return 0;
 }
-#endif // PREDEFINED(GENERATE_SINC_WINDOW)
+#endif // IS_TRUE(GENERATE_SINC_WINDOW)
 
 #if FIND_FAST_LOG2_COEFFICIENTS
 #include <iostream>

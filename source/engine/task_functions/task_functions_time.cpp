@@ -1,9 +1,10 @@
-#include "engine/task_functions/task_functions_time.h"
-#include "execution_graph/native_modules/native_modules_time.h"
-#include "engine/task_function_registry.h"
 #include "engine/buffer.h"
+#include "engine/task_function_registry.h"
 #include "engine/buffer_operations/buffer_operations.h"
 #include "engine/events/event_interface.h"
+#include "engine/task_functions/task_functions_time.h"
+
+#include "execution_graph/native_modules/native_modules_time.h"
 
 static const uint32 k_task_functions_time_library_id = 5;
 

@@ -1,6 +1,6 @@
 #include "common/utility/stopwatch.h"
 
-#if PREDEFINED(PLATFORM_WINDOWS)
+#if IS_TRUE(PLATFORM_WINDOWS)
 
 c_stopwatch::c_stopwatch() {
 	m_frequency = 0;
@@ -40,6 +40,6 @@ int64 c_stopwatch::query_internal() {
 	return time.QuadPart - m_start_time;
 }
 
-#else // PREDEFINED(PLATFORM_WINDOWS)
+#else // IS_TRUE(PLATFORM_WINDOWS)
 #error Unknown platform
-#endif // PREDEFINED(PLATFORM_WINDOWS)
+#endif // IS_TRUE(PLATFORM_WINDOWS)

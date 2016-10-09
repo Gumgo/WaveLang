@@ -1,9 +1,11 @@
-#include "engine/task_functions/task_functions_delay.h"
-#include "execution_graph/native_modules/native_modules_delay.h"
-#include "engine/task_function_registry.h"
 #include "engine/buffer.h"
+#include "engine/task_function_registry.h"
 #include "engine/buffer_operations/buffer_operations.h"
 #include "engine/events/event_interface.h"
+#include "engine/task_functions/task_functions_delay.h"
+
+#include "execution_graph/native_modules/native_modules_delay.h"
+
 #include <algorithm>
 
 static const uint32 k_task_functions_delay_library_id = 3;

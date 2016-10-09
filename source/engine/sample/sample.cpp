@@ -1,6 +1,8 @@
-#include "engine/sample/sample.h"
-#include "engine/math/sse.h"
 #include "common/utility/file_utility.h"
+
+#include "engine/math/sse.h"
+#include "engine/sample/sample.h"
+
 #include <fstream>
 
 struct s_wave_riff_header {
@@ -293,7 +295,7 @@ void c_sample::initialize(c_wrapped_array_const<c_sample *> mipmap) {
 
 	wl_assert(mipmap.get_count() > 0);
 
-#if PREDEFINED(ASSERTS_ENABLED)
+#if IS_TRUE(ASSERTS_ENABLED)
 	for (uint32 index = 1; index < mipmap.get_count(); index++) {
 		// Verify that the mipmap is valid
 		c_sample *sample_a = mipmap[index - 1];
@@ -308,7 +310,7 @@ void c_sample::initialize(c_wrapped_array_const<c_sample *> mipmap) {
 		wl_assert(sample_a->m_loop_end == sample_b->m_loop_end * 2);
 		wl_assert(sample_a->m_phase_shift_enabled == sample_b->m_phase_shift_enabled);
 	}
-#endif // PREDEFINED(ASSERTS_ENABLED)
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 	m_sample_rate = 0;
 	m_channel_count = 0;

@@ -2,6 +2,7 @@
 #define WAVELANG_BUFFER_OPERATIONS_INTERNAL_H__
 
 #include "common/common.h"
+
 #include "engine/buffer.h"
 #include "engine/buffer_operations/buffer_operations.h"
 

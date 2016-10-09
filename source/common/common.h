@@ -1,19 +1,20 @@
 #ifndef WAVELANG_COMMON_H__
 #define WAVELANG_COMMON_H__
 
-#include "common/macros.h"
-#include "common/platform.h"
-#include "common/types.h"
 #include "common/asserts.h"
 #include "common/cast_integer_verify.h"
-#include "common/string.h"
+#include "common/macros.h"
+#include "common/platform.h"
 #include "common/static_array.h"
+#include "common/string.h"
+#include "common/types.h"
 #include "common/wrapped_array.h"
+
 #include <cctype>
 #include <cstddef>
 #include <cstdint>
-#include <type_traits>
 #include <limits>
+#include <type_traits>
 
 // Some utility functions... if this list gets too big, move these somewhere better
 
@@ -58,7 +59,7 @@ template<typename t_value> t_value clamp(t_value value, t_value lower, t_value u
 	return std::min(std::max(value, lower), upper);
 }
 
-#if PREDEFINED(ENDIANNESS_LITTLE)
+#if IS_TRUE(ENDIANNESS_LITTLE)
 template<typename t_value> t_value native_to_little_endian(t_value value) {
 	return value;
 }
@@ -74,7 +75,7 @@ template<typename t_value> t_value little_to_native_endian(t_value value) {
 template<typename t_value> t_value big_to_native_endian(t_value value) {
 	return swap_byte_order(value);
 }
-#elif PREDEFINED(ENDIANNESS_BIG)
+#elif IS_TRUE(ENDIANNESS_BIG)
 template<typename t_value> t_value native_to_little_endian(t_value value) {
 	return swap_byte_order(value);
 }
