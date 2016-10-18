@@ -1,4 +1,3 @@
-#include "engine/executor/executor.h"
 #include "engine/task_function.h"
 
 const s_task_function_uid s_task_function_uid::k_invalid = s_task_function_uid::build(0xffffffff, 0xffffffff);
@@ -265,11 +264,4 @@ s_task_function_mapping s_task_function_mapping::build(
 	task_function_mapping.native_module_argument_mapping = mapping;
 
 	return task_function_mapping;
-}
-
-// Unfortunately a call to executor leaks into this file because the context needs to be able to access buffers by index
-// for array dereferencing
-const c_buffer *s_task_function_context::get_buffer_by_index(uint32 buffer_index) const {
-	wl_assert(executor);
-	return executor->get_buffer_by_index(buffer_index);
 }

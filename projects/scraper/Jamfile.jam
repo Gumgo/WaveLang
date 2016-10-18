@@ -1,0 +1,177 @@
+# Scraper - Scrapes the code for script module and task declarations and generates registration code
+
+import path ;
+import regex ;
+import sequence ;
+import string ;
+import vs-project-generator ;
+
+# We only support 64-bit scraper builds, even when the rest of the targets are 32-bit
+project : requirements <address-model>64 ;
+
+local rule get-llvm-config-binary
+{
+	return [ string.join \" [ path.native $(LLVM_BUILD_DIR)/Release/bin/llvm-config.exe ] \" ] ;
+}
+
+local rule get-llvm-cppflags
+{
+	SHELL [ string.join [ get-llvm-config-binary ] --cppflags : " " ] ;
+}
+
+local rule get-llvm-libnames
+{
+	SHELL [ string.join [ get-llvm-config-binary ] --libnames : " " ] ;
+}
+
+local rule get-llvm-libs ( toolset : variant )
+{
+	local llvm-lib-dir = $(LLVM_BUILD_DIR) ;
+	local llvm-lib-ext ;
+
+	if $(variant) = debug
+	{
+		llvm-lib-dir = $(llvm-lib-dir)/Debug/lib ;
+	}
+	else
+	{
+		llvm-lib-dir = $(llvm-lib-dir)/Release/lib ;
+	}
+
+	if $(toolset) = msvc
+	{
+		llvm-lib-ext = lib ;
+	}
+	else
+	{
+		import errors ;
+		errors.user-error Unsupported toolset '$(toolset)' ;
+	}
+
+	local llvm-libs = [ string.words [ get-llvm-libnames ] : " \t\n" ] ;
+
+	local llvm-and-clang-libs =
+		$(llvm-lib-dir)/$(llvm-libs)
+		$(llvm-lib-dir)/clangFrontend.$(llvm-lib-ext)
+		$(llvm-lib-dir)/clangSerialization.$(llvm-lib-ext)
+		$(llvm-lib-dir)/clangDriver.$(llvm-lib-ext)
+		$(llvm-lib-dir)/clangTooling.$(llvm-lib-ext)
+		$(llvm-lib-dir)/clangParse.$(llvm-lib-ext)
+		$(llvm-lib-dir)/clangSema.$(llvm-lib-ext)
+		$(llvm-lib-dir)/clangStaticAnalyzerFrontend.$(llvm-lib-ext)
+		$(llvm-lib-dir)/clangStaticAnalyzerCheckers.$(llvm-lib-ext)
+		$(llvm-lib-dir)/clangStaticAnalyzerCore.$(llvm-lib-ext)
+		$(llvm-lib-dir)/clangAnalysis.$(llvm-lib-ext)
+		$(llvm-lib-dir)/clangRewriteFrontend.$(llvm-lib-ext)
+		$(llvm-lib-dir)/clangRewrite.$(llvm-lib-ext)
+		$(llvm-lib-dir)/clangEdit.$(llvm-lib-ext)
+		$(llvm-lib-dir)/clangAST.$(llvm-lib-ext)
+		$(llvm-lib-dir)/clangLex.$(llvm-lib-ext)
+		$(llvm-lib-dir)/clangBasic.$(llvm-lib-ext) ;
+
+	# $HACK We seem to need this for some reason
+	if $(toolset) = msvc
+	{
+		llvm-and-clang-libs += $(WINDOWS_SDK_DIR)/Lib/winv6.3/um/x64/Version.lib ;
+	}
+
+	return $(llvm-and-clang-libs) ;
+}
+
+local rule starts-with-dash-d ( value )
+{
+	return [ regex.match "(^\-D)" : $(value) ] ;
+}
+
+local rule remove-dash-d ( value )
+{
+	return [ regex.match "\-D(.*)" : $(value) : 1 ] ;
+}
+
+local rule get-llvm-defines
+{
+	# If there's whitespace inside of a cppflag, string.words might produce the wrong result,
+	# but it's okay in this case because we're just looking for -D
+	local llvm-cpp-flags = [ string.words [ get-llvm-cppflags ] : " \t\n" ] ;
+	local filtered-defines = [ sequence.filter starts-with-dash-d : $(llvm-cpp-flags) ] ;
+	# Remove -D
+	return [ sequence.transform remove-dash-d : $(filtered-defines) ] ;
+}
+
+local project-name = scraper ;
+
+local defines = [ get-llvm-defines ] ;
+
+local features = ;
+
+local source-dir = $(TOP)/source ;
+
+local all-files = [ path.glob-tree
+	### Source paths:
+	$(source-dir)/common
+	$(source-dir)/scraper
+	$(source-dir)/natvis
+	:
+	### Search patterns:
+	$(GLOB_PATTERNS)
+	:
+	### Exclude patterns:
+	]
+	### Extra files
+	[ path.make $(source-dir)/execution_graph/native_module.h ]
+	[ path.make $(source-dir)/execution_graph/native_module.cpp ]
+	[ path.make $(source-dir)/engine/task_function.h ]
+	[ path.make $(source-dir)/engine/task_function.cpp ] ;
+
+local include-directories =
+	$(source-dir)
+	$(LLVM_DIR)/include
+	$(LLVM_DIR)/tools/clang/include
+	$(LLVM_BUILD_DIR)/include
+	$(LLVM_BUILD_DIR)/tools/clang/include ;
+
+# Configuration-dependent libraries: is there a better way to do this?
+alias configuration-dependent-libraries :
+	[ get-llvm-libs msvc : debug ]
+	$(WINDOWS_SDK_DIR)/Lib/winv6.3/um/x64/ShLwApi.Lib :
+	<toolset>msvc <variant>debug ;
+
+alias configuration-dependent-libraries :
+	[ get-llvm-libs msvc : release ]
+	$(WINDOWS_SDK_DIR)/Lib/winv6.3/um/x64/ShLwApi.Lib :
+	<toolset>msvc <variant>release ;
+
+local libraries = configuration-dependent-libraries ;
+
+if $(GENERATE_VS_PROJECTS) = 1
+{
+	# Don't declare any targets when generating VS project files
+	local local-files = [ get-local-source-files $(all-files) ] ;
+	vs-project-generator.setup-vs-project-config $(TOP) : $(project-name) : $(defines) : $(features) : $(local-files) : $(include-directories) ;
+}
+else
+{
+	# Add include directories to features
+	features += <include>$(include-directories) <define>$(defines) ;
+
+	# Determine the set of source files
+	local source-files = [ sequence.filter is-c-or-cpp-file : $(all-files) ] ;
+
+	# Declare obj files for each one
+	local obj-targets ;
+	for local source-file in $(source-files)
+	{
+		local obj-target = [ get-obj-file-from-source-file $(project-name) : $(source-file) ] ;
+		obj-targets += $(obj-target) ;
+		obj $(obj-target) : $(source-file) : $(features) ;
+	}
+
+	# Declare the executable
+	exe $(project-name) : $(obj-targets) $(libraries) : $(features) ;
+
+	# Install to the app directory
+	local install-dir = [ get-app-dir ] ;
+	install $(project-name)-install : $(project-name) :
+		<variant>debug,<address-model>64:<location>$(install-dir)/debug_64
+		<variant>release,<address-model>64:<location>$(install-dir)/release_64 ;
+}

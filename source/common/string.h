@@ -21,6 +21,36 @@ inline bool string_compare_case_insensitive(const char *str_a, const char *str_b
 	}
 }
 
+inline bool is_string_empty(const char *str) {
+	wl_assert(str);
+	return *str == '\0';
+}
+
+inline bool string_starts_with(const char *str, const char *prefix) {
+	wl_assert(str);
+	wl_assert(prefix);
+
+	const char *str_ptr = str;
+	const char *prefix_ptr = prefix;
+
+	while (true) {
+		char prefix_char = *prefix_ptr;
+		if (prefix_char == '\0') {
+			// Reached end of the prefix without finding a mismatch
+			return true;
+		} else {
+			char str_char = *str_ptr;
+			if (str_char != prefix_char) {
+				// Found a mismatch - accounts for null terminator of str
+				return false;
+			}
+		}
+
+		str_ptr++;
+		prefix_ptr++;
+	}
+}
+
 template<size_t k_buffer_size>
 class c_static_string {
 public:

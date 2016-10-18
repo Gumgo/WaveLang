@@ -16,3 +16,6 @@
 !/projects/vs_projects/Jamfile.jam
 !/projects/vs_projects/clean_vs_projects.bat
 !/projects/vs_projects/generate_vs_projects.bat
+
+# Ignore anything in the generated source folder
+/source/generated

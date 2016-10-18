@@ -21,8 +21,8 @@ public:
 			real32 real_value;
 			bool bool_value;
 		};
-		std::string string_value;
-		std::vector<uint32> array_value;
+		c_native_module_string string_value;
+		c_native_module_array array_value;
 	};
 
 	c_execution_graph_constant_evaluator();

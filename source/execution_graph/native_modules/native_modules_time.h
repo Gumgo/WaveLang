@@ -5,9 +5,12 @@
 
 #include "execution_graph/native_module.h"
 
-static const uint32 k_native_modules_time_library_id = 5;
-extern const s_native_module_uid k_native_module_time_period_uid;
+const uint32 k_native_modules_time_library_id = 5;
+wl_library(k_native_modules_time_library_id, "time");
 
-void register_native_modules_time();
+extern const s_native_module_uid k_native_module_time_period_uid;
+wl_native_module(k_native_module_time_period_uid, "time_period")
+wl_runtime_only
+void native_module_time_time_period(real32 wl_in_const duration, real32 wl_out &result);
 
 #endif // WAVELANG_EXECUTION_GRAPH_NATIVE_MODULES_NATIVE_MODULES_TIME_H__

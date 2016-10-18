@@ -7,6 +7,7 @@ echo "Generating VS project files" ;
 build-project $(TOP)/projects/compiler ;
 build-project $(TOP)/projects/console ;
 build-project $(TOP)/projects/runtime ;
+build-project $(TOP)/projects/scraper ;
 
 # Set up the VS solution config file and call the VS project generator
 vs-project-generator.setup-vs-solution-config $(TOP) : wavelang ;

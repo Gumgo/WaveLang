@@ -5,12 +5,27 @@
 
 #include "execution_graph/native_module.h"
 
-static const uint32 k_native_modules_controller_library_id = 6;
-extern const s_native_module_uid k_native_module_controller_get_note_id_uid;
-extern const s_native_module_uid k_native_module_controller_get_note_velocity_uid;
-extern const s_native_module_uid k_native_module_controller_get_note_press_duration_uid;
-extern const s_native_module_uid k_native_module_controller_get_note_release_duration_uid;
+const uint32 k_native_modules_controller_library_id = 6;
+wl_library(k_native_modules_controller_library_id, "controller");
 
-void register_native_modules_controller();
+extern const s_native_module_uid k_native_module_controller_get_note_id_uid;
+wl_native_module(k_native_module_controller_get_note_id_uid, "controller_get_note_id")
+wl_runtime_only
+void native_module_controller_get_note_id(real32 wl_out_return &result);
+
+extern const s_native_module_uid k_native_module_controller_get_note_velocity_uid;
+wl_native_module(k_native_module_controller_get_note_velocity_uid, "controller_get_note_velocity")
+wl_runtime_only
+void native_module_controller_get_note_velocity(real32 wl_out_return &result);
+
+extern const s_native_module_uid k_native_module_controller_get_note_press_duration_uid;
+wl_native_module(k_native_module_controller_get_note_press_duration_uid, "controller_get_note_press_duration")
+wl_runtime_only
+void native_module_controller_get_note_press_duration(real32 wl_out_return &result);
+
+extern const s_native_module_uid k_native_module_controller_get_note_release_duration_uid;
+wl_native_module(k_native_module_controller_get_note_release_duration_uid, "controller_get_note_release_duration")
+wl_runtime_only
+void native_module_controller_get_note_press_duration(real32 wl_out_return &result);
 
 #endif // WAVELANG_EXECUTION_GRAPH_NATIVE_MODULES_NATIVE_MODULES_CONTROLLER_H__

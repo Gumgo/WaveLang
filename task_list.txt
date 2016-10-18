@@ -80,6 +80,4 @@
 			- N and M are independent
 		- When downsampling, if filter_nyquist is true, a filter is applied at the nyquist frequency
 
-- Arrange all includes in alphabetical order
-
 - Disable inactive voices

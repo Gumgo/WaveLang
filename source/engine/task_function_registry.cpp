@@ -220,7 +220,7 @@ static void validate_task_function_mapping(
 		uint32 mapping_index = task_function_mapping.native_module_argument_mapping.mapping[arg];
 		wl_assert(VALID_INDEX(mapping_index, task_function.argument_count));
 
-		c_native_module_data_type native_module_type = native_module.arguments[arg].type;
+		c_native_module_data_type native_module_type = native_module.arguments[arg].type.get_data_type();
 		c_task_data_type task_type = task_function.argument_types[mapping_index];
 
 		// For all qualifier types, the primitive type and whether it's an array must match
@@ -228,7 +228,7 @@ static void validate_task_function_mapping(
 			convert_native_module_primitive_type_to_task_primitive_type(native_module_type.get_primitive_type()));
 		wl_assert(task_type.is_array() == native_module_type.is_array());
 
-		if (native_module_qualifier_is_input(native_module.arguments[arg].qualifier)) {
+		if (native_module_qualifier_is_input(native_module.arguments[arg].type.get_qualifier())) {
 			// Input arguments should have a valid input mapping
 			wl_assert(
 				input_type == k_task_function_mapping_native_module_input_type_variable ||
@@ -241,7 +241,7 @@ static void validate_task_function_mapping(
 			wl_assert(!task_argument_input_mappings[mapping_index]);
 			task_argument_input_mappings[mapping_index] = true;
 		} else {
-			wl_assert(native_module.arguments[arg].qualifier == k_native_module_qualifier_out);
+			wl_assert(native_module.arguments[arg].type.get_qualifier() == k_native_module_qualifier_out);
 			// Output arguments should be "ignored" in the mapping
 			wl_assert(input_type == k_task_function_mapping_native_module_input_type_none);
 

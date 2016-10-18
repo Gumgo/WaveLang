@@ -525,11 +525,11 @@ uint32 c_execution_graph::add_native_module_call_node(uint32 native_module_index
 		s_native_module_argument argument = native_module.arguments[arg];
 		uint32 argument_node_index = allocate_node();
 		s_node &argument_node = m_nodes[argument_node_index];
-		if (native_module_qualifier_is_input(argument.qualifier)) {
+		if (native_module_qualifier_is_input(argument.type.get_qualifier())) {
 			argument_node.type = k_execution_graph_node_type_indexed_input;
 			add_edge_internal(argument_node_index, index);
 		} else {
-			wl_assert(argument.qualifier == k_native_module_qualifier_out);
+			wl_assert(argument.type.get_qualifier() == k_native_module_qualifier_out);
 			argument_node.type = k_execution_graph_node_type_indexed_output;
 			add_edge_internal(index, argument_node_index);
 		}
@@ -833,9 +833,9 @@ bool c_execution_graph::validate_constants() const {
 		size_t input = 0;
 		for (size_t arg = 0; arg < native_module.argument_count; arg++) {
 			s_native_module_argument argument = native_module.arguments[arg];
-			if (argument.qualifier == k_native_module_qualifier_in) {
+			if (argument.type.get_qualifier() == k_native_module_qualifier_in) {
 				input++;
-			} else if (argument.qualifier == k_native_module_qualifier_constant) {
+			} else if (argument.type.get_qualifier() == k_native_module_qualifier_constant) {
 				// Validate that this input is constant
 				uint32 input_node_index = get_node_incoming_edge_index(node_index, input);
 				uint32 constant_node_index = get_node_incoming_edge_index(input_node_index, 0);
@@ -919,10 +919,10 @@ bool c_execution_graph::get_type_from_node(uint32 node_index, c_native_module_da
 
 			size_t input = 0;
 			for (size_t arg = 0; arg < native_module.argument_count; arg++) {
-				if (native_module_qualifier_is_input(native_module.arguments[arg].qualifier)) {
+				if (native_module_qualifier_is_input(native_module.arguments[arg].type.get_qualifier())) {
 					if (dest_node.incoming_edge_indices[input] == node_index) {
 						// We've found the matching argument - return its type
-						out_type = native_module.arguments[arg].type;
+						out_type = native_module.arguments[arg].type.get_data_type();
 						return true;
 					}
 					input++;
@@ -957,10 +957,10 @@ bool c_execution_graph::get_type_from_node(uint32 node_index, c_native_module_da
 
 			size_t output = 0;
 			for (size_t arg = 0; arg < native_module.argument_count; arg++) {
-				if (native_module.arguments[arg].qualifier == k_native_module_qualifier_out) {
+				if (native_module.arguments[arg].type.get_qualifier() == k_native_module_qualifier_out) {
 					if (dest_node.outgoing_edge_indices[output] == node_index) {
 						// We've found the matching argument - return its type
-						out_type = native_module.arguments[arg].type;
+						out_type = native_module.arguments[arg].type.get_data_type();
 						return true;
 					}
 					output++;

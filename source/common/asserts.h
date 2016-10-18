@@ -35,6 +35,7 @@ void handle_assert(const char *message);
 
 #else // IS_TRUE(ASSERTS_ENABLED)
 
+// $TODO change vassert to assertf and vhalt to haltf
 #define IF_ASSERTS_ENABLED(x)
 #define wl_assert(expression)			NOOP
 #define wl_vassert(expression, message)	NOOP

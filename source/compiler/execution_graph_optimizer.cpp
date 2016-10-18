@@ -7,7 +7,7 @@
 #include <stack>
 
 static void build_array_value(const c_execution_graph *execution_graph, uint32 array_node_index,
-	std::vector<uint32> &out_array_value);
+	c_native_module_array &out_array_value);
 static bool sanitize_array_index(const c_execution_graph *execution_graph, uint32 array_node_index, real32 array_index,
 	uint32 &out_sanitized_array_index);
 
@@ -90,7 +90,7 @@ void c_execution_graph_constant_evaluator::try_evaluate_node(uint32 node_index) 
 				break;
 
 			case k_native_module_primitive_type_string:
-				result.string_value = m_execution_graph->get_constant_node_string_value(node_index);
+				result.string_value.get_string() = m_execution_graph->get_constant_node_string_value(node_index);
 				break;
 
 			default:
@@ -151,11 +151,10 @@ bool c_execution_graph_constant_evaluator::build_module_call_arguments(const s_n
 		s_native_module_argument argument = native_module.arguments[arg];
 		s_native_module_compile_time_argument &compile_time_argument = out_arg_list[arg];
 #if IS_TRUE(ASSERTS_ENABLED)
-		compile_time_argument.assigned = false;
-		compile_time_argument.argument = argument;
+		compile_time_argument.type = argument.type;
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
-		if (native_module_qualifier_is_input(argument.qualifier)) {
+		if (native_module_qualifier_is_input(argument.type.get_qualifier())) {
 			uint32 input_node_index = m_execution_graph->get_node_incoming_edge_index(
 				native_module_node_index, next_input);
 			uint32 source_node_index = m_execution_graph->get_node_incoming_edge_index(input_node_index, 0);
@@ -195,7 +194,7 @@ bool c_execution_graph_constant_evaluator::build_module_call_arguments(const s_n
 
 			next_input++;
 		} else {
-			wl_assert(argument.qualifier == k_native_module_qualifier_out);
+			wl_assert(argument.type.get_qualifier() == k_native_module_qualifier_out);
 			compile_time_argument.real_value = 0.0f;
 			next_output++;
 		}
@@ -213,18 +212,17 @@ void c_execution_graph_constant_evaluator::store_native_module_call_results(cons
 
 	for (size_t arg = 0; arg < native_module.argument_count; arg++) {
 		s_native_module_argument argument = native_module.arguments[arg];
-		if (argument.qualifier == k_native_module_qualifier_out) {
+		if (argument.type.get_qualifier() == k_native_module_qualifier_out) {
 			const s_native_module_compile_time_argument &compile_time_argument = arg_list[arg];
-			wl_assert(compile_time_argument.assigned);
 
 			// Store the output result
 			s_result evaluation_result;
-			evaluation_result.type = argument.type;
+			evaluation_result.type = argument.type.get_data_type();
 
-			if (argument.type.is_array()) {
+			if (argument.type.get_data_type().is_array()) {
 				evaluation_result.array_value = compile_time_argument.array_value;
 			} else {
-				switch (argument.type.get_primitive_type()) {
+				switch (argument.type.get_data_type().get_primitive_type()) {
 				case k_native_module_primitive_type_real:
 					evaluation_result.real_value = compile_time_argument.real_value;
 					break;
@@ -284,19 +282,19 @@ s_compiler_result c_execution_graph_optimizer::optimize_graph(c_execution_graph 
 }
 
 static void build_array_value(const c_execution_graph *execution_graph, uint32 array_node_index,
-	std::vector<uint32> &out_array_value) {
+	c_native_module_array &out_array_value) {
 	wl_assert(execution_graph->get_node_type(array_node_index) == k_execution_graph_node_type_constant);
 	wl_assert(execution_graph->get_constant_node_data_type(array_node_index).is_array());
-	wl_assert(out_array_value.empty());
+	wl_assert(out_array_value.get_array().empty());
 
 	size_t array_count = execution_graph->get_node_incoming_edge_count(array_node_index);
-	out_array_value.reserve(array_count);
+	out_array_value.get_array().reserve(array_count);
 
 	for (size_t array_index = 0; array_index < array_count; array_index++) {
 		// Jump past the indexed input node
 		uint32 input_node_index = execution_graph->get_node_incoming_edge_index(array_node_index, array_index);
 		uint32 value_node_index = execution_graph->get_node_incoming_edge_index(input_node_index, 0);
-		out_array_value.push_back(value_node_index);
+		out_array_value.get_array().push_back(value_node_index);
 	}
 }
 
@@ -383,11 +381,10 @@ static bool optimize_native_module_call(c_execution_graph *execution_graph, uint
 				s_native_module_argument argument = native_module.arguments[arg];
 				s_native_module_compile_time_argument compile_time_argument;
 #if IS_TRUE(ASSERTS_ENABLED)
-				compile_time_argument.assigned = false;
-				compile_time_argument.argument = argument;
+				compile_time_argument.type = argument.type;
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
-				if (native_module_qualifier_is_input(argument.qualifier)) {
+				if (native_module_qualifier_is_input(argument.type.get_qualifier())) {
 					uint32 input_node_index = execution_graph->get_node_incoming_edge_index(node_index, next_input);
 					uint32 constant_node_index = execution_graph->get_node_incoming_edge_index(input_node_index, 0);
 					c_native_module_data_type type =
@@ -408,7 +405,7 @@ static bool optimize_native_module_call(c_execution_graph *execution_graph, uint
 							break;
 
 						case k_native_module_primitive_type_string:
-							compile_time_argument.string_value =
+							compile_time_argument.string_value.get_string() =
 								execution_graph->get_constant_node_string_value(constant_node_index);
 							break;
 
@@ -419,7 +416,7 @@ static bool optimize_native_module_call(c_execution_graph *execution_graph, uint
 
 					next_input++;
 				} else {
-					wl_assert(argument.qualifier == k_native_module_qualifier_out);
+					wl_assert(argument.type.get_qualifier() == k_native_module_qualifier_out);
 					compile_time_argument.real_value = 0.0f;
 					next_output++;
 				}
@@ -440,20 +437,19 @@ static bool optimize_native_module_call(c_execution_graph *execution_graph, uint
 			next_output = 0;
 			for (size_t arg = 0; arg < native_module.argument_count; arg++) {
 				s_native_module_argument argument = native_module.arguments[arg];
-				if (argument.qualifier == k_native_module_qualifier_out) {
+				if (argument.type.get_qualifier() == k_native_module_qualifier_out) {
 					const s_native_module_compile_time_argument &compile_time_argument = arg_list[arg];
-					wl_assert(compile_time_argument.assigned);
 
 					// Create a constant node for this output
 					uint32 constant_node_index = c_execution_graph::k_invalid_index;
-					const std::vector<uint32> *argument_array = nullptr;
+					const c_native_module_array *argument_array = nullptr;
 
-					if (argument.type.is_array()) {
+					if (argument.type.get_data_type().is_array()) {
 						constant_node_index = execution_graph->add_constant_array_node(
-							argument.type.get_element_type());
+							argument.type.get_data_type().get_element_type());
 						argument_array = &compile_time_argument.array_value;
 					} else {
-						switch (argument.type.get_primitive_type()) {
+						switch (argument.type.get_data_type().get_primitive_type()) {
 						case k_native_module_primitive_type_real:
 							constant_node_index = execution_graph->add_constant_node(compile_time_argument.real_value);
 							break;
@@ -463,7 +459,8 @@ static bool optimize_native_module_call(c_execution_graph *execution_graph, uint
 							break;
 
 						case k_native_module_primitive_type_string:
-							constant_node_index = execution_graph->add_constant_node(compile_time_argument.string_value);
+							constant_node_index = execution_graph->add_constant_node(
+								compile_time_argument.string_value.get_string());
 							break;
 
 						default:
@@ -473,8 +470,9 @@ static bool optimize_native_module_call(c_execution_graph *execution_graph, uint
 
 					if (argument_array) {
 						// Hook up array inputs
-						for (size_t index = 0; index < argument_array->size(); index++) {
-							execution_graph->add_constant_array_value(constant_node_index, (*argument_array)[index]);
+						for (size_t index = 0; index < argument_array->get_array().size(); index++) {
+							execution_graph->add_constant_array_value(
+								constant_node_index, argument_array->get_array()[index]);
 						}
 					}
 
@@ -1166,7 +1164,7 @@ static void validate_optimized_constants(const c_execution_graph *execution_grap
 		// For each constant input, verify that a constant node is linked up
 		size_t input = 0;
 		for (size_t arg = 0; arg < native_module.argument_count; arg++) {
-			e_native_module_qualifier qualifier = native_module.arguments[arg].qualifier;
+			e_native_module_qualifier qualifier = native_module.arguments[arg].type.get_qualifier();
 			if (qualifier == k_native_module_qualifier_in) {
 				input++;
 			} else if (qualifier == k_native_module_qualifier_constant) {

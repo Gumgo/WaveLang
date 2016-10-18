@@ -18,9 +18,18 @@ rule load-root-module ( module )
 
 load-root-module vs-project-generator ;
 
+import feature ;
 import os ;
 import path ;
 import regex ;
+import toolset ;
+
+# Declare features for scraper
+feature.feature scraper : : dependency free ;
+toolset.flags scraper COMMAND <scraper> ;
+
+feature.feature native-module-registration-function-name : : free ;
+toolset.flags scraper NATIVE_MODULE_REGISTRATION_FUNCTION_NAME <native-module-registration-function-name> ;
 
 rule to-bool ( value * )
 {
@@ -69,3 +78,44 @@ rule get-app-dir ( )
 {
 	return $(TOP)/app ;
 }
+
+rule scraper ( target : source : properties * )
+{
+	local scraper-properties = "-xc++" "-std=c++14" ;
+
+	local scraper-include-directories = $(TOP)/source ;
+	for local dir in $(scraper-include-directories)
+	{
+		local native-dir = [ path.native $(dir) ] ;
+		scraper-properties += "\"-I"$(native-dir)"\"" ;
+	}
+
+	local scraper-defines = SCRAPER_ENABLED ; # Indicates that we're scraping
+	scraper-properties += -D$(scraper-defines) ;
+
+	properties on $(target) = $(scraper-properties) ;
+
+	# Re-scrape if the scraper is updated
+	DEPENDS $(target) : [ on $(target) return $(COMMAND) ] ;
+}
+
+actions scraper bind COMMAND bind NATIVE_MODULE_REGISTRATION_FUNCTION_NAME
+{
+	$(COMMAND[1]:E=scraper_not_found) -n $(NATIVE_MODULE_REGISTRATION_FUNCTION_NAME) -o $(<) $(>) -- $(properties)
+}
+
+rule run-scraper ( registration-output : declaration-input : native-module-registration-function-name )
+{
+	make $(registration-output) : $(declaration-input) : @scraper :
+		<address-model>64
+		<scraper>$(TOP)/projects/scraper//scraper-install
+		<native-module-registration-function-name>$(native-module-registration-function-name) ;
+}
+
+# Declare global target - generated registration file
+# $TODO if we call run-scraper from any other jamfile, COMMAND doesn't get bound. Why is this? Need to fix so that $PLUGIN jamfiles can call this rule
+local registration-inputs = $(TOP)/source/native_module_registration_inputs.h ;
+local registration-file-name = $(TOP)/source/generated/registration_generated.inl ;
+
+run-scraper $(registration-file-name) : $(registration-inputs) : "register_native_modules" ;
+alias registration-file : $(registration-file-name) ;

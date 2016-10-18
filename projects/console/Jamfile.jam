@@ -59,7 +59,7 @@ if $(GENERATE_VS_PROJECTS) = 1
 else
 {
 	# Add include directories to features
-	features += <include>$(include-directories) ;
+	features += <include>$(include-directories) <define>$(defines) ;
 
 	# Determine the set of source files
 	local source-files = [ sequence.filter is-c-or-cpp-file : $(all-files) ] ;

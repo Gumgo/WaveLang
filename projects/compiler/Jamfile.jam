@@ -23,7 +23,10 @@ local all-files = [ path.glob-tree
 	$(GLOB_PATTERNS)
 	:
 	### Exclude patterns:
-	] ;
+	]
+	### Registration file: no dependency created here, but it gets pulled into the VS project:
+	[ path.make $(source-dir)/native_module_registration_inputs.h ]
+	;
 
 local include-directories =
 	$(source-dir) ;
@@ -60,7 +63,10 @@ if $(GENERATE_VS_PROJECTS) = 1
 else
 {
 	# Add include directories to features
-	features += <include>$(include-directories) ;
+	features += <include>$(include-directories) <define>$(defines) ;
+
+	# This target is dependent on the generated registration file
+	features += <dependency>$(TOP)//registration-file ;
 
 	# Determine the set of source files
 	local source-files = [ sequence.filter is-c-or-cpp-file : $(all-files) ] ;

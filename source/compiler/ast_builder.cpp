@@ -237,20 +237,20 @@ static void build_native_module_declarations(c_ast_node_scope *global_scope) {
 		module_declaration->set_name(native_module.name.get_string());
 		module_declaration->set_return_type(c_ast_data_type(k_ast_primitive_type_void));
 
-		bool first_out_argument_found = false;
+		bool return_argument_found = false;
 		for (size_t arg = 0; arg < native_module.argument_count; arg++) {
 			s_native_module_argument argument = native_module.arguments[arg];
-			if (native_module.first_output_is_return &&
-				argument.qualifier == k_native_module_qualifier_out &&
-				!first_out_argument_found) {
+			if (arg == native_module.return_argument_index) {
+				wl_assert(!return_argument_found);
+				wl_assert(argument.type.get_qualifier() == k_native_module_qualifier_out);
 				// The first out argument is routed through the return value, so don't add a declaration for it
-				module_declaration->set_return_type(get_ast_data_type(argument.type));
-				first_out_argument_found = true;
+				module_declaration->set_return_type(get_ast_data_type(argument.type.get_data_type()));
+				return_argument_found = true;
 			} else {
 				// Add a declaration for this argument
 				c_ast_node_named_value_declaration *argument_declaration = new c_ast_node_named_value_declaration();
-				argument_declaration->set_qualifier(get_ast_qualifier(argument.qualifier));
-				argument_declaration->set_data_type(get_ast_data_type(argument.type));
+				argument_declaration->set_qualifier(get_ast_qualifier(argument.type.get_qualifier()));
+				argument_declaration->set_data_type(get_ast_data_type(argument.type.get_data_type()));
 				module_declaration->add_argument(argument_declaration);
 			}
 		}

@@ -2,15 +2,20 @@
 #define WAVELANG_EXECUTION_GRAPH_NATIVE_MODULE_H__
 
 #include "common/common.h"
+#include "common/scraper_attributes.h"
 
+#include "execution_graph/native_module_compile_time_types.h"
+
+#include <string>
 #include <vector>
 
 static const size_t k_max_native_module_library_name_length = 64;
 static const size_t k_max_native_module_name_length = 64;
 static const size_t k_max_native_module_arguments = 10;
 static const size_t k_max_native_module_argument_name_length = 16;
+static const size_t k_invalid_argument_index = static_cast<size_t>(-1);
 
-#define NATIVE_PREFIX "__native_"
+#define NATIVE_PREFIX "__native_" // nocheckin Needed?
 
 // Unique identifier for each native module
 struct s_native_module_uid {
@@ -51,6 +56,35 @@ struct s_native_module_uid {
 
 	static const s_native_module_uid k_invalid;
 };
+
+// Fixed list of operators which are to be associated with native modules
+enum e_native_operator {
+	k_native_operator_noop, // Special case "no-op" operator
+	k_native_operator_negation,
+	k_native_operator_addition,
+	k_native_operator_subtraction,
+	k_native_operator_multiplication,
+	k_native_operator_division,
+	k_native_operator_modulo,
+	k_native_operator_concatenation,
+	k_native_operator_not,
+	k_native_operator_equal,
+	k_native_operator_not_equal,
+	k_native_operator_less,
+	k_native_operator_greater,
+	k_native_operator_less_equal,
+	k_native_operator_greater_equal,
+	k_native_operator_and,
+	k_native_operator_or,
+	k_native_operator_array_dereference,
+
+	k_native_operator_count
+};
+
+// Returns the native module name associated with the native operator. These are special pre-defined names which take
+// the form "operator_<symbol>" and cannot be called directly from script since they are not valid identifiers but are
+// used for module identification and in output.
+const char *get_native_operator_native_module_name(e_native_operator native_operator);
 
 enum e_native_module_qualifier {
 	k_native_module_qualifier_in,
@@ -110,43 +144,37 @@ private:
 	uint32 m_flags;
 };
 
+class c_native_module_qualified_data_type {
+public:
+	c_native_module_qualified_data_type();
+	c_native_module_qualified_data_type(c_native_module_data_type data_type, e_native_module_qualifier qualifier);
+	static c_native_module_qualified_data_type invalid();
+
+	bool is_valid() const;
+
+	c_native_module_data_type get_data_type() const;
+	e_native_module_qualifier get_qualifier() const;
+
+	bool operator==(const c_native_module_qualified_data_type &other) const;
+	bool operator!=(const c_native_module_qualified_data_type &other) const;
+
+private:
+	c_native_module_data_type m_data_type;
+	e_native_module_qualifier m_qualifier;
+};
+
 const s_native_module_primitive_type_traits &get_native_module_primitive_type_traits(
 	e_native_module_primitive_type primitive_type);
 
 struct s_native_module_argument {
-	e_native_module_qualifier qualifier;
-	c_native_module_data_type type;
-
-	static s_native_module_argument build(
-		e_native_module_qualifier qualifier,
-		c_native_module_data_type type) {
-		s_native_module_argument result = { qualifier, type };
-		return result;
-	}
- };
-
-struct s_native_module_named_argument {
-	s_native_module_argument argument;
 	c_static_string<k_max_native_module_argument_name_length> name;
-
-	static s_native_module_named_argument build(
-		e_native_module_qualifier qualifier,
-		c_native_module_data_type type,
-		const char *name) {
-		s_native_module_named_argument result = {
-			s_native_module_argument::build(qualifier, type),
-			c_static_string<k_max_native_module_argument_name_length>::construct_verify(name)
-		};
-		return result;
-	}
+	c_native_module_qualified_data_type type;
 };
 
-// Return value for a compile-time native module call
-// $TODO do we want to expose std::vector for arrays? Consider making a wrapper around it
+// Argument for a compile-time native module call
 struct s_native_module_compile_time_argument {
 #if IS_TRUE(ASSERTS_ENABLED)
-	s_native_module_argument argument;
-	bool assigned;
+	c_native_module_qualified_data_type type;
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
 	// Don't use these directly
@@ -154,127 +182,87 @@ struct s_native_module_compile_time_argument {
 		real32 real_value;
 		bool bool_value;
 	};
-	std::string string_value;
-	std::vector<uint32> array_value; // Array of value node indices
+	c_native_module_string string_value;
+	c_native_module_array array_value; // Array of value node indices for all types - use hacky, but safe, cast
 
 	// These functions are used to enforce correct usage of input or output
 
-	real32 get_real() const {
-		wl_assert(native_module_qualifier_is_input(argument.qualifier));
-		wl_assert(argument.type == c_native_module_data_type(k_native_module_primitive_type_real));
+	real32 get_real_in() const {
+		wl_assert(native_module_qualifier_is_input(type.get_qualifier()));
+		wl_assert(type.get_data_type() == c_native_module_data_type(k_native_module_primitive_type_real));
 		return real_value;
 	}
 
-	real32 operator=(real32 value) {
-		wl_assert(argument.qualifier == k_native_module_qualifier_out);
-		wl_assert(argument.type == c_native_module_data_type(k_native_module_primitive_type_real));
-		this->real_value = value;
-		IF_ASSERTS_ENABLED(assigned = true);
-		return value;
+	real32 &get_real_out() {
+		wl_assert(type.get_qualifier() == k_native_module_qualifier_out);
+		wl_assert(type.get_data_type() == c_native_module_data_type(k_native_module_primitive_type_real));
+		return real_value;
 	}
 
-	bool get_bool() const {
-		wl_assert(native_module_qualifier_is_input(argument.qualifier));
-		wl_assert(argument.type == c_native_module_data_type(k_native_module_primitive_type_bool));
+	bool get_bool_in() const {
+		wl_assert(native_module_qualifier_is_input(type.get_qualifier()));
+		wl_assert(type.get_data_type() == c_native_module_data_type(k_native_module_primitive_type_bool));
 		return bool_value;
 	}
 
-	bool operator=(bool value) {
-		wl_assert(argument.qualifier == k_native_module_qualifier_out);
-		wl_assert(argument.type == c_native_module_data_type(k_native_module_primitive_type_bool));
-		this->bool_value = value;
-		IF_ASSERTS_ENABLED(assigned = true);
-		return value;
+	bool &get_bool_out() {
+		wl_assert(type.get_qualifier() == k_native_module_qualifier_out);
+		wl_assert(type.get_data_type() == c_native_module_data_type(k_native_module_primitive_type_bool));
+		return bool_value;
 	}
 
-	const std::string &get_string() const {
-		wl_assert(native_module_qualifier_is_input(argument.qualifier));
-		wl_assert(argument.type == c_native_module_data_type(k_native_module_primitive_type_string));
+	const c_native_module_string &get_string_in() const {
+		wl_assert(native_module_qualifier_is_input(type.get_qualifier()));
+		wl_assert(type.get_data_type() == c_native_module_data_type(k_native_module_primitive_type_string));
 		return string_value;
 	}
 
-	const std::string &operator=(const std::string &value) {
-		wl_assert(argument.qualifier == k_native_module_qualifier_out);
-		wl_assert(argument.type == c_native_module_data_type(k_native_module_primitive_type_real));
-		this->string_value = value;
-		IF_ASSERTS_ENABLED(assigned = true);
+	c_native_module_string &get_string_out() {
+		wl_assert(type.get_qualifier() == k_native_module_qualifier_out);
+		wl_assert(type.get_data_type() == c_native_module_data_type(k_native_module_primitive_type_string));
 		return string_value;
 	}
 
-	const std::vector<uint32> &get_real_array() const {
-		wl_assert(native_module_qualifier_is_input(argument.qualifier));
-		wl_assert(argument.type == c_native_module_data_type(k_native_module_primitive_type_real, true));
-		return array_value;
+	const c_native_module_real_array &get_real_array_in() const {
+		wl_assert(native_module_qualifier_is_input(type.get_qualifier()));
+		wl_assert(type.get_data_type() == c_native_module_data_type(k_native_module_primitive_type_real, true));
+		return *static_cast<const c_native_module_real_array *>(&array_value);
 	}
 
-	void set_real_array(const std::vector<uint32> &value) {
-		wl_assert(argument.qualifier == k_native_module_qualifier_out);
-		wl_assert(argument.type == c_native_module_data_type(k_native_module_primitive_type_real, true));
-		this->array_value = value;
-		IF_ASSERTS_ENABLED(assigned = true);
+	c_native_module_real_array &get_real_array_out() {
+		wl_assert(type.get_qualifier() == k_native_module_qualifier_out);
+		wl_assert(type.get_data_type() == c_native_module_data_type(k_native_module_primitive_type_real, true));
+		return *static_cast<c_native_module_real_array *>(&array_value);
 	}
 
-	const std::vector<uint32> &get_bool_array() const {
-		wl_assert(native_module_qualifier_is_input(argument.qualifier));
-		wl_assert(argument.type == c_native_module_data_type(k_native_module_primitive_type_bool, true));
-		return array_value;
+	const c_native_module_bool_array &get_bool_array_in() const {
+		wl_assert(native_module_qualifier_is_input(type.get_qualifier()));
+		wl_assert(type.get_data_type() == c_native_module_data_type(k_native_module_primitive_type_bool, true));
+		return *static_cast<const c_native_module_bool_array *>(&array_value);
 	}
 
-	void set_bool_array(const std::vector<uint32> &value) {
-		wl_assert(argument.qualifier == k_native_module_qualifier_out);
-		wl_assert(argument.type == c_native_module_data_type(k_native_module_primitive_type_bool, true));
-		this->array_value = value;
-		IF_ASSERTS_ENABLED(assigned = true);
+	c_native_module_bool_array &get_bool_array_out() {
+		wl_assert(type.get_qualifier() == k_native_module_qualifier_out);
+		wl_assert(type.get_data_type() == c_native_module_data_type(k_native_module_primitive_type_bool, true));
+		return *static_cast<c_native_module_bool_array *>(&array_value);
 	}
 
-	const std::vector<uint32> &get_string_array() const {
-		wl_assert(native_module_qualifier_is_input(argument.qualifier));
-		wl_assert(argument.type == c_native_module_data_type(k_native_module_primitive_type_string, true));
-		return array_value;
+	const c_native_module_string_array &get_string_array_in() const {
+		wl_assert(native_module_qualifier_is_input(type.get_qualifier()));
+		wl_assert(type.get_data_type() == c_native_module_data_type(k_native_module_primitive_type_string, true));
+		return *static_cast<const c_native_module_string_array *>(&array_value);
 	}
 
-	void set_string_array(const std::vector<uint32> &value) {
-		wl_assert(argument.qualifier == k_native_module_qualifier_out);
-		wl_assert(argument.type == c_native_module_data_type(k_native_module_primitive_type_string, true));
-		this->array_value = value;
-		IF_ASSERTS_ENABLED(assigned = true);
+	c_native_module_string_array &get_string_array_out() {
+		wl_assert(type.get_qualifier() == k_native_module_qualifier_out);
+		wl_assert(type.get_data_type() == c_native_module_data_type(k_native_module_primitive_type_string, true));
+		return *static_cast<c_native_module_string_array *>(&array_value);
 	}
-
-private:
-	// Hide this operator so it is never accidentally used
-	s_native_module_compile_time_argument operator=(s_native_module_compile_time_argument other);
 };
 
 // A function which can be called at compile-time to resolve the value(s) of native module calls with constant inputs
 typedef c_wrapped_array<s_native_module_compile_time_argument> c_native_module_compile_time_argument_list;
 typedef void (*f_native_module_compile_time_call)(c_native_module_compile_time_argument_list arguments);
-
-// Shorthand for argument specification
-#define NMA(qualifier, type, name) s_native_module_named_argument::build(	\
-	k_native_module_qualifier_ ## qualifier,								\
-	c_native_module_data_type(k_native_module_primitive_type_ ## type),		\
-	name)
-#define NMA_ARRAY(qualifier, type, name) s_native_module_named_argument::build(	\
-	k_native_module_qualifier_ ## qualifier,									\
-	c_native_module_data_type(k_native_module_primitive_type_ ## type, true),	\
-	name)
-
-struct s_native_module_argument_list {
-	static const s_native_module_named_argument k_argument_none;
-	s_static_array<s_native_module_named_argument, k_max_native_module_arguments> arguments;
-
-	static s_native_module_argument_list build(
-		s_native_module_named_argument arg_0 = k_argument_none,
-		s_native_module_named_argument arg_1 = k_argument_none,
-		s_native_module_named_argument arg_2 = k_argument_none,
-		s_native_module_named_argument arg_3 = k_argument_none,
-		s_native_module_named_argument arg_4 = k_argument_none,
-		s_native_module_named_argument arg_5 = k_argument_none,
-		s_native_module_named_argument arg_6 = k_argument_none,
-		s_native_module_named_argument arg_7 = k_argument_none,
-		s_native_module_named_argument arg_8 = k_argument_none,
-		s_native_module_named_argument arg_9 = k_argument_none);
-};
 
 struct s_native_module {
 	// Unique identifier for this native module
@@ -282,30 +270,27 @@ struct s_native_module {
 
 	// Name of the native module
 	c_static_string<k_max_native_module_name_length> name;
-
-	// If true, the first output argument routes to the return value when called from code
-	bool first_output_is_return;
-
+	
 	// Number of arguments
 	size_t argument_count;
 	size_t in_argument_count;
 	size_t out_argument_count;
 
+	// Index of the argument representing the return value when called from script, or k_invalid_argument_index
+	size_t return_argument_index;
+
 	// List of arguments
 	s_static_array<s_native_module_argument, k_max_native_module_arguments> arguments;
-	s_static_array<c_static_string<k_max_native_module_argument_name_length>, k_max_native_module_arguments>
-		argument_names;
 
 	// Function to resolve the module at compile time if all inputs are constant, or null if this is not possible
 	f_native_module_compile_time_call compile_time_call;
-
-	static s_native_module build(
-		s_native_module_uid uid,
-		const char *name,
-		bool first_output_is_return,
-		const s_native_module_argument_list &arguments,
-		f_native_module_compile_time_call compile_time_call);
 };
+
+// Helpers to translate between nth argument and mth input/output
+size_t get_native_module_input_index_for_argument_index(
+	const s_native_module &native_module, size_t argument_index);
+size_t get_native_module_output_index_for_argument_index(
+	const s_native_module &native_module, size_t argument_index);
 
 // Optimization rules
 
@@ -338,7 +323,7 @@ struct s_native_module_optimization_symbol {
 		uint32 index; // Symbol index if an variable or constant
 		real32 real_value;
 		bool bool_value;
-		// Currently no string value (likely will never be needed)
+		// Currently no string value (likely will never be needed because all strings are compile-time resolved)
 	} data;
 
 	static s_native_module_optimization_symbol invalid() {
@@ -410,68 +395,11 @@ struct s_native_module_optimization_symbol {
 
 struct s_native_module_optimization_pattern {
 	s_static_array<s_native_module_optimization_symbol, k_max_native_module_optimization_pattern_length> symbols;
-
-	static s_native_module_optimization_pattern build(
-		s_native_module_optimization_symbol sym_0 = s_native_module_optimization_symbol::invalid(),
-		s_native_module_optimization_symbol sym_1 = s_native_module_optimization_symbol::invalid(),
-		s_native_module_optimization_symbol sym_2 = s_native_module_optimization_symbol::invalid(),
-		s_native_module_optimization_symbol sym_3 = s_native_module_optimization_symbol::invalid(),
-		s_native_module_optimization_symbol sym_4 = s_native_module_optimization_symbol::invalid(),
-		s_native_module_optimization_symbol sym_5 = s_native_module_optimization_symbol::invalid(),
-		s_native_module_optimization_symbol sym_6 = s_native_module_optimization_symbol::invalid(),
-		s_native_module_optimization_symbol sym_7 = s_native_module_optimization_symbol::invalid(),
-		s_native_module_optimization_symbol sym_8 = s_native_module_optimization_symbol::invalid(),
-		s_native_module_optimization_symbol sym_9 = s_native_module_optimization_symbol::invalid(),
-		s_native_module_optimization_symbol sym_10 = s_native_module_optimization_symbol::invalid(),
-		s_native_module_optimization_symbol sym_11 = s_native_module_optimization_symbol::invalid(),
-		s_native_module_optimization_symbol sym_12 = s_native_module_optimization_symbol::invalid(),
-		s_native_module_optimization_symbol sym_13 = s_native_module_optimization_symbol::invalid(),
-		s_native_module_optimization_symbol sym_14 = s_native_module_optimization_symbol::invalid(),
-		s_native_module_optimization_symbol sym_15 = s_native_module_optimization_symbol::invalid()) {
-		static_assert(k_max_native_module_optimization_pattern_length == 16, "Max optimization pattern length changed");
-		s_native_module_optimization_pattern result;
-		result.symbols[0] = sym_0;
-		result.symbols[1] = sym_1;
-		result.symbols[2] = sym_2;
-		result.symbols[3] = sym_3;
-		result.symbols[4] = sym_4;
-		result.symbols[5] = sym_5;
-		result.symbols[6] = sym_6;
-		result.symbols[7] = sym_7;
-		result.symbols[8] = sym_8;
-		result.symbols[9] = sym_9;
-		result.symbols[10] = sym_10;
-		result.symbols[11] = sym_11;
-		result.symbols[12] = sym_12;
-		result.symbols[13] = sym_13;
-		result.symbols[14] = sym_14;
-		result.symbols[15] = sym_15;
-		return result;
-	}
 };
 
 struct s_native_module_optimization_rule {
 	s_native_module_optimization_pattern source;
 	s_native_module_optimization_pattern target;
-
-	static s_native_module_optimization_rule build(
-		const s_native_module_optimization_pattern &source,
-		const s_native_module_optimization_pattern &target) {
-		s_native_module_optimization_rule result;
-		memcpy(&result.source, &source, sizeof(result.source));
-		memcpy(&result.target, &target, sizeof(result.target));
-		return result;
-	}
 };
-
-// Macros for building optimization rules
-#define NMO_BEGIN(uid)		s_native_module_optimization_symbol::build_native_module(uid)
-#define NMO_END				s_native_module_optimization_symbol::build_native_module_end()
-#define NMO_NM(uid, ...)	NMO_BEGIN(uid), ##__VA_ARGS__, NMO_END
-#define NMO_DRF(arr, idx)	s_native_module_optimization_symbol::build_array_dereference(), arr, idx
-#define NMO_V(index)		s_native_module_optimization_symbol::build_variable(index)
-#define NMO_C(index)		s_native_module_optimization_symbol::build_constant(index)
-#define NMO_RV(value)		s_native_module_optimization_symbol::build_real_value(value)
-#define NMO_BV(value)		s_native_module_optimization_symbol::build_bool_value(value)
 
 #endif // WAVELANG_EXECUTION_GRAPH_NATIVE_MODULE_H__

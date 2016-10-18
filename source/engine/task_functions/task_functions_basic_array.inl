@@ -49,7 +49,8 @@ static void task_function_real_array_dereference_in_out(const s_task_function_co
 				*out_ptr = element.constant_value;
 				out->set_constant(true);
 			} else {
-				c_real_buffer_in array_buffer = context.get_buffer_by_index(element.buffer_index_value);
+				c_real_buffer_in array_buffer =
+					context.array_dereference_interface->get_buffer_by_index(element.buffer_index_value);
 
 				if (array_buffer->is_constant()) {
 					*out_ptr = *array_buffer->get_data<real32>();
@@ -104,7 +105,8 @@ static void task_function_real_array_dereference_in_out(const s_task_function_co
 					dereferenced_value =
 						*reinterpret_cast<const real32 *>(&dereferenced_value_int);
 				} else {
-					c_real_buffer_in array_buffer = context.get_buffer_by_index(element.buffer_index_value);
+					c_real_buffer_in array_buffer =
+						context.array_dereference_interface->get_buffer_by_index(element.buffer_index_value);
 					uint32 dereference_index = index;
 
 					// Zero if constant, 0xffffffff otherwise
@@ -152,7 +154,8 @@ static void task_function_real_array_dereference_inout(const s_task_function_con
 				*index_out_ptr = element.constant_value;
 				index_out->set_constant(true);
 			} else {
-				c_real_buffer_in array_buffer = context.get_buffer_by_index(element.buffer_index_value);
+				c_real_buffer_in array_buffer =
+					context.array_dereference_interface->get_buffer_by_index(element.buffer_index_value);
 
 				if (array_buffer->is_constant()) {
 					*index_out_ptr = *array_buffer->get_data<real32>();
@@ -207,7 +210,8 @@ static void task_function_real_array_dereference_inout(const s_task_function_con
 					dereferenced_value =
 						*reinterpret_cast<const real32 *>(&dereferenced_value_int);
 				} else {
-					c_real_buffer_in array_buffer = context.get_buffer_by_index(element.buffer_index_value);
+					c_real_buffer_in array_buffer =
+						context.array_dereference_interface->get_buffer_by_index(element.buffer_index_value);
 					uint32 dereference_index = index;
 
 					// Zero if constant, 0xffffffff otherwise
@@ -258,7 +262,8 @@ static void task_function_bool_array_dereference_in_out(const s_task_function_co
 				*out_ptr = -static_cast<int32>(element.constant_value);
 				out->set_constant(true);
 			} else {
-				c_bool_buffer_in array_buffer = context.get_buffer_by_index(element.buffer_index_value);
+				c_bool_buffer_in array_buffer =
+					context.array_dereference_interface->get_buffer_by_index(element.buffer_index_value);
 
 				if (array_buffer->is_constant()) {
 					*out_ptr = *array_buffer->get_data<int32>();
@@ -317,7 +322,8 @@ static void task_function_bool_array_dereference_in_out(const s_task_function_co
 						// AND the value with the dereference mask. This will turn it into 0 if the index was invalid.
 						int32 dereferenced_value = static_cast<int32>(element.constant_value) & array_dereference_mask;
 					} else {
-						c_bool_buffer_in array_buffer = context.get_buffer_by_index(element.buffer_index_value);
+						c_bool_buffer_in array_buffer =
+							context.array_dereference_interface->get_buffer_by_index(element.buffer_index_value);
 						uint32 dereference_index = index;
 
 						// Zero if constant, 0xffffffff otherwise

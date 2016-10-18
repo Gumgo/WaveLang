@@ -1,4 +1,5 @@
 #include "engine/buffer.h"
+#include "engine/array_dereference_interface/array_dereference_interface.h"
 #include "engine/buffer_operations/buffer_operations.h"
 #include "engine/buffer_operations/buffer_operations_internal.h"
 #include "engine/task_function_registry.h"

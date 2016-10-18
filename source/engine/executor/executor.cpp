@@ -1,7 +1,8 @@
-#include "engine/task_graph.h"
+#include "engine/array_dereference_interface/array_dereference_interface.h"
 #include "engine/executor/channel_mixer.h"
 #include "engine/executor/executor.h"
 #include "engine/task_function_registry.h"
+#include "engine/task_graph.h"
 
 #include <algorithm>
 
@@ -409,8 +410,10 @@ void c_executor::process_task(uint32 thread_index, const s_task_parameters *para
 		s_static_array<s_task_function_argument, k_max_task_function_arguments> arguments;
 		size_t argument_count = setup_task_arguments(params->task_index, true, arguments);
 
+		c_array_dereference_interface array_dereference_interface(this);
 		c_sample_library_accessor sample_library_accessor(m_sample_library);
 		s_task_function_context task_function_context;
+		task_function_context.array_dereference_interface = &array_dereference_interface;
 		task_function_context.event_interface = &m_event_interface;
 		task_function_context.sample_accessor = &sample_library_accessor;
 		task_function_context.sample_requester = nullptr;
@@ -421,9 +424,6 @@ void c_executor::process_task(uint32 thread_index, const s_task_parameters *para
 			m_settings.task_graph->get_task_count() * params->voice_index + params->task_index];
 		task_function_context.arguments = c_task_function_arguments(arguments.get_elements(), argument_count);
 		// $TODO fill in timing info, etc.
-
-		// Needed for array dereference
-		task_function_context.executor = this;
 
 		// Call the task function
 		wl_assert(task_function.function);

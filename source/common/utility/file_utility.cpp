@@ -16,9 +16,9 @@ bool are_file_paths_equivalent(const char *path_a, const char *path_b) {
 	{
 		bool result = false;
 
-		HANDLE file_a_handle = CreateFile(path_a, 0, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
+		HANDLE file_a_handle = CreateFileA(path_a, 0, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
 			OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-		HANDLE file_b_handle = CreateFile(path_b, 0, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
+		HANDLE file_b_handle = CreateFileA(path_b, 0, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
 			OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
 		if (file_a_handle != INVALID_HANDLE_VALUE &&
@@ -63,7 +63,7 @@ bool are_file_paths_equivalent(const char *path_a, const char *path_b) {
 
 bool is_path_relative(const char *path) {
 #if IS_TRUE(PLATFORM_WINDOWS)
-	return PathIsRelative(path) == TRUE;
+	return PathIsRelativeA(path) == TRUE;
 #else // IS_TRUE(PLATFORM_WINDOWS)
 	// Absolute paths start with /, and otherwise it is relative
 	return *path != '/';
@@ -74,7 +74,7 @@ bool get_file_last_modified_timestamp(const char *path, uint64 &out_timestamp) {
 	bool result = false;
 
 #if IS_TRUE(PLATFORM_WINDOWS)
-	HANDLE file_handle = CreateFile(path, 0, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
+	HANDLE file_handle = CreateFileA(path, 0, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
 		OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
 	if (file_handle != INVALID_HANDLE_VALUE) {

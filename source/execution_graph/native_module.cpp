@@ -2,12 +2,6 @@
 
 const s_native_module_uid s_native_module_uid::k_invalid = s_native_module_uid::build(0xffffffff, 0xffffffff);
 
-// The invalid qualifier value signifies "none"
-const s_native_module_named_argument s_native_module_argument_list::k_argument_none = {
-	s_native_module_argument::build(k_native_module_qualifier_count, c_native_module_data_type::invalid()),
-	c_static_string<k_max_native_module_argument_name_length>::construct_empty()
-};
-
 static const s_native_module_primitive_type_traits k_native_module_primitive_type_traits[] = {
 	//	is_dynamic
 	{	true	},	// real
@@ -17,6 +11,33 @@ static const s_native_module_primitive_type_traits k_native_module_primitive_typ
 
 static_assert(NUMBEROF(k_native_module_primitive_type_traits) == k_native_module_primitive_type_count,
 	"Primitive type traits mismatch");
+
+static const char *k_native_operator_names[] = {
+	"operator_u+",
+	"operator_u-",
+	"operator_+",
+	"operator_-",
+	"operator_*",
+	"operator_/",
+	"operator_%",
+	"operator_.",
+	"operator_!",
+	"operator_==",
+	"operator_!=",
+	"operator_<",
+	"operator_>",
+	"operator_<=",
+	"operator_>=",
+	"operator_&&",
+	"operator_||",
+	"operator_[]"
+};
+static_assert(NUMBEROF(k_native_operator_names) == k_native_operator_count, "Native operator count mismatch");
+
+const char *get_native_operator_native_module_name(e_native_operator native_operator) {
+	wl_assert(VALID_INDEX(native_operator, k_native_operator_count));
+	return k_native_operator_names[native_operator];
+}
 
 struct s_native_module_data_type_format {
 	union {
@@ -89,6 +110,41 @@ bool c_native_module_data_type::operator!=(const c_native_module_data_type &othe
 	return (m_primitive_type != other.m_primitive_type) || (m_flags != other.m_flags);
 }
 
+c_native_module_qualified_data_type::c_native_module_qualified_data_type() {
+	m_qualifier = k_native_module_qualifier_in;
+}
+
+c_native_module_qualified_data_type::c_native_module_qualified_data_type(
+	c_native_module_data_type data_type, e_native_module_qualifier qualifier)
+	: m_data_type(data_type)
+	, m_qualifier(qualifier) {
+}
+
+c_native_module_qualified_data_type c_native_module_qualified_data_type::invalid() {
+	return c_native_module_qualified_data_type(c_native_module_data_type::invalid(), k_native_module_qualifier_count);
+}
+
+bool c_native_module_qualified_data_type::is_valid() const {
+	return m_data_type.is_valid();
+}
+
+
+c_native_module_data_type c_native_module_qualified_data_type::get_data_type() const {
+	return m_data_type;
+}
+
+e_native_module_qualifier c_native_module_qualified_data_type::get_qualifier() const {
+	return m_qualifier;
+}
+
+bool c_native_module_qualified_data_type::operator==(const c_native_module_qualified_data_type &other) const {
+	return (m_data_type == other.m_data_type) && (m_qualifier == other.m_qualifier);
+}
+
+bool c_native_module_qualified_data_type::operator!=(const c_native_module_qualified_data_type &other) const {
+	return (m_data_type != other.m_data_type) || (m_qualifier != other.m_qualifier);
+}
+
 uint32 c_native_module_data_type::write() const {
 	// $TODO endianness?
 	wl_assert(is_valid()); // Invalid type is only used as a sentinel in a few spots, should never write it
@@ -123,76 +179,36 @@ const s_native_module_primitive_type_traits &get_native_module_primitive_type_tr
 	return k_native_module_primitive_type_traits[primitive_type];
 }
 
-s_native_module_argument_list s_native_module_argument_list::build(
-	s_native_module_named_argument arg_0,
-	s_native_module_named_argument arg_1,
-	s_native_module_named_argument arg_2,
-	s_native_module_named_argument arg_3,
-	s_native_module_named_argument arg_4,
-	s_native_module_named_argument arg_5,
-	s_native_module_named_argument arg_6,
-	s_native_module_named_argument arg_7,
-	s_native_module_named_argument arg_8,
-	s_native_module_named_argument arg_9) {
-	static_assert(k_max_native_module_arguments == 10, "Max native module arguments changed");
-	s_native_module_argument_list result;
-	result.arguments[0] = arg_0;
-	result.arguments[1] = arg_1;
-	result.arguments[2] = arg_2;
-	result.arguments[3] = arg_3;
-	result.arguments[4] = arg_4;
-	result.arguments[5] = arg_5;
-	result.arguments[6] = arg_6;
-	result.arguments[7] = arg_7;
-	result.arguments[8] = arg_8;
-	result.arguments[9] = arg_9;
-	return result;
-}
+size_t get_native_module_input_index_for_argument_index(const s_native_module &native_module, size_t argument_index) {
+	size_t input_index = 0;
+	for (size_t arg = 0; arg < native_module.arguments.get_count(); arg++) {
+		if (arg == argument_index) {
+			wl_assert(native_module_qualifier_is_input(native_module.arguments[arg].type.get_qualifier()));
+			return input_index;
+		}
 
-s_native_module s_native_module::build(
-	s_native_module_uid uid,
-	const char *name,
-	bool first_output_is_return,
-	const s_native_module_argument_list &arguments,
-	f_native_module_compile_time_call compile_time_call) {
-	// First, zero-initialize
-	s_native_module native_module;
-	ZERO_STRUCT(&native_module);
-
-	native_module.uid = uid;
-
-	// Copy the name with size assert validation
-	native_module.name.set_verify(name);
-
-	native_module.first_output_is_return = first_output_is_return;
-	native_module.in_argument_count = 0;
-	native_module.out_argument_count = 0;
-	for (native_module.argument_count = 0;
-		 native_module.argument_count < k_max_native_module_arguments;
-		 native_module.argument_count++) {
-		const s_native_module_named_argument &arg = arguments.arguments[native_module.argument_count];
-		// Loop until we find an k_native_module_qualifier_count
-		if (arg.argument.qualifier != k_native_module_qualifier_count) {
-			wl_assert(VALID_INDEX(arg.argument.qualifier, k_native_module_qualifier_count));
-			wl_assert(arg.argument.type.is_valid());
-			native_module.arguments[native_module.argument_count] = arg.argument;
-			arg.name.validate();
-			native_module.argument_names[native_module.argument_count].set_verify(arg.name.get_string());
-
-			if (native_module_qualifier_is_input(arg.argument.qualifier)) {
-				native_module.in_argument_count++;
-			} else {
-				native_module.out_argument_count++;
-			}
-		} else {
-			break;
+		if (native_module_qualifier_is_input(native_module.arguments[arg].type.get_qualifier())) {
+			input_index++;
 		}
 	}
 
-	// If the first output is the return value, we must have at least one output
-	wl_assert(!first_output_is_return || native_module.out_argument_count > 0);
+	wl_vhalt("Invalid argument index");
+	return k_invalid_argument_index;
+}
 
-	native_module.compile_time_call = compile_time_call;
+size_t get_native_module_output_index_for_argument_index(const s_native_module &native_module, size_t argument_index) {
+	size_t output_index = 0;
+	for (size_t arg = 0; arg < native_module.arguments.get_count(); arg++) {
+		if (arg == argument_index) {
+			wl_assert(native_module.arguments[arg].type.get_qualifier() == k_native_module_qualifier_out);
+			return output_index;
+		}
 
-	return native_module;
+		if (native_module.arguments[arg].type.get_qualifier() == k_native_module_qualifier_out) {
+			output_index++;
+		}
+	}
+
+	wl_vhalt("Invalid argument index");
+	return k_invalid_argument_index;
 }

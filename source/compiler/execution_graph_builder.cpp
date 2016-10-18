@@ -298,13 +298,13 @@ public:
 			uint32 native_module_index = node->get_native_module_index();
 			const s_native_module &native_module = c_native_module_registry::get_native_module(native_module_index);
 
-			wl_assert(native_module.first_output_is_return ==
+			wl_assert((native_module.return_argument_index == k_invalid_argument_index) ||
 				(node->get_return_type() != c_ast_data_type(k_ast_primitive_type_void)));
 
 			// Create a native module call node
 			uint32 native_module_call_node_index = m_execution_graph->add_native_module_call_node(native_module_index);
 
-			if (native_module.first_output_is_return) {
+			if (native_module.return_argument_index != k_invalid_argument_index) {
 				wl_assert(native_module.argument_count == m_argument_node_indices.size() + 1);
 			} else {
 				wl_assert(native_module.argument_count == m_argument_node_indices.size());
@@ -314,8 +314,12 @@ public:
 			uint32 next_input = 0;
 			uint32 next_output = 0;
 
-			if (native_module.first_output_is_return) {
-				m_return_node_index = m_execution_graph->get_node_outgoing_edge_index(native_module_call_node_index, 0);
+			if (native_module.return_argument_index != k_invalid_argument_index) {
+				size_t output_index = get_native_module_output_index_for_argument_index(
+					native_module, native_module.return_argument_index);
+
+				m_return_node_index = m_execution_graph->get_node_outgoing_edge_index(
+					native_module_call_node_index, output_index);
 				next_output++;
 			}
 

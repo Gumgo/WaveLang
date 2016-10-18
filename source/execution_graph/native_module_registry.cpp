@@ -25,7 +25,7 @@ static_assert(NUMBEROF(k_native_module_qualifier_strings) == k_native_module_qua
 	"Native module qualifier string mismatch");
 
 // $TODO $PLUGIN error reporting for registration errors. Important when we have plugins - we will want a global error
-// reporting system for that.
+// reporting system for that. Also, don't halt on error, return false instead
 
 enum e_native_module_registry_state {
 	k_native_module_registry_state_uninitialized,
@@ -151,10 +151,12 @@ bool c_native_module_registry::register_native_module(const s_native_module &nat
 	wl_assert(!native_module.name.is_empty());
 	wl_assert(native_module.argument_count <= k_max_native_module_arguments);
 	wl_assert(native_module.argument_count == native_module.in_argument_count + native_module.out_argument_count);
-	wl_assert(!native_module.first_output_is_return || native_module.out_argument_count > 0);
+	wl_assert((native_module.return_argument_index == k_invalid_argument_index) ||
+		(native_module.arguments[native_module.return_argument_index].type.get_qualifier() ==
+			k_native_module_qualifier_out));
 #if IS_TRUE(ASSERTS_ENABLED)
 	for (size_t arg = 0; arg < native_module.argument_count; arg++) {
-		wl_assert(VALID_INDEX(native_module.arguments[arg].qualifier, k_native_module_qualifier_count));
+		wl_assert(VALID_INDEX(native_module.arguments[arg].type.get_qualifier(), k_native_module_qualifier_count));
 		wl_assert(native_module.arguments[arg].type.is_valid());
 	}
 #endif // IS_TRUE(ASSERTS_ENABLED)
@@ -203,14 +205,16 @@ void c_native_module_registry::register_native_operator(
 	g_native_module_registry_data.native_operators[native_operator].native_module_name.set_verify(native_module_name);
 }
 
-void c_native_module_registry::register_optimization_rule(const s_native_module_optimization_rule &optimization_rule) {
+bool c_native_module_registry::register_optimization_rule(const s_native_module_optimization_rule &optimization_rule) {
 	wl_assert(g_native_module_registry_state == k_native_module_registry_state_registering);
 
 	if (g_native_module_registry_data.optimizations_enabled) {
 		validate_optimization_rule(optimization_rule);
 		g_native_module_registry_data.optimization_rules.push_back(optimization_rule);
+		return true; // $TODO $PLUGIN
 	} else {
 		// Just ignore it. In the runtime, we don't need to store optimizations.
+		return true;
 	}
 }
 
@@ -300,7 +304,7 @@ bool c_native_module_registry::output_registered_native_modules(const char *file
 
 	std::sort(output_items.begin(), output_items.end());
 
-	bool first_output = false;
+	bool first_output = true;
 	for (size_t index = 0; index < output_items.size(); index++) {
 		const s_output_item &item = output_items[index];
 
@@ -324,50 +328,42 @@ bool c_native_module_registry::output_registered_native_modules(const char *file
 
 			out << "\t";
 
-			if (!native_module.first_output_is_return) {
+			if (native_module.return_argument_index == k_invalid_argument_index) {
 				// Return type of void is a special case
 				out << k_native_module_no_return_type_string;
 			} else {
 				wl_assert(native_module.out_argument_count > 0);
-				for (size_t arg = 0; arg < native_module.argument_count; arg++) {
-					const s_native_module_argument &argument = native_module.arguments[arg];
-					if (argument.qualifier == k_native_module_qualifier_out) {
-						out << k_native_module_primitive_type_strings[argument.type.get_primitive_type()];
-						if (argument.type.is_array()) {
-							out << "[]";
-						}
-						break;
-					}
+				const s_native_module_argument &argument = native_module.arguments[native_module.return_argument_index];
+				wl_assert(argument.type.get_qualifier() == k_native_module_qualifier_out);
+				out << k_native_module_primitive_type_strings[argument.type.get_data_type().get_primitive_type()];
+				if (argument.type.get_data_type().is_array()) {
+					out << "[]";
 				}
 			}
 
 			out << " " << native_module.name.get_string() << "(";
 
 			bool first_argument = true;
-			bool return_type_argument_found = false;
 			for (size_t arg = 0; arg < native_module.argument_count; arg++) {
-				const s_native_module_argument &argument = native_module.arguments[arg];
-
-				if (native_module.first_output_is_return &&
-					!return_type_argument_found &&
-					argument.qualifier == k_native_module_qualifier_out) {
+				if (arg == native_module.return_argument_index) {
 					// Skip it - this argument is the return type
-					return_type_argument_found = true;
 					continue;
 				}
+
+				const s_native_module_argument &argument = native_module.arguments[arg];
 
 				if (!first_argument) {
 					out << ", ";
 				}
 
-				out << k_native_module_qualifier_strings[argument.qualifier] << " " <<
-					k_native_module_primitive_type_strings[argument.type.get_primitive_type()];
-				if (argument.type.is_array()) {
+				out << k_native_module_qualifier_strings[argument.type.get_qualifier()] << " " <<
+					k_native_module_primitive_type_strings[argument.type.get_data_type().get_primitive_type()];
+				if (argument.type.get_data_type().is_array()) {
 					out << "[]";
 				}
 
-				if (!native_module.argument_names[arg].is_empty()) {
-					out << " " << native_module.argument_names[arg].get_string();
+				if (!native_module.arguments[arg].name.is_empty()) {
+					out << " " << native_module.arguments[arg].name.get_string();
 				}
 
 				first_argument = false;
@@ -401,10 +397,10 @@ static bool do_native_modules_conflict(const s_native_module &native_module_a, c
 	// conflicts, because using qualifiers would cause ambiguity. The return value cannot be used to resolve overloads,
 	// so we need to do a bit of work if the first output argument is used as the return value.
 
-	size_t argument_count_a = native_module_a.first_output_is_return ?
-		native_module_a.argument_count - 1 : native_module_a.argument_count;
-	size_t argument_count_b = native_module_b.first_output_is_return ?
-		native_module_b.argument_count - 1 : native_module_b.argument_count;
+	size_t argument_count_a = (native_module_a.return_argument_index == k_invalid_argument_index) ?
+		native_module_a.argument_count : native_module_a.argument_count - 1;
+	size_t argument_count_b = (native_module_a.return_argument_index == k_invalid_argument_index) ?
+		native_module_b.argument_count : native_module_b.argument_count - 1;
 
 	if (argument_count_a != argument_count_b) {
 		return false;
@@ -412,28 +408,21 @@ static bool do_native_modules_conflict(const s_native_module &native_module_a, c
 
 	size_t arg_a_index = 0;
 	size_t arg_b_index = 0;
-	bool first_out_arg_found_a = false;
-	bool first_out_arg_found_b = false;
 
 	bool all_match = true;
 	for (size_t arg = 0; all_match && arg < argument_count_a; arg++) {
-		// Skip the first output argument we find if it's used as a return value
+		// Skip the return arguments
 
-		if (native_module_a.first_output_is_return &&
-			native_module_a.arguments[arg_a_index].qualifier == k_native_module_qualifier_out &&
-			!first_out_arg_found_a) {
+		if (arg_a_index == native_module_a.return_argument_index) {
 			arg_a_index++;
-			first_out_arg_found_a = true;
 		}
 
-		if (native_module_b.first_output_is_return &&
-			native_module_b.arguments[arg_b_index].qualifier == k_native_module_qualifier_out &&
-			!first_out_arg_found_b) {
+		if (arg_b_index == native_module_b.return_argument_index) {
 			arg_b_index++;
-			first_out_arg_found_b = true;
 		}
 
-		if (native_module_a.arguments[arg_a_index].type != native_module_b.arguments[arg_b_index].type) {
+		if (native_module_a.arguments[arg_a_index].type.get_data_type() !=
+			native_module_b.arguments[arg_b_index].type.get_data_type()) {
 			all_match = false;
 		}
 

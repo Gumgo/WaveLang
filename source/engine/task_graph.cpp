@@ -468,11 +468,11 @@ static void get_native_module_call_input_types(const c_execution_graph &executio
 
 	size_t input_index = 0;
 	for (size_t index = 0; index < native_module.argument_count; index++) {
-		if (native_module.arguments[index].qualifier == k_native_module_qualifier_out) {
+		if (native_module.arguments[index].type.get_qualifier() == k_native_module_qualifier_out) {
 			// Skip outputs
 			out_input_types[index] = k_task_function_mapping_native_module_input_type_none;
 		} else {
-			wl_assert(native_module_qualifier_is_input(native_module.arguments[index].qualifier));
+			wl_assert(native_module_qualifier_is_input(native_module.arguments[index].type.get_qualifier()));
 
 			uint32 input_node_index = execution_graph.get_node_incoming_edge_index(node_index, input_index);
 			uint32 source_node_index = execution_graph.get_node_incoming_edge_index(input_node_index, 0);

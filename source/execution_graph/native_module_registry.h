@@ -7,30 +7,6 @@
 
 static const uint32 k_invalid_native_module_index = static_cast<uint32>(-1);
 
-// Fixed list of operators which are to be associated with native modules
-enum e_native_operator {
-	k_native_operator_noop, // Special case "no-op" operator
-	k_native_operator_negation,
-	k_native_operator_addition,
-	k_native_operator_subtraction,
-	k_native_operator_multiplication,
-	k_native_operator_division,
-	k_native_operator_modulo,
-	k_native_operator_concatenation,
-	k_native_operator_not,
-	k_native_operator_equal,
-	k_native_operator_not_equal,
-	k_native_operator_less,
-	k_native_operator_greater,
-	k_native_operator_less_equal,
-	k_native_operator_greater_equal,
-	k_native_operator_and,
-	k_native_operator_or,
-	k_native_operator_array_dereference,
-
-	k_native_operator_count
-};
-
 // The registry of all native modules, which are the built-in modules of the language
 class c_native_module_registry {
 public:
@@ -51,7 +27,7 @@ public:
 	static void register_native_operator(e_native_operator native_operator, const char *native_module_name);
 
 	// Registers an optimization rule
-	static void register_optimization_rule(const s_native_module_optimization_rule &optimization_rule);
+	static bool register_optimization_rule(const s_native_module_optimization_rule &optimization_rule);
 
 	static uint32 get_native_module_count();
 	static uint32 get_native_module_index(s_native_module_uid native_module_uid);

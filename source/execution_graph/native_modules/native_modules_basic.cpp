@@ -1,217 +1,139 @@
-#include "execution_graph/native_module_registry.h"
 #include "execution_graph/native_modules/native_modules_basic.h"
 
 #include <algorithm>
 
-static const char *k_native_modules_basic_library_name = "basic";
-const s_native_module_uid k_native_module_noop_real_uid					= s_native_module_uid::build(k_native_modules_basic_library_id, 0);
-const s_native_module_uid k_native_module_noop_bool_uid					= s_native_module_uid::build(k_native_modules_basic_library_id, 1);
-const s_native_module_uid k_native_module_noop_string_uid				= s_native_module_uid::build(k_native_modules_basic_library_id, 2);
-const s_native_module_uid k_native_module_negation_uid					= s_native_module_uid::build(k_native_modules_basic_library_id, 3);
-const s_native_module_uid k_native_module_addition_uid					= s_native_module_uid::build(k_native_modules_basic_library_id, 4);
-const s_native_module_uid k_native_module_subtraction_uid				= s_native_module_uid::build(k_native_modules_basic_library_id, 5);
-const s_native_module_uid k_native_module_multiplication_uid			= s_native_module_uid::build(k_native_modules_basic_library_id, 6);
-const s_native_module_uid k_native_module_division_uid					= s_native_module_uid::build(k_native_modules_basic_library_id, 7);
-const s_native_module_uid k_native_module_modulo_uid					= s_native_module_uid::build(k_native_modules_basic_library_id, 8);
-const s_native_module_uid k_native_module_concatenation_uid				= s_native_module_uid::build(k_native_modules_basic_library_id, 9);
-const s_native_module_uid k_native_module_not_uid						= s_native_module_uid::build(k_native_modules_basic_library_id, 10);
-const s_native_module_uid k_native_module_real_equal_uid				= s_native_module_uid::build(k_native_modules_basic_library_id, 11);
-const s_native_module_uid k_native_module_real_not_equal_uid			= s_native_module_uid::build(k_native_modules_basic_library_id, 12);
-const s_native_module_uid k_native_module_bool_equal_uid				= s_native_module_uid::build(k_native_modules_basic_library_id, 13);
-const s_native_module_uid k_native_module_bool_not_equal_uid			= s_native_module_uid::build(k_native_modules_basic_library_id, 14);
-const s_native_module_uid k_native_module_string_equal_uid				= s_native_module_uid::build(k_native_modules_basic_library_id, 15);
-const s_native_module_uid k_native_module_string_not_equal_uid			= s_native_module_uid::build(k_native_modules_basic_library_id, 16);
-const s_native_module_uid k_native_module_greater_uid					= s_native_module_uid::build(k_native_modules_basic_library_id, 17);
-const s_native_module_uid k_native_module_less_uid						= s_native_module_uid::build(k_native_modules_basic_library_id, 18);
-const s_native_module_uid k_native_module_greater_equal_uid				= s_native_module_uid::build(k_native_modules_basic_library_id, 19);
-const s_native_module_uid k_native_module_less_equal_uid				= s_native_module_uid::build(k_native_modules_basic_library_id, 20);
-const s_native_module_uid k_native_module_and_uid						= s_native_module_uid::build(k_native_modules_basic_library_id, 21);
-const s_native_module_uid k_native_module_or_uid						= s_native_module_uid::build(k_native_modules_basic_library_id, 22);
-const s_native_module_uid k_native_module_real_select_uid				= s_native_module_uid::build(k_native_modules_basic_library_id, 23);
-const s_native_module_uid k_native_module_bool_select_uid				= s_native_module_uid::build(k_native_modules_basic_library_id, 24);
-const s_native_module_uid k_native_module_string_select_uid				= s_native_module_uid::build(k_native_modules_basic_library_id, 25);
-const s_native_module_uid k_native_module_real_array_dereference_uid	= s_native_module_uid::build(k_native_modules_basic_library_id, 26);
-const s_native_module_uid k_native_module_real_array_count_uid			= s_native_module_uid::build(k_native_modules_basic_library_id, 27);
-const s_native_module_uid k_native_module_real_array_combine_uid		= s_native_module_uid::build(k_native_modules_basic_library_id, 28);
-const s_native_module_uid k_native_module_real_array_repeat_uid			= s_native_module_uid::build(k_native_modules_basic_library_id, 29);
-const s_native_module_uid k_native_module_real_array_repeat_rev_uid		= s_native_module_uid::build(k_native_modules_basic_library_id, 30);
-const s_native_module_uid k_native_module_bool_array_dereference_uid	= s_native_module_uid::build(k_native_modules_basic_library_id, 31);
-const s_native_module_uid k_native_module_bool_array_count_uid			= s_native_module_uid::build(k_native_modules_basic_library_id, 32);
-const s_native_module_uid k_native_module_bool_array_combine_uid		= s_native_module_uid::build(k_native_modules_basic_library_id, 33);
-const s_native_module_uid k_native_module_bool_array_repeat_uid			= s_native_module_uid::build(k_native_modules_basic_library_id, 34);
-const s_native_module_uid k_native_module_bool_array_repeat_rev_uid		= s_native_module_uid::build(k_native_modules_basic_library_id, 35);
-const s_native_module_uid k_native_module_string_array_dereference_uid	= s_native_module_uid::build(k_native_modules_basic_library_id, 36);
-const s_native_module_uid k_native_module_string_array_count_uid		= s_native_module_uid::build(k_native_modules_basic_library_id, 37);
-const s_native_module_uid k_native_module_string_array_combine_uid		= s_native_module_uid::build(k_native_modules_basic_library_id, 38);
-const s_native_module_uid k_native_module_string_array_repeat_uid		= s_native_module_uid::build(k_native_modules_basic_library_id, 39);
-const s_native_module_uid k_native_module_string_array_repeat_rev_uid	= s_native_module_uid::build(k_native_modules_basic_library_id, 40);
-const s_native_module_uid k_native_module_real_enforce_const_uid		= s_native_module_uid::build(k_native_modules_basic_library_id, 41);
-const s_native_module_uid k_native_module_bool_enforce_const_uid		= s_native_module_uid::build(k_native_modules_basic_library_id, 42);
-const s_native_module_uid k_native_module_string_enforce_const_uid		= s_native_module_uid::build(k_native_modules_basic_library_id, 43);
+static uint32 g_next_module_id = 0;
 
-static const char *k_native_operator_names[] = {
-	NATIVE_PREFIX "noop",
-	NATIVE_PREFIX "negation",
-	NATIVE_PREFIX "addition",
-	NATIVE_PREFIX "subtraction",
-	NATIVE_PREFIX "multiplication",
-	NATIVE_PREFIX "division",
-	NATIVE_PREFIX "modulo",
-	NATIVE_PREFIX "concatenation",
-	NATIVE_PREFIX "not",
-	NATIVE_PREFIX "equal",
-	NATIVE_PREFIX "not_equal",
-	NATIVE_PREFIX "less",
-	NATIVE_PREFIX "greater",
-	NATIVE_PREFIX "less_equal",
-	NATIVE_PREFIX "greater_equal",
-	NATIVE_PREFIX "and",
-	NATIVE_PREFIX "or",
-	NATIVE_PREFIX "array_dereference"
-};
-
-static_assert(NUMBEROF(k_native_operator_names) == k_native_operator_count, "Native operator count mismatch");
-
-static void native_module_noop_real(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 2);
-	arguments[1] = arguments[0].get_real();
+const s_native_module_uid k_native_module_noop_real_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_noop_real(real32 a, real32 &result) {
+	result = a;
 }
 
-static void native_module_noop_bool(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 2);
-	arguments[1] = arguments[0].get_bool();
+const s_native_module_uid k_native_module_noop_bool_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_noop_bool(bool a, bool &result) {
+	result = a;
 }
 
-static void native_module_noop_string(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 2);
-	arguments[1] = arguments[0].get_string();
+const s_native_module_uid k_native_module_noop_string_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_noop_string(const c_native_module_string &a, c_native_module_string &result) {
+	result.get_string() = a.get_string();
 }
 
-static void native_module_negation(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 2);
-	arguments[1] = -arguments[0].get_real();
+const s_native_module_uid k_native_module_negation_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_negation(real32 a, real32 &result) {
+	result = -a;
 }
 
-static void native_module_addition(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 3);
-	arguments[2] = arguments[0].get_real() + arguments[1].get_real();
+const s_native_module_uid k_native_module_addition_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_addition(real32 a, real32 b, real32 &result) {
+	result = a + b;
 }
 
-static void native_module_subtraction(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 3);
-	arguments[2] = arguments[0].get_real() - arguments[1].get_real();
+const s_native_module_uid k_native_module_subtraction_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_subtraction(real32 a, real32 b, real32 &result) {
+	result = a - b;
 }
 
-static void native_module_multiplication(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 3);
-	arguments[2] = arguments[0].get_real() * arguments[1].get_real();
+const s_native_module_uid k_native_module_multiplication_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_multiplication(real32 a, real32 b, real32 &result) {
+	result = a * b;
 }
 
-static void native_module_division(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 3);
-	arguments[2] = arguments[0].get_real() / arguments[1].get_real();
+const s_native_module_uid k_native_module_division_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_division(real32 a, real32 b, real32 &result) {
+	result = a / b;
 }
 
-static void native_module_modulo(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 3);
-	arguments[2] = std::fmod(arguments[0].get_real(), arguments[1].get_real());
+const s_native_module_uid k_native_module_modulo_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_modulo(real32 a, real32 b, real32 &result) {
+	result = std::fmod(a, b);
 }
 
-static void native_module_concatenation(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 3);
-	arguments[2] = arguments[0].get_string() + arguments[1].get_string();
+const s_native_module_uid k_native_module_concatenation_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_concatenation(const c_native_module_string &a, const c_native_module_string &b,
+	c_native_module_string &result) {
+	result.get_string() = a.get_string() + b.get_string();
 }
 
-static void native_module_not(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 2);
-	arguments[1] = !arguments[0].get_bool();
+const s_native_module_uid k_native_module_not_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_not(bool a, bool &result) {
+	result = !a;
 }
 
-static void native_module_real_equal(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 3);
-	arguments[2] = arguments[0].get_real() == arguments[1].get_real();
+const s_native_module_uid k_native_module_real_equal_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_real_equal(real32 a, real32 b, bool &result) {
+	result = (a == b);
 }
 
-static void native_module_real_not_equal(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 3);
-	arguments[2] = arguments[0].get_real() != arguments[1].get_real();
+const s_native_module_uid k_native_module_real_not_equal_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_real_not_equal(real32 a, real32 b, bool &result) {
+	result = (a != b);
 }
 
-static void native_module_bool_equal(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 3);
-	arguments[2] = arguments[0].get_bool() == arguments[1].get_bool();
+const s_native_module_uid k_native_module_bool_equal_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_bool_equal(bool a, bool b, bool &result) {
+	result = (a == b);
 }
 
-static void native_module_bool_not_equal(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 3);
-	arguments[2] = arguments[0].get_bool() != arguments[1].get_bool();
+const s_native_module_uid k_native_module_bool_not_equal_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_bool_not_equal(bool a, bool b, bool &result) {
+	result = (a != b);
 }
 
-static void native_module_string_equal(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 3);
-	arguments[2] = arguments[0].get_string() == arguments[1].get_string();
+const s_native_module_uid k_native_module_string_equal_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_string_equal(const c_native_module_string &a, const c_native_module_string &b, bool &result) {
+	result = (a.get_string() == b.get_string());
 }
 
-static void native_module_string_not_equal(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 3);
-	arguments[2] = arguments[0].get_string() != arguments[1].get_string();
+const s_native_module_uid k_native_module_string_not_equal_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_string_not_equal(const c_native_module_string &a, const c_native_module_string &b, bool &result) {
+	result = (a.get_string() != b.get_string());
 }
 
-static void native_module_greater(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 3);
-	arguments[2] = arguments[0].get_real() > arguments[1].get_real();
+const s_native_module_uid k_native_module_greater_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_greater(real32 a, real32 b, bool &result) {
+	result = (a > b);
 }
 
-static void native_module_less(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 3);
-	arguments[2] = arguments[0].get_real() < arguments[1].get_real();
+const s_native_module_uid k_native_module_less_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_less(real32 a, real32 b, bool &result) {
+	result = (a < b);
 }
 
-static void native_module_greater_equal(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 3);
-	arguments[2] = arguments[0].get_real() >= arguments[1].get_real();
+const s_native_module_uid k_native_module_greater_equal_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_greater_equal(real32 a, real32 b, bool &result) {
+	result = (a >= b);
 }
 
-static void native_module_less_equal(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 3);
-	arguments[2] = arguments[0].get_real() <= arguments[1].get_real();
+const s_native_module_uid k_native_module_less_equal_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_less_equal(real32 a, real32 b, bool &result) {
+	result = (a <= b);
 }
 
-static void native_module_and(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 3);
-	arguments[2] = arguments[0].get_bool() && arguments[1].get_bool();
+const s_native_module_uid k_native_module_and_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_and(bool a, bool b, bool &result) {
+	result = (a && b);
 }
 
-static void native_module_or(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 3);
-	arguments[2] = arguments[0].get_bool() || arguments[1].get_bool();
+const s_native_module_uid k_native_module_or_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_or(bool a, bool b, bool &result) {
+	result = (a || b);
 }
 
-static void native_module_real_select(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 4);
-	if (arguments[0].get_bool()) {
-		arguments[3] = arguments[1].get_real();
-	} else {
-		arguments[3] = arguments[2].get_real();
-	}
+const s_native_module_uid k_native_module_real_select_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_real_select(bool condition, real32 true_value, real32 false_value, real32 &result) {
+	result = condition ? true_value : false_value;
 }
 
-static void native_module_bool_select(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 4);
-	if (arguments[0].get_bool()) {
-		arguments[3] = arguments[1].get_bool();
-	} else {
-		arguments[3] = arguments[2].get_bool();
-	}
+const s_native_module_uid k_native_module_bool_select_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_bool_select(bool condition, bool true_value, bool false_value, bool &result) {
+	result = condition ? true_value : false_value;
 }
 
-static void native_module_string_select(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 4);
-	if (arguments[0].get_bool()) {
-		arguments[3] = arguments[1].get_string();
-	} else {
-		arguments[3] = arguments[2].get_string();
-	}
+const s_native_module_uid k_native_module_string_select_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_string_select(bool condition, const c_native_module_string &true_value,
+	const c_native_module_string &false_value, c_native_module_string &result) {
+	result.get_string() = condition ? true_value.get_string() : false_value.get_string();
 }
 
 static std::vector<uint32> array_combine(const std::vector<uint32> &array_0, const std::vector<uint32> &array_1) {
@@ -235,623 +157,105 @@ static std::vector<uint32> array_repeat(const std::vector<uint32> &arr, real32 r
 	return result;
 }
 
-static void native_module_real_array_count(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 2);
-	arguments[1] = static_cast<real32>(arguments[0].get_real_array().size());
+const s_native_module_uid k_native_module_real_array_dereference_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_real_array_dereference(const c_native_module_real_array &a, real32 b, real32 &result) {
+	wl_vhalt("This module call should always be optimized away");
 }
 
-static void native_module_real_array_combine(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 3);
-	arguments[2].set_real_array(array_combine(arguments[0].get_real_array(), arguments[1].get_real_array()));
+const s_native_module_uid k_native_module_real_array_count_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_real_array_count(const c_native_module_real_array &a, real32 &result) {
+	result = static_cast<real32>(a.get_array().size());
 }
 
-static void native_module_real_array_repeat(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 3);
-	arguments[2].set_real_array(array_repeat(arguments[0].get_real_array(), arguments[1].get_real()));
+const s_native_module_uid k_native_module_real_array_combine_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_real_array_combine(const c_native_module_real_array &a, const c_native_module_real_array &b,
+	c_native_module_real_array &result) {
+	result.get_array() = array_combine(a.get_array(), b.get_array());
 }
 
-static void native_module_real_array_repeat_rev(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 3);
-	arguments[2].set_real_array(array_repeat(arguments[1].get_real_array(), arguments[0].get_real()));
+const s_native_module_uid k_native_module_real_array_repeat_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_real_array_repeat(const c_native_module_real_array &a, real32 b,
+	c_native_module_real_array &result) {
+	result.get_array() = array_repeat(a.get_array(), b);
 }
 
-static void native_module_bool_array_count(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 2);
-	arguments[1] = static_cast<real32>(arguments[0].get_bool_array().size());
+const s_native_module_uid k_native_module_real_array_repeat_rev_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_real_array_repeat_rev(real32 a, const c_native_module_real_array &b,
+	c_native_module_real_array &result) {
+	result.get_array() = array_repeat(b.get_array(), a);
 }
 
-static void native_module_bool_array_combine(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 3);
-	arguments[2].set_bool_array(array_combine(arguments[0].get_bool_array(), arguments[1].get_bool_array()));
+const s_native_module_uid k_native_module_bool_array_dereference_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_bool_array_dereference(const c_native_module_bool_array &a, real32 b, bool &result) {
+	wl_vhalt("This module call should always be optimized away");
 }
 
-static void native_module_bool_array_repeat(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 3);
-	arguments[2].set_bool_array(array_repeat(arguments[0].get_bool_array(), arguments[1].get_real()));
+const s_native_module_uid k_native_module_bool_array_count_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_bool_array_count(const c_native_module_bool_array &a, real32 &result) {
+	result = static_cast<real32>(a.get_array().size());
 }
 
-static void native_module_bool_array_repeat_rev(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 3);
-	arguments[2].set_bool_array(array_repeat(arguments[1].get_bool_array(), arguments[0].get_real()));
+const s_native_module_uid k_native_module_bool_array_combine_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_bool_array_combine(const c_native_module_bool_array &a, const c_native_module_bool_array &b,
+	c_native_module_bool_array &result) {
+	result.get_array() = array_combine(a.get_array(), b.get_array());
 }
 
-static void native_module_string_array_count(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 2);
-	arguments[1] = static_cast<real32>(arguments[0].get_string_array().size());
+const s_native_module_uid k_native_module_bool_array_repeat_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_bool_array_repeat(const c_native_module_bool_array &a, real32 b,
+	c_native_module_bool_array &result) {
+	result.get_array() = array_repeat(a.get_array(), b);
 }
 
-static void native_module_string_array_combine(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 3);
-	arguments[2].set_string_array(array_combine(arguments[0].get_string_array(), arguments[1].get_string_array()));
+const s_native_module_uid k_native_module_bool_array_repeat_rev_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_bool_array_repeat_rev(real32 a, const c_native_module_bool_array &b,
+	c_native_module_bool_array &result) {
+	result.get_array() = array_repeat(b.get_array(), a);
 }
 
-static void native_module_string_array_repeat(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 3);
-	arguments[2].set_string_array(array_repeat(arguments[0].get_string_array(), arguments[1].get_real()));
+const s_native_module_uid k_native_module_string_array_dereference_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_string_array_dereference(const c_native_module_string_array &a, real32 b,
+	c_native_module_string &result) {
+	wl_vhalt("This module call should always be optimized away");
 }
 
-static void native_module_string_array_repeat_rev(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 3);
-	arguments[2].set_string_array(array_repeat(arguments[1].get_string_array(), arguments[0].get_real()));
+const s_native_module_uid k_native_module_string_array_count_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_string_array_count(const c_native_module_string_array &a, real32 &result) {
+	result = static_cast<real32>(a.get_array().size());
+}
+
+const s_native_module_uid k_native_module_string_array_combine_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_string_array_combine(const c_native_module_string_array &a, const c_native_module_string_array &b,
+	c_native_module_string_array &result) {
+	result.get_array() = array_combine(a.get_array(), b.get_array());
+}
+
+const s_native_module_uid k_native_module_string_array_repeat_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_string_array_repeat(const c_native_module_string_array &a, real32 b,
+	c_native_module_string_array &result) {
+	result.get_array() = array_repeat(a.get_array(), b);
+}
+
+const s_native_module_uid k_native_module_string_array_repeat_rev_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_string_array_repeat_rev(real32 a, const c_native_module_string_array &b,
+	c_native_module_string_array &result) {
+	result.get_array() = array_repeat(b.get_array(), a);
 }
 
 // __native_enforce_const functions exist so that a compile-time error is produced if a value is not constant.
 // The string version is only there for overload-completeness.
 
-static void native_module_real_enforce_const(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 2);
-	arguments[1] = arguments[0].get_real();
+const s_native_module_uid k_native_module_real_enforce_const_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_real_enforce_const(real32 a, real32 &result) {
+	a = result;
 }
 
-static void native_module_bool_enforce_const(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 2);
-	arguments[1] = arguments[0].get_bool();
+const s_native_module_uid k_native_module_bool_enforce_const_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_bool_enforce_const(bool a, bool &result) {
+	a = result;
 }
 
-static void native_module_string_enforce_const(c_native_module_compile_time_argument_list arguments) {
-	wl_assert(arguments.get_count() == 2);
-	arguments[1] = arguments[0].get_string();
-}
-
-void register_native_modules_basic() {
-	c_native_module_registry::register_native_module_library(
-		k_native_modules_basic_library_id, k_native_modules_basic_library_name);
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_noop_real_uid, k_native_operator_names[k_native_operator_noop],
-		true, s_native_module_argument_list::build(NMA(in, real, "x"), NMA(out, real, "")),
-		native_module_noop_real));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_noop_bool_uid, k_native_operator_names[k_native_operator_noop],
-		true, s_native_module_argument_list::build(NMA(in, bool, "x"), NMA(out, bool, "")),
-		native_module_noop_bool));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_noop_string_uid, k_native_operator_names[k_native_operator_noop],
-		true, s_native_module_argument_list::build(NMA(in, string, "x"), NMA(out, string, "")),
-		native_module_noop_string));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_negation_uid, k_native_operator_names[k_native_operator_negation],
-		true, s_native_module_argument_list::build(NMA(in, real, "x"), NMA(out, real, "")),
-		native_module_negation));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_addition_uid, k_native_operator_names[k_native_operator_addition],
-		true, s_native_module_argument_list::build(NMA(in, real, "x"), NMA(in, real, "y"), NMA(out, real, "")),
-		native_module_addition));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_subtraction_uid, k_native_operator_names[k_native_operator_subtraction],
-		true, s_native_module_argument_list::build(NMA(in, real, "x"), NMA(in, real, "y"), NMA(out, real, "")),
-		native_module_subtraction));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_multiplication_uid, k_native_operator_names[k_native_operator_multiplication],
-		true, s_native_module_argument_list::build(NMA(in, real, "x"), NMA(in, real, "y"), NMA(out, real, "")),
-		native_module_multiplication));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_division_uid, k_native_operator_names[k_native_operator_division],
-		true, s_native_module_argument_list::build(NMA(in, real, "x"), NMA(in, real, "y"), NMA(out, real, "")),
-		native_module_division));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_modulo_uid, k_native_operator_names[k_native_operator_modulo],
-		true, s_native_module_argument_list::build(NMA(in, real, "x"), NMA(in, real, "y"), NMA(out, real, "")),
-		native_module_modulo));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_concatenation_uid, k_native_operator_names[k_native_operator_concatenation],
-		true, s_native_module_argument_list::build(NMA(in, string, "x"), NMA(in, string, "y"), NMA(out, string, "")),
-		native_module_concatenation));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_not_uid, k_native_operator_names[k_native_operator_not],
-		true, s_native_module_argument_list::build(NMA(constant, bool, "x"), NMA(out, bool, "y")),
-		native_module_not));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_real_equal_uid, k_native_operator_names[k_native_operator_equal],
-		true, s_native_module_argument_list::build(NMA(constant, real, "x"), NMA(constant, real, "y"), NMA(out, bool, "")),
-		native_module_real_equal));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_real_not_equal_uid, k_native_operator_names[k_native_operator_not_equal],
-		true, s_native_module_argument_list::build(NMA(constant, real, "x"), NMA(constant, real, "y"), NMA(out, bool, "")),
-		native_module_real_not_equal));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_bool_equal_uid, k_native_operator_names[k_native_operator_equal],
-		true, s_native_module_argument_list::build(NMA(constant, bool, "x"), NMA(constant, bool, "y"), NMA(out, bool, "")),
-		native_module_bool_equal));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_bool_not_equal_uid, k_native_operator_names[k_native_operator_not_equal],
-		true, s_native_module_argument_list::build(NMA(constant, bool, "x"), NMA(constant, bool, "y"), NMA(out, bool, "")),
-		native_module_bool_not_equal));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_string_equal_uid, k_native_operator_names[k_native_operator_equal],
-		true, s_native_module_argument_list::build(NMA(constant, string, "x"), NMA(constant, string, "y"), NMA(out, bool, "")),
-		native_module_string_equal));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_string_not_equal_uid, k_native_operator_names[k_native_operator_not_equal],
-		true, s_native_module_argument_list::build(NMA(constant, string, "x"), NMA(constant, string, "y"), NMA(out, bool, "")),
-		native_module_string_not_equal));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_greater_uid, k_native_operator_names[k_native_operator_greater],
-		true, s_native_module_argument_list::build(NMA(constant, real, "x"), NMA(constant, real, "y"), NMA(out, bool, "")),
-		native_module_greater));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_less_uid, k_native_operator_names[k_native_operator_less],
-		true, s_native_module_argument_list::build(NMA(constant, real, "x"), NMA(constant, real, "y"), NMA(out, bool, "")),
-		native_module_less));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_greater_equal_uid, k_native_operator_names[k_native_operator_greater_equal],
-		true, s_native_module_argument_list::build(NMA(constant, real, "x"), NMA(constant, real, "y"), NMA(out, bool, "")),
-		native_module_greater_equal));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_less_equal_uid, k_native_operator_names[k_native_operator_less_equal],
-		true, s_native_module_argument_list::build(NMA(constant, real, "x"), NMA(constant, real, "y"), NMA(out, bool, "")),
-		native_module_less_equal));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_and_uid, k_native_operator_names[k_native_operator_and],
-		true, s_native_module_argument_list::build(NMA(constant, bool, "x"), NMA(constant, bool, "y"), NMA(out, bool, "")),
-		native_module_and));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_or_uid, k_native_operator_names[k_native_operator_or],
-		true, s_native_module_argument_list::build(NMA(constant, bool, "x"), NMA(constant, bool, "y"), NMA(out, bool, "")),
-		native_module_or));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_real_select_uid, NATIVE_PREFIX "select",
-		true, s_native_module_argument_list::build(NMA(in, bool, "condition"), NMA(in, real, "true_value"), NMA(in, real, "false_value"), NMA(out, real, "")),
-		native_module_real_select));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_bool_select_uid, NATIVE_PREFIX "select",
-		true, s_native_module_argument_list::build(NMA(in, bool, "condition"), NMA(in, bool, "true_value"), NMA(in, bool, "false_value"), NMA(out, bool, "")),
-		native_module_bool_select));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_string_select_uid, NATIVE_PREFIX "select",
-		true, s_native_module_argument_list::build(NMA(constant, bool, "condition"), NMA(in, string, "true_value"), NMA(in, string, "false_value"), NMA(out, string, "")),
-		native_module_string_select));
-
-	// Array dereference has no compile-time function because constant-index dereference is optimized away
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_real_array_dereference_uid, k_native_operator_names[k_native_operator_array_dereference],
-		true, s_native_module_argument_list::build(NMA_ARRAY(constant, real, "array"), NMA(in, real, "index"), NMA(out, real, "")),
-		nullptr));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_real_array_count_uid, NATIVE_PREFIX "array_count",
-		true, s_native_module_argument_list::build(NMA_ARRAY(constant, real, "array"), NMA(out, real, "")),
-		native_module_real_array_count));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_real_array_combine_uid, k_native_operator_names[k_native_operator_addition],
-		true, s_native_module_argument_list::build(NMA_ARRAY(constant, real, "x"), NMA_ARRAY(constant, real, "y"), NMA_ARRAY(out, real, "")),
-		native_module_real_array_combine));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_real_array_repeat_uid, k_native_operator_names[k_native_operator_multiplication],
-		true, s_native_module_argument_list::build(NMA_ARRAY(constant, real, "x"), NMA(constant, real, "y"), NMA_ARRAY(out, real, "")),
-		native_module_real_array_repeat));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_real_array_repeat_rev_uid, k_native_operator_names[k_native_operator_multiplication],
-		true, s_native_module_argument_list::build(NMA(constant, real, "x"), NMA_ARRAY(constant, real, "y"), NMA_ARRAY(out, real, "")),
-		native_module_real_array_repeat_rev));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_bool_array_dereference_uid, k_native_operator_names[k_native_operator_array_dereference],
-		true, s_native_module_argument_list::build(NMA_ARRAY(constant, bool, "array"), NMA(in, real, "index"), NMA(out, bool, "")),
-		nullptr));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_bool_array_count_uid, NATIVE_PREFIX "array_count",
-		true, s_native_module_argument_list::build(NMA_ARRAY(constant, bool, "array"), NMA(out, real, "")),
-		native_module_bool_array_count));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_bool_array_combine_uid, k_native_operator_names[k_native_operator_addition],
-		true, s_native_module_argument_list::build(NMA_ARRAY(constant, bool, "x"), NMA_ARRAY(constant, bool, "y"), NMA_ARRAY(out, bool, "")),
-		native_module_bool_array_combine));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_bool_array_repeat_uid, k_native_operator_names[k_native_operator_multiplication],
-		true, s_native_module_argument_list::build(NMA_ARRAY(constant, bool, "x"), NMA(constant, real, "y"), NMA_ARRAY(out, bool, "")),
-		native_module_bool_array_repeat));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_bool_array_repeat_rev_uid, k_native_operator_names[k_native_operator_multiplication],
-		true, s_native_module_argument_list::build(NMA(constant, real, "x"), NMA_ARRAY(constant, bool, "y"), NMA_ARRAY(out, bool, "")),
-		native_module_bool_array_repeat_rev));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_string_array_dereference_uid, k_native_operator_names[k_native_operator_array_dereference],
-		true, s_native_module_argument_list::build(NMA_ARRAY(constant, string, "array"), NMA(in, real, "index"), NMA(out, string, "")),
-		nullptr));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_string_array_count_uid, NATIVE_PREFIX "array_count",
-		true, s_native_module_argument_list::build(NMA_ARRAY(constant, string, "array"), NMA(out, real, "")),
-		native_module_string_array_count));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_string_array_combine_uid, k_native_operator_names[k_native_operator_addition],
-		true, s_native_module_argument_list::build(NMA_ARRAY(constant, string, "x"), NMA_ARRAY(constant, string, "y"), NMA_ARRAY(out, string, "")),
-		native_module_string_array_combine));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_string_array_repeat_uid, k_native_operator_names[k_native_operator_multiplication],
-		true, s_native_module_argument_list::build(NMA_ARRAY(constant, string, "x"), NMA(constant, real, "y"), NMA_ARRAY(out, string, "")),
-		native_module_string_array_repeat));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_string_array_repeat_rev_uid, k_native_operator_names[k_native_operator_multiplication],
-		true, s_native_module_argument_list::build(NMA(constant, real, "x"), NMA_ARRAY(constant, string, "y"), NMA_ARRAY(out, string, "")),
-		native_module_string_array_repeat_rev));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_real_enforce_const_uid, NATIVE_PREFIX "enforce_const",
-		true, s_native_module_argument_list::build(NMA(constant, real, "x"), NMA(out, real, "")),
-		native_module_real_enforce_const));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_bool_enforce_const_uid, NATIVE_PREFIX "enforce_const",
-		true, s_native_module_argument_list::build(NMA(constant, bool, "x"), NMA(out, bool, "")),
-		native_module_bool_enforce_const));
-
-	c_native_module_registry::register_native_module(s_native_module::build(
-		k_native_module_string_enforce_const_uid, NATIVE_PREFIX "enforce_const",
-		true, s_native_module_argument_list::build(NMA(constant, string, "x"), NMA(out, string, "")),
-		native_module_string_enforce_const));
-
-	// Register optimizations
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_noop_real_uid, NMO_V(0))),
-		s_native_module_optimization_pattern::build(NMO_V(0))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_noop_bool_uid, NMO_V(0))),
-		s_native_module_optimization_pattern::build(NMO_V(0))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_noop_string_uid, NMO_V(0))),
-		s_native_module_optimization_pattern::build(NMO_V(0))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_negation_uid, NMO_NM(k_native_module_negation_uid, NMO_V(0)))),
-		s_native_module_optimization_pattern::build(NMO_V(0))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_addition_uid, NMO_C(0), NMO_V(0))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_addition_uid, NMO_V(0), NMO_C(0)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_addition_uid, NMO_V(0), NMO_NM(k_native_module_negation_uid, NMO_V(1)))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_subtraction_uid, NMO_V(0), NMO_V(1)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_addition_uid, NMO_NM(k_native_module_negation_uid, NMO_V(0)), NMO_V(1))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_subtraction_uid, NMO_V(1), NMO_V(0)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_addition_uid, NMO_NM(k_native_module_negation_uid, NMO_V(0)), NMO_C(0))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_subtraction_uid, NMO_C(0), NMO_V(0)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_addition_uid, NMO_V(0), NMO_RV(0))),
-		s_native_module_optimization_pattern::build(NMO_V(0))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_subtraction_uid, NMO_V(0), NMO_C(0))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_addition_uid, NMO_V(0), NMO_NM(k_native_module_negation_uid, NMO_C(0))))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_subtraction_uid, NMO_C(0), NMO_NM(k_native_module_negation_uid, NMO_V(0)))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_addition_uid, NMO_V(0), NMO_C(0)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_subtraction_uid, NMO_V(0), NMO_NM(k_native_module_negation_uid, NMO_V(1)))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_addition_uid, NMO_V(0), NMO_V(1)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_subtraction_uid, NMO_RV(0), NMO_V(0))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_negation_uid, NMO_V(0)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_multiplication_uid, NMO_C(0), NMO_V(0))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_multiplication_uid, NMO_V(0), NMO_C(0)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_multiplication_uid, NMO_V(0), NMO_RV(0))),
-		s_native_module_optimization_pattern::build(NMO_RV(0))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_multiplication_uid, NMO_V(0), NMO_RV(1))),
-		s_native_module_optimization_pattern::build(NMO_V(0))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_multiplication_uid, NMO_V(0), NMO_RV(-1))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_negation_uid, NMO_V(0)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_division_uid, NMO_V(0), NMO_RV(1))),
-		s_native_module_optimization_pattern::build(NMO_V(0))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_division_uid, NMO_V(0), NMO_RV(-1))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_negation_uid, NMO_V(0)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_division_uid, NMO_NM(k_native_module_negation_uid, NMO_V(0)), NMO_C(0))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_division_uid, NMO_V(0), NMO_NM(k_native_module_negation_uid, NMO_C(0))))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_division_uid, NMO_C(0), NMO_NM(k_native_module_negation_uid, NMO_V(0)))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_division_uid, NMO_NM(k_native_module_negation_uid, NMO_C(0)), NMO_V(0)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_not_uid, NMO_NM(k_native_module_not_uid, NMO_V(0)))),
-		s_native_module_optimization_pattern::build(NMO_V(0))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_real_equal_uid, NMO_C(0), NMO_V(0))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_real_equal_uid, NMO_V(0), NMO_C(0)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_not_uid, NMO_NM(k_native_module_real_equal_uid, NMO_V(0), NMO_V(1)))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_real_not_equal_uid, NMO_V(0), NMO_V(1)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_not_uid, NMO_NM(k_native_module_real_equal_uid, NMO_V(0), NMO_C(0)))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_real_not_equal_uid, NMO_V(0), NMO_C(0)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_bool_equal_uid, NMO_C(0), NMO_V(0))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_bool_equal_uid, NMO_V(0), NMO_C(0)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_not_uid, NMO_NM(k_native_module_bool_equal_uid, NMO_V(0), NMO_V(1)))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_bool_not_equal_uid, NMO_V(0), NMO_V(1)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_not_uid, NMO_NM(k_native_module_bool_equal_uid, NMO_V(0), NMO_C(0)))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_bool_not_equal_uid, NMO_V(0), NMO_C(0)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_bool_equal_uid, NMO_V(0), NMO_BV(false))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_not_uid, NMO_V(0)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_bool_equal_uid, NMO_V(0), NMO_BV(true))),
-		s_native_module_optimization_pattern::build(NMO_V(0))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_real_not_equal_uid, NMO_C(0), NMO_V(0))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_real_not_equal_uid, NMO_V(0), NMO_C(0)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_not_uid, NMO_NM(k_native_module_real_not_equal_uid, NMO_V(0), NMO_V(1)))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_real_equal_uid, NMO_V(0), NMO_V(1)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_not_uid, NMO_NM(k_native_module_real_not_equal_uid, NMO_V(0), NMO_C(0)))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_real_equal_uid, NMO_V(0), NMO_C(0)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_bool_not_equal_uid, NMO_C(0), NMO_V(0))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_bool_not_equal_uid, NMO_V(0), NMO_C(0)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_not_uid, NMO_NM(k_native_module_bool_not_equal_uid, NMO_V(0), NMO_V(1)))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_bool_equal_uid, NMO_V(0), NMO_V(1)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_not_uid, NMO_NM(k_native_module_bool_not_equal_uid, NMO_V(0), NMO_C(0)))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_bool_equal_uid, NMO_V(0), NMO_C(0)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_bool_not_equal_uid, NMO_V(0), NMO_BV(false))),
-		s_native_module_optimization_pattern::build(NMO_V(0))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_bool_not_equal_uid, NMO_V(0), NMO_BV(true))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_not_uid, NMO_V(0)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_greater_uid, NMO_C(0), NMO_V(0))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_less_equal_uid, NMO_V(0), NMO_C(0)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_not_uid, NMO_NM(k_native_module_greater_uid, NMO_V(0), NMO_V(1)))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_less_equal_uid, NMO_V(0), NMO_V(1)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_not_uid, NMO_NM(k_native_module_greater_uid, NMO_V(0), NMO_C(0)))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_less_equal_uid, NMO_V(0), NMO_C(0)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_less_uid, NMO_C(0), NMO_V(0))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_greater_equal_uid, NMO_V(0), NMO_C(0)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_not_uid, NMO_NM(k_native_module_less_uid, NMO_V(0), NMO_V(1)))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_greater_equal_uid, NMO_V(0), NMO_V(1)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_not_uid, NMO_NM(k_native_module_less_uid, NMO_V(0), NMO_C(0)))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_greater_equal_uid, NMO_V(0), NMO_C(0)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_greater_equal_uid, NMO_C(0), NMO_V(0))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_less_uid, NMO_V(0), NMO_C(0)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_not_uid, NMO_NM(k_native_module_greater_equal_uid, NMO_V(0), NMO_V(1)))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_less_uid, NMO_V(0), NMO_V(1)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_not_uid, NMO_NM(k_native_module_greater_equal_uid, NMO_V(0), NMO_C(0)))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_less_uid, NMO_V(0), NMO_C(0)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_less_equal_uid, NMO_C(0), NMO_V(0))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_greater_uid, NMO_V(0), NMO_C(0)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_not_uid, NMO_NM(k_native_module_less_equal_uid, NMO_V(0), NMO_V(1)))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_greater_uid, NMO_V(0), NMO_V(1)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_not_uid, NMO_NM(k_native_module_less_equal_uid, NMO_V(0), NMO_C(0)))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_greater_uid, NMO_V(0), NMO_C(0)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_and_uid, NMO_C(0), NMO_V(0))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_and_uid, NMO_V(0), NMO_C(0)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_and_uid, NMO_V(0), NMO_BV(false))),
-		s_native_module_optimization_pattern::build(NMO_BV(false))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_and_uid, NMO_V(0), NMO_BV(true))),
-		s_native_module_optimization_pattern::build(NMO_V(0))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_or_uid, NMO_C(0), NMO_V(0))),
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_or_uid, NMO_V(0), NMO_C(0)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_or_uid, NMO_V(0), NMO_BV(false))),
-		s_native_module_optimization_pattern::build(NMO_V(0))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_or_uid, NMO_V(0), NMO_BV(true))),
-		s_native_module_optimization_pattern::build(NMO_BV(false))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_real_select_uid, NMO_BV(true), NMO_V(0), NMO_V(1))),
-			s_native_module_optimization_pattern::build(NMO_V(0))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_real_select_uid, NMO_BV(false), NMO_V(0), NMO_V(1))),
-		s_native_module_optimization_pattern::build(NMO_V(1))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_real_select_uid, NMO_BV(true), NMO_C(0), NMO_V(0))),
-		s_native_module_optimization_pattern::build(NMO_C(0))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_real_select_uid, NMO_BV(false), NMO_C(0), NMO_V(0))),
-		s_native_module_optimization_pattern::build(NMO_V(1))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_real_select_uid, NMO_BV(true), NMO_V(0), NMO_C(0))),
-		s_native_module_optimization_pattern::build(NMO_V(0))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_real_select_uid, NMO_BV(false), NMO_V(0), NMO_C(0))),
-		s_native_module_optimization_pattern::build(NMO_C(1))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_bool_select_uid, NMO_BV(true), NMO_V(0), NMO_V(1))),
-		s_native_module_optimization_pattern::build(NMO_V(0))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_bool_select_uid, NMO_BV(false), NMO_V(0), NMO_V(1))),
-		s_native_module_optimization_pattern::build(NMO_V(1))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_bool_select_uid, NMO_BV(true), NMO_C(0), NMO_V(0))),
-		s_native_module_optimization_pattern::build(NMO_C(0))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_bool_select_uid, NMO_BV(false), NMO_C(0), NMO_V(0))),
-		s_native_module_optimization_pattern::build(NMO_V(1))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_bool_select_uid, NMO_BV(true), NMO_V(0), NMO_C(0))),
-		s_native_module_optimization_pattern::build(NMO_V(0))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_bool_select_uid, NMO_BV(false), NMO_V(0), NMO_C(0))),
-		s_native_module_optimization_pattern::build(NMO_C(1))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_string_select_uid, NMO_BV(true), NMO_V(0), NMO_V(1))),
-		s_native_module_optimization_pattern::build(NMO_V(0))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_string_select_uid, NMO_BV(false), NMO_V(0), NMO_V(1))),
-		s_native_module_optimization_pattern::build(NMO_V(1))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_string_select_uid, NMO_BV(true), NMO_C(0), NMO_V(0))),
-		s_native_module_optimization_pattern::build(NMO_C(0))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_string_select_uid, NMO_BV(false), NMO_C(0), NMO_V(0))),
-		s_native_module_optimization_pattern::build(NMO_V(1))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_string_select_uid, NMO_BV(true), NMO_V(0), NMO_C(0))),
-		s_native_module_optimization_pattern::build(NMO_V(0))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_string_select_uid, NMO_BV(false), NMO_V(0), NMO_C(0))),
-		s_native_module_optimization_pattern::build(NMO_C(1))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_real_array_dereference_uid, NMO_C(0), NMO_C(1))),
-		s_native_module_optimization_pattern::build(NMO_DRF(NMO_C(0), NMO_C(1)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_bool_array_dereference_uid, NMO_C(0), NMO_C(1))),
-		s_native_module_optimization_pattern::build(NMO_DRF(NMO_C(0), NMO_C(1)))));
-
-	c_native_module_registry::register_optimization_rule(s_native_module_optimization_rule::build(
-		s_native_module_optimization_pattern::build(NMO_NM(k_native_module_string_array_dereference_uid, NMO_C(0), NMO_C(1))),
-		s_native_module_optimization_pattern::build(NMO_DRF(NMO_C(0), NMO_C(1)))));
-
-	// Register all operators
-	for (uint32 op = 0; op < k_native_operator_count; op++) {
-		c_native_module_registry::register_native_operator(
-			static_cast<e_native_operator>(op),
-			k_native_operator_names[op]);
-	}
+const s_native_module_uid k_native_module_string_enforce_const_uid = s_native_module_uid::build(k_native_modules_basic_library_id, g_next_module_id++);
+void native_module_string_enforce_const(const c_native_module_string &a, c_native_module_string &result) {
+	result.get_string() = a.get_string();
 }

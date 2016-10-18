@@ -7,11 +7,11 @@
 
 #include "execution_graph/native_module.h"
 
+class c_array_dereference_interface;
 class c_event_interface;
 class c_sample_library_accessor;
 class c_sample_library_requester;
 class c_voice_interface;
-class c_executor;
 
 // Unique identifier for each task function
 struct s_task_function_uid {
@@ -262,6 +262,7 @@ struct s_task_function_argument {
 typedef c_wrapped_array_const<s_task_function_argument> c_task_function_arguments;
 
 struct s_task_function_context {
+	c_array_dereference_interface *array_dereference_interface;
 	c_event_interface *event_interface;
 	c_sample_library_accessor *sample_accessor;
 	c_sample_library_requester *sample_requester;
@@ -274,16 +275,6 @@ struct s_task_function_context {
 	// $TODO more things like timing
 
 	c_task_function_arguments arguments;
-
-	// Used for dynamic array dereference
-	const c_buffer *get_buffer_by_index(uint32 buffer_index) const;
-
-private:
-	friend class c_executor;
-	const c_executor *executor;
-	// $TODO $PLUGIN change get_buffer_by_index to be another interface like voice_interface. Then, all of these
-	// interfaces could be grouped into a common folder of interfaces which are exposed to the plugin API, rather than
-	// scattered around the codebase
 };
 
 // This function takes a partially-filled-in context and returns the amount of memory the task requires

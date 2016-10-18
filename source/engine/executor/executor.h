@@ -118,7 +118,7 @@ private:
 	void decrement_buffer_usages(uint32 task_index);
 
 	// Used for array dereference
-	friend struct s_task_function_context;
+	friend class c_array_dereference_interface;
 	const c_buffer *get_buffer_by_index(uint32 buffer_index) const;
 
 	static void handle_event_wrapper(void *context, size_t event_size, const void *event_data);
