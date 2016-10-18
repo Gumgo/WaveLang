@@ -18,7 +18,7 @@ struct s_task_graph_globals {
 struct s_task_graph_data {
 	// Do not access these directly
 	struct {
-		c_task_data_type type;
+		c_task_qualified_data_type type;
 		bool is_constant;
 
 		union u_value {
@@ -49,7 +49,7 @@ struct s_task_graph_data {
 		} value;
 	} data;
 
-	c_task_data_type get_type() const {
+	c_task_qualified_data_type get_type() const {
 		return data.type;
 	}
 
@@ -58,71 +58,83 @@ struct s_task_graph_data {
 	}
 
 	uint32 get_real_buffer_in() const {
-		wl_assert(data.type == c_task_data_type(k_task_primitive_type_real, k_task_qualifier_in));
+		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_real));
+		wl_assert(data.type.get_qualifier() == k_task_qualifier_in);
 		wl_assert(!is_constant());
 		return data.value.real_buffer_in;
 	}
 
 	uint32 get_real_buffer_out() const {
-		wl_assert(data.type == c_task_data_type(k_task_primitive_type_real, k_task_qualifier_out));
+		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_real));
+		wl_assert(data.type.get_qualifier() == k_task_qualifier_out);
 		wl_assert(!is_constant());
 		return data.value.real_buffer_out;
 	}
 
 	uint32 get_real_buffer_inout() const {
-		wl_assert(data.type == c_task_data_type(k_task_primitive_type_real, k_task_qualifier_inout));
+		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_real));
+		wl_assert(data.type.get_qualifier() == k_task_qualifier_inout);
 		wl_assert(!is_constant());
 		return data.value.real_buffer_inout;
 	}
 
 	real32 get_real_constant_in() const {
-		wl_assert(data.type == c_task_data_type(k_task_primitive_type_real, k_task_qualifier_in));
+		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_real));
+		wl_assert(data.type.get_qualifier() == k_task_qualifier_in);
 		wl_assert(is_constant());
 		return data.value.real_constant_in;
 	}
 
 	c_real_array get_real_array_in() const {
-		wl_assert(data.type == c_task_data_type(k_task_primitive_type_real, k_task_qualifier_in, true));
+		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_real, true));
+		wl_assert(data.type.get_qualifier() == k_task_qualifier_in);
 		return data.value.real_array_in;
 	}
 
 	uint32 get_bool_buffer_in() const {
-		wl_assert(data.type == c_task_data_type(k_task_primitive_type_bool, k_task_qualifier_in));
+		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_bool));
+		wl_assert(data.type.get_qualifier() == k_task_qualifier_in);
 		wl_assert(!is_constant());
 		return data.value.bool_buffer_in;
 	}
 
 	uint32 get_bool_buffer_out() const {
-		wl_assert(data.type == c_task_data_type(k_task_primitive_type_bool, k_task_qualifier_out));
+		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_bool));
+		wl_assert(data.type.get_qualifier() == k_task_qualifier_out);
 		wl_assert(!is_constant());
 		return data.value.bool_buffer_out;
 	}
 
 	uint32 get_bool_buffer_inout() const {
-		wl_assert(data.type == c_task_data_type(k_task_primitive_type_bool, k_task_qualifier_inout));
+		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_bool));
+		wl_assert(data.type.get_qualifier() == k_task_qualifier_inout);
 		wl_assert(!is_constant());
 		return data.value.bool_buffer_inout;
 	}
 
 	bool get_bool_constant_in() const {
-		wl_assert(data.type == c_task_data_type(k_task_primitive_type_bool, k_task_qualifier_in));
+		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_bool));
+		wl_assert(data.type.get_qualifier() == k_task_qualifier_in);
 		wl_assert(is_constant());
 		return data.value.bool_constant_in;
 	}
 
 	c_bool_array get_bool_array_in() const {
-		wl_assert(data.type == c_task_data_type(k_task_primitive_type_bool, k_task_qualifier_in, true));
+		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_bool, true));
+		wl_assert(data.type.get_qualifier() == k_task_qualifier_in);
 		return data.value.bool_array_in;
 	}
 
 	const char *get_string_constant_in() const {
-		wl_assert(data.type == c_task_data_type(k_task_primitive_type_string, k_task_qualifier_in));
+		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_string));
+		wl_assert(data.type.get_qualifier() == k_task_qualifier_in);
 		wl_assert(is_constant());
 		return data.value.string_constant_in;
 	}
 
 	c_string_array get_string_array_in() const {
-		wl_assert(data.type == c_task_data_type(k_task_primitive_type_string, k_task_qualifier_in, true));
+		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_string, true));
+		wl_assert(data.type.get_qualifier() == k_task_qualifier_in);
 		return data.value.string_array_in;
 	}
 };
@@ -139,7 +151,7 @@ public:
 	void next();
 	uint32 get_buffer_index() const;
 	uint32 get_node_index() const; // For internal use only - used when constructing the graph
-	c_task_data_type get_buffer_type() const;
+	c_task_qualified_data_type get_buffer_type() const;
 	const s_task_graph_data &get_task_graph_data() const;
 
 private:
@@ -153,7 +165,7 @@ class c_task_graph {
 public:
 	// Describes the usage of a type of buffer within the graph
 	struct s_buffer_usage_info {
-		c_task_data_type type; // Qualifier type will be k_task_qualifier_in
+		c_task_data_type type;
 		uint32 max_concurrency;
 	};
 

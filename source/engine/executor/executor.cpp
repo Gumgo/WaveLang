@@ -476,10 +476,10 @@ size_t c_executor::setup_task_arguments(uint32 task_index, bool include_dynamic_
 		IF_ASSERTS_ENABLED(argument.data.type = argument_data[arg].data.type);
 		argument.data.is_constant = argument_data[arg].is_constant();
 
-		c_task_data_type type = argument_data[arg].data.type;
-		if (type.is_array()) {
+		c_task_qualified_data_type type = argument_data[arg].data.type;
+		if (type.get_data_type().is_array()) {
 			wl_assert(type.get_qualifier() == k_task_qualifier_in);
-			switch (type.get_primitive_type()) {
+			switch (type.get_data_type().get_primitive_type()) {
 			case k_task_primitive_type_real:
 				argument.data.value.real_array_in = argument_data[arg].get_real_array_in();
 				break;
@@ -497,7 +497,7 @@ size_t c_executor::setup_task_arguments(uint32 task_index, bool include_dynamic_
 			}
 		} else if (argument.data.is_constant) {
 			wl_assert(type.get_qualifier() == k_task_qualifier_in);
-			switch (type.get_primitive_type()) {
+			switch (type.get_data_type().get_primitive_type()) {
 			case k_task_primitive_type_real:
 				argument.data.value.real_constant_in = argument_data[arg].get_real_constant_in();
 				break;
@@ -530,7 +530,7 @@ void c_executor::allocate_output_buffers(uint32 task_index) {
 	for (size_t index = 0; index < arguments.get_count(); index++) {
 		const s_task_graph_data &argument = arguments[index];
 
-		if (!argument.data.type.is_array() && !argument.data.is_constant) {
+		if (!argument.data.type.get_data_type().is_array() && !argument.data.is_constant) {
 			e_task_qualifier qualifier = argument.data.type.get_qualifier();
 			if (qualifier == k_task_qualifier_out) {
 				// Allocate output buffers
@@ -556,8 +556,8 @@ void c_executor::decrement_buffer_usages(uint32 task_index) {
 			continue;
 		}
 
-		if (argument.get_type().is_array()) {
-			switch (argument.get_type().get_primitive_type()) {
+		if (argument.get_type().get_data_type().is_array()) {
+			switch (argument.get_type().get_data_type().get_primitive_type()) {
 			case k_task_primitive_type_real:
 			{
 				c_real_array real_array = argument.get_real_array_in();

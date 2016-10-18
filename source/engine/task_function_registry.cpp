@@ -221,12 +221,12 @@ static void validate_task_function_mapping(
 		wl_assert(VALID_INDEX(mapping_index, task_function.argument_count));
 
 		c_native_module_data_type native_module_type = native_module.arguments[arg].type.get_data_type();
-		c_task_data_type task_type = task_function.argument_types[mapping_index];
+		c_task_qualified_data_type task_type = task_function.argument_types[mapping_index];
 
 		// For all qualifier types, the primitive type and whether it's an array must match
-		wl_assert(task_type.get_primitive_type() ==
+		wl_assert(task_type.get_data_type().get_primitive_type() ==
 			convert_native_module_primitive_type_to_task_primitive_type(native_module_type.get_primitive_type()));
-		wl_assert(task_type.is_array() == native_module_type.is_array());
+		wl_assert(task_type.get_data_type().is_array() == native_module_type.is_array());
 
 		if (native_module_qualifier_is_input(native_module.arguments[arg].type.get_qualifier())) {
 			// Input arguments should have a valid input mapping
@@ -259,8 +259,8 @@ static void validate_task_function_mapping(
 		bool in_mapped = task_argument_input_mappings[task_arg];
 		bool out_mapped = task_argument_output_mappings[task_arg];
 
-		c_task_data_type type = task_function.argument_types[task_arg];
-		switch (task_function.argument_types[task_arg].get_qualifier()) {
+		c_task_qualified_data_type type = task_function.argument_types[task_arg];
+		switch (type.get_qualifier()) {
 		case k_task_qualifier_in:
 			wl_assert(in_mapped);
 			wl_assert(!out_mapped);

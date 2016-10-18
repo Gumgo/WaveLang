@@ -3,7 +3,7 @@
 const s_task_function_uid s_task_function_uid::k_invalid = s_task_function_uid::build(0xffffffff, 0xffffffff);
 
 // The invalid qualifier value signifies "none"
-const c_task_data_type s_task_function_argument_list::k_argument_none = c_task_data_type::invalid();
+const c_task_qualified_data_type s_task_function_argument_list::k_argument_none = c_task_qualified_data_type::invalid();
 
 static const s_task_primitive_type_traits k_task_primitive_type_traits[] = {
 	//	is_dynamic
@@ -17,15 +17,11 @@ static_assert(NUMBEROF(k_task_primitive_type_traits) == k_task_primitive_type_co
 
 c_task_data_type::c_task_data_type() {
 	m_primitive_type = k_task_primitive_type_real;
-	m_qualifier = k_task_qualifier_in;
 	m_flags = 0;
 }
 
-c_task_data_type::c_task_data_type(e_task_primitive_type primitive_type, e_task_qualifier qualifier, bool is_array) {
+c_task_data_type::c_task_data_type(e_task_primitive_type primitive_type, bool is_array) {
 	wl_assert(VALID_INDEX(primitive_type, k_task_primitive_type_count));
-	wl_assert(VALID_INDEX(qualifier, k_task_qualifier_count));
-	m_primitive_type = primitive_type;
-	m_qualifier = qualifier;
 	m_flags = 0;
 
 	set_bit<k_flag_is_array>(m_flags, is_array);
@@ -35,7 +31,6 @@ c_task_data_type c_task_data_type::invalid() {
 	// Set all to 0xffffffff
 	c_task_data_type result;
 	result.m_primitive_type = static_cast<e_task_primitive_type>(-1);
-	result.m_qualifier = static_cast<e_task_qualifier>(-1);
 	result.m_flags = static_cast<uint32>(-1);
 	return result;
 }
@@ -47,11 +42,6 @@ bool c_task_data_type::is_valid() const {
 e_task_primitive_type c_task_data_type::get_primitive_type() const {
 	wl_assert(is_valid());
 	return m_primitive_type;
-}
-
-e_task_qualifier c_task_data_type::get_qualifier() const {
-	wl_assert(is_valid());
-	return m_qualifier;
 }
 
 const s_task_primitive_type_traits &c_task_data_type::get_primitive_type_traits() const {
@@ -67,41 +57,68 @@ bool c_task_data_type::is_array() const {
 c_task_data_type c_task_data_type::get_element_type() const {
 	wl_assert(is_valid());
 	wl_assert(is_array());
-	return c_task_data_type(m_primitive_type, m_qualifier);
+	return c_task_data_type(m_primitive_type);
 }
 
 c_task_data_type c_task_data_type::get_array_type() const {
 	wl_assert(is_valid());
 	wl_assert(!is_array());
-	return c_task_data_type(m_primitive_type, m_qualifier, true);
-}
-
-c_task_data_type c_task_data_type::get_with_qualifier(e_task_qualifier qualifier) const {
-	wl_assert(is_valid());
-	return c_task_data_type(m_primitive_type, qualifier, is_array());
+	return c_task_data_type(m_primitive_type, true);
 }
 
 bool c_task_data_type::operator==(const c_task_data_type &other) const {
 	return (m_primitive_type == other.m_primitive_type) &&
-		(m_qualifier == other.m_qualifier) &&
 		(m_flags == other.m_flags);
 }
 
 bool c_task_data_type::operator!=(const c_task_data_type &other) const {
 	return (m_primitive_type != other.m_primitive_type) ||
-		(m_qualifier != other.m_qualifier) ||
 		(m_flags != other.m_flags);
 }
 
-bool c_task_data_type::is_legal() const {
+c_task_qualified_data_type::c_task_qualified_data_type() {
+	m_qualifier = k_task_qualifier_in;
+}
+
+c_task_qualified_data_type::c_task_qualified_data_type(c_task_data_type data_type, e_task_qualifier qualifier)
+	: m_data_type(data_type)
+	, m_qualifier(qualifier) {
+	wl_assert(!data_type.is_valid() || VALID_INDEX(qualifier, k_task_qualifier_count));
+}
+
+c_task_qualified_data_type c_task_qualified_data_type::invalid() {
+	return c_task_qualified_data_type(c_task_data_type::invalid(), k_task_qualifier_count);
+}
+
+bool c_task_qualified_data_type::is_valid() const {
+	return m_data_type.is_valid();
+}
+
+c_task_data_type c_task_qualified_data_type::get_data_type() const {
+	return m_data_type;
+}
+
+e_task_qualifier c_task_qualified_data_type::get_qualifier() const {
+	return m_qualifier;
+}
+
+bool c_task_qualified_data_type::operator==(const c_task_qualified_data_type &other) const {
+	return (m_data_type == other.m_data_type) && (m_qualifier == other.m_qualifier);
+}
+
+bool c_task_qualified_data_type::operator!=(const c_task_qualified_data_type &other) const {
+	return (m_data_type != other.m_data_type) || (m_qualifier != other.m_qualifier);
+}
+
+bool c_task_qualified_data_type::is_legal() const {
 	wl_assert(is_valid());
 
-	if (!get_primitive_type_traits().is_dynamic && m_qualifier != k_task_qualifier_in) {
+	if (!m_data_type.get_primitive_type_traits().is_dynamic && m_qualifier != k_task_qualifier_in) {
 		// Static-only types must only be used as inputs, e.g. a task cannot output a new string
 		return false;
 	}
 
-	if (is_array() && m_qualifier != k_task_qualifier_in) {
+	if (m_data_type.is_array() && m_qualifier != k_task_qualifier_in) {
 		// Arrays cannot be outputs
 		return false;
 	}
@@ -115,16 +132,16 @@ const s_task_primitive_type_traits &get_task_primitive_type_traits(e_task_primit
 }
 
 s_task_function_argument_list s_task_function_argument_list::build(
-	c_task_data_type arg_0,
-	c_task_data_type arg_1,
-	c_task_data_type arg_2,
-	c_task_data_type arg_3,
-	c_task_data_type arg_4,
-	c_task_data_type arg_5,
-	c_task_data_type arg_6,
-	c_task_data_type arg_7,
-	c_task_data_type arg_8,
-	c_task_data_type arg_9) {
+	c_task_qualified_data_type arg_0,
+	c_task_qualified_data_type arg_1,
+	c_task_qualified_data_type arg_2,
+	c_task_qualified_data_type arg_3,
+	c_task_qualified_data_type arg_4,
+	c_task_qualified_data_type arg_5,
+	c_task_qualified_data_type arg_6,
+	c_task_qualified_data_type arg_7,
+	c_task_qualified_data_type arg_8,
+	c_task_qualified_data_type arg_9) {
 	static_assert(k_max_task_function_arguments == 10, "Max task function arguments changed");
 	s_task_function_argument_list result;
 	result.arguments[0] = arg_0;
@@ -167,7 +184,7 @@ s_task_function s_task_function::build(
 	for (task_function.argument_count = 0;
 		 task_function.argument_count < k_max_task_function_arguments;
 		 task_function.argument_count++) {
-		c_task_data_type arg = arguments.arguments[task_function.argument_count];
+		c_task_qualified_data_type arg = arguments.arguments[task_function.argument_count];
 		// Loop until we find an invalid argument
 		if (arg.is_valid()) {
 			wl_assert(arg.is_legal());

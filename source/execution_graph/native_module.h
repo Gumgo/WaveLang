@@ -15,8 +15,6 @@ static const size_t k_max_native_module_arguments = 10;
 static const size_t k_max_native_module_argument_name_length = 16;
 static const size_t k_invalid_argument_index = static_cast<size_t>(-1);
 
-#define NATIVE_PREFIX "__native_" // nocheckin Needed?
-
 // Unique identifier for each native module
 struct s_native_module_uid {
 	// Unique identifier consists of 8 bytes

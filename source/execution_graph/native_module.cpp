@@ -118,6 +118,7 @@ c_native_module_qualified_data_type::c_native_module_qualified_data_type(
 	c_native_module_data_type data_type, e_native_module_qualifier qualifier)
 	: m_data_type(data_type)
 	, m_qualifier(qualifier) {
+	wl_assert(!data_type.is_valid() || VALID_INDEX(qualifier, k_native_module_qualifier_count));
 }
 
 c_native_module_qualified_data_type c_native_module_qualified_data_type::invalid() {
@@ -127,7 +128,6 @@ c_native_module_qualified_data_type c_native_module_qualified_data_type::invalid
 bool c_native_module_qualified_data_type::is_valid() const {
 	return m_data_type.is_valid();
 }
-
 
 c_native_module_data_type c_native_module_qualified_data_type::get_data_type() const {
 	return m_data_type;

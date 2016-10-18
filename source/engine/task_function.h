@@ -77,23 +77,19 @@ struct s_task_primitive_type_traits {
 class c_task_data_type {
 public:
 	c_task_data_type();
-	c_task_data_type(e_task_primitive_type primitive_type, e_task_qualifier qualifier, bool is_array = false);
+	c_task_data_type(e_task_primitive_type primitive_type, bool is_array = false);
 	static c_task_data_type invalid();
 
 	bool is_valid() const;
 
 	e_task_primitive_type get_primitive_type() const;
-	e_task_qualifier get_qualifier() const;
 	const s_task_primitive_type_traits &get_primitive_type_traits() const;
 	bool is_array() const;
 	c_task_data_type get_element_type() const;
 	c_task_data_type get_array_type() const;
-	c_task_data_type get_with_qualifier(e_task_qualifier qualifier) const;
 
 	bool operator==(const c_task_data_type &other) const;
 	bool operator!=(const c_task_data_type &other) const;
-
-	bool is_legal() const;
 
 private:
 	enum e_flag {
@@ -103,8 +99,27 @@ private:
 	};
 
 	e_task_primitive_type m_primitive_type;
-	e_task_qualifier m_qualifier;
 	uint32 m_flags;
+};
+
+class c_task_qualified_data_type {
+public:
+	c_task_qualified_data_type();
+	c_task_qualified_data_type(c_task_data_type data_type, e_task_qualifier qualifier);
+	static c_task_qualified_data_type invalid();
+
+	bool is_valid() const;
+	c_task_data_type get_data_type() const;
+	e_task_qualifier get_qualifier() const;
+
+	bool operator==(const c_task_qualified_data_type &other) const;
+	bool operator!=(const c_task_qualified_data_type &other) const;
+
+	bool is_legal() const;
+
+private:
+	c_task_data_type m_data_type;
+	e_task_qualifier m_qualifier;
 };
 
 const s_task_primitive_type_traits &get_task_primitive_type_traits(e_task_primitive_type primitive_type);
@@ -139,7 +154,7 @@ struct s_task_function_argument {
 	// Do not access these directly
 	struct {
 #if IS_TRUE(ASSERTS_ENABLED)
-		c_task_data_type type;
+		c_task_qualified_data_type type;
 #endif // IS_TRUE(ASSERTS_ENABLED)
 		bool is_constant;
 
@@ -170,31 +185,36 @@ struct s_task_function_argument {
 	}
 
 	const c_buffer *get_real_buffer_in() const {
-		wl_assert(data.type == c_task_data_type(k_task_primitive_type_real, k_task_qualifier_in));
+		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_real));
+		wl_assert(data.type.get_qualifier() == k_task_qualifier_in);
 		wl_assert(!is_constant());
 		return data.value.real_buffer_in;
 	}
 
 	c_buffer *get_real_buffer_out() const {
-		wl_assert(data.type == c_task_data_type(k_task_primitive_type_real, k_task_qualifier_out));
+		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_real));
+		wl_assert(data.type.get_qualifier() == k_task_qualifier_out);
 		wl_assert(!is_constant());
 		return data.value.real_buffer_out;
 	}
 
 	c_buffer *get_real_buffer_inout() const {
-		wl_assert(data.type == c_task_data_type(k_task_primitive_type_real, k_task_qualifier_inout));
+		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_real));
+		wl_assert(data.type.get_qualifier() == k_task_qualifier_inout);
 		wl_assert(!is_constant());
 		return data.value.real_buffer_inout;
 	}
 
 	real32 get_real_constant_in() const {
-		wl_assert(data.type == c_task_data_type(k_task_primitive_type_real, k_task_qualifier_in));
+		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_real));
+		wl_assert(data.type.get_qualifier() == k_task_qualifier_in);
 		wl_assert(is_constant());
 		return data.value.real_constant_in;
 	}
 
 	c_real_const_buffer_or_constant get_real_buffer_or_constant_in() const {
-		wl_assert(data.type == c_task_data_type(k_task_primitive_type_real, k_task_qualifier_in));
+		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_real));
+		wl_assert(data.type.get_qualifier() == k_task_qualifier_in);
 
 		if (data.is_constant) {
 			return c_real_const_buffer_or_constant(data.value.real_constant_in);
@@ -204,36 +224,42 @@ struct s_task_function_argument {
 	}
 
 	c_real_array get_real_array_in() const {
-		wl_assert(data.type == c_task_data_type(k_task_primitive_type_real, k_task_qualifier_in, true));
+		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_real, true));
+		wl_assert(data.type.get_qualifier() == k_task_qualifier_in);
 		return data.value.real_array_in;
 	}
 
 	const c_buffer *get_bool_buffer_in() const {
-		wl_assert(data.type == c_task_data_type(k_task_primitive_type_bool, k_task_qualifier_in));
+		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_bool));
+		wl_assert(data.type.get_qualifier() == k_task_qualifier_in);
 		wl_assert(!is_constant());
 		return data.value.bool_buffer_in;
 	}
 
 	c_buffer *get_bool_buffer_out() const {
-		wl_assert(data.type == c_task_data_type(k_task_primitive_type_bool, k_task_qualifier_out));
+		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_bool));
+		wl_assert(data.type.get_qualifier() == k_task_qualifier_out);
 		wl_assert(!is_constant());
 		return data.value.bool_buffer_out;
 	}
 
 	c_buffer *get_bool_buffer_inout() const {
-		wl_assert(data.type == c_task_data_type(k_task_primitive_type_bool, k_task_qualifier_inout));
+		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_bool));
+		wl_assert(data.type.get_qualifier() == k_task_qualifier_inout);
 		wl_assert(!is_constant());
 		return data.value.bool_buffer_inout;
 	}
 
 	bool get_bool_constant_in() const {
-		wl_assert(data.type == c_task_data_type(k_task_primitive_type_bool, k_task_qualifier_in));
+		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_bool));
+		wl_assert(data.type.get_qualifier() == k_task_qualifier_in);
 		wl_assert(is_constant());
 		return data.value.bool_constant_in;
 	}
 
 	c_bool_const_buffer_or_constant get_bool_buffer_or_constant_in() const {
-		wl_assert(data.type == c_task_data_type(k_task_primitive_type_bool, k_task_qualifier_in));
+		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_bool));
+		wl_assert(data.type.get_qualifier() == k_task_qualifier_in);
 
 		if (data.is_constant) {
 			return c_bool_const_buffer_or_constant(data.value.bool_constant_in);
@@ -243,18 +269,21 @@ struct s_task_function_argument {
 	}
 
 	c_bool_array get_bool_array_in() const {
-		wl_assert(data.type == c_task_data_type(k_task_primitive_type_bool, k_task_qualifier_in, true));
+		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_bool, true));
+		wl_assert(data.type.get_qualifier() == k_task_qualifier_in);
 		return data.value.bool_array_in;
 	}
 
 	const char *get_string_constant_in() const {
-		wl_assert(data.type == c_task_data_type(k_task_primitive_type_string, k_task_qualifier_in));
+		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_string));
+		wl_assert(data.type.get_qualifier() == k_task_qualifier_in);
 		wl_assert(is_constant());
 		return data.value.string_constant_in;
 	}
 
 	c_string_array get_string_array_in() const {
-		wl_assert(data.type == c_task_data_type(k_task_primitive_type_string, k_task_qualifier_in, true));
+		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_string, true));
+		wl_assert(data.type.get_qualifier() == k_task_qualifier_in);
 		return data.value.string_array_in;
 	}
 };
@@ -296,25 +325,25 @@ static const size_t k_max_task_function_name_length = 64;
 static const size_t k_max_task_function_arguments = 10;
 
 struct s_task_function_argument_list {
-	static const c_task_data_type k_argument_none;
-	s_static_array<c_task_data_type, k_max_task_function_arguments> arguments;
+	static const c_task_qualified_data_type k_argument_none;
+	s_static_array<c_task_qualified_data_type, k_max_task_function_arguments> arguments;
 
 	static s_task_function_argument_list build(
-		c_task_data_type arg_0 = k_argument_none,
-		c_task_data_type arg_1 = k_argument_none,
-		c_task_data_type arg_2 = k_argument_none,
-		c_task_data_type arg_3 = k_argument_none,
-		c_task_data_type arg_4 = k_argument_none,
-		c_task_data_type arg_5 = k_argument_none,
-		c_task_data_type arg_6 = k_argument_none,
-		c_task_data_type arg_7 = k_argument_none,
-		c_task_data_type arg_8 = k_argument_none,
-		c_task_data_type arg_9 = k_argument_none);
+		c_task_qualified_data_type arg_0 = k_argument_none,
+		c_task_qualified_data_type arg_1 = k_argument_none,
+		c_task_qualified_data_type arg_2 = k_argument_none,
+		c_task_qualified_data_type arg_3 = k_argument_none,
+		c_task_qualified_data_type arg_4 = k_argument_none,
+		c_task_qualified_data_type arg_5 = k_argument_none,
+		c_task_qualified_data_type arg_6 = k_argument_none,
+		c_task_qualified_data_type arg_7 = k_argument_none,
+		c_task_qualified_data_type arg_8 = k_argument_none,
+		c_task_qualified_data_type arg_9 = k_argument_none);
 };
 
 // Shorthand for argument specification
-#define TDT(qualifier, type)	c_task_data_type(k_task_primitive_type_ ## type, k_task_qualifier_ ## qualifier)
-#define TDT_ARRAY(type)			c_task_data_type(k_task_primitive_type_ ## type, k_task_qualifier_in, true)
+#define TDT(qualifier, type)	c_task_qualified_data_type(c_task_data_type(k_task_primitive_type_ ## type), k_task_qualifier_ ## qualifier)
+#define TDT_ARRAY(type)			c_task_qualified_data_type(c_task_data_type(k_task_primitive_type_ ## type, true), k_task_qualifier_in)
 
 struct s_task_function {
 	// Unique identifier for this task function
@@ -339,7 +368,7 @@ struct s_task_function {
 	uint32 argument_count;
 
 	// Type of each argument
-	s_static_array<c_task_data_type, k_max_task_function_arguments> argument_types;
+	s_static_array<c_task_qualified_data_type, k_max_task_function_arguments> argument_types;
 
 	static s_task_function build(
 		s_task_function_uid uid,

@@ -157,7 +157,7 @@ void c_task_buffer_iterator::next() {
 		} else {
 			const s_task_graph_data &current_data = m_data_array[m_argument_index];
 			size_t current_array_count = 1;
-			if (current_data.data.type.is_array()) {
+			if (current_data.data.type.get_data_type().is_array()) {
 				current_array_count = get_task_data_array_count(current_data);
 			}
 
@@ -178,7 +178,7 @@ void c_task_buffer_iterator::next() {
 			advance = new_data.data.is_constant;
 
 			if (advance) {
-				if (new_data.data.type.is_array()) {
+				if (new_data.data.type.get_data_type().is_array()) {
 					size_t new_array_count = get_task_data_array_count(new_data);
 
 					if (new_array_count == 0) {
@@ -187,9 +187,7 @@ void c_task_buffer_iterator::next() {
 					} else {
 						advance = is_task_data_array_element_constant(new_data, m_array_index);
 
-						if (!advance &&
-							m_type_mask.is_valid() &&
-							get_buffer_type().get_with_qualifier(m_type_mask.get_qualifier()) != m_type_mask) {
+						if (!advance && m_type_mask.is_valid() && get_buffer_type().get_data_type() != m_type_mask) {
 							// Skip buffers which are not of the mask type
 							advance = true;
 						}
@@ -206,7 +204,7 @@ uint32 c_task_buffer_iterator::get_buffer_index() const {
 	const s_task_graph_data &data = m_data_array[m_argument_index];
 	wl_assert(!data.data.is_constant);
 
-	if (data.data.type.is_array()) {
+	if (data.data.type.get_data_type().is_array()) {
 		buffer_index = get_task_data_array_element_buffer_const(data, m_array_index);
 	} else {
 		buffer_index = data.data.value.buffer;
@@ -221,7 +219,7 @@ uint32 c_task_buffer_iterator::get_node_index() const {
 	const s_task_graph_data &data = m_data_array[m_argument_index];
 	wl_assert(!data.data.is_constant);
 
-	if (data.data.type.is_array()) {
+	if (data.data.type.get_data_type().is_array()) {
 		buffer_index = get_task_data_array_element_buffer_const(data, m_array_index);
 	} else {
 		buffer_index = data.data.value.execution_graph_index_a;
@@ -230,13 +228,13 @@ uint32 c_task_buffer_iterator::get_node_index() const {
 	return buffer_index;
 }
 
-c_task_data_type c_task_buffer_iterator::get_buffer_type() const {
+c_task_qualified_data_type c_task_buffer_iterator::get_buffer_type() const {
 	const s_task_graph_data &data = m_data_array[m_argument_index];
 	wl_assert(!data.data.is_constant);
 
-	c_task_data_type result = data.data.type;
-	if (result.is_array()) {
-		result = result.get_element_type();
+	c_task_qualified_data_type result = data.data.type;
+	if (result.get_data_type().is_array()) {
+		result = c_task_qualified_data_type(result.get_data_type().get_element_type(), result.get_qualifier());
 	}
 
 	return result;
@@ -387,10 +385,10 @@ bool c_task_graph::build(const c_execution_graph &execution_graph) {
 }
 
 static size_t get_task_data_array_count(const s_task_graph_data &data) {
-	wl_assert(data.data.type.is_array());
+	wl_assert(data.data.type.get_data_type().is_array());
 
 	size_t result = 0;
-	switch (data.data.type.get_primitive_type()) {
+	switch (data.data.type.get_data_type().get_primitive_type()) {
 	case k_task_primitive_type_real:
 		result = data.data.value.real_array_in.get_count();
 		break;
@@ -411,10 +409,10 @@ static size_t get_task_data_array_count(const s_task_graph_data &data) {
 }
 
 static bool is_task_data_array_element_constant(const s_task_graph_data &data, size_t index) {
-	wl_assert(data.data.type.is_array());
+	wl_assert(data.data.type.get_data_type().is_array());
 
 	bool result = true;
-	switch (data.data.type.get_primitive_type()) {
+	switch (data.data.type.get_data_type().get_primitive_type()) {
 	case k_task_primitive_type_real:
 		result = data.data.value.real_array_in[index].is_constant;
 		break;
@@ -435,11 +433,11 @@ static bool is_task_data_array_element_constant(const s_task_graph_data &data, s
 }
 
 static uint32 get_task_data_array_element_buffer_const(const s_task_graph_data &data, size_t index) {
-	wl_assert(data.data.type.is_array());
+	wl_assert(data.data.type.get_data_type().is_array());
 	wl_assert(!is_task_data_array_element_constant(data, index));
 
 	uint32 result = c_task_graph::k_invalid_buffer;
-	switch (data.data.type.get_primitive_type()) {
+	switch (data.data.type.get_data_type().get_primitive_type()) {
 	case k_task_primitive_type_real:
 		result = data.data.value.real_array_in[index].buffer_index_value;
 		break;
@@ -583,8 +581,8 @@ void c_task_graph::resolve_arrays() {
 		for (size_t arg = 0; arg < task_function.argument_count; arg++) {
 			s_task_graph_data &argument = m_data_lists[task.arguments_start + arg];
 
-			if (argument.data.type.is_array()) {
-				switch (argument.data.type.get_primitive_type()) {
+			if (argument.data.type.get_data_type().is_array()) {
+				switch (argument.data.type.get_data_type().get_primitive_type()) {
 				case k_task_primitive_type_real:
 				{
 					// We previously stored the offset in the pointer
@@ -631,8 +629,8 @@ void c_task_graph::resolve_strings() {
 		for (size_t arg = 0; arg < task_function.argument_count; arg++) {
 			s_task_graph_data &argument = m_data_lists[task.arguments_start + arg];
 
-			if (argument.data.type.get_primitive_type() == k_task_primitive_type_string) {
-				if (argument.data.type.is_array()) {
+			if (argument.data.type.get_data_type().get_primitive_type() == k_task_primitive_type_string) {
+				if (argument.data.type.get_data_type().is_array()) {
 					for (size_t index = 0; index < argument.data.value.string_array_in.get_count(); index++) {
 						// Access the element in a non-const way
 						size_t element_index =
@@ -699,7 +697,7 @@ void c_task_graph::setup_task(const c_execution_graph &execution_graph, uint32 n
 #if IS_TRUE(ASSERTS_ENABLED)
 	for (size_t index = old_size; index < m_data_lists.size(); index++) {
 		// Fill with 0xffffffff so we can assert that we don't set a value twice
-		m_data_lists[index].data.type = c_task_data_type::invalid();
+		m_data_lists[index].data.type = c_task_qualified_data_type::invalid();
 		m_data_lists[index].data.value.execution_graph_index_a = c_execution_graph::k_invalid_index;
 		m_data_lists[index].data.value.execution_graph_index_b = c_execution_graph::k_invalid_index;
 	}
@@ -730,14 +728,14 @@ void c_task_graph::setup_task(const c_execution_graph &execution_graph, uint32 n
 			uint32 input_node_index = execution_graph.get_node_incoming_edge_index(node_index, input_index);
 			uint32 source_node_index = execution_graph.get_node_incoming_edge_index(input_node_index, 0);
 
-			bool is_array = argument_data.data.type.is_array();
+			bool is_array = argument_data.data.type.get_data_type().is_array();
 			bool is_constant = execution_graph.get_node_type(source_node_index) == k_execution_graph_node_type_constant;
 			if (is_constant) {
 				wl_assert(argument_data.data.type.get_qualifier() == k_task_qualifier_in);
 			}
 
 			bool is_buffer = false;
-			switch (argument_data.data.type.get_primitive_type()) {
+			switch (argument_data.data.type.get_data_type().get_primitive_type()) {
 			case k_task_primitive_type_real:
 				if (is_array) {
 					s_build_real_array_settings settings;
@@ -869,11 +867,11 @@ void c_task_graph::setup_task(const c_execution_graph &execution_graph, uint32 n
 }
 
 uint32 *c_task_graph::get_task_data_array_element_buffer(const s_task_graph_data &data, size_t index) {
-	wl_assert(data.data.type.is_array());
+	wl_assert(data.data.type.get_data_type().is_array());
 	wl_assert(!is_task_data_array_element_constant(data, index));
 
 	uint32 *result = nullptr;
-	switch (data.data.type.get_primitive_type()) {
+	switch (data.data.type.get_data_type().get_primitive_type()) {
 	case k_task_primitive_type_real:
 	{
 		size_t element_index = &data.data.value.real_array_in[index] - &m_real_array_element_lists.front();
@@ -1046,7 +1044,7 @@ void c_task_graph::build_task_successor_lists(const c_execution_graph &execution
 		bool any_input_buffers = false;
 		for (size_t arg = 0; !any_input_buffers && arg < task_function.argument_count; arg++) {
 			const s_task_graph_data &argument = m_data_lists[task.arguments_start + arg];
-			c_task_data_type arg_type = task_function.argument_types[arg];
+			c_task_qualified_data_type arg_type = task_function.argument_types[arg];
 			bool is_input =
 				(arg_type.get_qualifier() == k_task_qualifier_in) ||
 				(arg_type.get_qualifier() == k_task_qualifier_inout);
@@ -1126,7 +1124,7 @@ void c_task_graph::allocate_buffers(const c_execution_graph &execution_graph) {
 			s_task_graph_data &argument = m_data_lists[task.arguments_start + arg];
 
 			// For each buffer, find all attached nodes and create a mapping
-			if (argument.data.type.is_array()) {
+			if (argument.data.type.get_data_type().is_array()) {
 				size_t array_count = get_task_data_array_count(argument);
 				for (size_t index = 0; index < array_count; index++) {
 					if (!is_task_data_array_element_constant(argument, index)) {
@@ -1160,7 +1158,7 @@ void c_task_graph::allocate_buffers(const c_execution_graph &execution_graph) {
 
 #if IS_TRUE(ASSERTS_ENABLED)
 	for (size_t index = m_outputs_start; index < m_data_lists.size(); index++) {
-		m_data_lists[index].data.type = c_task_data_type::invalid();
+		m_data_lists[index].data.type = c_task_qualified_data_type::invalid();
 	}
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
@@ -1172,7 +1170,7 @@ void c_task_graph::allocate_buffers(const c_execution_graph &execution_graph) {
 			s_task_graph_data &output_data = m_data_lists[m_outputs_start + output_index];
 			wl_assert(!output_data.data.type.is_valid());
 
-			output_data.data.type = c_task_data_type(k_task_primitive_type_real, k_task_qualifier_in);
+			output_data.data.type = c_task_qualified_data_type(k_task_primitive_type_real, k_task_qualifier_in);
 			if (nodes_to_buffers[node_index] != k_invalid_buffer) {
 				output_data.data.is_constant = false;
 				output_data.data.value.real_buffer_in = nodes_to_buffers[node_index];
@@ -1302,7 +1300,7 @@ void c_task_graph::calculate_max_concurrency() {
 
 	for (uint32 task_index = 0; task_index < m_tasks.size(); task_index++) {
 		for (c_task_buffer_iterator it(get_task_arguments(task_index)); it.is_valid(); it.next()) {
-			c_task_data_type buffer_type = it.get_buffer_type().get_with_qualifier(k_task_qualifier_in);
+			c_task_data_type buffer_type = it.get_buffer_type().get_data_type();
 
 			// Skip if we've already calculated for this type
 			size_t found = false;
