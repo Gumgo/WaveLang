@@ -130,16 +130,19 @@ local include-directories =
 	$(LLVM_BUILD_DIR)/include
 	$(LLVM_BUILD_DIR)/tools/clang/include ;
 
-# Configuration-dependent libraries: is there a better way to do this?
-alias configuration-dependent-libraries :
-	[ get-llvm-libs msvc : debug ]
-	$(WINDOWS_SDK_DIR)/Lib/winv6.3/um/x64/ShLwApi.Lib :
-	<toolset>msvc <variant>debug ;
+if $(GENERATE_VS_PROJECTS) != 1
+{
+	# Configuration-dependent libraries: is there a better way to do this?
+	alias configuration-dependent-libraries :
+		[ get-llvm-libs msvc : debug ]
+		$(WINDOWS_SDK_DIR)/Lib/winv6.3/um/x64/ShLwApi.Lib :
+		<toolset>msvc <variant>debug ;
 
-alias configuration-dependent-libraries :
-	[ get-llvm-libs msvc : release ]
-	$(WINDOWS_SDK_DIR)/Lib/winv6.3/um/x64/ShLwApi.Lib :
-	<toolset>msvc <variant>release ;
+	alias configuration-dependent-libraries :
+		[ get-llvm-libs msvc : release ]
+		$(WINDOWS_SDK_DIR)/Lib/winv6.3/um/x64/ShLwApi.Lib :
+		<toolset>msvc <variant>release ;
+}
 
 local libraries = configuration-dependent-libraries ;
 

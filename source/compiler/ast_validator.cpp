@@ -479,6 +479,7 @@ public:
 				if (!visit_module(index)) {
 					s_compiler_result error;
 					error.result = k_compiler_result_cyclic_module_call;
+					error.source_location.clear();
 					error.message = "Cyclic module call(s) detected";
 					m_errors->push_back(error);
 					break;
@@ -1104,6 +1105,7 @@ s_compiler_result c_ast_validator::validate(const s_compiler_context *compiler_c
 	if (!visitor.was_entry_point_found()) {
 		s_compiler_result error;
 		error.result = k_compiler_result_no_entry_point;
+		error.source_location.clear();
 		error.message = "No entry point '" + std::string(k_entry_point_name) + "' found";
 		out_errors.push_back(error);
 	}

@@ -217,9 +217,6 @@ private:
 	void setup_task(const c_execution_graph &execution_graph, uint32 node_index,
 		uint32 task_index, const s_task_function_mapping &task_function_mapping);
 	uint32 *get_task_data_array_element_buffer(const s_task_graph_data &argument, size_t index);
-	template<typename t_build_array_settings> typename t_build_array_settings::t_array c_task_graph::build_array(
-		const c_execution_graph &execution_graph, t_build_array_settings &settings, uint32 node_index,
-		bool &out_is_constant);
 	void build_task_successor_lists(const c_execution_graph &execution_graph,
 		const std::vector<uint32> &nodes_to_tasks);
 	void allocate_buffers(const c_execution_graph &execution_graph);

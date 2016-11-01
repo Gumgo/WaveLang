@@ -130,8 +130,6 @@ PROD(NS(expr_5),
 PROD(NS(expr_5),
 	NS(expr_5), TS(operator_subtraction), NS(expr_6))
 PROD(NS(expr_5),
-	NS(expr_5), TS(operator_concatenation), NS(expr_6))
-PROD(NS(expr_5),
 	NS(expr_6))
 
 PROD(NS(expr_6),

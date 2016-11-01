@@ -108,6 +108,15 @@ struct s_constant_accessor_bool {
 	}
 };
 
+// Buffer types: these are exactly the same as c_buffer and only exist for type identification/validation, i.e. the
+// pointers (and even objects themselves) can be directly cast between each other with no problems
+class c_real_buffer : public c_buffer {};
+class c_bool_buffer : public c_buffer {};
+
+static_assert(sizeof(c_real_buffer) == sizeof(c_buffer), "Buffer size mismatch");
+static_assert(sizeof(c_bool_buffer) == sizeof(c_buffer), "Buffer size mismatch");
+
+// Buffer-or-constant types
 typedef c_buffer_or_constant_base<c_buffer, real32, s_constant_accessor_real> c_real_buffer_or_constant;
 typedef c_buffer_or_constant_base<const c_buffer, real32, s_constant_accessor_real> c_real_const_buffer_or_constant;
 

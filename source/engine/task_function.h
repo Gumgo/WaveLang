@@ -163,15 +163,15 @@ struct s_task_function_argument {
 
 			c_buffer *buffer; // Shared accessor for any buffer, no accessor function for this
 
-			const c_buffer *real_buffer_in;
-			c_buffer *real_buffer_out;
-			c_buffer *real_buffer_inout;
+			const c_real_buffer *real_buffer_in;
+			c_real_buffer *real_buffer_out;
+			c_real_buffer *real_buffer_inout;
 			real32 real_constant_in;
 			c_real_array real_array_in;
 
-			const c_buffer *bool_buffer_in;
-			c_buffer *bool_buffer_out;
-			c_buffer *bool_buffer_inout;
+			const c_bool_buffer *bool_buffer_in;
+			c_bool_buffer *bool_buffer_out;
+			c_bool_buffer *bool_buffer_inout;
 			bool bool_constant_in;
 			c_bool_array bool_array_in;
 
@@ -180,25 +180,26 @@ struct s_task_function_argument {
 		} value;
 	} data;
 
+	// For arrays, the array itself is always constant so if this is true, it means all elements are constants
 	bool is_constant() const {
 		return data.is_constant;
 	}
 
-	const c_buffer *get_real_buffer_in() const {
+	const c_real_buffer *get_real_buffer_in() const {
 		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_real));
 		wl_assert(data.type.get_qualifier() == k_task_qualifier_in);
 		wl_assert(!is_constant());
 		return data.value.real_buffer_in;
 	}
 
-	c_buffer *get_real_buffer_out() const {
+	c_real_buffer *get_real_buffer_out() const {
 		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_real));
 		wl_assert(data.type.get_qualifier() == k_task_qualifier_out);
 		wl_assert(!is_constant());
 		return data.value.real_buffer_out;
 	}
 
-	c_buffer *get_real_buffer_inout() const {
+	c_real_buffer *get_real_buffer_inout() const {
 		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_real));
 		wl_assert(data.type.get_qualifier() == k_task_qualifier_inout);
 		wl_assert(!is_constant());
@@ -229,21 +230,21 @@ struct s_task_function_argument {
 		return data.value.real_array_in;
 	}
 
-	const c_buffer *get_bool_buffer_in() const {
+	const c_bool_buffer *get_bool_buffer_in() const {
 		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_bool));
 		wl_assert(data.type.get_qualifier() == k_task_qualifier_in);
 		wl_assert(!is_constant());
 		return data.value.bool_buffer_in;
 	}
 
-	c_buffer *get_bool_buffer_out() const {
+	c_bool_buffer *get_bool_buffer_out() const {
 		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_bool));
 		wl_assert(data.type.get_qualifier() == k_task_qualifier_out);
 		wl_assert(!is_constant());
 		return data.value.bool_buffer_out;
 	}
 
-	c_buffer *get_bool_buffer_inout() const {
+	c_bool_buffer *get_bool_buffer_inout() const {
 		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_bool));
 		wl_assert(data.type.get_qualifier() == k_task_qualifier_inout);
 		wl_assert(!is_constant());
@@ -324,27 +325,6 @@ typedef void (*f_task_function)(const s_task_function_context &context);
 static const size_t k_max_task_function_name_length = 64;
 static const size_t k_max_task_function_arguments = 10;
 
-struct s_task_function_argument_list {
-	static const c_task_qualified_data_type k_argument_none;
-	s_static_array<c_task_qualified_data_type, k_max_task_function_arguments> arguments;
-
-	static s_task_function_argument_list build(
-		c_task_qualified_data_type arg_0 = k_argument_none,
-		c_task_qualified_data_type arg_1 = k_argument_none,
-		c_task_qualified_data_type arg_2 = k_argument_none,
-		c_task_qualified_data_type arg_3 = k_argument_none,
-		c_task_qualified_data_type arg_4 = k_argument_none,
-		c_task_qualified_data_type arg_5 = k_argument_none,
-		c_task_qualified_data_type arg_6 = k_argument_none,
-		c_task_qualified_data_type arg_7 = k_argument_none,
-		c_task_qualified_data_type arg_8 = k_argument_none,
-		c_task_qualified_data_type arg_9 = k_argument_none);
-};
-
-// Shorthand for argument specification
-#define TDT(qualifier, type)	c_task_qualified_data_type(c_task_data_type(k_task_primitive_type_ ## type), k_task_qualifier_ ## qualifier)
-#define TDT_ARRAY(type)			c_task_qualified_data_type(c_task_data_type(k_task_primitive_type_ ## type, true), k_task_qualifier_in)
-
 struct s_task_function {
 	// Unique identifier for this task function
 	s_task_function_uid uid;
@@ -369,15 +349,6 @@ struct s_task_function {
 
 	// Type of each argument
 	s_static_array<c_task_qualified_data_type, k_max_task_function_arguments> argument_types;
-
-	static s_task_function build(
-		s_task_function_uid uid,
-		const char *name,
-		f_task_memory_query memory_query,
-		f_task_initializer initializer,
-		f_task_voice_initializer voice_initializer,
-		f_task_function function,
-		const s_task_function_argument_list &arguments);
 };
 
 // Task function mappings
@@ -405,46 +376,20 @@ enum e_task_function_mapping_native_module_input_type {
 // it as the output.
 
 struct s_task_function_native_module_argument_mapping {
-	static const uint32 k_argument_none = static_cast<uint32>(-1);
+	// The argument type that must be matched for the native module in order for this mapping to be used
+	e_task_function_mapping_native_module_input_type input_type;
 
-	s_static_array<uint32, k_max_native_module_arguments> mapping;
-
-	static s_task_function_native_module_argument_mapping build(
-		uint32 arg_0 = k_argument_none,
-		uint32 arg_1 = k_argument_none,
-		uint32 arg_2 = k_argument_none,
-		uint32 arg_3 = k_argument_none,
-		uint32 arg_4 = k_argument_none,
-		uint32 arg_5 = k_argument_none,
-		uint32 arg_6 = k_argument_none,
-		uint32 arg_7 = k_argument_none,
-		uint32 arg_8 = k_argument_none,
-		uint32 arg_9 = k_argument_none);
+	// The task function argument index being mapped to
+	uint32 task_function_argument_index;
 };
 
 struct s_task_function_mapping {
-	static const e_task_function_mapping_native_module_input_type k_input_type_none =
-		k_task_function_mapping_native_module_input_type_count;
-
 	// Task function to map to
 	s_task_function_uid task_function_uid;
 
-	// The pattern of argument types that must be matched for the native module in order for this mapping to be used
-	s_static_array<e_task_function_mapping_native_module_input_type, k_max_native_module_arguments>
-		native_module_input_types;
-
-	// Maps each native module argument to a task function in/out/inout argument
-	s_task_function_native_module_argument_mapping native_module_argument_mapping;
-
-	// We use a string shorthand notation to represent possible native module arguments. The Nth character in the string
-	// represents the Nth argument to the native module. The possible input types are:
-	// - v: a variable input
-	// - b: a variable input which does not branch; i.e. this variable is only used in this input and nowhere else
-	// - .: this argument is an output and should be ignored
-	static s_task_function_mapping build(
-		s_task_function_uid task_function_uid,
-		const char *input_pattern,
-		const s_task_function_native_module_argument_mapping &mapping);
+	// Mapping for each native module argument
+	s_static_array<s_task_function_native_module_argument_mapping, k_max_native_module_arguments>
+		native_module_argument_mapping;
 };
 
 // Task mapping notation examples (NM = native module):

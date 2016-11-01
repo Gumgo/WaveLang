@@ -16,7 +16,6 @@ rule null-if-empty ( values * )
 
 rule setup-vs-project-config ( top-dir : project-name : defines * : features * : source-files * : include-directories * )
 {
-	local output-dir = [ path.native $(top-dir)/bin ] ;
 	local native-include-directories = [ sequence.transform path.native : $(include-directories) ] ;
 
 	local configurations = Debug Release ;
@@ -24,18 +23,32 @@ rule setup-vs-project-config ( top-dir : project-name : defines * : features * :
 
 	for local configuration in $(configurations)
 	{
+		local output-dir-configuration = $(top-dir)/app ;
+
 		local is-debug = 0 ;
 		if $(configuration) = Debug
 		{
 			local is-debug = 1 ;
+			output-dir-configuration = $(output-dir-configuration)/debug_ ;
+		}
+		else
+		{
+			output-dir-configuration = $(output-dir-configuration)/release_ ;
 		}
 
 		for local platform in $(platforms)
 		{
+			local output-dir-configuration-platform = $(output-dir-configuration) ;
+
 			local is-64-bit = 0 ;
 			if $(platform) = x64
 			{
 				local is-64-bit = 1 ;
+				output-dir-configuration-platform = $(output-dir-configuration-platform)64/$(project-name).exe ;
+			}
+			else
+			{
+				output-dir-configuration-platform = $(output-dir-configuration-platform)32/$(project-name).exe ;
 			}
 
 			local build-command = [ get-base-build-command $(top-dir) : $(project-name) : $(configuration) : $(platform) ] ;
@@ -48,7 +61,7 @@ rule setup-vs-project-config ( top-dir : project-name : defines * : features * :
 				$(build-command) :
 				[ string.join $(build-command) --clean : " " ] :
 				[ string.join $(build-command) -a : " " ] :
-				$(output-dir) :
+				[ path.native $(output-dir-configuration-platform) ] :
 				$(defines) :
 				$(source-files) :
 				$(native-include-directories) :

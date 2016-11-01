@@ -36,6 +36,10 @@ const s_task_function_mapping *get_task_mapping_for_native_module_and_inputs(
 	uint32 native_module_index,
 	const s_task_function_mapping_native_module_input_type_array &native_module_inputs);
 
+template<typename t_build_array_settings>
+typename t_build_array_settings::t_array build_array(const c_execution_graph &execution_graph,
+	t_build_array_settings &settings, uint32 node_index, bool &out_is_constant);
+
 struct s_build_real_array_settings {
 	typedef s_real_array_element t_element;
 	typedef c_real_array t_array;
@@ -555,8 +559,14 @@ static const s_task_function_mapping *get_task_mapping_for_native_module_and_inp
 	// Go through the mappings in order and return the first one that matches
 	for (size_t index = 0; index < task_function_mapping_list.get_count(); index++) {
 		const s_task_function_mapping &mapping = task_function_mapping_list[index];
+
+		s_task_function_mapping_native_module_input_type_array mapping_input_types;
+		for (size_t arg = 0; arg < native_module.argument_count; arg++) {
+			mapping_input_types[arg] = mapping.native_module_argument_mapping[arg].input_type;
+		}
+
 		bool match = do_native_module_inputs_match(
-			native_module.argument_count, native_module_inputs, mapping.native_module_input_types);
+			native_module.argument_count, native_module_inputs, mapping_input_types);
 
 		if (match) {
 			return &mapping;
@@ -712,14 +722,15 @@ void c_task_graph::setup_task(const c_execution_graph &execution_graph, uint32 n
 	size_t output_index = 0;
 	for (size_t index = 0; index < input_output_count; index++) {
 		// Determine if this is an input or output from the task function mapping input type
-		wl_assert(VALID_INDEX(task_function_mapping.native_module_input_types[index],
+		wl_assert(VALID_INDEX(task_function_mapping.native_module_argument_mapping[index].input_type,
 			k_task_function_mapping_native_module_input_type_count));
 
-		bool is_input = task_function_mapping.native_module_input_types[index] !=
+		bool is_input = task_function_mapping.native_module_argument_mapping[index].input_type !=
 			k_task_function_mapping_native_module_input_type_none;
 
 		if (is_input) {
-			uint32 argument_index = task_function_mapping.native_module_argument_mapping.mapping[index];
+			uint32 argument_index =
+				task_function_mapping.native_module_argument_mapping[index].task_function_argument_index;
 			wl_assert(VALID_INDEX(argument_index, task_function.argument_count));
 			s_task_graph_data &argument_data = m_data_lists[task.arguments_start + argument_index];
 			argument_data.data.type = task_function.argument_types[argument_index];
@@ -825,7 +836,8 @@ void c_task_graph::setup_task(const c_execution_graph &execution_graph, uint32 n
 
 			input_index++;
 		} else {
-			uint32 argument_index = task_function_mapping.native_module_argument_mapping.mapping[index];
+			uint32 argument_index =
+				task_function_mapping.native_module_argument_mapping[index].task_function_argument_index;
 			wl_assert(VALID_INDEX(argument_index, task_function.argument_count));
 			s_task_graph_data &argument_data = m_data_lists[task.arguments_start + argument_index];
 			argument_data.data.type = task_function.argument_types[argument_index];
@@ -895,81 +907,6 @@ uint32 *c_task_graph::get_task_data_array_element_buffer(const s_task_graph_data
 	}
 
 	return result;
-}
-
-template<typename t_build_array_settings>
-typename t_build_array_settings::t_array c_task_graph::build_array(
-	const c_execution_graph &execution_graph, t_build_array_settings &settings, uint32 node_index,
-	bool &out_is_constant) {
-	// Build a list of array elements using the array node at node_index. Note that at this point, we're actually
-	// storing the node indices in the element buffer_index_value field - we will later convert these to buffer indices.
-
-	typedef typename t_build_array_settings::t_array t_array;
-	typedef typename t_build_array_settings::t_element t_element;
-
-	wl_assert(execution_graph.get_node_type(node_index) == k_execution_graph_node_type_constant);
-	wl_assert(execution_graph.get_constant_node_data_type(node_index) ==
-		c_native_module_data_type(t_build_array_settings::k_native_module_primitive_type, true));
-
-	size_t array_count = execution_graph.get_node_incoming_edge_count(node_index);
-
-	// First scan the list of elements to see if this array has already been instantiated
-	out_is_constant = true;
-	bool match = false;
-	size_t start_offset = static_cast<size_t>(-1);
-	for (size_t start_index = 0; match && (start_index + array_count < settings.element_lists->size()); start_index++) {
-		// Check if the next N elements match starting at start_index
-		bool match_inner = true;
-		for (size_t array_index = 0; match_inner && array_index < array_count; array_index++) {
-			uint32 input_node_index = execution_graph.get_node_incoming_edge_index(node_index, array_index);
-			uint32 source_node_index = execution_graph.get_node_incoming_edge_index(input_node_index, 0);
-			bool source_node_is_constant = (execution_graph.get_node_type(source_node_index) == k_execution_graph_node_type_constant);
-
-			const t_element &element = (*settings.element_lists)[start_index + array_index];
-			bool is_element_constant = settings.is_element_constant(element);
-
-			if (is_element_constant && source_node_is_constant) {
-				match_inner = settings.compare_element_to_constant_node(element, execution_graph, source_node_index);
-			} else if (!is_element_constant && !source_node_is_constant) {
-				// Recall that this is currently storing the node index
-				match_inner = (settings.get_element_buffer_index_value(element) == source_node_index);
-				out_is_constant = false;
-			} else {
-				match_inner = false;
-			}
-		}
-
-		if (match_inner) {
-			match = true;
-			start_offset = start_index;
-		}
-	}
-
-	if (!match) {
-		// If we didn't match, we need to construct elements
-		start_offset = settings.element_lists->size();
-
-		out_is_constant = true;
-		for (size_t array_index = 0; array_index < array_count; array_index++) {
-			uint32 input_node_index = execution_graph.get_node_incoming_edge_index(node_index, array_index);
-			uint32 source_node_index = execution_graph.get_node_incoming_edge_index(input_node_index, 0);
-			bool source_node_is_constant = (execution_graph.get_node_type(source_node_index) == k_execution_graph_node_type_constant);
-
-			settings.element_lists->push_back(t_element());
-			t_element &element = settings.element_lists->back();
-
-			if (source_node_is_constant) {
-				settings.set_element_constant(element, execution_graph, source_node_index);
-			} else {
-				// Store the node index for now
-				settings.set_element_buffer_index_value(element, source_node_index);
-			}
-		}
-	}
-
-	// We store the offset in the pointer, which we will later convert
-	const t_element *start_offset_pointer = reinterpret_cast<const t_element *>(start_offset);
-	return t_array(start_offset_pointer, array_count);
 }
 
 void c_task_graph::build_task_successor_lists(const c_execution_graph &execution_graph,
@@ -1502,4 +1439,80 @@ void c_task_graph::calculate_buffer_usages() {
 
 		m_buffer_usages[it.get_buffer_index()]++;
 	}
+}
+
+template<typename t_build_array_settings>
+typename t_build_array_settings::t_array build_array(const c_execution_graph &execution_graph,
+	t_build_array_settings &settings, uint32 node_index, bool &out_is_constant) {
+	// Build a list of array elements using the array node at node_index. Note that at this point, we're actually
+	// storing the node indices in the element buffer_index_value field - we will later convert these to buffer indices.
+
+	typedef typename t_build_array_settings::t_array t_array;
+	typedef typename t_build_array_settings::t_element t_element;
+
+	wl_assert(execution_graph.get_node_type(node_index) == k_execution_graph_node_type_constant);
+	wl_assert(execution_graph.get_constant_node_data_type(node_index) ==
+		c_native_module_data_type(t_build_array_settings::k_native_module_primitive_type, true));
+
+	size_t array_count = execution_graph.get_node_incoming_edge_count(node_index);
+
+	// First scan the list of elements to see if this array has already been instantiated
+	out_is_constant = true;
+	bool match = false;
+	size_t start_offset = static_cast<size_t>(-1);
+	for (size_t start_index = 0; match && (start_index + array_count < settings.element_lists->size()); start_index++) {
+		// Check if the next N elements match starting at start_index
+		bool match_inner = true;
+		for (size_t array_index = 0; match_inner && array_index < array_count; array_index++) {
+			uint32 input_node_index = execution_graph.get_node_incoming_edge_index(node_index, array_index);
+			uint32 source_node_index = execution_graph.get_node_incoming_edge_index(input_node_index, 0);
+			bool source_node_is_constant =
+				(execution_graph.get_node_type(source_node_index) == k_execution_graph_node_type_constant);
+
+			const t_element &element = (*settings.element_lists)[start_index + array_index];
+			bool is_element_constant = settings.is_element_constant(element);
+
+			if (is_element_constant && source_node_is_constant) {
+				match_inner = settings.compare_element_to_constant_node(element, execution_graph, source_node_index);
+			} else if (!is_element_constant && !source_node_is_constant) {
+				// Recall that this is currently storing the node index
+				match_inner = (settings.get_element_buffer_index_value(element) == source_node_index);
+				out_is_constant = false;
+			} else {
+				match_inner = false;
+			}
+		}
+
+		if (match_inner) {
+			match = true;
+			start_offset = start_index;
+		}
+	}
+
+	if (!match) {
+		// If we didn't match, we need to construct elements
+		start_offset = settings.element_lists->size();
+
+		out_is_constant = true;
+		for (size_t array_index = 0; array_index < array_count; array_index++) {
+			uint32 input_node_index = execution_graph.get_node_incoming_edge_index(node_index, array_index);
+			uint32 source_node_index = execution_graph.get_node_incoming_edge_index(input_node_index, 0);
+			bool source_node_is_constant =
+				(execution_graph.get_node_type(source_node_index) == k_execution_graph_node_type_constant);
+
+			settings.element_lists->push_back(t_element());
+			t_element &element = settings.element_lists->back();
+
+			if (source_node_is_constant) {
+				settings.set_element_constant(element, execution_graph, source_node_index);
+			} else {
+				// Store the node index for now
+				settings.set_element_buffer_index_value(element, source_node_index);
+			}
+		}
+	}
+
+	// We store the offset in the pointer, which we will later convert
+	const t_element *start_offset_pointer = reinterpret_cast<const t_element *>(start_offset);
+	return t_array(start_offset_pointer, array_count);
 }

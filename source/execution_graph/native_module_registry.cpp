@@ -36,8 +36,9 @@ enum e_native_module_registry_state {
 	k_native_module_registry_state_count,
 };
 
-struct s_native_module_library {
-	c_static_string<k_max_native_module_library_name_length> library_name;
+struct s_native_module_internal {
+	s_native_module native_module;
+	e_native_operator native_operator;
 };
 
 struct s_native_operator {
@@ -54,7 +55,7 @@ struct std::hash<s_native_module_uid> {
 struct s_native_module_registry_data {
 	std::unordered_map<uint32, s_native_module_library> native_module_libraries;
 
-	std::vector<s_native_module> native_modules;
+	std::vector<s_native_module_internal> native_modules;
 	std::unordered_map<s_native_module_uid, uint32> native_module_uids_to_indices;
 	s_static_array<s_native_operator, k_native_operator_count> native_operators;
 
@@ -65,7 +66,8 @@ struct s_native_module_registry_data {
 static e_native_module_registry_state g_native_module_registry_state = k_native_module_registry_state_uninitialized;
 static s_native_module_registry_data g_native_module_registry_data;
 
-static bool do_native_modules_conflict(const s_native_module &native_module_a, const s_native_module &native_module_b);
+static bool do_native_modules_conflict(
+	const s_native_module_internal &native_module_a, const s_native_module_internal &native_module_b);
 
 #if IS_TRUE(ASSERTS_ENABLED)
 static void validate_optimization_rule(const s_native_module_optimization_rule &optimization_rule);
@@ -115,7 +117,7 @@ bool c_native_module_registry::end_registration() {
 		for (uint32 native_module_index = 0;
 			 !found && native_module_index < g_native_module_registry_data.native_modules.size();
 			 native_module_index++) {
-			found = (g_native_module_registry_data.native_modules[native_module_index].name ==
+			found = (g_native_module_registry_data.native_modules[native_module_index].native_module.name ==
 				g_native_module_registry_data.native_operators[index].native_module_name);
 		}
 
@@ -128,19 +130,30 @@ bool c_native_module_registry::end_registration() {
 	return true;
 }
 
-bool c_native_module_registry::register_native_module_library(uint32 library_id, const char *library_name) {
+bool c_native_module_registry::register_native_module_library(const s_native_module_library &library) {
 	wl_assert(g_native_module_registry_state == k_native_module_registry_state_registering);
 
 	// Make sure there isn't already a library registered with this ID
-	auto it = g_native_module_registry_data.native_module_libraries.find(library_id);
+	auto it = g_native_module_registry_data.native_module_libraries.find(library.id);
 	if (it != g_native_module_registry_data.native_module_libraries.end()) {
 		return false;
 	}
 
-	s_native_module_library library;
-	library.library_name.set_verify(library_name);
-	g_native_module_registry_data.native_module_libraries.insert(std::make_pair(library_id, library));
+	// $TODO $PLUGIN make sure there isn't a library with the same name
+
+	g_native_module_registry_data.native_module_libraries.insert(std::make_pair(library.id, library));
 	return true;
+}
+
+bool c_native_module_registry::is_native_module_library_registered(uint32 library_id) {
+	auto it = g_native_module_registry_data.native_module_libraries.find(library_id);
+	return it != g_native_module_registry_data.native_module_libraries.end();
+}
+
+const s_native_module_library &c_native_module_registry::get_native_module_library(uint32 library_id) {
+	wl_assert(is_native_module_library_registered(library_id));
+	auto it = g_native_module_registry_data.native_module_libraries.find(library_id);
+	return it->second;
 }
 
 bool c_native_module_registry::register_native_module(const s_native_module &native_module) {
@@ -161,6 +174,9 @@ bool c_native_module_registry::register_native_module(const s_native_module &nat
 	}
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
+	s_native_module_internal native_module_internal;
+	native_module_internal.native_module = native_module;
+
 	// Check that the library referenced by the UID is registered
 	{
 		auto it = g_native_module_registry_data.native_module_libraries.find(native_module.uid.get_library_id());
@@ -175,11 +191,20 @@ bool c_native_module_registry::register_native_module(const s_native_module &nat
 		return false;
 	}
 
+	// Determine whether this native module is a native operator
+	native_module_internal.native_operator = k_native_operator_invalid;
+	for (uint32 operator_index = 0; operator_index < k_native_operator_count; operator_index++) {
+		if (native_module.name == g_native_module_registry_data.native_operators[operator_index].native_module_name) {
+			native_module_internal.native_operator = static_cast<e_native_operator>(operator_index);
+			break;
+		}
+	}
+
 	// Check that this native module isn't identical to an existing one
 	for (uint32 other_index = 0; other_index < g_native_module_registry_data.native_modules.size(); other_index++) {
-		const s_native_module &other_native_module = g_native_module_registry_data.native_modules[other_index];
+		const s_native_module_internal &other_native_module = g_native_module_registry_data.native_modules[other_index];
 
-		if (do_native_modules_conflict(native_module, other_native_module)) {
+		if (do_native_modules_conflict(native_module_internal, other_native_module)) {
 			return false;
 		}
 	}
@@ -187,8 +212,7 @@ bool c_native_module_registry::register_native_module(const s_native_module &nat
 	uint32 index = cast_integer_verify<uint32>(g_native_module_registry_data.native_modules.size());
 
 	// Append the native module
-	g_native_module_registry_data.native_modules.push_back(s_native_module());
-	memcpy(&g_native_module_registry_data.native_modules.back(), &native_module, sizeof(native_module));
+	g_native_module_registry_data.native_modules.push_back(native_module_internal);
 
 	g_native_module_registry_data.native_module_uids_to_indices.insert(
 		std::make_pair(native_module.uid, index));
@@ -200,9 +224,18 @@ void c_native_module_registry::register_native_operator(
 	e_native_operator native_operator, const char *native_module_name) {
 	wl_assert(g_native_module_registry_state == k_native_module_registry_state_registering);
 
+	wl_vassert(g_native_module_registry_data.native_modules.empty(),
+		"Native operators must be registered before native modules");
+
 	wl_assert(VALID_INDEX(native_operator, k_native_operator_count));
 	wl_assert(strlen(native_module_name) <= k_max_native_module_name_length - 1);
 	g_native_module_registry_data.native_operators[native_operator].native_module_name.set_verify(native_module_name);
+}
+
+e_native_operator c_native_module_registry::get_native_module_operator(s_native_module_uid native_module_uid) {
+	uint32 native_module_index = get_native_module_index(native_module_uid);
+	wl_assert(native_module_index != k_invalid_native_module_index);
+	return g_native_module_registry_data.native_modules[native_module_index].native_operator;
 }
 
 bool c_native_module_registry::register_optimization_rule(const s_native_module_optimization_rule &optimization_rule) {
@@ -233,7 +266,7 @@ uint32 c_native_module_registry::get_native_module_index(s_native_module_uid nat
 
 const s_native_module &c_native_module_registry::get_native_module(uint32 index) {
 	wl_assert(VALID_INDEX(index, get_native_module_count()));
-	return g_native_module_registry_data.native_modules[index];
+	return g_native_module_registry_data.native_modules[index].native_module;
 }
 
 const char *c_native_module_registry::get_native_module_for_native_operator(e_native_operator native_operator) {
@@ -298,7 +331,7 @@ bool c_native_module_registry::output_registered_native_modules(const char *file
 	for (size_t index = 0; index < g_native_module_registry_data.native_modules.size(); index++) {
 		s_output_item item;
 		item.type = s_output_item::k_type_native_module;
-		item.uid = g_native_module_registry_data.native_modules[index].uid;
+		item.uid = g_native_module_registry_data.native_modules[index].native_module.uid;
 		output_items.push_back(item);
 	}
 
@@ -317,7 +350,7 @@ bool c_native_module_registry::output_registered_native_modules(const char *file
 
 			const s_native_module_library &library =
 				g_native_module_registry_data.native_module_libraries[item.uid.get_library_id()];
-			out << library.library_name.get_string() << ":\n";
+			out << library.name.get_string() << ":\n";
 			break;
 		}
 
@@ -388,8 +421,18 @@ bool c_native_module_registry::output_registered_native_modules(const char *file
 	return true;
 }
 
-static bool do_native_modules_conflict(const s_native_module &native_module_a, const s_native_module &native_module_b) {
-	if (native_module_a.name != native_module_b.name) {
+static bool do_native_modules_conflict(
+	const s_native_module_internal &native_module_a, const s_native_module_internal &native_module_b) {
+	if (native_module_a.native_operator == k_native_operator_invalid &&
+		native_module_b.native_operator == k_native_operator_invalid) {
+		// If we're not comparing operators and the libraries don't match, these native modules will never conflict
+		// because the library prefix will prevent conflicts
+		if (native_module_a.native_module.uid.get_library_id() != native_module_b.native_module.uid.get_library_id()) {
+			return false;
+		}
+	}
+
+	if (native_module_a.native_module.name != native_module_b.native_module.name) {
 		return false;
 	}
 
@@ -397,10 +440,10 @@ static bool do_native_modules_conflict(const s_native_module &native_module_a, c
 	// conflicts, because using qualifiers would cause ambiguity. The return value cannot be used to resolve overloads,
 	// so we need to do a bit of work if the first output argument is used as the return value.
 
-	size_t argument_count_a = (native_module_a.return_argument_index == k_invalid_argument_index) ?
-		native_module_a.argument_count : native_module_a.argument_count - 1;
-	size_t argument_count_b = (native_module_a.return_argument_index == k_invalid_argument_index) ?
-		native_module_b.argument_count : native_module_b.argument_count - 1;
+	size_t argument_count_a = (native_module_a.native_module.return_argument_index == k_invalid_argument_index) ?
+		native_module_a.native_module.argument_count : native_module_a.native_module.argument_count - 1;
+	size_t argument_count_b = (native_module_a.native_module.return_argument_index == k_invalid_argument_index) ?
+		native_module_b.native_module.argument_count : native_module_b.native_module.argument_count - 1;
 
 	if (argument_count_a != argument_count_b) {
 		return false;
@@ -413,16 +456,16 @@ static bool do_native_modules_conflict(const s_native_module &native_module_a, c
 	for (size_t arg = 0; all_match && arg < argument_count_a; arg++) {
 		// Skip the return arguments
 
-		if (arg_a_index == native_module_a.return_argument_index) {
+		if (arg_a_index == native_module_a.native_module.return_argument_index) {
 			arg_a_index++;
 		}
 
-		if (arg_b_index == native_module_b.return_argument_index) {
+		if (arg_b_index == native_module_b.native_module.return_argument_index) {
 			arg_b_index++;
 		}
 
-		if (native_module_a.arguments[arg_a_index].type.get_data_type() !=
-			native_module_b.arguments[arg_b_index].type.get_data_type()) {
+		if (native_module_a.native_module.arguments[arg_a_index].type.get_data_type() !=
+			native_module_b.native_module.arguments[arg_b_index].type.get_data_type()) {
 			all_match = false;
 		}
 

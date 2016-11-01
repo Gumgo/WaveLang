@@ -1,7 +1,7 @@
 #include "compiler/lexer.h"
 #include "compiler/parser.h"
 
-#define OUTPUT_PARSE_TREE_ENABLED 1
+#define OUTPUT_PARSE_TREE_ENABLED 0
 
 #if IS_TRUE(OUTPUT_PARSE_TREE_ENABLED)
 #include "common/utility/graphviz_generator.h"
@@ -218,7 +218,6 @@ static const char *k_parse_tree_output_terminal_strings[] = {
 	"operator-multiplication",
 	"operator-division",
 	"operator-modulo",
-	"operator-concatenation",
 	"operator-not",
 	"operator-equal",
 	"operator-not-equal",

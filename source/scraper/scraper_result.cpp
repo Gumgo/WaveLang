@@ -16,6 +16,18 @@ void c_scraper_result::add_optimization_rule(const s_optimization_rule_declarati
 	m_optimization_rule_declarations.push_back(optimization_rule);
 }
 
+void c_scraper_result::add_task_memory_query(const s_task_memory_query_declaration &task_memory_query) {
+	m_task_memory_query_declarations.push_back(task_memory_query);
+}
+
+void c_scraper_result::add_task_initializer(const s_task_initializer_declaration &task_initializer) {
+	m_task_initializer_declarations.push_back(task_initializer);
+}
+
+void c_scraper_result::add_task_voice_initializer(const s_task_voice_initializer_declaration &task_voice_initializer) {
+	m_task_voice_initializer_declarations.push_back(task_voice_initializer);
+}
+
 void c_scraper_result::add_task_function(const s_task_function_declaration &task_function) {
 	m_task_function_declarations.push_back(task_function);
 }
@@ -41,6 +53,30 @@ size_t c_scraper_result::get_optimization_rule_count() const {
 
 const s_optimization_rule_declaration &c_scraper_result::get_optimization_rule(size_t index) const {
 	return m_optimization_rule_declarations[index];
+}
+
+size_t c_scraper_result::get_task_memory_query_count() const {
+	return m_task_memory_query_declarations.size();
+}
+
+const s_task_memory_query_declaration &c_scraper_result::get_task_memory_query(size_t index) const {
+	return m_task_memory_query_declarations[index];
+}
+
+size_t c_scraper_result::get_task_initializer_count() const {
+	return m_task_initializer_declarations.size();
+}
+
+const s_task_initializer_declaration &c_scraper_result::get_task_initializer(size_t index) const {
+	return m_task_initializer_declarations[index];
+}
+
+size_t c_scraper_result::get_task_voice_initializer_count() const {
+	return m_task_voice_initializer_declarations.size();
+}
+
+const s_task_voice_initializer_declaration &c_scraper_result::get_task_voice_initializer(size_t index) const {
+	return m_task_voice_initializer_declarations[index];
 }
 
 size_t c_scraper_result::get_task_function_count() const {

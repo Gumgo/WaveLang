@@ -1,14 +1,16 @@
 #include "common/common.h"
 
 #include "scraper/ast_visitor.h"
-#include "scraper/registration_generator.h"
+#include "scraper/native_module_registration_generator.h"
 #include "scraper/scraper_result.h"
+#include "scraper/task_function_registration_generator.h"
 
 #pragma warning(push, 0) // Disable warnings for LLVM
 #include <clang/Tooling/CommonOptionsParser.h>
 #include <clang/Tooling/Tooling.h>
 #pragma warning(pop)
 
+#include <fstream>
 #include <vector>
 
 // Classes required to run clang:
@@ -64,6 +66,13 @@ int main(int argc, const char **argv) {
 			llvm::cl::Required,
 			llvm::cl::cat(scraper_options_category));
 
+		llvm::cl::opt<std::string> task_function_registration_function_name_option(
+			"t",
+			llvm::cl::desc("Task function registration function name"),
+			llvm::cl::value_desc("function name"),
+			llvm::cl::Required,
+			llvm::cl::cat(scraper_options_category));
+
 		clang::tooling::CommonOptionsParser common_options_parser(argc, argv, scraper_options_category);
 
 		llvm::ArrayRef<std::string> source_path_list(
@@ -76,10 +85,29 @@ int main(int argc, const char **argv) {
 		clang_tool.run(&action_factory);
 
 		if (scraper_result.get_success()) {
-			if (!generate_native_module_registration(
+			std::ofstream out(output_filename_option.getValue());
+			if (!out.is_open()) {
+				result = 1;
+			} else {
+				// Generate header
+				out << "// THIS FILE IS AUTO-GENERATED - DO NOT EDIT\n\n";
+			}
+
+			if (result == 0 && !generate_native_module_registration(
 				&scraper_result,
 				native_module_registration_function_name_option.getValue().c_str(),
-				output_filename_option.getValue().c_str())) {
+				out)) {
+				result = 1;
+			}
+
+			if (result == 0 && !generate_task_function_registration(
+				&scraper_result,
+				task_function_registration_function_name_option.getValue().c_str(),
+				out)) {
+				result = 1;
+			}
+
+			if (result == 0 && out.fail()) {
 				result = 1;
 			}
 		} else {

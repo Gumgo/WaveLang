@@ -123,6 +123,9 @@ namespace compiler_utility {
 	// Finds the length of the identifier starting at str. Returns 0 if there is no valid identifier there.
 	size_t find_identifier_length(c_compiler_string str);
 
+	// Returns whether the given string is a valid identifier
+	bool is_valid_identifier(const char *str);
+
 	bool is_valid_start_identifier_character(char c);
 	bool is_valid_identifier_character(char c);
 

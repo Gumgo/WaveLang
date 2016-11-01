@@ -20,7 +20,6 @@ static const char *k_native_operator_names[] = {
 	"operator_*",
 	"operator_/",
 	"operator_%",
-	"operator_.",
 	"operator_!",
 	"operator_==",
 	"operator_!=",

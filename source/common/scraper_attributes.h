@@ -9,38 +9,60 @@
 #define SCRAPER_ATTRIBUTE(x)
 #endif // SCRAPER_ENABLED
 
-#define SCRAPER_STANDALONE_ATTRIBUTE(x) struct SCRAPER_ATTRIBUTE(x) s_attribute_placeholder
-
-#define WL_LIBRARY_PREFIX "wl_library:"
-#define WL_NATIVE_MODULE_DECLARATION "wl_native_module_declaration"
-#define WL_UID_PREFIX "wl_uid:"
+// Convention:
+// If an argument is expected, use _PREFIX suffix and end the annotation with ':'
+// Otherwise, end the annotation with '.'
+#define WL_LIBRARY_DECLARATION "wl_library_declaration."
+#define WL_NATIVE_MODULE_DECLARATION "wl_native_module_declaration."
+#define WL_ID_PREFIX "wl_id:"
 #define WL_NAME_PREFIX "wl_name:"
+#define WL_VERSION_PREFIX "wl_version."
 #define WL_OPERATOR_PREFIX "wl_operator:"
-#define WL_RUNTIME_ONLY "wl_runtime_only"
-#define WL_IN "wl_in"
-#define WL_OUT "wl_out"
-#define WL_IN_CONST "wl_in_const"
-#define WL_OUT_RETURN "wl_out_return"
+#define WL_RUNTIME_ONLY "wl_runtime_only."
+#define WL_IN "wl_in."
+#define WL_OUT "wl_out."
+#define WL_IN_CONST "wl_in_const."
+#define WL_OUT_RETURN "wl_out_return."
 #define WL_OPTIMIZATION_RULE_PREFIX "wl_optimization_rule:"
+#define WL_TASK_FUNCTION_DECLARATION "wl_task_function_declaration."
+#define WL_SOURCE_PREFIX "wl_source:"
+#define WL_IN_SOURCE_PREFIX "wl_in_source:"
+#define WL_OUT_SOURCE_PREFIX "wl_out_source:"
+#define WL_TASK_MEMORY_QUERY "wl_task_memory_query."
+#define WL_TASK_MEMORY_QUERY_FUNCTION_PREFIX "wl_task_memory_query_function:"
+#define WL_TASK_INITIALIZER "wl_task_initializer."
+#define WL_TASK_INITIALIZER_FUNCTION_PREFIX "wl_task_initializer_function:"
+#define WL_TASK_VOICE_INITIALIZER "wl_task_voice_initializer."
+#define WL_TASK_VOICE_INITIALIZER_FUNCTION_PREFIX "wl_task_voice_initializer_function:"
 
-// Defines a library
-#define wl_library(id, name) SCRAPER_STANDALONE_ATTRIBUTE(WL_LIBRARY_PREFIX #id "," name)
+// Declares a library
+#define wl_library_declaration SCRAPER_ATTRIBUTE(WL_LIBRARY_DECLARATION)
 
 // Defines a native module
 #define wl_native_module_declaration SCRAPER_ATTRIBUTE(WL_NATIVE_MODULE_DECLARATION)
 
-// Assigns a UID to a native module
-#define wl_uid(uid) SCRAPER_ATTRIBUTE(WL_UID_PREFIX #uid)
+// Assigns an ID to a library, native module, or task function
+#define wl_id(id) SCRAPER_ATTRIBUTE(WL_ID_PREFIX #id)
 
-// Assigns a script-visible name to a native module. Optionally, this can take the form "name$overload_identifier". Only
-// the "name" portion will be stored, but the full identifier can be used to uniquely identify this overload in
-// optimization rules.
+// Assigns a script-visible name to a library, native module, or task function. Optionally, for native modules, this can
+// take the form "name$overload_identifier". Only the "name" portion will be stored, but the full identifier can be used
+// to uniquely identify this overload in optimization rules.
 #define wl_name(name) SCRAPER_ATTRIBUTE(WL_NAME_PREFIX name)
 
-// Helper macro which covers native module declaration, UID, and name
-#define wl_native_module(uid, name)	\
+// Assigns a version number to a library
+#define wl_version(version) SCRAPER_ATTRIBUTE(WL_VERSION_PREFIX #version)
+
+// Helper macro which covers library declaration, ID, name, and version
+#define wl_library(id, name, version)	\
+	wl_library_declaration				\
+	wl_id(id)							\
+	wl_name(name)						\
+	wl_version(version)
+
+// Helper macro which covers native module declaration, ID, and name
+#define wl_native_module(id, name)	\
 	wl_native_module_declaration	\
-	wl_uid(uid)						\
+	wl_id(id)						\
 	wl_name(name)
 
 // Associates an operator with the native module. A name should also be provided but it is only used for identification
@@ -68,12 +90,52 @@
 // meaning that if the expression "x" is identified, it will be replaced with "y" during optimization. Expressions can
 // be built using the following pieces:
 // - module_name$overload_identifier(x, y, z, ...) - Represents a native module call, where x, y, z, ... are the
-//   arguments. Example: addition$real(x, y)
+//   arguments. Optional syntax: library_name.module_name$overload_identifier. Example: addition$real(x, y)
 // - variable[index] - Represents an array dereference operation. Example: x[0]
 // - identifier - Used to represent a variable to be matched between the pre- and post-optimization expression.
 // - const identifier - Same as above, but the variable is only matched if it is compile-time constant.
 // - <real value> - matches with a real value.
 // - true, false - matches with a boolean value.
-#define wl_optimization_rule(rule) SCRAPER_STANDALONE_ATTRIBUTE(WL_OPTIMIZATION_RULE_PREFIX #rule)
+#define wl_optimization_rule(rule) SCRAPER_ATTRIBUTE(WL_OPTIMIZATION_RULE_PREFIX #rule)
+
+// Defines a task function
+#define wl_task_function_declaration SCRAPER_ATTRIBUTE(WL_TASK_FUNCTION_DECLARATION)
+
+// Associates a task function with a native module source
+#define wl_source(source) SCRAPER_ATTRIBUTE(WL_SOURCE_PREFIX source)
+
+// Helper macro which covers task function declaration, ID, name, and native module source
+#define wl_task_function(id, name, source)	\
+	wl_task_function_declaration			\
+	wl_id(id)								\
+	wl_name(name)							\
+	wl_source(source)
+
+// An input parameter taking its source from native module parameter "source"
+#define wl_in_source(source) SCRAPER_ATTRIBUTE(WL_IN_SOURCE_PREFIX source)
+
+// An output parameter taking its source from native module parameter "source"
+#define wl_out_source(source) SCRAPER_ATTRIBUTE(WL_OUT_SOURCE_PREFIX source)
+
+// An inout parameter taking its in and out sources from native module parameters "in_source" and "out_source"
+#define wl_inout_source(in_source, out_source) wl_in_source(in_source) wl_out_source(out_source)
+
+// Declares a task memory query function
+#define wl_task_memory_query SCRAPER_ATTRIBUTE(WL_TASK_MEMORY_QUERY)
+
+// Associates the provided task memory query function with the task function being declared
+#define wl_task_memory_query_function(func) SCRAPER_ATTRIBUTE(WL_TASK_MEMORY_QUERY_FUNCTION_PREFIX func)
+
+// Declares a task initializer function
+#define wl_task_initializer SCRAPER_ATTRIBUTE(WL_TASK_INITIALIZER)
+
+// Associates the provided task initializer function with the task function being declared
+#define wl_task_initializer_function(func) SCRAPER_ATTRIBUTE(WL_TASK_INITIALIZER_FUNCTION_PREFIX func)
+
+// Declares a task voice initializer function
+#define wl_task_voice_initializer SCRAPER_ATTRIBUTE(WL_TASK_VOICE_INITIALIZER)
+
+// Associates the provided task voice initializer function with the task function being declared
+#define wl_task_voice_initializer_function(func) SCRAPER_ATTRIBUTE(WL_TASK_VOICE_INITIALIZER_FUNCTION_PREFIX func)
 
 #endif // WAVELANG_COMMON_SCRAPER_ATTRIBUTES_H__

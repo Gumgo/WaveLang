@@ -12,3 +12,8 @@ clang::DiagnosticBuilder c_diagnostic::error(const clang::SourceLocation &source
 	// Report the diagnostic and return an object we can use the << operator on
 	return m_compiler_instance.getDiagnostics().Report(source_location, diagnostic_id);
 }
+
+clang::DiagnosticBuilder c_diagnostic::error(const clang::Decl *decl, const char *message_format) {
+	wl_assert(decl);
+	return error(decl->getSourceRange().getBegin(), message_format);
+}

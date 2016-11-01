@@ -37,16 +37,7 @@ void c_preprocessor::register_preprocessor_command(const char *command_name,
 #ifdef ASSERTS_ENABLED
 	// Validate the name
 	wl_assert(command_name);
-	{
-		const char *ch = command_name;
-		wl_assert(*ch != '\0');
-		wl_assert(compiler_utility::is_valid_start_identifier_character(*ch));
-		ch++;
-		while (*ch != '\0') {
-			wl_assert(compiler_utility::is_valid_identifier_character(*ch));
-			ch++;
-		}
-	}
+	wl_assert(compiler_utility::is_valid_identifier(command_name));
 
 	// Make sure the command name is unique
 	for (size_t index = 0; index < g_preprocessor_command_executor_count; index++) {

@@ -115,6 +115,8 @@ bool c_task_function_registry::register_task_function(const s_task_function &tas
 	}
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
+	// $TODO $PLUGIN Check that the library referenced by the UID is registered
+
 	// Check that the UID isn't already in use
 	if (g_task_function_registry_data.task_function_uids_to_indices.find(task_function.uid) !=
 		g_task_function_registry_data.task_function_uids_to_indices.end()) {
@@ -149,6 +151,7 @@ bool c_task_function_registry::register_task_function_mapping_list(
 	// Don't double-register
 	wl_assert(list.mapping_count == 0);
 
+	// $TODO $PLUGIN validate that the library UID on all tasks matches the library UID on the native module
 #if IS_TRUE(ASSERTS_ENABLED)
 	const s_native_module &native_module = c_native_module_registry::get_native_module(native_module_index);
 	// Validate each mapping
@@ -214,10 +217,10 @@ static void validate_task_function_mapping(
 	// Ensure that all indices are valid and that all mapping types match
 	for (size_t arg = 0; arg < native_module.argument_count; arg++) {
 		e_task_function_mapping_native_module_input_type input_type =
-			task_function_mapping.native_module_input_types[arg];
+			task_function_mapping.native_module_argument_mapping[arg].input_type;
 
 		// Make sure we're mapping to a valid task argument index
-		uint32 mapping_index = task_function_mapping.native_module_argument_mapping.mapping[arg];
+		uint32 mapping_index = task_function_mapping.native_module_argument_mapping[arg].task_function_argument_index;
 		wl_assert(VALID_INDEX(mapping_index, task_function.argument_count));
 
 		c_native_module_data_type native_module_type = native_module.arguments[arg].type.get_data_type();

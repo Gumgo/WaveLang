@@ -15,6 +15,12 @@ static const size_t k_max_native_module_arguments = 10;
 static const size_t k_max_native_module_argument_name_length = 16;
 static const size_t k_invalid_argument_index = static_cast<size_t>(-1);
 
+struct s_native_module_library {
+	uint32 id;
+	c_static_string<k_max_native_module_library_name_length> name;
+	uint32 version;
+};
+
 // Unique identifier for each native module
 struct s_native_module_uid {
 	// Unique identifier consists of 8 bytes
@@ -57,6 +63,8 @@ struct s_native_module_uid {
 
 // Fixed list of operators which are to be associated with native modules
 enum e_native_operator {
+	k_native_operator_invalid = -1,
+
 	k_native_operator_noop, // Special case "no-op" operator
 	k_native_operator_negation,
 	k_native_operator_addition,
@@ -64,7 +72,6 @@ enum e_native_operator {
 	k_native_operator_multiplication,
 	k_native_operator_division,
 	k_native_operator_modulo,
-	k_native_operator_concatenation,
 	k_native_operator_not,
 	k_native_operator_equal,
 	k_native_operator_not_equal,

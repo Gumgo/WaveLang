@@ -1,8 +1,1 @@
 #include "execution_graph/native_modules/native_modules_controller.h"
-
-static uint32 g_next_module_id = 0;
-
-const s_native_module_uid k_native_module_controller_get_note_id_uid = s_native_module_uid::build(k_native_modules_controller_library_id, g_next_module_id++);
-const s_native_module_uid k_native_module_controller_get_note_velocity_uid = s_native_module_uid::build(k_native_modules_controller_library_id, g_next_module_id++);
-const s_native_module_uid k_native_module_controller_get_note_press_duration_uid = s_native_module_uid::build(k_native_modules_controller_library_id, g_next_module_id++);
-const s_native_module_uid k_native_module_controller_get_note_release_duration_uid = s_native_module_uid::build(k_native_modules_controller_library_id, g_next_module_id++);

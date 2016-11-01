@@ -308,7 +308,7 @@ c_lr_action_goto_table::c_lr_action_goto_table() {
 
 uint32 c_lr_action_goto_table::get_state_count() const {
 #if IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
-	return m_action_table.size() / m_terminal_count;
+	return static_cast<uint32>(m_action_table.size() / m_terminal_count);
 #else // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 	return static_cast<uint32>(m_action_table.get_count() / m_terminal_count);
 #endif // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
@@ -792,7 +792,7 @@ void c_lr_parser::compute_symbols_follow_set() {
 					// remaining symbol string must be able to follow this current symbol.
 					size_t remaining_index = rhs_index + 1;
 					c_lr_symbol_set remaining_first_set = compute_symbol_string_first_set(
-						production.rhs + remaining_index, rhs_count - remaining_index);
+						&production.rhs[remaining_index], rhs_count - remaining_index);
 
 					size_t rhs_symbol_index = m_production_set.get_symbol_index(production.rhs[rhs_index]);
 					follow_set_changed |= m_symbol_properties_table[rhs_symbol_index].follow_set.union_with_set(
@@ -954,7 +954,7 @@ void c_lr_parser::compute_item_sets() {
 				} else {
 					// This is a reduce action
 					e_lr_conflict conflict = m_action_goto_table.set_action(item_set_index, item.lookahead.get_index(),
-						c_lr_action(k_lr_action_type_reduce, item.production_index));
+						c_lr_action(k_lr_action_type_reduce, static_cast<uint32>(item.production_index)));
 
 					// $TODO Better error handling
 					wl_assert(conflict == k_lr_conflict_none);

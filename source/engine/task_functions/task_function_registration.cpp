@@ -1,24 +1,21 @@
+#include "task_function_registration_inputs.h"
+
+#include "engine/task_function.h"
 #include "engine/task_function_registry.h"
 #include "engine/task_functions/task_function_registration.h"
 
-#include "engine/task_functions/task_functions_basic.h"
-#include "engine/task_functions/task_functions_utility.h"
-#include "engine/task_functions/task_functions_sampler.h"
-#include "engine/task_functions/task_functions_delay.h"
-#include "engine/task_functions/task_functions_filter.h"
-#include "engine/task_functions/task_functions_time.h"
-#include "engine/task_functions/task_functions_controller.h"
+#include "execution_graph/native_modules/native_module_registration.h"
+
+// Generated native module registration
+#define TASK_FUNCTION_REGISTRATION_ENABLED
+#include "generated/registration_generated.inl"
+#undef TASK_FUNCTION_REGISTRATION_ENABLED
 
 void register_task_functions() {
 	c_task_function_registry::begin_registration();
 
-	register_task_functions_basic();
-	register_task_functions_utility();
-	register_task_functions_sampler();
-	register_task_functions_delay();
-	register_task_functions_filter();
-	register_task_functions_time();
-	register_task_functions_controller();
+	//bool result = // $TODO $PLUGIN handle failure
+	register_task_functions_generated();
 
 	// $TODO plugin task functions would be registered here
 

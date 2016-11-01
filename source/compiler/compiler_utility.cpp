@@ -36,13 +36,69 @@ size_t compiler_utility::find_identifier_length(c_compiler_string str) {
 		}
 	}
 
+	bool last_char_was_dot = false;
 	for (size_t index = 1; index < str.get_length(); index++) {
-		if (!is_valid_identifier_character(str[index])) {
-			return index;
+		if (is_valid_identifier_character(str[index])) {
+			bool is_dot = (str[index] == '.');
+			if (is_dot && last_char_was_dot) {
+				// Can't have two dots in a row
+				return 0;
+			}
+
+			last_char_was_dot = is_dot;
+		} else {
+			if (last_char_was_dot) {
+				// Can't end in a dot
+				return 0;
+			} else {
+				return index;
+			}
 		}
 	}
 
+	if (last_char_was_dot) {
+		// Can't end in a dot
+		return 0;
+	}
+
 	return str.get_length();
+}
+
+bool compiler_utility::is_valid_identifier(const char *str) {
+	wl_assert(str);
+
+	if (!is_valid_start_identifier_character(str[0])) {
+		// Handles empty string - first character will be null terminator
+		return false;
+	}
+
+	const char *current_char = str + 1;
+	bool last_char_was_dot = false;
+	while (true) {
+		char ch = *current_char;
+		current_char++;
+
+		if (ch == '\0') {
+			break;
+		} else if (is_valid_identifier_character(ch)) {
+			bool is_dot = (ch == '.');
+			if (is_dot && last_char_was_dot) {
+				// Can't have two dots in a row
+				return false;
+			}
+
+			last_char_was_dot = is_dot;
+		} else {
+			return false;
+		}
+	}
+
+	if (last_char_was_dot) {
+		// Can't end in a dot
+		return false;
+	}
+
+	return true;
 }
 
 bool compiler_utility::is_valid_start_identifier_character(char c) {
@@ -50,7 +106,7 @@ bool compiler_utility::is_valid_start_identifier_character(char c) {
 }
 
 bool compiler_utility::is_valid_identifier_character(char c) {
-	return is_valid_start_identifier_character(c) || is_number(c);
+	return is_valid_start_identifier_character(c) || is_number(c) || (c == '.');
 }
 
 bool compiler_utility::is_number(char c) {

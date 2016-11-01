@@ -14,15 +14,6 @@
 // $TODO tracking time with floats in seconds seems imprecise... track in samples instead maybe?
 // $TODO add initial_delay parameter
 
-static const uint32 k_task_functions_sampler_library_id = 2;
-
-static const s_task_function_uid k_task_function_sampler_in_out_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 0);
-static const s_task_function_uid k_task_function_sampler_inout_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 1);
-
-static const s_task_function_uid k_task_function_sampler_loop_in_in_out_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 10);
-static const s_task_function_uid k_task_function_sampler_loop_inout_in_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 11);
-static const s_task_function_uid k_task_function_sampler_loop_in_inout_uid = s_task_function_uid::build(k_task_functions_sampler_library_id, 12);
-
 struct s_buffer_operation_sampler {
 	static size_t query_memory();
 	static void initialize(c_event_interface *event_interface, c_sample_library_requester *sample_requester,
@@ -1376,164 +1367,108 @@ static c_real32_4 shift_left_3(const c_real32_4 &a, const c_real32_4 &b) {
 	return shuffle<0, 2, 1, 2>(c, b);
 }
 
-static size_t task_memory_query_sampler(const s_task_function_context &context) {
-	return s_buffer_operation_sampler::query_memory();
-}
+namespace sampler_task_functions {
 
-static void task_initializer_sampler(const s_task_function_context &context) {
-	const char *name = context.arguments[0].get_string_constant_in();
-	real32 channel = context.arguments[1].get_real_constant_in();
-	s_buffer_operation_sampler::initialize(
-		context.event_interface,
-		context.sample_requester,
-		static_cast<s_buffer_operation_sampler *>(context.task_memory),
-		name, k_sample_loop_mode_none, false, channel);
-}
-
-static void task_voice_initializer_sampler(const s_task_function_context &context) {
-	s_buffer_operation_sampler::voice_initialize(static_cast<s_buffer_operation_sampler *>(context.task_memory));
-}
-
-static void task_function_sampler_in_out(const s_task_function_context &context) {
-	s_buffer_operation_sampler::in_out(
-		context.event_interface, context.arguments[0].get_string_constant_in(),
-		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
-		context.buffer_size,
-		context.sample_rate,
-		context.arguments[2].get_real_buffer_or_constant_in(),
-		context.arguments[3].get_real_buffer_out());
-}
-
-static void task_function_sampler_inout(const s_task_function_context &context) {
-	s_buffer_operation_sampler::inout(
-		context.event_interface, context.arguments[0].get_string_constant_in(),
-		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
-		context.buffer_size,
-		context.sample_rate,
-		context.arguments[2].get_real_buffer_inout());
-}
-
-static void task_initializer_sampler_loop_in_in_out(const s_task_function_context &context) {
-	const char *name = context.arguments[0].get_string_constant_in();
-	real32 channel = context.arguments[1].get_real_constant_in();
-	bool bidi = context.arguments[2].get_bool_constant_in();
-	real32 phase = context.arguments[4].is_constant() ?
-		context.arguments[4].get_real_buffer_or_constant_in().get_constant() : 0.0f;
-	phase = clamp(phase, 0.0f, 1.0f);
-	e_sample_loop_mode loop_mode = bidi ? k_sample_loop_mode_bidi_loop : k_sample_loop_mode_loop;
-	s_buffer_operation_sampler::initialize(
-		context.event_interface,
-		context.sample_requester,
-		static_cast<s_buffer_operation_sampler *>(context.task_memory),
-		name, loop_mode, (phase != 0.0f), channel);
-}
-
-static void task_function_sampler_loop_in_in_out(const s_task_function_context &context) {
-	s_buffer_operation_sampler::loop_in_in_out(
-		context.event_interface, context.arguments[0].get_string_constant_in(),
-		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
-		context.buffer_size,
-		context.sample_rate,
-		context.arguments[3].get_real_buffer_or_constant_in(),
-		context.arguments[4].get_real_buffer_or_constant_in(),
-		context.arguments[5].get_real_buffer_out());
-}
-
-static void task_initializer_sampler_loop_inout_in(const s_task_function_context &context) {
-	// Same as the in_in_out version, because the out argument is shared with time, not phase
-	task_initializer_sampler_loop_in_in_out(context);
-}
-
-static void task_function_sampler_loop_inout_in(const s_task_function_context &context) {
-	s_buffer_operation_sampler::loop_inout_in(
-		context.event_interface, context.arguments[0].get_string_constant_in(),
-		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
-		context.buffer_size,
-		context.sample_rate,
-		context.arguments[3].get_real_buffer_inout(),
-		context.arguments[4].get_real_buffer_or_constant_in());
-}
-
-static void task_initializer_sampler_loop_in_inout(const s_task_function_context &context) {
-	const char *name = context.arguments[0].get_string_constant_in();
-	real32 channel = context.arguments[1].get_real_constant_in();
-	bool bidi = context.arguments[2].get_bool_constant_in();
-	e_sample_loop_mode loop_mode = bidi ? k_sample_loop_mode_bidi_loop : k_sample_loop_mode_loop;
-	s_buffer_operation_sampler::initialize(
-		context.event_interface,
-		context.sample_requester,
-		static_cast<s_buffer_operation_sampler *>(context.task_memory),
-		name, loop_mode, true, channel);
-}
-
-static void task_function_sampler_loop_in_inout(const s_task_function_context &context) {
-	s_buffer_operation_sampler::loop_in_inout(
-		context.event_interface, context.arguments[0].get_string_constant_in(),
-		context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
-		context.buffer_size,
-		context.sample_rate,
-		context.arguments[3].get_real_buffer_or_constant_in(),
-		context.arguments[4].get_real_buffer_inout());
-}
-
-void register_task_functions_sampler() {
-	{
-		c_task_function_registry::register_task_function(
-			s_task_function::build(k_task_function_sampler_in_out_uid,
-				"sampler_in_out",
-				task_memory_query_sampler, task_initializer_sampler, task_voice_initializer_sampler, task_function_sampler_in_out,
-				s_task_function_argument_list::build(TDT(in, string), TDT(in, real), TDT(in, real), TDT(out, real))));
-
-		c_task_function_registry::register_task_function(
-			s_task_function::build(k_task_function_sampler_inout_uid,
-				"sampler_inout",
-				task_memory_query_sampler, task_initializer_sampler, task_voice_initializer_sampler, task_function_sampler_inout,
-				s_task_function_argument_list::build(TDT(in, string), TDT(in, real), TDT(inout, real))));
-
-		s_task_function_mapping mappings[] = {
-			s_task_function_mapping::build(k_task_function_sampler_inout_uid, "vvb.",
-				s_task_function_native_module_argument_mapping::build(0, 1, 2, 2)),
-
-			s_task_function_mapping::build(k_task_function_sampler_in_out_uid, "vvv.",
-				s_task_function_native_module_argument_mapping::build(0, 1, 2, 3)),
-
-		};
-
-		c_task_function_registry::register_task_function_mapping_list(
-			k_native_module_sampler_uid, c_task_function_mapping_list::construct(mappings));
+	size_t sampler_memory_query(const s_task_function_context &context) {
+		return s_buffer_operation_sampler::query_memory();
 	}
 
-	{
-		c_task_function_registry::register_task_function(
-			s_task_function::build(k_task_function_sampler_loop_in_in_out_uid,
-				"sampler_loop_in_in_out",
-				task_memory_query_sampler, task_initializer_sampler_loop_in_in_out, task_voice_initializer_sampler, task_function_sampler_loop_in_in_out,
-				s_task_function_argument_list::build(TDT(in, string), TDT(in, real), TDT(in, bool), TDT(in, real), TDT(in, real), TDT(out, real))));
-
-		c_task_function_registry::register_task_function(
-			s_task_function::build(k_task_function_sampler_loop_inout_in_uid,
-				"sampler_loop_inout_in",
-				task_memory_query_sampler, task_initializer_sampler_loop_inout_in, task_voice_initializer_sampler, task_function_sampler_loop_inout_in,
-				s_task_function_argument_list::build(TDT(in, string), TDT(in, real), TDT(in, bool), TDT(inout, real), TDT(in, real))));
-
-		c_task_function_registry::register_task_function(
-			s_task_function::build(k_task_function_sampler_loop_in_inout_uid,
-				"sampler_loop_in_inout",
-				task_memory_query_sampler, task_initializer_sampler_loop_in_inout, task_voice_initializer_sampler, task_function_sampler_loop_in_inout,
-				s_task_function_argument_list::build(TDT(in, string), TDT(in, real), TDT(in, bool), TDT(in, real), TDT(inout, real))));
-
-		s_task_function_mapping mappings[] = {
-			s_task_function_mapping::build(k_task_function_sampler_loop_inout_in_uid, "vvvbv.",
-			s_task_function_native_module_argument_mapping::build(0, 1, 2, 3, 4, 3)),
-
-			s_task_function_mapping::build(k_task_function_sampler_loop_in_inout_uid, "vvvvb.",
-				s_task_function_native_module_argument_mapping::build(0, 1, 2, 3, 4, 4)),
-
-			s_task_function_mapping::build(k_task_function_sampler_loop_in_in_out_uid, "vvvvv.",
-				s_task_function_native_module_argument_mapping::build(0, 1, 2, 3, 4, 5)),
-		};
-
-		c_task_function_registry::register_task_function_mapping_list(
-			k_native_module_sampler_loop_uid, c_task_function_mapping_list::construct(mappings));
+	void sampler_initializer(const s_task_function_context &context,
+		const char *name,
+		real32 channel) {
+		s_buffer_operation_sampler::initialize(
+			context.event_interface,
+			context.sample_requester,
+			static_cast<s_buffer_operation_sampler *>(context.task_memory),
+			name, k_sample_loop_mode_none, false, channel);
 	}
+
+	void sampler_voice_initializer(const s_task_function_context &context) {
+		s_buffer_operation_sampler::voice_initialize(static_cast<s_buffer_operation_sampler *>(context.task_memory));
+	}
+
+	void sampler_in_out(const s_task_function_context &context,
+		const char *name,
+		c_real_const_buffer_or_constant speed,
+		c_real_buffer *result) {
+		s_buffer_operation_sampler::in_out(
+			context.event_interface, name,
+			context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
+			context.buffer_size,
+			context.sample_rate,
+			speed,
+			result);
+	}
+
+	void sampler_inout(const s_task_function_context &context,
+		const char *name,
+		c_real_buffer *speed_result) {
+		s_buffer_operation_sampler::inout(
+			context.event_interface, name,
+			context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
+			context.buffer_size,
+			context.sample_rate,
+			speed_result);
+	}
+
+	void sampler_loop_initializer(const s_task_function_context &context,
+		const char *name,
+		real32 channel,
+		bool bidi,
+		c_real_const_buffer_or_constant phase) {
+		bool phase_shift_enabled = !phase.is_constant() || (clamp(phase.get_constant(), 0.0f, 1.0f) != 0.0f);
+		e_sample_loop_mode loop_mode = bidi ? k_sample_loop_mode_bidi_loop : k_sample_loop_mode_loop;
+		s_buffer_operation_sampler::initialize(
+			context.event_interface,
+			context.sample_requester,
+			static_cast<s_buffer_operation_sampler *>(context.task_memory),
+			name, loop_mode, phase_shift_enabled, channel);
+	}
+
+	void sampler_loop_in_in_out(const s_task_function_context &context,
+		const char *name,
+		c_real_const_buffer_or_constant speed,
+		c_real_const_buffer_or_constant phase,
+		c_real_buffer *result) {
+		s_buffer_operation_sampler::loop_in_in_out(
+			context.event_interface, name,
+			context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
+			context.buffer_size, context.sample_rate,
+			speed, phase, result);
+	}
+
+	void sampler_loop_inout_in(const s_task_function_context &context,
+		const char *name,
+		c_real_buffer *speed_result,
+		c_real_const_buffer_or_constant phase) {
+		s_buffer_operation_sampler::loop_inout_in(
+			context.event_interface, name,
+			context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
+			context.buffer_size, context.sample_rate,
+			speed_result, phase);
+	}
+
+	void sampler_loop_in_inout_initializer(const s_task_function_context &context,
+		const char *name,
+		real32 channel,
+		bool bidi) {
+		e_sample_loop_mode loop_mode = bidi ? k_sample_loop_mode_bidi_loop : k_sample_loop_mode_loop;
+		s_buffer_operation_sampler::initialize(
+			context.event_interface,
+			context.sample_requester,
+			static_cast<s_buffer_operation_sampler *>(context.task_memory),
+			name, loop_mode, true, channel);
+	}
+
+	void sampler_loop_in_inout(const s_task_function_context &context,
+		const char *name,
+		c_real_const_buffer_or_constant speed,
+		c_real_buffer *phase_result) {
+		s_buffer_operation_sampler::loop_in_inout(
+			context.event_interface, name,
+			context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
+			context.buffer_size, context.sample_rate,
+			speed, phase_result);
+	}
+
 }

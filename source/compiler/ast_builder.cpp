@@ -230,11 +230,24 @@ static std::vector<size_t> build_left_recursive_list(const c_lr_parse_tree &pars
 static void build_native_module_declarations(c_ast_node_scope *global_scope) {
 	for (uint32 index = 0; index < c_native_module_registry::get_native_module_count(); index++) {
 		const s_native_module &native_module = c_native_module_registry::get_native_module(index);
+		const s_native_module_library &library = c_native_module_registry::get_native_module_library(
+			native_module.uid.get_library_id());
 
 		c_ast_node_module_declaration *module_declaration = new c_ast_node_module_declaration();
 		module_declaration->set_is_native(true);
 		module_declaration->set_native_module_index(index);
-		module_declaration->set_name(native_module.name.get_string());
+
+		if (c_native_module_registry::get_native_module_operator(native_module.uid) == k_native_operator_invalid) {
+			// Set the name to "library.module_name"
+			std::string name = library.name.get_string();
+			name.push_back('.');
+			name += native_module.name.get_string();
+			module_declaration->set_name(name);
+		} else {
+			// Set the module name directly with no library prefix because it is used to identify an operator
+			module_declaration->set_name(native_module.name.get_string());
+		}
+
 		module_declaration->set_return_type(c_ast_data_type(k_ast_primitive_type_void));
 
 		bool return_argument_found = false;
@@ -966,11 +979,6 @@ static c_ast_node_module_call *build_binary_operator_call(const c_lr_parse_tree 
 	case k_token_type_operator_modulo:
 		operator_module_name =
 			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_modulo);
-		break;
-
-	case k_token_type_operator_concatenation:
-		operator_module_name =
-			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_concatenation);
 		break;
 
 	case k_token_type_operator_equal:

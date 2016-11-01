@@ -2,30 +2,30 @@
 #define WAVELANG_EXECUTION_GRAPH_NATIVE_MODULES_NATIVE_MODULES_CONTROLLER_H__
 
 #include "common/common.h"
+#include "common/scraper_attributes.h"
 
 #include "execution_graph/native_module.h"
 
-const uint32 k_native_modules_controller_library_id = 6;
-wl_library(k_native_modules_controller_library_id, "controller");
+const uint32 k_controller_library_id = 7;
 
-extern const s_native_module_uid k_native_module_controller_get_note_id_uid;
-wl_native_module(k_native_module_controller_get_note_id_uid, "controller_get_note_id")
-wl_runtime_only
-void native_module_controller_get_note_id(real32 wl_out_return &result);
+namespace controller_native_modules wl_library(k_controller_library_id, "controller", 0) {
 
-extern const s_native_module_uid k_native_module_controller_get_note_velocity_uid;
-wl_native_module(k_native_module_controller_get_note_velocity_uid, "controller_get_note_velocity")
-wl_runtime_only
-void native_module_controller_get_note_velocity(real32 wl_out_return &result);
+	wl_native_module(0x6b31d702, "get_note_id")
+	wl_runtime_only
+	void get_note_id(wl_out_return real32 &result);
 
-extern const s_native_module_uid k_native_module_controller_get_note_press_duration_uid;
-wl_native_module(k_native_module_controller_get_note_press_duration_uid, "controller_get_note_press_duration")
-wl_runtime_only
-void native_module_controller_get_note_press_duration(real32 wl_out_return &result);
+	wl_native_module(0x3b1024b5, "get_note_velocity")
+	wl_runtime_only
+	void get_note_velocity(wl_out_return real32 &result);
 
-extern const s_native_module_uid k_native_module_controller_get_note_release_duration_uid;
-wl_native_module(k_native_module_controller_get_note_release_duration_uid, "controller_get_note_release_duration")
-wl_runtime_only
-void native_module_controller_get_note_press_duration(real32 wl_out_return &result);
+	wl_native_module(0xfdfdc707, "get_note_press_duration")
+	wl_runtime_only
+	void get_note_press_duration(wl_out_return real32 &result);
+
+	wl_native_module(0xbe234212, "get_note_release_duration")
+	wl_runtime_only
+	void get_note_release_duration(wl_out_return real32 &result);
+
+}
 
 #endif // WAVELANG_EXECUTION_GRAPH_NATIVE_MODULES_NATIVE_MODULES_CONTROLLER_H__

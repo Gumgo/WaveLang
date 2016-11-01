@@ -4,7 +4,10 @@
 #include "execution_graph/native_module_registry.h"
 #include "execution_graph/native_modules/native_module_registration.h"
 
+// Generated native module registration
+#define NATIVE_MODULE_REGISTRATION_ENABLED
 #include "generated/registration_generated.inl"
+#undef NATIVE_MODULE_REGISTRATION_ENABLED
 
 void register_native_modules(bool optimizations_enabled) {
 	c_native_module_registry::begin_registration(optimizations_enabled);
@@ -17,7 +20,7 @@ void register_native_modules(bool optimizations_enabled) {
 	}
 
 	//bool result = // $TODO $PLUGIN handle failure
-	register_native_modules();
+	register_native_modules_generated();
 
 	// $TODO plugin native modules would be registered here
 

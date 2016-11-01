@@ -67,7 +67,6 @@ enum e_token_type {
 	k_token_type_operator_multiplication,
 	k_token_type_operator_division,
 	k_token_type_operator_modulo,
-	k_token_type_operator_concatenation,
 	k_token_type_operator_not,
 	k_token_type_operator_equal,
 	k_token_type_operator_not_equal,

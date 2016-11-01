@@ -1,4 +1,4 @@
-#include "scraper/registration_generator.h"
+#include "scraper/native_module_registration_generator.h"
 #include "scraper/scraper_result.h"
 
 #include <fstream>
@@ -38,7 +38,6 @@ static const char *k_native_operator_enum_strings[] = {
 	"k_native_operator_multiplication",
 	"k_native_operator_division",
 	"k_native_operator_modulo",
-	"k_native_operator_concatenation",
 	"k_native_operator_not",
 	"k_native_operator_equal",
 	"k_native_operator_not_equal",
@@ -96,7 +95,7 @@ private:
 	};
 
 	static e_token_type get_token_type(const std::string &token);
-	std::string find_native_module_uid_string(const std::string &native_module_identifier) const;
+	std::string get_native_module_uid_string(const std::string &native_module_identifier) const;
 	std::string get_build_identifier_string(const std::string &identifier, bool is_constant, bool building_source);
 	void write_symbol_prefix(std::ofstream &out) const;
 
@@ -113,29 +112,27 @@ private:
 };
 
 bool generate_native_module_registration(
-	const c_scraper_result *result, const char *registration_function_name, const char *fname) {
+	const c_scraper_result *result, const char *registration_function_name, std::ofstream &out) {
 	wl_assert(result);
-	wl_assert(fname);
+	wl_assert(registration_function_name);
 
-	std::ofstream out(fname);
-
-	// Generate header
-	out << "// THIS FILE IS AUTO-GENERATED - DO NOT EDIT" NEWLINE_STR NEWLINE_STR;
+	out << "#ifdef NATIVE_MODULE_REGISTRATION_ENABLED" NEWLINE_STR NEWLINE_STR;
 
 	// Generate native module call wrappers
 	for (size_t native_module_index = 0;
 		 native_module_index < result->get_native_module_count();
 		 native_module_index++) {
 		const s_native_module_declaration &native_module = result->get_native_module(native_module_index);
+		const s_library_declaration &library = result->get_library(native_module.library_index);
 
 		if (native_module.compile_time_call.empty()) {
 			// No compile-time call
 			continue;
 		}
 
-		out << "static void " << native_module.compile_time_call <<
+		out << "static void " << library.name << "_" << native_module.compile_time_call <<
 			"_call_wrapper(c_native_module_compile_time_argument_list arguments) {" NEWLINE_STR;
-		out << TAB_STR << native_module.compile_time_call << "(" NEWLINE_STR;
+		out << TAB_STR << native_module.compile_time_function_call << "(" NEWLINE_STR;
 
 		for (size_t arg = 0; arg < native_module.arguments.size(); arg++) {
 			c_native_module_qualified_data_type type = native_module.arguments[arg].type;
@@ -160,9 +157,14 @@ bool generate_native_module_registration(
 	// Generate library registration
 	for (size_t library_index = 0; library_index < result->get_library_count(); library_index++) {
 		const s_library_declaration &library = result->get_library(library_index);
-		out << TAB_STR "result &= c_native_module_registry::register_native_module_library(" <<
-			library.id_string << ", \"" <<
-			library.name << "\");" NEWLINE_STR;
+		out << TAB_STR "{" NEWLINE_STR;
+		out << TAB2_STR "s_native_module_library library;" NEWLINE_STR;
+		out << TAB2_STR "ZERO_STRUCT(&library);" NEWLINE_STR;
+		out << TAB2_STR "library.id = " << id_to_string(library.id) << ";" NEWLINE_STR;
+		out << TAB2_STR "library.name.set_verify(\"" << library.name << "\");" NEWLINE_STR;
+		out << TAB2_STR "library.version = " << library.version << ";" NEWLINE_STR;
+		out << TAB2_STR "result &= c_native_module_registry::register_native_module_library(library);" NEWLINE_STR;
+		out << TAB_STR "}" NEWLINE_STR;
 	}
 
 	// Generate each native module
@@ -170,6 +172,7 @@ bool generate_native_module_registration(
 		 native_module_index < result->get_native_module_count();
 		 native_module_index++) {
 		const s_native_module_declaration &native_module = result->get_native_module(native_module_index);
+		const s_library_declaration &library = result->get_library(native_module.library_index);
 
 		size_t in_argument_count = 0;
 		size_t out_argument_count = 0;
@@ -188,24 +191,25 @@ bool generate_native_module_registration(
 			}
 		}
 
-		out << TAB_STR "{\n";
+		out << TAB_STR "{" NEWLINE_STR;
 		out << TAB2_STR "s_native_module native_module;" NEWLINE_STR;
 		out << TAB2_STR "ZERO_STRUCT(&native_module);" NEWLINE_STR;
-		out << TAB2_STR "native_module.uid = " << native_module.uid_string << ";" NEWLINE_STR;
+		out << TAB2_STR "native_module.uid = s_native_module_uid::build(" <<
+			id_to_string(library.id) << ", " << id_to_string(native_module.id) << ");" NEWLINE_STR;
 
 		out << TAB2_STR "native_module.name.set_verify(\"";
 		if (native_module.native_operator.empty()) {
 			out << native_module.name;
 		} else {
 			// The native module name is actually the operator name
-			e_native_operator native_operator = k_native_operator_count;
+			e_native_operator native_operator = k_native_operator_invalid;
 			for (uint32 index = 0; index < k_native_operator_count; index++) {
 				if (native_module.native_operator == k_native_operator_enum_strings[index]) {
 					native_operator = static_cast<e_native_operator>(index);
 				}
 			}
 
-			if (native_operator == k_native_operator_count) {
+			if (native_operator == k_native_operator_invalid) {
 				std::cerr << "Invalid native operator '" << native_module.native_operator <<
 					"' for native module '" << native_module.identifier << "'\n";
 				return false;
@@ -237,11 +241,9 @@ bool generate_native_module_registration(
 			out << TAB2_STR "}" NEWLINE_STR;
 		}
 
-		out << TAB2_STR "native_module.compile_time_call = ";
-		if (native_module.compile_time_call.empty()) {
-			out << "nullptr;" NEWLINE_STR;
-		} else {
-			out << native_module.compile_time_call << "_call_wrapper;" NEWLINE_STR;
+		if (!native_module.compile_time_call.empty()) {
+			out << TAB2_STR "native_module.compile_time_call = " <<
+				library.name << "_" << native_module.compile_time_call << "_call_wrapper;" NEWLINE_STR;
 		}
 
 		out << TAB2_STR "result &= c_native_module_registry::register_native_module(native_module);" NEWLINE_STR;
@@ -264,7 +266,9 @@ bool generate_native_module_registration(
 	}
 
 	out << TAB_STR "return result;" NEWLINE_STR;
-	out << "}" NEWLINE_STR;
+	out << "}" NEWLINE_STR NEWLINE_STR;
+
+	out << "#endif // NATIVE_MODULE_REGISTRATION_ENABLED" NEWLINE_STR NEWLINE_STR;
 
 	if (out.fail()) {
 		return false;
@@ -324,7 +328,7 @@ bool c_optimization_rule_builder::build(std::ofstream &out) {
 					return false;
 				}
 
-				std::string native_module_uid_string = find_native_module_uid_string(m_rule.tokens[index]);
+				std::string native_module_uid_string = get_native_module_uid_string(m_rule.tokens[index]);
 				if (native_module_uid_string.empty()) {
 					// Failed to find matching native module
 					return false;
@@ -470,11 +474,41 @@ c_optimization_rule_builder::e_token_type c_optimization_rule_builder::get_token
 	}
 }
 
-std::string c_optimization_rule_builder::find_native_module_uid_string(
+std::string c_optimization_rule_builder::get_native_module_uid_string(
 	const std::string &native_module_identifier) const {
+	std::string identifier_to_match;
+	size_t library_index = static_cast<size_t>(-1);
+	const s_library_declaration *library = nullptr;
+
+	// Find the library
+	size_t dot_pos = native_module_identifier.find_first_of('.');
+	if (dot_pos != std::string::npos) {
+		std::string library_name = native_module_identifier.substr(0, dot_pos);
+		identifier_to_match = native_module_identifier.substr(dot_pos + 1);
+		for (size_t index = 0; index < m_scraper_result->get_library_count(); index++) {
+			if (m_scraper_result->get_library(index).name == library_name) {
+				library_index = index;
+				library = &m_scraper_result->get_library(index);
+				break;
+			}
+		}
+	} else {
+		library_index = m_rule.library_index;
+		library = &m_scraper_result->get_library(m_rule.library_index);
+		identifier_to_match = native_module_identifier;
+	}
+
+	if (!library) {
+		return std::string();
+	}
+
 	for (size_t index = 0; index < m_scraper_result->get_native_module_count(); index++) {
-		if (native_module_identifier == m_scraper_result->get_native_module(index).identifier) {
-			return m_scraper_result->get_native_module(index).uid_string;
+		const s_native_module_declaration &native_module = m_scraper_result->get_native_module(index);
+		if (native_module.library_index == library_index &&
+			identifier_to_match == native_module.identifier) {
+			return "s_native_module_uid::build(" +
+				std::to_string(library->id) + ", " +
+				std::to_string(native_module.id) + ")";
 		}
 	}
 

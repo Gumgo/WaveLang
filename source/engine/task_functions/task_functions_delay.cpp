@@ -4,18 +4,12 @@
 #include "engine/events/event_interface.h"
 #include "engine/task_functions/task_functions_delay.h"
 
-#include "execution_graph/native_modules/native_modules_delay.h"
-
 #include <algorithm>
-
-static const uint32 k_task_functions_delay_library_id = 3;
-
-static const s_task_function_uid k_task_function_delay_in_out_uid = s_task_function_uid::build(k_task_functions_delay_library_id, 0);
 
 struct s_buffer_operation_delay {
 	static size_t query_memory(uint32 sample_rate, real32 delay);
-	static void initialize(c_event_interface *event_interface,
-		s_buffer_operation_delay *context, uint32 sample_rate, real32 delay);
+	static void initialize(c_event_interface *event_interface, s_buffer_operation_delay *context,
+		uint32 sample_rate, real32 delay);
 	static void voice_initialize(s_buffer_operation_delay *context);
 
 	static void in_out(
@@ -213,47 +207,36 @@ void s_buffer_operation_delay::in_out(
 	}
 }
 
-static size_t task_memory_query_delay(const s_task_function_context &context) {
-	return s_buffer_operation_delay::query_memory(
-		context.sample_rate,
-		context.arguments[0].get_real_constant_in());
-}
+namespace delay_task_functions {
 
-static void task_initializer_delay(const s_task_function_context &context) {
-	s_buffer_operation_delay::initialize(
-		context.event_interface,
-		static_cast<s_buffer_operation_delay *>(context.task_memory),
-		context.sample_rate,
-		context.arguments[0].get_real_constant_in());
-}
-
-static void task_voice_initializer_delay(const s_task_function_context &context) {
-	s_buffer_operation_delay::voice_initialize(static_cast<s_buffer_operation_delay *>(context.task_memory));
-}
-
-static void task_function_delay_in_out(const s_task_function_context &context) {
-	s_buffer_operation_delay::in_out(
-		static_cast<s_buffer_operation_delay *>(context.task_memory),
-		context.buffer_size,
-		context.arguments[1].get_real_buffer_or_constant_in(),
-		context.arguments[2].get_real_buffer_out());
-}
-
-void register_task_functions_delay() {
-	{
-		c_task_function_registry::register_task_function(
-			s_task_function::build(k_task_function_delay_in_out_uid,
-				"delay_in_out",
-				task_memory_query_delay, task_initializer_delay, task_voice_initializer_delay, task_function_delay_in_out,
-				s_task_function_argument_list::build(TDT(in, real), TDT(in, real), TDT(out, real))));
-
-		s_task_function_mapping mappings[] = {
-			s_task_function_mapping::build(k_task_function_delay_in_out_uid, "vv.",
-			s_task_function_native_module_argument_mapping::build(0, 1, 2))
-
-		};
-
-		c_task_function_registry::register_task_function_mapping_list(
-			k_native_module_delay_uid, c_task_function_mapping_list::construct(mappings));
+	size_t delay_memory_query(const s_task_function_context &context,
+		real32 duration) {
+		return s_buffer_operation_delay::query_memory(
+			context.sample_rate,
+			duration);
 	}
+
+	void delay_initializer(const s_task_function_context &context,
+		real32 duration) {
+		s_buffer_operation_delay::initialize(
+			context.event_interface,
+			static_cast<s_buffer_operation_delay *>(context.task_memory),
+			context.sample_rate,
+			duration);
+	}
+
+	void delay_initializer(const s_task_function_context &context) {
+		s_buffer_operation_delay::voice_initialize(static_cast<s_buffer_operation_delay *>(context.task_memory));
+	}
+
+	void delay_in_out(const s_task_function_context &context,
+		c_real_const_buffer_or_constant signal,
+		c_real_buffer *result) {
+		s_buffer_operation_delay::in_out(
+			static_cast<s_buffer_operation_delay *>(context.task_memory),
+			context.buffer_size,
+			signal,
+			result);
+	}
+
 }

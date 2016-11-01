@@ -4,15 +4,6 @@
 #include "engine/task_functions/task_functions_controller.h"
 #include "engine/voice_interface/voice_interface.h"
 
-#include "execution_graph/native_modules/native_modules_controller.h"
-
-static const uint32 k_task_functions_controller_library_id = 6;
-
-static const s_task_function_uid k_task_function_controller_get_note_id_out_uid					= s_task_function_uid::build(k_task_functions_controller_library_id, 0);
-static const s_task_function_uid k_task_function_controller_get_note_velocity_out_uid			= s_task_function_uid::build(k_task_functions_controller_library_id, 1);
-static const s_task_function_uid k_task_function_controller_get_note_press_duration_out_uid		= s_task_function_uid::build(k_task_functions_controller_library_id, 2);
-static const s_task_function_uid k_task_function_controller_get_note_release_duration_out_uid	= s_task_function_uid::build(k_task_functions_controller_library_id, 3);
-
 struct s_buffer_operation_controller_get_note_id {
 	static void out(int32 note_id, c_real_buffer_out out);
 };
@@ -113,113 +104,55 @@ void s_buffer_operation_controller_get_note_release_duration::out(
 
 }
 
-static void task_function_controller_get_note_id_out(const s_task_function_context &context) {
-	s_buffer_operation_controller_get_note_id::out(
-		context.voice_interface->get_note_id(), context.arguments[0].get_real_buffer_out());
-}
+namespace controller_task_functions {
 
-static void task_function_controller_get_note_velocity_out(const s_task_function_context &context) {
-	s_buffer_operation_controller_get_note_velocity::out(
-		context.voice_interface->get_note_velocity(), context.arguments[0].get_real_buffer_out());
-}
-
-static size_t task_memory_query_controller_get_note_press_duration_out(const s_task_function_context &context) {
-	return s_buffer_operation_controller_get_note_press_duration::query_memory();
-}
-
-static void task_voice_initialize_controller_get_note_press_duration_out(const s_task_function_context &context) {
-	s_buffer_operation_controller_get_note_press_duration::voice_initialize(
-		static_cast<s_buffer_operation_controller_get_note_press_duration *>(context.task_memory));
-}
-
-static void task_function_controller_get_note_press_duration_out(const s_task_function_context &context) {
-	s_buffer_operation_controller_get_note_press_duration::out(
-		static_cast<s_buffer_operation_controller_get_note_press_duration *>(context.task_memory),
-		context.buffer_size,
-		context.sample_rate,
-		context.arguments[0].get_real_buffer_out());
-}
-
-static size_t task_memory_query_controller_get_note_release_duration_out(const s_task_function_context &context) {
-	return s_buffer_operation_controller_get_note_release_duration::query_memory();
-}
-
-static void task_voice_initialize_controller_get_note_release_duration_out(const s_task_function_context &context) {
-	s_buffer_operation_controller_get_note_release_duration::voice_initialize(
-		static_cast<s_buffer_operation_controller_get_note_release_duration *>(context.task_memory));
-}
-
-static void task_function_controller_get_note_release_duration_out(const s_task_function_context &context) {
-	s_buffer_operation_controller_get_note_release_duration::out(
-		static_cast<s_buffer_operation_controller_get_note_release_duration *>(context.task_memory),
-		context.buffer_size,
-		context.sample_rate,
-		context.voice_interface->get_note_release_sample(),
-		context.arguments[0].get_real_buffer_out());
-}
-
-void register_task_functions_controller() {
-	{
-		c_task_function_registry::register_task_function(
-			s_task_function::build(k_task_function_controller_get_note_id_out_uid,
-				"controller_get_note_id",
-				nullptr, nullptr, nullptr, task_function_controller_get_note_id_out,
-				s_task_function_argument_list::build(TDT(out, real))));
-
-		s_task_function_mapping mappings[] = {
-			s_task_function_mapping::build(k_task_function_controller_get_note_id_out_uid, ".",
-				s_task_function_native_module_argument_mapping::build(0))
-		};
-
-		c_task_function_registry::register_task_function_mapping_list(
-			k_native_module_controller_get_note_id_uid, c_task_function_mapping_list::construct(mappings));
+	void get_note_id_out(const s_task_function_context &context,
+		c_real_buffer *result) {
+		s_buffer_operation_controller_get_note_id::out(
+			context.voice_interface->get_note_id(), result);
 	}
 
-	{
-		c_task_function_registry::register_task_function(
-			s_task_function::build(k_task_function_controller_get_note_velocity_out_uid,
-				"controller_get_note_velocity",
-				nullptr, nullptr, nullptr, task_function_controller_get_note_velocity_out,
-				s_task_function_argument_list::build(TDT(out, real))));
-
-		s_task_function_mapping mappings[] = {
-			s_task_function_mapping::build(k_task_function_controller_get_note_velocity_out_uid, ".",
-				s_task_function_native_module_argument_mapping::build(0))
-		};
-
-		c_task_function_registry::register_task_function_mapping_list(
-			k_native_module_controller_get_note_velocity_uid, c_task_function_mapping_list::construct(mappings));
+	void get_note_velocity_out(const s_task_function_context &context,
+		c_real_buffer *result) {
+		s_buffer_operation_controller_get_note_velocity::out(
+			context.voice_interface->get_note_velocity(), result);
 	}
 
-	{
-		c_task_function_registry::register_task_function(
-			s_task_function::build(k_task_function_controller_get_note_press_duration_out_uid,
-				"controller_get_note_press_duration",
-				task_memory_query_controller_get_note_press_duration_out, nullptr, task_voice_initialize_controller_get_note_press_duration_out, task_function_controller_get_note_press_duration_out,
-				s_task_function_argument_list::build(TDT(out, real))));
-
-		s_task_function_mapping mappings[] = {
-			s_task_function_mapping::build(k_task_function_controller_get_note_press_duration_out_uid, ".",
-				s_task_function_native_module_argument_mapping::build(0))
-		};
-
-		c_task_function_registry::register_task_function_mapping_list(
-			k_native_module_controller_get_note_press_duration_uid, c_task_function_mapping_list::construct(mappings));
+	size_t get_note_press_duration_memory_query(const s_task_function_context &context) {
+		return s_buffer_operation_controller_get_note_press_duration::query_memory();
 	}
 
-	{
-		c_task_function_registry::register_task_function(
-			s_task_function::build(k_task_function_controller_get_note_release_duration_out_uid,
-				"controller_get_note_release_duration",
-				task_memory_query_controller_get_note_release_duration_out, nullptr, task_voice_initialize_controller_get_note_release_duration_out, task_function_controller_get_note_release_duration_out,
-				s_task_function_argument_list::build(TDT(out, real))));
-
-		s_task_function_mapping mappings[] = {
-			s_task_function_mapping::build(k_task_function_controller_get_note_release_duration_out_uid, ".",
-				s_task_function_native_module_argument_mapping::build(0))
-		};
-
-		c_task_function_registry::register_task_function_mapping_list(
-			k_native_module_controller_get_note_release_duration_uid, c_task_function_mapping_list::construct(mappings));
+	void get_note_press_duration_voice_initializer(const s_task_function_context &context) {
+		s_buffer_operation_controller_get_note_press_duration::voice_initialize(
+			static_cast<s_buffer_operation_controller_get_note_press_duration *>(context.task_memory));
 	}
+
+	void get_note_press_duration_out(const s_task_function_context &context,
+		c_real_buffer *result) {
+		s_buffer_operation_controller_get_note_press_duration::out(
+			static_cast<s_buffer_operation_controller_get_note_press_duration *>(context.task_memory),
+			context.buffer_size,
+			context.sample_rate,
+			result);
+	}
+
+	size_t get_note_release_duration_memory_query(const s_task_function_context &context) {
+		return s_buffer_operation_controller_get_note_release_duration::query_memory();
+	}
+
+	void get_note_release_duration_voice_initializer(const s_task_function_context &context) {
+		s_buffer_operation_controller_get_note_release_duration::voice_initialize(
+			static_cast<s_buffer_operation_controller_get_note_release_duration *>(context.task_memory));
+	}
+
+	void get_note_release_duration_out(const s_task_function_context &context,
+		c_real_buffer *result) {
+		s_buffer_operation_controller_get_note_release_duration::out(
+			static_cast<s_buffer_operation_controller_get_note_release_duration *>(context.task_memory),
+			context.buffer_size,
+			context.sample_rate,
+			context.voice_interface->get_note_release_sample(),
+			result);
+	}
+
 }

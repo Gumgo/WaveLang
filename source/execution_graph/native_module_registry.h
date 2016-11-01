@@ -17,7 +17,10 @@ public:
 	static bool end_registration();
 
 	// Registers a library which native modules are grouped under
-	static bool register_native_module_library(uint32 library_id, const char *library_name);
+	static bool register_native_module_library(const s_native_module_library &library);
+
+	static bool is_native_module_library_registered(uint32 library_id);
+	static const s_native_module_library &get_native_module_library(uint32 library_id);
 
 	// Registers a native module - returns whether successful
 	static bool register_native_module(const s_native_module &native_module);
@@ -25,6 +28,7 @@ public:
 	// Registers a native operator by associating it with the name of a native module. We use the name and not UID
 	// because the operator can be overloaded.
 	static void register_native_operator(e_native_operator native_operator, const char *native_module_name);
+	static e_native_operator get_native_module_operator(s_native_module_uid native_module_uid);
 
 	// Registers an optimization rule
 	static bool register_optimization_rule(const s_native_module_optimization_rule &optimization_rule);

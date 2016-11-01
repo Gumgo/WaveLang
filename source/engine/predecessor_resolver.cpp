@@ -1,6 +1,6 @@
 #include "engine/predecessor_resolver.h"
 
-#define OUTPUT_PREDECESSOR_RESOLUTION 1
+#define OUTPUT_PREDECESSOR_RESOLUTION 0
 
 #if IS_TRUE(OUTPUT_PREDECESSOR_RESOLUTION)
 #include <fstream>
