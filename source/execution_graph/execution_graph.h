@@ -54,6 +54,10 @@ class c_execution_graph {
 public:
 	static const uint32 k_invalid_index = static_cast<uint32>(-1);
 
+	// Special output index representing whether processing should remain active - once a voice drops to 0 volume it can
+	// be disabled for improved performance
+	static const uint32 k_remain_active_output_index = static_cast<uint32>(-1);
+
 	c_execution_graph();
 
 	e_execution_graph_result save(const char *fname) const;

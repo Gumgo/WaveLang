@@ -695,7 +695,6 @@ s_compiler_result c_execution_graph_builder::build_execution_graph(
 	// Find the entry point to start iteration
 	const c_ast_node_module_declaration *entry_point_module =
 		c_execution_graph_module_builder::find_module_declaration_single(ast, k_entry_point_name);
-	wl_assert(entry_point_module->get_return_type() == c_ast_data_type(k_ast_primitive_type_void));
 
 	c_execution_graph_module_builder builder(&out_errors, ast, out_execution_graph, entry_point_module);
 	entry_point_module->iterate(&builder);
@@ -706,6 +705,16 @@ s_compiler_result c_execution_graph_builder::build_execution_graph(
 
 		uint32 output_node_index = out_execution_graph->add_output_node(cast_integer_verify<uint32>(arg));
 		uint32 out_argument_node_index = builder.get_out_argument_node_index(arg);
+		out_execution_graph->add_edge(out_argument_node_index, output_node_index);
+	}
+
+	// Add an output for the remain-active result
+	{
+		wl_assert(entry_point_module->get_return_type() == c_ast_data_type(k_ast_primitive_type_bool));
+
+		uint32 output_node_index = out_execution_graph->add_output_node(
+			c_execution_graph::k_remain_active_output_index);
+		uint32 out_argument_node_index = builder.get_return_value_node_index();
 		out_execution_graph->add_edge(out_argument_node_index, output_node_index);
 	}
 

@@ -187,6 +187,7 @@ public:
 
 	c_task_graph_task_array get_initial_tasks() const;
 	c_task_graph_data_array get_outputs() const;
+	const s_task_graph_data &get_remain_active_output() const;
 
 	uint32 get_buffer_count() const;
 	c_wrapped_array_const<s_buffer_usage_info> get_buffer_usage_info() const;
@@ -195,6 +196,8 @@ public:
 	const s_task_graph_globals &get_globals() const;
 
 private:
+	static const size_t k_invalid_list_index = static_cast<size_t>(-1);
+
 	struct s_task {
 		// The function to execute during this task
 		uint32 task_function_index;
@@ -258,6 +261,9 @@ private:
 	// List of final output buffers
 	size_t m_outputs_start;
 	size_t m_outputs_count;
+
+	// Remain-active buffer
+	size_t m_remain_active_output;
 
 	s_task_graph_globals m_globals;
 };

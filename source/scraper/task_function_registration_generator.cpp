@@ -228,9 +228,9 @@ bool generate_task_function_registration(
 				task_function.function << "_" << task_function.initializer << "_call_wrapper;" NEWLINE_STR;
 		}
 
-		if (!task_function.initializer.empty()) {
+		if (!task_function.voice_initializer.empty()) {
 			out << TAB2_STR "task_function.voice_initializer = " << library.name << "_" <<
-				task_function.function << "_" << task_function.initializer << "_call_wrapper;" NEWLINE_STR;
+				task_function.function << "_" << task_function.voice_initializer << "_call_wrapper;" NEWLINE_STR;
 		}
 
 		out << TAB2_STR "task_function.function = " << library.name << "_" <<
@@ -706,7 +706,7 @@ static bool generate_native_module_to_task_function_mappings(
 				}
 
 				if (inout_count_a != inout_count_b) {
-					return inout_count_a < inout_count_b;
+					return inout_count_a > inout_count_b;
 				}
 
 				// Fewer arguments wins

@@ -344,23 +344,39 @@ bool c_execution_graph::validate() const {
 		}
 	}
 
-	// Output indices for the n output nodes should be unique and map to the range [0,n-1]
-	std::vector<bool> output_nodes_found(output_node_count, false);
+	if (output_node_count == 0) {
+		// Need at least one output node for the remain-active result
+		return false;
+	}
+
+	// Output indices for the n output nodes should be unique and map to the range [0,n-1], with one additional node for
+	// the remain-active result
+	std::vector<bool> output_nodes_found(output_node_count - 1, false);
+	bool remain_active_output_node_found = false;
 	for (uint32 index = 0; index < get_node_count(); index++) {
 		if (get_node_type(index) == k_execution_graph_node_type_output) {
 			uint32 output_index = get_output_node_output_index(index);
 
-			if (!VALID_INDEX(output_index, output_node_count)) {
-				// Not in the range [0,n-1]
-				return false;
-			}
+			if (output_index == k_remain_active_output_index) {
+				if (remain_active_output_node_found) {
+					// Duplicate remain-active result
+					return false;
+				}
 
-			if (output_nodes_found[output_index]) {
-				// Duplicate output index
-				return false;
-			}
+				remain_active_output_node_found = true;
+			} else {
+				if (!VALID_INDEX(output_index, output_node_count - 1)) {
+					// Not in the range [0,n-1]
+					return false;
+				}
 
-			output_nodes_found[output_index] = true;
+				if (output_nodes_found[output_index]) {
+					// Duplicate output index
+					return false;
+				}
+
+				output_nodes_found[output_index] = true;
+			}
 		}
 	}
 
@@ -369,6 +385,8 @@ bool c_execution_graph::validate() const {
 	for (size_t index = 0; index < output_nodes_found.size(); index++) {
 		wl_assert(output_nodes_found[index]);
 	}
+
+	wl_assert(remain_active_output_node_found);
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
 	// Check for cycles
@@ -972,7 +990,11 @@ bool c_execution_graph::get_type_from_node(uint32 node_index, c_native_module_da
 	}
 
 	case k_execution_graph_node_type_output:
-		out_type = c_native_module_data_type(k_native_module_primitive_type_real);
+		if (node.node_data.output.output_index == k_remain_active_output_index) {
+			out_type = c_native_module_data_type(k_native_module_primitive_type_bool);
+		} else {
+			out_type = c_native_module_data_type(k_native_module_primitive_type_real);
+		}
 		return true;
 
 	default:
@@ -1301,7 +1323,7 @@ bool c_execution_graph::generate_graphviz_file(const char *fname, bool collapse_
 		graph_node.set_name(node_name.c_str());
 		graph.add_node(graph_node);
 
-		if (arrays_to_collapse[index]) {
+		if (collapse_large_arrays && arrays_to_collapse[index]) {
 			// Add an extra "collapsed" node for this array
 			std::string collapsed_array_node_name = "collapsed_array_" + std::to_string(collapsed_nodes);
 			c_graphviz_node collapsed_array_node;

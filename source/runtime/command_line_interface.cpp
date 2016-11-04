@@ -117,6 +117,7 @@ int c_command_line_interface::main_function(bool list_mode) {
 	}
 
 	runtime_context.executor.shutdown();
+	runtime_context.controller_driver_interface.stop_stream();
 	runtime_context.controller_driver_interface.shutdown();
 	runtime_context.audio_driver_interface.stop_stream();
 	runtime_context.audio_driver_interface.shutdown();

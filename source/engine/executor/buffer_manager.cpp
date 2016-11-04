@@ -3,6 +3,9 @@
 #include "engine/executor/buffer_manager.h"
 #include "engine/executor/channel_mixer.h"
 
+// Returns
+static bool scan_remain_active_buffer(const c_buffer *remain_active_buffer, size_t shifted_);
+
 void c_buffer_manager::initialize(const c_task_graph *task_graph, uint32 max_buffer_size, uint32 output_channels) {
 	wl_assert(task_graph);
 	wl_assert(max_buffer_size > 0);
@@ -15,7 +18,6 @@ void c_buffer_manager::initialize(const c_task_graph *task_graph, uint32 max_buf
 	c_wrapped_array_const<c_task_graph::s_buffer_usage_info> buffer_usage_info = task_graph->get_buffer_usage_info();
 
 	m_real_buffer_pool_index = static_cast<uint32>(-1);
-	//m_bool_buffer_pool_index = static_cast<uint32>(-1);
 	for (uint32 index = 0; index < buffer_usage_info.get_count(); index++) {
 		const c_task_graph::s_buffer_usage_info &info = buffer_usage_info[index];
 		s_buffer_pool_description desc;
@@ -30,7 +32,6 @@ void c_buffer_manager::initialize(const c_task_graph *task_graph, uint32 max_buf
 
 		case k_task_primitive_type_bool:
 			desc.type = k_buffer_type_bool;
-			//m_bool_buffer_pool_index = index;
 			break;
 
 		case k_task_primitive_type_string:
@@ -57,15 +58,6 @@ void c_buffer_manager::initialize(const c_task_graph *task_graph, uint32 max_buf
 		desc.count = 0;
 		buffer_pool_descriptions.push_back(desc);
 	}
-
-	//if (m_bool_buffer_pool_index == static_cast<uint32>(-1)) {
-	//	m_bool_buffer_pool_index = buffer_pool_descriptions.size();
-	//	s_buffer_pool_description desc;
-	//	desc.type = k_buffer_type_bool;
-	//	desc.size = max_buffer_size;
-	//	desc.count = 0;
-	//	buffer_pool_descriptions.push_back(desc);
-	//}
 
 	c_task_graph_data_array outputs = task_graph->get_outputs();
 
@@ -199,6 +191,30 @@ void c_buffer_manager::accumulate_voice_output(uint32 voice_sample_offset) {
 
 	assert_all_output_buffers_free();
 	m_voices_processed++;
+}
+
+bool c_buffer_manager::process_remain_active_output(uint32 voice_sample_offset) {
+	bool remain_active;
+
+	if (m_task_graph->get_remain_active_output().is_constant()) {
+		// The remain-active output is just a constant, so return it directly
+		remain_active = m_task_graph->get_remain_active_output().get_bool_constant_in();
+	} else {
+		wl_assert(m_task_graph->get_remain_active_output().get_type() ==
+			c_task_qualified_data_type(k_task_primitive_type_bool, k_task_qualifier_in));
+		uint32 remain_active_buffer_index = m_task_graph->get_remain_active_output().get_bool_buffer_in();
+		uint32 remain_active_buffer_handle = m_buffer_contexts.get_array()[remain_active_buffer_index].handle;
+		wl_assert(remain_active_buffer_handle != k_lock_free_invalid_handle);
+
+		// Scan the buffer for any "false" values. Don't bother shifting the buffer, just scan up to the number of
+		// samples written.
+		const c_buffer *remain_active_buffer = m_buffer_allocator.get_buffer(remain_active_buffer_handle);
+		remain_active = scan_remain_active_buffer(remain_active_buffer, voice_sample_offset);
+
+		decrement_buffer_usage(remain_active_buffer_index);
+	}
+
+	return remain_active;
 }
 
 void c_buffer_manager::mix_voice_accumulation_buffers_to_output_buffer(
@@ -446,6 +462,47 @@ void c_buffer_manager::mix_voice_accumulation_buffers_to_channel_buffers() {
 			m_buffer_allocator.free_buffer(m_voice_accumulation_buffers[accum]);
 		}
 	}
+}
+
+bool c_buffer_manager::scan_remain_active_buffer(
+	const c_buffer *remain_active_buffer, uint32 voice_sample_offset) const {
+	bool remain_active;
+
+	if (remain_active_buffer->is_constant()) {
+		// Grab the first bit
+		remain_active = ((*remain_active_buffer->get_data<int32>() & 1) != 0);
+	} else {
+		remain_active = true;
+
+		// Scan the buffer for any false values
+		uint32 samples_to_process = m_chunk_size - voice_sample_offset;
+		int32 samples_remaining = cast_integer_verify<int32>(samples_to_process);
+		c_buffer_iterator_1<c_const_bool_buffer_iterator_128> iter(remain_active_buffer, samples_to_process);
+		for (; iter.is_valid(); iter.next()) {
+			wl_assert(samples_remaining > 0);
+
+			c_int32_4 elements_remaining = c_int32_4(samples_remaining) - c_int32_4(0, 32, 64, 96);
+			c_int32_4 clamped_elements_remaining = min(max(elements_remaining, c_int32_4(0)), c_int32_4(32));
+			c_int32_4 zeros_to_shift = c_int32_4(32) - clamped_elements_remaining;
+			c_int32_4 overflow_mask = c_int32_4(0xffffffff) << zeros_to_shift;
+
+			// We now have zeros in the positions of all bits past the end of the buffer
+			// Pad the value with 1s before testing for 0 so we don't get false positives
+			c_int32_4 padded_value = iter.get_iterator_a().get_value() | ~overflow_mask;
+			c_int32_4 all_one_test = (padded_value == c_int32_4(0xffffffff));
+			int32 all_one_msb = mask_from_msb(all_one_test);
+
+			if (all_one_msb != 15) {
+				// At least one bit was false, so set the final result to false
+				remain_active = false;
+				break;
+			}
+
+			samples_remaining -= 128;
+		}
+	}
+
+	return remain_active;
 }
 
 void c_buffer_manager::free_channel_buffers() {

@@ -6,6 +6,14 @@
 #include "execution_graph/native_module_registry.h"
 #include "execution_graph/execution_graph.h"
 
+#define OUTPUT_TASK_GRAPH_BUILD_RESULT 0
+
+#if IS_TRUE(OUTPUT_TASK_GRAPH_BUILD_RESULT)
+#include <fstream>
+#include <iomanip>
+#include <sstream>
+#endif // IS_TRUE(OUTPUT_TASK_GRAPH_BUILD_RESULT)
+
 static const uint32 k_invalid_task = static_cast<uint32>(-1);
 
 const uint32 c_task_graph::k_invalid_buffer;
@@ -39,6 +47,10 @@ const s_task_function_mapping *get_task_mapping_for_native_module_and_inputs(
 template<typename t_build_array_settings>
 typename t_build_array_settings::t_array build_array(const c_execution_graph &execution_graph,
 	t_build_array_settings &settings, uint32 node_index, bool &out_is_constant);
+
+#if IS_TRUE(OUTPUT_TASK_GRAPH_BUILD_RESULT)
+bool output_task_graph_build_result(const c_task_graph &task_graph, const char *filename);
+#endif // IS_TRUE(OUTPUT_TASK_GRAPH_BUILD_RESULT)
 
 struct s_build_real_array_settings {
 	typedef s_real_array_element t_element;
@@ -253,10 +265,11 @@ const s_task_graph_data &c_task_buffer_iterator::get_task_graph_data() const {
 c_task_graph::c_task_graph() {
 	m_buffer_count = 0;
 	m_max_task_concurrency = 0;
-	m_initial_tasks_start = 0;
+	m_initial_tasks_start = k_invalid_list_index;
 	m_initial_tasks_count = 0;
-	m_outputs_start = 0;
+	m_outputs_start = k_invalid_list_index;
 	m_outputs_count = 0;
+	m_remain_active_output = k_invalid_list_index;
 
 	ZERO_STRUCT(&m_globals);
 }
@@ -307,6 +320,10 @@ c_task_graph_data_array c_task_graph::get_outputs() const {
 		m_outputs_count);
 }
 
+const s_task_graph_data &c_task_graph::get_remain_active_output() const {
+	return m_data_lists[m_remain_active_output];
+}
+
 uint32 c_task_graph::get_buffer_count() const {
 	return m_buffer_count;
 }
@@ -335,10 +352,11 @@ bool c_task_graph::build(const c_execution_graph &execution_graph) {
 	m_buffer_usages.clear();
 	m_max_task_concurrency = 0;
 	m_buffer_usage_info.clear();
-	m_initial_tasks_start = 0;
+	m_initial_tasks_start = k_invalid_list_index;
 	m_initial_tasks_count = 0;
-	m_outputs_start = 0;
+	m_outputs_start = k_invalid_list_index;
 	m_outputs_count = 0;
+	m_remain_active_output = k_invalid_list_index;
 
 	// Maps nodes in the execution graph to tasks in the task graph
 	std::vector<uint32> nodes_to_tasks(execution_graph.get_node_count(), k_invalid_task);
@@ -367,6 +385,10 @@ bool c_task_graph::build(const c_execution_graph &execution_graph) {
 
 		const s_execution_graph_globals &execution_graph_globals = execution_graph.get_globals();
 		m_globals.max_voices = execution_graph_globals.max_voices;
+
+#if IS_TRUE(OUTPUT_TASK_GRAPH_BUILD_RESULT)
+		output_task_graph_build_result(*this, "graph_build_result.csv");
+#endif // IS_TRUE(OUTPUT_TASK_GRAPH_BUILD_RESULT)
 	}
 
 	if (!success) {
@@ -383,6 +405,7 @@ bool c_task_graph::build(const c_execution_graph &execution_graph) {
 		m_initial_tasks_count = 0;
 		m_outputs_start = 0;
 		m_outputs_count = 0;
+		m_remain_active_output = k_invalid_list_index;
 	}
 
 	return success;
@@ -1086,12 +1109,16 @@ void c_task_graph::allocate_buffers(const c_execution_graph &execution_graph) {
 	m_outputs_count = 0;
 	for (uint32 node_index = 0; node_index < execution_graph.get_node_count(); node_index++) {
 		if (execution_graph.get_node_type(node_index) == k_execution_graph_node_type_output) {
-			m_outputs_count++;
+			uint32 output_index = execution_graph.get_output_node_output_index(node_index);
+			if (output_index != c_execution_graph::k_remain_active_output_index) {
+				m_outputs_count++;
+			}
 		}
 	}
 
 	m_outputs_start = m_data_lists.size();
-	m_data_lists.resize(m_data_lists.size() + m_outputs_count);
+	// Make space for all outputs including the remain-active output
+	m_data_lists.resize(m_data_lists.size() + m_outputs_count + 1);
 
 #if IS_TRUE(ASSERTS_ENABLED)
 	for (size_t index = m_outputs_start; index < m_data_lists.size(); index++) {
@@ -1102,22 +1129,40 @@ void c_task_graph::allocate_buffers(const c_execution_graph &execution_graph) {
 	for (uint32 node_index = 0; node_index < execution_graph.get_node_count(); node_index++) {
 		if (execution_graph.get_node_type(node_index) == k_execution_graph_node_type_output) {
 			uint32 output_index = execution_graph.get_output_node_output_index(node_index);
+			bool is_remain_active_output = (output_index == c_execution_graph::k_remain_active_output_index);
 
 			// Offset into the list by the output index
-			s_task_graph_data &output_data = m_data_lists[m_outputs_start + output_index];
+			size_t data_list_index = m_outputs_start + (is_remain_active_output ? m_outputs_count : output_index);
+
+			if (is_remain_active_output) {
+				wl_assert(m_remain_active_output == k_invalid_list_index);
+				m_remain_active_output = data_list_index;
+			}
+
+			s_task_graph_data &output_data = m_data_lists[data_list_index];
 			wl_assert(!output_data.data.type.is_valid());
 
-			output_data.data.type = c_task_qualified_data_type(k_task_primitive_type_real, k_task_qualifier_in);
+			output_data.data.type = is_remain_active_output ?
+				c_task_qualified_data_type(k_task_primitive_type_bool, k_task_qualifier_in) :
+				c_task_qualified_data_type(k_task_primitive_type_real, k_task_qualifier_in);
+
 			if (nodes_to_buffers[node_index] != k_invalid_buffer) {
 				output_data.data.is_constant = false;
-				output_data.data.value.real_buffer_in = nodes_to_buffers[node_index];
+				// Buffer type is bool if remain-active output, real otherwise
+				output_data.data.value.buffer = nodes_to_buffers[node_index];
 			} else {
 				// This output has a constant piped directly into it
 				uint32 constant_node_index = execution_graph.get_node_incoming_edge_index(node_index, 0);
 				wl_assert(execution_graph.get_node_type(constant_node_index) == k_execution_graph_node_type_constant);
 				output_data.data.is_constant = true;
-				output_data.data.value.real_constant_in =
-					execution_graph.get_constant_node_real_value(constant_node_index);
+
+				if (is_remain_active_output) {
+					output_data.data.value.bool_constant_in =
+						execution_graph.get_constant_node_bool_value(constant_node_index);
+				} else {
+					output_data.data.value.real_constant_in =
+						execution_graph.get_constant_node_real_value(constant_node_index);
+				}
 			}
 		}
 	}
@@ -1127,6 +1172,8 @@ void c_task_graph::allocate_buffers(const c_execution_graph &execution_graph) {
 	for (size_t index = m_outputs_start; index < m_data_lists.size(); index++) {
 		wl_assert(m_data_lists[index].data.type.is_valid());
 	}
+
+	wl_assert(m_remain_active_output != k_invalid_list_index);
 #endif // IS_TRUE(ASSERTS_ENABLED)
 }
 
@@ -1333,6 +1380,9 @@ uint32 c_task_graph::calculate_max_buffer_concurrency(
 		}
 	}
 
+	// The output buffers are also concurrent with the remain-active output buffer, but they are different types (real
+	// and bool) so we don't need to bother marking them as concurrent since they will never be combined anyway
+
 	// Reduce the matrix down to only valid buffers. The actual indices no longer matter at this point.
 	std::vector<bool> reduced_buffer_concurrency;
 	reduced_buffer_concurrency.reserve(valid_buffer_count * valid_buffer_count);
@@ -1439,6 +1489,15 @@ void c_task_graph::calculate_buffer_usages() {
 
 		m_buffer_usages[it.get_buffer_index()]++;
 	}
+
+	// Remain-active buffer contributes as well
+	{
+		const s_task_graph_data &remain_active_output = m_data_lists[m_remain_active_output];
+		c_task_buffer_iterator it(c_task_graph_data_array(&remain_active_output, 1));
+		if (it.is_valid()) {
+			m_buffer_usages[it.get_buffer_index()]++;
+		}
+	}
 }
 
 template<typename t_build_array_settings>
@@ -1516,3 +1575,68 @@ typename t_build_array_settings::t_array build_array(const c_execution_graph &ex
 	const t_element *start_offset_pointer = reinterpret_cast<const t_element *>(start_offset);
 	return t_array(start_offset_pointer, array_count);
 }
+
+#if IS_TRUE(OUTPUT_TASK_GRAPH_BUILD_RESULT)
+static bool output_task_graph_build_result(const c_task_graph &task_graph, const char *filename) {
+	std::ofstream out(filename);
+	if (!out.is_open()) {
+		return false;
+	}
+
+	out << "Task Index,Task UID,Task Name";
+	for (size_t arg = 0; arg < k_max_task_function_arguments; arg++) {
+		out << ", Arg " << arg;
+	}
+	out << "\n";
+
+	for (uint32 index = 0; index < task_graph.get_task_count(); index++) {
+		uint32 task_function_index = task_graph.get_task_function_index(index);
+		const s_task_function &task_function = c_task_function_registry::get_task_function(task_function_index);
+
+		std::stringstream uid_stream;
+		uid_stream << "0x" << std::setfill('0') << std::setw(2) << std::hex;
+		for (size_t b = 0; b < NUMBEROF(task_function.uid.data); b++) {
+			uid_stream << static_cast<uint32>(task_function.uid.data[b]);
+		}
+
+		out << index << "," <<
+			uid_stream.str() << "," <<
+			task_function.name.get_string();
+
+		c_task_graph_data_array arguments = task_graph.get_task_arguments(index);
+		for (size_t arg = 0; arg < arguments.get_count(); arg++) {
+			out << ",";
+			if (arguments[arg].data.type.get_data_type().is_array()) {
+				// $TODO support this case
+				out << "array";
+			} else {
+				if (arguments[arg].data.is_constant) {
+					switch (arguments[arg].data.type.get_data_type().get_primitive_type()) {
+					case k_task_primitive_type_real:
+						out << arguments[arg].data.value.real_constant_in;
+						break;
+
+					case k_task_primitive_type_bool:
+						out << (arguments[arg].data.value.bool_constant_in ? "true" : "false");
+						break;
+
+					case k_task_primitive_type_string:
+						out << arguments[arg].data.value.string_constant_in;
+						break;
+
+					default:
+						wl_unreachable();
+					}
+				} else {
+					out << "[" << arguments[arg].data.value.buffer << "]";
+				}
+			}
+		}
+		out << "\n";
+
+		// $TODO output task dependency information
+	}
+
+	return !out.fail();
+}
+#endif // IS_TRUE(OUTPUT_TASK_GRAPH_BUILD_RESULT)

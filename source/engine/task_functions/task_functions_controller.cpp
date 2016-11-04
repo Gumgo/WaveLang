@@ -99,6 +99,7 @@ void s_buffer_operation_controller_get_note_release_duration::out(
 		}
 
 		out->set_constant(false);
+		context->released = true;
 		context->current_sample += buffer_size;
 	}
 

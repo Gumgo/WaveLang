@@ -112,7 +112,6 @@ public:
 		, m_cached_value(0)
 		, m_dirty_cache(false) {
 		validate_buffer(buffer);
-		wl_assert(!buffer->is_constant());
 		read_cached_value_if_necessary();
 	}
 
@@ -131,7 +130,7 @@ public:
 	}
 
 	c_int32_4 get_value() const {
-		int32 element_index = cast_integer_verify<int32>(m_offset / 32);
+		int32 element_index = cast_integer_verify<int32>(m_offset / 32) % 4;
 		int32 shift_amount = cast_integer_verify<int32>(m_offset % 32);
 		wl_assert(element_index < 4);
 
@@ -148,7 +147,7 @@ public:
 	}
 
 	void set_value(const c_int32_4 &value) {
-		int32 element_index = cast_integer_verify<int32>(m_offset / 32);
+		int32 element_index = cast_integer_verify<int32>(m_offset / 32) % 4;
 		int32 shift_amount = cast_integer_verify<int32>(m_offset % 32);
 		wl_assert(element_index < 4);
 
@@ -166,6 +165,12 @@ public:
 
 		// Clear bits in the cached value, then overwrite them with the new value
 		m_cached_value = (m_cached_value & ~element_value_mask) | element_value_bits;
+		m_dirty_cache = true;
+
+		if ((m_offset % 128) == 124) {
+			// Write when we're at the end of the SSE block
+			write_cached_value_if_necessary();
+		}
 	}
 
 	bool should_set_buffer_constant() const {
@@ -209,6 +214,7 @@ public:
 		, m_buffer_size(buffer_size)
 		, m_cached_value(0) {
 		validate_buffer(buffer);
+		wl_assert(!buffer->is_constant());
 		read_cached_value_if_necessary();
 	}
 
@@ -222,7 +228,7 @@ public:
 	}
 
 	c_int32_4 get_value() const {
-		int32 element_index = cast_integer_verify<int32>(m_offset / 32);
+		int32 element_index = cast_integer_verify<int32>(m_offset / 32) % 4;
 		int32 shift_amount = cast_integer_verify<int32>(m_offset % 32);
 		wl_assert(element_index < 4);
 
@@ -298,11 +304,11 @@ public:
 		// check and make an integer mask out of the resulting boolean masks (a 4-bit value). If either integer mask has
 		// a value of 3 (i.e. all 4 bits set), the buffer is constant.
 		c_int32_4 all_zero = (m_all_zero == c_int32_4(0));
-		c_int32_4 all_one = (m_all_zero == c_int32_4(0xffffffff));
+		c_int32_4 all_one = (m_all_one == c_int32_4(0xffffffff));
 		int32 all_zero_msb = mask_from_msb(all_zero);
-		int32 all_one_msb = mask_from_msb(all_zero);
+		int32 all_one_msb = mask_from_msb(all_one);
 
-		return (all_zero_msb == 3) || (all_one_msb == 3);
+		return (all_zero_msb == 15) || (all_one_msb == 15);
 	}
 
 private:

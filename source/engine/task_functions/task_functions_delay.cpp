@@ -225,7 +225,7 @@ namespace delay_task_functions {
 			duration);
 	}
 
-	void delay_initializer(const s_task_function_context &context) {
+	void delay_voice_initializer(const s_task_function_context &context) {
 		s_buffer_operation_delay::voice_initialize(static_cast<s_buffer_operation_delay *>(context.task_memory));
 	}
 

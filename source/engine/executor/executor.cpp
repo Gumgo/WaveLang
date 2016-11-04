@@ -369,9 +369,10 @@ void c_executor::process_voice(const s_executor_chunk_context &chunk_context, ui
 		}
 	}
 
-	//if (flag_for_disable_voice_is_true) { $TODO
-	//	m_voice_allocator.disable_voice(voice_index);
-	//}
+	bool remain_active = m_buffer_manager.process_remain_active_output(voice.chunk_offset_samples);
+	if (!remain_active) {
+		m_voice_allocator.disable_voice(voice_index);
+	}
 }
 
 void c_executor::add_task(uint32 voice_index, uint32 task_index, uint32 sample_rate, uint32 frames) {

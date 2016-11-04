@@ -36,7 +36,7 @@ module real sampler_square(in real frequency) {
 }
 
 module real sampler_ext(in string sample, in real channel, in bool loop, in bool bidi, in real speed) {
-	bool loop_const = enforce_const(loop);
+	bool loop_const := core.enforce_const(loop);
 	return core.select(loop_const,
 		sampler.sampler_loop(sample, channel, bidi, speed, 0),
 		sampler.sampler(sample, channel, speed));

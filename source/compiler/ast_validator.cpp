@@ -581,12 +581,12 @@ public:
 
 				m_entry_point_found = true;
 
-				// Should have no return value and only out arguments
-				if (node->get_return_type() != c_ast_data_type(k_ast_primitive_type_void)) {
+				// Should have bool return value and only out arguments
+				if (node->get_return_type() != c_ast_data_type(k_ast_primitive_type_bool)) {
 					s_compiler_result error;
 					error.result = k_compiler_result_invalid_entry_point;
 					error.source_location = node->get_source_location();
-					error.message = "Entry point '" + node->get_name() + "' must not return a value";
+					error.message = "Entry point '" + node->get_name() + "' must return a bool";
 					m_errors->push_back(error);
 				}
 

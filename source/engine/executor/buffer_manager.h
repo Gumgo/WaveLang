@@ -10,6 +10,7 @@
 
 #include <vector>
 
+class c_buffer;
 class c_task_graph;
 
 class c_buffer_manager {
@@ -19,6 +20,7 @@ public:
 	void begin_chunk(uint32 chunk_size);
 	void initialize_buffers_for_voice();
 	void accumulate_voice_output(uint32 voice_sample_offset);
+	bool process_remain_active_output(uint32 voice_sample_offset);
 	void mix_voice_accumulation_buffers_to_output_buffer(
 		e_sample_format sample_format, c_wrapped_array<uint8> output_buffer);
 
@@ -41,6 +43,7 @@ private:
 	void swap_output_buffers_with_voice_accumulation_buffers(uint32 voice_sample_offset);
 	void add_output_buffers_to_voice_accumulation_buffers(uint32 voice_sample_offset);
 	void mix_voice_accumulation_buffers_to_channel_buffers();
+	bool scan_remain_active_buffer(const c_buffer *remain_active_buffer, uint32 voice_sample_offset) const;
 	void free_channel_buffers();
 
 #if IS_TRUE(ASSERTS_ENABLED)
