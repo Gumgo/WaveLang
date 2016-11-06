@@ -1059,7 +1059,7 @@ void c_task_graph::allocate_buffers(const c_execution_graph &execution_graph) {
 				// This mapping should always be equal because this is an inout buffer - there is only one buffer
 				wl_assert(nodes_to_buffers[argument.data.value.execution_graph_index_a] ==
 					nodes_to_buffers[argument.data.value.execution_graph_index_b]);
-			} else {
+			} else if (!argument.data.type.get_data_type().is_array()) {
 				wl_assert(argument.data.value.execution_graph_index_b == c_execution_graph::k_invalid_index);
 			}
 #endif // IS_TRUE(ASSERTS_ENABLED)
@@ -1567,6 +1567,7 @@ typename t_build_array_settings::t_array build_array(const c_execution_graph &ex
 			} else {
 				// Store the node index for now
 				settings.set_element_buffer_index_value(element, source_node_index);
+				out_is_constant = false;
 			}
 		}
 	}
