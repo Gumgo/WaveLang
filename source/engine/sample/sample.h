@@ -17,6 +17,7 @@ enum e_sample_loop_mode {
 };
 
 static const uint32 k_max_sample_padding = 4;
+static const uint32 k_max_sample_mipmap_levels = 16;
 
 // Contains a predefined buffer of audio sample data. This data has an associated sample rate which is independent of
 // the output sample rate. A sample can optionally consist of a mipmap of sub-samples for improved resampling quality.

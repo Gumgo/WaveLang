@@ -30,7 +30,8 @@ public:
 	// Returns event count
 	size_t process_controller_events(
 		c_wrapped_array<s_timestamped_controller_event> controller_events,
-		int64 buffer_duration_ns);
+		real64 buffer_time_sec,
+		real64 buffer_duration_sec);
 
 private:
 	struct ALIGNAS_LOCK_FREE s_controller_event_queue_element : public s_timestamped_controller_event {};

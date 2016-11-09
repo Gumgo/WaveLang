@@ -239,6 +239,7 @@ void c_command_line_interface::initialize_from_runtime_config() {
 	// Initialize audio stream
 	{
 		s_audio_driver_settings settings;
+		settings.set_default();
 		settings.device_index = config_settings.audio_device_index;
 		settings.sample_rate = config_settings.audio_sample_rate;
 		//settings.input_channels = config_settings.audio_input_channels; // $TODO $INPUT
@@ -258,8 +259,13 @@ void c_command_line_interface::initialize_from_runtime_config() {
 	// Initialize the controller
 	if (config_settings.controller_enabled) {
 		s_controller_driver_settings settings;
+		settings.set_default();
 		settings.device_index = config_settings.controller_device_index;
 		settings.controller_event_queue_size = config_settings.controller_event_queue_size;
+
+		if (runtime_context.audio_driver_interface.is_stream_running()) {
+			runtime_context.audio_driver_interface.get_stream_clock(settings.clock, settings.clock_context);
+		}
 
 		s_controller_driver_result result = runtime_context.controller_driver_interface.start_stream(settings);
 		if (result.result != k_controller_driver_result_success) {

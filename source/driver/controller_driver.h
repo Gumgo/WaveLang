@@ -22,6 +22,8 @@ struct s_controller_driver_result {
 	}
 };
 
+typedef real64 (*f_controller_clock)(void *context);
+
 struct s_controller_driver_settings {
 	// Index of the controller device to stream data from
 	uint32 device_index;
@@ -29,9 +31,15 @@ struct s_controller_driver_settings {
 	// Maximum number of allowed queued controller events before they start dropping
 	size_t controller_event_queue_size;
 
+	// Controller clock callback
+	f_controller_clock clock;
+	void *clock_context;
+
 	void set_default() {
 		device_index = 0;
 		controller_event_queue_size = 1024;
+		clock = nullptr;
+		clock_context = nullptr;
 	}
 };
 

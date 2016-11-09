@@ -34,6 +34,11 @@ static void setup_stream_parameters(const s_audio_driver_settings &settings, uin
 	// $TODO should suggestedLatency be user-provided?
 }
 
+static real64 stream_clock(void *context) {
+	wl_assert(context);
+	return Pa_GetStreamTime(static_cast<PaStream *>(context));
+}
+
 c_audio_driver_interface::c_audio_driver_interface() {
 	m_initialized = false;
 	m_device_count = 0;
@@ -200,6 +205,12 @@ const s_audio_driver_settings &c_audio_driver_interface::get_settings() const {
 	return m_settings;
 }
 
+void c_audio_driver_interface::get_stream_clock(f_audio_driver_stream_clock &out_clock, void *&out_context) {
+	wl_assert(is_stream_running());
+	out_clock = stream_clock;
+	out_context = m_stream;
+}
+
 int c_audio_driver_interface::stream_callback_internal(
 	const void *input, void *output, unsigned long frame_count,
 	const PaStreamCallbackTimeInfo *time_info, PaStreamCallbackFlags status_flags, void *user_data) {
@@ -207,8 +218,11 @@ int c_audio_driver_interface::stream_callback_internal(
 
 	wl_assert(frame_count == this_ptr->m_settings.frames_per_buffer);
 
+	const PaStreamInfo *stream_info = Pa_GetStreamInfo(this_ptr->m_stream);
+
 	s_audio_driver_stream_callback_context context;
 	context.driver_settings = &this_ptr->m_settings;
+	context.buffer_time_sec = time_info->outputBufferDacTime - stream_info->outputLatency;
 
 	size_t output_buffer_size =
 		context.driver_settings->output_channels *

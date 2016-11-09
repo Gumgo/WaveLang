@@ -289,6 +289,7 @@ void c_sample::initialize_for_mipmap(uint32 sample_rate, uint32 channel_count, u
 void c_sample::initialize(c_wrapped_array_const<c_sample *> mipmap) {
 	wl_assert(!m_sample_data.get_array().get_pointer());
 	wl_assert(m_mipmap.empty());
+	wl_assert(m_mipmap.size() <= k_max_sample_mipmap_levels);
 
 	wl_assert(m_type == k_type_none);
 	m_type = k_type_mipmap;

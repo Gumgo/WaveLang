@@ -39,7 +39,7 @@ struct s_controller_event {
 };
 
 struct s_timestamped_controller_event {
-	int64 timestamp_ns;
+	real64 timestamp_sec;
 	s_controller_event controller_event;
 };
 

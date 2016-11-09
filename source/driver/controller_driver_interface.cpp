@@ -2,8 +2,15 @@
 
 #include <algorithm>
 
-// Pad by 1 ms - allow events 1ms before the beginning of the buffer to be included
-static const int64 k_controller_event_buffer_padding_ns = k_nanoseconds_per_second / k_milliseconds_per_second;
+// nocheckin
+#include <iostream>
+
+// Pad by 100ms to pick up late events
+static const real64 k_controller_event_buffer_padding_sec = 0.1;
+
+// Add 15ms of latency to compensate for scheduler, jitter, etc.
+// $TODO $REALTIME make this configurable
+static const real64 k_unknown_latency = 0.015;
 
 c_controller_driver_interface::c_controller_driver_interface() {
 }
@@ -86,35 +93,61 @@ const s_controller_driver_settings &c_controller_driver_interface::get_settings(
 
 size_t c_controller_driver_interface::process_controller_events(
 	c_wrapped_array<s_timestamped_controller_event> controller_events,
-	int64 buffer_duration_ns) {
+	real64 buffer_time_sec,
+	real64 buffer_duration_sec) {
 	size_t controller_event_count = 0;
-	int64 largest_allowed_timestamp_ns = m_timestamp_stopwatch.query();
-	int64 buffer_beginning_timestamp_ns = largest_allowed_timestamp_ns - buffer_duration_ns;
+
+	// The provided buffer time represents the start time of the buffer that's about to be processed, taking expected
+	// latency into account. Ideally, this time is the current time (it should be on a realtime system). In a truly
+	// "realtime" system where we process events the moment they come in, this chunk would consume events from
+	// buffer_time_sec to buffer_time_sec + buffer_duration_sec. However, those events are actually in the future
+	// relative to now, so instead, use the events from the last chunk. Finally, to compensate for jitter from the
+	// scheduler and other sources, we add some extra ("unknown") latency.
+
+	//                 Unknown latency   Known latency
+	//                         /-------+-----------------------\
+	//             Events      |       |                       |
+	// --------[-$---$-----$--]------------------------------------------------------------
+	//               |                                         |
+	//               \---------------\                         |
+	//                               v                         |
+	//         Prev buffer     This buffer now                 |
+	// --------[==============][=$===$=====$==]--------------------------------------------
+	//                         |
+	//                         \-------------------------------\
+	//                                                         v
+	// --------------------------------------------------------[=$===$=====$==]------------
+	//                                                         Buffer is sent to ADC
+
+	real64 smallest_allowed_timestamp_sec = buffer_time_sec - buffer_duration_sec - k_unknown_latency;
+	real64 largest_allowed_timestamp_sec = smallest_allowed_timestamp_sec + buffer_duration_sec;
 
 	bool done = false;
 	while (!done) {
 		s_controller_event_queue_element element;
 
-		if (!m_controller_event_queue.peek(element) || element.timestamp_ns >= largest_allowed_timestamp_ns) {
+		if (!m_controller_event_queue.peek(element) || element.timestamp_sec >= largest_allowed_timestamp_sec) {
 			done = true;
 		} else {
 			// Since this is the only thread reading elements, we're guaranteed to pop the element we just peeked at
 			m_controller_event_queue.pop();
 
-			int64 relative_timestamp_ns = element.timestamp_ns - buffer_beginning_timestamp_ns;
-			if (relative_timestamp_ns >= -k_controller_event_buffer_padding_ns) {
-				relative_timestamp_ns = std::max(0ll, relative_timestamp_ns);
+			real64 relative_timestamp_sec = element.timestamp_sec - smallest_allowed_timestamp_sec;
+			if (relative_timestamp_sec >= -k_controller_event_buffer_padding_sec) {
+				relative_timestamp_sec = std::max(0.0, relative_timestamp_sec);
 
 				if (controller_event_count < controller_events.get_count()) {
 					// Copy the event into the buffer
 					s_timestamped_controller_event &buffer_event = controller_events[controller_event_count];
-					buffer_event.timestamp_ns = relative_timestamp_ns;
+					buffer_event.timestamp_sec = relative_timestamp_sec;
 					buffer_event.controller_event = element.controller_event;
 					controller_event_count++;
 				} else {
 					// Too many events
 				}
 			} else {
+				// nocheckin
+				std::cout << "dropped! " << relative_timestamp_sec * 1000 << "\n";
 				// Drop the event - it's in the past
 			}
 		}
@@ -130,8 +163,10 @@ void c_controller_driver_interface::submit_controller_event_wrapper(
 }
 
 void c_controller_driver_interface::submit_controller_event(const s_controller_event &controller_event) {
+	const s_controller_driver_settings &settings = get_settings();
+
 	s_controller_event_queue_element element;
-	element.timestamp_ns = m_timestamp_stopwatch.query();
+	element.timestamp_sec = settings.clock ? settings.clock(settings.clock_context) : 0.0;
 	element.controller_event = controller_event;
 
 	// Attempt to push the element - drop if out of space

@@ -11,6 +11,7 @@ void s_runtime_context::stream_callback(const s_audio_driver_stream_callback_con
 	chunk_context.output_channels = context.driver_settings->output_channels;
 	chunk_context.sample_format = context.driver_settings->sample_format;
 	chunk_context.frames = context.driver_settings->frames_per_buffer;
+	chunk_context.buffer_time_sec = context.buffer_time_sec;
 	chunk_context.output_buffer = context.output_buffer;
 	// $TODO add more
 
@@ -18,10 +19,12 @@ void s_runtime_context::stream_callback(const s_audio_driver_stream_callback_con
 }
 
 size_t s_runtime_context::process_controller_events_callback(
-	void *context, c_wrapped_array<s_timestamped_controller_event> controller_events, int64 buffer_duration_ns) {
+	void *context, c_wrapped_array<s_timestamped_controller_event> controller_events,
+	real64 buffer_time_sec, real64 buffer_duration_sec) {
 	s_runtime_context *this_ptr = static_cast<s_runtime_context *>(context);
 	if (this_ptr->controller_driver_interface.is_stream_running()) {
-		return this_ptr->controller_driver_interface.process_controller_events(controller_events, buffer_duration_ns);
+		return this_ptr->controller_driver_interface.process_controller_events(
+			controller_events, buffer_time_sec, buffer_duration_sec);
 	} else {
 		return 0;
 	}

@@ -4,6 +4,8 @@
 
 #include <algorithm>
 
+static uint32 compute_sample_offset(real64 timestamp_sec, uint32 sample_rate, uint32 frame_count);
+
 c_voice_allocator::c_voice_allocator() {
 }
 
@@ -83,8 +85,8 @@ void c_voice_allocator::allocate_voices_for_chunk(
 			m_voice_list_nodes.remove_node_from_list(m_voice_list, voice_index);
 			m_voice_list_nodes.push_node_onto_list_back(m_voice_list, voice_index);
 
-			// Possible alternative: prioritize the first N notes for this chunk, rather than the list. I don't think this
-			// really makes sense though, as it seems more expected to have the last N notes pressed play.
+			// Possible alternative: prioritize the first N notes for this chunk, rather than the list. I don't think
+			// this really makes sense though, as it seems more expected to have the last N notes pressed play.
 			//if (voice.activated_this_chunk) {
 			//	continue;
 			//}
@@ -93,11 +95,8 @@ void c_voice_allocator::allocate_voices_for_chunk(
 			voice.activated_this_chunk = true;
 			voice.released = false;
 
-			// offset_samples = timestamp_ns / ns_per_sample
-			int64 offset_samples = controller_event.timestamp_ns * sample_rate / k_nanoseconds_per_second;
-			offset_samples = std::min(std::max(offset_samples, 0ll), static_cast<int64>(sample_rate - 1));
-
-			voice.chunk_offset_samples = cast_integer_verify<uint32>(offset_samples);
+			voice.chunk_offset_samples =
+				compute_sample_offset(controller_event.timestamp_sec, sample_rate, chunk_sample_count);
 			voice.note_id = note_on_data->note_id;
 			voice.note_velocity = note_on_data->velocity;
 			voice.note_release_sample = -1;
@@ -115,9 +114,8 @@ void c_voice_allocator::allocate_voices_for_chunk(
 				}
 
 				if (voice.note_id == note_off_data->note_id && !voice.released) {
-					int64 offset_samples = controller_event.timestamp_ns * sample_rate / k_nanoseconds_per_second;
-					offset_samples = std::min(std::max(offset_samples, 0ll), static_cast<int64>(sample_rate - 1));
-					voice.note_release_sample = cast_integer_verify<uint32>(offset_samples);
+					voice.note_release_sample =
+						compute_sample_offset(controller_event.timestamp_sec, sample_rate, chunk_sample_count);
 					voice.released = true;
 					break;
 				}
@@ -149,4 +147,11 @@ uint32 c_voice_allocator::get_voice_count() const {
 
 const c_voice_allocator::s_voice &c_voice_allocator::get_voice(uint32 voice_index) const {
 	return m_voices[voice_index];
+}
+
+static uint32 compute_sample_offset(real64 timestamp_sec, uint32 sample_rate, uint32 frame_count) {
+	// offset_samples = timestamp_sec * sample_rate
+	int64 offset_samples = static_cast<int64>(timestamp_sec * static_cast<real64>(sample_rate));
+	offset_samples = std::min(std::max(offset_samples, 0ll), static_cast<int64>(frame_count - 1));
+	return static_cast<uint32>(offset_samples);
 }

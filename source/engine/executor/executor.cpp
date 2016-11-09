@@ -276,7 +276,8 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 	size_t controller_event_count = m_settings.process_controller_events(
 		m_settings.process_controller_events_context,
 		m_controller_event_manager.get_writable_controller_events(),
-		chunk_context.frames * k_nanoseconds_per_second / chunk_context.sample_rate);
+		chunk_context.buffer_time_sec,
+		static_cast<real64>(chunk_context.frames) / static_cast<real64>(chunk_context.sample_rate));
 	m_controller_event_manager.process_controller_events(controller_event_count);
 
 	m_voice_allocator.allocate_voices_for_chunk(

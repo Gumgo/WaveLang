@@ -25,7 +25,8 @@ class c_buffer;
 struct s_task_function;
 
 typedef size_t (*f_process_controller_events)(
-	void *context, c_wrapped_array<s_timestamped_controller_event> controller_events, int64 buffer_duration_ns);
+	void *context, c_wrapped_array<s_timestamped_controller_event> controller_events,
+	real64 buffer_time_sec, real64 buffer_duration_sec);
 
 struct s_executor_settings {
 	const c_task_graph *task_graph;
@@ -49,6 +50,7 @@ struct s_executor_chunk_context {
 	uint32 output_channels;
 	e_sample_format sample_format;
 	uint32 frames;
+	real64 buffer_time_sec;
 
 	c_wrapped_array<uint8> output_buffer;
 };

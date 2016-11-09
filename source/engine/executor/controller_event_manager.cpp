@@ -45,7 +45,7 @@ void c_controller_event_manager::process_controller_events(size_t controller_eve
 			}
 
 			return (sort_key_a == sort_key_b) ?
-				event_a.timestamp_ns < event_b.timestamp_ns :
+				event_a.timestamp_sec < event_b.timestamp_sec :
 				sort_key_a < sort_key_b;
 		}
 	};

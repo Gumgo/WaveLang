@@ -50,8 +50,7 @@
 			- Emit error on initialize if this is not true
 
 - Fix sampler
-	- Use doubles for keeping track of time
-	- Don't convert time to second values, just keep as samples
+	- Remove branching from fetch_sample by using multiple sinc tables to remove the sample shift operations
 
 - Plugin system ($PLUGIN)
 	- Allow users to register their own native modules and tasks
@@ -61,7 +60,7 @@
 	- Support input parameters to the main module taken from an audio input source
 
 - MIDI input support ($MIDI)
-	- Convert to intermediate format so we're not tied to MIDI
+	- Add support for more channels
 
 - Upsampled buffer operations ($UPSAMPLE)
 	- Upsampled types:
@@ -79,5 +78,3 @@
 			- module real@Nx __native_resample@Nx(in real@Mx signal)
 			- N and M are independent
 		- When downsampling, if filter_nyquist is true, a filter is applied at the nyquist frequency
-
-- Disable inactive voices

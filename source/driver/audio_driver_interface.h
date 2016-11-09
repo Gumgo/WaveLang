@@ -39,6 +39,7 @@ struct s_audio_driver_settings;
 
 struct s_audio_driver_stream_callback_context {
 	const s_audio_driver_settings *driver_settings;
+	real64 buffer_time_sec;
 	c_wrapped_array<uint8> output_buffer;
 	// $TODO add more data
 
@@ -46,6 +47,8 @@ struct s_audio_driver_stream_callback_context {
 };
 
 typedef void (*f_audio_driver_stream_callback)(const s_audio_driver_stream_callback_context &context);
+
+typedef real64 (*f_audio_driver_stream_clock)(void *context);
 
 struct s_audio_driver_settings {
 	// Index of the device to use for the stream
@@ -105,6 +108,8 @@ public:
 	void stop_stream();
 	bool is_stream_running() const;
 	const s_audio_driver_settings &get_settings() const;
+
+	void get_stream_clock(f_audio_driver_stream_clock &out_clock, void *&out_context);
 
 private:
 	static int stream_callback_internal(
