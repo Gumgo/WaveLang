@@ -26,7 +26,7 @@ struct s_runtime_context {
 
 	// We store two task graphs, one for the active audio stream, and one for the loading synth. We load into the
 	// non-active one and then swap at a deterministic time.
-	c_task_graph task_graphs[2];
+	s_static_array<c_task_graph, 2> task_graphs;
 	int32 active_task_graph;
 };
 

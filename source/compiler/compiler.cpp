@@ -11,7 +11,7 @@
 #include "compiler/parser.h"
 #include "compiler/preprocessor.h"
 
-#include "execution_graph/execution_graph.h"
+#include "execution_graph/instrument.h"
 
 #include <algorithm>
 #include <fstream>
@@ -28,11 +28,11 @@ static s_compiler_result read_and_preprocess_source_file(
 static void fixup_source(std::vector<char> &inout_source);
 
 s_compiler_result c_compiler::compile(const char *root_path, const char *source_filename,
-	c_execution_graph *out_execution_graph) {
+	c_instrument *out_instrument) {
 	wl_assert(root_path);
 	wl_assert(source_filename);
-	wl_assert(out_execution_graph);
-	wl_assert(out_execution_graph->get_node_count() == 0);
+	wl_assert(out_instrument);
+	wl_assert(out_instrument->get_execution_graph_count() == 0);
 
 	s_compiler_result result;
 	result.clear();
@@ -61,10 +61,9 @@ s_compiler_result c_compiler::compile(const char *root_path, const char *source_
 	c_lexer::initialize_lexer();
 	c_preprocessor::initialize_preprocessor();
 
-	s_execution_graph_globals execution_graph_globals;
+	s_execution_graph_globals_context execution_graph_globals_context;
+
 	{
-		s_execution_graph_globals_context execution_graph_globals_context;
-		execution_graph_globals_context.globals = &execution_graph_globals;
 		execution_graph_globals_context.clear();
 
 		c_execution_graph_globals_parser::register_preprocessor_commands(&execution_graph_globals_context);
@@ -78,12 +77,11 @@ s_compiler_result c_compiler::compile(const char *root_path, const char *source_
 				return result;
 			}
 		}
+
+		execution_graph_globals_context.assign_defaults();
 	}
 
 	c_preprocessor::shutdown_preprocessor();
-
-	// Store the globals in the graph so they are accessible in future compilation phases
-	out_execution_graph->set_globals(execution_graph_globals);
 
 	// Run the lexer on the preprocessed files
 	s_lexer_output lexer_output;
@@ -146,37 +144,53 @@ s_compiler_result c_compiler::compile(const char *root_path, const char *source_
 		}
 	}
 
-	// Build the execution graph. This can fail if loops don't resolve to constants.
+	// Loop over each instance of execution graph globals and build a graph
 	{
-		std::vector<s_compiler_result> graph_errors;
-		result = c_execution_graph_builder::build_execution_graph(ast.get(), out_execution_graph, graph_errors);
+		std::vector<s_execution_graph_globals> execution_graph_globals_set =
+			execution_graph_globals_context.build_execution_graph_globals_set();
 
-		for (size_t error = 0; error < graph_errors.size(); error++) {
-			output_error(context, graph_errors[error]);
-		}
+		for (size_t index = 0; index < execution_graph_globals_set.size(); index++) {
+			c_execution_graph *execution_graph = new c_execution_graph();
 
-		if (result.result != k_compiler_result_success) {
-			output_error(context, result);
-			return result;
+			// Add to the instrument immediately to prevent memory leaks
+			out_instrument->add_execution_graph(execution_graph);
+
+			// Store the globals in the graph so they are accessible in future compilation phases
+			execution_graph->set_globals(execution_graph_globals_set[index]);
+
+			// Build the execution graph. This can fail if loops don't resolve to constants.
+			{
+				std::vector<s_compiler_result> graph_errors;
+				result = c_execution_graph_builder::build_execution_graph(ast.get(), execution_graph, graph_errors);
+
+				for (size_t error = 0; error < graph_errors.size(); error++) {
+					output_error(context, graph_errors[error]);
+				}
+
+				if (result.result != k_compiler_result_success) {
+					output_error(context, result);
+					return result;
+				}
+			}
+
+			// Optimize the graph. This can fail if constant inputs don't resolve to constants.
+			{
+				std::vector<s_compiler_result> optimization_errors;
+				result = c_execution_graph_optimizer::optimize_graph(execution_graph, optimization_errors);
+
+				for (size_t error = 0; error < optimization_errors.size(); error++) {
+					output_error(context, optimization_errors[error]);
+				}
+
+				if (result.result != k_compiler_result_success) {
+					output_error(context, result);
+					return result;
+				}
+			}
 		}
 	}
 
-	// Optimize the graph. This can fail if constant inputs don't resolve to constants.
-	{
-		std::vector<s_compiler_result> optimization_errors;
-		result = c_execution_graph_optimizer::optimize_graph(out_execution_graph, optimization_errors);
-
-		for (size_t error = 0; error < optimization_errors.size(); error++) {
-			output_error(context, optimization_errors[error]);
-		}
-
-		if (result.result != k_compiler_result_success) {
-			output_error(context, result);
-			return result;
-		}
-	}
-
-	wl_assert(out_execution_graph->validate());
+	wl_assert(out_instrument->validate());
 
 	return result;
 }

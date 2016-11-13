@@ -267,7 +267,15 @@ struct s_native_module_compile_time_argument {
 
 // A function which can be called at compile-time to resolve the value(s) of native module calls with constant inputs
 typedef c_wrapped_array<s_native_module_compile_time_argument> c_native_module_compile_time_argument_list;
-typedef void (*f_native_module_compile_time_call)(c_native_module_compile_time_argument_list arguments);
+
+struct s_native_module_context {
+	uint32 sample_rate;
+	uint32 chunk_size;
+
+	c_native_module_compile_time_argument_list *arguments;
+};
+
+typedef void (*f_native_module_compile_time_call)(const s_native_module_context &context);
 
 struct s_native_module {
 	// Unique identifier for this native module

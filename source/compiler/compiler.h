@@ -7,12 +7,12 @@
 
 // The entry point to the wavelang compiler
 
-class c_execution_graph;
+class c_instrument;
 
 class c_compiler {
 public:
 	static s_compiler_result compile(const char *root_path, const char *source_filename,
-		c_execution_graph *out_execution_graph);
+		c_instrument *out_instrument);
 };
 
 #endif // WAVELANG_COMPILER_COMPILER_H__

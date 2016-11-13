@@ -5,6 +5,7 @@
 #include "compiler/getopt/getopt.h"
 
 #include "execution_graph/execution_graph.h"
+#include "execution_graph/instrument.h"
 #include "execution_graph/native_module_registry.h"
 #include "execution_graph/native_modules/native_module_registration.h"
 
@@ -16,6 +17,8 @@ static const char *k_wavelang_synth_extension = "wls";
 static const char *k_documentation_filename = "registered_native_modules.txt";
 
 int main(int argc, char **argv) {
+	int32 result = 0;
+
 	c_native_module_registry::initialize();
 	register_native_modules(true);
 
@@ -75,10 +78,10 @@ int main(int argc, char **argv) {
 	// Compile each input file
 	for (int arg = first_file_argument_index; arg < argc; arg++) {
 		std::cout << "Compiling '" << argv[arg] << "'\n";
-		c_execution_graph execution_graph;
-		s_compiler_result result = c_compiler::compile(".\\", argv[arg], &execution_graph);
+		c_instrument instrument;
+		s_compiler_result compile_result = c_compiler::compile(".\\", argv[arg], &instrument);
 
-		if (result.result == k_compiler_result_success) {
+		if (compile_result.result == k_compiler_result_success) {
 			std::string fname_no_ext = argv[arg];
 			// Add or replace extension
 			size_t last_slash = fname_no_ext.find_last_of('/');
@@ -98,24 +101,32 @@ int main(int argc, char **argv) {
 			std::string out_fname = fname_no_ext + '.' + k_wavelang_synth_extension;
 			std::cout << "Compiled '" << argv[arg] << "' successfully, saving result to '" << out_fname << "'\n";
 
-			e_execution_graph_result save_result = execution_graph.save(out_fname.c_str());
-			if (save_result != k_execution_graph_result_success) {
+			e_instrument_result save_result = instrument.save(out_fname.c_str());
+			if (save_result != k_instrument_result_success) {
 				std::cerr << "Failed to save '" << out_fname << "' (result code " << save_result << ")\n";
 			}
 
 			if (output_execution_graph) {
-				std::string graph_fname = fname_no_ext + '.' + k_graphviz_file_extension;
-				if (execution_graph.generate_graphviz_file(graph_fname.c_str(), condense_large_arrays)) {
-					std::cout << "Saved execution graph to '" << graph_fname << "'\n";
-				} else {
-					std::cerr << "Failed to save '" << graph_fname << "'\n";
+				for (uint32 graph_index = 0; graph_index < instrument.get_execution_graph_count(); graph_index++) {
+					std::string graph_fname = fname_no_ext + '.' + std::to_string(graph_index) +
+						'.' + k_graphviz_file_extension;
+
+					bool execution_graph_result = instrument.get_execution_graph(graph_index)->generate_graphviz_file(
+						graph_fname.c_str(), condense_large_arrays);
+
+					if (execution_graph_result) {
+						std::cout << "Saved execution graph to '" << graph_fname << "'\n";
+					} else {
+						std::cerr << "Failed to save '" << graph_fname << "'\n";
+					}
 				}
 			}
 		} else {
 			std::cerr << "Failed to compile '" << argv[arg] << "'\n";
+			result = 1;
 		}
 	}
 
 	c_native_module_registry::shutdown();
-	return 0;
+	return result;
 }

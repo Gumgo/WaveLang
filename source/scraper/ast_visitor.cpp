@@ -250,6 +250,7 @@ void c_ast_visitor::visit_native_module_declaration(clang::FunctionDecl *decl) {
 	s_native_module_declaration native_module;
 	native_module.library_index = m_current_library_index;
 	std::string function_name = decl->getName();
+	native_module.first_argument_is_context = false;
 	native_module.compile_time_call = function_name;
 	native_module.compile_time_function_call = get_function_call(decl);
 
@@ -285,6 +286,17 @@ void c_ast_visitor::visit_native_module_declaration(clang::FunctionDecl *decl) {
 
 	for (clang::ParmVarDecl **it = decl->param_begin(); it != decl->param_end(); it++) {
 		clang::ParmVarDecl *param_decl = *it;
+
+		if (it == decl->param_begin()) {
+			clang::QualType type = param_decl->getType();
+			const clang::Type *canonical_type = type.getCanonicalType().getTypePtr();
+			std::string type_string = clang::QualType::getAsString(canonical_type, type.getQualifiers());
+
+			if (type_string == "const struct s_native_module_context &") {
+				native_module.first_argument_is_context = true;
+				continue;
+			}
+		}
 
 		c_annotation_collection param_annotations(param_decl->getAttrs());
 

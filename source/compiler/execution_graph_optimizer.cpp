@@ -125,9 +125,14 @@ void c_execution_graph_constant_evaluator::try_evaluate_node(uint32 node_index) 
 
 		// Make the compile time call to resolve the outputs
 		if (all_inputs_evaluated) {
-			c_native_module_compile_time_argument_list wrapped_arg_list(
+			s_native_module_context native_module_context;
+			ZERO_STRUCT(&native_module_context);
+			// $TODO $TARGET fill in other fields
+			c_native_module_compile_time_argument_list arguments(
 				arg_list.empty() ? nullptr : &arg_list.front(), arg_list.size());
-			native_module.compile_time_call(wrapped_arg_list);
+			native_module_context.arguments = &arguments;
+
+			native_module.compile_time_call(native_module_context);
 			store_native_module_call_results(native_module, native_module_node_index, arg_list);
 		}
 
@@ -429,9 +434,14 @@ static bool optimize_native_module_call(c_execution_graph *execution_graph, uint
 
 			{
 				// Make the compile time call to resolve the outputs
-				c_native_module_compile_time_argument_list wrapped_arg_list(
+				s_native_module_context native_module_context;
+				ZERO_STRUCT(&native_module_context);
+				// $TODO $TARGET fill in other fields
+				c_native_module_compile_time_argument_list arguments(
 					arg_list.empty() ? nullptr : &arg_list.front(), arg_list.size());
-				native_module.compile_time_call(wrapped_arg_list);
+				native_module_context.arguments = &arguments;
+
+				native_module.compile_time_call(native_module_context);
 			}
 
 			next_output = 0;

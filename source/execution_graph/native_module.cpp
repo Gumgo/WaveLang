@@ -145,7 +145,6 @@ bool c_native_module_qualified_data_type::operator!=(const c_native_module_quali
 }
 
 uint32 c_native_module_data_type::write() const {
-	// $TODO endianness?
 	wl_assert(is_valid()); // Invalid type is only used as a sentinel in a few spots, should never write it
 	s_native_module_data_type_format format;
 	format.primitive_type = static_cast<uint16>(m_primitive_type);
@@ -154,7 +153,6 @@ uint32 c_native_module_data_type::write() const {
 }
 
 bool c_native_module_data_type::read(uint32 data) {
-	// $TODO endianness?
 	s_native_module_data_type_format format;
 	format.data = data;
 

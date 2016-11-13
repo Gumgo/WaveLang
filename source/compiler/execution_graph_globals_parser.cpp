@@ -5,11 +5,44 @@
 
 void s_execution_graph_globals_context::clear() {
 	max_voices_command_executed = false;
-	sample_rate_command_executed = false;
-	chunk_size_command_executed = false;
+	max_voices = 0;
 
-	globals->max_voices = 1;
-	// $TODO other defaults as they are created
+	sample_rate_command_executed = false;
+	sample_rates.clear();
+
+	chunk_size_command_executed = false;
+	chunk_size = 0;
+}
+
+void s_execution_graph_globals_context::assign_defaults() {
+	if (!max_voices_command_executed) {
+		max_voices = 1;
+	}
+
+	if (!sample_rate_command_executed) {
+		wl_assert(sample_rates.empty());
+		sample_rates.push_back(0);
+	}
+
+	if (!chunk_size_command_executed) {
+		chunk_size = 0;
+	}
+}
+
+std::vector<s_execution_graph_globals> s_execution_graph_globals_context::build_execution_graph_globals_set() const {
+	std::vector<s_execution_graph_globals> result;
+
+	// Add loop nesting for each multi-valued execution graph global:
+	for (size_t sample_rate_index = 0; sample_rate_index < sample_rates.size(); sample_rate_index++) {
+		s_execution_graph_globals globals;
+		globals.max_voices = max_voices;
+		globals.sample_rate = sample_rates[sample_rate_index];
+		globals.chunk_size = chunk_size;
+
+		result.push_back(globals);
+	}
+
+	return result;
 }
 
 // Utilities for parsing arguments
@@ -78,7 +111,7 @@ static s_compiler_result preprocessor_command_max_voices(
 		return result;
 	}
 
-	if (!get_unsigned_nonzero_integer(arguments.get_argument(0), globals_context->globals->max_voices)) {
+	if (!get_unsigned_nonzero_integer(arguments.get_argument(0), globals_context->max_voices)) {
 		result.result = k_compiler_result_invalid_globals;
 		result.source_location = arguments.get_argument(0).source_location;
 		result.message = "Invalid max_voices value '" + arguments.get_argument(0).token_string.to_std_string() + "'";
@@ -111,9 +144,8 @@ static s_compiler_result preprocessor_command_sample_rate(
 		return result;
 	}
 
-	// $TODO resize sample_rate array to the argument size
 	for (size_t index = 0; index < arguments.get_argument_count(); index++) {
-		uint32 sample_rate; // $TODO assign to the real value
+		uint32 sample_rate;
 		if (!get_unsigned_nonzero_integer(arguments.get_argument(index), sample_rate)) {
 			result.result = k_compiler_result_invalid_globals;
 			result.source_location = arguments.get_argument(index).source_location;
@@ -121,6 +153,17 @@ static s_compiler_result preprocessor_command_sample_rate(
 				arguments.get_argument(index).token_string.to_std_string() + "'";
 			return result;
 		}
+
+		for (size_t existing_index = 0; existing_index < globals_context->sample_rates.size(); existing_index++) {
+			if (sample_rate == globals_context->sample_rates[existing_index]) {
+				result.result = k_compiler_result_invalid_globals;
+				result.source_location = arguments.get_argument(index).source_location;
+				result.message = "Duplicate sample_rate value '" + std::to_string(sample_rate) + "' specified";
+				return result;
+			}
+		}
+
+		globals_context->sample_rates.push_back(sample_rate);
 	}
 
 	globals_context->sample_rate_command_executed = true;
@@ -149,8 +192,7 @@ static s_compiler_result preprocessor_command_chunk_size(
 		return result;
 	}
 
-	uint32 chunk_size; // $TODO assign to the real value
-	if (!get_unsigned_nonzero_integer(arguments.get_argument(0), chunk_size)) {
+	if (!get_unsigned_nonzero_integer(arguments.get_argument(0), globals_context->chunk_size)) {
 		result.result = k_compiler_result_invalid_globals;
 		result.source_location = arguments.get_argument(0).source_location;
 		result.message = "Invalid chunk_size value '" + arguments.get_argument(0).token_string.to_std_string() + "'";

@@ -5,6 +5,7 @@
 #include "engine/task_functions/task_function_registration.h"
 
 #include "execution_graph/execution_graph.h"
+#include "execution_graph/instrument.h"
 #include "execution_graph/native_module_registry.h"
 #include "execution_graph/native_modules/native_module_registration.h"
 
@@ -41,8 +42,8 @@ private:
 	void initialize_from_runtime_config();
 	void process_command_load_synth(const s_command &command);
 
-	c_runtime_config runtime_config;
-	s_runtime_context runtime_context;
+	c_runtime_config m_runtime_config;
+	s_runtime_context m_runtime_context;
 };
 
 int main(int argc, char **argv) {
@@ -71,7 +72,7 @@ int c_command_line_interface::main_function(bool list_mode) {
 	register_task_functions();
 
 	{
-		s_audio_driver_result driver_result = runtime_context.audio_driver_interface.initialize();
+		s_audio_driver_result driver_result = m_runtime_context.audio_driver_interface.initialize();
 		if (driver_result.result != k_audio_driver_result_success) {
 			std::cout << driver_result.message << "\n";
 			return 1;
@@ -79,7 +80,7 @@ int c_command_line_interface::main_function(bool list_mode) {
 	}
 
 	{
-		s_controller_driver_result driver_result = runtime_context.controller_driver_interface.initialize();
+		s_controller_driver_result driver_result = m_runtime_context.controller_driver_interface.initialize();
 		if (driver_result.result != k_controller_driver_result_success) {
 			std::cout << driver_result.message << "\n";
 			return 1;
@@ -89,16 +90,16 @@ int c_command_line_interface::main_function(bool list_mode) {
 	if (list_mode) {
 		list_devices();
 	} else {
-		runtime_config.read_settings(
-			&runtime_context.audio_driver_interface,
-			&runtime_context.controller_driver_interface,
+		m_runtime_config.read_settings(
+			&m_runtime_context.audio_driver_interface,
+			&m_runtime_context.controller_driver_interface,
 			k_runtime_config_filename);
 
 		initialize_event_data_types();
 		initialize_from_runtime_config();
 
 		// None active initially
-		runtime_context.active_task_graph = -1;
+		m_runtime_context.active_task_graph = -1;
 
 		bool done = false;
 		while (!done) {
@@ -116,11 +117,11 @@ int c_command_line_interface::main_function(bool list_mode) {
 		}
 	}
 
-	runtime_context.executor.shutdown();
-	runtime_context.controller_driver_interface.stop_stream();
-	runtime_context.controller_driver_interface.shutdown();
-	runtime_context.audio_driver_interface.stop_stream();
-	runtime_context.audio_driver_interface.shutdown();
+	m_runtime_context.executor.shutdown();
+	m_runtime_context.controller_driver_interface.stop_stream();
+	m_runtime_context.controller_driver_interface.shutdown();
+	m_runtime_context.audio_driver_interface.stop_stream();
+	m_runtime_context.audio_driver_interface.shutdown();
 
 	c_task_function_registry::shutdown();
 	c_native_module_registry::shutdown();
@@ -221,20 +222,20 @@ bool c_command_line_interface::is_whitespace(char c) {
 
 void c_command_line_interface::list_devices() {
 	std::cout << "Audio devices:\n";
-	for (uint32 index = 0; index < runtime_context.audio_driver_interface.get_device_count(); index++) {
-		s_audio_device_info device_info = runtime_context.audio_driver_interface.get_device_info(index);
+	for (uint32 index = 0; index < m_runtime_context.audio_driver_interface.get_device_count(); index++) {
+		s_audio_device_info device_info = m_runtime_context.audio_driver_interface.get_device_info(index);
 		std::cout << index << ": " << device_info.name << "\n";
 	}
 
 	std::cout << "Controller devices:\n";
-	for (uint32 index = 0; index < runtime_context.controller_driver_interface.get_device_count(); index++) {
-		s_controller_device_info device_info = runtime_context.controller_driver_interface.get_device_info(index);
+	for (uint32 index = 0; index < m_runtime_context.controller_driver_interface.get_device_count(); index++) {
+		s_controller_device_info device_info = m_runtime_context.controller_driver_interface.get_device_info(index);
 		std::cout << index << ": " << device_info.name << "\n";
 	}
 }
 
 void c_command_line_interface::initialize_from_runtime_config() {
-	const c_runtime_config::s_settings &config_settings = runtime_config.get_settings();
+	const c_runtime_config::s_settings &config_settings = m_runtime_config.get_settings();
 
 	// Initialize audio stream
 	{
@@ -247,10 +248,10 @@ void c_command_line_interface::initialize_from_runtime_config() {
 		settings.sample_format = config_settings.audio_sample_format;
 		settings.frames_per_buffer = config_settings.audio_frames_per_buffer;
 
-		settings.stream_callback = runtime_context.stream_callback;
-		settings.stream_callback_user_data = &runtime_context;
+		settings.stream_callback = m_runtime_context.stream_callback;
+		settings.stream_callback_user_data = &m_runtime_context;
 
-		s_audio_driver_result result = runtime_context.audio_driver_interface.start_stream(settings);
+		s_audio_driver_result result = m_runtime_context.audio_driver_interface.start_stream(settings);
 		if (result.result != k_audio_driver_result_success) {
 			std::cout << result.message << "\n";
 		}
@@ -263,11 +264,11 @@ void c_command_line_interface::initialize_from_runtime_config() {
 		settings.device_index = config_settings.controller_device_index;
 		settings.controller_event_queue_size = config_settings.controller_event_queue_size;
 
-		if (runtime_context.audio_driver_interface.is_stream_running()) {
-			runtime_context.audio_driver_interface.get_stream_clock(settings.clock, settings.clock_context);
+		if (m_runtime_context.audio_driver_interface.is_stream_running()) {
+			m_runtime_context.audio_driver_interface.get_stream_clock(settings.clock, settings.clock_context);
 		}
 
-		s_controller_driver_result result = runtime_context.controller_driver_interface.start_stream(settings);
+		s_controller_driver_result result = m_runtime_context.controller_driver_interface.start_stream(settings);
 		if (result.result != k_controller_driver_result_success) {
 			std::cout << result.message << "\n";
 		}
@@ -276,35 +277,57 @@ void c_command_line_interface::initialize_from_runtime_config() {
 
 void c_command_line_interface::process_command_load_synth(const s_command &command) {
 	if (command.arguments.size() == 1) {
-		// Try to load the execution graph
-		c_execution_graph execution_graph;
+		// Try to load the instrument
+		c_instrument instrument;
 
 		// First argument is the path to load
-		e_execution_graph_result load_result = execution_graph.load(command.arguments[0].c_str());
-		if (load_result != k_execution_graph_result_success) {
+		e_instrument_result load_result = instrument.load(command.arguments[0].c_str());
+		if (load_result != k_instrument_result_success) {
 			std::cout << "Failed to load '" << command.arguments[0] << "' (result code " << load_result << ")\n";
 			return;
 		}
 
-		// Load into the inactive task graph
-		int32 loading_task_graph;
-		if (runtime_context.active_task_graph == -1) {
-			loading_task_graph = 0;
-		} else {
-			loading_task_graph = (runtime_context.active_task_graph == 0) ? 1 : 0;
+		// Select the execution graph from the instrument
+		uint32 execution_graph_index;
+		{
+			s_execution_graph_requirements requirements;
+			requirements.sample_rate = static_cast<uint32>(
+				m_runtime_context.audio_driver_interface.get_settings().sample_rate);
+
+			e_execution_graph_for_requirements_result execution_graph_result =
+				instrument.get_execution_graph_for_requirements(requirements, execution_graph_index);
+
+			if (execution_graph_result == k_execution_graph_for_requirements_result_no_match) {
+				std::cout << "Failed to find execution graph matching the runtime requirements\n";
+				return;
+			} else if (execution_graph_result == k_execution_graph_for_requirements_result_ambiguous_matches) {
+				std::cout << "Found multiple execution graphs matching the runtime requirements - "
+					"refine stream parameters or execution graph globals\n";
+				return;
+			} else {
+				wl_assert(execution_graph_result == k_execution_graph_for_requirements_result_success);
+			}
 		}
 
-		c_task_graph &task_graph = runtime_context.task_graphs[loading_task_graph];
-		if (!task_graph.build(execution_graph)) {
+		// Load into the inactive task graph
+		int32 loading_task_graph;
+		if (m_runtime_context.active_task_graph == -1) {
+			loading_task_graph = 0;
+		} else {
+			loading_task_graph = (m_runtime_context.active_task_graph == 0) ? 1 : 0;
+		}
+
+		c_task_graph &task_graph = m_runtime_context.task_graphs[loading_task_graph];
+		if (!task_graph.build(*instrument.get_execution_graph(execution_graph_index))) {
 			std::cout << "Failed to build task graph\n";
 			return;
 		}
 
-		if (runtime_context.audio_driver_interface.is_stream_running()) {
+		if (m_runtime_context.audio_driver_interface.is_stream_running()) {
 			// Set up the executor with the new graph
-			runtime_context.executor.shutdown();
+			m_runtime_context.executor.shutdown();
 
-			const c_runtime_config::s_settings &runtime_config_settings = runtime_config.get_settings();
+			const c_runtime_config::s_settings &runtime_config_settings = m_runtime_config.get_settings();
 			s_executor_settings settings;
 			settings.task_graph = &task_graph;
 			settings.thread_count = runtime_config_settings.executor_thread_count;
@@ -313,13 +336,13 @@ void c_command_line_interface::process_command_load_synth(const s_command &comma
 			settings.output_channels = runtime_config_settings.audio_output_channels;
 			settings.controller_event_queue_size = runtime_config_settings.controller_event_queue_size;
 			settings.process_controller_events = s_runtime_context::process_controller_events_callback;
-			settings.process_controller_events_context = &runtime_context;
+			settings.process_controller_events_context = &m_runtime_context;
 			settings.event_console_enabled = runtime_config_settings.executor_console_enabled;
 			settings.profiling_enabled = runtime_config_settings.executor_profiling_enabled;
-			runtime_context.executor.initialize(settings);
+			m_runtime_context.executor.initialize(settings);
 		}
 
-		runtime_context.active_task_graph = loading_task_graph;
+		m_runtime_context.active_task_graph = loading_task_graph;
 		return;
 	}
 

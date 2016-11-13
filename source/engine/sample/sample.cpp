@@ -53,7 +53,10 @@ c_sample *c_sample::load(const char *filename, e_sample_loop_mode loop_mode, boo
 static bool load_wave(std::ifstream &file, e_sample_loop_mode loop_mode, bool phase_shift_enabled,
 	c_sample *out_sample) {
 	s_wave_riff_header riff_header;
-	if (!read(file, riff_header)) {
+
+	c_binary_file_reader reader(file);
+
+	if (!reader.read_raw(&riff_header, sizeof(riff_header))) {
 		return false;
 	}
 
@@ -76,7 +79,7 @@ static bool load_wave(std::ifstream &file, e_sample_loop_mode loop_mode, bool ph
 	}
 
 	s_wave_fmt_subchunk fmt_subchunk;
-	if (!read(file, fmt_subchunk)) {
+	if (!reader.read_raw(&fmt_subchunk, sizeof(fmt_subchunk))) {
 		return false;
 	}
 
@@ -120,7 +123,7 @@ static bool load_wave(std::ifstream &file, e_sample_loop_mode loop_mode, bool ph
 	}
 
 	s_wave_data_subchunk data_subchunk;
-	if (!read(file, data_subchunk)) {
+	if (!reader.read_raw(&data_subchunk, sizeof(data_subchunk))) {
 		return false;
 	}
 

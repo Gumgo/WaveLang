@@ -8,8 +8,6 @@
 #include <fstream>
 #include <string>
 
-static const char k_format_identifier[] = { 'w', 'a', 'v', 'e', 'l', 'a', 'n', 'g' };
-
 const uint32 c_execution_graph::k_invalid_index;
 
 static std::string format_real_for_graph_output(real32 value) {
@@ -31,8 +29,8 @@ static std::string format_real_for_graph_output(real32 value) {
 	return str;
 }
 
-static e_execution_graph_result invalid_graph_or_read_failure(const std::ifstream &in) {
-	return in.eof() ? k_execution_graph_result_invalid_graph : k_execution_graph_result_failed_to_read;
+static e_instrument_result invalid_graph_or_read_failure(const std::ifstream &in) {
+	return in.eof() ? k_instrument_result_invalid_graph : k_instrument_result_failed_to_read;
 }
 
 c_execution_graph::c_execution_graph() {
@@ -41,7 +39,7 @@ c_execution_graph::c_execution_graph() {
 
 // $TODO do we care about being endian-correct?
 
-e_execution_graph_result c_execution_graph::save(const char *fname) const {
+e_instrument_result c_execution_graph::save(std::ofstream &out) const {
 	wl_assert(validate());
 
 #if IS_TRUE(ASSERTS_ENABLED)
@@ -51,19 +49,10 @@ e_execution_graph_result c_execution_graph::save(const char *fname) const {
 	}
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
-	std::ofstream out(fname, std::ios::binary);
-	if (!out.is_open()) {
-		return k_execution_graph_result_failed_to_write;
-	}
-
-	// Write identifier at the beginning
-	for (size_t ch = 0; ch < NUMBEROF(k_format_identifier); ch++) {
-		write(out, k_format_identifier[ch]);
-	}
-	write(out, k_execution_graph_format_version);
+	c_binary_file_writer writer(out);
 
 	// Write the globals
-	write(out, m_globals.max_voices);
+	writer.write(m_globals.max_voices);
 
 	// Write the node count, and also count up all edges
 	uint32 node_count = cast_integer_verify<uint32>(m_nodes.size());
@@ -71,7 +60,7 @@ e_execution_graph_result c_execution_graph::save(const char *fname) const {
 #if IS_TRUE(ASSERTS_ENABLED)
 	uint32 edge_count_verify = 0;
 #endif // IS_TRUE(ASSERTS_ENABLED)
-	write(out, node_count);
+	writer.write(node_count);
 	for (uint32 index = 0; index < node_count; index++) {
 		const s_node &node = m_nodes[index];
 		edge_count += cast_integer_verify<uint32>(node.outgoing_edge_indices.size());
@@ -80,26 +69,26 @@ e_execution_graph_result c_execution_graph::save(const char *fname) const {
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
 		uint32 node_type = static_cast<uint32>(node.type);
-		write(out, node_type);
+		writer.write(node_type);
 
 		switch (node.type) {
 		case k_execution_graph_node_type_constant:
 		{
-			write(out, node.node_data.constant.type.write());
+			writer.write(node.node_data.constant.type.write());
 			if (node.node_data.constant.type.is_array()) {
 				// No additional data
 			} else {
 				switch (node.node_data.constant.type.get_primitive_type()) {
 				case k_native_module_primitive_type_real:
-					write(out, node.node_data.constant.real_value);
+					writer.write(node.node_data.constant.real_value);
 					break;
 
 				case k_native_module_primitive_type_bool:
-					write(out, node.node_data.constant.bool_value);
+					writer.write(node.node_data.constant.bool_value);
 					break;
 
 				case k_native_module_primitive_type_string:
-					write(out, node.node_data.constant.string_index);
+					writer.write(node.node_data.constant.string_index);
 					break;
 
 				default:
@@ -114,7 +103,7 @@ e_execution_graph_result c_execution_graph::save(const char *fname) const {
 			// Save out the UID, not the index
 			const s_native_module &native_module =
 				c_native_module_registry::get_native_module(node.node_data.native_module_call.native_module_index);
-			write(out, native_module.uid);
+			writer.write(native_module.uid);
 			break;
 		}
 
@@ -123,7 +112,7 @@ e_execution_graph_result c_execution_graph::save(const char *fname) const {
 			break;
 
 		case k_execution_graph_node_type_output:
-			write(out, node.node_data.output.output_index);
+			writer.write(node.node_data.output.output_index);
 			break;
 
 		default:
@@ -134,69 +123,45 @@ e_execution_graph_result c_execution_graph::save(const char *fname) const {
 	wl_assert(edge_count == edge_count_verify);
 
 	// Write edges
-	write(out, edge_count);
+	writer.write(edge_count);
 	for (uint32 index = 0; index < node_count; index++) {
 		const s_node &node = m_nodes[index];
 		for (size_t edge = 0; edge < node.outgoing_edge_indices.size(); edge++) {
 			// Write pair (a, b)
-			write(out, index);
-			write(out, node.outgoing_edge_indices[edge]);
+			writer.write(index);
+			writer.write(node.outgoing_edge_indices[edge]);
 		}
 	}
 
 	// Write string table
 	uint32 string_table_size = cast_integer_verify<uint32>(m_string_table.get_table_size());
-	write(out, string_table_size);
+	writer.write(string_table_size);
 	out.write(m_string_table.get_table_pointer(), m_string_table.get_table_size());
 
 	if (out.fail()) {
-		return k_execution_graph_result_failed_to_write;
+		return k_instrument_result_failed_to_write;
 	}
 
-	return k_execution_graph_result_success;
+	return k_instrument_result_success;
 }
 
-e_execution_graph_result c_execution_graph::load(const char *fname) {
+e_instrument_result c_execution_graph::load(std::ifstream &in) {
 	wl_assert(m_nodes.empty());
 	wl_assert(m_string_table.get_table_size() == 0);
 
-	std::ifstream in(fname, std::ios::binary);
-	if (!in.is_open()) {
-		return k_execution_graph_result_failed_to_read;
-	}
+	c_binary_file_reader reader(in);
 
 	// If we get a EOF error, it means that we successfully read but the file was shorter than expected, indicating that
 	// we should return an invalid format error.
 
-	// Read the identifiers at the beginning of the file
-	char format_identifier_buffer[NUMBEROF(k_format_identifier)];
-	for (size_t ch = 0; ch < NUMBEROF(k_format_identifier); ch++) {
-		if (!read(in, format_identifier_buffer[ch])) {
-			return in.eof() ? k_execution_graph_result_invalid_header : k_execution_graph_result_failed_to_read;
-		}
-	}
-
-	uint32 format_version;
-	if (!read(in, format_version)) {
-		return in.eof() ? k_execution_graph_result_invalid_header : k_execution_graph_result_failed_to_read;
-	}
-
-	if (memcmp(k_format_identifier, format_identifier_buffer, sizeof(k_format_identifier)) != 0) {
-		return k_execution_graph_result_invalid_header;
-	}
-
-	if (format_version != k_execution_graph_format_version) {
-		return k_execution_graph_result_version_mismatch;
-	}
-
 	// Read the globals
-	if (!read(in, m_globals.max_voices)) {
+	if (!reader.read(m_globals.max_voices)) {
 		return invalid_graph_or_read_failure(in);
 	}
 
 	// Read the node count
 	uint32 node_count;
-	if (!read(in, node_count)) {
+	if (!reader.read(node_count)) {
 		return invalid_graph_or_read_failure(in);
 	}
 
@@ -205,7 +170,7 @@ e_execution_graph_result c_execution_graph::load(const char *fname) {
 		s_node node;
 
 		uint32 node_type;
-		if (!read(in, node_type)) {
+		if (!reader.read(node_type)) {
 			return invalid_graph_or_read_failure(in);
 		}
 
@@ -215,12 +180,12 @@ e_execution_graph_result c_execution_graph::load(const char *fname) {
 		case k_execution_graph_node_type_constant:
 		{
 			uint32 type_data;
-			if (!read(in, type_data)) {
+			if (!reader.read(type_data)) {
 				return invalid_graph_or_read_failure(in);
 			}
 
 			if (!node.node_data.constant.type.read(type_data)) {
-				return k_execution_graph_result_invalid_graph;
+				return k_instrument_result_invalid_graph;
 			}
 
 			if (node.node_data.constant.type.is_array()) {
@@ -228,25 +193,25 @@ e_execution_graph_result c_execution_graph::load(const char *fname) {
 			} else {
 				switch (node.node_data.constant.type.get_primitive_type()) {
 				case k_native_module_primitive_type_real:
-					if (!read(in, node.node_data.constant.real_value)) {
+					if (!reader.read(node.node_data.constant.real_value)) {
 						return invalid_graph_or_read_failure(in);
 					}
 					break;
 
 				case k_native_module_primitive_type_bool:
-					if (!read(in, node.node_data.constant.bool_value)) {
+					if (!reader.read(node.node_data.constant.bool_value)) {
 						return invalid_graph_or_read_failure(in);
 					}
 					break;
 
 				case k_native_module_primitive_type_string:
-					if (!read(in, node.node_data.constant.string_index)) {
+					if (!reader.read(node.node_data.constant.string_index)) {
 						return invalid_graph_or_read_failure(in);
 					}
 					break;
 
 				default:
-					return k_execution_graph_result_invalid_graph;
+					return k_instrument_result_invalid_graph;
 				}
 			}
 
@@ -257,13 +222,13 @@ e_execution_graph_result c_execution_graph::load(const char *fname) {
 		{
 			// Read the native module UID and convert it to an index
 			s_native_module_uid uid;
-			if (!read(in, uid)) {
-				return in.eof() ? k_execution_graph_result_invalid_graph : k_execution_graph_result_failed_to_read;
+			if (!reader.read(uid)) {
+				return invalid_graph_or_read_failure(in);
 			}
 
 			uint32 native_module_index = c_native_module_registry::get_native_module_index(uid);
 			if (native_module_index == k_invalid_native_module_index) {
-				return k_execution_graph_result_unregistered_native_module;
+				return k_instrument_result_unregistered_native_module;
 			}
 
 			node.node_data.native_module_call.native_module_index = native_module_index;
@@ -275,13 +240,13 @@ e_execution_graph_result c_execution_graph::load(const char *fname) {
 			break;
 
 		case k_execution_graph_node_type_output:
-			if (!read(in, node.node_data.output.output_index)) {
-				return in.eof() ? k_execution_graph_result_invalid_graph : k_execution_graph_result_failed_to_read;
+			if (!reader.read(node.node_data.output.output_index)) {
+				return invalid_graph_or_read_failure(in);
 			}
 			break;
 
 		default:
-			return k_execution_graph_result_invalid_graph;
+			return k_instrument_result_invalid_graph;
 		}
 
 		m_nodes.push_back(node);
@@ -289,38 +254,38 @@ e_execution_graph_result c_execution_graph::load(const char *fname) {
 
 	// Read edges
 	uint32 edge_count;
-	if (!read(in, edge_count)) {
-		return in.eof() ? k_execution_graph_result_invalid_graph : k_execution_graph_result_failed_to_read;
+	if (!reader.read(edge_count)) {
+		return invalid_graph_or_read_failure(in);
 	}
 
 	for (uint32 index = 0; index < edge_count; index++) {
 		uint32 from_index, to_index;
-		if (!read(in, from_index) ||
-			!read(in, to_index)) {
-			return in.eof() ? k_execution_graph_result_invalid_graph : k_execution_graph_result_failed_to_read;
+		if (!reader.read(from_index) ||
+			!reader.read(to_index)) {
+			return invalid_graph_or_read_failure(in);
 		}
 
 		if (!add_edge_for_load(from_index, to_index)) {
-			return k_execution_graph_result_invalid_graph;
+			return k_instrument_result_invalid_graph;
 		}
 	}
 
 	uint32 string_table_size;
-	if (!read(in, string_table_size)) {
-		return in.eof() ? k_execution_graph_result_invalid_graph : k_execution_graph_result_failed_to_read;
+	if (!reader.read(string_table_size)) {
+		return invalid_graph_or_read_failure(in);
 	}
 
 	char *string_table_pointer = m_string_table.initialize_for_load(string_table_size);
 	in.read(string_table_pointer, m_string_table.get_table_size());
 	if (in.fail()) {
-		return in.eof() ? k_execution_graph_result_invalid_graph : k_execution_graph_result_failed_to_read;
+		return invalid_graph_or_read_failure(in);
 	}
 
 	if (!validate()) {
-		return k_execution_graph_result_invalid_graph;
+		return k_instrument_result_invalid_graph;
 	}
 
-	return k_execution_graph_result_success;
+	return k_instrument_result_success;
 }
 
 bool c_execution_graph::validate() const {

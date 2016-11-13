@@ -4,12 +4,11 @@
 #include "common/common.h"
 #include "common/utility/string_table.h"
 
+#include "execution_graph/instrument_constants.h"
 #include "execution_graph/native_module.h"
 
+#include <fstream>
 #include <vector>
-
-// Bump this number when anything changes
-static const uint32 k_execution_graph_format_version = 0;
 
 enum e_execution_graph_node_type {
 	// An invalid node, or a node which has been removed
@@ -34,20 +33,17 @@ enum e_execution_graph_node_type {
 	k_execution_graph_node_type_count
 };
 
-enum e_execution_graph_result {
-	k_execution_graph_result_success,
-	k_execution_graph_result_failed_to_write,
-	k_execution_graph_result_failed_to_read,
-	k_execution_graph_result_invalid_header,
-	k_execution_graph_result_version_mismatch,
-	k_execution_graph_result_invalid_graph,
-	k_execution_graph_result_unregistered_native_module,
-
-	k_execution_graph_result_count
-};
-
 struct s_execution_graph_globals {
+	// The maximum number of voice instances that can be playing at once
 	uint32 max_voices;
+
+	// The stream sample rate. If 0, this graph is compatible with any stream. Note that while some modules require the
+	// sample rate to be pre-specified (such as get_sample_rate()), most are sample rate agnostic.
+	uint32 sample_rate; // nocheckin
+
+	// The size of each processing chunk. If 0, this graph is compatible with any processing chunk size. Certain modules
+	// may require a minimum chunk size, though most are chunk size agnostic.
+	uint32 chunk_size;
 };
 
 class c_execution_graph {
@@ -60,8 +56,8 @@ public:
 
 	c_execution_graph();
 
-	e_execution_graph_result save(const char *fname) const;
-	e_execution_graph_result load(const char *fname);
+	e_instrument_result save(std::ofstream &out) const;
+	e_instrument_result load(std::ifstream &in);
 
 	bool validate() const;
 

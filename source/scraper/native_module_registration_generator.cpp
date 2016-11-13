@@ -131,12 +131,16 @@ bool generate_native_module_registration(
 		}
 
 		out << "static void " << library.name << "_" << native_module.compile_time_call <<
-			"_call_wrapper(c_native_module_compile_time_argument_list arguments) {" NEWLINE_STR;
+			"_call_wrapper(const s_native_module_context &context) {" NEWLINE_STR;
 		out << TAB_STR << native_module.compile_time_function_call << "(" NEWLINE_STR;
+
+		if (native_module.first_argument_is_context) {
+			out << TAB2_STR << "context" << (native_module.arguments.empty() ? ");" : ",") << NEWLINE_STR;
+		}
 
 		for (size_t arg = 0; arg < native_module.arguments.size(); arg++) {
 			c_native_module_qualified_data_type type = native_module.arguments[arg].type;
-			out << TAB2_STR << "arguments[" << arg << "].get_" <<
+			out << TAB2_STR << "(*context.arguments)[" << arg << "].get_" <<
 				k_native_module_primitive_type_argument_strings[type.get_data_type().get_primitive_type()] <<
 				(type.get_data_type().is_array() ? "_array_" : "_") <<
 				k_native_module_qualifier_argument_strings[type.get_qualifier()] << "()";

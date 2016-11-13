@@ -28,6 +28,7 @@ struct s_native_module_declaration {
 	std::string identifier; // This takes the form "module_name$overload_identifier", e.g. "addition$real"
 	std::string name;
 	std::string native_operator;
+	bool first_argument_is_context;
 	std::vector<s_native_module_argument_declaration> arguments;
 	std::string compile_time_call;
 	std::string compile_time_function_call; // Includes namespace scope
