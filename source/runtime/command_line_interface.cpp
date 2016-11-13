@@ -302,7 +302,7 @@ void c_command_line_interface::process_command_load_synth(const s_command &comma
 				return;
 			} else if (execution_graph_result == k_execution_graph_for_requirements_result_ambiguous_matches) {
 				std::cout << "Found multiple execution graphs matching the runtime requirements - "
-					"refine stream parameters or execution graph globals\n";
+					"refine stream parameters or synth globals\n";
 				return;
 			} else {
 				wl_assert(execution_graph_result == k_execution_graph_for_requirements_result_success);

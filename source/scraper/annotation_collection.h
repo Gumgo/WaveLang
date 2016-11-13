@@ -58,7 +58,7 @@ public:
 		const char *context,
 		clang::CompilerInstance *compiler_instance,
 		clang::Decl *decl,
-		c_diagnostic &diag);
+		c_scraper_diagnostic &diag);
 
 private:
 	enum e_annotation_type {

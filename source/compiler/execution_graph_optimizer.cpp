@@ -2,17 +2,31 @@
 
 #include "execution_graph/native_module.h"
 #include "execution_graph/native_module_registry.h"
+#include "execution_graph/diagnostic/diagnostic.h"
 
 #include <array>
 #include <stack>
+#include <vector>
+
+struct s_native_module_diagnostic_callback_context {
+	std::vector<s_compiler_result> *errors;
+	const s_native_module *native_module;
+};
 
 static void build_array_value(const c_execution_graph *execution_graph, uint32 array_node_index,
 	c_native_module_array &out_array_value);
 static bool sanitize_array_index(const c_execution_graph *execution_graph, uint32 array_node_index, real32 array_index,
 	uint32 &out_sanitized_array_index);
 
-static bool optimize_node(c_execution_graph *execution_graph, uint32 node_index);
-static bool optimize_native_module_call(c_execution_graph *execution_graph, uint32 node_index);
+static void native_module_diagnostic_callback(void *context, e_diagnostic_level diagnostic_level,
+	const std::string &message);
+static void execute_compile_time_call(const c_execution_graph *execution_graph, const s_native_module &native_module,
+	c_native_module_compile_time_argument_list arguments, std::vector<s_compiler_result> *errors);
+
+static bool optimize_node(c_execution_graph *execution_graph, uint32 node_index,
+	std::vector<s_compiler_result> *errors);
+static bool optimize_native_module_call(c_execution_graph *execution_graph, uint32 node_index,
+	std::vector<s_compiler_result> *errors);
 static bool try_to_apply_optimization_rule(c_execution_graph *execution_graph, uint32 node_index, uint32 rule_index);
 static void remove_useless_nodes(c_execution_graph *execution_graph);
 static void transfer_outputs(c_execution_graph *execution_graph,
@@ -25,9 +39,11 @@ c_execution_graph_constant_evaluator::c_execution_graph_constant_evaluator() {
 	m_execution_graph = nullptr;
 }
 
-void c_execution_graph_constant_evaluator::initialize(const c_execution_graph *execution_graph) {
+void c_execution_graph_constant_evaluator::initialize(const c_execution_graph *execution_graph,
+	std::vector<s_compiler_result> *errors) {
 	wl_assert(!m_execution_graph);
 	m_execution_graph = execution_graph;
+	m_errors = errors;
 	m_invalid_constant = true;
 }
 
@@ -125,17 +141,12 @@ void c_execution_graph_constant_evaluator::try_evaluate_node(uint32 node_index) 
 
 		// Make the compile time call to resolve the outputs
 		if (all_inputs_evaluated) {
-			s_native_module_context native_module_context;
-			ZERO_STRUCT(&native_module_context);
-			// $TODO $TARGET fill in other fields
-			c_native_module_compile_time_argument_list arguments(
-				arg_list.empty() ? nullptr : &arg_list.front(), arg_list.size());
-			native_module_context.arguments = &arguments;
-
-			native_module.compile_time_call(native_module_context);
+			execute_compile_time_call(m_execution_graph, native_module,
+				c_native_module_compile_time_argument_list(
+					arg_list.empty() ? nullptr : &arg_list.front(), arg_list.size()),
+				m_errors);
 			store_native_module_call_results(native_module, native_module_node_index, arg_list);
 		}
-
 	} else {
 		// We should only ever add constants and native module output nodes
 		wl_unreachable();
@@ -266,7 +277,7 @@ s_compiler_result c_execution_graph_optimizer::optimize_graph(c_execution_graph 
 		optimization_performed = false;
 
 		for (uint32 index = 0; index < execution_graph->get_node_count(); index++) {
-			optimization_performed |= optimize_node(execution_graph, index);
+			optimization_performed |= optimize_node(execution_graph, index, &out_errors);
 		}
 
 		remove_useless_nodes(execution_graph);
@@ -324,7 +335,48 @@ static bool sanitize_array_index(const c_execution_graph *execution_graph, uint3
 	return true;
 }
 
-static bool optimize_node(c_execution_graph *execution_graph, uint32 node_index) {
+static void native_module_diagnostic_callback(void *context, e_diagnostic_level diagnostic_level,
+	const std::string &message) {
+	s_native_module_diagnostic_callback_context *native_module_diagnostic_callback_context =
+		static_cast<s_native_module_diagnostic_callback_context *>(context);
+	wl_assert(native_module_diagnostic_callback_context);
+
+	if (diagnostic_level == k_diagnostic_level_error) {
+		s_compiler_result error;
+		error.result = k_compiler_result_native_module_compile_time_call;
+		error.source_location.clear();
+		error.message = "Native module '" +
+			std::string(native_module_diagnostic_callback_context->native_module->name.get_string()) + "' call: " +
+			message;
+		native_module_diagnostic_callback_context->errors->push_back(error);
+	} else {
+		// $TODO $DIAGNOSTIC report messages and warnings
+	}
+}
+
+static void execute_compile_time_call(const c_execution_graph *execution_graph, const s_native_module &native_module,
+	c_native_module_compile_time_argument_list arguments, std::vector<s_compiler_result> *errors) {
+	wl_assert(execution_graph);
+
+	// Make the compile time call to resolve the outputs
+	s_native_module_context native_module_context;
+	ZERO_STRUCT(&native_module_context);
+
+	s_native_module_diagnostic_callback_context native_module_diagnostic_callback_context;
+	native_module_diagnostic_callback_context.errors = errors;
+	native_module_diagnostic_callback_context.native_module = &native_module;
+
+	c_diagnostic diagnostic(native_module_diagnostic_callback, &native_module_diagnostic_callback_context);
+
+	native_module_context.diagnostic = &diagnostic;
+	native_module_context.execution_graph_globals = &execution_graph->get_globals();
+	native_module_context.arguments = &arguments;
+
+	native_module.compile_time_call(native_module_context);
+}
+
+static bool optimize_node(c_execution_graph *execution_graph, uint32 node_index,
+	std::vector<s_compiler_result> *errors) {
 	bool optimized = false;
 
 	switch (execution_graph->get_node_type(node_index)) {
@@ -337,7 +389,7 @@ static bool optimize_node(c_execution_graph *execution_graph, uint32 node_index)
 		break;
 
 	case k_execution_graph_node_type_native_module_call:
-		optimized = optimize_native_module_call(execution_graph, node_index);
+		optimized = optimize_native_module_call(execution_graph, node_index, errors);
 		break;
 
 	case k_execution_graph_node_type_indexed_input:
@@ -359,7 +411,8 @@ static bool optimize_node(c_execution_graph *execution_graph, uint32 node_index)
 	return optimized;
 }
 
-static bool optimize_native_module_call(c_execution_graph *execution_graph, uint32 node_index) {
+static bool optimize_native_module_call(c_execution_graph *execution_graph, uint32 node_index,
+	std::vector<s_compiler_result> *errors) {
 	wl_assert(execution_graph->get_node_type(node_index) == k_execution_graph_node_type_native_module_call);
 	const s_native_module &native_module = c_native_module_registry::get_native_module(
 		execution_graph->get_native_module_call_native_module_index(node_index));
@@ -432,17 +485,11 @@ static bool optimize_native_module_call(c_execution_graph *execution_graph, uint
 			wl_assert(next_input == native_module.in_argument_count);
 			wl_assert(next_output == native_module.out_argument_count);
 
-			{
-				// Make the compile time call to resolve the outputs
-				s_native_module_context native_module_context;
-				ZERO_STRUCT(&native_module_context);
-				// $TODO $TARGET fill in other fields
-				c_native_module_compile_time_argument_list arguments(
-					arg_list.empty() ? nullptr : &arg_list.front(), arg_list.size());
-				native_module_context.arguments = &arguments;
-
-				native_module.compile_time_call(native_module_context);
-			}
+			// Make the compile time call to resolve the outputs
+			execute_compile_time_call(execution_graph, native_module,
+				c_native_module_compile_time_argument_list(
+					arg_list.empty() ? nullptr : &arg_list.front(), arg_list.size()),
+				errors);
 
 			next_output = 0;
 			for (size_t arg = 0; arg < native_module.argument_count; arg++) {

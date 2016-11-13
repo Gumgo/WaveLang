@@ -10,9 +10,9 @@
 #pragma warning(pop)
 
 // Utility class for reporting scraper errors through clang's diagnostic mechanism
-class c_diagnostic {
+class c_scraper_diagnostic {
 public:
-	c_diagnostic(clang::CompilerInstance &compiler_instance);
+	c_scraper_diagnostic(clang::CompilerInstance &compiler_instance);
 
 	clang::DiagnosticBuilder error(const clang::SourceLocation &source_location, const char *message_format);
 

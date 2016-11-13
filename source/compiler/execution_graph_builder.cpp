@@ -183,7 +183,7 @@ public:
 
 		m_loop_count_for_next_scope = 1;
 
-		m_constant_evaluator.initialize(execution_graph);
+		m_constant_evaluator.initialize(execution_graph, error_accumulator);
 
 		m_argument_node_indices.resize(module_declaration->get_argument_count(), c_execution_graph::k_invalid_index);
 		m_return_node_index = c_execution_graph::k_invalid_index;

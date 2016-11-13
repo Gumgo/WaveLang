@@ -37,6 +37,7 @@ enum e_compiler_result {
 	k_compiler_result_unassigned_named_value_used,
 	k_compiler_result_incorrect_argument_count,
 	k_compiler_result_cyclic_module_call,
+	k_compiler_result_native_module_compile_time_call,
 	k_compiler_result_no_entry_point,
 	k_compiler_result_invalid_entry_point,
 	k_compiler_result_syntax_error,

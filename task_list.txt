@@ -48,6 +48,10 @@
 - MIDI input support ($MIDI)
 	- Add support for more channels
 
+- Improve compiler diagnostics ($DIAGNOSTIC)
+	- Create a diagnostic class to report messages, warnings, and errors
+	- Separate out error reporting from error return values
+
 - Upsampled buffer operations ($UPSAMPLE)
 	- Upsampled types:
 		- real@2x, real@8x, etc.

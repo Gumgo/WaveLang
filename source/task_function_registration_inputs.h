@@ -10,6 +10,7 @@
 #include "engine/task_functions/task_functions_filter.h"
 #include "engine/task_functions/task_functions_math.h"
 #include "engine/task_functions/task_functions_sampler.h"
+#include "engine/task_functions/task_functions_stream.h"
 #include "engine/task_functions/task_functions_time.h"
 
 #endif // WAVELANG_TASK_FUNCTION_REGISTRATION_INPUTS_H__

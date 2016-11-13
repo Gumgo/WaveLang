@@ -1091,7 +1091,7 @@ void c_execution_graph::set_globals(const s_execution_graph_globals &globals) {
 	m_globals = globals;
 }
 
-const s_execution_graph_globals c_execution_graph::get_globals() const {
+const s_execution_graph_globals &c_execution_graph::get_globals() const {
 	return m_globals;
 }
 

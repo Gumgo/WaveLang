@@ -28,6 +28,7 @@ local all-files = [ path.glob-tree
 	]
 	### Registration file: no dependency created here, but it gets pulled into the VS project:
 	[ path.make $(source-dir)/native_module_registration_inputs.h ]
+	[ path.make $(source-dir)/task_function_registration_inputs.h ]
 	;
 
 local include-directories =

@@ -26,7 +26,7 @@ public:
 	};
 
 	c_execution_graph_constant_evaluator();
-	void initialize(const c_execution_graph *execution_graph);
+	void initialize(const c_execution_graph *execution_graph, std::vector<s_compiler_result> *errors);
 
 	// Each time a constant is evaluated, the evaluation progress is retained. This way, we can avoid re-evaluating the
 	// same thing multiple times. This works as long as nodes are only added and never removed or changed during
@@ -35,8 +35,16 @@ public:
 	s_result get_result() const;
 
 private:
+	void try_evaluate_node(uint32 node_index);
+	bool build_module_call_arguments(const s_native_module &native_module, uint32 native_module_node_index,
+		std::vector<s_native_module_compile_time_argument> &out_arg_list);
+	void store_native_module_call_results(const s_native_module &native_module, uint32 native_module_node_index,
+		const std::vector<s_native_module_compile_time_argument> &arg_list);
+
 	// The graph
 	const c_execution_graph *m_execution_graph;
+
+	std::vector<s_compiler_result> *m_errors;
 
 	// Maps node indices to their evaluated results. Either native module output nodes or constant nodes.
 	std::map<uint32, s_result> m_results;
@@ -47,12 +55,6 @@ private:
 	// The final result
 	bool m_invalid_constant;
 	s_result m_result;
-
-	void try_evaluate_node(uint32 node_index);
-	bool build_module_call_arguments(const s_native_module &native_module, uint32 native_module_node_index,
-		std::vector<s_native_module_compile_time_argument> &out_arg_list);
-	void store_native_module_call_results(const s_native_module &native_module, uint32 native_module_node_index,
-		const std::vector<s_native_module_compile_time_argument> &arg_list);
 };
 
 class c_execution_graph_optimizer {

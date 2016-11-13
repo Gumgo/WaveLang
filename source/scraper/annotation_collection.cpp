@@ -96,7 +96,7 @@ bool c_annotation_specifications::execute(
 	const char *context,
 	clang::CompilerInstance *compiler_instance,
 	clang::Decl *decl,
-	c_diagnostic &diag) {
+	c_scraper_diagnostic &diag) {
 	bool result = true;
 
 	clang::DeclContext *decl_context = decl->getDeclContext();

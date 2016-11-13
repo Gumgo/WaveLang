@@ -4,6 +4,7 @@
 #include "common/common.h"
 #include "common/utility/string_table.h"
 
+#include "execution_graph/execution_graph_globals.h"
 #include "execution_graph/instrument_constants.h"
 #include "execution_graph/native_module.h"
 
@@ -31,19 +32,6 @@ enum e_execution_graph_node_type {
 	k_execution_graph_node_type_output,
 
 	k_execution_graph_node_type_count
-};
-
-struct s_execution_graph_globals {
-	// The maximum number of voice instances that can be playing at once
-	uint32 max_voices;
-
-	// The stream sample rate. If 0, this graph is compatible with any stream. Note that while some modules require the
-	// sample rate to be pre-specified (such as get_sample_rate()), most are sample rate agnostic.
-	uint32 sample_rate; // nocheckin
-
-	// The size of each processing chunk. If 0, this graph is compatible with any processing chunk size. Certain modules
-	// may require a minimum chunk size, though most are chunk size agnostic.
-	uint32 chunk_size;
 };
 
 class c_execution_graph {
@@ -90,7 +78,7 @@ public:
 	bool does_node_use_indexed_outputs(uint32 node_index) const;
 
 	void set_globals(const s_execution_graph_globals &globals);
-	const s_execution_graph_globals get_globals() const;
+	const s_execution_graph_globals &get_globals() const;
 
 	void remove_unused_nodes_and_reassign_node_indices();
 

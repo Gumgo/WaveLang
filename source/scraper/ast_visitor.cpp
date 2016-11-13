@@ -69,7 +69,7 @@ private:
 	size_t m_current_library_index;
 
 	// Used to emit scraper errors
-	c_diagnostic m_diag;
+	c_scraper_diagnostic m_diag;
 
 	// Printing policy for type names
 	clang::PrintingPolicy m_printing_policy;

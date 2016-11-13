@@ -7,8 +7,6 @@
 #include "engine/task_functions/sampler/fetch_sample.h"
 #include "engine/task_functions/sampler/sampler_context.h"
 
-#include "execution_graph/native_modules/native_modules_sampler.h"
-
 class c_event_interface;
 
 // $TODO add initial_delay parameter

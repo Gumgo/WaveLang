@@ -10,6 +10,7 @@
 #include "execution_graph/native_modules/native_modules_filter.h"
 #include "execution_graph/native_modules/native_modules_math.h"
 #include "execution_graph/native_modules/native_modules_sampler.h"
+#include "execution_graph/native_modules/native_modules_stream.h"
 #include "execution_graph/native_modules/native_modules_time.h"
 
 #endif // WAVELANG_NATIVE_MODULE_REGISTRATION_INPUTS_H__

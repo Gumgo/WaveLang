@@ -3,8 +3,6 @@
 #include "engine/buffer_operations/buffer_operations.h"
 #include "engine/task_functions/task_functions_math.h"
 
-#include "execution_graph/native_modules/native_modules_math.h"
-
 struct s_op_abs {
 	c_real32_4 operator()(const c_real32_4 &a) const { return abs(a); }
 };
