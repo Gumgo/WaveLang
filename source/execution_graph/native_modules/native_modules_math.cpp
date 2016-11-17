@@ -43,4 +43,17 @@ namespace math_native_modules {
 		result = std::pow(a, b);
 	}
 
+	void sin(real32 a, real32 &result) {
+		result = std::sin(a);
+	}
+
+	void cos(real32 a, real32 &result) {
+		result = std::cos(a);
+	}
+
+	void sincos(real32 a, real32 &out_sin, real32 &out_cos) {
+		out_sin = std::sin(a);
+		out_cos = std::cos(a);
+	}
+
 }

@@ -298,7 +298,7 @@ void c_ast_visitor::visit_native_module_declaration(clang::FunctionDecl *decl) {
 			}
 		}
 
-		c_annotation_collection param_annotations(param_decl->getAttrs());
+		c_annotation_collection param_annotations(param_decl->attrs());
 
 		s_native_module_argument_declaration argument_declaration;
 		argument_declaration.name = param_decl->getName();
@@ -676,7 +676,7 @@ std::vector<s_task_function_argument_declaration> c_ast_visitor::parse_task_argu
 			continue;
 		}
 
-		c_annotation_collection param_annotations(param_decl->getAttrs());
+		c_annotation_collection param_annotations(param_decl->attrs());
 
 		s_task_function_argument_declaration argument_declaration;
 		argument_declaration.name = param_decl->getName();

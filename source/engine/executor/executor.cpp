@@ -1,4 +1,5 @@
 #include "engine/array_dereference_interface/array_dereference_interface.h"
+#include "engine/controller_interface/controller_interface.h"
 #include "engine/executor/channel_mixer.h"
 #include "engine/executor/executor.h"
 #include "engine/task_function_registry.h"
@@ -230,7 +231,7 @@ void c_executor::initialize_voice_allocator() {
 }
 
 void c_executor::initialize_controller_event_manager() {
-	m_controller_event_manager.initialize(m_settings.controller_event_queue_size);
+	m_controller_event_manager.initialize(m_settings.controller_event_queue_size, m_settings.max_controller_parameters);
 }
 
 void c_executor::initialize_task_contexts() {
@@ -414,12 +415,14 @@ void c_executor::process_task(uint32 thread_index, const s_task_parameters *para
 
 		c_array_dereference_interface array_dereference_interface(this);
 		c_sample_library_accessor sample_library_accessor(m_sample_library);
+		c_controller_interface controller_interface(&m_controller_event_manager);
 		s_task_function_context task_function_context;
 		task_function_context.array_dereference_interface = &array_dereference_interface;
 		task_function_context.event_interface = &m_event_interface;
 		task_function_context.sample_accessor = &sample_library_accessor;
 		task_function_context.sample_requester = nullptr;
 		task_function_context.voice_interface = &m_voice_interface;
+		task_function_context.controller_interface = &controller_interface;
 		task_function_context.sample_rate = params->sample_rate;
 		task_function_context.buffer_size = params->frames;
 		task_function_context.task_memory = m_voice_task_memory_pointers[

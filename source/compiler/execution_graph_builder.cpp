@@ -611,7 +611,6 @@ public:
 	virtual void end_visit(const c_ast_node_named_value *node) {
 		// Return the node containing this named value's current value, as well as the named value's name
 		s_identifier *identifier = get_identifier(node->get_name());
-		wl_assert(identifier->current_value_node_index != c_execution_graph::k_invalid_index);
 
 		s_expression_result result;
 		result.type = identifier->data_type;

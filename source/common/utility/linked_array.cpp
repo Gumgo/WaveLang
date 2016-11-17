@@ -192,7 +192,7 @@ bool c_linked_array::is_node_in_list_slow(const s_linked_array_list &list, size_
 
 	size_t list_index = list.front;
 	while (true) {
-		if (list.front == node_index) {
+		if (list_index == node_index) {
 			return true;
 		}
 

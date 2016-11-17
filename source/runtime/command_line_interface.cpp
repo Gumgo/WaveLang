@@ -335,6 +335,7 @@ void c_command_line_interface::process_command_load_synth(const s_command &comma
 			settings.max_buffer_size = runtime_config_settings.audio_frames_per_buffer;
 			settings.output_channels = runtime_config_settings.audio_output_channels;
 			settings.controller_event_queue_size = runtime_config_settings.controller_event_queue_size;
+			settings.max_controller_parameters = runtime_config_settings.executor_max_controller_parameters;
 			settings.process_controller_events = s_runtime_context::process_controller_events_callback;
 			settings.process_controller_events_context = &m_runtime_context;
 			settings.event_console_enabled = runtime_config_settings.executor_console_enabled;

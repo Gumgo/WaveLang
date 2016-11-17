@@ -1027,7 +1027,7 @@ public:
 						// If this argument has an out qualifier, it must take a direct named value
 						// We currently don't support outputting to an array element directly
 						if (argument->get_qualifier() == k_ast_qualifier_out &&
-							result.identifier_name.empty()) {
+							argument_result.identifier_name.empty()) {
 							s_compiler_result error;
 							error.result = k_compiler_result_named_value_expected;
 							error.source_location = node->get_argument(arg)->get_source_location();
@@ -1042,7 +1042,7 @@ public:
 						}
 
 						// If a valid identifier has been provided, update its last assigned or last used statement
-						const s_identifier *identifier = get_identifier(result.identifier_name);
+						const s_identifier *identifier = get_identifier(argument_result.identifier_name);
 						if (identifier) {
 							s_named_value *named_value = get_named_value(identifier->ast_node);
 							wl_assert(named_value);

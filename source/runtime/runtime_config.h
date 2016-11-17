@@ -26,6 +26,7 @@ public:
 		uint32 controller_event_queue_size;
 
 		uint32 executor_thread_count;
+		uint32 executor_max_controller_parameters;
 		bool executor_console_enabled;
 		bool executor_profiling_enabled;
 	};

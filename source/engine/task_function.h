@@ -8,6 +8,7 @@
 #include "execution_graph/native_module.h"
 
 class c_array_dereference_interface;
+class c_controller_interface;
 class c_event_interface;
 class c_sample_library_accessor;
 class c_sample_library_requester;
@@ -297,6 +298,7 @@ struct s_task_function_context {
 	c_sample_library_accessor *sample_accessor;
 	c_sample_library_requester *sample_requester;
 	c_voice_interface *voice_interface;
+	c_controller_interface *controller_interface;
 
 	uint32 sample_rate;
 	uint32 buffer_size;

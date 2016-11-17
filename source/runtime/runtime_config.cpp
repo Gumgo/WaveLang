@@ -214,6 +214,8 @@ bool c_runtime_config::read_settings(
 
 		if (executor_node) {
 			try_to_get_value_from_child_node(executor_node, "thread_count", 1u, 16u, m_settings.executor_thread_count);
+			try_to_get_value_from_child_node(
+				executor_node, "max_controller_parameters", 1u, 65535u,m_settings.executor_max_controller_parameters);
 			try_to_get_value_from_child_node(executor_node, "console_enabled", m_settings.executor_console_enabled);
 			try_to_get_value_from_child_node(executor_node, "profiling_enabled", m_settings.executor_profiling_enabled);
 		}
@@ -257,6 +259,7 @@ void c_runtime_config::set_default_controller(const s_controller_device_info *co
 
 void c_runtime_config::set_default_executor() {
 	m_settings.executor_thread_count = 1;
+	m_settings.executor_max_controller_parameters = 1024;
 	m_settings.executor_console_enabled = true;
 	m_settings.executor_profiling_enabled = true;
 }

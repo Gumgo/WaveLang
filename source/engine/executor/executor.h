@@ -36,6 +36,7 @@ struct s_executor_settings {
 	uint32 output_channels;
 
 	size_t controller_event_queue_size;
+	size_t max_controller_parameters;
 	f_process_controller_events process_controller_events;
 	void *process_controller_events_context;
 

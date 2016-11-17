@@ -40,7 +40,14 @@ namespace math_native_modules wl_library(k_math_library_id, "math", 0) {
 	wl_native_module(0x05476bde, "pow")
 	void pow(wl_in real32 a, wl_in real32 b, wl_out_return real32 &result);
 
-	// $TODO add trig functions
+	wl_native_module(0x68deeac4, "sin")
+	void sin(wl_in real32 a, wl_out_return real32 &result);
+
+	wl_native_module(0xd14343d3, "cos")
+	void cos(wl_in real32 a, wl_out_return real32 &result);
+
+	wl_native_module(0xb319d4a8, "sincos")
+	void sincos(wl_in real32 a, wl_out real32 &out_sin, wl_out real32 &out_cos);
 }
 
 #endif // WAVELANG_EXECUTION_GRAPH_NATIVE_MODULES_NATIVE_MODULES_MATH_H__

@@ -461,6 +461,122 @@ void buffer_operator_in_inout(const t_operation &op, size_t buffer_size,
 	}
 }
 
+template<typename t_operation, typename t_iterable_buffer_a, typename t_iterable_buffer_b, typename t_iterable_buffer_c>
+void buffer_operator_in_out_out(const t_operation &op, size_t buffer_size,
+	t_iterable_buffer_a iterable_buffer_a,
+	t_iterable_buffer_b iterable_buffer_b,
+	t_iterable_buffer_c iterable_buffer_c) {
+	static_assert(t_iterable_buffer_a::k_task_qualifier == k_task_qualifier_in, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_b::k_task_qualifier == k_task_qualifier_out, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_c::k_task_qualifier == k_task_qualifier_out, "Incorrect qualifier");
+
+	typedef typename t_iterable_buffer_a::t_iterator t_iterator_a;
+	typedef typename t_iterator_a::t_value t_value_a;
+	typedef typename t_iterable_buffer_b::t_iterator t_iterator_b;
+	typedef typename t_iterator_b::t_value t_value_b;
+	typedef typename t_iterable_buffer_c::t_iterator t_iterator_c;
+	typedef typename t_iterator_c::t_value t_value_c;
+
+	if (iterable_buffer_a.is_constant()) {
+		t_value_a value_a = iterable_buffer_a.get_constant();
+		t_value_b value_b;
+		t_value_c value_c;
+		op(value_a, value_b, value_c);
+		iterable_buffer_b.set_constant(value_b);
+		iterable_buffer_c.set_constant(value_c);
+	} else {
+		c_buffer_iterator_3<t_iterator_a, t_iterator_b, t_iterator_c> iterator(
+			iterable_buffer_a.get_buffer(), iterable_buffer_b.get_buffer(), iterable_buffer_c.get_buffer(),
+			buffer_size);
+
+		for (; iterator.is_valid(); iterator.next()) {
+			t_value_a value_a = iterator.get_iterator_a().get_value();
+			t_value_b value_b;
+			t_value_c value_c;
+			op(value_a, value_b, value_c);
+			iterator.get_iterator_b().set_value(value_b);
+			iterator.get_iterator_c().set_value(value_c);
+		}
+
+		iterable_buffer_b.get_buffer()->set_constant(iterator.get_iterator_b().should_set_buffer_constant());
+		iterable_buffer_c.get_buffer()->set_constant(iterator.get_iterator_c().should_set_buffer_constant());
+	}
+}
+
+template<typename t_operation, typename t_iterable_buffer_a, typename t_iterable_buffer_b>
+void buffer_operator_inout_out(const t_operation &op, size_t buffer_size,
+	t_iterable_buffer_a iterable_buffer_a,
+	t_iterable_buffer_b iterable_buffer_b) {
+	static_assert(t_iterable_buffer_a::k_task_qualifier == k_task_qualifier_inout, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_b::k_task_qualifier == k_task_qualifier_out, "Incorrect qualifier");
+
+	typedef typename t_iterable_buffer_a::t_iterator t_iterator_a;
+	typedef typename t_iterator_a::t_value t_value_a;
+	typedef typename t_iterable_buffer_b::t_iterator t_iterator_b;
+	typedef typename t_iterator_b::t_value t_value_b;
+
+	if (iterable_buffer_a.is_constant()) {
+		t_value_a value_a_in = iterable_buffer_a.get_constant();
+		t_value_a value_a_out;
+		t_value_b value_b;
+		op(value_a_in, value_a_out, value_b);
+		iterable_buffer_a.set_constant(value_a_out);
+		iterable_buffer_b.set_constant(value_b);
+	} else {
+		c_buffer_iterator_2<t_iterator_a, t_iterator_b> iterator(
+			iterable_buffer_a.get_buffer(), iterable_buffer_b.get_buffer(), buffer_size);
+
+		for (; iterator.is_valid(); iterator.next()) {
+			t_value_a value_a_in = iterator.get_iterator_a().get_value();
+			t_value_a value_a_out;
+			t_value_b value_b;
+			op(value_a_in, value_a_out, value_b);
+			iterator.get_iterator_a().set_value(value_a_out);
+			iterator.get_iterator_b().set_value(value_b);
+		}
+
+		iterable_buffer_a.get_buffer()->set_constant(iterator.get_iterator_a().should_set_buffer_constant());
+		iterable_buffer_b.get_buffer()->set_constant(iterator.get_iterator_b().should_set_buffer_constant());
+	}
+}
+
+template<typename t_operation, typename t_iterable_buffer_a, typename t_iterable_buffer_b>
+void buffer_operator_out_inout(const t_operation &op, size_t buffer_size,
+	t_iterable_buffer_a iterable_buffer_a,
+	t_iterable_buffer_b iterable_buffer_b) {
+	static_assert(t_iterable_buffer_a::k_task_qualifier == k_task_qualifier_out, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_b::k_task_qualifier == k_task_qualifier_inout, "Incorrect qualifier");
+
+	typedef typename t_iterable_buffer_a::t_iterator t_iterator_a;
+	typedef typename t_iterator_a::t_value t_value_a;
+	typedef typename t_iterable_buffer_b::t_iterator t_iterator_b;
+	typedef typename t_iterator_b::t_value t_value_b;
+
+	if (iterable_buffer_b.is_constant()) {
+		t_value_b value_b_in = iterable_buffer_b.get_constant();
+		t_value_a value_a;
+		t_value_b value_b_out;
+		op(value_b_in, value_a, value_b_out);
+		iterable_buffer_a.set_constant(value_a);
+		iterable_buffer_b.set_constant(value_b_out);
+	} else {
+		c_buffer_iterator_2<t_iterator_a, t_iterator_b> iterator(
+			iterable_buffer_a.get_buffer(), iterable_buffer_b.get_buffer(), buffer_size);
+
+		for (; iterator.is_valid(); iterator.next()) {
+			t_value_a value_b_in = iterator.get_iterator_b().get_value();
+			t_value_a value_a;
+			t_value_b value_b_out;
+			op(value_b_in, value_a, value_b_out);
+			iterator.get_iterator_a().set_value(value_a);
+			iterator.get_iterator_b().set_value(value_b_out);
+		}
+
+		iterable_buffer_a.get_buffer()->set_constant(iterator.get_iterator_a().should_set_buffer_constant());
+		iterable_buffer_b.get_buffer()->set_constant(iterator.get_iterator_b().should_set_buffer_constant());
+	}
+}
+
 template<typename t_operation, typename t_iterable_buffer_a, typename t_iterable_buffer_b,
 	typename t_iterable_buffer_c, typename t_iterable_buffer_d>
 void buffer_operator_in_in_in_out(const t_operation &op, size_t buffer_size,
@@ -1000,6 +1116,28 @@ struct s_buffer_operation_real_real_real {
 	static void in_inout(size_t buffer_size, c_real_buffer_or_constant_in a, c_real_buffer_inout b) {
 		buffer_operator_in_inout(t_operation(), buffer_size,
 			c_iterable_buffer_real_in(a),
+			c_iterable_buffer_real_inout(b));
+	}
+
+	// Two-output functions are rare but they do exist (e.g. sincos)
+
+	static void in_out_out(size_t buffer_size,
+		c_real_buffer_or_constant_in a, c_real_buffer_out b, c_real_buffer_out c) {
+		buffer_operator_in_out_out(t_operation(), buffer_size,
+			c_iterable_buffer_real_in(a),
+			c_iterable_buffer_real_out(b),
+			c_iterable_buffer_real_out(c));
+	}
+
+	static void inout_out(size_t buffer_size, c_real_buffer_inout a, c_real_buffer_out b) {
+		buffer_operator_inout_out(t_operation(), buffer_size,
+			c_iterable_buffer_real_inout(a),
+			c_iterable_buffer_real_out(b));
+	}
+
+	static void out_inout(size_t buffer_size, c_real_buffer_out a, c_real_buffer_inout b) {
+		buffer_operator_out_inout(t_operation(), buffer_size,
+			c_iterable_buffer_real_out(a),
 			c_iterable_buffer_real_inout(b));
 	}
 };

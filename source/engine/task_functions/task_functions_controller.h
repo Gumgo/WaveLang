@@ -42,6 +42,16 @@ namespace controller_task_functions wl_library(k_controller_library_id, "control
 	void get_note_release_duration_out(const s_task_function_context &context,
 		wl_out_source("result") c_real_buffer *result);
 
+	wl_task_initializer
+	void get_parameter_value_initializer(const s_task_function_context &context,
+		wl_in_source("parameter_id") real32 parameter_id);
+
+	wl_task_function(0x6badd8e8, "get_parameter_value_out", "get_parameter_value")
+	wl_task_initializer_function("get_parameter_value_initializer")
+	void get_parameter_value_out(const s_task_function_context &context,
+		wl_in_source("parameter_id") real32 parameter_id,
+		wl_out_source("result") c_real_buffer *result);
+
 }
 
 #endif // WAVELANG_ENGINE_TASK_FUNCTIONS_TASK_FUNCTIONS_CONTROLLER_H__

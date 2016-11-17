@@ -12,10 +12,10 @@ void s_sampler_context::initialize(c_event_interface *event_interface, c_sample_
 	wl_assert(VALID_INDEX(loop_mode, k_sample_loop_mode_count));
 
 	sample_handle = sample_requester->request_sample(sample, loop_mode, phase_shift_enabled);
-	if (channel < 0.0f ||
-		std::floor(channel) != channel) {
+	if (channel_real < 0.0f ||
+		std::floor(channel_real) != channel_real) {
 		sample_handle = c_sample_library::k_invalid_handle;
-		event_interface->submit(EVENT_ERROR << "Invalid sample channel '" << channel << "'");
+		event_interface->submit(EVENT_ERROR << "Invalid sample channel '" << channel_real << "'");
 	}
 	channel = static_cast<uint32>(channel_real);
 	sample_index = 0.0;
