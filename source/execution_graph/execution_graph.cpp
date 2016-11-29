@@ -34,10 +34,7 @@ static e_instrument_result invalid_graph_or_read_failure(const std::ifstream &in
 }
 
 c_execution_graph::c_execution_graph() {
-	ZERO_STRUCT(&m_globals);
 }
-
-// $TODO do we care about being endian-correct?
 
 e_instrument_result c_execution_graph::save(std::ofstream &out) const {
 	wl_assert(validate());
@@ -50,9 +47,6 @@ e_instrument_result c_execution_graph::save(std::ofstream &out) const {
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
 	c_binary_file_writer writer(out);
-
-	// Write the globals
-	writer.write(m_globals.max_voices);
 
 	// Write the node count, and also count up all edges
 	uint32 node_count = cast_integer_verify<uint32>(m_nodes.size());
@@ -111,6 +105,10 @@ e_instrument_result c_execution_graph::save(std::ofstream &out) const {
 		case k_execution_graph_node_type_indexed_output:
 			break;
 
+		case k_execution_graph_node_type_input:
+			writer.write(node.node_data.input.input_index);
+			break;
+
 		case k_execution_graph_node_type_output:
 			writer.write(node.node_data.output.output_index);
 			break;
@@ -153,11 +151,6 @@ e_instrument_result c_execution_graph::load(std::ifstream &in) {
 
 	// If we get a EOF error, it means that we successfully read but the file was shorter than expected, indicating that
 	// we should return an invalid format error.
-
-	// Read the globals
-	if (!reader.read(m_globals.max_voices)) {
-		return invalid_graph_or_read_failure(in);
-	}
 
 	// Read the node count
 	uint32 node_count;
@@ -239,6 +232,12 @@ e_instrument_result c_execution_graph::load(std::ifstream &in) {
 		case k_execution_graph_node_type_indexed_output:
 			break;
 
+		case k_execution_graph_node_type_input:
+			if (!reader.read(node.node_data.input.input_index)) {
+				return invalid_graph_or_read_failure(in);
+			}
+			break;
+
 		case k_execution_graph_node_type_output:
 			if (!reader.read(node.node_data.output.output_index)) {
 				return invalid_graph_or_read_failure(in);
@@ -289,13 +288,13 @@ e_instrument_result c_execution_graph::load(std::ifstream &in) {
 }
 
 bool c_execution_graph::validate() const {
+	size_t input_node_count = 0;
 	size_t output_node_count = 0;
 
 	// Validate each node, validate each edge, check for cycles
 	for (uint32 index = 0; index < get_node_count(); index++) {
-		if (get_node_type(index) == k_execution_graph_node_type_output) {
-			output_node_count++;
-		}
+		input_node_count += (get_node_type(index) == k_execution_graph_node_type_input);
+		output_node_count += (get_node_type(index) == k_execution_graph_node_type_output);
 
 		if (!validate_node(index)) {
 			return false;
@@ -314,12 +313,27 @@ bool c_execution_graph::validate() const {
 		return false;
 	}
 
-	// Output indices for the n output nodes should be unique and map to the range [0,n-1], with one additional node for
-	// the remain-active result
+	// Input indices for the n input nodes should be unique and map to the range [0,n-1]. This is also true for output
+	// nodes, but with one additional node for the remain-active result
+	std::vector<bool> input_nodes_found(input_node_count, false);
 	std::vector<bool> output_nodes_found(output_node_count - 1, false);
 	bool remain_active_output_node_found = false;
 	for (uint32 index = 0; index < get_node_count(); index++) {
-		if (get_node_type(index) == k_execution_graph_node_type_output) {
+		if (get_node_type(index) == k_execution_graph_node_type_input) {
+			uint32 input_index = get_input_node_input_index(index);
+
+			if (!VALID_INDEX(input_index, input_node_count)) {
+				// Not in the range [0,n-1]
+				return false;
+			}
+
+			if (input_nodes_found[input_index]) {
+				// Duplicate input index
+				return false;
+			}
+
+			input_nodes_found[input_index] = true;
+		} else if (get_node_type(index) == k_execution_graph_node_type_output) {
 			uint32 output_index = get_output_node_output_index(index);
 
 			if (output_index == k_remain_active_output_index) {
@@ -345,8 +359,12 @@ bool c_execution_graph::validate() const {
 		}
 	}
 
-	// We should have found exactly n unique outputs
+	// We should have found exactly n unique input and outputs
 #if IS_TRUE(ASSERTS_ENABLED)
+	for (size_t index = 0; index < input_nodes_found.size(); index++) {
+		wl_assert(input_nodes_found[index]);
+	}
+
 	for (size_t index = 0; index < output_nodes_found.size(); index++) {
 		wl_assert(output_nodes_found[index]);
 	}
@@ -383,11 +401,6 @@ bool c_execution_graph::validate() const {
 		return false;
 	}
 
-	// Validate globals
-	if (m_globals.max_voices < 1) {
-		return false;
-	}
-
 	return true;
 }
 
@@ -401,6 +414,7 @@ bool c_execution_graph::does_node_use_indexed_inputs(const s_node &node) {
 
 	case k_execution_graph_node_type_indexed_input:
 	case k_execution_graph_node_type_indexed_output:
+	case k_execution_graph_node_type_input:
 	case k_execution_graph_node_type_output:
 		return false;
 
@@ -420,6 +434,7 @@ bool c_execution_graph::does_node_use_indexed_outputs(const s_node &node) {
 
 	case k_execution_graph_node_type_indexed_input:
 	case k_execution_graph_node_type_indexed_output:
+	case k_execution_graph_node_type_input:
 	case k_execution_graph_node_type_output:
 		return false;
 
@@ -518,6 +533,14 @@ uint32 c_execution_graph::add_native_module_call_node(uint32 native_module_index
 		}
 	}
 
+	return index;
+}
+
+uint32 c_execution_graph::add_input_node(uint32 input_index) {
+	uint32 index = allocate_node();
+	s_node &node = m_nodes[index];
+	node.type = k_execution_graph_node_type_input;
+	node.node_data.input.input_index = input_index;
 	return index;
 }
 
@@ -726,6 +749,10 @@ bool c_execution_graph::validate_node(uint32 index) const {
 		return
 			(node.incoming_edge_indices.size() == 1);
 
+	case k_execution_graph_node_type_input:
+		return
+			(node.incoming_edge_indices.empty());
+
 	case k_execution_graph_node_type_output:
 		return
 			(node.incoming_edge_indices.size() == 1) &&
@@ -770,6 +797,14 @@ bool c_execution_graph::validate_edge(uint32 from_index, uint32 to_index) const 
 		break;
 
 	case k_execution_graph_node_type_indexed_output:
+		if ((to_node.type != k_execution_graph_node_type_indexed_input) &&
+			(to_node.type != k_execution_graph_node_type_output)) {
+			return false;
+		}
+		check_type = true;
+		break;
+
+	case k_execution_graph_node_type_input:
 		if ((to_node.type != k_execution_graph_node_type_indexed_input) &&
 			(to_node.type != k_execution_graph_node_type_output)) {
 			return false;
@@ -954,6 +989,10 @@ bool c_execution_graph::get_type_from_node(uint32 node_index, c_native_module_da
 		return false;
 	}
 
+	case k_execution_graph_node_type_input:
+		out_type = c_native_module_data_type(k_native_module_primitive_type_real);
+		return true;
+
 	case k_execution_graph_node_type_output:
 		if (node.node_data.output.output_index == k_remain_active_output_index) {
 			out_type = c_native_module_data_type(k_native_module_primitive_type_bool);
@@ -1053,6 +1092,12 @@ uint32 c_execution_graph::get_native_module_call_native_module_index(uint32 node
 	return node.node_data.native_module_call.native_module_index;
 }
 
+uint32 c_execution_graph::get_input_node_input_index(uint32 node_index) const {
+	const s_node &node = m_nodes[node_index];
+	wl_assert(node.type == k_execution_graph_node_type_input);
+	return node.node_data.input.input_index;
+}
+
 uint32 c_execution_graph::get_output_node_output_index(uint32 node_index) const {
 	const s_node &node = m_nodes[node_index];
 	wl_assert(node.type == k_execution_graph_node_type_output);
@@ -1085,14 +1130,6 @@ bool c_execution_graph::does_node_use_indexed_inputs(uint32 node_index) const {
 
 bool c_execution_graph::does_node_use_indexed_outputs(uint32 node_index) const {
 	return does_node_use_indexed_outputs(m_nodes[node_index]);
-}
-
-void c_execution_graph::set_globals(const s_execution_graph_globals &globals) {
-	m_globals = globals;
-}
-
-const s_execution_graph_globals &c_execution_graph::get_globals() const {
-	return m_globals;
 }
 
 void c_execution_graph::remove_unused_nodes_and_reassign_node_indices() {
@@ -1274,9 +1311,23 @@ bool c_execution_graph::generate_graphviz_file(const char *fname, bool collapse_
 			break;
 		}
 
+		case k_execution_graph_node_type_input:
+			graph_node.set_shape("box");
+			graph_node.set_label(("input " + std::to_string(node.node_data.input.input_index)).c_str());
+			graph_node.set_style("rounded");
+			break;
+
 		case k_execution_graph_node_type_output:
 			graph_node.set_shape("box");
-			graph_node.set_label(("output " + std::to_string(node.node_data.output.output_index)).c_str());
+			{
+				std::string output_index_string;
+				if (node.node_data.output.output_index == k_remain_active_output_index) {
+					output_index_string = "remain-active";
+				} else {
+					output_index_string = std::to_string(node.node_data.output.output_index);
+				}
+				graph_node.set_label(("output " + output_index_string).c_str());
+			}
 			graph_node.set_style("rounded");
 			break;
 

@@ -119,15 +119,12 @@ namespace core_native_modules wl_library(k_core_library_id, "core", 0) {
 		wl_in_const const c_native_module_string &false_value, wl_out_return c_native_module_string &result);
 
 	wl_native_module(0x443b421c, "enforce_const$real")
-	// $TODO this is broken! optimizer deletes it before it is enforced!
 	void enforce_const_real(wl_in_const real32 a, wl_out_return real32 &result);
 
 	wl_native_module(0x263d2c30, "enforce_const$bool")
-	// $TODO this is broken! optimizer deletes it before it is enforced!
 	void enforce_const_bool(wl_in_const bool a, wl_out_return bool &result);
 
 	wl_native_module(0x5de97a3b, "enforce_const$string")
-	// $TODO this is broken! optimizer deletes it before it is enforced!
 	void enforce_const_string(wl_in_const const c_native_module_string &a,
 		wl_out_return c_native_module_string &result);
 

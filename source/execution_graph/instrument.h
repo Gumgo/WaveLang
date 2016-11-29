@@ -4,27 +4,59 @@
 #include "common/common.h"
 
 #include "execution_graph/instrument_constants.h"
+#include "execution_graph/instrument_globals.h"
 
+#include <fstream>
 #include <vector>
 
 class c_execution_graph;
 
-// Used to select the appropriate execution graph from an instrument
-struct s_execution_graph_requirements {
+// Used to select the appropriate instrument variant from an instrument
+struct s_instrument_variant_requirements {
 	uint32 sample_rate;
 };
 
-enum e_execution_graph_for_requirements_result {
-	k_execution_graph_for_requirements_result_success,
-	k_execution_graph_for_requirements_result_no_match,
-	k_execution_graph_for_requirements_result_ambiguous_matches,
+enum e_instrument_variant_for_requirements_result {
+	k_instrument_variant_for_requirements_result_success,
+	k_instrument_variant_for_requirements_result_no_match,
+	k_instrument_variant_for_requirements_result_ambiguous_matches,
 
-	k_execution_graph_for_requirements_result_count
+	k_instrument_variant_for_requirements_result_count
 };
 
-// An instrument contains compiled execution graphs. An instrument may contain more than one execution graph if the
-// execution graph globals are context-specific - e.g. an execution graph may be compiled several times for different
-// sample rates.
+// An instrument variant consists of an instance of instrument globals and either a voice execution graph, an FX
+// execution graph, or both
+class c_instrument_variant {
+public:
+	c_instrument_variant();
+	~c_instrument_variant();
+
+	e_instrument_result save(std::ofstream &out) const;
+	e_instrument_result load(std::ifstream &in);
+
+	bool validate() const;
+
+	void set_instrument_globals(const s_instrument_globals &instrument_globals);
+
+	// These functions take ownership of the execution graph, which should be allocated using new
+	void set_voice_execution_graph(c_execution_graph *execution_graph);
+	void set_fx_execution_graph(c_execution_graph *execution_graph);
+
+	const s_instrument_globals &get_instrument_globals() const;
+	c_execution_graph *get_voice_execution_graph();
+	const c_execution_graph *get_voice_execution_graph() const;
+	c_execution_graph *get_fx_execution_graph();
+	const c_execution_graph *get_fx_execution_graph() const;
+
+private:
+	s_instrument_globals m_instrument_globals;
+	c_execution_graph *m_voice_execution_graph;
+	c_execution_graph *m_fx_execution_graph;
+};
+
+// An instrument contains one or more instrument variants. An instrument may contain more than one instrument variant if
+// the instrument globals are context-specific - e.g. an execution graph may be compiled several times for
+// different sample rates.
 class c_instrument {
 public:
 	c_instrument();
@@ -35,18 +67,18 @@ public:
 
 	bool validate() const;
 
-	// Takes ownership of the execution graph, which should be allocated using new
-	void add_execution_graph(c_execution_graph *execution_graph);
+	// Takes ownership of the instrument variant, which should be allocated using new
+	void add_instrument_variant(c_instrument_variant *instrument_variant);
 
-	uint32 get_execution_graph_count() const;
-	const c_execution_graph *get_execution_graph(uint32 index) const;
+	uint32 get_instrument_variant_count() const;
+	const c_instrument_variant *get_instrument_variant(uint32 index) const;
 
-	// Chooses the execution graph which best matches the given requirements
-	e_execution_graph_for_requirements_result get_execution_graph_for_requirements(
-		const s_execution_graph_requirements &requirements, uint32 &out_execution_graph_index) const;
+	// Chooses the instrument variant which best matches the given requirements
+	e_instrument_variant_for_requirements_result get_instrument_variant_for_requirements(
+		const s_instrument_variant_requirements &requirements, uint32 &out_instrument_variant_index) const;
 
 private:
-	std::vector<c_execution_graph *> m_execution_graphs;
+	std::vector<c_instrument_variant *> m_instrument_variants;
 };
 
 #endif // WAVELANG_EXECUTION_GRAPH_INSTRUMENT_H__

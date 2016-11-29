@@ -34,6 +34,10 @@ public:
 	inline c_buffer *get_buffer(uint32 buffer_handle);
 	inline const c_buffer *get_buffer(uint32 buffer_handle) const;
 
+#if IS_TRUE(ASSERTS_ENABLED)
+	void assert_all_buffers_free() const;
+#endif // IS_TRUE(ASSERTS_ENABLED)
+
 private:
 	struct s_buffer_pool {
 		// Pool settings

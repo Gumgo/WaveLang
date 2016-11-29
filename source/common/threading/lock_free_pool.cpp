@@ -82,3 +82,9 @@ void c_lock_free_pool::free(uint32 handle) {
 
 	lock_free_list_push(m_free_list, m_free_list_head, handle);
 }
+
+#if IS_TRUE(ASSERTS_ENABLED)
+uint32 c_lock_free_pool::calculate_used_count_unsafe() const {
+	return static_cast<uint32>(m_free_list.get_count() - lock_free_list_count_unsafe(m_free_list, m_free_list_head));
+}
+#endif // IS_TRUE(ASSERTS_ENABLED)

@@ -6,14 +6,12 @@
 
 #include "engine/task_function.h"
 
+#include "execution_graph/instrument_stage.h"
+
 #include <vector>
 
 class c_execution_graph;
 class c_predecessor_resolver;
-
-struct s_task_graph_globals {
-	uint32 max_voices;
-};
 
 struct s_task_graph_data {
 	// Do not access these directly
@@ -186,14 +184,13 @@ public:
 	c_task_graph_task_array get_task_successors(uint32 task_index) const;
 
 	c_task_graph_task_array get_initial_tasks() const;
+	c_task_graph_data_array get_inputs() const;
 	c_task_graph_data_array get_outputs() const;
 	const s_task_graph_data &get_remain_active_output() const;
 
 	uint32 get_buffer_count() const;
 	c_wrapped_array_const<s_buffer_usage_info> get_buffer_usage_info() const;
 	uint32 get_buffer_usages(uint32 buffer_index) const;
-
-	const s_task_graph_globals &get_globals() const;
 
 private:
 	static const size_t k_invalid_list_index = static_cast<size_t>(-1);
@@ -223,9 +220,11 @@ private:
 	void build_task_successor_lists(const c_execution_graph &execution_graph,
 		const std::vector<uint32> &nodes_to_tasks);
 	void allocate_buffers(const c_execution_graph &execution_graph);
+	void convert_nodes_to_buffers(s_task_graph_data &task_graph_data, const std::vector<uint32> &nodes_to_buffers);
 	void assign_buffer_to_related_nodes(const c_execution_graph &execution_graph, uint32 node_index,
 		const std::vector<uint32> &inout_connections, std::vector<uint32> &nodes_to_buffers, uint32 buffer_index);
 	void calculate_max_concurrency();
+	void add_usage_info_for_buffer_type(const c_predecessor_resolver &predecessor_resolver, c_task_data_type type);
 	uint32 calculate_max_buffer_concurrency(
 		const c_predecessor_resolver &task_predecessor_resolver, c_task_data_type type) const;
 	uint32 estimate_max_concurrency(uint32 node_count, const std::vector<bool> &concurrency_matrix) const;
@@ -258,14 +257,16 @@ private:
 	size_t m_initial_tasks_start;
 	size_t m_initial_tasks_count;
 
+	// List of input buffers
+	size_t m_inputs_start;
+	size_t m_inputs_count;
+
 	// List of final output buffers
 	size_t m_outputs_start;
 	size_t m_outputs_count;
 
 	// Remain-active buffer
 	size_t m_remain_active_output;
-
-	s_task_graph_globals m_globals;
 };
 
 #endif // WAVELANG_ENGINE_TASK_GRAPH_H__

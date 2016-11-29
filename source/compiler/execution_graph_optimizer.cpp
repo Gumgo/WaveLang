@@ -1,12 +1,11 @@
 #include "compiler/execution_graph_optimizer.h"
 
+#include "execution_graph/execution_graph.h"
 #include "execution_graph/native_module.h"
 #include "execution_graph/native_module_registry.h"
 #include "execution_graph/diagnostic/diagnostic.h"
 
 #include <array>
-#include <stack>
-#include <vector>
 
 struct s_native_module_diagnostic_callback_context {
 	std::vector<s_compiler_result> *errors;
@@ -20,12 +19,14 @@ static bool sanitize_array_index(const c_execution_graph *execution_graph, uint3
 
 static void native_module_diagnostic_callback(void *context, e_diagnostic_level diagnostic_level,
 	const std::string &message);
-static void execute_compile_time_call(const c_execution_graph *execution_graph, const s_native_module &native_module,
+static void execute_compile_time_call(const c_execution_graph *execution_graph,
+	const s_instrument_globals *instrument_globals, const s_native_module &native_module,
 	c_native_module_compile_time_argument_list arguments, std::vector<s_compiler_result> *errors);
 
-static bool optimize_node(c_execution_graph *execution_graph, uint32 node_index,
-	std::vector<s_compiler_result> *errors);
-static bool optimize_native_module_call(c_execution_graph *execution_graph, uint32 node_index,
+static bool optimize_node(c_execution_graph *execution_graph, const s_instrument_globals *instrument_globals,
+	uint32 node_index, std::vector<s_compiler_result> *errors);
+static bool optimize_native_module_call(c_execution_graph *execution_graph,
+	const s_instrument_globals *instrument_globals, uint32 node_index,
 	std::vector<s_compiler_result> *errors);
 static bool try_to_apply_optimization_rule(c_execution_graph *execution_graph, uint32 node_index, uint32 rule_index);
 static void remove_useless_nodes(c_execution_graph *execution_graph);
@@ -37,12 +38,15 @@ static void validate_optimized_constants(const c_execution_graph *execution_grap
 
 c_execution_graph_constant_evaluator::c_execution_graph_constant_evaluator() {
 	m_execution_graph = nullptr;
+	m_instrument_globals = nullptr;
 }
 
 void c_execution_graph_constant_evaluator::initialize(const c_execution_graph *execution_graph,
-	std::vector<s_compiler_result> *errors) {
+	const s_instrument_globals *instrument_globals, std::vector<s_compiler_result> *errors) {
 	wl_assert(!m_execution_graph);
+	wl_assert(!m_instrument_globals);
 	m_execution_graph = execution_graph;
+	m_instrument_globals = instrument_globals;
 	m_errors = errors;
 	m_invalid_constant = true;
 }
@@ -141,7 +145,7 @@ void c_execution_graph_constant_evaluator::try_evaluate_node(uint32 node_index) 
 
 		// Make the compile time call to resolve the outputs
 		if (all_inputs_evaluated) {
-			execute_compile_time_call(m_execution_graph, native_module,
+			execute_compile_time_call(m_execution_graph, m_instrument_globals, native_module,
 				c_native_module_compile_time_argument_list(
 					arg_list.empty() ? nullptr : &arg_list.front(), arg_list.size()),
 				m_errors);
@@ -267,7 +271,7 @@ void c_execution_graph_constant_evaluator::store_native_module_call_results(cons
 }
 
 s_compiler_result c_execution_graph_optimizer::optimize_graph(c_execution_graph *execution_graph,
-	std::vector<s_compiler_result> &out_errors) {
+	const s_instrument_globals *instrument_globals, std::vector<s_compiler_result> &out_errors) {
 	s_compiler_result result;
 	result.clear();
 
@@ -277,7 +281,7 @@ s_compiler_result c_execution_graph_optimizer::optimize_graph(c_execution_graph 
 		optimization_performed = false;
 
 		for (uint32 index = 0; index < execution_graph->get_node_count(); index++) {
-			optimization_performed |= optimize_node(execution_graph, index, &out_errors);
+			optimization_performed |= optimize_node(execution_graph, instrument_globals, index, &out_errors);
 		}
 
 		remove_useless_nodes(execution_graph);
@@ -354,7 +358,8 @@ static void native_module_diagnostic_callback(void *context, e_diagnostic_level 
 	}
 }
 
-static void execute_compile_time_call(const c_execution_graph *execution_graph, const s_native_module &native_module,
+static void execute_compile_time_call(const c_execution_graph *execution_graph,
+	const s_instrument_globals *instrument_globals, const s_native_module &native_module,
 	c_native_module_compile_time_argument_list arguments, std::vector<s_compiler_result> *errors) {
 	wl_assert(execution_graph);
 
@@ -369,14 +374,14 @@ static void execute_compile_time_call(const c_execution_graph *execution_graph, 
 	c_diagnostic diagnostic(native_module_diagnostic_callback, &native_module_diagnostic_callback_context);
 
 	native_module_context.diagnostic = &diagnostic;
-	native_module_context.execution_graph_globals = &execution_graph->get_globals();
+	native_module_context.instrument_globals = instrument_globals;
 	native_module_context.arguments = &arguments;
 
 	native_module.compile_time_call(native_module_context);
 }
 
-static bool optimize_node(c_execution_graph *execution_graph, uint32 node_index,
-	std::vector<s_compiler_result> *errors) {
+static bool optimize_node(c_execution_graph *execution_graph, const s_instrument_globals *instrument_globals,
+	uint32 node_index, std::vector<s_compiler_result> *errors) {
 	bool optimized = false;
 
 	switch (execution_graph->get_node_type(node_index)) {
@@ -389,7 +394,7 @@ static bool optimize_node(c_execution_graph *execution_graph, uint32 node_index,
 		break;
 
 	case k_execution_graph_node_type_native_module_call:
-		optimized = optimize_native_module_call(execution_graph, node_index, errors);
+		optimized = optimize_native_module_call(execution_graph, instrument_globals, node_index, errors);
 		break;
 
 	case k_execution_graph_node_type_indexed_input:
@@ -398,6 +403,10 @@ static bool optimize_node(c_execution_graph *execution_graph, uint32 node_index,
 
 	case k_execution_graph_node_type_indexed_output:
 		// Indexed outputs can't be optimized
+		break;
+
+	case k_execution_graph_node_type_input:
+		// Inputs can't be optimized
 		break;
 
 	case k_execution_graph_node_type_output:
@@ -411,7 +420,8 @@ static bool optimize_node(c_execution_graph *execution_graph, uint32 node_index,
 	return optimized;
 }
 
-static bool optimize_native_module_call(c_execution_graph *execution_graph, uint32 node_index,
+static bool optimize_native_module_call(c_execution_graph *execution_graph,
+	const s_instrument_globals *instrument_globals, uint32 node_index,
 	std::vector<s_compiler_result> *errors) {
 	wl_assert(execution_graph->get_node_type(node_index) == k_execution_graph_node_type_native_module_call);
 	const s_native_module &native_module = c_native_module_registry::get_native_module(
@@ -486,7 +496,7 @@ static bool optimize_native_module_call(c_execution_graph *execution_graph, uint
 			wl_assert(next_output == native_module.out_argument_count);
 
 			// Make the compile time call to resolve the outputs
-			execute_compile_time_call(execution_graph, native_module,
+			execute_compile_time_call(execution_graph, instrument_globals, native_module,
 				c_native_module_compile_time_argument_list(
 					arg_list.empty() ? nullptr : &arg_list.front(), arg_list.size()),
 				errors);
@@ -1019,12 +1029,16 @@ void remove_useless_nodes(c_execution_graph *execution_graph) {
 	// Remove all unvisited nodes
 	for (uint32 index = 0; index < execution_graph->get_node_count(); index++) {
 		if (!nodes_visited[index]) {
-			// Don't directly remove inputs/outputs, since they automatically get removed along with their nodes. Also
-			// avoid removing invalid nodes, because they're already removed.
+			// A few exceptions:
+			// - Don't directly remove inputs/outputs, since they automatically get removed along with their nodes
+			// - Avoid removing invalid nodes, because they're already removed
+			// - Don't remove unused inputs or we would get unexpected graph incompatibility errors if an input is
+			//   unused because input node count defines the number of inputs
 			e_execution_graph_node_type type = execution_graph->get_node_type(index);
 			if (type != k_execution_graph_node_type_invalid &&
 				type != k_execution_graph_node_type_indexed_input &&
-				type != k_execution_graph_node_type_indexed_output) {
+				type != k_execution_graph_node_type_indexed_output &&
+				type != k_execution_graph_node_type_input) {
 				execution_graph->remove_node(index);
 			}
 		}

@@ -1,157 +1,124 @@
-#include "engine/task_graph.h"
 #include "engine/buffer_operations/buffer_operations_internal.h"
 #include "engine/executor/buffer_manager.h"
 #include "engine/executor/channel_mixer.h"
 
-// Returns
-static bool scan_remain_active_buffer(const c_buffer *remain_active_buffer, size_t shifted_);
+#include <algorithm>
 
-void c_buffer_manager::initialize(const c_task_graph *task_graph, uint32 max_buffer_size, uint32 output_channels) {
-	wl_assert(task_graph);
+// $TODO $UPSAMPLE this has (mostly) been build to support the eventual addition of upsampled data being passed from the
+// voice graph to the FX graph. should probably double check everything though.
+
+void c_buffer_manager::initialize(const c_runtime_instrument *runtime_instrument,
+	uint32 max_buffer_size, uint32 output_channels) {
+	wl_assert(runtime_instrument);
 	wl_assert(max_buffer_size > 0);
 	wl_assert(output_channels > 0);
 
-	m_task_graph = task_graph;
+	m_runtime_instrument = runtime_instrument;
 
-	std::vector<s_buffer_pool_description> buffer_pool_descriptions;
+	// Build data to allocate our buffer pools
 
-	c_wrapped_array_const<c_task_graph::s_buffer_usage_info> buffer_usage_info = task_graph->get_buffer_usage_info();
+	// Represents buffer concurrency during the voice processing phase
+	std::vector<c_task_graph::s_buffer_usage_info> voice_buffer_usage_info;
 
-	m_real_buffer_pool_index = static_cast<uint32>(-1);
-	for (uint32 index = 0; index < buffer_usage_info.get_count(); index++) {
-		const c_task_graph::s_buffer_usage_info &info = buffer_usage_info[index];
-		s_buffer_pool_description desc;
+	// Represents buffer concurrency during the FX processing phase
+	std::vector<c_task_graph::s_buffer_usage_info> fx_buffer_usage_info;
 
-		wl_assert(!info.type.is_array());
-		wl_assert(info.type.get_primitive_type_traits().is_dynamic);
-		switch (info.type.get_primitive_type()) {
-		case k_task_primitive_type_real:
-			desc.type = k_buffer_type_real;
-			m_real_buffer_pool_index = index;
-			break;
+	// Represents buffer concurrency during the channel mixing phase
+	std::vector<c_task_graph::s_buffer_usage_info> channel_mix_buffer_usage_info;
 
-		case k_task_primitive_type_bool:
-			desc.type = k_buffer_type_bool;
-			break;
+	if (runtime_instrument->get_voice_task_graph()) {
+		// During the voice processing phase, start with the buffers from the voice task graph
+		c_wrapped_array_const<c_task_graph::s_buffer_usage_info> voice_graph_buffer_usage_info =
+			runtime_instrument->get_voice_task_graph()->get_buffer_usage_info();
 
-		case k_task_primitive_type_string:
-			wl_unreachable();
-			break;
+		voice_buffer_usage_info.assign(
+			voice_graph_buffer_usage_info.get_pointer(),
+			voice_graph_buffer_usage_info.get_pointer() + voice_graph_buffer_usage_info.get_count());
 
-		default:
-			wl_unreachable();
+		// Voice accumulation buffers exist in parallel with voice processing, so we need an additional buffer for each
+		// voice output
+		// Note: if max_voices is 1, then we don't actually need the accumulation buffers to be stored separately and
+		// could instead only reserve additional accumulation buffers for each constant output and each duplicated
+		// output buffer (meaning cases where the same buffer is routed to more than one output). However, for
+		// simplicity, we will just always reserve 1 buffer per output instead.
+		c_task_graph_data_array voice_outputs = runtime_instrument->get_voice_task_graph()->get_outputs();
+		m_voice_output_pool_indices.resize(voice_outputs.get_count());
+		for (size_t output_index = 0; output_index < voice_outputs.get_count(); output_index++) {
+			uint32 buffer_pool_index = get_or_add_buffer_pool(
+				voice_outputs[output_index].get_type().get_data_type(), voice_buffer_usage_info);
+			m_voice_output_pool_indices[output_index] = buffer_pool_index;
+			voice_buffer_usage_info[buffer_pool_index].max_concurrency++;
 		}
 
-		desc.size = max_buffer_size;
-		desc.count = info.max_concurrency;
-
-		buffer_pool_descriptions.push_back(desc);
+		m_voice_accumulation_buffers.resize(voice_outputs.get_count());
 	}
 
-	// Add a slot for real buffers and bool buffers if they don't exist already
+	if (runtime_instrument->get_fx_task_graph()) {
+		// During the FX processing phase, start with the buffers from the FX task graph
+		c_wrapped_array_const<c_task_graph::s_buffer_usage_info> fx_graph_buffer_usage_info =
+			runtime_instrument->get_fx_task_graph()->get_buffer_usage_info();
 
-	if (m_real_buffer_pool_index == static_cast<uint32>(-1)) {
-		m_real_buffer_pool_index = static_cast<uint32>(buffer_pool_descriptions.size());
-		s_buffer_pool_description desc;
-		desc.type = k_buffer_type_real;
-		desc.size = max_buffer_size;
-		desc.count = 0;
-		buffer_pool_descriptions.push_back(desc);
-	}
+		fx_buffer_usage_info.assign(
+			fx_graph_buffer_usage_info.get_pointer(),
+			fx_graph_buffer_usage_info.get_pointer() + fx_graph_buffer_usage_info.get_count());
 
-	c_task_graph_data_array outputs = task_graph->get_outputs();
-
-	// Allocate an additional buffer for each constant output. The task graph doesn't require buffers for these, but at
-	// this point we do.
-	for (uint32 output = 0; output < outputs.get_count(); output++) {
-		if (outputs[output].data.is_constant) {
-			buffer_pool_descriptions[m_real_buffer_pool_index].count++;
+		// Note: the note above for voice processing also applies to FX processing, and in fact it always applies, even
+		// if max_voices is not 1, because FX processing is always only a "single voice". Again, for simplicity, just
+		// reserve a buffer for each output.
+		c_task_graph_data_array fx_outputs = runtime_instrument->get_fx_task_graph()->get_outputs();
+		m_fx_output_pool_indices.resize(fx_outputs.get_count());
+		for (size_t output_index = 0; output_index < fx_outputs.get_count(); output_index++) {
+			uint32 buffer_pool_index = get_or_add_buffer_pool(
+				fx_outputs[output_index].get_type().get_data_type(), fx_buffer_usage_info);
+			m_fx_output_pool_indices[output_index] = buffer_pool_index;
+			fx_buffer_usage_info[buffer_pool_index].max_concurrency++;
 		}
+
+		m_fx_output_buffers.resize(fx_outputs.get_count());
 	}
 
-	// Allocate an additional buffer for each "duplicated" output buffer. This is because we need to keep them separate
-	// for accumulation.
 	{
-		std::vector<uint32> buffer_deduplicator;
-		buffer_deduplicator.reserve(outputs.get_count());
-		uint32 total_buffer_outputs = 0;
-		uint32 unique_buffer_outputs = 0;
-		for (uint32 output = 0; output < outputs.get_count(); output++) {
+		// Reserve additional buffers to perform channel mixing
+		const c_task_graph *channel_output_task_graph = runtime_instrument->get_fx_task_graph() ?
+			runtime_instrument->get_fx_task_graph() :
+			runtime_instrument->get_voice_task_graph();
 
-			if (!outputs[output].data.is_constant) {
-				uint32 output_buffer_index = outputs[output].get_real_buffer_in();
-				if (std::find(buffer_deduplicator.begin(), buffer_deduplicator.end(), output_buffer_index) ==
-					buffer_deduplicator.end()) {
-					unique_buffer_outputs++;
-					buffer_deduplicator.push_back(output_buffer_index);
-				}
-
-				total_buffer_outputs++;
-			}
+		// During the channel mixing phase, buffers from the final processing graph are still allocated
+		c_task_graph_data_array channel_outputs = channel_output_task_graph->get_outputs();
+		for (size_t output_index = 0; output_index < channel_outputs.get_count(); output_index++) {
+			uint32 buffer_pool_index = get_or_add_buffer_pool(
+				channel_outputs[output_index].get_type().get_data_type(), channel_mix_buffer_usage_info);
+			channel_mix_buffer_usage_info[buffer_pool_index].max_concurrency++;
 		}
 
-		uint32 duplicated_buffer_outputs = total_buffer_outputs - unique_buffer_outputs;
-		buffer_pool_descriptions[m_real_buffer_pool_index].count += duplicated_buffer_outputs;
+		// Reserve buffers for channel mixing; all final output channels are real values
+		// Note: again, this isn't quite a perfect optimization for memory usage, but it's good enough
+		uint32 channel_mix_buffer_pool_index = get_or_add_buffer_pool(
+			c_task_data_type(k_task_primitive_type_real), channel_mix_buffer_usage_info);
+		m_real_buffer_pool_index = channel_mix_buffer_pool_index;
+		channel_mix_buffer_usage_info[channel_mix_buffer_pool_index].max_concurrency += output_channels;
+		size_t channel_output_count = channel_output_task_graph->get_outputs().get_count();
+
+		m_channel_mix_buffers.resize(output_channels);
 	}
 
-	// If we support multiple voices, we need buffers to accumulate the final result into
-	if (task_graph->get_globals().max_voices > 1) {
-		buffer_pool_descriptions[m_real_buffer_pool_index].count += outputs.get_count();
-	}
+	const std::vector<c_task_graph::s_buffer_usage_info> *buffer_usage_info_array[] = {
+		&voice_buffer_usage_info,
+		&fx_buffer_usage_info,
+		&channel_mix_buffer_usage_info
+	};
 
-	// If the output count differs from the channel count, we'll need additional buffers to perform mixing
-	if (output_channels != outputs.get_count()) {
-		buffer_pool_descriptions[m_real_buffer_pool_index].count += output_channels;
-	}
+	// Combine to get worst-case concurrency requirements across all phases
+	std::vector<c_task_graph::s_buffer_usage_info> buffer_usage_info = combine_buffer_usage_info(
+		c_wrapped_array_const<const std::vector<c_task_graph::s_buffer_usage_info> *>::construct(
+			buffer_usage_info_array));
 
-	s_buffer_allocator_settings buffer_allocator_settings;
-	buffer_allocator_settings.buffer_pool_descriptions = c_wrapped_array_const<s_buffer_pool_description>(
-		&buffer_pool_descriptions.front(), buffer_pool_descriptions.size());
-
-	m_buffer_allocator.initialize(buffer_allocator_settings);
-
-	m_buffer_contexts.free();
-	m_buffer_contexts.allocate(task_graph->get_buffer_count());
-
-	// Assign pool indices to each buffer context so we know where to allocate from when the time comes
-#if IS_TRUE(ASSERTS_ENABLED)
-	for (size_t index = 0; index < m_buffer_contexts.get_array().get_count(); index++) {
-		m_buffer_contexts.get_array()[index].pool_index = static_cast<uint32>(-1);
-	}
-#endif // IS_TRUE(ASSERTS_ENABLED)
-
-	// Iterate through each buffer in each task and assign it a pool
-	for (uint32 task_index = 0; task_index < task_graph->get_task_count(); task_index++) {
-		c_task_graph_data_array arguments = task_graph->get_task_arguments(task_index);
-
-		for (c_task_buffer_iterator it(arguments); it.is_valid(); it.next()) {
-			c_task_data_type type_to_match = it.get_buffer_type().get_data_type();
-
-			// Find the pool for this buffer (or buffers, in the case of arrays)
-			uint32 pool_index;
-			for (pool_index = 0; pool_index < buffer_usage_info.get_count(); pool_index++) {
-				if (buffer_usage_info[pool_index].type == type_to_match) {
-					break;
-				}
-			}
-
-			wl_assert(pool_index != buffer_usage_info.get_count());
-			m_buffer_contexts.get_array()[it.get_buffer_index()].pool_index = pool_index;
-		}
-	}
-
-#if IS_TRUE(ASSERTS_ENABLED)
-	for (size_t index = 0; index < m_buffer_contexts.get_array().get_count(); index++) {
-		// Make sure all buffers got pool assignments
-		wl_assert(VALID_INDEX(m_buffer_contexts.get_array()[index].pool_index, buffer_usage_info.get_count()));
-	}
-#endif // IS_TRUE(ASSERTS_ENABLED)
-
-	m_voice_accumulation_buffers.resize(outputs.get_count());
-	m_channel_mix_buffers.resize(output_channels);
+	initialize_buffer_contexts(buffer_usage_info);
+	initialize_buffer_allocator(max_buffer_size, buffer_usage_info);
 
 	m_chunk_size = 0;
 	m_voices_processed = 0;
+	m_fx_processed = false;
 }
 
 void c_buffer_manager::begin_chunk(uint32 chunk_size) {
@@ -159,19 +126,66 @@ void c_buffer_manager::begin_chunk(uint32 chunk_size) {
 	m_chunk_size = chunk_size;
 
 	m_voices_processed = 0;
+	m_fx_processed = false;
 
 	std::fill(m_voice_accumulation_buffers.begin(), m_voice_accumulation_buffers.end(),
+		k_lock_free_invalid_handle);
+	std::fill(m_fx_output_buffers.begin(), m_fx_output_buffers.end(),
 		k_lock_free_invalid_handle);
 	std::fill(m_channel_mix_buffers.begin(), m_channel_mix_buffers.end(),
 		k_lock_free_invalid_handle);
 }
 
-void c_buffer_manager::initialize_buffers_for_voice() {
+void c_buffer_manager::initialize_buffers_for_graph(e_instrument_stage instrument_stage) {
+	const c_task_graph *task_graph = m_runtime_instrument->get_task_graph(instrument_stage);
+	wl_assert(task_graph);
+
+	c_task_graph_data_array inputs = task_graph->get_inputs();
+
 	// Initially all buffers are unassigned
-	for (uint32 buffer = 0; buffer < m_task_graph->get_buffer_count(); buffer++) {
+	for (uint32 buffer = 0; buffer < task_graph->get_buffer_count(); buffer++) {
 		s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer];
 		buffer_context.handle = k_lock_free_invalid_handle;
-		buffer_context.usages_remaining.initialize(m_task_graph->get_buffer_usages(buffer));
+		buffer_context.usages_remaining.initialize(task_graph->get_buffer_usages(buffer));
+
+#if IS_TRUE(ASSERTS_ENABLED)
+		if (buffer_context.usages_remaining.get_unsafe() == 0) {
+			// If we have a completely unused buffer, it must be an input, since inputs aren't optimized away
+			bool is_input = false;
+			for (size_t index = 0; !is_input && index < inputs.get_count(); index++) {
+				wl_assert(!inputs[index].is_constant());
+				is_input = (buffer == inputs[index].data.value.buffer);
+			}
+			wl_assert(is_input);
+		}
+#endif // IS_TRUE(ASSERTS_ENABLED)
+	}
+
+	// Assign voice accumulation outputs to FX inputs
+	// If any input is completely unused, it should be deallocated immediately
+	wl_assert(inputs.get_count() == 0 || instrument_stage == k_instrument_stage_fx);
+	for (size_t index = 0; index < inputs.get_count(); index++) {
+		wl_assert(!inputs[index].is_constant());
+		uint32 buffer_index = inputs[index].data.value.buffer;
+
+		s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer_index];
+
+		if (m_voices_processed == 0) {
+			wl_assert(m_voice_accumulation_buffers[index] == k_lock_free_invalid_handle);
+			// No voices were active, so allocate an empty buffer
+			buffer_context.handle = m_buffer_allocator.allocate_buffer(m_voice_output_pool_indices[index]);
+			c_buffer *buffer = m_buffer_allocator.get_buffer(buffer_context.handle);
+			*buffer->get_data<real32>() = 0.0f;
+			buffer->set_constant(true);
+		} else {
+			wl_assert(m_voice_accumulation_buffers[index] != k_lock_free_invalid_handle);
+			std::swap(buffer_context.handle, m_voice_accumulation_buffers[index]);
+		}
+
+		if (buffer_context.usages_remaining.get_unsafe() == 0) {
+			m_buffer_allocator.free_buffer(buffer_context.handle);
+			buffer_context.handle = k_lock_free_invalid_handle;
+		}
 	}
 }
 
@@ -179,7 +193,7 @@ void c_buffer_manager::accumulate_voice_output(uint32 voice_sample_offset) {
 	if (voice_sample_offset > 0) {
 		// If our voice output is offset, shift it forward in the buffer by the appropriate amount so that it starts at
 		// the right time.
-		shift_output_buffers(voice_sample_offset);
+		shift_voice_output_buffers(voice_sample_offset);
 	}
 
 	if (m_voices_processed == 0) {
@@ -189,20 +203,33 @@ void c_buffer_manager::accumulate_voice_output(uint32 voice_sample_offset) {
 		add_output_buffers_to_voice_accumulation_buffers(voice_sample_offset);
 	}
 
-	assert_all_output_buffers_free();
+	assert_all_output_buffers_free(k_instrument_stage_voice);
 	m_voices_processed++;
 }
 
-bool c_buffer_manager::process_remain_active_output(uint32 voice_sample_offset) {
+void c_buffer_manager::store_fx_output() {
+	wl_assert(m_runtime_instrument->get_fx_task_graph());
+	swap_and_deduplicate_output_buffers(
+		m_runtime_instrument->get_fx_task_graph()->get_outputs(),
+		m_fx_output_pool_indices, m_fx_output_buffers, 0);
+
+	assert_all_output_buffers_free(k_instrument_stage_fx);
+	m_fx_processed = true;
+}
+
+bool c_buffer_manager::process_remain_active_output(e_instrument_stage instrument_stage, uint32 voice_sample_offset) {
+	const c_task_graph *task_graph = m_runtime_instrument->get_task_graph(instrument_stage);
+	wl_assert(task_graph);
+
 	bool remain_active;
 
-	if (m_task_graph->get_remain_active_output().is_constant()) {
+	if (task_graph->get_remain_active_output().is_constant()) {
 		// The remain-active output is just a constant, so return it directly
-		remain_active = m_task_graph->get_remain_active_output().get_bool_constant_in();
+		remain_active = task_graph->get_remain_active_output().get_bool_constant_in();
 	} else {
-		wl_assert(m_task_graph->get_remain_active_output().get_type() ==
+		wl_assert(task_graph->get_remain_active_output().get_type() ==
 			c_task_qualified_data_type(k_task_primitive_type_bool, k_task_qualifier_in));
-		uint32 remain_active_buffer_index = m_task_graph->get_remain_active_output().get_bool_buffer_in();
+		uint32 remain_active_buffer_index = task_graph->get_remain_active_output().get_bool_buffer_in();
 		uint32 remain_active_buffer_handle = m_buffer_contexts.get_array()[remain_active_buffer_index].handle;
 		wl_assert(remain_active_buffer_handle != k_lock_free_invalid_handle);
 
@@ -217,10 +244,16 @@ bool c_buffer_manager::process_remain_active_output(uint32 voice_sample_offset) 
 	return remain_active;
 }
 
-void c_buffer_manager::mix_voice_accumulation_buffers_to_output_buffer(
-	e_sample_format sample_format, c_wrapped_array<uint8> output_buffer) {
-	mix_voice_accumulation_buffers_to_channel_buffers();
+void c_buffer_manager::mix_voice_accumulation_buffers_to_channel_buffers() {
+	mix_to_channel_buffers(m_voice_accumulation_buffers);
+}
 
+void c_buffer_manager::mix_fx_output_to_channel_buffers() {
+	mix_to_channel_buffers(m_fx_output_buffers);
+}
+
+void c_buffer_manager::mix_channel_buffers_to_output_buffer(
+	e_sample_format sample_format, c_wrapped_array<uint8> output_buffer) {
 	c_wrapped_array_const<uint32> channel_buffers(
 		&m_channel_mix_buffers.front(), m_channel_mix_buffers.size());
 	convert_and_interleave_to_output_buffer(
@@ -231,12 +264,13 @@ void c_buffer_manager::mix_voice_accumulation_buffers_to_output_buffer(
 		output_buffer);
 
 	free_channel_buffers();
+	assert_all_buffers_free();
 }
 
-void c_buffer_manager::allocate_buffer(uint32 buffer_index) {
+void c_buffer_manager::allocate_buffer(e_instrument_stage instrument_stage, uint32 buffer_index) {
 	wl_assert(!is_buffer_allocated(buffer_index));
 	s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer_index];
-	buffer_context.handle = m_buffer_allocator.allocate_buffer(buffer_context.pool_index);
+	buffer_context.handle = m_buffer_allocator.allocate_buffer(buffer_context.pool_indices[instrument_stage]);
 }
 
 void c_buffer_manager::decrement_buffer_usage(uint32 buffer_index) {
@@ -265,10 +299,170 @@ const c_buffer *c_buffer_manager::get_buffer(uint32 buffer_index) const {
 	return m_buffer_allocator.get_buffer(buffer_context.handle);
 }
 
-void c_buffer_manager::shift_output_buffers(uint32 voice_sample_offset) {
+uint32 c_buffer_manager::get_buffer_pool(c_task_data_type buffer_type,
+	const std::vector<c_task_graph::s_buffer_usage_info> &buffer_pools) const {
+	for (uint32 index = 0; index < buffer_pools.size(); index++) {
+		if (buffer_pools[index].type == buffer_type) {
+			return index;
+		}
+	}
+
+	return static_cast<uint32>(-1);
+}
+
+uint32 c_buffer_manager::get_or_add_buffer_pool(c_task_data_type buffer_type,
+	std::vector<c_task_graph::s_buffer_usage_info> &buffer_pools) const {
+	uint32 pool_index = get_buffer_pool(buffer_type, buffer_pools);
+	if (pool_index != static_cast<uint32>(-1)) {
+		return pool_index;
+	}
+
+	uint32 new_index = cast_integer_verify<uint32>(buffer_pools.size());
+	c_task_graph::s_buffer_usage_info buffer_usage_info;
+	buffer_usage_info.type = buffer_type;
+	buffer_usage_info.max_concurrency = 0;
+	buffer_pools.push_back(buffer_usage_info);
+	return new_index;
+}
+
+std::vector<c_task_graph::s_buffer_usage_info> c_buffer_manager::combine_buffer_usage_info(
+	c_wrapped_array_const<const std::vector<c_task_graph::s_buffer_usage_info> *> buffer_usage_info_array) const {
+	std::vector<c_task_graph::s_buffer_usage_info> result;
+
+	for (size_t array_index = 0; array_index < buffer_usage_info_array.get_count(); array_index++) {
+		const std::vector<c_task_graph::s_buffer_usage_info> &buffer_usage_info = *buffer_usage_info_array[array_index];
+
+		for (size_t index = 0; index < buffer_usage_info.size(); index++) {
+			uint32 result_pool_index = get_or_add_buffer_pool(buffer_usage_info[index].type, result);
+			result[result_pool_index].max_concurrency = std::max(
+				result[result_pool_index].max_concurrency,
+				buffer_usage_info[index].max_concurrency);
+		}
+	}
+
+	return result;
+}
+
+void c_buffer_manager::initialize_buffer_allocator(size_t max_buffer_size,
+	const std::vector<c_task_graph::s_buffer_usage_info> &buffer_usage_info) {
+	std::vector<s_buffer_pool_description> buffer_pool_descriptions;
+
+	for (uint32 index = 0; index < buffer_usage_info.size(); index++) {
+		const c_task_graph::s_buffer_usage_info &info = buffer_usage_info[index];
+		s_buffer_pool_description desc;
+
+		wl_assert(!info.type.is_array());
+		wl_assert(info.type.get_primitive_type_traits().is_dynamic);
+		switch (info.type.get_primitive_type()) {
+		case k_task_primitive_type_real:
+			desc.type = k_buffer_type_real;
+			break;
+
+		case k_task_primitive_type_bool:
+			desc.type = k_buffer_type_bool;
+			break;
+
+		case k_task_primitive_type_string:
+			wl_unreachable();
+			break;
+
+		default:
+			wl_unreachable();
+		}
+
+		desc.size = max_buffer_size;
+		desc.count = info.max_concurrency;
+		buffer_pool_descriptions.push_back(desc);
+	}
+
+	s_buffer_allocator_settings buffer_allocator_settings;
+	buffer_allocator_settings.buffer_pool_descriptions = c_wrapped_array_const<s_buffer_pool_description>(
+		&buffer_pool_descriptions.front(), buffer_pool_descriptions.size());
+
+	m_buffer_allocator.initialize(buffer_allocator_settings);
+}
+
+void c_buffer_manager::initialize_buffer_contexts(
+	const std::vector<c_task_graph::s_buffer_usage_info> &buffer_usage_info) {
+	const c_task_graph *voice_task_graph = m_runtime_instrument->get_voice_task_graph();
+	const c_task_graph *fx_task_graph = m_runtime_instrument->get_fx_task_graph();
+	size_t buffer_context_count = std::max(
+		voice_task_graph ? voice_task_graph->get_buffer_count() : 0,
+		fx_task_graph ? fx_task_graph->get_buffer_count() : 0);
+
+	m_buffer_contexts.free();
+	m_buffer_contexts.allocate(buffer_context_count);
+
+	// Assign pool indices to each buffer context so we know where to allocate from when the time comes
+#if IS_TRUE(ASSERTS_ENABLED)
+	for (size_t index = 0; index < m_buffer_contexts.get_array().get_count(); index++) {
+		s_buffer_context &buffer_context = m_buffer_contexts.get_array()[index];
+		buffer_context.usages_remaining.initialize(0);
+		for (size_t instrument_stage = 0; instrument_stage < k_instrument_stage_count; instrument_stage++) {
+			m_buffer_contexts.get_array()[index].pool_indices[instrument_stage] = static_cast<uint32>(-1);
+		}
+		buffer_context.handle = k_lock_free_invalid_handle;
+		buffer_context.shifted_samples = false;
+		buffer_context.swapped_into_voice_accumulation_buffer = false;
+	}
+#endif // IS_TRUE(ASSERTS_ENABLED)
+
+	// Iterate through each buffer in each task and assign it a pool
+	for (size_t instrument_stage = 0; instrument_stage < k_instrument_stage_count; instrument_stage++) {
+		const c_task_graph *task_graph = m_runtime_instrument->get_task_graph(
+			static_cast<e_instrument_stage>(instrument_stage));
+		if (!task_graph) {
+			continue;
+		}
+
+		c_task_graph_data_array inputs = task_graph->get_inputs();
+		for (uint32 input_index = 0; input_index < inputs.get_count(); input_index++) {
+			const s_task_graph_data &input_data = inputs[input_index];
+			wl_assert(!input_data.is_constant());
+
+			// Find the pool for this buffer (or buffers, in the case of arrays)
+			uint32 pool_index = get_buffer_pool(input_data.get_type().get_data_type(), buffer_usage_info);
+			wl_assert(VALID_INDEX(pool_index, buffer_usage_info.size()));
+
+			m_buffer_contexts.get_array()[input_data.data.value.buffer].pool_indices[instrument_stage] = pool_index;
+		}
+
+		for (uint32 task_index = 0; task_index < task_graph->get_task_count(); task_index++) {
+			c_task_graph_data_array arguments = task_graph->get_task_arguments(task_index);
+
+			for (c_task_buffer_iterator it(arguments); it.is_valid(); it.next()) {
+				c_task_data_type type_to_match = it.get_buffer_type().get_data_type();
+
+				// Find the pool for this buffer (or buffers, in the case of arrays)
+				uint32 pool_index = get_buffer_pool(type_to_match, buffer_usage_info);
+				wl_assert(VALID_INDEX(pool_index, buffer_usage_info.size()));
+
+				m_buffer_contexts.get_array()[it.get_buffer_index()].pool_indices[instrument_stage] = pool_index;
+			}
+		}
+	}
+
+#if IS_TRUE(ASSERTS_ENABLED)
+	for (size_t instrument_stage = 0; instrument_stage < k_instrument_stage_count; instrument_stage++) {
+		const c_task_graph *task_graph = m_runtime_instrument->get_task_graph(
+			static_cast<e_instrument_stage>(instrument_stage));
+		if (!task_graph) {
+			continue;
+		}
+
+		// Make sure all buffers got pool assignments
+		for (uint32 index = 0; index < task_graph->get_buffer_count(); index++) {
+			wl_assert(VALID_INDEX(m_buffer_contexts.get_array()[index].pool_indices[instrument_stage],
+				buffer_usage_info.size()));
+		}
+	}
+#endif // IS_TRUE(ASSERTS_ENABLED)
+}
+
+void c_buffer_manager::shift_voice_output_buffers(uint32 voice_sample_offset) {
 	wl_assert(voice_sample_offset < m_chunk_size);
 
-	c_task_graph_data_array outputs = m_task_graph->get_outputs();
+	c_task_graph_data_array outputs = m_runtime_instrument->get_voice_task_graph()->get_outputs();
 
 	for (uint32 output = 0; output < outputs.get_count(); output++) {
 		if (outputs[output].is_constant()) {
@@ -314,8 +508,10 @@ void c_buffer_manager::shift_output_buffers(uint32 voice_sample_offset) {
 	}
 }
 
-void c_buffer_manager::swap_output_buffers_with_voice_accumulation_buffers(uint32 voice_sample_offset) {
-	c_task_graph_data_array outputs = m_task_graph->get_outputs();
+void c_buffer_manager::swap_and_deduplicate_output_buffers(
+	c_task_graph_data_array outputs, const std::vector<uint32> &buffer_pool_indices,
+	std::vector<uint32> &destination, uint32 voice_sample_offset) {
+	wl_assert(outputs.get_count() == destination.size());
 
 	for (uint32 output = 0; output < outputs.get_count(); output++) {
 		if (outputs[output].is_constant()) {
@@ -330,12 +526,12 @@ void c_buffer_manager::swap_output_buffers_with_voice_accumulation_buffers(uint3
 	}
 
 	for (uint32 output = 0; output < outputs.get_count(); output++) {
-		wl_assert(m_voice_accumulation_buffers[output] == k_lock_free_invalid_handle);
+		wl_assert(destination[output] == k_lock_free_invalid_handle);
 		wl_assert(outputs[output].get_type() ==
 			c_task_qualified_data_type(k_task_primitive_type_real, k_task_qualifier_in));
 		if (outputs[output].is_constant()) {
-			uint32 buffer_handle = m_buffer_allocator.allocate_buffer(m_real_buffer_pool_index);
-			m_voice_accumulation_buffers[output] = buffer_handle;
+			uint32 buffer_handle = m_buffer_allocator.allocate_buffer(buffer_pool_indices[output]);
+			destination[output] = buffer_handle;
 			if (voice_sample_offset == 0) {
 				s_buffer_operation_assignment::in_out(
 					m_chunk_size,
@@ -360,14 +556,14 @@ void c_buffer_manager::swap_output_buffers_with_voice_accumulation_buffers(uint3
 				m_buffer_contexts.get_array()[outputs[output].get_real_buffer_in()];
 
 			if (!buffer_context.swapped_into_voice_accumulation_buffer) {
-				m_voice_accumulation_buffers[output] = buffer_context.handle;
+				destination[output] = buffer_context.handle;
 				buffer_context.swapped_into_voice_accumulation_buffer = true;
 			} else {
 				// This case occurs when a single buffer is used for multiple outputs, and the buffer was already
 				// swapped to an accumulation slot. In this case, we must actually allocate an additional buffer and
 				// copy to it, because we need to keep the data separate both accumulations.
-				uint32 buffer_handle = m_buffer_allocator.allocate_buffer(m_real_buffer_pool_index);
-				m_voice_accumulation_buffers[output] = buffer_handle;
+				uint32 buffer_handle = m_buffer_allocator.allocate_buffer(buffer_pool_indices[output]);
+				destination[output] = buffer_handle;
 				s_buffer_operation_assignment::in_out(
 					m_chunk_size,
 					c_real_buffer_or_constant_in(m_buffer_allocator.get_buffer(buffer_context.handle)),
@@ -384,8 +580,17 @@ void c_buffer_manager::swap_output_buffers_with_voice_accumulation_buffers(uint3
 	}
 }
 
+void c_buffer_manager::swap_output_buffers_with_voice_accumulation_buffers(uint32 voice_sample_offset) {
+	swap_and_deduplicate_output_buffers(
+		m_runtime_instrument->get_voice_task_graph()->get_outputs(), m_voice_output_pool_indices,
+		m_voice_accumulation_buffers, voice_sample_offset);
+}
+
 void c_buffer_manager::add_output_buffers_to_voice_accumulation_buffers(uint32 voice_sample_offset) {
-	c_task_graph_data_array outputs = m_task_graph->get_outputs();
+	const c_task_graph *task_graph = m_runtime_instrument->get_voice_task_graph();
+	wl_assert(task_graph);
+
+	c_task_graph_data_array outputs = task_graph->get_outputs();
 
 	// Add to the accumulation buffers, which should already exist from the first voice
 	for (uint32 output = 0; output < outputs.get_count(); output++) {
@@ -427,8 +632,8 @@ void c_buffer_manager::add_output_buffers_to_voice_accumulation_buffers(uint32 v
 	}
 }
 
-void c_buffer_manager::mix_voice_accumulation_buffers_to_channel_buffers() {
-	if (m_voices_processed == 0) {
+void c_buffer_manager::mix_to_channel_buffers(std::vector<uint32> &source_buffers) {
+	if (m_voices_processed == 0 && !m_fx_processed) {
 		// We have no data, simply allocate zero'd buffers for the channel buffers
 		for (uint32 channel = 0; channel < m_channel_mix_buffers.size(); channel++) {
 			wl_assert(m_channel_mix_buffers[channel] == k_lock_free_invalid_handle);
@@ -439,11 +644,11 @@ void c_buffer_manager::mix_voice_accumulation_buffers_to_channel_buffers() {
 				c_real_buffer_or_constant_in(0.0f),
 				m_buffer_allocator.get_buffer(buffer_handle));
 		}
-	} else if (m_voice_accumulation_buffers.size() == m_channel_mix_buffers.size()) {
-		// Simply swap the accumulation buffers with the channel buffers
-		std::swap(m_voice_accumulation_buffers, m_channel_mix_buffers);
+	} else if (source_buffers.size() == m_channel_mix_buffers.size()) {
+		// Simply swap the source buffers with the channel buffers
+		std::swap(source_buffers, m_channel_mix_buffers);
 	} else {
-		// Mix the accumulation buffers into the channel buffers and free the accumulation buffers
+		// Mix the source buffers into the channel buffers and free the source buffers
 
 		// Allocate channel buffers
 		for (uint32 channel = 0; channel < m_channel_mix_buffers.size(); channel++) {
@@ -451,15 +656,14 @@ void c_buffer_manager::mix_voice_accumulation_buffers_to_channel_buffers() {
 			m_channel_mix_buffers[channel] = m_buffer_allocator.allocate_buffer(m_real_buffer_pool_index);
 		}
 
-		c_wrapped_array_const<uint32> accumulation_buffers(
-			&m_voice_accumulation_buffers.front(), m_voice_accumulation_buffers.size());
+		c_wrapped_array_const<uint32> source_buffer_list(&source_buffers.front(), source_buffers.size());
 		c_wrapped_array_const<uint32> channel_buffers(&m_channel_mix_buffers.front(), m_channel_mix_buffers.size());
 
-		mix_output_buffers_to_channel_buffers(m_chunk_size, m_buffer_allocator, accumulation_buffers, channel_buffers);
+		mix_output_buffers_to_channel_buffers(m_chunk_size, m_buffer_allocator, source_buffer_list, channel_buffers);
 
 		// Free the accumulation buffers
-		for (uint32 accum = 0; accum < m_voice_accumulation_buffers.size(); accum++) {
-			m_buffer_allocator.free_buffer(m_voice_accumulation_buffers[accum]);
+		for (uint32 accum = 0; accum < source_buffers.size(); accum++) {
+			m_buffer_allocator.free_buffer(source_buffers[accum]);
 		}
 	}
 }
@@ -472,9 +676,9 @@ bool c_buffer_manager::scan_remain_active_buffer(
 		// Grab the first bit
 		remain_active = ((*remain_active_buffer->get_data<int32>() & 1) != 0);
 	} else {
-		remain_active = true;
+		remain_active = false;
 
-		// Scan the buffer for any false values
+		// Scan the buffer for any true values
 		uint32 samples_to_process = m_chunk_size - voice_sample_offset;
 		int32 samples_remaining = cast_integer_verify<int32>(samples_to_process);
 		c_buffer_iterator_1<c_const_bool_buffer_iterator_128> iter(remain_active_buffer, samples_to_process);
@@ -487,14 +691,14 @@ bool c_buffer_manager::scan_remain_active_buffer(
 			c_int32_4 overflow_mask = c_int32_4(0xffffffff) << zeros_to_shift;
 
 			// We now have zeros in the positions of all bits past the end of the buffer
-			// Pad the value with 1s before testing for 0 so we don't get false positives
-			c_int32_4 padded_value = iter.get_iterator_a().get_value() | ~overflow_mask;
-			c_int32_4 all_one_test = (padded_value == c_int32_4(0xffffffff));
-			int32 all_one_msb = mask_from_msb(all_one_test);
+			// Mask the value being tested so we don't get false positives
+			c_int32_4 padded_value = iter.get_iterator_a().get_value() & overflow_mask;
+			c_int32_4 all_zero_test = (padded_value == c_int32_4(0));
+			int32 all_zero_msb = mask_from_msb(all_zero_test);
 
-			if (all_one_msb != 15) {
-				// At least one bit was false, so set the final result to false
-				remain_active = false;
+			if (all_zero_msb != 15) {
+				// At least one bit was true, so stop scanning
+				remain_active = true;
 				break;
 			}
 
@@ -513,12 +717,17 @@ void c_buffer_manager::free_channel_buffers() {
 }
 
 #if IS_TRUE(ASSERTS_ENABLED)
-void c_buffer_manager::assert_all_output_buffers_free() const {
+void c_buffer_manager::assert_all_output_buffers_free(e_instrument_stage instrument_stage) const {
 	// All buffers should have been freed
-	for (size_t buffer = 0; buffer < m_buffer_contexts.get_array().get_count(); buffer++) {
+	uint32 buffer_count = m_runtime_instrument->get_task_graph(instrument_stage)->get_buffer_count();
+	for (uint32 buffer = 0; buffer < buffer_count; buffer++) {
 		const s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer];
 		wl_assert(buffer_context.handle == k_lock_free_invalid_handle);
 		wl_assert(buffer_context.usages_remaining.get_unsafe() == 0);
 	}
+}
+
+void c_buffer_manager::assert_all_buffers_free() const {
+	m_buffer_allocator.assert_all_buffers_free();
 }
 #endif // IS_TRUE(ASSERTS_ENABLED)

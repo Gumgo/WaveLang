@@ -1,6 +1,7 @@
 #include "compiler/ast.h"
 
-const char *k_entry_point_name = "main";
+const char *k_voice_entry_point_name = "voice_main";
+const char *k_fx_entry_point_name = "fx_main";
 
 c_ast_node::c_ast_node(e_ast_node_type type)
 	: m_type(type) {

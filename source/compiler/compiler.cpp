@@ -5,8 +5,8 @@
 #include "compiler/ast_validator.h"
 #include "compiler/compiler.h"
 #include "compiler/execution_graph_builder.h"
-#include "compiler/execution_graph_globals_parser.h"
 #include "compiler/execution_graph_optimizer.h"
+#include "compiler/instrument_globals_parser.h"
 #include "compiler/lexer.h"
 #include "compiler/parser.h"
 #include "compiler/preprocessor.h"
@@ -32,7 +32,7 @@ s_compiler_result c_compiler::compile(const char *root_path, const char *source_
 	wl_assert(root_path);
 	wl_assert(source_filename);
 	wl_assert(out_instrument);
-	wl_assert(out_instrument->get_execution_graph_count() == 0);
+	wl_assert(out_instrument->get_instrument_variant_count() == 0);
 
 	s_compiler_result result;
 	result.clear();
@@ -61,12 +61,12 @@ s_compiler_result c_compiler::compile(const char *root_path, const char *source_
 	c_lexer::initialize_lexer();
 	c_preprocessor::initialize_preprocessor();
 
-	s_execution_graph_globals_context execution_graph_globals_context;
+	s_instrument_globals_context instrument_globals_context;
 
 	{
-		execution_graph_globals_context.clear();
+		instrument_globals_context.clear();
 
-		c_execution_graph_globals_parser::register_preprocessor_commands(&execution_graph_globals_context);
+		c_instrument_globals_parser::register_preprocessor_commands(&instrument_globals_context);
 
 		// While we keep resolving #import lines, keep processing source files
 		// The list will grow as we are looping over it
@@ -78,7 +78,7 @@ s_compiler_result c_compiler::compile(const char *root_path, const char *source_
 			}
 		}
 
-		execution_graph_globals_context.assign_defaults();
+		instrument_globals_context.assign_defaults();
 	}
 
 	c_preprocessor::shutdown_preprocessor();
@@ -144,24 +144,24 @@ s_compiler_result c_compiler::compile(const char *root_path, const char *source_
 		}
 	}
 
-	// Loop over each instance of execution graph globals and build a graph
+	// Loop over each instance of instrument globals and build an instrument variant
 	{
-		std::vector<s_execution_graph_globals> execution_graph_globals_set =
-			execution_graph_globals_context.build_execution_graph_globals_set();
+		std::vector<s_instrument_globals> instrument_globals_set =
+			instrument_globals_context.build_instrument_globals_set();
 
-		for (size_t index = 0; index < execution_graph_globals_set.size(); index++) {
-			c_execution_graph *execution_graph = new c_execution_graph();
+		for (size_t index = 0; index < instrument_globals_set.size(); index++) {
+			c_instrument_variant *instrument_variant = new c_instrument_variant();
 
 			// Add to the instrument immediately to prevent memory leaks
-			out_instrument->add_execution_graph(execution_graph);
+			out_instrument->add_instrument_variant(instrument_variant);
 
-			// Store the globals in the graph so they are accessible in future compilation phases
-			execution_graph->set_globals(execution_graph_globals_set[index]);
+			// Store the globals in the instrument variant so they are accessible in future compilation phases
+			instrument_variant->set_instrument_globals(instrument_globals_set[index]);
 
-			// Build the execution graph. This can fail if loops don't resolve to constants.
+			// Build the execution graphs. This can fail if loops don't resolve to constants.
 			{
 				std::vector<s_compiler_result> graph_errors;
-				result = c_execution_graph_builder::build_execution_graph(ast.get(), execution_graph, graph_errors);
+				result = c_execution_graph_builder::build_execution_graphs(ast.get(), instrument_variant, graph_errors);
 
 				for (size_t error = 0; error < graph_errors.size(); error++) {
 					output_error(context, graph_errors[error]);
@@ -173,10 +173,31 @@ s_compiler_result c_compiler::compile(const char *root_path, const char *source_
 				}
 			}
 
-			// Optimize the graph. This can fail if constant inputs don't resolve to constants.
-			{
+			// Optimize the graphs. This can fail if constant inputs don't resolve to constants.
+
+			if (instrument_variant->get_voice_execution_graph()) {
 				std::vector<s_compiler_result> optimization_errors;
-				result = c_execution_graph_optimizer::optimize_graph(execution_graph, optimization_errors);
+				result = c_execution_graph_optimizer::optimize_graph(
+					instrument_variant->get_voice_execution_graph(),
+					&instrument_variant->get_instrument_globals(),
+					optimization_errors);
+
+				for (size_t error = 0; error < optimization_errors.size(); error++) {
+					output_error(context, optimization_errors[error]);
+				}
+
+				if (result.result != k_compiler_result_success) {
+					output_error(context, result);
+					return result;
+				}
+			}
+
+			if (instrument_variant->get_fx_execution_graph()) {
+				std::vector<s_compiler_result> optimization_errors;
+				result = c_execution_graph_optimizer::optimize_graph(
+					instrument_variant->get_fx_execution_graph(),
+					&instrument_variant->get_instrument_globals(),
+					optimization_errors);
 
 				for (size_t error = 0; error < optimization_errors.size(); error++) {
 					output_error(context, optimization_errors[error]);

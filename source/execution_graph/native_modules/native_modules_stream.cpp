@@ -4,13 +4,13 @@
 namespace stream_native_modules {
 
 	void get_sample_rate(const s_native_module_context &context, real32 &result) {
-		if (context.execution_graph_globals->sample_rate == 0) {
+		if (context.instrument_globals->sample_rate == 0) {
 			context.diagnostic->error(
 				"Sample rate is only available in targeted builds; "
 				"it can be specified using the #sample_rate synth global");
 			result = 0.0f;
 		} else {
-			result = static_cast<real32>(context.execution_graph_globals->sample_rate);
+			result = static_cast<real32>(context.instrument_globals->sample_rate);
 		}
 	}
 

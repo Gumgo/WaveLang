@@ -107,17 +107,35 @@ int main(int argc, char **argv) {
 			}
 
 			if (output_execution_graph) {
-				for (uint32 graph_index = 0; graph_index < instrument.get_execution_graph_count(); graph_index++) {
-					std::string graph_fname = fname_no_ext + '.' + std::to_string(graph_index) +
-						'.' + k_graphviz_file_extension;
+				for (uint32 variant_index = 0;
+					 variant_index < instrument.get_instrument_variant_count();
+					 variant_index++) {
+					const c_instrument_variant *instrument_variant = instrument.get_instrument_variant(variant_index);
 
-					bool execution_graph_result = instrument.get_execution_graph(graph_index)->generate_graphviz_file(
-						graph_fname.c_str(), condense_large_arrays);
+					const c_execution_graph *execution_graphs[] = {
+						instrument_variant->get_voice_execution_graph(),
+						instrument_variant->get_fx_execution_graph()
+					};
 
-					if (execution_graph_result) {
-						std::cout << "Saved execution graph to '" << graph_fname << "'\n";
-					} else {
-						std::cerr << "Failed to save '" << graph_fname << "'\n";
+					static const char *k_instrument_stages[] = {
+						"voice",
+						"fx"
+					};
+
+					for (size_t type = 0; type < NUMBEROF(execution_graphs); type++) {
+						std::string graph_fname = fname_no_ext + '.' + std::string(k_instrument_stages[type]) +
+							'.' + std::to_string(variant_index) + '.' + k_graphviz_file_extension;
+
+						if (execution_graphs[type]) {
+							bool execution_graph_result = execution_graphs[type]->generate_graphviz_file(
+								graph_fname.c_str(), condense_large_arrays);
+
+							if (execution_graph_result) {
+								std::cout << "Saved execution graph to '" << graph_fname << "'\n";
+							} else {
+								std::cerr << "Failed to save '" << graph_fname << "'\n";
+							}
+						}
 					}
 				}
 			}

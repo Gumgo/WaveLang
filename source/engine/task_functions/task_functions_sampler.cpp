@@ -187,7 +187,6 @@ struct s_sampler_loop_algorithm {
 
 	void compute_sample_offset(
 		const c_real32_4 &phase_val, s_static_array<real64, k_sse_block_elements> &out_sample_offset) {
-		// nocheckin Review this
 		c_real32_4 clamped_phase = min(max(phase_val, c_real32_4(0.0f)), c_real32_4(1.0f));
 		ALIGNAS_SSE s_static_array<real32, k_sse_block_elements> phase;
 		phase_val.store(phase.get_elements());

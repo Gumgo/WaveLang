@@ -2,9 +2,6 @@
 
 #include <algorithm>
 
-// nocheckin
-#include <iostream>
-
 // Pad by 100ms to pick up late events
 static const real64 k_controller_event_buffer_padding_sec = 0.1;
 
@@ -146,8 +143,6 @@ size_t c_controller_driver_interface::process_controller_events(
 					// Too many events
 				}
 			} else {
-				// nocheckin
-				std::cout << "dropped! " << relative_timestamp_sec * 1000 << "\n";
 				// Drop the event - it's in the past
 			}
 		}

@@ -5,17 +5,25 @@
 #include "common/threading/lock_free.h"
 #include "common/utility/stopwatch.h"
 
+#include "execution_graph/instrument_stage.h"
+
 #include <vector>
 
 struct s_profiler_settings {
 	uint32 worker_thread_count;
-	uint32 task_count;
+	uint32 voice_task_count;
+	uint32 fx_task_count;
 };
 
 struct s_profiler_record {
+	uint32 sample_count;
 	int64 average_time;
 	int64 min_time;
 	int64 max_time;
+
+	void reset();
+	void update(int64 time);
+	void resolve();
 };
 
 struct s_profiler_report {
@@ -27,13 +35,18 @@ struct s_profiler_report {
 	};
 
 	s_profiler_record execution_total_time;
-	s_profiler_record execution_task_time;
 	s_profiler_record execution_overhead_time;
 
-	std::vector<s_task> tasks;
+	s_profiler_record single_voice_time;
+	s_profiler_record voice_time;
+	s_profiler_record fx_time;
+
+	s_static_array<std::vector<s_task>, k_instrument_stage_count> tasks;
 };
 
 bool output_profiler_report(const char *filename, const s_profiler_report &report);
+
+// $TODO add more query points. additional data includes channel mixing time, voice/FX setup time versus task time
 
 class c_profiler {
 public:
@@ -47,19 +60,28 @@ public:
 	void get_report(s_profiler_report &out_report) const;
 
 	void begin_execution();
-	void begin_execution_tasks();
-	void end_execution_tasks();
+	void begin_voices();
+	void end_voices();
+	void begin_voice();
+	void end_voice();
+	void begin_fx();
+	void end_fx();
 	void end_execution();
 
-	void begin_task(uint32 worker_thread, uint32 task_index, uint32 task_function_index);
-	void begin_task_function(uint32 worker_thread, uint32 task_index);
-	void end_task_function(uint32 worker_thread, uint32 task_index);
-	void end_task(uint32 worker_thread, uint32 task_index);
+	void begin_task(e_instrument_stage instrument_stage, uint32 worker_thread, uint32 task_index,
+		uint32 task_function_index);
+	void begin_task_function(e_instrument_stage instrument_stage, uint32 worker_thread, uint32 task_index);
+	void end_task_function(e_instrument_stage instrument_stage, uint32 worker_thread, uint32 task_index);
+	void end_task(e_instrument_stage instrument_stage, uint32 worker_thread, uint32 task_index);
 
 private:
 	enum e_execution_query_point {
-		k_execution_query_point_begin_tasks,
-		k_execution_query_point_end_tasks,
+		k_execution_query_point_begin_voices,
+		k_execution_query_point_end_voices,
+		k_execution_query_point_begin_voice,
+		k_execution_query_point_end_voice,
+		k_execution_query_point_begin_fx,
+		k_execution_query_point_end_fx,
 		k_execution_query_point_end_execution,
 
 		k_execution_query_point_count
@@ -75,12 +97,11 @@ private:
 
 	struct ALIGNAS_LOCK_FREE s_execution {
 		c_stopwatch stopwatch;
-		uint32 instance_count;
 		s_profiler_record total_time;
-		s_profiler_record task_time;
 		s_profiler_record overhead_time;
-		int64 query_points[k_execution_query_point_count];
-		int64 running_task_time;
+		s_profiler_record voice_time;
+		s_profiler_record fx_time;
+		s_static_array<int64, k_execution_query_point_count> query_points;
 	};
 
 	struct ALIGNAS_LOCK_FREE s_thread_context {
@@ -89,16 +110,15 @@ private:
 
 	struct ALIGNAS_LOCK_FREE s_task {
 		uint32 task_function_index;
-		uint32 instance_count;
 		s_profiler_record total_time;
 		s_profiler_record function_time;
 		s_profiler_record overhead_time;
-		int64 query_points[k_task_query_point_count];
+		s_static_array<int64, k_task_query_point_count> query_points;
 	};
 
 	s_execution m_execution;
 	c_lock_free_aligned_allocator<s_thread_context> m_thread_contexts;
-	c_lock_free_aligned_allocator<s_task> m_tasks;
+	s_static_array<c_lock_free_aligned_allocator<s_task>, k_instrument_stage_count> m_tasks;
 };
 
 #endif // WAVELANG_ENGINE_PROFILER_PROFILER_H__

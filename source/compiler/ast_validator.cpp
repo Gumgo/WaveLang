@@ -97,8 +97,17 @@ private:
 	// If this is set, then we're about to enter the body scope for this module
 	const c_ast_node_module_declaration *m_module_for_next_scope;
 
-	// Set to true when the entry point is found
-	bool m_entry_point_found;
+	// Set to true when the voice entry point is found
+	bool m_voice_entry_point_found;
+
+	// Output count for voice module
+	size_t m_voice_output_count;
+
+	// Set to true when the FX entry point is found
+	bool m_fx_entry_point_found;
+
+	// Input count for FX processing
+	size_t m_fx_input_count;
 
 	// Stack of scopes - global scope is at the bottom
 	std::deque<s_scope> m_scope_stack;
@@ -451,7 +460,10 @@ public:
 		m_errors = error_accumulator;
 		m_module_for_next_scope = nullptr;
 		m_current_statement = 0;
-		m_entry_point_found = false;
+		m_voice_entry_point_found = false;
+		m_voice_output_count = 0;
+		m_fx_entry_point_found = false;
+		m_fx_input_count = 0;
 		m_scope_depth = 0;
 	}
 
@@ -490,8 +502,12 @@ public:
 		}
 	}
 
-	bool was_entry_point_found() const {
-		return m_entry_point_found;
+	bool was_voice_entry_point_found() const {
+		return m_voice_entry_point_found;
+	}
+
+	bool was_fx_entry_point_found() const {
+		return m_fx_entry_point_found;
 	}
 
 	virtual bool begin_visit(const c_ast_node_scope *node) {
@@ -570,53 +586,81 @@ public:
 			m_module_calls.push_back(s_module_call());
 			m_module_calls.back().module = node;
 
-			if (node->get_name() == k_entry_point_name) {
-				if (m_entry_point_found) {
+			bool is_voice_entry_point = (node->get_name() == k_voice_entry_point_name);
+			bool is_fx_entry_point = (node->get_name() == k_fx_entry_point_name);
+
+			if (is_voice_entry_point || is_fx_entry_point) {
+				if ((is_voice_entry_point && m_voice_entry_point_found) ||
+					(is_fx_entry_point && m_fx_entry_point_found)) {
 					s_compiler_result error;
 					error.result = k_compiler_result_invalid_entry_point;
 					error.source_location = node->get_source_location();
-					error.message = "Entry point '" + node->get_name() + "' must not be overloaded";
+					error.message = std::string(is_voice_entry_point ? "Voice" : "FX") +
+						" entry point '" + node->get_name() + "' must not be overloaded";
 					m_errors->push_back(error);
-				}
-
-				m_entry_point_found = true;
-
-				// Should have bool return value and only out arguments
-				if (node->get_return_type() != c_ast_data_type(k_ast_primitive_type_bool)) {
-					s_compiler_result error;
-					error.result = k_compiler_result_invalid_entry_point;
-					error.source_location = node->get_source_location();
-					error.message = "Entry point '" + node->get_name() + "' must return a bool";
-					m_errors->push_back(error);
-				}
-
-				// $TODO $INPUT change this when we support inputs
-				bool all_out = true;
-				bool all_real = true;
-				for (size_t arg = 0; all_out && arg < node->get_argument_count(); arg++) {
-					if (node->get_argument(arg)->get_qualifier() != k_ast_qualifier_out) {
-						all_out = false;
+				} else {
+					if (is_voice_entry_point) {
+						m_voice_entry_point_found = true;
+					} else {
+						wl_assert(is_fx_entry_point);
+						m_fx_entry_point_found = true;
 					}
 
-					if (node->get_argument(arg)->get_data_type() != c_ast_data_type(k_ast_primitive_type_real)) {
-						all_real = false;
+					// Should have bool return value and only out arguments
+					if (node->get_return_type() != c_ast_data_type(k_ast_primitive_type_bool)) {
+						s_compiler_result error;
+						error.result = k_compiler_result_invalid_entry_point;
+						error.source_location = node->get_source_location();
+						error.message = "Entry point '" + node->get_name() + "' must return a bool";
+						m_errors->push_back(error);
 					}
-				}
 
-				if (!all_out) {
-					s_compiler_result error;
-					error.result = k_compiler_result_invalid_entry_point;
-					error.source_location = node->get_source_location();
-					error.message = "Entry point '" + node->get_name() + "' must only take out arguments";
-					m_errors->push_back(error);
-				}
+					// $TODO $INPUT change this when we support inputs
+					bool all_out = true;
+					bool all_real = true;
+					for (size_t arg = 0; all_out && arg < node->get_argument_count(); arg++) {
+						e_ast_qualifier qualifier = node->get_argument(arg)->get_qualifier();
+						m_voice_output_count += is_voice_entry_point && (qualifier == k_ast_qualifier_out);
+						m_fx_input_count += is_fx_entry_point && (qualifier == k_ast_qualifier_in);
 
-				if (!all_real) {
-					s_compiler_result error;
-					error.result = k_compiler_result_invalid_entry_point;
-					error.source_location = node->get_source_location();
-					error.message = "Entry point '" + node->get_name() + "' must only take real arguments";
-					m_errors->push_back(error);
+						if (qualifier != k_ast_qualifier_out) {
+							all_out = false;
+						}
+
+						if (node->get_argument(arg)->get_data_type() != c_ast_data_type(k_ast_primitive_type_real)) {
+							all_real = false;
+						}
+					}
+
+					if (is_voice_entry_point && !all_out) {
+						s_compiler_result error;
+						error.result = k_compiler_result_invalid_entry_point;
+						error.source_location = node->get_source_location();
+						error.message = "Voice entry point '" + node->get_name() + "' must only take out arguments";
+						m_errors->push_back(error);
+					}
+
+					if (!all_real) {
+						s_compiler_result error;
+						error.result = k_compiler_result_invalid_entry_point;
+						error.source_location = node->get_source_location();
+						error.message = std::string(is_voice_entry_point ? "Voice" : "FX") +
+							" entry point '" + node->get_name() + "' must only take real arguments";
+						m_errors->push_back(error);
+					}
+
+					// If we've found both the voice and FX module, validate that inputs and outputs match
+					if (m_voice_entry_point_found && m_fx_entry_point_found) {
+						if (m_voice_output_count != m_fx_input_count) {
+							s_compiler_result error;
+							error.result = k_compiler_result_invalid_entry_point;
+							error.source_location.clear();
+							error.message = "Voice entry point '" + std::string(k_voice_entry_point_name) +
+								"' output count does not match FX entry point '" + std::string(k_fx_entry_point_name) +
+								"' input count";
+							m_errors->push_back(error);
+						}
+					}
 				}
 			}
 
@@ -1102,11 +1146,13 @@ s_compiler_result c_ast_validator::validate(const s_compiler_context *compiler_c
 	ast->iterate(&visitor);
 
 	// Validate that an entry point was found
-	if (!visitor.was_entry_point_found()) {
+	if (!visitor.was_voice_entry_point_found() &&
+		!visitor.was_fx_entry_point_found()) {
 		s_compiler_result error;
 		error.result = k_compiler_result_no_entry_point;
 		error.source_location.clear();
-		error.message = "No entry point '" + std::string(k_entry_point_name) + "' found";
+		error.message = "No voice entry point '" + std::string(k_voice_entry_point_name) +
+			"' or FX entry point '" + std::string(k_fx_entry_point_name) + "' found";
 		out_errors.push_back(error);
 	}
 

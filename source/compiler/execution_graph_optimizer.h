@@ -5,11 +5,14 @@
 
 #include "compiler/compiler_utility.h"
 
-#include "execution_graph/execution_graph.h"
+#include "execution_graph/instrument_globals.h"
+#include "execution_graph/native_module.h"
 
 #include <map>
 #include <stack>
 #include <vector>
+
+class c_execution_graph;
 
 // Used to evaluate constants in a partially-built graph. Necessary for building repeat loops.
 class c_execution_graph_constant_evaluator {
@@ -26,7 +29,8 @@ public:
 	};
 
 	c_execution_graph_constant_evaluator();
-	void initialize(const c_execution_graph *execution_graph, std::vector<s_compiler_result> *errors);
+	void initialize(const c_execution_graph *execution_graph, const s_instrument_globals *instrument_globals,
+		std::vector<s_compiler_result> *errors);
 
 	// Each time a constant is evaluated, the evaluation progress is retained. This way, we can avoid re-evaluating the
 	// same thing multiple times. This works as long as nodes are only added and never removed or changed during
@@ -44,6 +48,9 @@ private:
 	// The graph
 	const c_execution_graph *m_execution_graph;
 
+	// Globals
+	const s_instrument_globals *m_instrument_globals;
+
 	std::vector<s_compiler_result> *m_errors;
 
 	// Maps node indices to their evaluated results. Either native module output nodes or constant nodes.
@@ -60,7 +67,7 @@ private:
 class c_execution_graph_optimizer {
 public:
 	static s_compiler_result optimize_graph(c_execution_graph *execution_graph,
-		std::vector<s_compiler_result> &out_errors);
+		const s_instrument_globals *instrument_globals, std::vector<s_compiler_result> &out_errors);
 };
 
 #endif // WAVELANG_COMPILER_EXECUTION_GRAPH_OPTIMIZER_H__

@@ -99,7 +99,7 @@ int c_command_line_interface::main_function(bool list_mode) {
 		initialize_from_runtime_config();
 
 		// None active initially
-		m_runtime_context.active_task_graph = -1;
+		m_runtime_context.active_instrument = -1;
 
 		bool done = false;
 		while (!done) {
@@ -288,38 +288,38 @@ void c_command_line_interface::process_command_load_synth(const s_command &comma
 		}
 
 		// Select the execution graph from the instrument
-		uint32 execution_graph_index;
+		uint32 instrument_variant_index;
 		{
-			s_execution_graph_requirements requirements;
+			s_instrument_variant_requirements requirements;
 			requirements.sample_rate = static_cast<uint32>(
 				m_runtime_context.audio_driver_interface.get_settings().sample_rate);
 
-			e_execution_graph_for_requirements_result execution_graph_result =
-				instrument.get_execution_graph_for_requirements(requirements, execution_graph_index);
+			e_instrument_variant_for_requirements_result instrument_variant_result =
+				instrument.get_instrument_variant_for_requirements(requirements, instrument_variant_index);
 
-			if (execution_graph_result == k_execution_graph_for_requirements_result_no_match) {
-				std::cout << "Failed to find execution graph matching the runtime requirements\n";
+			if (instrument_variant_result == k_instrument_variant_for_requirements_result_no_match) {
+				std::cout << "Failed to find instrument variant matching the runtime requirements\n";
 				return;
-			} else if (execution_graph_result == k_execution_graph_for_requirements_result_ambiguous_matches) {
-				std::cout << "Found multiple execution graphs matching the runtime requirements - "
-					"refine stream parameters or synth globals\n";
+			} else if (instrument_variant_index == k_instrument_variant_for_requirements_result_ambiguous_matches) {
+				std::cout << "Found multiple instrument variants matching the runtime requirements - "
+					"refine stream parameters or instrument globals\n";
 				return;
 			} else {
-				wl_assert(execution_graph_result == k_execution_graph_for_requirements_result_success);
+				wl_assert(instrument_variant_result == k_instrument_variant_for_requirements_result_success);
 			}
 		}
 
-		// Load into the inactive task graph
-		int32 loading_task_graph;
-		if (m_runtime_context.active_task_graph == -1) {
-			loading_task_graph = 0;
+		// Load into the inactive instrument
+		int32 loading_instrument;
+		if (m_runtime_context.active_instrument == -1) {
+			loading_instrument = 0;
 		} else {
-			loading_task_graph = (m_runtime_context.active_task_graph == 0) ? 1 : 0;
+			loading_instrument = (m_runtime_context.active_instrument == 0) ? 1 : 0;
 		}
 
-		c_task_graph &task_graph = m_runtime_context.task_graphs[loading_task_graph];
-		if (!task_graph.build(*instrument.get_execution_graph(execution_graph_index))) {
-			std::cout << "Failed to build task graph\n";
+		c_runtime_instrument &runtime_instrument = m_runtime_context.runtime_instruments[loading_instrument];
+		if (!runtime_instrument.build(instrument.get_instrument_variant(instrument_variant_index))) {
+			std::cout << "Failed to build runtime instrument\n";
 			return;
 		}
 
@@ -329,7 +329,7 @@ void c_command_line_interface::process_command_load_synth(const s_command &comma
 
 			const c_runtime_config::s_settings &runtime_config_settings = m_runtime_config.get_settings();
 			s_executor_settings settings;
-			settings.task_graph = &task_graph;
+			settings.runtime_instrument = &runtime_instrument;
 			settings.thread_count = runtime_config_settings.executor_thread_count;
 			settings.sample_rate = runtime_config_settings.audio_sample_rate;
 			settings.max_buffer_size = runtime_config_settings.audio_frames_per_buffer;
@@ -343,7 +343,7 @@ void c_command_line_interface::process_command_load_synth(const s_command &comma
 			m_runtime_context.executor.initialize(settings);
 		}
 
-		m_runtime_context.active_task_graph = loading_task_graph;
+		m_runtime_context.active_instrument = loading_instrument;
 		return;
 	}
 

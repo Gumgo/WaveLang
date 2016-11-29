@@ -4,12 +4,13 @@
 #include "common/common.h"
 #include "common/utility/string_table.h"
 
-#include "execution_graph/execution_graph_globals.h"
 #include "execution_graph/instrument_constants.h"
 #include "execution_graph/native_module.h"
 
 #include <fstream>
 #include <vector>
+
+// $TODO rename the folder "instrument" - will require a decent amount of refactoring, including jamfiles
 
 enum e_execution_graph_node_type {
 	// An invalid node, or a node which has been removed
@@ -28,7 +29,10 @@ enum e_execution_graph_node_type {
 	// An output to a native module
 	k_execution_graph_node_type_indexed_output,
 
-	// Takes exactly 1 input
+	// Has exactly 1 output and no inputs
+	k_execution_graph_node_type_input,
+
+	// Has exactly 1 input and no outputs
 	k_execution_graph_node_type_output,
 
 	k_execution_graph_node_type_count
@@ -55,6 +59,7 @@ public:
 	uint32 add_constant_array_node(c_native_module_data_type element_data_type);
 	void add_constant_array_value(uint32 constant_array_node_index, uint32 value_node_index);
 	uint32 add_native_module_call_node(uint32 native_module_index);
+	uint32 add_input_node(uint32 input_index);
 	uint32 add_output_node(uint32 output_index);
 	void remove_node(uint32 node_index);
 
@@ -68,6 +73,7 @@ public:
 	bool get_constant_node_bool_value(uint32 node_index) const;
 	const char *get_constant_node_string_value(uint32 node_index) const;
 	uint32 get_native_module_call_native_module_index(uint32 node_index) const;
+	uint32 get_input_node_input_index(uint32 node_index) const;
 	uint32 get_output_node_output_index(uint32 node_index) const;
 	size_t get_node_incoming_edge_count(uint32 node_index) const;
 	uint32 get_node_incoming_edge_index(uint32 node_index, size_t edge) const;
@@ -76,9 +82,6 @@ public:
 
 	bool does_node_use_indexed_inputs(uint32 node_index) const;
 	bool does_node_use_indexed_outputs(uint32 node_index) const;
-
-	void set_globals(const s_execution_graph_globals &globals);
-	const s_execution_graph_globals &get_globals() const;
 
 	void remove_unused_nodes_and_reassign_node_indices();
 
@@ -105,6 +108,10 @@ private:
 					uint32 string_index;
 				};
 			} constant;
+
+			struct {
+				uint32 input_index;
+			} input;
 
 			struct {
 				uint32 output_index;
@@ -135,7 +142,6 @@ private:
 	void remove_unused_strings();
 
 	std::vector<s_node> m_nodes;
-	s_execution_graph_globals m_globals;
 
 	c_string_table m_string_table;
 };

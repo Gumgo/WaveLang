@@ -4,7 +4,7 @@
 #include "common/common.h"
 #include "common/scraper_attributes.h"
 
-#include "execution_graph/execution_graph_globals.h"
+#include "execution_graph/instrument_globals.h"
 #include "execution_graph/native_module_compile_time_types.h"
 
 #include <string>
@@ -274,7 +274,7 @@ typedef c_wrapped_array<s_native_module_compile_time_argument> c_native_module_c
 struct s_native_module_context {
 	c_diagnostic *diagnostic;
 
-	const s_execution_graph_globals *execution_graph_globals;
+	const s_instrument_globals *instrument_globals;
 
 	c_native_module_compile_time_argument_list *arguments;
 };

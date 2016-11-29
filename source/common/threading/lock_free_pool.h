@@ -22,6 +22,11 @@ public:
 	// Frees the given node, allowing it to be reused
 	void free(uint32 handle);
 
+#if IS_TRUE(ASSERTS_ENABLED)
+	// Calculates the amount of elements used. Not thread safe! Currently this is only used for asserts.
+	uint32 calculate_used_count_unsafe() const;
+#endif // IS_TRUE(ASSERTS_ENABLED)
+
 private:
 	// Free-list is a linked stack. To free an element, push to the top. To allocate, pop from the top.
 	// Initially all elements are on the free-list.

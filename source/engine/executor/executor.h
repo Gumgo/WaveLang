@@ -15,13 +15,18 @@
 #include "engine/events/event_interface.h"
 #include "engine/executor/buffer_manager.h"
 #include "engine/executor/controller_event_manager.h"
+#include "engine/executor/task_memory_manager.h"
 #include "engine/executor/voice_allocator.h"
 #include "engine/profiler/profiler.h"
 #include "engine/sample/sample_library.h"
 #include "engine/voice_interface/voice_interface.h"
 
-class c_task_graph;
+#include "execution_graph/instrument_stage.h"
+
 class c_buffer;
+class c_runtime_instrument;
+class c_task_graph;
+struct s_instrument_globals;
 struct s_task_function;
 
 typedef size_t (*f_process_controller_events)(
@@ -29,7 +34,7 @@ typedef size_t (*f_process_controller_events)(
 	real64 buffer_time_sec, real64 buffer_duration_sec);
 
 struct s_executor_settings {
-	const c_task_graph *task_graph;
+	const c_runtime_instrument *runtime_instrument;
 	uint32 thread_count;
 	uint32 sample_rate;
 	uint32 max_buffer_size;
@@ -107,8 +112,13 @@ private:
 
 	void shutdown_internal();
 
+	static size_t task_memory_query_wrapper(void *context, const c_task_graph *task_graph, uint32 task_index);
+	size_t task_memory_query(const c_task_graph *task_graph, uint32 task_index);
+
 	void execute_internal(const s_executor_chunk_context &chunk_context);
+	void process_fx(const s_executor_chunk_context &chunk_context);
 	void process_voice(const s_executor_chunk_context &chunk_context, uint32 voice_index);
+	void process_voice_or_fx(const s_executor_chunk_context &chunk_context, uint32 voice_index);
 
 	void add_task(uint32 voice_index, uint32 task_index, uint32 sample_rate, uint32 frames);
 
@@ -131,6 +141,10 @@ private:
 	c_atomic_int32 m_state;
 	c_semaphore m_shutdown_signal;
 
+	// The active task graph (voice or FX)
+	const c_task_graph *m_active_task_graph;
+	e_instrument_stage m_active_instrument_stage;
+
 	// Settings for the executor
 	s_executor_settings m_settings;
 
@@ -140,11 +154,8 @@ private:
 	// Manages lifetime of various buffers used during processing
 	c_buffer_manager m_buffer_manager;
 
-	// Allocator for task-persistent memory
-	c_lock_free_aligned_allocator<uint8> m_task_memory_allocator;
-
-	// Pointer to each task's persistent memory for each voice
-	std::vector<void *> m_voice_task_memory_pointers;
+	// Manages user-facing memory for each task
+	c_task_memory_manager m_task_memory_manager;
 
 	// Manages which voices are active
 	c_voice_allocator m_voice_allocator;

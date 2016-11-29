@@ -12,6 +12,7 @@ enum e_instrument_result {
 	k_instrument_result_failed_to_read,
 	k_instrument_result_invalid_header,
 	k_instrument_result_version_mismatch,
+	k_instrument_result_invalid_globals,
 	k_instrument_result_invalid_graph,
 	k_instrument_result_unregistered_native_module,
 

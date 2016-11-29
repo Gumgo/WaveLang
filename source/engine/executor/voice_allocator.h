@@ -8,6 +8,7 @@
 
 #include <vector>
 
+// Allocates and maintains voices, also keeps track of whether FX processing is active
 class c_voice_allocator {
 public:
 	// Represents a voice, either active or inactive
@@ -24,7 +25,7 @@ public:
 	c_voice_allocator();
 	~c_voice_allocator();
 
-	void initialize(uint32 max_voices);
+	void initialize(uint32 max_voices, bool has_fx, bool activate_fx_immediately);
 	void shutdown();
 
 	// Assigns new voices for this chunk, possibly replacing existing voices
@@ -39,6 +40,12 @@ public:
 
 	uint32 get_voice_count() const;
 	const s_voice &get_voice(uint32 voice_index) const;
+
+	// We use an s_voice instance to track FX processing even though it isn't really a "voice"
+	const s_voice &get_fx_voice() const;
+
+	// Deactivates FX processing. The synth must explicitly notify the runtime of this.
+	void disable_fx();
 
 private:
 	// Voice allocation algorithm:
@@ -60,6 +67,15 @@ private:
 	// newest. We use this list to quickly find the oldest voice to replace.
 	s_linked_array_list m_voice_list;
 	c_linked_array m_voice_list_nodes;
+
+	// Whether FX processing exists
+	bool m_has_fx;
+
+	// The "voice" used to track FX processing
+	s_voice m_fx_voice;
+
+	// Whether to activate FX processing immediately, even if no voice is playing
+	bool m_fx_needs_activation;
 };
 
 #endif // WAVELANG_ENGINE_EXECUTOR_VOICE_ALLOCATOR_H__

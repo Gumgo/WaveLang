@@ -26,9 +26,11 @@ rule setup-vs-project-config ( top-dir : project-name : defines * : features * :
 		local output-dir-configuration = $(top-dir)/app ;
 
 		local is-debug = 0 ;
+		local defines-inner = $(defines) ;
 		if $(configuration) = Debug
 		{
-			local is-debug = 1 ;
+			is-debug = 1 ;
+			defines-inner += _DEBUG ;
 			output-dir-configuration = $(output-dir-configuration)/debug_ ;
 		}
 		else
@@ -43,7 +45,7 @@ rule setup-vs-project-config ( top-dir : project-name : defines * : features * :
 			local is-64-bit = 0 ;
 			if $(platform) = x64
 			{
-				local is-64-bit = 1 ;
+				is-64-bit = 1 ;
 				output-dir-configuration-platform = $(output-dir-configuration-platform)64/$(project-name).exe ;
 			}
 			else
@@ -62,7 +64,7 @@ rule setup-vs-project-config ( top-dir : project-name : defines * : features * :
 				[ string.join $(build-command) --clean : " " ] :
 				[ string.join $(build-command) -a : " " ] :
 				[ path.native $(output-dir-configuration-platform) ] :
-				$(defines) :
+				$(defines-inner) :
 				$(source-files) :
 				$(native-include-directories) :
 				$(is-64-bit) :

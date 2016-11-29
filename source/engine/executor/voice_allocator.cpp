@@ -12,7 +12,7 @@ c_voice_allocator::c_voice_allocator() {
 c_voice_allocator::~c_voice_allocator() {
 }
 
-void c_voice_allocator::initialize(uint32 max_voices) {
+void c_voice_allocator::initialize(uint32 max_voices, bool has_fx, bool activate_fx_immediately) {
 	wl_assert(max_voices > 0);
 	m_voices.resize(max_voices);
 	m_voice_list_nodes.initialize(max_voices);
@@ -25,6 +25,10 @@ void c_voice_allocator::initialize(uint32 max_voices) {
 		size_t list_node_index = m_voice_list_nodes.allocate_node();
 		m_voice_list_nodes.push_node_onto_list_back(m_voice_list, list_node_index);
 	}
+
+	m_has_fx = has_fx;
+	ZERO_STRUCT(&m_fx_voice);
+	m_fx_needs_activation = activate_fx_immediately;
 }
 
 void c_voice_allocator::shutdown() {
@@ -35,6 +39,9 @@ void c_voice_allocator::allocate_voices_for_chunk(
 	c_wrapped_array_const<s_timestamped_controller_event> controller_events,
 	uint32 sample_rate, uint32 chunk_sample_count) {
 	wl_assert(!m_voices.empty());
+
+	bool activate_fx = m_has_fx && m_fx_needs_activation;
+	m_fx_needs_activation = false;
 
 	// Any active voice with an offset the previous chunk should no longer have an offset
 	for (size_t index = m_voice_list.back;
@@ -49,6 +56,10 @@ void c_voice_allocator::allocate_voices_for_chunk(
 		voice.activated_this_chunk = false;
 		voice.chunk_offset_samples = 0;
 		voice.note_release_sample = -1;
+	}
+
+	if (m_fx_voice.active) {
+		m_fx_voice.activated_this_chunk = false;
 	}
 
 	for (size_t event_index = 0; event_index < controller_events.get_count(); event_index++) {
@@ -100,6 +111,8 @@ void c_voice_allocator::allocate_voices_for_chunk(
 			voice.note_id = note_on_data->note_id;
 			voice.note_velocity = note_on_data->velocity;
 			voice.note_release_sample = -1;
+
+			activate_fx = true;
 		} else if (controller_event.controller_event.event_type == k_controller_event_type_note_off) {
 			const s_controller_event_data_note_off *note_off_data =
 				controller_event.controller_event.get_data<s_controller_event_data_note_off>();
@@ -124,6 +137,16 @@ void c_voice_allocator::allocate_voices_for_chunk(
 			// Ignore other event types - we really shouldn't even be getting them here
 		}
 	}
+
+	if (m_has_fx && activate_fx && !m_fx_voice.active) {
+		m_fx_voice.active = true;
+		m_fx_voice.activated_this_chunk = true;
+		m_fx_voice.released = false;
+		m_fx_voice.chunk_offset_samples = 0;
+		m_fx_voice.note_id = 0;
+		m_fx_voice.note_velocity = 1.0f;
+		m_fx_voice.note_release_sample = -1;
+	}
 }
 
 void c_voice_allocator::disable_voice(uint32 voice_index) {
@@ -147,6 +170,15 @@ uint32 c_voice_allocator::get_voice_count() const {
 
 const c_voice_allocator::s_voice &c_voice_allocator::get_voice(uint32 voice_index) const {
 	return m_voices[voice_index];
+}
+
+const c_voice_allocator::s_voice &c_voice_allocator::get_fx_voice() const {
+	return m_fx_voice;
+}
+
+void c_voice_allocator::disable_fx() {
+	m_fx_voice.active = false;
+	m_fx_voice.activated_this_chunk = false;
 }
 
 static uint32 compute_sample_offset(real64 timestamp_sec, uint32 sample_rate, uint32 frame_count) {

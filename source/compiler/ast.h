@@ -8,7 +8,8 @@
 
 #include <vector>
 
-extern const char *k_entry_point_name;
+extern const char *k_voice_entry_point_name;
+extern const char *k_fx_entry_point_name;
 
 // List of all AST nodes
 enum e_ast_node_type {

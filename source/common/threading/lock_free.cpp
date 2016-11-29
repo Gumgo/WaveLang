@@ -92,3 +92,19 @@ uint32 lock_free_list_pop(c_lock_free_handle_array &node_storage, s_lock_free_ha
 
 	return old_head_handle;
 }
+
+#if IS_TRUE(ASSERTS_ENABLED)
+uint32 lock_free_list_count_unsafe(const c_lock_free_handle_array &node_storage, const s_lock_free_handle &list_head) {
+	uint32 count = 0;
+
+	s_lock_free_handle_data next;
+	next.data = list_head.handle.get_unsafe();
+
+	while (next.handle != k_lock_free_invalid_handle) {
+		count++;
+		next.data = node_storage[next.handle].handle.get_unsafe();
+	}
+
+	return count;
+}
+#endif // IS_TRUE(ASSERTS_ENABLED)

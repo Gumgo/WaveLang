@@ -3,6 +3,7 @@
 #include "compiler/execution_graph_optimizer.h"
 
 #include "execution_graph/execution_graph.h"
+#include "execution_graph/instrument.h"
 #include "execution_graph/native_module.h"
 #include "execution_graph/native_module_registry.h"
 
@@ -62,6 +63,7 @@ private:
 
 	const c_ast_node *m_ast_root;								// Root of the AST
 	c_execution_graph *m_execution_graph;						// The execution graph we are building
+	const s_instrument_globals *m_instrument_globals;		// The globals for this graph
 	const c_ast_node_module_declaration *m_module_declaration;	// The module we are adding to the graph
 
 	// The number of arguments we have visited so far
@@ -170,6 +172,7 @@ public:
 		std::vector<s_compiler_result> *error_accumulator,
 		const c_ast_node *ast_root,
 		c_execution_graph *execution_graph,
+		const s_instrument_globals *instrument_globals,
 		const c_ast_node_module_declaration *module_declaration) {
 		wl_assert(ast_root);
 		wl_assert(execution_graph);
@@ -178,12 +181,13 @@ public:
 		m_errors = error_accumulator;
 		m_ast_root = ast_root;
 		m_execution_graph = execution_graph;
+		m_instrument_globals = instrument_globals;
 		m_module_declaration = module_declaration;
 		m_arguments_found = 0;
 
 		m_loop_count_for_next_scope = 1;
 
-		m_constant_evaluator.initialize(execution_graph, error_accumulator);
+		m_constant_evaluator.initialize(execution_graph, instrument_globals, error_accumulator);
 
 		m_argument_node_indices.resize(module_declaration->get_argument_count(), c_execution_graph::k_invalid_index);
 		m_return_node_index = c_execution_graph::k_invalid_index;
@@ -243,7 +247,6 @@ public:
 			}
 		}
 
-		wl_vhalt("Module declaration not found");
 		return nullptr;
 	}
 
@@ -265,7 +268,6 @@ public:
 			}
 		}
 
-		wl_vhalt("Module declaration not found");
 		return nullptr;
 	}
 
@@ -635,9 +637,10 @@ public:
 
 		const c_ast_node_module_declaration *module_call_declaration =
 			find_module_declaration(m_ast_root, node->get_name().c_str(), argument_expression_results);
+		wl_assert(module_call_declaration);
 
 		c_execution_graph_module_builder module_builder(
-			m_errors, m_ast_root, m_execution_graph, module_call_declaration);
+			m_errors, m_ast_root, m_execution_graph, m_instrument_globals, module_call_declaration);
 
 		// Hook up the input arguments
 		for (size_t arg = 0; arg < module_call_declaration->get_argument_count(); arg++) {
@@ -686,35 +689,99 @@ public:
 	}
 };
 
-s_compiler_result c_execution_graph_builder::build_execution_graph(
-	const c_ast_node *ast, c_execution_graph *out_execution_graph, std::vector<s_compiler_result> &out_errors) {
+s_compiler_result c_execution_graph_builder::build_execution_graphs(
+	const c_ast_node *ast, c_instrument_variant *out_instrument_variant, std::vector<s_compiler_result> &out_errors) {
 	s_compiler_result result;
 	result.clear();
 
-	// Find the entry point to start iteration
-	const c_ast_node_module_declaration *entry_point_module =
-		c_execution_graph_module_builder::find_module_declaration_single(ast, k_entry_point_name);
+	// Find the entry points for voice and FX modules
+	const c_ast_node_module_declaration *voice_entry_point_module =
+		c_execution_graph_module_builder::find_module_declaration_single(ast, k_voice_entry_point_name);
+	const c_ast_node_module_declaration *fx_entry_point_module =
+		c_execution_graph_module_builder::find_module_declaration_single(ast, k_fx_entry_point_name);
 
-	c_execution_graph_module_builder builder(&out_errors, ast, out_execution_graph, entry_point_module);
-	entry_point_module->iterate(&builder);
+	wl_assert(voice_entry_point_module || fx_entry_point_module);
 
-	// Add an output node for each argument (they should all be out arguments)
-	for (size_t arg = 0; arg < entry_point_module->get_argument_count(); arg++) {
-		wl_assert(entry_point_module->get_argument(arg)->get_qualifier() == k_ast_qualifier_out);
+	if (voice_entry_point_module) {
+		c_execution_graph *execution_graph = new c_execution_graph();
+		out_instrument_variant->set_voice_execution_graph(execution_graph);
 
-		uint32 output_node_index = out_execution_graph->add_output_node(cast_integer_verify<uint32>(arg));
-		uint32 out_argument_node_index = builder.get_out_argument_node_index(arg);
-		out_execution_graph->add_edge(out_argument_node_index, output_node_index);
+		c_execution_graph_module_builder builder(&out_errors, ast, execution_graph,
+			&out_instrument_variant->get_instrument_globals(), voice_entry_point_module);
+		voice_entry_point_module->iterate(&builder);
+
+		// Add an output node for each argument (they should all be out arguments)
+		for (size_t arg = 0; arg < voice_entry_point_module->get_argument_count(); arg++) {
+			wl_assert(voice_entry_point_module->get_argument(arg)->get_qualifier() == k_ast_qualifier_out);
+
+			uint32 output_node_index = execution_graph->add_output_node(cast_integer_verify<uint32>(arg));
+			uint32 out_argument_node_index = builder.get_out_argument_node_index(arg);
+			execution_graph->add_edge(out_argument_node_index, output_node_index);
+		}
+
+		// Add an output for the remain-active result
+		{
+			wl_assert(voice_entry_point_module->get_return_type() == c_ast_data_type(k_ast_primitive_type_bool));
+
+			uint32 output_node_index = execution_graph->add_output_node(
+				c_execution_graph::k_remain_active_output_index);
+			uint32 out_argument_node_index = builder.get_return_value_node_index();
+			execution_graph->add_edge(out_argument_node_index, output_node_index);
+		}
 	}
 
-	// Add an output for the remain-active result
-	{
-		wl_assert(entry_point_module->get_return_type() == c_ast_data_type(k_ast_primitive_type_bool));
+	if (fx_entry_point_module) {
+		c_execution_graph *execution_graph = new c_execution_graph();
+		out_instrument_variant->set_fx_execution_graph(execution_graph);
 
-		uint32 output_node_index = out_execution_graph->add_output_node(
-			c_execution_graph::k_remain_active_output_index);
-		uint32 out_argument_node_index = builder.get_return_value_node_index();
-		out_execution_graph->add_edge(out_argument_node_index, output_node_index);
+		c_execution_graph_module_builder builder(&out_errors, ast, execution_graph,
+			&out_instrument_variant->get_instrument_globals(), fx_entry_point_module);
+
+		// Add an input node for each input argument
+		uint32 input_index = 0;
+		for (size_t arg = 0; arg < fx_entry_point_module->get_argument_count(); arg++) {
+			const c_ast_node_named_value_declaration *argument = fx_entry_point_module->get_argument(arg);
+
+			if (argument->get_qualifier() == k_ast_qualifier_in) {
+				uint32 input_node_index = execution_graph->add_input_node(input_index);
+				builder.set_in_argument_node_index(arg, input_node_index);
+				input_index++;
+			} else {
+				wl_assert(argument->get_qualifier() == k_ast_qualifier_out);
+			}
+		}
+
+		fx_entry_point_module->iterate(&builder);
+
+		// Add an output node for each output argument
+		uint32 output_index = 0;
+		for (size_t arg = 0; arg < fx_entry_point_module->get_argument_count(); arg++) {
+			const c_ast_node_named_value_declaration *argument = fx_entry_point_module->get_argument(arg);
+
+			if (argument->get_qualifier() == k_ast_qualifier_out) {
+				uint32 output_node_index = execution_graph->add_output_node(output_index);
+				uint32 out_argument_node_index = builder.get_out_argument_node_index(arg);
+				execution_graph->add_edge(out_argument_node_index, output_node_index);
+				output_index++;
+			} else {
+				wl_assert(argument->get_qualifier() == k_ast_qualifier_in);
+			}
+		}
+
+		if (voice_entry_point_module) {
+			// The output count from the voice graph should match the input count from the FX graph
+			wl_assert(input_index == voice_entry_point_module->get_argument_count());
+		}
+
+		// Add an output for the remain-active result
+		{
+			wl_assert(fx_entry_point_module->get_return_type() == c_ast_data_type(k_ast_primitive_type_bool));
+
+			uint32 output_node_index = execution_graph->add_output_node(
+				c_execution_graph::k_remain_active_output_index);
+			uint32 out_argument_node_index = builder.get_return_value_node_index();
+			execution_graph->add_edge(out_argument_node_index, output_node_index);
+		}
 	}
 
 	if (!out_errors.empty()) {

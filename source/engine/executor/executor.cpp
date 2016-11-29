@@ -1,9 +1,12 @@
+#include "engine/runtime_instrument.h"
+#include "engine/task_function_registry.h"
+#include "engine/task_graph.h"
 #include "engine/array_dereference_interface/array_dereference_interface.h"
 #include "engine/controller_interface/controller_interface.h"
 #include "engine/executor/channel_mixer.h"
 #include "engine/executor/executor.h"
-#include "engine/task_function_registry.h"
-#include "engine/task_graph.h"
+
+#include "execution_graph/instrument_globals.h"
 
 #include <algorithm>
 
@@ -65,6 +68,11 @@ void c_executor::execute(const s_executor_chunk_context &chunk_context) {
 
 void c_executor::initialize_internal(const s_executor_settings &settings) {
 	m_settings = settings;
+
+	wl_assert(settings.runtime_instrument->get_voice_task_graph() || settings.runtime_instrument->get_fx_task_graph());
+	m_active_task_graph = nullptr;
+	m_active_instrument_stage = k_instrument_stage_invalid;
+
 	initialize_events();
 	initialize_thread_pool();
 	initialize_buffer_manager();
@@ -74,19 +82,27 @@ void c_executor::initialize_internal(const s_executor_settings &settings) {
 	initialize_controller_event_manager();
 	initialize_task_contexts();
 	initialize_profiler();
+
+	m_event_interface.submit(EVENT_MESSAGE << "Synth started");
+	if (m_settings.profiling_enabled) {
+		m_event_interface.submit(EVENT_MESSAGE << "Profiling enabled");
+	}
 }
 
 void c_executor::initialize_events() {
-	m_event_console.start();
+	if (m_settings.event_console_enabled) {
+		m_event_console.start();
 
-	if (!m_async_event_handler.is_initialized()) {
-		s_async_event_handler_settings event_handler_settings;
-		event_handler_settings.set_default();
-		event_handler_settings.event_handler = handle_event_wrapper;
-		event_handler_settings.event_handler_context = this;
-		m_async_event_handler.initialize(event_handler_settings);
+		if (!m_async_event_handler.is_initialized()) {
+			s_async_event_handler_settings event_handler_settings;
+			event_handler_settings.set_default();
+			event_handler_settings.event_handler = handle_event_wrapper;
+			event_handler_settings.event_handler_context = this;
+			m_async_event_handler.initialize(event_handler_settings);
+		}
+
+		m_async_event_handler.begin_event_handling();
 	}
-	m_async_event_handler.begin_event_handling();
 
 	m_event_interface.initialize(&m_async_event_handler);
 }
@@ -94,140 +110,87 @@ void c_executor::initialize_events() {
 void c_executor::initialize_thread_pool() {
 	s_thread_pool_settings thread_pool_settings;
 	thread_pool_settings.thread_count = m_settings.thread_count;
-	thread_pool_settings.max_tasks = std::max(1u, m_settings.task_graph->get_max_task_concurrency());
+	thread_pool_settings.max_tasks = 1;
+	for (size_t stage = 0; stage < k_instrument_stage_count; stage++) {
+		e_instrument_stage instrument_stage = static_cast<e_instrument_stage>(stage);
+		if (m_settings.runtime_instrument->get_task_graph(instrument_stage)) {
+			thread_pool_settings.max_tasks = std::max(
+				thread_pool_settings.max_tasks,
+				m_settings.runtime_instrument->get_task_graph(instrument_stage)->get_max_task_concurrency());
+		}
+	}
 	thread_pool_settings.start_paused = true;
 	m_thread_pool.start(thread_pool_settings);
 }
 
 void c_executor::initialize_buffer_manager() {
-	m_buffer_manager.initialize(m_settings.task_graph, m_settings.max_buffer_size, m_settings.output_channels);
+	m_buffer_manager.initialize(m_settings.runtime_instrument, m_settings.max_buffer_size, m_settings.output_channels);
 }
 
 void c_executor::initialize_task_memory() {
-	uint32 max_voices = m_settings.task_graph->get_globals().max_voices;
-	size_t total_voice_task_memory_pointers = max_voices * m_settings.task_graph->get_task_count();
-	m_voice_task_memory_pointers.clear();
-	m_voice_task_memory_pointers.reserve(total_voice_task_memory_pointers);
+	m_task_memory_manager.initialize(m_settings.runtime_instrument, task_memory_query_wrapper, this);
 
-	// Since we initially store offsets, this value cast to a pointer represents null
-	static const size_t k_invalid_memory_pointer = static_cast<size_t>(-1);
-
-	size_t required_memory_per_voice = 0;
-	for (uint32 task = 0; task < m_settings.task_graph->get_task_count(); task++) {
-		const s_task_function &task_function =
-			c_task_function_registry::get_task_function(m_settings.task_graph->get_task_function_index(task));
-
-		size_t required_memory_for_task = 0;
-		if (task_function.memory_query) {
-			// The memory query function will be able to read from the constant inputs.
-			// We don't (currently) support dynamic task memory usage.
-
-			// Set up the arguments
-			s_static_array<s_task_function_argument, k_max_task_function_arguments> arguments;
-			size_t argument_count = setup_task_arguments(task, false, arguments);
-
-			s_task_function_context task_function_context;
-			ZERO_STRUCT(&task_function_context);
-			task_function_context.event_interface = &m_event_interface;
-			task_function_context.sample_rate = m_settings.sample_rate;
-			task_function_context.arguments = c_task_function_arguments(arguments.get_elements(), argument_count);
-			// $TODO fill in timing info, etc.
-
-			required_memory_for_task = task_function.memory_query(task_function_context);
-		}
-
-		if (required_memory_for_task == 0) {
-			m_voice_task_memory_pointers.push_back(reinterpret_cast<void *>(k_invalid_memory_pointer));
-		} else {
-			m_voice_task_memory_pointers.push_back(reinterpret_cast<void *>(required_memory_per_voice));
-
-			required_memory_per_voice += required_memory_for_task;
-			required_memory_per_voice = align_size(required_memory_per_voice, k_lock_free_alignment);
-		}
-	}
-
-	// Allocate the memory so we can calculate the true pointers
-	size_t total_required_memory = max_voices * required_memory_per_voice;
-	m_task_memory_allocator.free();
-
-	if (total_required_memory > 0) {
-		m_task_memory_allocator.allocate(total_required_memory);
-		size_t task_memory_base = reinterpret_cast<size_t>(m_task_memory_allocator.get_array().get_pointer());
-
-		// Compute offset pointers
-		for (size_t index = 0; index < m_voice_task_memory_pointers.size(); index++) {
-			size_t offset = reinterpret_cast<size_t>(m_voice_task_memory_pointers[index]);
-			void *offset_pointer = (offset == k_invalid_memory_pointer) ?
-				nullptr :
-				offset_pointer = reinterpret_cast<void *>(task_memory_base + offset);
-			m_voice_task_memory_pointers[index] = offset_pointer;
-		}
-
-		// Now offset for each additional voice
-		m_voice_task_memory_pointers.resize(total_voice_task_memory_pointers);
-		for (uint32 voice = 1; voice < max_voices; voice++) {
-			size_t voice_offset = voice * m_settings.task_graph->get_task_count();
-			size_t voice_memory_offset = voice * required_memory_per_voice;
-			for (size_t index = 0; index < m_settings.task_graph->get_task_count(); index++) {
-				size_t base_pointer = reinterpret_cast<size_t>(m_voice_task_memory_pointers[index]);
-				void *offset_pointer = (base_pointer == 0) ?
-					nullptr :
-					reinterpret_cast<void *>(base_pointer + voice_memory_offset);
-				m_voice_task_memory_pointers[voice_offset + index] = offset_pointer;
-			}
-		}
-
-		// Zero out all the memory - tasks can detect whether it is initialized by providing an "initialized" field
-		memset(m_task_memory_allocator.get_array().get_pointer(), 0,
-			m_task_memory_allocator.get_array().get_count());
-	} else {
-#if IS_TRUE(ASSERTS_ENABLED)
-		// All pointers should be invalid
-		for (size_t index = 0; index < m_voice_task_memory_pointers.size(); index++) {
-			wl_assert(m_voice_task_memory_pointers[index] == reinterpret_cast<void *>(k_invalid_memory_pointer));
-		}
-#endif // IS_TRUE(ASSERTS_ENABLED)
-
-		// All point to null
-		m_voice_task_memory_pointers.clear();
-		m_voice_task_memory_pointers.resize(total_voice_task_memory_pointers, nullptr);
-	}
+	// The memory query function changes the active task graph, so reset it here to avoid bugs
+	m_active_task_graph = nullptr;
+	m_active_instrument_stage = k_instrument_stage_invalid;
 }
 
 void c_executor::initialize_tasks() {
 	m_sample_library.clear_requested_samples();
 
-	for (uint32 task = 0; task < m_settings.task_graph->get_task_count(); task++) {
-		const s_task_function &task_function =
-			c_task_function_registry::get_task_function(m_settings.task_graph->get_task_function_index(task));
+	uint32 max_voices = m_settings.runtime_instrument->get_instrument_globals().max_voices;
 
-		if (task_function.initializer) {
-			// Set up the arguments
-			s_static_array<s_task_function_argument, k_max_task_function_arguments> arguments;
-			size_t argument_count = setup_task_arguments(task, false, arguments);
+	for (size_t instrument_stage = 0; instrument_stage < k_instrument_stage_count; instrument_stage++) {
+		const c_task_graph *task_graph = m_settings.runtime_instrument->get_task_graph(
+			static_cast<e_instrument_stage>(instrument_stage));
+		if (!task_graph) {
+			continue;
+		}
 
-			c_sample_library_requester sample_library_requester(m_sample_library);
-			s_task_function_context task_function_context;
-			ZERO_STRUCT(&task_function_context);
-			task_function_context.event_interface = &m_event_interface;
-			task_function_context.sample_requester = &sample_library_requester;
-			task_function_context.sample_rate = m_settings.sample_rate;
-			task_function_context.arguments = c_task_function_arguments(arguments.get_elements(), argument_count);
-			// $TODO fill in timing info, etc.
+		m_active_task_graph = task_graph;
+		m_active_instrument_stage = static_cast<e_instrument_stage>(instrument_stage);
 
-			for (uint32 voice = 0; voice < m_settings.task_graph->get_globals().max_voices; voice++) {
-				task_function_context.task_memory =
-					m_voice_task_memory_pointers[m_settings.task_graph->get_task_count() * voice + task];
-				task_function.initializer(task_function_context);
+		uint32 max_voices_for_this_graph = (instrument_stage == k_instrument_stage_voice) ? max_voices : 1;
+
+		for (uint32 task = 0; task < task_graph->get_task_count(); task++) {
+			const s_task_function &task_function =
+				c_task_function_registry::get_task_function(task_graph->get_task_function_index(task));
+
+			if (task_function.initializer) {
+				// Set up the arguments
+				s_static_array<s_task_function_argument, k_max_task_function_arguments> arguments;
+				size_t argument_count = setup_task_arguments(task, false, arguments);
+
+				c_sample_library_requester sample_library_requester(m_sample_library);
+				s_task_function_context task_function_context;
+				ZERO_STRUCT(&task_function_context);
+				task_function_context.event_interface = &m_event_interface;
+				task_function_context.sample_requester = &sample_library_requester;
+				task_function_context.sample_rate = m_settings.sample_rate;
+				task_function_context.arguments = c_task_function_arguments(arguments.get_elements(), argument_count);
+				// $TODO fill in timing info, etc.
+
+				for (uint32 voice = 0; voice < max_voices_for_this_graph; voice++) {
+					task_function_context.task_memory = m_task_memory_manager.get_task_memory(
+						static_cast<e_instrument_stage>(instrument_stage), task, voice);
+					task_function.initializer(task_function_context);
+				}
 			}
 		}
 	}
+
+	m_active_task_graph = nullptr;
+	m_active_instrument_stage = k_instrument_stage_invalid;
 
 	m_sample_library.update_loaded_samples();
 }
 
 void c_executor::initialize_voice_allocator() {
-	m_voice_allocator.initialize(m_settings.task_graph->get_globals().max_voices);
+	const s_instrument_globals &globals = m_settings.runtime_instrument->get_instrument_globals();
+	m_voice_allocator.initialize(
+		globals.max_voices,
+		m_settings.runtime_instrument->get_fx_task_graph() != nullptr,
+		globals.activate_fx_immediately);
 }
 
 void c_executor::initialize_controller_event_manager() {
@@ -236,14 +199,32 @@ void c_executor::initialize_controller_event_manager() {
 
 void c_executor::initialize_task_contexts() {
 	m_task_contexts.free();
-	m_task_contexts.allocate(m_settings.task_graph->get_task_count());
+	uint32 max_task_count = 0;
+
+	for (size_t instrument_stage = 0; instrument_stage < k_instrument_stage_count; instrument_stage++) {
+		const c_task_graph *task_graph = m_settings.runtime_instrument->get_task_graph(
+			static_cast<e_instrument_stage>(instrument_stage));
+
+		if (task_graph) {
+			if (task_graph) {
+				max_task_count = std::max(max_task_count, task_graph->get_task_count());
+			}
+		}
+	}
+
+	m_task_contexts.allocate(max_task_count);
 }
 
 void c_executor::initialize_profiler() {
 	if (m_settings.profiling_enabled) {
 		s_profiler_settings profiler_settings;
 		profiler_settings.worker_thread_count = m_settings.thread_count;
-		profiler_settings.task_count = m_settings.task_graph->get_task_count();
+		profiler_settings.voice_task_count = m_settings.runtime_instrument->get_voice_task_graph() ?
+			m_settings.runtime_instrument->get_voice_task_graph()->get_task_count() :
+			0;
+		profiler_settings.fx_task_count = m_settings.runtime_instrument->get_fx_task_graph() ?
+			m_settings.runtime_instrument->get_fx_task_graph()->get_task_count() :
+			0;
 		m_profiler.initialize(profiler_settings);
 		m_profiler.start();
 	}
@@ -253,8 +234,10 @@ void c_executor::shutdown_internal() {
 	IF_ASSERTS_ENABLED(uint32 unexecuted_tasks = ) m_thread_pool.stop();
 	wl_assert(unexecuted_tasks == 0);
 
-	m_async_event_handler.end_event_handling();
-	m_event_console.stop();
+	if (m_settings.event_console_enabled) {
+		m_async_event_handler.end_event_handling();
+		m_event_console.stop();
+	}
 
 	if (m_settings.profiling_enabled) {
 		m_profiler.stop();
@@ -262,6 +245,38 @@ void c_executor::shutdown_internal() {
 		m_profiler.get_report(report);
 		output_profiler_report("profiler_report.csv", report);
 	}
+}
+
+size_t c_executor::task_memory_query_wrapper(void *context, const c_task_graph *task_graph, uint32 task_index) {
+	return static_cast<c_executor *>(context)->task_memory_query(task_graph, task_index);
+}
+
+size_t c_executor::task_memory_query(const c_task_graph *task_graph, uint32 task_index) {
+	m_active_task_graph = task_graph;
+
+	const s_task_function &task_function =
+		c_task_function_registry::get_task_function(task_graph->get_task_function_index(task_index));
+
+	size_t required_memory_for_task = 0;
+	if (task_function.memory_query) {
+		// The memory query function will be able to read from the constant inputs.
+		// We don't (currently) support dynamic task memory usage.
+
+		// Set up the arguments
+		s_static_array<s_task_function_argument, k_max_task_function_arguments> arguments;
+		size_t argument_count = setup_task_arguments(task_index, false, arguments);
+
+		s_task_function_context task_function_context;
+		ZERO_STRUCT(&task_function_context);
+		task_function_context.event_interface = &m_event_interface;
+		task_function_context.sample_rate = m_settings.sample_rate;
+		task_function_context.arguments = c_task_function_arguments(arguments.get_elements(), argument_count);
+		// $TODO fill in timing info, etc.
+
+		required_memory_for_task = task_function.memory_query(task_function_context);
+	}
+
+	return required_memory_for_task;
 }
 
 void c_executor::execute_internal(const s_executor_chunk_context &chunk_context) {
@@ -284,20 +299,49 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 	m_voice_allocator.allocate_voices_for_chunk(
 		m_controller_event_manager.get_note_events(), chunk_context.sample_rate, chunk_context.frames);
 
-	// Process each active voice
-	for (uint32 voice_index = 0; voice_index < m_voice_allocator.get_voice_count(); voice_index++) {
-		const c_voice_allocator::s_voice &voice = m_voice_allocator.get_voice(voice_index);
+	m_active_task_graph = m_settings.runtime_instrument->get_voice_task_graph();
+	m_active_instrument_stage = k_instrument_stage_voice;
 
-		if (!voice.active) {
-			continue;
+	if (m_active_task_graph) {
+		if (m_settings.profiling_enabled) {
+			m_profiler.begin_voices();
 		}
 
-		process_voice(chunk_context, voice_index);
-		m_buffer_manager.accumulate_voice_output(voice.chunk_offset_samples);
+		// Process each active voice
+		for (uint32 voice_index = 0; voice_index < m_voice_allocator.get_voice_count(); voice_index++) {
+			const c_voice_allocator::s_voice &voice = m_voice_allocator.get_voice(voice_index);
+
+			if (!voice.active) {
+				continue;
+			}
+
+			process_voice(chunk_context, voice_index);
+			m_buffer_manager.accumulate_voice_output(voice.chunk_offset_samples);
+		}
+
+		if (m_settings.profiling_enabled) {
+			m_profiler.end_voices();
+		}
 	}
 
-	m_buffer_manager.mix_voice_accumulation_buffers_to_output_buffer(
-		chunk_context.sample_format, chunk_context.output_buffer);
+	m_active_task_graph = m_settings.runtime_instrument->get_fx_task_graph();
+	m_active_instrument_stage = k_instrument_stage_fx;
+
+	if (m_active_task_graph) {
+		if (m_voice_allocator.get_fx_voice().active) {
+			process_fx(chunk_context);
+			m_buffer_manager.store_fx_output();
+		}
+
+		m_buffer_manager.mix_fx_output_to_channel_buffers();
+	} else {
+		m_buffer_manager.mix_voice_accumulation_buffers_to_channel_buffers();
+	}
+
+	m_active_task_graph = nullptr;
+	m_active_instrument_stage = k_instrument_stage_invalid;
+
+	m_buffer_manager.mix_channel_buffers_to_output_buffer(chunk_context.sample_format, chunk_context.output_buffer);
 
 	if (m_settings.profiling_enabled) {
 		m_profiler.end_execution();
@@ -305,13 +349,46 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 }
 
 void c_executor::process_voice(const s_executor_chunk_context &chunk_context, uint32 voice_index) {
-	const c_voice_allocator::s_voice &voice = m_voice_allocator.get_voice(voice_index);
+	if (m_settings.profiling_enabled) {
+		m_profiler.begin_voice();
+	}
+
+	wl_assert(m_active_task_graph);
+	wl_assert(m_active_instrument_stage == k_instrument_stage_voice);
+	process_voice_or_fx(chunk_context, voice_index);
+
+	if (m_settings.profiling_enabled) {
+		m_profiler.end_voice();
+	}
+}
+
+void c_executor::process_fx(const s_executor_chunk_context &chunk_context) {
+	if (m_settings.profiling_enabled) {
+		m_profiler.begin_fx();
+	}
+
+	wl_assert(m_active_task_graph);
+	wl_assert(m_active_instrument_stage == k_instrument_stage_fx);
+	process_voice_or_fx(chunk_context, 0);
+
+	if (m_settings.profiling_enabled) {
+		m_profiler.end_fx();
+	}
+}
+
+void c_executor::process_voice_or_fx(const s_executor_chunk_context &chunk_context, uint32 voice_index) {
+	const c_voice_allocator::s_voice &voice = (m_active_instrument_stage == k_instrument_stage_voice) ?
+		m_voice_allocator.get_voice(voice_index) :
+		m_voice_allocator.get_fx_voice();
 	wl_assert(voice.active);
 
+	// Voice index should be 0 if we're performing FX proessing
+	wl_assert(m_active_instrument_stage == k_instrument_stage_voice || voice_index == 0);
+
 	if (voice.activated_this_chunk) {
-		for (uint32 task = 0; task < m_settings.task_graph->get_task_count(); task++) {
+		for (uint32 task = 0; task < m_active_task_graph->get_task_count(); task++) {
 			const s_task_function &task_function =
-				c_task_function_registry::get_task_function(m_settings.task_graph->get_task_function_index(task));
+				c_task_function_registry::get_task_function(m_active_task_graph->get_task_function_index(task));
 
 			if (task_function.voice_initializer) {
 				// Set up the arguments
@@ -324,8 +401,8 @@ void c_executor::process_voice(const s_executor_chunk_context &chunk_context, ui
 				task_function_context.event_interface = &m_event_interface;
 				task_function_context.sample_requester = &sample_library_requester;
 				task_function_context.sample_rate = m_settings.sample_rate;
-				task_function_context.task_memory =
-					m_voice_task_memory_pointers[m_settings.task_graph->get_task_count() * voice_index + task];
+				task_function_context.task_memory = m_task_memory_manager.get_task_memory(
+					m_active_instrument_stage, task, voice_index);
 				task_function_context.arguments = c_task_function_arguments(arguments.get_elements(), argument_count);
 				// $TODO fill in timing info, etc.
 
@@ -335,14 +412,14 @@ void c_executor::process_voice(const s_executor_chunk_context &chunk_context, ui
 	}
 
 	// Setup each initial task predecessor count
-	for (uint32 task = 0; task < m_settings.task_graph->get_task_count(); task++) {
+	for (uint32 task = 0; task < m_active_task_graph->get_task_count(); task++) {
 		m_task_contexts.get_array()[task].predecessors_remaining.initialize(
-			cast_integer_verify<int32>(m_settings.task_graph->get_task_predecessor_count(task)));
+			cast_integer_verify<int32>(m_active_task_graph->get_task_predecessor_count(task)));
 	}
 
-	m_buffer_manager.initialize_buffers_for_voice();
+	m_buffer_manager.initialize_buffers_for_graph(m_active_instrument_stage);
 
-	m_tasks_remaining.initialize(cast_integer_verify<int32>(m_settings.task_graph->get_task_count()));
+	m_tasks_remaining.initialize(cast_integer_verify<int32>(m_active_task_graph->get_task_count()));
 
 	wl_assert(chunk_context.frames > voice.chunk_offset_samples);
 	uint32 frame_count = chunk_context.frames - voice.chunk_offset_samples;
@@ -351,29 +428,27 @@ void c_executor::process_voice(const s_executor_chunk_context &chunk_context, ui
 		voice.note_id, voice.note_velocity, voice.note_release_sample - voice.chunk_offset_samples);
 
 	// Add the initial tasks
-	c_task_graph_task_array initial_tasks = m_settings.task_graph->get_initial_tasks();
+	c_task_graph_task_array initial_tasks = m_active_task_graph->get_initial_tasks();
 	if (initial_tasks.get_count() > 0) {
 		for (size_t initial_task = 0; initial_task < initial_tasks.get_count(); initial_task++) {
 			add_task(voice_index, initial_tasks[initial_task], chunk_context.sample_rate, frame_count);
-		}
-
-		if (m_settings.profiling_enabled) {
-			m_profiler.begin_execution_tasks();
 		}
 
 		// Start the threads processing
 		m_thread_pool.resume();
 		m_all_tasks_complete_signal.wait();
 		m_thread_pool.pause();
-
-		if (m_settings.profiling_enabled) {
-			m_profiler.end_execution_tasks();
-		}
 	}
 
-	bool remain_active = m_buffer_manager.process_remain_active_output(voice.chunk_offset_samples);
+	bool remain_active = m_buffer_manager.process_remain_active_output(
+		m_active_instrument_stage, voice.chunk_offset_samples);
+
 	if (!remain_active) {
-		m_voice_allocator.disable_voice(voice_index);
+		if (m_active_instrument_stage == k_instrument_stage_voice) {
+			m_voice_allocator.disable_voice(voice_index);
+		} else {
+			m_voice_allocator.disable_fx();
+		}
 	}
 }
 
@@ -399,12 +474,12 @@ void c_executor::process_task_wrapper(uint32 thread_index, const s_thread_parame
 
 void c_executor::process_task(uint32 thread_index, const s_task_parameters *params) {
 	if (m_settings.profiling_enabled) {
-		m_profiler.begin_task(thread_index, params->task_index,
-			m_settings.task_graph->get_task_function_index(params->task_index));
+		m_profiler.begin_task(m_active_instrument_stage, thread_index, params->task_index,
+			m_active_task_graph->get_task_function_index(params->task_index));
 	}
 
 	const s_task_function &task_function =
-		c_task_function_registry::get_task_function(m_settings.task_graph->get_task_function_index(params->task_index));
+		c_task_function_registry::get_task_function(m_active_task_graph->get_task_function_index(params->task_index));
 
 	allocate_output_buffers(params->task_index);
 
@@ -425,8 +500,8 @@ void c_executor::process_task(uint32 thread_index, const s_task_parameters *para
 		task_function_context.controller_interface = &controller_interface;
 		task_function_context.sample_rate = params->sample_rate;
 		task_function_context.buffer_size = params->frames;
-		task_function_context.task_memory = m_voice_task_memory_pointers[
-			m_settings.task_graph->get_task_count() * params->voice_index + params->task_index];
+		task_function_context.task_memory = m_task_memory_manager.get_task_memory(
+			m_active_instrument_stage, params->task_index, params->voice_index);
 		task_function_context.arguments = c_task_function_arguments(arguments.get_elements(), argument_count);
 		// $TODO fill in timing info, etc.
 
@@ -434,20 +509,20 @@ void c_executor::process_task(uint32 thread_index, const s_task_parameters *para
 		wl_assert(task_function.function);
 
 		if (m_settings.profiling_enabled) {
-			m_profiler.begin_task_function(thread_index, params->task_index);
+			m_profiler.begin_task_function(m_active_instrument_stage, thread_index, params->task_index);
 		}
 
 		task_function.function(task_function_context);
 
 		if (m_settings.profiling_enabled) {
-			m_profiler.end_task_function(thread_index, params->task_index);
+			m_profiler.end_task_function(m_active_instrument_stage, thread_index, params->task_index);
 		}
 	}
 
 	decrement_buffer_usages(params->task_index);
 
 	// Decrement remaining predecessor counts for all successors to this task
-	c_task_graph_task_array successors = m_settings.task_graph->get_task_successors(params->task_index);
+	c_task_graph_task_array successors = m_active_task_graph->get_task_successors(params->task_index);
 	for (size_t successor = 0; successor < successors.get_count(); successor++) {
 		uint32 successor_index = successors[successor];
 
@@ -461,20 +536,21 @@ void c_executor::process_task(uint32 thread_index, const s_task_parameters *para
 
 	int32 prev_tasks_remaining = m_tasks_remaining.decrement();
 	wl_assert(prev_tasks_remaining > 0);
+
+	if (m_settings.profiling_enabled) {
+		m_profiler.end_task(m_active_instrument_stage, thread_index, params->task_index);
+	}
+
 	if (prev_tasks_remaining == 1) {
 		// Notify the calling thread that we are done
 		m_all_tasks_complete_signal.notify();
-	}
-
-	if (m_settings.profiling_enabled) {
-		m_profiler.end_task(thread_index, params->task_index);
 	}
 }
 
 size_t c_executor::setup_task_arguments(uint32 task_index, bool include_dynamic_arguments,
 	s_static_array<s_task_function_argument, k_max_task_function_arguments> &out_arguments) {
 	// Obtain argument data from the graph
-	c_task_graph_data_array argument_data = m_settings.task_graph->get_task_arguments(task_index);
+	c_task_graph_data_array argument_data = m_active_task_graph->get_task_arguments(task_index);
 
 	for (size_t arg = 0; arg < argument_data.get_count(); arg++) {
 		s_task_function_argument &argument = out_arguments[arg];
@@ -530,7 +606,7 @@ size_t c_executor::setup_task_arguments(uint32 task_index, bool include_dynamic_
 
 
 void c_executor::allocate_output_buffers(uint32 task_index) {
-	c_task_graph_data_array arguments = m_settings.task_graph->get_task_arguments(task_index);
+	c_task_graph_data_array arguments = m_active_task_graph->get_task_arguments(task_index);
 
 	for (size_t index = 0; index < arguments.get_count(); index++) {
 		const s_task_graph_data &argument = arguments[index];
@@ -539,7 +615,7 @@ void c_executor::allocate_output_buffers(uint32 task_index) {
 			e_task_qualifier qualifier = argument.data.type.get_qualifier();
 			if (qualifier == k_task_qualifier_out) {
 				// Allocate output buffers
-				m_buffer_manager.allocate_buffer(argument.data.value.buffer);
+				m_buffer_manager.allocate_buffer(m_active_instrument_stage, argument.data.value.buffer);
 			} else {
 				wl_assert(qualifier == k_task_qualifier_in || qualifier == k_task_qualifier_inout);
 				// Any input buffers should already be allocated (this includes inout buffers)
@@ -550,7 +626,7 @@ void c_executor::allocate_output_buffers(uint32 task_index) {
 }
 
 void c_executor::decrement_buffer_usages(uint32 task_index) {
-	c_task_graph_data_array arguments = m_settings.task_graph->get_task_arguments(task_index);
+	c_task_graph_data_array arguments = m_active_task_graph->get_task_arguments(task_index);
 
 	// Decrement usage of each buffer
 	for (size_t index = 0; index < arguments.get_count(); index++) {

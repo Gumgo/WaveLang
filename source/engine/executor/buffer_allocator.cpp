@@ -99,3 +99,12 @@ void c_buffer_allocator::free_buffer(uint32 buffer_handle) {
 		buffer_handle < pool.first_buffer_handle + pool.description.count);
 	pool.buffer_pool.free(buffer_handle - pool.first_buffer_handle);
 }
+
+#if IS_TRUE(ASSERTS_ENABLED)
+void c_buffer_allocator::assert_all_buffers_free() const {
+	for (uint32 pool_index = 0; pool_index < m_buffer_pools.size(); pool_index++) {
+		const s_buffer_pool &pool = m_buffer_pools[pool_index];
+		wl_assert(pool.buffer_pool.calculate_used_count_unsafe() == 0);
+	}
+}
+#endif // IS_TRUE(ASSERTS_ENABLED)

@@ -1,10 +1,10 @@
-#ifndef WAVELANG_EXECUTION_GRAPH_EXECUTION_GRAPH_GLOBALS_H__
-#define WAVELANG_EXECUTION_GRAPH_EXECUTION_GRAPH_GLOBALS_H__
+#ifndef WAVELANG_EXECUTION_GRAPH_INSTRUMENT_GLOBALS_H__
+#define WAVELANG_EXECUTION_GRAPH_INSTRUMENT_GLOBALS_H__
 
 #include "common/common.h"
 
-// Also called synth globals
-struct s_execution_graph_globals {
+// Settings which apply throughout an entire instrument
+struct s_instrument_globals {
 	// The maximum number of voice instances that can be playing at once
 	uint32 max_voices;
 
@@ -15,6 +15,9 @@ struct s_execution_graph_globals {
 	// The size of each processing chunk. If 0, this graph is compatible with any processing chunk size. Certain modules
 	// may require a minimum chunk size, though most are chunk size agnostic.
 	uint32 chunk_size;
+
+	// Whether to start FX processing immediately. If false, FX processing starts when any voice is activated.
+	bool activate_fx_immediately;
 };
 
-#endif // WAVELANG_EXECUTION_GRAPH_EXECUTION_GRAPH_GLOBALS_H__
+#endif // WAVELANG_EXECUTION_GRAPH_INSTRUMENT_GLOBALS_H__

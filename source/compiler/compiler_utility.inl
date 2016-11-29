@@ -32,6 +32,18 @@ inline bool c_compiler_string::operator==(const char *other) const {
 	return *this == other_str;
 }
 
+inline bool c_compiler_string::operator!=(const c_compiler_string &other) const {
+	return (m_length != other.m_length) ||
+		(memcmp(m_str, other.m_str, m_length) != 0);
+}
+
+inline bool c_compiler_string::operator!=(const char *other) const {
+	// $TODO Could improve implementation to avoid strlen call
+	wl_assert(other);
+	c_compiler_string other_str(other, strlen(other));
+	return *this != other_str;
+}
+
 inline char c_compiler_string::operator[](size_t index) const {
 	wl_assert(index < m_length);
 	return m_str[index];

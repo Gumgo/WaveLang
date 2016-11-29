@@ -2,17 +2,176 @@
 
 #include "execution_graph/execution_graph.h"
 #include "execution_graph/instrument.h"
-
-#include <fstream>
+#include "execution_graph/instrument_globals.h"
 
 static const char k_format_identifier[] = { 'w', 'a', 'v', 'e', 'l', 'a', 'n', 'g' };
+
+c_instrument_variant::c_instrument_variant() {
+	ZERO_STRUCT(&m_instrument_globals);
+	m_voice_execution_graph = nullptr;
+	m_fx_execution_graph = nullptr;
+}
+
+c_instrument_variant::~c_instrument_variant() {
+	delete m_voice_execution_graph;
+	delete m_fx_execution_graph;
+}
+
+e_instrument_result c_instrument_variant::save(std::ofstream &out) const {
+	c_binary_file_writer writer(out);
+
+	// Write the globals
+	writer.write(m_instrument_globals.max_voices);
+	writer.write(m_instrument_globals.sample_rate);
+	writer.write(m_instrument_globals.chunk_size);
+
+	// Write each graph
+	writer.write(m_voice_execution_graph != nullptr);
+	if (m_voice_execution_graph) {
+		e_instrument_result graph_result = m_voice_execution_graph->save(out);
+		if (graph_result != k_instrument_result_success) {
+			return graph_result;
+		}
+	}
+
+	writer.write(m_fx_execution_graph != nullptr);
+	if (m_fx_execution_graph) {
+		e_instrument_result graph_result = m_fx_execution_graph->save(out);
+		if (graph_result != k_instrument_result_success) {
+			return graph_result;
+		}
+	}
+
+	if (out.fail()) {
+		return k_instrument_result_failed_to_write;
+	}
+
+	return k_instrument_result_success;
+}
+
+e_instrument_result c_instrument_variant::load(std::ifstream &in) {
+	c_binary_file_reader reader(in);
+
+	// Read the globals
+	if (!reader.read(m_instrument_globals.max_voices) ||
+		!reader.read(m_instrument_globals.sample_rate) ||
+		!reader.read(m_instrument_globals.chunk_size)) {
+		return in.eof() ? k_instrument_result_invalid_globals : k_instrument_result_failed_to_read;
+	}
+
+	// Read each graph
+	bool has_voice_graph;
+	if (!reader.read(has_voice_graph)) {
+		return in.eof() ? k_instrument_result_invalid_graph : k_instrument_result_failed_to_read;
+	}
+
+	if (has_voice_graph) {
+		m_voice_execution_graph = new c_execution_graph();
+		e_instrument_result graph_result = m_voice_execution_graph->load(in);
+		if (graph_result != k_instrument_result_success) {
+			return graph_result;
+		}
+	}
+
+	bool has_fx_graph;
+	if (!reader.read(has_fx_graph)) {
+		return in.eof() ? k_instrument_result_invalid_graph : k_instrument_result_failed_to_read;
+	}
+
+	if (has_fx_graph) {
+		m_fx_execution_graph = new c_execution_graph();
+		e_instrument_result graph_result = m_fx_execution_graph->load(in);
+		if (graph_result != k_instrument_result_success) {
+			return graph_result;
+		}
+	}
+
+	return k_instrument_result_success;
+}
+
+bool c_instrument_variant::validate() const {
+	if (!m_voice_execution_graph && !m_fx_execution_graph) {
+		return false;
+	}
+
+	if ((m_voice_execution_graph && !m_voice_execution_graph->validate()) ||
+		(m_fx_execution_graph && !m_fx_execution_graph->validate())) {
+		return false;
+	}
+
+	if (m_voice_execution_graph && m_fx_execution_graph) {
+		uint32 voice_graph_output_count = 0;
+		for (uint32 node_index = 0; node_index < m_voice_execution_graph->get_node_count(); node_index++) {
+			if (m_voice_execution_graph->get_node_type(node_index) == k_execution_graph_node_type_output) {
+				uint32 output_index = m_voice_execution_graph->get_output_node_output_index(node_index);
+				if (output_index != c_execution_graph::k_remain_active_output_index) {
+					voice_graph_output_count++;
+				}
+			}
+		}
+
+		uint32 fx_graph_input_count = 0;
+		for (uint32 node_index = 0; node_index < m_fx_execution_graph->get_node_count(); node_index++) {
+			if (m_fx_execution_graph->get_node_type(node_index) == k_execution_graph_node_type_input) {
+				fx_graph_input_count++;
+			}
+		}
+
+		if (voice_graph_output_count != fx_graph_input_count) {
+			return false;
+		}
+	}
+
+	// Validate globals
+	if (m_instrument_globals.max_voices < 1) {
+		return false; // $TODO $INPUT input-only graphs can have 0 voices
+	}
+
+	return true;
+}
+
+void c_instrument_variant::set_instrument_globals(const s_instrument_globals &instrument_globals) {
+	m_instrument_globals = instrument_globals;
+}
+
+void c_instrument_variant::set_voice_execution_graph(c_execution_graph *execution_graph) {
+	wl_assert(execution_graph);
+	wl_assert(!m_voice_execution_graph);
+	m_voice_execution_graph = execution_graph;
+}
+
+void c_instrument_variant::set_fx_execution_graph(c_execution_graph *execution_graph) {
+	wl_assert(execution_graph);
+	wl_assert(!m_fx_execution_graph);
+	m_fx_execution_graph = execution_graph;
+}
+
+const s_instrument_globals &c_instrument_variant::get_instrument_globals() const {
+	return m_instrument_globals;
+}
+
+c_execution_graph *c_instrument_variant::get_voice_execution_graph() {
+	return m_voice_execution_graph;
+}
+
+const c_execution_graph *c_instrument_variant::get_voice_execution_graph() const {
+	return m_voice_execution_graph;
+}
+
+c_execution_graph *c_instrument_variant::get_fx_execution_graph() {
+	return m_fx_execution_graph;
+}
+
+const c_execution_graph *c_instrument_variant::get_fx_execution_graph() const {
+	return m_fx_execution_graph;
+}
 
 c_instrument::c_instrument() {
 }
 
 c_instrument::~c_instrument() {
-	for (size_t index = 0; index < m_execution_graphs.size(); index++) {
-		delete m_execution_graphs[index];
+	for (size_t index = 0; index < m_instrument_variants.size(); index++) {
+		delete m_instrument_variants[index];
 	}
 }
 
@@ -33,14 +192,16 @@ e_instrument_result c_instrument::save(const char *fname) const {
 
 	writer.write(k_instrument_format_version);
 
-	// Write execution graph count followed by the list of execution graphs
-	// $TODO a better format might be a table with file offsets to each graph
-	writer.write(cast_integer_verify<uint32>(m_execution_graphs.size()));
+	// $TODO $PLUGIN write out all library IDs and versions used in any graph
 
-	for (uint32 index = 0; index < m_execution_graphs.size(); index++) {
-		e_instrument_result graph_result = m_execution_graphs[index]->save(out);
-		if (graph_result != k_instrument_result_success) {
-			return graph_result;
+	// Write instrument variant count followed by the list of instrument variants
+	// $TODO a better format might be a table with file offsets to each variant
+	writer.write(cast_integer_verify<uint32>(m_instrument_variants.size()));
+
+	for (uint32 index = 0; index < m_instrument_variants.size(); index++) {
+		e_instrument_result instrument_variant_result = m_instrument_variants[index]->save(out);
+		if (instrument_variant_result != k_instrument_result_success) {
+			return instrument_variant_result;
 		}
 	}
 
@@ -52,7 +213,7 @@ e_instrument_result c_instrument::save(const char *fname) const {
 }
 
 e_instrument_result c_instrument::load(const char *fname) {
-	wl_assert(m_execution_graphs.empty());
+	wl_assert(m_instrument_variants.empty());
 
 	std::ifstream in(fname, std::ios::binary);
 	if (!in.is_open()) {
@@ -82,17 +243,17 @@ e_instrument_result c_instrument::load(const char *fname) {
 		return k_instrument_result_version_mismatch;
 	}
 
-	uint32 execution_graph_count;
-	if (!reader.read(execution_graph_count)) {
+	uint32 instrument_variant_count;
+	if (!reader.read(instrument_variant_count)) {
 		return k_instrument_result_invalid_header;
 	}
 
-	for (uint32 index = 0; index < execution_graph_count; index++) {
-		c_execution_graph *graph = new c_execution_graph();
-		m_execution_graphs.push_back(graph);
-		e_instrument_result graph_result = graph->load(in);
-		if (graph_result != k_instrument_result_success) {
-			return graph_result;
+	for (uint32 index = 0; index < instrument_variant_count; index++) {
+		c_instrument_variant *variant = new c_instrument_variant();
+		m_instrument_variants.push_back(variant);
+		e_instrument_result instrument_variant_result = variant->load(in);
+		if (instrument_variant_result != k_instrument_result_success) {
+			return instrument_variant_result;
 		}
 	}
 
@@ -100,8 +261,8 @@ e_instrument_result c_instrument::load(const char *fname) {
 }
 
 bool c_instrument::validate() const {
-	for (size_t index = 0; index < m_execution_graphs.size(); index++) {
-		if (!m_execution_graphs[index]->validate()) {
+	for (size_t index = 0; index < m_instrument_variants.size(); index++) {
+		if (!m_instrument_variants[index]->validate()) {
 			return false;
 		}
 	}
@@ -109,26 +270,26 @@ bool c_instrument::validate() const {
 	return true;
 }
 
-void c_instrument::add_execution_graph(c_execution_graph *execution_graph) {
-	m_execution_graphs.push_back(execution_graph);
+void c_instrument::add_instrument_variant(c_instrument_variant *instrument_variant) {
+	m_instrument_variants.push_back(instrument_variant);
 }
 
-uint32 c_instrument::get_execution_graph_count() const {
-	return cast_integer_verify<uint32>(m_execution_graphs.size());
+uint32 c_instrument::get_instrument_variant_count() const {
+	return cast_integer_verify<uint32>(m_instrument_variants.size());
 }
 
-const c_execution_graph *c_instrument::get_execution_graph(uint32 index) const {
-	return m_execution_graphs[index];
+const c_instrument_variant *c_instrument::get_instrument_variant(uint32 index) const {
+	return m_instrument_variants[index];
 }
 
-e_execution_graph_for_requirements_result c_instrument::get_execution_graph_for_requirements(
-	const s_execution_graph_requirements &requirements, uint32 &out_execution_graph_index) const {
+e_instrument_variant_for_requirements_result c_instrument::get_instrument_variant_for_requirements(
+	const s_instrument_variant_requirements &requirements, uint32 &out_instrument_variant_index) const {
 	int32 best_match_score = -1;
 	size_t matches_for_this_score = 0;
-	uint32 execution_graph_index = 0;
+	uint32 instrument_variant_index = 0;
 
-	for (uint32 index = 0; index < m_execution_graphs.size(); index++) {
-		const s_execution_graph_globals &globals = m_execution_graphs[index]->get_globals();
+	for (uint32 index = 0; index < m_instrument_variants.size(); index++) {
+		const s_instrument_globals &globals = m_instrument_variants[index]->get_instrument_globals();
 
 		int32 score = 0;
 
@@ -149,16 +310,16 @@ e_execution_graph_for_requirements_result c_instrument::get_execution_graph_for_
 		} else if (score > best_match_score) {
 			best_match_score = score;
 			matches_for_this_score = 1;
-			execution_graph_index = index;
+			instrument_variant_index = index;
 		}
 	}
 
-	out_execution_graph_index = execution_graph_index;
+	out_instrument_variant_index = instrument_variant_index;
 	if (best_match_score == -1) {
-		return k_execution_graph_for_requirements_result_no_match;
+		return k_instrument_variant_for_requirements_result_no_match;
 	} else if (matches_for_this_score > 1) {
-		return k_execution_graph_for_requirements_result_ambiguous_matches;
+		return k_instrument_variant_for_requirements_result_ambiguous_matches;
 	} else {
-		return k_execution_graph_for_requirements_result_success;
+		return k_instrument_variant_for_requirements_result_success;
 	}
 }

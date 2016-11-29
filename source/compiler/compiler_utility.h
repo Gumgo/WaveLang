@@ -98,6 +98,8 @@ public:
 	inline bool is_empty() const;
 	inline bool operator==(const c_compiler_string &other) const;
 	inline bool operator==(const char *other) const;
+	inline bool operator!=(const c_compiler_string &other) const;
+	inline bool operator!=(const char *other) const;
 
 	inline char operator[](size_t index) const;
 

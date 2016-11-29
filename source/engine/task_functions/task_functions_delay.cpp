@@ -205,6 +205,8 @@ void s_buffer_operation_delay::in_out(
 			memcpy(out_ptr + context->delay_samples, in_ptr, (buffer_size - context->delay_samples) * sizeof(real32));
 		}
 	}
+
+	out->set_constant(false);
 }
 
 namespace delay_task_functions {

@@ -6,7 +6,7 @@
 #include "driver/audio_driver_interface.h"
 #include "driver/controller_driver_interface.h"
 
-#include "engine/task_graph.h"
+#include "engine/runtime_instrument.h"
 #include "engine/executor/executor.h"
 
 struct s_runtime_context {
@@ -24,10 +24,10 @@ struct s_runtime_context {
 	// Executes the synth logic
 	c_executor executor;
 
-	// We store two task graphs, one for the active audio stream, and one for the loading synth. We load into the
-	// non-active one and then swap at a deterministic time.
-	s_static_array<c_task_graph, 2> task_graphs;
-	int32 active_task_graph;
+	// We store two runtime instruments, one for the active audio stream, and one for the loading synth. We load into
+	// the non-active one and then swap at a deterministic time.
+	s_static_array<c_runtime_instrument, 2> runtime_instruments;
+	int32 active_instrument;
 };
 
 #endif // WAVELANG_RUNTIME_CONTEXT_H__
