@@ -31,6 +31,9 @@ public:
 		bool executor_profiling_enabled;
 	};
 
+	// Produces a self-documenting settings file
+	static bool write_default_settings(const char *fname);
+
 	void initialize(
 		const c_audio_driver_interface *audio_driver_interface,
 		const c_controller_driver_interface *controller_driver_interface);

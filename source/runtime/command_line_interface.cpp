@@ -90,10 +90,12 @@ int c_command_line_interface::main_function(bool list_mode) {
 	if (list_mode) {
 		list_devices();
 	} else {
-		m_runtime_config.read_settings(
+		if (!m_runtime_config.read_settings(
 			&m_runtime_context.audio_driver_interface,
 			&m_runtime_context.controller_driver_interface,
-			k_runtime_config_filename);
+			k_runtime_config_filename)) {
+			c_runtime_config::write_default_settings(k_runtime_config_filename);
+		}
 
 		initialize_event_data_types();
 		initialize_from_runtime_config();
