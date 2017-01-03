@@ -4,7 +4,7 @@
 #include "common/common.h"
 #include "common/utility/aligned_allocator.h"
 
-#include "engine/math/sse.h"
+#include "engine/math/simd.h"
 
 #include <vector>
 
@@ -99,7 +99,7 @@ private:
 	uint32 m_loop_end;				// End loop point, in samples
 	bool m_phase_shift_enabled;		// Whether phase shifting is allowed (implemented by extending the loop)
 
-	c_aligned_allocator<real32, k_sse_alignment> m_sample_data;
+	c_aligned_allocator<real32, k_simd_alignment> m_sample_data;
 	std::vector<c_sample *> m_mipmap;
 };
 

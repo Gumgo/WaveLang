@@ -289,7 +289,7 @@ void c_async_event_handler::event_handling_thread_function() {
 		{
 			// Check if it's been enough time since we last flushed
 			int64 time_since_last_flush_ms = current_time_ms - m_last_flush_time_ms;
-			int64 time_to_next_flush_ms = std::min(m_settings.flush_period_ms - time_since_last_flush_ms, 0ll);
+			int64 time_to_next_flush_ms = std::max(m_settings.flush_period_ms - time_since_last_flush_ms, 0ll);
 
 			if (time_to_next_flush_ms < k_flush_time_padding_ms) {
 				m_flush_required = true;
@@ -316,8 +316,8 @@ void c_async_event_handler::event_handling_thread_function() {
 		// to the buffer, but will run out of space again and will re-queue another flush, which will not be missed the
 		// second time.
 
-		if (m_flush_required) {
-			flush();
+		if (flush_required) {
+			m_flush_required = false;
 		}
 
 		// Tell threads that the flush is done

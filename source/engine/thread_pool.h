@@ -10,6 +10,7 @@
 #include <vector>
 
 struct s_thread_pool_settings {
+	// If thread_count is 0, tasks will be processed on the calling thread when resume() is called
 	uint32 thread_count;
 	uint32 max_tasks;
 	bool start_paused;
@@ -62,8 +63,14 @@ private:
 	};
 
 	static void worker_thread_entry_point(const s_thread_parameter_block *param_block);
+	void execute_all_tasks_synchronous();
 
 	std::vector<c_thread> m_threads;
+
+#if IS_TRUE(ASSERTS_ENABLED)
+	// Whether the thread pool is running - used for asserts only, not safe to access from worker threads
+	bool m_running;
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 	// Used to allow threads to pause in a blocking way when we don't want to hog CPU
 	c_atomic_int32 m_check_paused;						// Lock-free guard against unnecessarily acquiring the mutex

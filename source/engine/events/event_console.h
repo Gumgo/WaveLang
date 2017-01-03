@@ -33,8 +33,12 @@ private:
 #if IS_TRUE(PLATFORM_WINDOWS)
 	HANDLE m_pipe;
 	HANDLE m_process;
+#elif IS_TRUE(PLATFORM_LINUX)
+	int m_pipe;
+	pid_t m_process;
+	FILE *m_write_stream;
 #else // platform
-#error Unimplemented platform
+//#error Unimplemented platform
 #endif // platform
 };
 

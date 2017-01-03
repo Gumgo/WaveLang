@@ -46,10 +46,10 @@ bool are_file_paths_equivalent(const char *path_a, const char *path_b) {
 	}
 #else // IS_TRUE(PLATFORM_WINDOWS)
 	{
-		struct s_stat stat_buffer_a;
-		struct s_stat stat_buffer_b;
-		int32 result_a = get_stat(path_a, &stat_buffer_a);
-		int32 result_b = get_stat(path_b, &stat_buffer_b);
+		struct stat stat_buffer_a;
+		struct stat stat_buffer_b;
+		int32 result_a = stat(path_a, &stat_buffer_a);
+		int32 result_b = stat(path_b, &stat_buffer_b);
 
 		if (result_a != 0 || result_b != 0) {
 			// In the event of any error, assume the files are different
@@ -94,8 +94,8 @@ bool get_file_last_modified_timestamp(const char *path, uint64 &out_timestamp) {
 		CloseHandle(file_handle);
 	}
 #else // IS_TRUE(PLATFORM_WINDOWS)
-	struct s_stat stat_buffer;
-	if (get_stat(path, &stat_buffer) == 0) {
+	struct stat stat_buffer;
+	if (stat(path, &stat_buffer) == 0) {
 		out_timestamp = stat_buffer.st_mtime;
 		result = true;
 	}

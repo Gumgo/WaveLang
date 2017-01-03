@@ -68,3 +68,10 @@
 			- module real@Nx __native_resample@Nx(in real@Mx signal)
 			- N and M are independent
 		- When downsampling, if filter_nyquist is true, a filter is applied at the nyquist frequency
+
+- Add debug library ($DEBUG)
+	- Add modules to print values on a trigger
+	- Add scraper attribute to disable optimization/removal of modules with no contributing outputs (otherwise print would be removed)
+
+- Expand the timing library ($TIMING)
+	- Add edge triggers

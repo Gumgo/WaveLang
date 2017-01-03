@@ -10,7 +10,7 @@ static uint32 get_index_or_invalid(uint32 array_count, real32 real_index) {
 	// quick bitwise test.
 	//int32 is_invalid = std::isnan(real_index) | std::isinf(real_index);
 	static const uint32 k_exponent_mask = 0x7f800000;
-	uint32 real_index_bits = *reinterpret_cast<const uint32 *>(&real_index);
+	uint32 real_index_bits = reinterpret_bits<uint32>(real_index);
 	int32 is_invalid = (real_index_bits & k_exponent_mask) == k_exponent_mask;
 
 	// If is_invalid is true, this might have an undefined value, but that's fine
@@ -86,9 +86,9 @@ namespace array_task_functions {
 
 					// AND the value with the dereference mask. This will turn it into 0 if the index was invalid.
 					int32 dereferenced_value_int =
-						*reinterpret_cast<const int32 *>(&element.constant_value) & array_dereference_mask;
+						reinterpret_bits<int32>(element.constant_value) & array_dereference_mask;
 					real32 dereferenced_value =
-						*reinterpret_cast<const real32 *>(&dereferenced_value_int);
+						reinterpret_bits<real32>(dereferenced_value_int);
 
 					out_ptr[index] = dereferenced_value;
 				}
@@ -109,9 +109,9 @@ namespace array_task_functions {
 					if (element.is_constant || !array_index_is_valid) {
 						// AND the value with the dereference mask. This will turn it into 0 if the index was invalid.
 						int32 dereferenced_value_int =
-							*reinterpret_cast<const int32 *>(&element.constant_value) & array_dereference_mask;
+							reinterpret_bits<int32>(element.constant_value) & array_dereference_mask;
 						dereferenced_value =
-							*reinterpret_cast<const real32 *>(&dereferenced_value_int);
+							reinterpret_bits<real32>(dereferenced_value_int);
 					} else {
 						c_real_buffer_in array_buffer =
 							context.array_dereference_interface->get_buffer_by_index(element.buffer_index_value);
@@ -190,9 +190,9 @@ namespace array_task_functions {
 
 					// AND the value with the dereference mask. This will turn it into 0 if the index was invalid.
 					int32 dereferenced_value_int =
-						*reinterpret_cast<const int32 *>(&element.constant_value) & array_dereference_mask;
+						reinterpret_bits<int32>(element.constant_value) & array_dereference_mask;
 					real32 dereferenced_value =
-						*reinterpret_cast<const real32 *>(&dereferenced_value_int);
+						reinterpret_bits<real32>(dereferenced_value_int);
 
 					index_out_ptr[index] = dereferenced_value;
 				}
@@ -213,9 +213,9 @@ namespace array_task_functions {
 					if (element.is_constant || !array_index_is_valid) {
 						// AND the value with the dereference mask. This will turn it into 0 if the index was invalid.
 						int32 dereferenced_value_int =
-							*reinterpret_cast<const int32 *>(&element.constant_value) & array_dereference_mask;
+							reinterpret_bits<int32>(element.constant_value) & array_dereference_mask;
 						dereferenced_value =
-							*reinterpret_cast<const real32 *>(&dereferenced_value_int);
+							reinterpret_bits<real32>(dereferenced_value_int);
 					} else {
 						c_real_buffer_in array_buffer =
 							context.array_dereference_interface->get_buffer_by_index(element.buffer_index_value);
@@ -326,7 +326,7 @@ namespace array_task_functions {
 
 						if (element.is_constant || !array_index_is_valid) {
 							// AND the value with the dereference mask. This will turn it into 0 if the index was invalid.
-							int32 dereferenced_value = static_cast<int32>(element.constant_value) & array_dereference_mask;
+							dereferenced_value = static_cast<int32>(element.constant_value) & array_dereference_mask;
 						} else {
 							c_bool_buffer_in array_buffer =
 								context.array_dereference_interface->get_buffer_by_index(element.buffer_index_value);

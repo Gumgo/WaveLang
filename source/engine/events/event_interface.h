@@ -113,6 +113,7 @@ template<typename t_value> void register_event_data_type() {
 
 class c_event_interface {
 public:
+	// Pass null to disable events
 	void initialize(c_async_event_handler *event_handler);
 	void submit(const c_event &e);
 

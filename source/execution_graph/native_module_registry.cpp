@@ -45,12 +45,14 @@ struct s_native_operator {
 	c_static_string<k_max_native_module_name_length> native_module_name;
 };
 
-template<>
-struct std::hash<s_native_module_uid> {
-	size_t operator()(const s_native_module_uid &key) const {
-		return std::hash<uint64>()(key.data_uint64);
-	}
-};
+namespace std {
+	template<>
+	struct hash<s_native_module_uid> {
+		size_t operator()(const s_native_module_uid &key) const {
+			return std::hash<uint64>()(key.data_uint64);
+		}
+	};
+}
 
 struct s_native_module_registry_data {
 	std::unordered_map<uint32, s_native_module_library> native_module_libraries;

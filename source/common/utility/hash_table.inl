@@ -116,7 +116,6 @@ t_value *c_hash_table<t_key, t_value, t_hash>::find(const t_key &key) {
 	size_t bucket_index = get_bucket_index(key);
 	const s_bucket &bucket = m_buckets[bucket_index];
 
-	size_t prev_element_index = k_invalid_element_index;
 	size_t element_index = bucket.first_element_index;
 
 	while (element_index != k_invalid_element_index) {
@@ -127,7 +126,6 @@ t_value *c_hash_table<t_key, t_value, t_hash>::find(const t_key &key) {
 			return element.value.get_pointer();
 		}
 
-		prev_element_index = element_index;
 		element_index = element.next_element_index;
 	}
 
@@ -139,7 +137,6 @@ const t_value *c_hash_table<t_key, t_value, t_hash>::find(const t_key &key) cons
 	size_t bucket_index = get_bucket_index(key);
 	const s_bucket &bucket = m_buckets[bucket_index];
 
-	size_t prev_element_index = k_invalid_element_index;
 	size_t element_index = bucket.first_element_index;
 
 	while (element_index != k_invalid_element_index) {
@@ -150,7 +147,6 @@ const t_value *c_hash_table<t_key, t_value, t_hash>::find(const t_key &key) cons
 			return element.value.get_pointer();
 		}
 
-		prev_element_index = element_index;
 		element_index = element.next_element_index;
 	}
 

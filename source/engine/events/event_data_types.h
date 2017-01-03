@@ -12,182 +12,75 @@
 
 template<> struct s_event_data_type_definition<bool> {
 	static uint8 id;
-
-	static bool build_event(c_event_data_stack &event_data_stack, bool value) {
-		return event_data_stack.try_append(value);
-	}
-
-	static size_t build_event_string(c_event_string &event_string, const void *data_pointer) {
-		char buffer[16];
-		snprintf(buffer, NUMBEROF(buffer), "%d", *static_cast<const bool *>(data_pointer));
-		event_string.append_truncate(buffer);
-		return sizeof(bool);
-	}
+	static bool build_event(c_event_data_stack &event_data_stack, bool value);
+	static size_t build_event_string(c_event_string &event_string, const void *data_pointer);
 };
 
 template<> struct s_event_data_type_definition<int8> {
 	static uint8 id;
-
-	static bool build_event(c_event_data_stack &event_data_stack, int8 value) {
-		return event_data_stack.try_append(value);
-	}
-
-	static size_t build_event_string(c_event_string &event_string, const void *data_pointer) {
-		char buffer[16];
-		snprintf(buffer, NUMBEROF(buffer), "%d", *static_cast<const int8 *>(data_pointer));
-		event_string.append_truncate(buffer);
-		return sizeof(int8);
-	}
+	static bool build_event(c_event_data_stack &event_data_stack, int8 value);
+	static size_t build_event_string(c_event_string &event_string, const void *data_pointer);
 };
 
 template<> struct s_event_data_type_definition<uint8> {
 	static uint8 id;
-
-	static bool build_event(c_event_data_stack &event_data_stack, uint8 value) {
-		return event_data_stack.try_append(value);
-	}
-
-	static size_t build_event_string(c_event_string &event_string, const void *data_pointer) {
-		char buffer[16];
-		snprintf(buffer, NUMBEROF(buffer), "%u", *static_cast<const uint8 *>(data_pointer));
-		event_string.append_truncate(buffer);
-		return sizeof(uint8);
-	}
+	static bool build_event(c_event_data_stack &event_data_stack, uint8 value);
+	static size_t build_event_string(c_event_string &event_string, const void *data_pointer);
 };
 
 template<> struct s_event_data_type_definition<int16> {
 	static uint8 id;
-
-	static bool build_event(c_event_data_stack &event_data_stack, int16 value) {
-		return event_data_stack.try_append(value);
-	}
-
-	static size_t build_event_string(c_event_string &event_string, const void *data_pointer) {
-		char buffer[16];
-		snprintf(buffer, NUMBEROF(buffer), "%d", *static_cast<const int16 *>(data_pointer));
-		event_string.append_truncate(buffer);
-		return sizeof(int16);
-	}
+	static bool build_event(c_event_data_stack &event_data_stack, int16 value);
+	static size_t build_event_string(c_event_string &event_string, const void *data_pointer);
 };
 
 template<> struct s_event_data_type_definition<uint16> {
 	static uint8 id;
-
-	static bool build_event(c_event_data_stack &event_data_stack, uint16 value) {
-		return event_data_stack.try_append(value);
-	}
-
-	static size_t build_event_string(c_event_string &event_string, const void *data_pointer) {
-		char buffer[16];
-		snprintf(buffer, NUMBEROF(buffer), "%u", *static_cast<const uint16 *>(data_pointer));
-		event_string.append_truncate(buffer);
-		return sizeof(uint16);
-	}
+	static bool build_event(c_event_data_stack &event_data_stack, uint16 value);
+	static size_t build_event_string(c_event_string &event_string, const void *data_pointer);
 };
 
 template<> struct s_event_data_type_definition<int32> {
 	static uint8 id;
-
-	static bool build_event(c_event_data_stack &event_data_stack, int32 value) {
-		return event_data_stack.try_append(value);
-	}
-
-	static size_t build_event_string(c_event_string &event_string, const void *data_pointer) {
-		char buffer[16];
-		snprintf(buffer, NUMBEROF(buffer), "%d", *static_cast<const int32 *>(data_pointer));
-		event_string.append_truncate(buffer);
-		return sizeof(int32);
-	}
+	static bool build_event(c_event_data_stack &event_data_stack, int32 value);
+	static size_t build_event_string(c_event_string &event_string, const void *data_pointer);
 };
 
 template<> struct s_event_data_type_definition<uint32> {
 	static uint8 id;
-
-	static bool build_event(c_event_data_stack &event_data_stack, uint32 value) {
-		return event_data_stack.try_append(value);
-	}
-
-	static size_t build_event_string(c_event_string &event_string, const void *data_pointer) {
-		char buffer[16];
-		snprintf(buffer, NUMBEROF(buffer), "%u", *static_cast<const uint32 *>(data_pointer));
-		event_string.append_truncate(buffer);
-		return sizeof(uint32);
-	}
+	static bool build_event(c_event_data_stack &event_data_stack, uint32 value);
+	static size_t build_event_string(c_event_string &event_string, const void *data_pointer);
 };
 
 template<> struct s_event_data_type_definition<int64> {
 	static uint8 id;
-
-	static bool build_event(c_event_data_stack &event_data_stack, int64 value) {
-		return event_data_stack.try_append(value);
-	}
-
-	static size_t build_event_string(c_event_string &event_string, const void *data_pointer) {
-		char buffer[16];
-		snprintf(buffer, NUMBEROF(buffer), "%" PRId64, *static_cast<const int64 *>(data_pointer));
-		event_string.append_truncate(buffer);
-		return sizeof(int64);
-	}
+	static bool build_event(c_event_data_stack &event_data_stack, int64 value);
+	static size_t build_event_string(c_event_string &event_string, const void *data_pointer);
 };
 
 template<> struct s_event_data_type_definition<uint64> {
 	static uint8 id;
-
-	static bool build_event(c_event_data_stack &event_data_stack, uint64 value) {
-		return event_data_stack.try_append(value);
-	}
-
-	static size_t build_event_string(c_event_string &event_string, const void *data_pointer) {
-		char buffer[16];
-		snprintf(buffer, NUMBEROF(buffer), "%" PRIu64, *static_cast<const uint64 *>(data_pointer));
-		event_string.append_truncate(buffer);
-		return sizeof(uint64);
-	}
+	static bool build_event(c_event_data_stack &event_data_stack, uint64 value);
+	static size_t build_event_string(c_event_string &event_string, const void *data_pointer);
 };
 
 template<> struct s_event_data_type_definition<real32> {
 	static uint8 id;
-
-	static bool build_event(c_event_data_stack &event_data_stack, real32 value) {
-		return event_data_stack.try_append(value);
-	}
-
-	static size_t build_event_string(c_event_string &event_string, const void *data_pointer) {
-		char buffer[16];
-		snprintf(buffer, NUMBEROF(buffer), "%f", *static_cast<const real32 *>(data_pointer));
-		event_string.append_truncate(buffer);
-		return sizeof(real32);
-	}
+	static bool build_event(c_event_data_stack &event_data_stack, real32 value);
+	static size_t build_event_string(c_event_string &event_string, const void *data_pointer);
 };
 
 template<> struct s_event_data_type_definition<real64> {
 	static uint8 id;
-
-	static bool build_event(c_event_data_stack &event_data_stack, real64 value) {
-		return event_data_stack.try_append(value);
-	}
-
-	static size_t build_event_string(c_event_string &event_string, const void *data_pointer) {
-		char buffer[16];
-		snprintf(buffer, NUMBEROF(buffer), "%f", *static_cast<const real64 *>(data_pointer));
-		event_string.append_truncate(buffer);
-		return sizeof(real64);
-	}
+	static bool build_event(c_event_data_stack &event_data_stack, real64 value);
+	static size_t build_event_string(c_event_string &event_string, const void *data_pointer);
 };
 
 // Static string - only pointer is copied
 template<> struct s_event_data_type_definition<const char *> {
 	static uint8 id;
-
-	static bool build_event(c_event_data_stack &event_data_stack, const char *value) {
-		return event_data_stack.try_append(value);
-	}
-
-	static size_t build_event_string(c_event_string &event_string, const void *data_pointer) {
-		const char *str = *static_cast<const char * const *>(data_pointer);
-		event_string.append_truncate(str);
-		return sizeof(const char *);
-	}
+	static bool build_event(c_event_data_stack &event_data_stack, const char *value);
+	static size_t build_event_string(c_event_string &event_string, const void *data_pointer);
 };
 
 // Dynamic string - entire string is copied
@@ -199,16 +92,8 @@ public:
 
 template<> struct s_event_data_type_definition<c_dstr> {
 	static uint8 id;
-
-	static bool build_event(c_event_data_stack &event_data_stack, c_dstr value) {
-		return event_data_stack.try_append(strlen(value.m_str) + 1, value.m_str);
-	}
-
-	static size_t build_event_string(c_event_string &event_string, const void *data_pointer) {
-		const char *str = static_cast<const char *>(data_pointer);
-		event_string.append_truncate(str);
-		return strlen(str) + 1;
-	}
+	static bool build_event(c_event_data_stack &event_data_stack, c_dstr value);
+	static size_t build_event_string(c_event_string &event_string, const void *data_pointer);
 };
 
 void initialize_event_data_types();

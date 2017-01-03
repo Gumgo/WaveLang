@@ -24,6 +24,7 @@ e_instrument_result c_instrument_variant::save(std::ofstream &out) const {
 	writer.write(m_instrument_globals.max_voices);
 	writer.write(m_instrument_globals.sample_rate);
 	writer.write(m_instrument_globals.chunk_size);
+	writer.write(m_instrument_globals.activate_fx_immediately);
 
 	// Write each graph
 	writer.write(m_voice_execution_graph != nullptr);
@@ -55,7 +56,8 @@ e_instrument_result c_instrument_variant::load(std::ifstream &in) {
 	// Read the globals
 	if (!reader.read(m_instrument_globals.max_voices) ||
 		!reader.read(m_instrument_globals.sample_rate) ||
-		!reader.read(m_instrument_globals.chunk_size)) {
+		!reader.read(m_instrument_globals.chunk_size) ||
+		!reader.read(m_instrument_globals.activate_fx_immediately)) {
 		return in.eof() ? k_instrument_result_invalid_globals : k_instrument_result_failed_to_read;
 	}
 

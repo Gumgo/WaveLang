@@ -18,12 +18,12 @@ static_assert(k_sinc_window_size / 2 <= k_max_sample_padding, "Window half-size 
 
 // To be more cache-friendly, we precompute the slopes and place them adjacent to the values. Otherwise we would need to
 // traverse two arrays in parallel. The cost is that we use 2x memory (which could ultimately hurt caching).
-struct ALIGNAS_SSE s_sinc_window_coefficients {
+struct ALIGNAS_SIMD s_sinc_window_coefficients {
 	// Four sinc window values, each spaced apart by 1 sample distance
-	real32 values[k_sse_block_elements];
+	real32 values[k_simd_block_elements];
 
 	// Slopes corresponding to each value for linear interpolation
-	real32 slopes[k_sse_block_elements];
+	real32 slopes[k_simd_block_elements];
 };
 
 #include "sinc_window_coefficients.inl"
@@ -31,7 +31,7 @@ struct ALIGNAS_SSE s_sinc_window_coefficients {
 static_assert(NUMBEROF(k_sinc_window_coefficients) == k_sinc_window_sample_resolution,
 	"Windowed sinc filter coefficient count mismatch");
 static_assert(NUMBEROF(k_sinc_window_coefficients[0]) ==
-	ALIGN_SIZE(k_sinc_window_size - 1, k_sse_block_elements) / k_sse_block_elements,
+	ALIGN_SIZE(k_sinc_window_size - 1, k_simd_block_elements) / k_simd_block_elements,
 	"Windowed sinc filter coefficient count mismatch");
 
 #endif // WAVELANG_ENGINE_TASK_FUNCTIONS_SAMPLER_SINC_WINDOW_H__

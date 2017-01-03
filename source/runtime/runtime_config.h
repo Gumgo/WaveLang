@@ -24,6 +24,7 @@ public:
 		bool controller_enabled;
 		uint32 controller_device_index;
 		uint32 controller_event_queue_size;
+		uint32 controller_unknown_latency;
 
 		uint32 executor_thread_count;
 		uint32 executor_max_controller_parameters;

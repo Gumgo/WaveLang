@@ -62,7 +62,7 @@ inline int32 c_atomic_int32::compare_exchange(int32 c, int32 x) {
 }
 
 inline int32 c_atomic_int32::add(int32 x) {
-	m_value.fetch_add(x);
+	return m_value.fetch_add(x);
 }
 
 inline int32 c_atomic_int32::increment() {

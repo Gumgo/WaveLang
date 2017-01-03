@@ -1,10 +1,13 @@
-# Runtime - a stand-alone synth engine
+# Runtime-Pi - a stand-alone synth engine for Raspberry Pi
 
 import path ;
 import sequence ;
 import vs-project-generator ;
 
-local project-name = runtime ;
+# We only support 64-bit builds, even when the rest of the targets are 32-bit
+project : requirements <address-model>64 ;
+
+local project-name = runtime-pi ;
 
 local defines = ;
 
@@ -40,32 +43,8 @@ local include-directories =
 # Configuration-dependent libraries: is there a better way to do this?
 
 alias configuration-dependent-libraries :
-	$(PORTAUDIO_DIR)/build/msvc/Win32/Debug/portaudio_x86.lib
-	$(RTMIDI_DIR)/lib/rtmidid.lib
-	$(WINDOWS_SDK_DIR)/Lib/winv6.3/um/x86/WinMM.lib
-	$(WINDOWS_SDK_DIR)/Lib/winv6.3/um/x86/ShLwApi.Lib :
-	<toolset>msvc <variant>debug <address-model>32 ;
-
-alias configuration-dependent-libraries :
-	$(PORTAUDIO_DIR)/build/msvc/x64/Debug/portaudio_x64.lib
-	$(RTMIDI_DIR)/lib/rtmidid64.lib
-	$(WINDOWS_SDK_DIR)/Lib/winv6.3/um/x64/WinMM.lib
-	$(WINDOWS_SDK_DIR)/Lib/winv6.3/um/x64/ShLwApi.Lib :
-	<toolset>msvc <variant>debug <address-model>64 ;
-
-alias configuration-dependent-libraries :
-	$(PORTAUDIO_DIR)/build/msvc/Win32/Release/portaudio_x86.lib
-	$(RTMIDI_DIR)/lib/rtmidi.lib
-	$(WINDOWS_SDK_DIR)/Lib/winv6.3/um/x86/WinMM.lib
-	$(WINDOWS_SDK_DIR)/Lib/winv6.3/um/x86/ShLwApi.Lib :
-	<toolset>msvc <variant>release <address-model>32 ;
-
-alias configuration-dependent-libraries :
-	$(PORTAUDIO_DIR)/build/msvc/x64/Release/portaudio_x64.lib
-	$(RTMIDI_DIR)/lib/rtmidi64.lib
-	$(WINDOWS_SDK_DIR)/Lib/winv6.3/um/x64/WinMM.lib
-	$(WINDOWS_SDK_DIR)/Lib/winv6.3/um/x64/ShLwApi.Lib :
-	<toolset>msvc <variant>release <address-model>64 ;
+	[ path.join $(PORTAUDIO_DIR) lib libportaudio.so ]
+	[ path.join $(RTMIDI_DIR) lib librtmidi.so.3.0.0 ] ;
 
 local libraries = configuration-dependent-libraries ;
 
@@ -78,10 +57,11 @@ if $(GENERATE_VS_PROJECTS) = 1
 else
 {
 	# Add include directories to features
-	features += <include>$(include-directories) <define>$(defines) ;
+	features += <include>$(include-directories) <define>$(defines) <variant>debug:<define>_DEBUG ;
 
 	# This target is dependent on the generated registration file
-	features += <dependency>$(TOP)//registration-file ;
+	# HACK adding this dependency seems to cause the scraper to build using the gcc-arm compiler! Omit it for now - make sure to run the scraper manually when necessary
+	#features += <dependency>$(TOP)//registration-file ;
 
 	# Determine the set of source files
 	local source-files = [ sequence.filter is-c-or-cpp-file : $(all-files) ] ;
@@ -92,17 +72,15 @@ else
 	{
 		local obj-target = [ get-obj-file-from-source-file $(project-name) : $(source-file) ] ;
 		obj-targets += $(obj-target) ;
-		obj $(obj-target) : $(source-file) : $(features) ;
+		obj $(obj-target) : $(source-file) : $(features) <architecture>arm <toolset>gcc-arm <target-os>linux ;
 	}
 
 	# Declare the executable
-	exe $(project-name) : $(obj-targets) $(libraries) : $(features) ;
+	exe $(project-name)-executable : $(obj-targets) $(libraries) : $(features) <architecture>arm <toolset>gcc-arm <target-os>linux ;
 
 	# Install to the app directory
 	local install-dir = [ get-app-dir ] ;
-	install $(project-name)-install : $(project-name) :
-		<variant>debug,<address-model>32:<location>$(install-dir)/debug_32
-		<variant>debug,<address-model>64:<location>$(install-dir)/debug_64
-		<variant>release,<address-model>32:<location>$(install-dir)/release_32
-		<variant>release,<address-model>64:<location>$(install-dir)/release_64 ;
+	install $(project-name)-install : $(project-name)-executable :
+		<variant>debug,<address-model>64:<location>$(install-dir)/debug_64_pi
+		<variant>release,<address-model>64:<location>$(install-dir)/release_64_pi ;
 }

@@ -108,7 +108,7 @@ size_t s_buffer_operation_delay::query_memory(uint32 sample_rate, real32 delay) 
 	}
 
 	uint32 delay_samples = static_cast<uint32>(
-		std::max(0.0f, round(static_cast<real32>(sample_rate) * delay)));
+		std::max(0.0f, roundf(static_cast<real32>(sample_rate) * delay)));
 
 	// Allocate the size of the context plus the delay buffer
 	return sizeof(s_buffer_operation_delay) + (delay_samples * sizeof(real32));
@@ -122,7 +122,7 @@ void s_buffer_operation_delay::initialize(c_event_interface *event_interface,
 	}
 
 	context->delay_samples = static_cast<uint32>(
-		std::max(0.0f, round(static_cast<real32>(sample_rate) * delay)));
+		std::max(0.0f, roundf(static_cast<real32>(sample_rate) * delay)));
 	context->delay_buffer_head_index = 0;
 	context->is_constant = true;
 

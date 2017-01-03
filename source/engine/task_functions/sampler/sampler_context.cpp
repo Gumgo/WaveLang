@@ -73,9 +73,9 @@ bool s_sampler_context::handle_reached_end(c_real_buffer_out out) {
 }
 
 size_t s_sampler_context::increment_time(real64 length_samples, const c_real32_4 &advance,
-	size_t &inout_buffer_samples_remaining, s_static_array<real64, k_sse_block_elements> &out_samples) {
+	size_t &inout_buffer_samples_remaining, s_static_array<real64, k_simd_block_elements> &out_samples) {
 	// We haven't vectorized this, so extract the reals
-	ALIGNAS_SSE s_static_array<real32, k_sse_block_elements> advance_array;
+	ALIGNAS_SIMD s_static_array<real32, k_simd_block_elements> advance_array;
 	advance.store(advance_array.get_elements());
 
 	wl_assert(!reached_end);
@@ -83,7 +83,7 @@ size_t s_sampler_context::increment_time(real64 length_samples, const c_real32_4
 
 	// We will return the actual number of times incremented so we don't over-sample
 	size_t increment_count = 0;
-	for (uint32 i = 0; i < k_sse_block_elements && inout_buffer_samples_remaining > 0; i++) {
+	for (uint32 i = 0; i < k_simd_block_elements && inout_buffer_samples_remaining > 0; i++) {
 		increment_count++;
 		inout_buffer_samples_remaining--;
 		out_samples[i] = sample_index;
@@ -98,7 +98,7 @@ size_t s_sampler_context::increment_time(real64 length_samples, const c_real32_4
 	}
 
 	// We should only ever increment less than 4 times if we reach the end of the buffer or the end of the sample
-	if (increment_count < k_sse_block_elements) {
+	if (increment_count < k_simd_block_elements) {
 		wl_assert(reached_end || inout_buffer_samples_remaining == 0);
 	}
 
@@ -107,9 +107,9 @@ size_t s_sampler_context::increment_time(real64 length_samples, const c_real32_4
 
 size_t s_sampler_context::increment_time_looping(
 	real64 loop_start_sample, real64 loop_end_sample, const c_real32_4 &advance,
-	size_t &inout_buffer_samples_remaining, s_static_array<real64, k_sse_block_elements> &out_samples) {
+	size_t &inout_buffer_samples_remaining, s_static_array<real64, k_simd_block_elements> &out_samples) {
 	// We haven't vectorized this, so extract the reals
-	ALIGNAS_SSE s_static_array<real32, k_sse_block_elements> advance_array;
+	ALIGNAS_SIMD s_static_array<real32, k_simd_block_elements> advance_array;
 	advance.store(advance_array.get_elements());
 
 	wl_assert(!reached_end);
@@ -117,7 +117,7 @@ size_t s_sampler_context::increment_time_looping(
 
 	// We will return the actual number of times incremented so we don't over-sample
 	size_t increment_count = 0;
-	for (uint32 i = 0; i < k_sse_block_elements && inout_buffer_samples_remaining > 0; i++) {
+	for (uint32 i = 0; i < k_simd_block_elements && inout_buffer_samples_remaining > 0; i++) {
 		increment_count++;
 		inout_buffer_samples_remaining--;
 		out_samples[i] = sample_index;
@@ -133,7 +133,7 @@ size_t s_sampler_context::increment_time_looping(
 	}
 
 	// We should only ever increment less than 4 times if we reach the end of the buffer
-	if (increment_count < k_sse_block_elements) {
+	if (increment_count < k_simd_block_elements) {
 		wl_assert(inout_buffer_samples_remaining == 0);
 	}
 

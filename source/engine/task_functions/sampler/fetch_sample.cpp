@@ -28,11 +28,6 @@ static void choose_mipmap_levels(
 	real32 stream_sample_rate, const c_real32_4 &speed_adjusted_sample_rate_0, uint32 mip_count,
 	c_int32_4 &out_mip_index_a, c_int32_4 &out_mip_index_b, c_real32_4 &out_mip_blend_ratio);
 
-// Treats a and b as a contiguous block of 8 values and shifts left by the given amount; returns only the first 4
-static c_real32_4 shift_left_1(const c_real32_4 &a, const c_real32_4 &b);
-static c_real32_4 shift_left_2(const c_real32_4 &a, const c_real32_4 &b);
-static c_real32_4 shift_left_3(const c_real32_4 &a, const c_real32_4 &b);
-
 real32 fetch_sample(const c_sample *sample, uint32 channel, real64 sample_index) {
 	wl_assert(!sample->is_mipmap());
 
@@ -49,16 +44,16 @@ real32 fetch_sample(const c_sample *sample, uint32 channel, real64 sample_index)
 	// We use SSE so we need to read in 16-byte-aligned blocks. Therefore if our start sample is unaligned we must
 	// perform some shifting.
 
-	uint32 start_sse_index = align_size_down(start_window_sample_index, k_sse_block_elements);
-	uint32 end_sse_index = align_size(end_window_sample_index, static_cast<uint32>(k_sse_block_elements));
+	uint32 start_simd_index = align_size_down(start_window_sample_index, k_simd_block_elements);
+	uint32 end_simd_index = align_size(end_window_sample_index, static_cast<uint32>(k_simd_block_elements));
 	c_wrapped_array_const<real32> sample_data = sample->get_channel_sample_data(channel);
-	const real32 *sample_ptr = &sample_data[start_sse_index];
+	const real32 *sample_ptr = &sample_data[start_simd_index];
 	// Don't dereference the array directly because we may want a pointer to the very end, which is not a valid element
-	wl_assert(end_sse_index <= sample_data.get_count());
-	const real32 *sample_end_ptr = sample_data.get_pointer() + end_sse_index;
+	wl_assert(end_simd_index <= sample_data.get_count());
+	const real32 *sample_end_ptr = sample_data.get_pointer() + end_simd_index;
 
-	uint32 sse_offset = start_window_sample_index - start_sse_index;
-	wl_assert(VALID_INDEX(sse_offset, k_sse_block_elements));
+	uint32 simd_offset = start_window_sample_index - start_simd_index;
+	wl_assert(VALID_INDEX(simd_offset, k_simd_block_elements));
 
 	// Determine which windowed sinc lookup table to use
 	real32 sinc_window_table_index = sample_index_frac_part * static_cast<real32>(k_sinc_window_sample_resolution);
@@ -72,10 +67,10 @@ real32 fetch_sample(const c_sample *sample, uint32 channel, real64 sample_index)
 	c_real32_4 slope_multiplier(sinc_window_table_index_frac_part);
 	c_real32_4 result_4(0.0f);
 
-	switch (sse_offset) {
+	switch (simd_offset) {
 	case 0:
 	{
-		for (; sample_ptr < sample_end_ptr; sample_ptr += k_sse_block_elements, sinc_window_ptr++) {
+		for (; sample_ptr < sample_end_ptr; sample_ptr += k_simd_block_elements, sinc_window_ptr++) {
 			c_real32_4 samples(sample_ptr);
 
 			c_real32_4 sinc_window_values(sinc_window_ptr->values);
@@ -88,10 +83,10 @@ real32 fetch_sample(const c_sample *sample, uint32 channel, real64 sample_index)
 	case 1:
 	{
 		c_real32_4 prev_block(sample_ptr);
-		sample_ptr += k_sse_block_elements;
-		for (; sample_ptr < sample_end_ptr; sample_ptr += k_sse_block_elements, sinc_window_ptr++) {
+		sample_ptr += k_simd_block_elements;
+		for (; sample_ptr < sample_end_ptr; sample_ptr += k_simd_block_elements, sinc_window_ptr++) {
 			c_real32_4 curr_block(sample_ptr);
-			c_real32_4 samples = shift_left_1(prev_block, curr_block);
+			c_real32_4 samples = extract<0>(prev_block, curr_block);
 			prev_block = curr_block;
 
 			c_real32_4 sinc_window_values(sinc_window_ptr->values);
@@ -104,10 +99,10 @@ real32 fetch_sample(const c_sample *sample, uint32 channel, real64 sample_index)
 	case 2:
 	{
 		c_real32_4 prev_block(sample_ptr);
-		sample_ptr += k_sse_block_elements;
-		for (; sample_ptr < sample_end_ptr; sample_ptr += k_sse_block_elements, sinc_window_ptr++) {
+		sample_ptr += k_simd_block_elements;
+		for (; sample_ptr < sample_end_ptr; sample_ptr += k_simd_block_elements, sinc_window_ptr++) {
 			c_real32_4 curr_block(sample_ptr);
-			c_real32_4 samples = shift_left_2(prev_block, curr_block);
+			c_real32_4 samples = extract<2>(prev_block, curr_block);
 			prev_block = curr_block;
 
 			c_real32_4 sinc_window_values(sinc_window_ptr->values);
@@ -120,10 +115,10 @@ real32 fetch_sample(const c_sample *sample, uint32 channel, real64 sample_index)
 	case 3:
 	{
 		c_real32_4 prev_block(sample_ptr);
-		sample_ptr += k_sse_block_elements;
-		for (; sample_ptr < sample_end_ptr; sample_ptr += k_sse_block_elements, sinc_window_ptr++) {
+		sample_ptr += k_simd_block_elements;
+		for (; sample_ptr < sample_end_ptr; sample_ptr += k_simd_block_elements, sinc_window_ptr++) {
 			c_real32_4 curr_block(sample_ptr);
-			c_real32_4 samples = shift_left_3(prev_block, curr_block);
+			c_real32_4 samples = extract<3>(prev_block, curr_block);
 			prev_block = curr_block;
 
 			c_real32_4 sinc_window_values(sinc_window_ptr->values);
@@ -139,15 +134,15 @@ real32 fetch_sample(const c_sample *sample, uint32 channel, real64 sample_index)
 
 	// Perform the final sum and return the result
 	c_real32_4 result_4_sum = result_4.sum_elements();
-	ALIGNAS_SSE real32 result[k_sse_block_elements];
+	ALIGNAS_SIMD real32 result[k_simd_block_elements];
 	result_4_sum.store(result);
 	return result[0];
 }
 
 void fetch_mipmapped_samples(const c_sample *sample, uint32 channel,
 	real32 stream_sample_rate, const c_real32_4 &speed_adjusted_sample_rate_0, size_t count,
-	const s_static_array<real64, k_sse_block_elements> &samples, real32 *out_ptr) {
-	wl_assert(count > 0 && count <= k_sse_block_elements);
+	const s_static_array<real64, k_simd_block_elements> &samples, real32 *out_ptr) {
+	wl_assert(count > 0 && count <= k_simd_block_elements);
 
 	// Compute the mip indices and blend factors for these 4 samples (if we incremented less than 4 times, some
 	// are unused)
@@ -157,13 +152,13 @@ void fetch_mipmapped_samples(const c_sample *sample, uint32 channel,
 	choose_mipmap_levels(stream_sample_rate, speed_adjusted_sample_rate_0, sample->get_mipmap_count(),
 		mip_index_a, mip_index_b, mip_blend_ratio);
 
-	ALIGNAS_SSE s_static_array<int32, k_sse_block_elements> mip_index_a_array;
-	ALIGNAS_SSE s_static_array<int32, k_sse_block_elements> mip_index_b_array;
+	ALIGNAS_SIMD s_static_array<int32, k_simd_block_elements> mip_index_a_array;
+	ALIGNAS_SIMD s_static_array<int32, k_simd_block_elements> mip_index_b_array;
 	mip_index_a.store(mip_index_a_array.get_elements());
 	mip_index_b.store(mip_index_b_array.get_elements());
 
-	ALIGNAS_SSE s_static_array<real32, k_sse_block_elements> samples_a_array;
-	ALIGNAS_SSE s_static_array<real32, k_sse_block_elements> samples_b_array;
+	ALIGNAS_SIMD s_static_array<real32, k_simd_block_elements> samples_a_array;
+	ALIGNAS_SIMD s_static_array<real32, k_simd_block_elements> samples_b_array;
 
 	for (size_t i = 0; i < count; i++) {
 		if (mip_index_a_array[i] == mip_index_b_array[i]) {
@@ -215,23 +210,4 @@ static void choose_mipmap_levels(
 	c_int32_4 max_mip_index(cast_integer_verify<int32>(mip_count - 1));
 	out_mip_index_a = min(out_mip_index_a, max_mip_index);
 	out_mip_index_b = min(out_mip_index_a + c_int32_4(1), max_mip_index);
-}
-
-static c_real32_4 shift_left_1(const c_real32_4 &a, const c_real32_4 &b) {
-	// [.xyz][w...] => [z.w.]
-	// [.xyz][z.w.] => [xyzw]
-	c_real32_4 c = shuffle<3, 0, 0, 0>(a, b);
-	return shuffle<1, 2, 0, 2>(a, c);
-}
-
-static c_real32_4 shift_left_2(const c_real32_4 &a, const c_real32_4 &b) {
-	// [..xy][zw..] => [xyzw]
-	return shuffle<2, 3, 0, 1>(a, b);
-}
-
-static c_real32_4 shift_left_3(const c_real32_4 &a, const c_real32_4 &b) {
-	// [...x][yzw.] => [x.y.]
-	// [x.y.][yzw.] => [xyzw]
-	c_real32_4 c = shuffle<3, 0, 0, 0>(a, b);
-	return shuffle<0, 2, 1, 2>(c, b);
 }

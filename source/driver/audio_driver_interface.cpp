@@ -30,7 +30,7 @@ static void setup_stream_parameters(const s_audio_driver_settings &settings, uin
 	out_output_params.device = device_index;
 	out_output_params.channelCount = cast_integer_verify<int>(settings.output_channels);
 	out_output_params.sampleFormat = get_pa_sample_format(settings.sample_format);
-	out_output_params.suggestedLatency = device_info->defaultLowInputLatency;
+	out_output_params.suggestedLatency = device_info->defaultLowOutputLatency;
 	// $TODO should suggestedLatency be user-provided?
 }
 

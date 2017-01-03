@@ -9,6 +9,7 @@ public:
 	// Non-thread-safe functions:
 
 	c_lock_free_pool();
+	c_lock_free_pool(c_lock_free_pool &&other);
 
 	// Initializes the pool. The user must provide and manage the backing memory for the free-list, whose capacity is
 	// determines the pool size.

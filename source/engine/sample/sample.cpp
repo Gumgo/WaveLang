@@ -1,6 +1,6 @@
 #include "common/utility/file_utility.h"
 
-#include "engine/math/sse.h"
+#include "engine/math/simd.h"
 #include "engine/sample/sample.h"
 
 #include <fstream>
@@ -336,7 +336,7 @@ void c_sample::initialize(c_wrapped_array_const<c_sample *> mipmap) {
 		m_mipmap[reverse_index] = mip_sample;
 
 		// Swap out the current data with an empty vector
-		c_aligned_allocator<real32, k_sse_alignment> m_raw_sample_data;
+		c_aligned_allocator<real32, k_simd_alignment> m_raw_sample_data;
 		m_raw_sample_data.swap(mip_sample->m_sample_data);
 
 		c_wrapped_array_const<real32> sample_data = m_raw_sample_data.get_array();
@@ -458,7 +458,7 @@ void c_sample::initialize_data_with_padding(uint32 channel_count, uint32 frame_c
 	// Add padding to the beginning and end
 	// Round up to account for SSE padding
 	m_total_frame_count = align_size(m_sampling_frame_count + (2 * edge_padding),
-		static_cast<uint32>(k_sse_block_elements));
+		static_cast<uint32>(k_simd_block_elements));
 	if (m_phase_shift_enabled) {
 		m_total_frame_count += loop_frame_count;
 	}
@@ -544,8 +544,8 @@ void c_sample::initialize_data_with_padding(uint32 channel_count, uint32 frame_c
 		}
 
 		// Pad with 0 for SSE alignment
-		uint32 sse_padding_count = align_size(dst_offset, static_cast<uint32>(k_sse_block_elements)) - dst_offset;
-		for (uint32 index = 0; index < sse_padding_count; index++) {
+		uint32 simd_padding_count = align_size(dst_offset, static_cast<uint32>(k_simd_block_elements)) - dst_offset;
+		for (uint32 index = 0; index < simd_padding_count; index++) {
 			sample_data_array[dst_offset] = 0.0f;
 			dst_offset++;
 		}

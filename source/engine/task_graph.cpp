@@ -40,7 +40,7 @@ static bool do_native_module_inputs_match(
 	const s_task_function_mapping_native_module_input_type_array &native_module_inputs,
 	const s_task_function_mapping_native_module_input_type_array &inputs_to_match);
 
-const s_task_function_mapping *get_task_mapping_for_native_module_and_inputs(
+static const s_task_function_mapping *get_task_mapping_for_native_module_and_inputs(
 	uint32 native_module_index,
 	const s_task_function_mapping_native_module_input_type_array &native_module_inputs);
 
@@ -1005,9 +1005,6 @@ void c_task_graph::build_task_successor_lists(const c_execution_graph &execution
 	m_initial_tasks_start = m_task_lists.size();
 	m_initial_tasks_count = 0;
 	for (uint32 task_index = 0; task_index < m_tasks.size(); task_index++) {
-		const s_task &task = m_tasks[task_index];
-		const s_task_function &task_function = c_task_function_registry::get_task_function(task.task_function_index);
-
 		if (get_task_predecessor_count(task_index) == 0) {
 			m_initial_tasks_count++;
 			m_task_lists.push_back(task_index);
@@ -1080,12 +1077,6 @@ void c_task_graph::allocate_buffers(const c_execution_graph &execution_graph) {
 
 	for (uint32 node_index = 0; node_index < execution_graph.get_node_count(); node_index++) {
 		if (execution_graph.get_node_type(node_index) == k_execution_graph_node_type_input) {
-			uint32 input_index = execution_graph.get_input_node_input_index(node_index);
-
-			// Offset into the list by the output index
-			size_t data_list_index = m_inputs_start + input_index;
-			s_task_graph_data &input_data = m_data_lists[data_list_index];
-
 			if (nodes_to_buffers[node_index] != k_invalid_buffer) {
 				// Already allocated, skip this one
 			} else {
@@ -1097,9 +1088,6 @@ void c_task_graph::allocate_buffers(const c_execution_graph &execution_graph) {
 	}
 
 	for (uint32 task_index = 0; task_index < m_tasks.size(); task_index++) {
-		const s_task &task = m_tasks[task_index];
-		const s_task_function &task_function = c_task_function_registry::get_task_function(task.task_function_index);
-
 		c_task_graph_data_array arguments = get_task_arguments(task_index);
 		for (c_task_buffer_iterator it(arguments); it.is_valid(); it.next()) {
 #if IS_TRUE(ASSERTS_ENABLED)

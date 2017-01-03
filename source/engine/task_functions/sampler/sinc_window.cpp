@@ -62,16 +62,17 @@ namespace sinc_window_generator {
 		// Generate N arrays, one corresponding to each possible resolution offset (range [0,resolution-1])
 		// Each array is window_size-1 in length (rounded up to multiples of SSE)
 
-		size_t sse_array_length = align_size(k_sinc_window_size - 1, k_sse_block_elements) / k_sse_block_elements;
+		size_t simd_array_length = align_size(k_sinc_window_size - 1, k_simd_block_elements) / k_simd_block_elements;
 		uint32 total_values = static_cast<uint32>((k_sinc_window_size - 1) * k_sinc_window_sample_resolution);
 
-		out << "static const s_sinc_window_coefficients k_sinc_window_coefficients[][" << sse_array_length << "] = {\n";
+		out << "static const s_sinc_window_coefficients k_sinc_window_coefficients[][" <<
+			simd_array_length << "] = {\n";
 
 		for (size_t resolution_index = 0; resolution_index < k_sinc_window_sample_resolution; resolution_index++) {
 			size_t sample_index;
 			s_sinc_window_coefficients coefficients;
 			ZERO_STRUCT(&coefficients);
-			size_t sse_index = 0;
+			size_t simd_index = 0;
 
 			out << "\t{\n";
 
@@ -83,13 +84,13 @@ namespace sinc_window_generator {
 					sinc(total_values, window_value_index) * kaiser(3.0, total_values, window_value_index);
 				real64 next_value =
 					sinc(total_values, window_value_index + 1) * kaiser(3.0, total_values, window_value_index + 1);
-				coefficients.values[sse_index] = static_cast<real32>(curr_value);
-				coefficients.slopes[sse_index] = static_cast<real32>(
+				coefficients.values[simd_index] = static_cast<real32>(curr_value);
+				coefficients.slopes[simd_index] = static_cast<real32>(
 					(next_value - curr_value) / static_cast<real64>(k_sinc_window_sample_resolution));
 
-				sse_index++;
+				simd_index++;
 				// Output if we're a multiple of 4, or if we're the last index
-				if (sse_index == k_sse_block_elements || sample_index == k_sinc_window_size - 1) {
+				if (simd_index == k_simd_block_elements || sample_index == k_sinc_window_size - 1) {
 					out << "\t\t{ " <<
 						fixup_real32(coefficients.values[0]) << ", " <<
 						fixup_real32(coefficients.values[1]) << ", " <<
@@ -101,7 +102,7 @@ namespace sinc_window_generator {
 						fixup_real32(coefficients.slopes[3]) << " },\n";
 
 					ZERO_STRUCT(&coefficients);
-					sse_index = 0;
+					simd_index = 0;
 				}
 			}
 

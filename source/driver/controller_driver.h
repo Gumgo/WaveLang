@@ -31,6 +31,9 @@ struct s_controller_driver_settings {
 	// Maximum number of allowed queued controller events before they start dropping
 	size_t controller_event_queue_size;
 
+	// Amount of "unknown" latency to compensate for things like scheduler jitter
+	real64 unknown_latency;
+
 	// Controller clock callback
 	f_controller_clock clock;
 	void *clock_context;
@@ -38,6 +41,7 @@ struct s_controller_driver_settings {
 	void set_default() {
 		device_index = 0;
 		controller_event_queue_size = 1024;
+		unknown_latency = 0.015;
 		clock = nullptr;
 		clock_context = nullptr;
 	}

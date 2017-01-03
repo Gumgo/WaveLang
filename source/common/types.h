@@ -1,6 +1,9 @@
 #ifndef WAVELANG_COMMON_TYPES_H__
 #define WAVELANG_COMMON_TYPES_H__
 
+#include <cstddef>
+#include <stddef.h> // Also need this for GCC for some reason
+
 typedef signed char int8;
 typedef unsigned char uint8;
 typedef signed short int16;

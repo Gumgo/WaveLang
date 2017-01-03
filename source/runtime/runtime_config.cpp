@@ -32,11 +32,12 @@ static const uint32 k_default_audio_frames_per_buffer = 512;
 
 static const bool k_default_controller_enabled = false;
 static const uint32 k_default_controller_event_queue_size = 1024;
+static const uint32 k_default_controller_unknown_latency = 15;
 
 static const uint32 k_default_executor_thread_count = 0;
 static const uint32 k_default_executor_max_controller_parameters = 1024;
 static const bool k_default_executor_console_enabled = true;
-static const bool k_default_executor_profiling_enabled = true;
+static const bool k_default_executor_profiling_enabled = false;
 
 static bool try_to_get_value_from_child_node(
 	const rapidxml::xml_node<> *parent_node, const char *child_node_name, uint32 default_value, uint32 &out_value) {
@@ -174,6 +175,12 @@ bool c_runtime_config::write_default_settings(const char *fname) {
 	controller_node->append_node(document.allocate_node(rapidxml::node_element, "event_queue_size",
 		k_default_xml_string));
 
+	controller_node->append_node(document.allocate_node(rapidxml::node_comment, nullptr, document.allocate_string(
+		("Amount of unknown latency in milliseconds to compensate for things like schedule jitter - default is " +
+			std::to_string(k_default_controller_unknown_latency)).c_str())));
+	controller_node->append_node(document.allocate_node(rapidxml::node_element, "unknown_latency",
+		k_default_xml_string));
+
 	rapidxml::xml_node<> *executor_node = document.allocate_node(rapidxml::node_element, "executor");
 	document.append_node(executor_node);
 	executor_node->append_node(document.allocate_node(rapidxml::node_comment, nullptr, "Contains executor settings"));
@@ -270,8 +277,6 @@ bool c_runtime_config::read_settings(
 		if (audio_node) {
 			const rapidxml::xml_node<> *audio_device_index_node = audio_node->first_node("device_index");
 			if (audio_device_index_node) {
-				const char *audio_device_index_string = audio_device_index_node->value();
-
 				uint32 index;
 				if (try_to_get_value_from_child_node(
 					audio_node, "device_index", m_settings.audio_device_index, index) &&
@@ -332,6 +337,8 @@ bool c_runtime_config::read_settings(
 		if (controller_node && m_settings.controller_enabled) {
 			try_to_get_value_from_child_node(controller_node, "event_queue_size",
 				1u, 1000000u, m_settings.controller_event_queue_size, m_settings.controller_event_queue_size);
+			try_to_get_value_from_child_node(controller_node, "unknown_latency",
+				0u, 1000u, m_settings.controller_unknown_latency, m_settings.controller_unknown_latency);
 		}
 
 		if (executor_node) {
@@ -377,6 +384,7 @@ void c_runtime_config::set_default_controller_device(const c_controller_driver_i
 	m_settings.controller_enabled = (controller_driver_interface->get_device_count() > 0);
 	if (m_settings.controller_enabled) {
 		m_settings.controller_device_index = controller_driver_interface->get_default_device_index();
+		m_settings.controller_unknown_latency = k_default_controller_unknown_latency;
 	} else {
 		m_settings.controller_event_queue_size = 1;
 	}

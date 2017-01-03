@@ -3,14 +3,18 @@
 #include <string>
 
 c_thread_pool::c_thread_pool() {
+#if IS_TRUE(ASSERTS_ENABLED)
+	m_running = false;
+#endif // IS_TRUE(ASSERTS_ENABLED)
 }
 
 c_thread_pool::~c_thread_pool() {
+	wl_assert(!m_running);
 }
 
 void c_thread_pool::start(const s_thread_pool_settings &settings) {
+	wl_assert(!m_running);
 	wl_assert(m_threads.size() == 0);
-	wl_assert(settings.thread_count > 0);
 	wl_assert(settings.max_tasks > 0);
 
 	// Set up the task queue
@@ -43,10 +47,14 @@ void c_thread_pool::start(const s_thread_pool_settings &settings) {
 
 		m_threads[thread].start(thread_definition);
 	}
+
+#if IS_TRUE(ASSERTS_ENABLED)
+	m_running = true;
+#endif // IS_TRUE(ASSERTS_ENABLED)
 }
 
 uint32 c_thread_pool::stop() {
-	wl_assert(m_threads.size() > 0);
+	wl_assert(m_running);
 
 	// Push a "terminate" task for each thread - a task with no function pointer.
 	// Note: when a thread encounters this, it will terminate immediately! There could still be pending tasks left.
@@ -77,11 +85,15 @@ uint32 c_thread_pool::stop() {
 	m_pending_tasks_queue_memory.free();
 	m_pending_tasks_free_list_memory.free();
 
+#if IS_TRUE(ASSERTS_ENABLED)
+	m_running = false;
+#endif // IS_TRUE(ASSERTS_ENABLED)
+
 	return unexecuted_tasks;
 }
 
 void c_thread_pool::pause() {
-	wl_assert(m_threads.size() > 0);
+	wl_assert(m_running);
 
 	IF_ASSERTS_ENABLED(int32 prev_value = ) m_check_paused.increment();
 	wl_assert(prev_value == 0);
@@ -94,7 +106,7 @@ void c_thread_pool::pause() {
 }
 
 void c_thread_pool::resume() {
-	wl_assert(m_threads.size() > 0);
+	wl_assert(m_running);
 
 	IF_ASSERTS_ENABLED(int32 prev_value = ) m_check_paused.decrement();
 	wl_assert(prev_value == 1);
@@ -108,10 +120,15 @@ void c_thread_pool::resume() {
 
 	// Signal all threads that we should unpause
 	m_pause_condition_variable.notify_all();
+
+	if (m_threads.size() == 0) {
+		// If there are no worker threads, immediately process tasks
+		execute_all_tasks_synchronous();
+	}
 }
 
 bool c_thread_pool::add_task(const s_thread_pool_task &task) {
-	wl_assert(!m_threads.empty());
+	wl_assert(m_running);
 
 	s_task pending_task;
 	pending_task.task_function = task.task_entry_point;
@@ -145,5 +162,18 @@ void c_thread_pool::worker_thread_entry_point(const s_thread_parameter_block *pa
 
 			task.task_function(context.worker_thread_index, &task.params);
 		}
+	}
+}
+
+void c_thread_pool::execute_all_tasks_synchronous() {
+	// Attempt to pop a task from the queue
+	s_task task;
+	while (m_pending_tasks.pop(task)) {
+		// If this task has no task function, it is an indication that we should terminate
+		if (!task.task_function) {
+			return;
+		}
+
+		task.task_function(0, &task.params);
 	}
 }

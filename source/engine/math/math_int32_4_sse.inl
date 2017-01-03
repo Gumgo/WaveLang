@@ -10,11 +10,10 @@ inline c_int32_4::c_int32_4(int32 a, int32 b, int32 c, int32 d)
 }
 
 inline c_int32_4::c_int32_4(const int32 *ptr) {
-	wl_assert(is_pointer_aligned(ptr, k_sse_alignment));
-	m_value = _mm_load_si128(reinterpret_cast<const __m128i *>(ptr));
+	load(ptr);
 }
 
-inline c_int32_4::c_int32_4(const __m128i &v)
+inline c_int32_4::c_int32_4(const t_simd_int32 &v)
 	: m_value(v) {
 }
 
@@ -23,16 +22,16 @@ inline c_int32_4::c_int32_4(const c_int32_4 &v)
 }
 
 inline void c_int32_4::load(const int32 *ptr) {
-	wl_assert(is_pointer_aligned(ptr, k_sse_alignment));
-	m_value = _mm_load_si128(reinterpret_cast<const __m128i *>(ptr));
+	wl_assert(is_pointer_aligned(ptr, k_simd_alignment));
+	m_value = _mm_load_si128(reinterpret_cast<const t_simd_int32 *>(ptr));
 }
 
 inline void c_int32_4::store(int32 *ptr) const {
-	wl_assert(is_pointer_aligned(ptr, k_sse_alignment));
-	_mm_store_si128(reinterpret_cast<__m128i *>(ptr), m_value);
+	wl_assert(is_pointer_aligned(ptr, k_simd_alignment));
+	_mm_store_si128(reinterpret_cast<t_simd_int32 *>(ptr), m_value);
 }
 
-inline c_int32_4 &c_int32_4::operator=(const __m128i &v) {
+inline c_int32_4 &c_int32_4::operator=(const t_simd_int32 &v) {
 	m_value = v;
 	return *this;
 }
@@ -42,7 +41,7 @@ inline c_int32_4 &c_int32_4::operator=(const c_int32_4 &v) {
 	return *this;
 }
 
-inline c_int32_4::operator __m128i() const {
+inline c_int32_4::operator t_simd_int32() const {
 	return m_value;
 }
 
@@ -87,7 +86,8 @@ inline c_int32_4 operator<<(const c_int32_4 &lhs, int32 rhs) {
 }
 
 inline c_int32_4 operator<<(const c_int32_4 &lhs, const c_int32_4 &rhs) {
-	return _mm_sll_epi32(lhs, rhs);
+	// $TODO don't use AVX
+	return _mm_sllv_epi32(lhs, rhs);
 }
 
 inline c_int32_4 operator>>(const c_int32_4 &lhs, int32 rhs) {
@@ -95,7 +95,8 @@ inline c_int32_4 operator>>(const c_int32_4 &lhs, int32 rhs) {
 }
 
 inline c_int32_4 operator>>(const c_int32_4 &lhs, const c_int32_4 &rhs) {
-	return _mm_sra_epi32(lhs, rhs);
+	// $TODO don't use AVX
+	return _mm_srav_epi32(lhs, rhs);
 }
 
 inline c_int32_4 c_int32_4::shift_right_unsigned(int32 rhs) const {
@@ -103,7 +104,8 @@ inline c_int32_4 c_int32_4::shift_right_unsigned(int32 rhs) const {
 }
 
 inline c_int32_4 c_int32_4::shift_right_unsigned(const c_int32_4 &rhs) const {
-	return _mm_srl_epi32(m_value, rhs);
+	// $TODO don't use AVX
+	return _mm_srlv_epi32(m_value, rhs);
 }
 
 inline c_int32_4 operator==(const c_int32_4 &lhs, const c_int32_4 &rhs) {
@@ -197,21 +199,53 @@ inline c_int32_4 single_element(const c_int32_4 &v, int32 pos) {
 
 template<int32 k_pos_0, int32 k_pos_1, int32 k_pos_2, int32 k_pos_3>
 c_int32_4 shuffle(const c_int32_4 &v) {
-	static_assert(VALID_INDEX(k_pos_0, k_sse_block_elements), "Must be in range [0,3]");
-	static_assert(VALID_INDEX(k_pos_1, k_sse_block_elements), "Must be in range [0,3]");
-	static_assert(VALID_INDEX(k_pos_2, k_sse_block_elements), "Must be in range [0,3]");
-	static_assert(VALID_INDEX(k_pos_3, k_sse_block_elements), "Must be in range [0,3]");
+	static_assert(VALID_INDEX(k_pos_0, k_simd_block_elements), "Must be in range [0,3]");
+	static_assert(VALID_INDEX(k_pos_1, k_simd_block_elements), "Must be in range [0,3]");
+	static_assert(VALID_INDEX(k_pos_2, k_simd_block_elements), "Must be in range [0,3]");
+	static_assert(VALID_INDEX(k_pos_3, k_simd_block_elements), "Must be in range [0,3]");
 	static const int32 k_shuffle_pos = k_pos_0 | (k_pos_1 << 2) | (k_pos_2 << 4) | (k_pos_3 << 6);
 	return _mm_shuffle_epi32(v, k_shuffle_pos);
 }
 
 template<int32 k_pos_0, int32 k_pos_1, int32 k_pos_2, int32 k_pos_3>
 c_int32_4 shuffle(const c_int32_4 &a, const c_int32_4 &b) {
-	static_assert(VALID_INDEX(k_pos_0, k_sse_block_elements), "Must be in range [0,3]");
-	static_assert(VALID_INDEX(k_pos_1, k_sse_block_elements), "Must be in range [0,3]");
-	static_assert(VALID_INDEX(k_pos_2, k_sse_block_elements), "Must be in range [0,3]");
-	static_assert(VALID_INDEX(k_pos_3, k_sse_block_elements), "Must be in range [0,3]");
+	static_assert(VALID_INDEX(k_pos_0, k_simd_block_elements), "Must be in range [0,3]");
+	static_assert(VALID_INDEX(k_pos_1, k_simd_block_elements), "Must be in range [0,3]");
+	static_assert(VALID_INDEX(k_pos_2, k_simd_block_elements), "Must be in range [0,3]");
+	static_assert(VALID_INDEX(k_pos_3, k_simd_block_elements), "Must be in range [0,3]");
 	static const int32 k_shuffle_pos = k_pos_0 | (k_pos_1 << 2) | (k_pos_2 << 4) | (k_pos_3 << 6);
 	return c_real32_4(_mm_shuffle_ps(
 		a.real32_4_from_bits(), b.real32_4_from_bits(), k_shuffle_pos)).int32_4_from_bits();
+}
+
+template<>
+inline c_int32_4 extract<0>(const c_int32_4 &a, const c_int32_4 &b) {
+	return a;
+}
+
+template<>
+inline c_int32_4 extract<1>(const c_int32_4 &a, const c_int32_4 &b) {
+	// [.xyz][w...] => [z.w.]
+	// [.xyz][z.w.] => [xyzw]
+	c_int32_4 c = shuffle<3, 0, 0, 0>(a, b);
+	return shuffle<1, 2, 0, 2>(a, c);
+}
+
+template<>
+inline c_int32_4 extract<2>(const c_int32_4 &a, const c_int32_4 &b) {
+	// [..xy][zw..] => [xyzw]
+	return shuffle<2, 3, 0, 1>(a, b);
+}
+
+template<>
+inline c_int32_4 extract<3>(const c_int32_4 &a, const c_int32_4 &b) {
+	// [...x][yzw.] => [x.y.]
+	// [x.y.][yzw.] => [xyzw]
+	c_int32_4 c = shuffle<3, 0, 0, 0>(a, b);
+	return shuffle<0, 2, 1, 2>(c, b);
+}
+
+template<>
+inline c_int32_4 extract<4>(const c_int32_4 &a, const c_int32_4 &b) {
+	return b;
 }

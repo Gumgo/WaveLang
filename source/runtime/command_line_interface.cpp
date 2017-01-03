@@ -265,6 +265,7 @@ void c_command_line_interface::initialize_from_runtime_config() {
 		settings.set_default();
 		settings.device_index = config_settings.controller_device_index;
 		settings.controller_event_queue_size = config_settings.controller_event_queue_size;
+		settings.unknown_latency = static_cast<real64>(config_settings.controller_unknown_latency) * 0.001;
 
 		if (m_runtime_context.audio_driver_interface.is_stream_running()) {
 			m_runtime_context.audio_driver_interface.get_stream_clock(settings.clock, settings.clock_context);
@@ -279,6 +280,11 @@ void c_command_line_interface::initialize_from_runtime_config() {
 
 void c_command_line_interface::process_command_load_synth(const s_command &command) {
 	if (command.arguments.size() == 1) {
+		if (!m_runtime_context.audio_driver_interface.is_stream_running()) {
+			std::cout << "Audio stream is not running\n";
+			return;
+		}
+
 		// Try to load the instrument
 		c_instrument instrument;
 

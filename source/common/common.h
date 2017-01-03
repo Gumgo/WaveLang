@@ -5,11 +5,13 @@
 #include "common/cast_integer_verify.h"
 #include "common/macros.h"
 #include "common/platform.h"
+#include "common/platform_macros.h"
 #include "common/static_array.h"
 #include "common/string.h"
 #include "common/types.h"
 #include "common/wrapped_array.h"
 
+#include <algorithm>
 #include <cctype>
 #include <cstddef>
 #include <cstdint>
@@ -20,7 +22,7 @@
 
 // Alignment must be a power of 2 for all alignment functions
 
-#define ALIGN_SIZE(size, alignment) ((size) + ((alignment) - 1) & ~((alignment) - 1))
+#define ALIGN_SIZE(size, alignment) ((size) + (((alignment) - 1) & ~((alignment) - 1)))
 #define ALIGN_SIZE_DOWN(size, alignment) ((size) & ~((alignment) - 1))
 #define IS_SIZE_ALIGNED(size, alignment) ((size) & ((alignment) - 1) == 0)
 
@@ -118,5 +120,15 @@ private:
 	c_uncopyable(const c_uncopyable &other);
 	c_uncopyable &operator=(const c_uncopyable &other);
 };
+
+template<typename t_to, typename t_from>
+t_to reinterpret_bits(t_from from) {
+	static_assert(sizeof(t_to) == sizeof(t_from), "Can't reinterpret_bits for types of different sizes");
+
+	// This SHOULD get optimized...
+	t_to to;
+	memcpy(&to, &from, sizeof(to));
+	return to;
+}
 
 #endif // WAVELANG_COMMON_COMMON_H__

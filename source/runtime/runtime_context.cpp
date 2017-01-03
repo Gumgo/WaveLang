@@ -2,6 +2,8 @@
 
 #include "runtime/runtime_context.h"
 
+#include <iostream>
+
 void s_runtime_context::stream_callback(const s_audio_driver_stream_callback_context &context) {
 	// Pipe into the executor
 	s_runtime_context *this_ptr = static_cast<s_runtime_context *>(context.user_data);

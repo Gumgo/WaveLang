@@ -9,13 +9,13 @@
 // $TODO this should actually be called for all buffers being passed into any task, not in the task itself
 inline void validate_buffer(const c_buffer *buffer) {
 	wl_assert(buffer);
-	wl_assert(is_pointer_aligned(buffer->get_data(), k_sse_alignment));
+	wl_assert(is_pointer_aligned(buffer->get_data(), k_simd_alignment));
 }
 
 // Base iterator interface:
 //class c_buffer_iterator {
 //public:
-//	typedef <sse_type> t_value;
+//	typedef <simd_type> t_value;
 //	typedef [const] c_buffer t_buffer;
 //
 //	// Number of elements contained in each value type (e.g. SSE reals are 4 elements, SSE bools are 128)
@@ -51,7 +51,7 @@ public:
 	}
 
 	void next() {
-		m_pointer += k_sse_block_elements;
+		m_pointer += k_simd_block_elements;
 	}
 
 	c_real32_4 get_value() const {
@@ -86,7 +86,7 @@ public:
 	}
 
 	void next() {
-		m_pointer += k_sse_block_elements;
+		m_pointer += k_simd_block_elements;
 	}
 
 	c_real32_4 get_value() const {
@@ -121,9 +121,9 @@ public:
 	}
 
 	void next() {
-		m_offset += k_sse_block_elements;
+		m_offset += k_simd_block_elements;
 		if ((m_offset % 128) == 0) {
-			m_pointer += k_sse_block_elements;
+			m_pointer += k_simd_block_elements;
 		}
 
 		read_cached_value_if_necessary();
@@ -219,9 +219,9 @@ public:
 	}
 
 	void next() {
-		m_offset += k_sse_block_elements;
+		m_offset += k_simd_block_elements;
 		if ((m_offset % 128) == 0) {
-			m_pointer += k_sse_block_elements;
+			m_pointer += k_simd_block_elements;
 		}
 
 		read_cached_value_if_necessary();
@@ -275,7 +275,7 @@ public:
 	}
 
 	void next() {
-		m_pointer += k_sse_block_elements;
+		m_pointer += k_simd_block_elements;
 		m_elements_remaining -= 128;
 	}
 
@@ -334,7 +334,7 @@ public:
 	}
 
 	void next() {
-		m_pointer += k_sse_block_elements;
+		m_pointer += k_simd_block_elements;
 	}
 
 	c_int32_4 get_value() const {

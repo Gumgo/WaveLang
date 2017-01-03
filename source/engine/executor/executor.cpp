@@ -104,7 +104,7 @@ void c_executor::initialize_events() {
 		m_async_event_handler.begin_event_handling();
 	}
 
-	m_event_interface.initialize(&m_async_event_handler);
+	m_event_interface.initialize(m_settings.event_console_enabled ? &m_async_event_handler : nullptr);
 }
 
 void c_executor::initialize_thread_pool() {
@@ -218,7 +218,7 @@ void c_executor::initialize_task_contexts() {
 void c_executor::initialize_profiler() {
 	if (m_settings.profiling_enabled) {
 		s_profiler_settings profiler_settings;
-		profiler_settings.worker_thread_count = m_settings.thread_count;
+		profiler_settings.worker_thread_count = std::max(1u, m_settings.thread_count);
 		profiler_settings.voice_task_count = m_settings.runtime_instrument->get_voice_task_graph() ?
 			m_settings.runtime_instrument->get_voice_task_graph()->get_task_count() :
 			0;

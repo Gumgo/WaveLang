@@ -31,10 +31,10 @@ struct s_sampler_context {
 	// each increment is stored in out_time. Handles looping/wrapping.
 
 	size_t increment_time(real64 length_samples, const c_real32_4 &advance,
-		size_t &inout_buffer_samples_remaining, s_static_array<real64, k_sse_block_elements> &out_samples);
+		size_t &inout_buffer_samples_remaining, s_static_array<real64, k_simd_block_elements> &out_samples);
 
 	size_t increment_time_looping(real64 loop_start_sample, real64 loop_end_sample, const c_real32_4 &advance,
-		size_t &inout_buffer_samples_remaining, s_static_array<real64, k_sse_block_elements> &out_samples);
+		size_t &inout_buffer_samples_remaining, s_static_array<real64, k_simd_block_elements> &out_samples);
 
 	// Store the sample index in real64 for improved precision so we can accurately handle both short and long samples
 	uint32 sample_handle;

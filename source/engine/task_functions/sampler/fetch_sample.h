@@ -18,7 +18,7 @@ real32 fetch_sample(const c_sample *sample, uint32 channel, real64 sample_index)
 // later be overwritten, or are past the end of the buffer but exist for padding.
 void fetch_mipmapped_samples(
 	const c_sample *sample, uint32 channel, real32 stream_sample_rate, const c_real32_4 &speed_adjusted_sample_rate_0,
-	size_t count, const s_static_array<real64, k_sse_block_elements> &samples, real32 *out_ptr);
+	size_t count, const s_static_array<real64, k_simd_block_elements> &samples, real32 *out_ptr);
 
 /*
 Windowed sinc sampling chart

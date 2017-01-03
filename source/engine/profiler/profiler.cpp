@@ -68,6 +68,11 @@ bool output_profiler_report(const char *filename, const s_profiler_report &repor
 		const std::vector<s_profiler_report::s_task> &tasks = report.tasks[instrument_stage];
 		for (uint32 task_index = 0; task_index < tasks.size(); task_index++) {
 			const s_profiler_report::s_task &task = tasks[task_index];
+			if (task.task_total_time.sample_count == 0) {
+				// Don't report this task if it never ran
+				continue;
+			}
+
 			const s_task_function &task_function =
 				c_task_function_registry::get_task_function(task.task_function_index);
 
@@ -174,6 +179,7 @@ void c_profiler::get_report(s_profiler_report &out_report) const {
 }
 
 void c_profiler::begin_execution() {
+	ZERO_STRUCT(&m_execution.query_points);
 	m_execution.stopwatch.reset();
 }
 
@@ -217,11 +223,11 @@ void c_profiler::end_execution() {
 	int64 total_time =
 		m_execution.query_points[k_execution_query_point_end_execution];
 	int64 voice_time =
-		m_execution.query_points[k_execution_query_point_begin_voices] -
-		m_execution.query_points[k_execution_query_point_end_voices];
+		m_execution.query_points[k_execution_query_point_end_voices] -
+		m_execution.query_points[k_execution_query_point_begin_voices];
 	int64 fx_time =
-		m_execution.query_points[k_execution_query_point_begin_fx] -
-		m_execution.query_points[k_execution_query_point_end_fx];
+		m_execution.query_points[k_execution_query_point_end_fx] -
+		m_execution.query_points[k_execution_query_point_begin_fx];
 	int64 overhead_time = total_time - voice_time - fx_time;
 
 	m_execution.total_time.update(total_time);

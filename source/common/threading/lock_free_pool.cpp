@@ -18,6 +18,18 @@ c_lock_free_pool::c_lock_free_pool()
 	m_free_list_head.handle.initialize(head.data);
 }
 
+c_lock_free_pool::c_lock_free_pool(c_lock_free_pool &&other)
+	: m_free_list(nullptr, 0) {
+	m_free_list_head.handle.initialize(other.m_free_list_head.handle.get_unsafe());
+
+	s_lock_free_handle_data head;
+	head.handle = k_lock_free_invalid_handle;
+	head.tag = 0;
+	other.m_free_list_head.handle.initialize(head.data);
+
+	std::swap(m_free_list, other.m_free_list);
+}
+
 void c_lock_free_pool::initialize(c_lock_free_handle_array free_list_memory) {
 	if (free_list_memory.get_count() == 0) {
 		s_lock_free_handle_data head;

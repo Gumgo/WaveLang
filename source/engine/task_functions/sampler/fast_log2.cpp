@@ -127,8 +127,8 @@ void test_fast_log2() {
 		c_real32_4 frac_part;
 		c_int32_4 int_part = fast_log2(x, frac_part);
 
-		ALIGNAS_SSE real32 frac_out[4];
-		ALIGNAS_SSE int32 int_out[4];
+		ALIGNAS_SIMD real32 frac_out[4];
+		ALIGNAS_SIMD int32 int_out[4];
 
 		frac_part.store(frac_out);
 		int_part.store(int_out);

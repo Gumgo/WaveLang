@@ -28,6 +28,18 @@ public:
 		return true;
 	}
 
+	bool read(bool &out_value) {
+		uint8 raw_value;
+		m_file.read(reinterpret_cast<char *>(&raw_value), sizeof(raw_value));
+
+		if (m_file.fail() || raw_value > 1) {
+			return false;
+		}
+
+		out_value = (raw_value != 0);
+		return true;
+	}
+
 	bool read_raw(void *buffer, size_t count) {
 		m_file.read(reinterpret_cast<char *>(buffer), count);
 		return !m_file.fail();
@@ -46,6 +58,11 @@ public:
 	// Performs endian byte swapping
 	template<typename t_value> void write(t_value value) {
 		t_value raw_value = native_to_big_endian(value);
+		m_file.write(reinterpret_cast<const char *>(&raw_value), sizeof(raw_value));
+	}
+
+	void write(bool value) {
+		uint8 raw_value = value ? 1 : 0;
 		m_file.write(reinterpret_cast<const char *>(&raw_value), sizeof(raw_value));
 	}
 

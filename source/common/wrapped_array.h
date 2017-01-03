@@ -52,6 +52,11 @@ public:
 		, m_count(0) {
 	}
 
+	c_wrapped_array(const c_wrapped_array &other)
+		: m_pointer(other.m_pointer)
+		, m_count(other.m_count) {
+	}
+
 	c_wrapped_array(t_element *pointer, size_t count)
 		: m_pointer(pointer)
 		, m_count(count) {

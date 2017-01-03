@@ -5,10 +5,6 @@
 // Pad by 100ms to pick up late events
 static const real64 k_controller_event_buffer_padding_sec = 0.1;
 
-// Add 15ms of latency to compensate for scheduler, jitter, etc.
-// $TODO $REALTIME make this configurable
-static const real64 k_unknown_latency = 0.015;
-
 c_controller_driver_interface::c_controller_driver_interface() {
 }
 
@@ -116,7 +112,7 @@ size_t c_controller_driver_interface::process_controller_events(
 	// --------------------------------------------------------[=$===$=====$==]------------
 	//                                                         Buffer is sent to ADC
 
-	real64 smallest_allowed_timestamp_sec = buffer_time_sec - buffer_duration_sec - k_unknown_latency;
+	real64 smallest_allowed_timestamp_sec = buffer_time_sec - buffer_duration_sec - get_settings().unknown_latency;
 	real64 largest_allowed_timestamp_sec = smallest_allowed_timestamp_sec + buffer_duration_sec;
 
 	bool done = false;

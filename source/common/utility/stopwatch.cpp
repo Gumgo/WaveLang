@@ -41,5 +41,38 @@ int64 c_stopwatch::query_internal() {
 }
 
 #else // IS_TRUE(PLATFORM_WINDOWS)
-#error Unknown platform
+
+c_stopwatch::c_stopwatch() {
+	m_frequency = 0; // Unused on Linux because clock is in nanoseconds already
+}
+
+c_stopwatch::~c_stopwatch() {
+}
+
+void c_stopwatch::initialize() {
+	// Nothing to do
+}
+
+void c_stopwatch::reset() {
+	struct timespec clock_result;
+	IF_ASSERTS_ENABLED(int result_code = ) clock_gettime(CLOCK_REALTIME, &clock_result);
+	wl_assert(result_code == 0);
+	m_start_time = clock_result.tv_sec * k_nanoseconds_per_second + clock_result.tv_nsec;
+}
+
+int64 c_stopwatch::query() {
+	return query_internal();
+}
+
+int64 c_stopwatch::query_ms() {
+	return query_internal() / (k_nanoseconds_per_second / k_milliseconds_per_second);
+}
+
+int64 c_stopwatch::query_internal() {
+	struct timespec clock_result;
+	IF_ASSERTS_ENABLED(int result_code = ) clock_gettime(CLOCK_REALTIME, &clock_result);
+	wl_assert(result_code == 0);
+	return (clock_result.tv_sec * k_nanoseconds_per_second + clock_result.tv_nsec) - m_start_time;
+}
+
 #endif // IS_TRUE(PLATFORM_WINDOWS)

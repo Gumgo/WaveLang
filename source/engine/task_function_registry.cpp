@@ -22,12 +22,14 @@ struct s_task_function_mapping_list_internal {
 	size_t mapping_count;
 };
 
-template<>
-struct std::hash<s_task_function_uid> {
-	size_t operator()(const s_task_function_uid &key) const {
-		return std::hash<uint64>()(key.data_uint64);
-	}
-};
+namespace std {
+	template<>
+	struct hash<s_task_function_uid> {
+		size_t operator()(const s_task_function_uid &key) const {
+			return hash<uint64>()(key.data_uint64);
+		}
+	};
+}
 
 struct s_task_function_registry_data {
 	std::vector<s_task_function> task_functions;
@@ -44,7 +46,6 @@ static s_task_function_registry_data g_task_function_registry_data;
 #if IS_TRUE(ASSERTS_ENABLED)
 static void validate_task_function_mapping(
 	const s_native_module &native_module, const s_task_function_mapping &task_function_mapping);
-#endif // IS_TRUE(ASSERTS_ENABLED)
 
 static const e_task_primitive_type k_native_module_primitive_type_to_task_primitive_type_mapping[] = {
 	k_task_primitive_type_real,		// k_native_module_primitive_type_real
@@ -60,6 +61,7 @@ static e_task_primitive_type convert_native_module_primitive_type_to_task_primit
 	wl_assert(VALID_INDEX(native_module_primitive_type, k_native_module_primitive_type_count));
 	return k_native_module_primitive_type_to_task_primitive_type_mapping[native_module_primitive_type];
 }
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 void c_task_function_registry::initialize() {
 	wl_assert(g_task_function_registry_state == k_task_function_registry_state_uninitialized);

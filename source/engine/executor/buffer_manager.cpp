@@ -97,7 +97,6 @@ void c_buffer_manager::initialize(const c_runtime_instrument *runtime_instrument
 			c_task_data_type(k_task_primitive_type_real), channel_mix_buffer_usage_info);
 		m_real_buffer_pool_index = channel_mix_buffer_pool_index;
 		channel_mix_buffer_usage_info[channel_mix_buffer_pool_index].max_concurrency += output_channels;
-		size_t channel_output_count = channel_output_task_graph->get_outputs().get_count();
 
 		m_channel_mix_buffers.resize(output_channels);
 	}
