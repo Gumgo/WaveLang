@@ -3,6 +3,7 @@
 
 #include "common/common.h"
 
+#include "driver/controller_driver.h"
 #include "driver/sample_format.h"
 
 class c_audio_driver_interface;
@@ -10,6 +11,14 @@ class c_controller_driver_interface;
 
 struct s_audio_device_info;
 struct s_controller_device_info;
+
+enum e_runtime_config_result {
+	k_runtime_config_result_success,
+	k_runtime_config_result_does_not_exist,
+	k_runtime_config_result_error,
+
+	k_runtime_config_result_count
+};
 
 class c_runtime_config {
 public:
@@ -21,8 +30,8 @@ public:
 		e_sample_format audio_sample_format;
 		uint32 audio_frames_per_buffer;
 
-		bool controller_enabled;
-		uint32 controller_device_index;
+		size_t controller_device_count;
+		s_static_array<uint32, k_max_controller_devices> controller_device_indices;
 		uint32 controller_event_queue_size;
 		uint32 controller_unknown_latency;
 
@@ -38,7 +47,7 @@ public:
 	void initialize(
 		const c_audio_driver_interface *audio_driver_interface,
 		const c_controller_driver_interface *controller_driver_interface);
-	bool read_settings(
+	e_runtime_config_result read_settings(
 		const c_audio_driver_interface *audio_driver_interface,
 		const c_controller_driver_interface *controller_driver_interface,
 		const char *fname);

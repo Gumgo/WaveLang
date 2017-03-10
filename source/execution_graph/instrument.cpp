@@ -259,6 +259,10 @@ e_instrument_result c_instrument::load(const char *fname) {
 		}
 	}
 
+	if (!validate()) {
+		return k_instrument_result_validation_failure;
+	}
+
 	return k_instrument_result_success;
 }
 

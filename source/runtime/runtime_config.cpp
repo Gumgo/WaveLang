@@ -133,7 +133,7 @@ bool c_runtime_config::write_default_settings(const char *fname) {
 	audio_node->append_node(document.allocate_node(rapidxml::node_comment, nullptr, "Contains audio settings"));
 
 	audio_node->append_node(document.allocate_node(rapidxml::node_comment, nullptr,
-		"Index of the audio device to use - run with -list to see a list of options"));
+		"Index of the audio device to use - run with --list to see a list of options"));
 	audio_node->append_node(document.allocate_node(rapidxml::node_element, "device_index", k_default_xml_string));
 
 	audio_node->append_node(document.allocate_node(rapidxml::node_comment, nullptr,
@@ -164,8 +164,11 @@ bool c_runtime_config::write_default_settings(const char *fname) {
 		"Contains controller settings"));
 
 	controller_node->append_node(document.allocate_node(rapidxml::node_comment, nullptr,
-		"Index of the controller device to use - run with -list to see a list of options, "
+		"Index of the controller device to use - run with --list to see a list of options, "
 		"or use \"none\" to disable controller"));
+	controller_node->append_node(document.allocate_node(rapidxml::node_comment, nullptr, document.allocate_string(
+		("To enable multiple controllers, specify <device_index_0> through <device_index_" +
+			std::to_string(k_max_controller_devices) + ">").c_str())));
 	controller_node->append_node(document.allocate_node(rapidxml::node_element, "device_index", k_default_xml_string));
 
 	controller_node->append_node(document.allocate_node(rapidxml::node_comment, nullptr, document.allocate_string(
@@ -223,16 +226,16 @@ void c_runtime_config::initialize(
 		audio_driver_interface->get_device_info(m_settings.audio_device_index);
 	set_default_audio(&audio_device_info);
 
-	if (m_settings.controller_enabled) {
+	if (m_settings.controller_device_count > 0) {
 		s_controller_device_info controller_device_info =
-			controller_driver_interface->get_device_info(m_settings.controller_device_index);
+			controller_driver_interface->get_device_info(m_settings.controller_device_indices[0]);
 		set_default_controller(&controller_device_info);
 	}
 
 	set_default_executor();
 }
 
-bool c_runtime_config::read_settings(
+e_runtime_config_result c_runtime_config::read_settings(
 	const c_audio_driver_interface *audio_driver_interface,
 	const c_controller_driver_interface *controller_driver_interface,
 	const char *fname) {
@@ -244,7 +247,7 @@ bool c_runtime_config::read_settings(
 			if (!file.is_open()) {
 				std::cout << "Failed to open '" << fname << "'\n";
 				initialize(audio_driver_interface, controller_driver_interface);
-				return false;
+				return k_runtime_config_result_does_not_exist;
 			}
 
 			std::streampos file_size = file.tellg();
@@ -257,7 +260,7 @@ bool c_runtime_config::read_settings(
 			if (file.fail()) {
 				std::cout << "Failed to read '" << fname << "'\n";
 				initialize(audio_driver_interface, controller_driver_interface);
-				return false;
+				return k_runtime_config_result_error;
 			}
 		}
 
@@ -287,19 +290,44 @@ bool c_runtime_config::read_settings(
 		}
 
 		if (controller_node) {
-			const rapidxml::xml_node<> *controller_device_index_node = controller_node->first_node("device_index");
-			if (controller_device_index_node) {
-				const char *controller_device_index_string = controller_device_index_node->value();
+			uint32 default_device_index = (m_settings.controller_device_count == 0) ?
+				0 :
+				m_settings.controller_device_indices[0];
 
-				if (strcmp(controller_device_index_string, k_none_xml_string) == 0) {
-					m_settings.controller_enabled = false;
-				} else {
-					uint32 index;
-					if (try_to_get_value_from_child_node(
-						controller_node , "device_index", m_settings.controller_device_index, index) &&
-						index < controller_driver_interface->get_device_count()) {
-						m_settings.controller_enabled = true;
-						m_settings.controller_device_index = index;
+			for (uint32 device = 0; device < k_max_controller_devices; device++) {
+				std::string node_name = "device_index_" + std::to_string(device);
+				const rapidxml::xml_node<> *controller_device_index_node =
+					controller_node->first_node(node_name.c_str());
+
+				if (device == 0 && !controller_device_index_node) {
+					// Device 0 can also be specified with just "device_index"
+					node_name = "device_index";
+					controller_device_index_node = controller_node->first_node(node_name.c_str());
+				}
+
+				if (controller_device_index_node) {
+					const char *controller_device_index_string = controller_device_index_node->value();
+
+					if (strcmp(controller_device_index_string, k_none_xml_string) == 0) {
+						// Do nothing - this device isn't enabled
+					} else {
+						uint32 index;
+						if (try_to_get_value_from_child_node(
+							controller_node , node_name.c_str(), default_device_index, index) &&
+							index < controller_driver_interface->get_device_count()) {
+							// Determine if this device is already in use
+							bool in_use = false;
+							for (size_t used_device = 0;
+								 !in_use && used_device < m_settings.controller_device_count;
+								 used_device++) {
+								in_use = (m_settings.controller_device_indices[used_device] == index);
+							}
+
+							if (!in_use) {
+								m_settings.controller_device_indices[m_settings.controller_device_count] = index;
+								m_settings.controller_device_count++;
+							}
+						}
 					}
 				}
 			}
@@ -310,9 +338,9 @@ bool c_runtime_config::read_settings(
 			audio_driver_interface->get_device_info(m_settings.audio_device_index);
 		set_default_audio(&audio_device_info);
 
-		if (m_settings.controller_enabled) {
+		if (m_settings.controller_device_count > 0) {
 			s_controller_device_info controller_device_info =
-				controller_driver_interface->get_device_info(m_settings.controller_device_index);
+				controller_driver_interface->get_device_info(m_settings.controller_device_indices[0]);
 			set_default_controller(&controller_device_info);
 		}
 
@@ -334,7 +362,7 @@ bool c_runtime_config::read_settings(
 				1u, 1000000u, m_settings.audio_frames_per_buffer, m_settings.audio_frames_per_buffer);
 		}
 
-		if (controller_node && m_settings.controller_enabled) {
+		if (controller_node && m_settings.controller_device_count > 0) {
 			try_to_get_value_from_child_node(controller_node, "event_queue_size",
 				1u, 1000000u, m_settings.controller_event_queue_size, m_settings.controller_event_queue_size);
 			try_to_get_value_from_child_node(controller_node, "unknown_latency",
@@ -355,10 +383,10 @@ bool c_runtime_config::read_settings(
 	} catch (const rapidxml::parse_error &) {
 		std::cout << "'" << fname << "' is not valid XML\n";
 		initialize(audio_driver_interface, controller_driver_interface);
-		return false;
+		return k_runtime_config_result_error;
 	}
 
-	return true;
+	return k_runtime_config_result_success;
 }
 
 const c_runtime_config::s_settings &c_runtime_config::get_settings() const {
@@ -381,9 +409,9 @@ void c_runtime_config::set_default_audio(const s_audio_device_info *audio_device
 }
 
 void c_runtime_config::set_default_controller_device(const c_controller_driver_interface *controller_driver_interface) {
-	m_settings.controller_enabled = (controller_driver_interface->get_device_count() > 0);
-	if (m_settings.controller_enabled) {
-		m_settings.controller_device_index = controller_driver_interface->get_default_device_index();
+	m_settings.controller_device_count = (controller_driver_interface->get_device_count() == 0) ? 0 : 1;
+	if (m_settings.controller_device_count > 0) {
+		m_settings.controller_device_indices[0] = controller_driver_interface->get_default_device_index();
 		m_settings.controller_unknown_latency = k_default_controller_unknown_latency;
 	} else {
 		m_settings.controller_event_queue_size = 1;

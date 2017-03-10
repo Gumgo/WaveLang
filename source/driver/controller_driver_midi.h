@@ -37,6 +37,7 @@ private:
 	f_submit_controller_event m_submit_controller_event;
 	void *m_submit_controller_event_context;
 	RtMidiIn *m_midi_in;
+	std::vector<RtMidiIn *> m_additional_midi_in; // Additional devices
 	std::vector<std::string> m_port_names;
 	bool m_stream_running;
 	s_controller_driver_settings m_settings;

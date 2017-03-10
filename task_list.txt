@@ -75,3 +75,9 @@
 
 - Expand the timing library ($TIMING)
 	- Add edge triggers
+
+- Scriptable wavetables
+	- Introduce sampler_wavetable(const real[] table) function
+		- table argument is a constant array of frequency weights where index i represents base_frequency*2^i
+		- Generates band-limited mipmap (currently happens in hardcoded C++)
+	- Replace hardcoded samplers with utility script

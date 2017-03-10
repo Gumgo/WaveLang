@@ -34,6 +34,8 @@ real32 fetch_sample(const c_sample *sample, uint32 channel, real64 sample_index)
 	// Determine which sample we want and split it into fractional and integer parts
 	real64 sample_index_rounded_down;
 	real32 sample_index_frac_part = static_cast<real32>(std::modf(sample_index, &sample_index_rounded_down));
+	real32 unused;
+	sample_index_frac_part = std::modf(sample_index_frac_part, &unused); // The above line can fail and produce 1.0f
 	uint32 sample_index_int_part = static_cast<uint32>(sample_index_rounded_down);
 	sample_index_int_part += sample->get_first_sampling_frame();
 

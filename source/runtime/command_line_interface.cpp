@@ -24,7 +24,7 @@ public:
 	c_command_line_interface(int argc, char **argv);
 	~c_command_line_interface();
 
-	int main_function(bool list_mode);
+	int main_function();
 
 private:
 	struct s_command {
@@ -44,27 +44,39 @@ private:
 
 	c_runtime_config m_runtime_config;
 	s_runtime_context m_runtime_context;
+
+	// Command-line options:
+	bool m_list_enabled;			// Whether to list all native modules and immediately exit
+	std::string m_startup_synth;	// If non-empty, immediately loads a synth
 };
 
 int main(int argc, char **argv) {
 	int result;
 	{
 		c_command_line_interface cli(argc, argv);
-		// $TODO add real command line argument parsing
-		bool list_mode = (argc == 2 && strcmp(argv[1], "-list") == 0);
-		result = cli.main_function(list_mode);
+		result = cli.main_function();
 	}
 	return result;
 }
 
 c_command_line_interface::c_command_line_interface(int argc, char **argv) {
+	m_list_enabled = false;
+
+	// $TODO add real command line argument parsing
+	if (argc == 2) {
+		if (strcmp(argv[1], "--list") == 0) {
+			m_list_enabled = true;
+		} else {
+			m_startup_synth = argv[1];
+		}
+	}
 }
 
 c_command_line_interface::~c_command_line_interface() {
 
 }
 
-int c_command_line_interface::main_function(bool list_mode) {
+int c_command_line_interface::main_function() {
 	c_native_module_registry::initialize();
 	c_task_function_registry::initialize();
 
@@ -87,14 +99,21 @@ int c_command_line_interface::main_function(bool list_mode) {
 		}
 	}
 
-	if (list_mode) {
+	if (m_list_enabled) {
 		list_devices();
 	} else {
-		if (!m_runtime_config.read_settings(
+		e_runtime_config_result runtime_config_result = m_runtime_config.read_settings(
 			&m_runtime_context.audio_driver_interface,
 			&m_runtime_context.controller_driver_interface,
-			k_runtime_config_filename)) {
+			k_runtime_config_filename);
+
+		if (runtime_config_result == k_runtime_config_result_does_not_exist) {
+			std::cout << "Creating default runtime config file\n";
 			c_runtime_config::write_default_settings(k_runtime_config_filename);
+		} else if (runtime_config_result == k_runtime_config_result_error) {
+			std::cout << "Runtime config was found but had errors\n";
+		} else {
+			wl_assert(runtime_config_result == k_runtime_config_result_success);
 		}
 
 		initialize_event_data_types();
@@ -102,6 +121,13 @@ int c_command_line_interface::main_function(bool list_mode) {
 
 		// None active initially
 		m_runtime_context.active_instrument = -1;
+
+		if (!m_startup_synth.empty()) {
+			s_command command;
+			command.command = "load_synth";
+			command.arguments.push_back(m_startup_synth);
+			process_command_load_synth(command);
+		}
 
 		bool done = false;
 		while (!done) {
@@ -260,10 +286,13 @@ void c_command_line_interface::initialize_from_runtime_config() {
 	}
 
 	// Initialize the controller
-	if (config_settings.controller_enabled) {
+	if (config_settings.controller_device_count > 0) {
 		s_controller_driver_settings settings;
 		settings.set_default();
-		settings.device_index = config_settings.controller_device_index;
+		settings.device_count = config_settings.controller_device_count;
+		for (size_t device = 0; device < config_settings.controller_device_count; device++) {
+			settings.device_indices[device] = config_settings.controller_device_indices[device];
+		}
 		settings.controller_event_queue_size = config_settings.controller_event_queue_size;
 		settings.unknown_latency = static_cast<real64>(config_settings.controller_unknown_latency) * 0.001;
 

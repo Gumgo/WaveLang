@@ -5,6 +5,8 @@
 
 #include "driver/controller.h"
 
+static const size_t k_max_controller_devices = 16;
+
 enum e_controller_driver_result {
 	k_controller_driver_result_success,
 	k_controller_driver_result_failed_to_open_stream,
@@ -25,8 +27,10 @@ struct s_controller_driver_result {
 typedef real64 (*f_controller_clock)(void *context);
 
 struct s_controller_driver_settings {
-	// Index of the controller device to stream data from
-	uint32 device_index;
+	size_t device_count;
+
+	// Indices of the controller devices to stream data from
+	s_static_array<uint32, k_max_controller_devices> device_indices;
 
 	// Maximum number of allowed queued controller events before they start dropping
 	size_t controller_event_queue_size;
@@ -39,7 +43,8 @@ struct s_controller_driver_settings {
 	void *clock_context;
 
 	void set_default() {
-		device_index = 0;
+		device_count = 1;
+		ZERO_STRUCT(&device_indices);
 		controller_event_queue_size = 1024;
 		unknown_latency = 0.015;
 		clock = nullptr;

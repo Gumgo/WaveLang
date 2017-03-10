@@ -15,6 +15,7 @@ enum e_instrument_result {
 	k_instrument_result_invalid_globals,
 	k_instrument_result_invalid_graph,
 	k_instrument_result_unregistered_native_module,
+	k_instrument_result_validation_failure,
 
 	k_instrument_result_count
 };

@@ -77,8 +77,27 @@ s_controller_driver_result c_controller_driver_midi::start_stream(const s_contro
 	result.clear();
 
 	try {
-		m_midi_in->openPort(settings.device_index);
+		for (size_t device = 0; device < settings.device_count; device++) {
+			RtMidiIn *midi_in;
+			if (device == 0) {
+				midi_in = m_midi_in;
+			} else {
+				m_additional_midi_in.push_back(new RtMidiIn);
+				midi_in = m_additional_midi_in.back();
+				midi_in->setCallback(message_callback_wrapper, this);
+			}
+
+			midi_in->openPort(settings.device_indices[device]);
+		}
 	} catch (const RtMidiError &error) {
+		// Close all ports
+		m_midi_in->closePort();
+		for (size_t device = 0; device < m_additional_midi_in.size(); device++) {
+			m_additional_midi_in[device]->closePort();
+			delete m_additional_midi_in[device];
+		}
+		m_additional_midi_in.clear();
+
 		result.result = k_controller_driver_result_failed_to_open_stream;
 		result.message = error.getMessage();
 		return result;
@@ -95,6 +114,11 @@ void c_controller_driver_midi::stop_stream() {
 	}
 
 	m_midi_in->closePort();
+	for (size_t device = 0; device < m_additional_midi_in.size(); device++) {
+		m_additional_midi_in[device]->closePort();
+		delete m_additional_midi_in[device];
+	}
+	m_additional_midi_in.clear();
 
 	m_stream_running = false;
 }
