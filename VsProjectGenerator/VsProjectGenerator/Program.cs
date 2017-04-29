@@ -23,6 +23,13 @@ namespace VsProjectGenerator
 		public const string PlatformToolset = "v140";
 		public const string CharacterSet = "MultiByte";
 
+		public const string LinuxKeyword = "Linux";
+		public const string LinuxMinimumVisualStudioVersion = "14.0";
+		public const string LinuxApplicationType = "Linux";
+		public const string LinuxApplicationTypeRevision = "1.0";
+		public const string TargetLinuxPlatform = "Generic";
+		public const string LinuxProjectType = "{FC1A4D80-50E9-41DA-9192-61C0DBAA00D2}";
+
 		public const string WarningLevel = "Level3";
 
 		public static readonly string[] DefaultDefines =
@@ -77,6 +84,7 @@ namespace VsProjectGenerator
 		}
 
 		public string Name { get; set; }
+		public bool IsLinux { get; set; }
 		public Guid Guid { get; set; }
 
 		public List<ProjectConfigurationPlatform> ProjectConfigurationPlatforms { get; set; }
@@ -254,12 +262,14 @@ namespace VsProjectGenerator
 					System.IO.StreamReader projectReader = new System.IO.StreamReader(projectFile);
 
 					string projectName = projectReader.ReadLine();
+					string isLinux = projectReader.ReadLine();
 					Project project = solution.Projects.Find(p => p.Name.Equals(projectName));
 
 					if (project == null)
 					{
 						project = new Project();
 						project.Name = projectName;
+						project.IsLinux = isLinux != "0";
 						project.Guid = Guid.NewGuid();
 						solution.Projects.Add(project);
 					}
@@ -578,7 +588,20 @@ namespace VsProjectGenerator
 						writer.WriteAttributeString("Label", "Globals");
 						writer.WriteElementString("ProjectGuid", project.Guid.ToString("B"));
 						writer.WriteElementString("RootNamespace", project.Name);
-						writer.WriteElementString("Keyword", Constants.MakeFileProjKeyword);
+						writer.WriteElementString("Keyword", project.IsLinux ?
+							Constants.LinuxKeyword : Constants.MakeFileProjKeyword);
+
+						if (project.IsLinux)
+						{
+							writer.WriteElementString("MinimumVisualStudioVersion",
+								Constants.LinuxMinimumVisualStudioVersion);
+							writer.WriteElementString("ApplicationType", Constants.LinuxApplicationType);
+							writer.WriteElementString("ApplicationTypeRevision",
+								Constants.LinuxApplicationTypeRevision);
+							writer.WriteElementString("TargetLinuxPlatform", Constants.TargetLinuxPlatform);
+							writer.WriteElementString("LinuxProjectType", Constants.LinuxProjectType);
+						}
+
 						writer.WriteEndElement();
 					}
 
@@ -596,7 +619,9 @@ namespace VsProjectGenerator
 							writer.WriteElementString("ConfigurationType", Constants.ConfigurationType);
 							string useDebugLibrariesString = pcp.IsDebug ? "true" : "false";
 							writer.WriteElementString("UseDebugLibraries", useDebugLibrariesString);
-							writer.WriteElementString("PlatformToolset", Constants.PlatformToolset);
+							if (!project.IsLinux) {
+								writer.WriteElementString("PlatformToolset", Constants.PlatformToolset);
+							}
 						}
 
 						writer.WriteEndElement();
@@ -611,71 +636,75 @@ namespace VsProjectGenerator
 					// Extension settings
 					AddElementWithAttribute(writer, "ImportGroup", "Label", "ExtensionSettings");
 
-					// Property sheets
-					foreach (ProjectConfigurationPlatform pcp in project.ProjectConfigurationPlatforms)
-					{
-						writer.WriteStartElement("ImportGroup");
-						writer.WriteAttributeString("Label", "PropertySheets");
-						writer.WriteAttributeString("Condition", pcp.ConditionString);
-
+					if (!project.IsLinux) {
+						// Property sheets
+						foreach (ProjectConfigurationPlatform pcp in project.ProjectConfigurationPlatforms)
 						{
-							writer.WriteStartElement("Import");
-							writer.WriteAttributeString("Project",
-								@"$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props");
-							writer.WriteAttributeString("Condition",
-								@"exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')");
-							writer.WriteAttributeString("Label", "LocalAppDataPlatform");
+							writer.WriteStartElement("ImportGroup");
+							writer.WriteAttributeString("Label", "PropertySheets");
+							writer.WriteAttributeString("Condition", pcp.ConditionString);
+
+							{
+								writer.WriteStartElement("Import");
+								writer.WriteAttributeString("Project",
+									@"$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props");
+								writer.WriteAttributeString("Condition",
+									@"exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')");
+								writer.WriteAttributeString("Label", "LocalAppDataPlatform");
+								writer.WriteEndElement();
+							}
+
 							writer.WriteEndElement();
 						}
-
-						writer.WriteEndElement();
 					}
 
 					// User macros
 					AddElementWithAttribute(writer, "PropertyGroup", "Label", "UserMacros");
 
-					// Configuration directories
-					foreach (ProjectConfigurationPlatform pcp in project.ProjectConfigurationPlatforms)
-					{
-						writer.WriteStartElement("PropertyGroup");
-						writer.WriteAttributeString("Condition", pcp.ConditionString);
-
+					if (!project.IsLinux) {
+						// Configuration directories
+						foreach (ProjectConfigurationPlatform pcp in project.ProjectConfigurationPlatforms)
 						{
-							// Makefile commands
-							writer.WriteElementString("NMakeBuildCommandLine", pcp.BuildCommand);
-							writer.WriteElementString("NMakeRebuildCommandLine", pcp.RebuildCommand);
-							writer.WriteElementString("NMakeCleanCommandLine", pcp.CleanCommand);
-							writer.WriteElementString("NMakeOutput", pcp.OutputDir);
-						}
+							writer.WriteStartElement("PropertyGroup");
+							writer.WriteAttributeString("Condition", pcp.ConditionString);
 
-						{
-							// Preprocessor definitions
-							StringBuilder defines = new StringBuilder();
-
-							pcp.Defines.ForEach(define => AppendToPropertyList(defines, define));
-							foreach (string define in Constants.DefaultDefines)
 							{
-								AppendToPropertyList(defines, define);
+								// Makefile commands
+								writer.WriteElementString("NMakeBuildCommandLine", pcp.BuildCommand);
+								writer.WriteElementString("NMakeRebuildCommandLine", pcp.RebuildCommand);
+								writer.WriteElementString("NMakeCleanCommandLine", pcp.CleanCommand);
+								writer.WriteElementString("NMakeOutput", pcp.OutputDir);
 							}
 
-							writer.WriteElementString("NMakePreprocessorDefinitions", defines.ToString());
-						}
-
-						{
-							// Include directories
-							StringBuilder includes = new StringBuilder();
-
-							pcp.IncludeDirectories.ForEach(
-								include => AppendToPropertyList(includes, include));
-							foreach (string include in Constants.DefaultIncludeDirectories)
 							{
-								AppendToPropertyList(includes, include);
+								// Preprocessor definitions
+								StringBuilder defines = new StringBuilder();
+
+								pcp.Defines.ForEach(define => AppendToPropertyList(defines, define));
+								foreach (string define in Constants.DefaultDefines)
+								{
+									AppendToPropertyList(defines, define);
+								}
+
+								writer.WriteElementString("NMakePreprocessorDefinitions", defines.ToString());
 							}
 
-							writer.WriteElementString("NMakeIncludeSearchPath", includes.ToString());
-						}
+							{
+								// Include directories
+								StringBuilder includes = new StringBuilder();
 
-						writer.WriteEndElement();
+								pcp.IncludeDirectories.ForEach(
+									include => AppendToPropertyList(includes, include));
+								foreach (string include in Constants.DefaultIncludeDirectories)
+								{
+									AppendToPropertyList(includes, include);
+								}
+
+								writer.WriteElementString("NMakeIncludeSearchPath", includes.ToString());
+							}
+
+							writer.WriteEndElement();
+						}
 					}
 
 					// File listing

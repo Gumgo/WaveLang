@@ -52,7 +52,9 @@ if $(GENERATE_VS_PROJECTS) = 1
 {
 	# Don't declare any targets when generating VS project files
 	local local-files = [ get-local-source-files $(all-files) ] ;
-	vs-project-generator.setup-vs-project-config $(TOP) : $(project-name) : $(defines) : $(features) : $(local-files) : $(include-directories) ;
+	vs-project-generator.setup-vs-project-config $(TOP) : $(project-name) : 0 : $(defines) : $(features) : $(local-files) : $(include-directories) ;
+	# TEMPORARY: make an additional project just for debugging until I figure out how to unify them
+	vs-project-generator.setup-vs-project-config $(TOP) : $(project-name)-gdb : 1 : $(defines) : $(features) : $(local-files) : $(include-directories) ;
 }
 else
 {

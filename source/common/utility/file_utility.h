@@ -8,6 +8,7 @@
 bool are_file_paths_equivalent(const char *path_a, const char *path_b);
 bool is_path_relative(const char *path);
 bool get_file_last_modified_timestamp(const char *path, uint64 &out_timestamp);
+void create_directory(const char *path);
 
 class c_binary_file_reader {
 public:

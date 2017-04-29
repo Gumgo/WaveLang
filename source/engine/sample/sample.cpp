@@ -1,9 +1,19 @@
 #include "common/utility/file_utility.h"
+#include "common/utility/sha1/SHA1.h"
 
+#include "engine/math/math_constants.h"
 #include "engine/math/simd.h"
 #include "engine/sample/sample.h"
 
 #include <fstream>
+#include <iostream>
+
+static const uint32 k_min_mipmap_sample_count = 4;
+
+static const char *k_wavetable_cache_folder = "cache";
+static const char *k_wavetable_cache_extension = ".wtc";
+static const char k_wavetable_cache_identifier[] = { 'w', 't', 'c', 'h' };
+static const uint32 k_wavetable_cache_version = 0;
 
 struct s_wave_riff_header {
 	uint32 chunk_id;
@@ -29,10 +39,24 @@ struct s_wave_data_subchunk {
 
 // $TODO add cue-points to wav files: http://bleepsandpops.com/post/37792760450/adding-cue-points-to-wav-files-in-c
 
-static bool load_wave(std::ifstream &file, e_sample_loop_mode loop_mode, bool phase_shift_enabled,
-	c_sample *out_sample);
+static std::string hash_wavetable_parameters(
+	c_wrapped_array_const<real32> harmonic_weights,
+	uint32 sample_count,
+	bool phase_shift_enabled);
 
-c_sample *c_sample::load(const char *filename, e_sample_loop_mode loop_mode, bool phase_shift_enabled) {
+static bool read_wavetable_cache(
+	c_wrapped_array_const<real32> harmonic_weights,
+	uint32 sample_count,
+	bool phase_shift_enabled,
+	c_wrapped_array<real32> out_sample_data);
+
+static bool write_wavetable_cache(
+	c_wrapped_array_const<real32> harmonic_weights,
+	uint32 sample_count,
+	bool phase_shift_enabled,
+	c_wrapped_array_const<real32> sample_data);
+
+c_sample *c_sample::load_file(const char *filename, e_sample_loop_mode loop_mode, bool phase_shift_enabled) {
 	c_sample *sample = new c_sample();
 
 	std::ifstream file(filename);
@@ -50,8 +74,237 @@ c_sample *c_sample::load(const char *filename, e_sample_loop_mode loop_mode, boo
 	return sample;
 }
 
-static bool load_wave(std::ifstream &file, e_sample_loop_mode loop_mode, bool phase_shift_enabled,
-	c_sample *out_sample) {
+c_sample *c_sample::generate_wavetable(c_wrapped_array_const<real32> harmonic_weights, uint32 sample_count,
+	bool phase_shift_enabled) {
+	if (harmonic_weights.get_count() == 0) {
+		// If no harmonics are provided, that's an error
+		return nullptr;
+	}
+
+	if (sample_count < 4) {
+		return nullptr;
+	}
+
+	{
+		uint32 sample_count_pow2_check = 1;
+		while (sample_count_pow2_check < sample_count) {
+			sample_count_pow2_check *= 2;
+		}
+
+		if (sample_count_pow2_check != sample_count) {
+			return nullptr;
+		}
+	}
+
+	enum e_pass {
+		k_pass_compute_memory,
+		k_pass_generate_data,
+
+		k_pass_count
+	};
+
+	c_sample *sample = new c_sample();
+	std::vector<real32> entry_sample_data;
+	bool loaded_from_cache = false;
+	for (uint32 pass = 0; pass < k_pass_count; pass++) {
+		uint32 wavetable_entry_count = 0;
+		uint32 total_sample_count = 0;
+		uint32 previous_entry_sample_count = 0;
+		for (uint32 max_frequency = sample_count / 2 - 1; max_frequency > 0; max_frequency--) {
+			uint32 wavetable_entry_index = wavetable_entry_count;
+			wavetable_entry_count++;
+
+			uint32 entry_sample_count = sample_count;
+			// The entry sample count must be more than twice the max frequency
+			// entry_sample_count / 2 > max_frequency * 2
+			while (entry_sample_count > max_frequency * 4) {
+				entry_sample_count /= 2;
+			}
+
+			wl_assert(entry_sample_count > 2);
+
+			// Check to see if we actually need new sample data. If the entry sample count is the same as the previous
+			// entry and the previous highest harmonic weight is 0 (that is, the single harmonic weight differing
+			// between this entry and the previous entry), then the sample data for this entry will be identical to the
+			// previous entry's sample data, so we don't need to reserve more space.
+
+			// harmonic_weight for frequency freq == harmonic_weights[freq - 1]
+			// first_unused_harmonic_index == (max_frequency - 1) + 1 == max_frequency
+			uint32 first_unused_harmonic_index = max_frequency;
+			real32 first_unused_harmonic_weight = first_unused_harmonic_index < harmonic_weights.get_count() ?
+				harmonic_weights[first_unused_harmonic_index] : 0.0f;
+
+			if (previous_entry_sample_count == entry_sample_count &&
+				first_unused_harmonic_weight == 0.0f) {
+				// This sample is identical to the previous one, just reuse the data
+				wl_assert(wavetable_entry_index > 0);
+
+				if (pass == k_pass_generate_data) {
+					c_sample &entry_sample = sample->m_wavetable[wavetable_entry_index];
+					const c_sample &previous_entry_sample = sample->m_wavetable[wavetable_entry_index - 1];
+					entry_sample = previous_entry_sample;
+				}
+			} else {
+				uint32 padded_sample_count = entry_sample_count + k_max_sample_padding * 2;
+				if (phase_shift_enabled) {
+					// The loop is doubled in size
+					padded_sample_count += entry_sample_count;
+				}
+
+				if (pass == k_pass_generate_data) {
+					// Grab a block of samples
+					c_wrapped_array<real32> sample_data_destination =
+						sample->m_sample_data_allocator.get_array().get_range(total_sample_count, padded_sample_count);
+
+					c_sample &entry_sample = sample->m_wavetable[wavetable_entry_index];
+					entry_sample.m_type = k_type_single_sample;
+					entry_sample.m_sample_rate = entry_sample_count;
+					entry_sample.m_base_sample_rate_ratio =
+						static_cast<real64>(entry_sample_count) / static_cast<real64>(sample_count);
+					entry_sample.m_loop_mode = k_sample_loop_mode_loop;
+					entry_sample.m_loop_start = 0;
+					entry_sample.m_loop_end = entry_sample_count;
+					entry_sample.m_phase_shift_enabled = phase_shift_enabled;
+
+					if (!loaded_from_cache) {
+						entry_sample_data.resize(entry_sample_count);
+						// Add harmonics up to the nyquist limit
+						for (uint32 sample_index = 0; sample_index < entry_sample_count; sample_index++) {
+							real64 sample_value = 0.0;
+							real64 sample_offset_multiplier = 2.0 * k_pi *
+								static_cast<real64>(sample_index) / static_cast<real64>(entry_sample_count);
+
+							uint32 harmonic_end_index = std::min(
+								cast_integer_verify<uint32>(harmonic_weights.get_count()), first_unused_harmonic_index);
+							for (uint32 harmonic_index = 0; harmonic_index < harmonic_end_index; harmonic_index++) {
+								real64 period_multiplier = static_cast<real64>(harmonic_index + 1);
+								sample_value +=
+									harmonic_weights[harmonic_index] *
+									std::sin(sample_offset_multiplier * period_multiplier);
+							}
+
+							entry_sample_data[sample_index] = static_cast<real32>(sample_value);
+						}
+					}
+
+					const real32 *entry_sample_data_pointer =
+						entry_sample_data.empty() ? nullptr : &entry_sample_data.front();
+					sample->m_wavetable[wavetable_entry_index].initialize_data_with_padding(1, entry_sample_count,
+						c_wrapped_array_const<real32>(entry_sample_data_pointer, entry_sample_data.size()),
+						&sample_data_destination, loaded_from_cache);
+				}
+
+				total_sample_count += align_size(padded_sample_count, static_cast<uint32>(k_simd_block_elements));
+			}
+
+			previous_entry_sample_count = entry_sample_count;
+		}
+
+		wl_assert(wavetable_entry_count > 0);
+
+		if (pass == k_pass_compute_memory) {
+			// Allocate memory to hold all wavetable entries
+			sample->m_sample_data_allocator.allocate(total_sample_count);
+			sample->m_wavetable.resize(wavetable_entry_count);
+
+			c_wrapped_array<real32> sample_data_array = sample->m_sample_data_allocator.get_array();
+			loaded_from_cache = read_wavetable_cache(
+				harmonic_weights, sample_count, phase_shift_enabled, sample_data_array);
+			if (!loaded_from_cache) {
+				std::cout << "Generating wavetable\n";
+			}
+		} else {
+			wl_assert(pass == k_pass_generate_data);
+			wl_assert(total_sample_count == sample->m_sample_data_allocator.get_array().get_count());
+
+			if (!loaded_from_cache) {
+				c_wrapped_array<real32> sample_data_array = sample->m_sample_data_allocator.get_array();
+				write_wavetable_cache(harmonic_weights, sample_count, phase_shift_enabled, sample_data_array);
+			}
+		}
+	}
+
+	sample->initialize_wavetable();
+	return sample;
+}
+
+c_sample::c_sample() {
+	m_type = k_type_none;
+	m_sample_rate = 0;
+	m_base_sample_rate_ratio = 0.0;
+	m_channel_count = 0;
+
+	m_first_sampling_frame = 0;
+	m_sampling_frame_count = 0;
+	m_total_frame_count = 0;
+
+	m_loop_mode = k_sample_loop_mode_none;
+	m_loop_start = 0;
+	m_loop_end = 0;
+	m_phase_shift_enabled = false;
+}
+
+bool c_sample::is_wavetable() const {
+	return m_type == k_type_wavetable;
+}
+
+uint32 c_sample::get_sample_rate() const {
+	return m_sample_rate;
+}
+
+real64 c_sample::get_base_sample_rate_ratio() const {
+	return m_base_sample_rate_ratio;
+}
+
+uint32 c_sample::get_channel_count() const {
+	return m_channel_count;
+}
+
+uint32 c_sample::get_first_sampling_frame() const {
+	return m_first_sampling_frame;
+}
+
+uint32 c_sample::get_sampling_frame_count() const {
+	return m_sampling_frame_count;
+}
+
+uint32 c_sample::get_total_frame_count() const {
+	return m_total_frame_count;
+}
+
+e_sample_loop_mode c_sample::get_loop_mode() const {
+	return m_loop_mode;
+}
+
+uint32 c_sample::get_loop_start() const {
+	return m_loop_start;
+}
+
+uint32 c_sample::get_loop_end() const {
+	return m_loop_end;
+}
+
+bool c_sample::is_phase_shift_enabled() const {
+	return m_phase_shift_enabled;
+}
+
+c_wrapped_array_const<real32> c_sample::get_channel_sample_data(uint32 channel) const {
+	wl_assert(VALID_INDEX(channel, m_channel_count));
+	return m_sample_data.get_range(m_total_frame_count * channel, m_total_frame_count);
+}
+
+uint32 c_sample::get_wavetable_entry_count() const {
+	wl_assert(m_type == k_type_wavetable);
+	return cast_integer_verify<uint32>(m_wavetable.size());
+}
+
+const c_sample *c_sample::get_wavetable_entry(uint32 index) const {
+	wl_assert(m_type == k_type_wavetable);
+	return &m_wavetable[index];
+}
+
+bool c_sample::load_wave(
+	std::ifstream &file, e_sample_loop_mode loop_mode, bool phase_shift_enabled, c_sample *out_sample) {
 	s_wave_riff_header riff_header;
 
 	c_binary_file_reader reader(file);
@@ -195,33 +448,12 @@ static bool load_wave(std::ifstream &file, e_sample_loop_mode loop_mode, bool ph
 	return true;
 }
 
-c_sample::c_sample() {
-	m_type = k_type_none;
-	m_sample_rate = 0;
-	m_channel_count = 0;
-
-	m_first_sampling_frame = 0;
-	m_sampling_frame_count = 0;
-	m_total_frame_count = 0;
-
-	m_loop_mode = k_sample_loop_mode_none;
-	m_loop_start = 0;
-	m_loop_end = 0;
-}
-
-c_sample::~c_sample() {
-	if (m_type == k_type_mipmap) {
-		for (uint32 index = 0; index < m_mipmap.size(); index++) {
-			delete m_mipmap[index];
-		}
-	}
-}
-
 void c_sample::initialize(uint32 sample_rate, uint32 channel_count, uint32 frame_count,
 	e_sample_loop_mode loop_mode, uint32 loop_start, uint32 loop_end, bool phase_shift_enabled,
 	c_wrapped_array_const<real32> sample_data) {
-	wl_assert(!m_sample_data.get_array().get_pointer());
-	wl_assert(m_mipmap.empty());
+	wl_assert(!m_sample_data_allocator.get_array().get_pointer());
+	wl_assert(!m_sample_data.get_pointer());
+	wl_assert(m_wavetable.empty());
 
 	wl_assert(sample_data.get_count() > 0);
 
@@ -230,6 +462,7 @@ void c_sample::initialize(uint32 sample_rate, uint32 channel_count, uint32 frame
 
 	wl_assert(sample_rate > 0);
 	m_sample_rate = sample_rate;
+	m_base_sample_rate_ratio = 1.0;
 
 	wl_assert(VALID_INDEX(loop_mode, k_sample_loop_mode_count));
 	m_loop_mode = loop_mode;
@@ -245,186 +478,65 @@ void c_sample::initialize(uint32 sample_rate, uint32 channel_count, uint32 frame
 	}
 	m_phase_shift_enabled = phase_shift_enabled;
 
-	initialize_data_with_padding(channel_count, frame_count, sample_data, k_max_sample_padding, k_max_sample_padding);
+	initialize_data_with_padding(channel_count, frame_count, sample_data, nullptr, false);
 }
 
-void c_sample::initialize_for_mipmap(uint32 sample_rate, uint32 channel_count, uint32 frame_count,
-	e_sample_loop_mode loop_mode, uint32 loop_start, uint32 loop_end, bool phase_shift_enabled,
-	c_wrapped_array_const<real32> sample_data) {
-	wl_assert(!m_sample_data.get_array().get_pointer());
-	wl_assert(m_mipmap.empty());
-
-	wl_assert(sample_data.get_count() > 0);
+void c_sample::initialize_wavetable() {
+	wl_assert(!m_sample_data.get_pointer());
+	wl_assert(!m_wavetable.empty());
 
 	wl_assert(m_type == k_type_none);
-	m_type = k_type_uninitialized_mipmap_sample;
-
-	wl_assert(sample_rate > 0);
-	wl_assert(channel_count * frame_count == sample_data.get_count());
-	m_sample_rate = sample_rate;
-	m_channel_count = channel_count;
-
-	m_first_sampling_frame = 0;
-	m_sampling_frame_count = frame_count;
-	m_total_frame_count = frame_count;
-
-	wl_assert(VALID_INDEX(loop_mode, k_sample_loop_mode_count));
-	m_loop_mode = loop_mode;
-	if (loop_mode == k_sample_loop_mode_none) {
-		wl_assert(!phase_shift_enabled);
-		m_loop_start = 0;
-		m_loop_end = 0;
-	}
-	else {
-		wl_assert(loop_start < loop_end);
-		wl_assert(loop_end <= frame_count);
-		m_loop_start = loop_start;
-		m_loop_end = loop_end;
-	}
-	m_phase_shift_enabled = phase_shift_enabled;
-
-	// Directly copy the data - do not modify it yet
-	m_sample_data.allocate(sample_data.get_count());
-	memcpy(m_sample_data.get_array().get_pointer(), sample_data.get_pointer(),
-		sample_data.get_count() * sizeof(real32));
-}
-
-void c_sample::initialize(c_wrapped_array_const<c_sample *> mipmap) {
-	wl_assert(!m_sample_data.get_array().get_pointer());
-	wl_assert(m_mipmap.empty());
-	wl_assert(m_mipmap.size() <= k_max_sample_mipmap_levels);
-
-	wl_assert(m_type == k_type_none);
-	m_type = k_type_mipmap;
-
-	wl_assert(mipmap.get_count() > 0);
+	m_type = k_type_wavetable;
 
 #if IS_TRUE(ASSERTS_ENABLED)
-	for (uint32 index = 1; index < mipmap.get_count(); index++) {
+	for (uint32 index = 1; index < m_wavetable.size(); index++) {
 		// Verify that the mipmap is valid
-		c_sample *sample_a = mipmap[index - 1];
-		c_sample *sample_b = mipmap[index];
+		const c_sample &sample_a = m_wavetable[index - 1];
+		const c_sample &sample_b = m_wavetable[index];
 
-		wl_assert(sample_a->m_type == k_type_uninitialized_mipmap_sample);
-		wl_assert(sample_b->m_type == k_type_uninitialized_mipmap_sample);
-		wl_assert(sample_a->m_sample_rate == sample_b->m_sample_rate * 2);
-		wl_assert(sample_a->m_channel_count == sample_b->m_channel_count);
-		wl_assert(sample_a->m_sampling_frame_count == sample_b->m_sampling_frame_count * 2);
-		wl_assert(sample_a->m_loop_start == sample_b->m_loop_start * 2);
-		wl_assert(sample_a->m_loop_end == sample_b->m_loop_end * 2);
-		wl_assert(sample_a->m_phase_shift_enabled == sample_b->m_phase_shift_enabled);
+		wl_assert(sample_a.m_type == k_type_single_sample);
+		wl_assert(sample_b.m_type == k_type_single_sample);
+		wl_assert(sample_a.m_sample_rate == sample_b.m_sample_rate * 2 ||
+			sample_a.m_sample_rate == sample_b.m_sample_rate);
+		uint32 sample_rate_ratio = sample_a.m_sample_rate / sample_b.m_sample_rate;
+		wl_assert(sample_a.m_channel_count == sample_b.m_channel_count);
+		wl_assert(sample_a.m_sampling_frame_count == sample_b.m_sampling_frame_count * sample_rate_ratio);
+		wl_assert(sample_a.m_loop_mode == sample_b.m_loop_mode);
+		wl_assert(sample_a.m_loop_start - sample_a.m_first_sampling_frame ==
+			(sample_b.m_loop_start - sample_b.m_first_sampling_frame) * sample_rate_ratio);
+		wl_assert(sample_a.m_loop_end - sample_a.m_first_sampling_frame ==
+			(sample_b.m_loop_end - sample_b.m_first_sampling_frame) * sample_rate_ratio);
+		wl_assert(sample_a.m_phase_shift_enabled == sample_b.m_phase_shift_enabled);
 	}
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
-	m_sample_rate = 0;
-	m_channel_count = 0;
+	const c_sample &first_sample = m_wavetable.front();
+	m_sample_rate = first_sample.m_sample_rate;
+	m_base_sample_rate_ratio = first_sample.m_base_sample_rate_ratio;
+	m_channel_count = first_sample.m_channel_count;
 
-	m_first_sampling_frame = 0;
-	m_sampling_frame_count = 0;
-	m_total_frame_count = 0;
+	m_first_sampling_frame = first_sample.m_first_sampling_frame;
+	m_sampling_frame_count = first_sample.m_sampling_frame_count;
+	m_total_frame_count = first_sample.m_total_frame_count;
 
-	m_loop_mode = mipmap[0]->m_loop_mode;
-	m_loop_start = 0;
-	m_loop_end = 0;
-	m_phase_shift_enabled = mipmap[0]->m_phase_shift_enabled;
-
-	uint32 loop_padding = k_max_sample_padding;
-	m_mipmap.resize(mipmap.get_count());
-	for (size_t index = 0; index < mipmap.get_count(); index++) {
-		size_t reverse_index = mipmap.get_count() - index - 1;
-		c_sample *mip_sample = mipmap[reverse_index];
-		m_mipmap[reverse_index] = mip_sample;
-
-		// Swap out the current data with an empty vector
-		c_aligned_allocator<real32, k_simd_alignment> m_raw_sample_data;
-		m_raw_sample_data.swap(mip_sample->m_sample_data);
-
-		c_wrapped_array_const<real32> sample_data = m_raw_sample_data.get_array();
-		mip_sample->initialize_data_with_padding(
-			mip_sample->m_channel_count, mip_sample->m_total_frame_count,
-			sample_data, k_max_sample_padding, loop_padding);
-
-		// This sample has been initialized
-		mip_sample->m_type = k_type_single_sample;
-
-		// In order to line up, each level must use twice the padding as the level higher. The edge padding can stay the
-		// same though.
-		loop_padding *= 2;
-	}
-}
-
-bool c_sample::is_mipmap() const {
-	return m_type == k_type_mipmap;
-}
-
-uint32 c_sample::get_sample_rate() const {
-	wl_assert(m_type == k_type_single_sample);
-	return m_sample_rate;
-}
-
-uint32 c_sample::get_channel_count() const {
-	wl_assert(m_type == k_type_single_sample);
-	return m_channel_count;
-}
-
-uint32 c_sample::get_first_sampling_frame() const {
-	wl_assert(m_type == k_type_single_sample);
-	return m_first_sampling_frame;
-}
-
-uint32 c_sample::get_sampling_frame_count() const {
-	wl_assert(m_type == k_type_single_sample);
-	return m_sampling_frame_count;
-}
-
-uint32 c_sample::get_total_frame_count() const {
-	wl_assert(m_type == k_type_single_sample);
-	return m_total_frame_count;
-}
-
-e_sample_loop_mode c_sample::get_loop_mode() const {
-	return m_loop_mode;
-}
-
-uint32 c_sample::get_loop_start() const {
-	wl_assert(m_type == k_type_single_sample);
-	return m_loop_start;
-}
-
-uint32 c_sample::get_loop_end() const {
-	wl_assert(m_type == k_type_single_sample);
-	return m_loop_end;
-}
-
-bool c_sample::is_phase_shift_enabled() const {
-	return m_phase_shift_enabled;
-}
-
-c_wrapped_array_const<real32> c_sample::get_channel_sample_data(uint32 channel) const {
-	wl_assert(VALID_INDEX(channel, m_channel_count));
-	return c_wrapped_array_const<real32>(
-		&m_sample_data.get_array()[m_total_frame_count * channel], m_total_frame_count);
-}
-
-uint32 c_sample::get_mipmap_count() const {
-	wl_assert(m_type == k_type_mipmap);
-	return cast_integer_verify<uint32>(m_mipmap.size());
-}
-
-const c_sample *c_sample::get_mipmap_sample(uint32 index) const {
-	wl_assert(m_type == k_type_mipmap);
-	return m_mipmap[index];
+	m_loop_mode = first_sample.m_loop_mode;
+	m_loop_start = first_sample.m_loop_start;
+	m_loop_end = first_sample.m_loop_end;
+	m_phase_shift_enabled = first_sample.m_phase_shift_enabled;
 }
 
 void c_sample::initialize_data_with_padding(uint32 channel_count, uint32 frame_count,
-	c_wrapped_array_const<real32> sample_data, uint32 edge_padding, uint32 loop_padding) {
+	c_wrapped_array_const<real32> sample_data, c_wrapped_array<real32> *destination, bool initialize_metadata_only) {
 	// Add zero padding to the beginning of the sound
-	m_first_sampling_frame = edge_padding;
+	m_first_sampling_frame = k_max_sample_padding;
 	uint32 loop_frame_count = 0;
 
 	switch (m_loop_mode) {
 	case k_sample_loop_mode_none:
 		// With no looping, the sampling frame count is the same as the provided frame count
+		// Key: D = sample data, 0 = zero padding
+		// Orig:      [DDDDDDDD]
+		// Final: [00][DDDDDDDD][00]
 		m_sampling_frame_count = frame_count;
 		break;
 
@@ -433,14 +545,32 @@ void c_sample::initialize_data_with_padding(uint32 channel_count, uint32 frame_c
 		// do this because if we're sampling using a window size of N, then the first time we loop, we actually want our
 		// window to touch the pre-loop samples. However, once we've looped enough (usually just once if the loop is
 		// long enough) we want our window to "wrap" at the edges. In other words, we want both endpoints of our loop to
-		// appear to be identical for the maximum window size.
-		m_sampling_frame_count = m_loop_end + loop_padding;
+		// appear to be identical for the maximum window size, so we shift the loop points forward in time.
+		// Key: I = intro samples, L = loop samples, T = intro-to-loop-transition samples (beginning of the loop),
+		// P = loop padding, E = edge padding
+		// Orig:      [IIII][LLLLLLLLLLLLLLLL]
+		// Final: [00][IIII][TT][LLLLLLLLLLLL][PP][EE]
+
+		// If the loop start point is 0 (i.e. there is no "intro"), then the above doesn't apply and we don't need to
+		// apply any loop padding. This is because with no intro, there is no "intro boundary" to sample differently
+		// from the first time we enter the loop region.
+		// Orig:      [LLLLLLLL]
+		// Final: [PP][LLLLLLLL][PP]
+
+		m_sampling_frame_count = m_loop_end;
+		if (m_loop_start > 0) {
+			m_sampling_frame_count += k_max_sample_padding;
+		}
 		loop_frame_count = m_loop_end - m_loop_start;
 		break;
 
 	case k_sample_loop_mode_bidi_loop:
-		// Same logic as above, but the actual looping portion of the sound is duplicated and reversed
-		m_sampling_frame_count = m_loop_end + loop_padding;
+		// Same logic as above, but the actual looping portion of the sound is duplicated and reversed:
+		// [01234567] -> [01234567654321]
+		m_sampling_frame_count = m_loop_end;
+		if (m_loop_start > 0) {
+			m_sampling_frame_count += k_max_sample_padding;
+		}
 		loop_frame_count = m_loop_end - m_loop_start;
 		if (m_loop_end - m_loop_start > 2) {
 			// Don't duplicate the first and last samples
@@ -457,103 +587,283 @@ void c_sample::initialize_data_with_padding(uint32 channel_count, uint32 frame_c
 
 	// Add padding to the beginning and end
 	// Round up to account for SSE padding
-	m_total_frame_count = align_size(m_sampling_frame_count + (2 * edge_padding),
+	m_total_frame_count = align_size(m_sampling_frame_count + (2 * k_max_sample_padding),
 		static_cast<uint32>(k_simd_block_elements));
 	if (m_phase_shift_enabled) {
 		m_total_frame_count += loop_frame_count;
 	}
 
-	wl_assert(channel_count * frame_count == sample_data.get_count());
+	wl_assert(initialize_metadata_only || channel_count * frame_count == sample_data.get_count());
 	m_channel_count = channel_count;
 
-	m_sample_data.allocate(m_total_frame_count * m_channel_count);
-	c_wrapped_array<real32> sample_data_array = m_sample_data.get_array();
+	c_wrapped_array<real32> sample_data_array;
+	if (!destination) {
+		m_sample_data_allocator.allocate(m_total_frame_count * m_channel_count);
+		sample_data_array = m_sample_data_allocator.get_array();
+	} else {
+		sample_data_array = *destination;
+		wl_assert(sample_data_array.get_count() == m_total_frame_count * m_channel_count);
+	}
 
-	for (uint32 channel = 0; channel < m_channel_count; channel++) {
-		uint32 src_offset = frame_count * channel;
-		uint32 dst_offset = m_total_frame_count * channel;
+	m_sample_data = sample_data_array;
 
-		// Pad beginning with 0
-		for (uint32 index = 0; index < edge_padding; index++) {
-			sample_data_array[dst_offset] = 0.0f;
-			dst_offset++;
-		}
+	if (!initialize_metadata_only) {
+		for (uint32 channel = 0; channel < m_channel_count; channel++) {
+			uint32 src_offset = frame_count * channel;
+			uint32 dst_offset = m_total_frame_count * channel;
 
-		switch (m_loop_mode) {
-		case k_sample_loop_mode_none:
-			// Copy samples directly
-			for (uint32 index = 0; index < frame_count; index++) {
-				sample_data_array[dst_offset] = sample_data[src_offset + index];
-				dst_offset++;
-			}
-
-			// Pad end with 0
-			for (uint32 index = 0; index < edge_padding; index++) {
-				sample_data_array[dst_offset] = 0.0f;
-				dst_offset++;
-			}
-			break;
-
-		case k_sample_loop_mode_loop:
-		case k_sample_loop_mode_bidi_loop:
-		{
-			// Copy samples directly
-			for (uint32 index = 0; index < m_loop_end; index++) {
-				sample_data_array[dst_offset] = sample_data[src_offset + index];
-				dst_offset++;
-			}
-
-			uint32 loop_mod = m_loop_end - m_loop_start;
-			if (m_loop_mode == k_sample_loop_mode_bidi_loop) {
-				// Copy reversed loop
-				uint32 loop_offset = dst_offset - loop_mod;
-				for (uint32 index = 1; index + 1 < loop_mod; index++) {
-					uint32 reverse_index = loop_mod - index - 1;
-					sample_data_array[dst_offset] = sample_data_array[loop_offset + reverse_index];
+			switch (m_loop_mode) {
+			case k_sample_loop_mode_none:
+				// Pad beginning with 0
+				for (uint32 index = 0; index < k_max_sample_padding; index++) {
+					sample_data_array[dst_offset] = 0.0f;
 					dst_offset++;
 				}
 
-				if (loop_mod > 2) {
-					loop_mod += (loop_mod - 2);
+				// Copy samples directly
+				for (uint32 index = 0; index < frame_count; index++) {
+					sample_data_array[dst_offset] = sample_data[src_offset + index];
+					dst_offset++;
 				}
+
+				// Pad end with 0
+				for (uint32 index = 0; index < k_max_sample_padding; index++) {
+					sample_data_array[dst_offset] = 0.0f;
+					dst_offset++;
+				}
+				break;
+
+			case k_sample_loop_mode_loop:
+			case k_sample_loop_mode_bidi_loop:
+			{
+				// Pad beginning with 0 (if our loop start point is 0, we will later overwrite this with loop samples)
+				for (uint32 index = 0; index < k_max_sample_padding; index++) {
+					sample_data_array[dst_offset] = 0.0f;
+					dst_offset++;
+				}
+
+				// Copy samples directly
+				for (uint32 index = 0; index < m_loop_end; index++) {
+					sample_data_array[dst_offset] = sample_data[src_offset + index];
+					dst_offset++;
+				}
+
+				uint32 loop_mod = m_loop_end - m_loop_start;
+				if (m_loop_mode == k_sample_loop_mode_bidi_loop) {
+					// Copy reversed loop
+					uint32 loop_offset = dst_offset - loop_mod;
+					for (uint32 index = 1; index + 1 < loop_mod; index++) {
+						uint32 reverse_index = loop_mod - index - 1;
+						sample_data_array[dst_offset] = sample_data_array[loop_offset + reverse_index];
+						dst_offset++;
+					}
+
+					if (loop_mod > 2) {
+						loop_mod += (loop_mod - 2);
+					}
+				}
+
+				wl_assert(loop_mod == loop_frame_count);
+
+				if (m_loop_start == 0) {
+					// No loop padding necessary, just apply beginning/end padding by copying from the loop
+
+					// Pad the beginning by copying loop samples
+					for (uint32 index = 0; index < k_max_sample_padding; index++) {
+						uint32 rev_index = k_max_sample_padding - index - 1;
+						sample_data_array[rev_index] = sample_data_array[rev_index + loop_mod];
+					}
+
+					// Pad the end by copying loop samples
+					for (uint32 index = 0; index < k_max_sample_padding; index++) {
+						sample_data_array[dst_offset] = sample_data_array[dst_offset - loop_mod];
+						dst_offset++;
+					}
+				} else {
+					// Extend the loop by both loop padding and edge padding
+					uint32 loop_extend = k_max_sample_padding * 2;
+					if (m_phase_shift_enabled) {
+						// Double the loop so we can phase-shift without overrunning bounds
+						loop_extend += loop_mod;
+					}
+
+					for (uint32 index = 0; index < loop_extend; index++) {
+						sample_data_array[dst_offset] = sample_data_array[dst_offset - loop_mod];
+						dst_offset++;
+					}
+
+					// Finally, adjust loop points forward by the loop padding
+					m_loop_start += k_max_sample_padding;
+					m_loop_end += k_max_sample_padding;
+				}
+				break;
 			}
 
-			wl_assert(loop_mod == loop_frame_count);
-
-			// Extend the loop by both loop padding and edge padding
-			uint32 loop_extend = loop_padding + edge_padding;
-			if (m_phase_shift_enabled) {
-				// Double the loop so we can phase-shift without overrunning bounds
-				loop_extend += loop_mod;
+			default:
+				wl_unreachable();
 			}
 
-			for (uint32 index = 0; index < loop_extend; index++) {
-				sample_data_array[dst_offset] = sample_data_array[dst_offset - loop_mod];
+			// Pad with 0 for SSE alignment
+			uint32 simd_padding_count = align_size(dst_offset, static_cast<uint32>(k_simd_block_elements)) - dst_offset;
+			for (uint32 index = 0; index < simd_padding_count; index++) {
+				sample_data_array[dst_offset] = 0.0f;
 				dst_offset++;
 			}
 
-
-			// Finally, adjust loop points
-			m_loop_start += loop_padding;
-			m_loop_end += loop_padding;
-			break;
+			wl_assert(dst_offset == (channel + 1) * m_total_frame_count);
 		}
-
-		default:
-			wl_unreachable();
-		}
-
-		// Pad with 0 for SSE alignment
-		uint32 simd_padding_count = align_size(dst_offset, static_cast<uint32>(k_simd_block_elements)) - dst_offset;
-		for (uint32 index = 0; index < simd_padding_count; index++) {
-			sample_data_array[dst_offset] = 0.0f;
-			dst_offset++;
-		}
-
-		wl_assert(dst_offset == (channel + 1) * m_total_frame_count);
 	}
 
 	// Offset the loop points by the initial padding
 	m_loop_start += m_first_sampling_frame;
 	m_loop_end += m_first_sampling_frame;
+}
+
+static std::string hash_wavetable_parameters(
+	c_wrapped_array_const<real32> harmonic_weights,
+	uint32 sample_count,
+	bool phase_shift_enabled) {
+	CSHA1 hash;
+	uint32 harmonic_weights_count = cast_integer_verify<uint32>(harmonic_weights.get_count());
+	hash.Update(reinterpret_cast<const uint8 *>(&harmonic_weights_count), sizeof(harmonic_weights_count));
+	hash.Update(reinterpret_cast<const uint8 *>(harmonic_weights.get_pointer()),
+		cast_integer_verify<uint32>(sizeof(harmonic_weights[0]) * harmonic_weights.get_count()));
+	hash.Update(reinterpret_cast<const uint8 *>(&phase_shift_enabled), sizeof(phase_shift_enabled));
+	hash.Final();
+
+	std::string hash_string;
+	hash.ReportHashStl(hash_string, CSHA1::REPORT_HEX_SHORT);
+	return hash_string;
+}
+
+static bool read_wavetable_cache(
+	c_wrapped_array_const<real32> harmonic_weights,
+	uint32 sample_count,
+	bool phase_shift_enabled,
+	c_wrapped_array<real32> out_sample_data) {
+	std::string hash_string = hash_wavetable_parameters(harmonic_weights, sample_count, phase_shift_enabled);
+	std::string wavetable_cache_filename = k_wavetable_cache_folder;
+	wavetable_cache_filename += '/';
+	wavetable_cache_filename += hash_string;
+	wavetable_cache_filename += k_wavetable_cache_extension;
+
+	bool result = true;
+
+	std::ifstream file(wavetable_cache_filename, std::ios::binary);
+	if (!file.is_open()) {
+		result = false;
+	}
+
+	if (result) {
+		uint32 file_identifier;
+		file.read(reinterpret_cast<char *>(&file_identifier), sizeof(file_identifier));
+		if (file.fail() || memcmp(&file_identifier, k_wavetable_cache_identifier, sizeof(file_identifier)) != 0) {
+			result = false;
+		}
+	}
+
+	if (result) {
+		uint32 file_version;
+		file.read(reinterpret_cast<char *>(&file_version), sizeof(file_version));
+		if (file.fail() || file_version != k_wavetable_cache_version) {
+			result = false;
+		}
+	}
+
+	uint32 file_harmonic_weights_count;
+	uint32 file_sample_count;
+	uint32 file_phase_shift_enabled;
+
+	if (result) {
+		file.read(reinterpret_cast<char *>(&file_harmonic_weights_count), sizeof(file_harmonic_weights_count));
+		if (file.fail() || file_harmonic_weights_count != harmonic_weights.get_count()) {
+			result = false;
+		}
+	}
+
+	if (result) {
+		if (file_harmonic_weights_count > 0) {
+			std::vector<real32> file_harmonic_weights(file_harmonic_weights_count);
+			size_t harmonic_weights_size = sizeof(file_harmonic_weights[0]) * file_harmonic_weights.size();
+			file.read(reinterpret_cast<char *>(&file_harmonic_weights.front()), harmonic_weights_size);
+			if (file.fail() ||
+				memcmp(&file_harmonic_weights.front(), harmonic_weights.get_pointer(), harmonic_weights_size) != 0) {
+				result = false;
+			}
+		}
+	}
+
+	if (result) {
+		file.read(reinterpret_cast<char *>(&file_sample_count), sizeof(file_sample_count));
+		if (file.fail() || file_sample_count != sample_count) {
+			result = false;
+		}
+	}
+
+	if (result) {
+		file.read(reinterpret_cast<char *>(&file_phase_shift_enabled), sizeof(file_phase_shift_enabled));
+		if (file.fail() || file_phase_shift_enabled != static_cast<uint32>(phase_shift_enabled)) {
+			result = false;
+		}
+	}
+
+	if (result) {
+		// Read sample data if everything has matched so far
+		file.read(reinterpret_cast<char *>(out_sample_data.get_pointer()),
+			sizeof(out_sample_data[0]) * out_sample_data.get_count());
+		if (file.fail()) {
+			result = false;
+		}
+	}
+
+	if (result) {
+		std::cout << "Loaded wavetable '" << wavetable_cache_filename << "'\n";
+	} else {
+		std::cout << "Failed to load wavetable '" << wavetable_cache_filename << "'\n";
+	}
+	return result;
+}
+
+static bool write_wavetable_cache(
+	c_wrapped_array_const<real32> harmonic_weights,
+	uint32 sample_count,
+	bool phase_shift_enabled,
+	c_wrapped_array_const<real32> sample_data) {
+	std::string hash_string = hash_wavetable_parameters(harmonic_weights, sample_count, phase_shift_enabled);
+	std::string wavetable_cache_filename = k_wavetable_cache_folder;
+	wavetable_cache_filename += '/';
+	wavetable_cache_filename += hash_string;
+	wavetable_cache_filename += k_wavetable_cache_extension;
+
+	create_directory(k_wavetable_cache_folder);
+
+	std::ofstream file(wavetable_cache_filename, std::ios::binary);
+	if (!file.is_open()) {
+		return false;
+	}
+
+	file.write(reinterpret_cast<const char *>(k_wavetable_cache_identifier), sizeof(k_wavetable_cache_identifier));
+	file.write(reinterpret_cast<const char *>(&k_wavetable_cache_version), sizeof(k_wavetable_cache_version));
+
+	uint32 file_harmonic_weights_count = cast_integer_verify<uint32>(harmonic_weights.get_count());
+	uint32 file_phase_shift_enabled = phase_shift_enabled ? 1 : 0;
+
+	file.write(reinterpret_cast<const char *>(&file_harmonic_weights_count), sizeof(file_harmonic_weights_count));
+
+	size_t harmonic_weights_size = sizeof(harmonic_weights[0]) * harmonic_weights.get_count();
+	file.write(reinterpret_cast<const char *>(harmonic_weights.get_pointer()), harmonic_weights_size);
+	file.write(reinterpret_cast<const char *>(&sample_count), sizeof(sample_count));
+	file.write(reinterpret_cast<const char *>(&file_phase_shift_enabled), sizeof(file_phase_shift_enabled));
+
+	// Write sample data
+	file.write(reinterpret_cast<const char *>(sample_data.get_pointer()),
+		sizeof(sample_data[0]) * sample_data.get_count());
+
+	if (file.fail()) {
+		std::cout << "Failed to save wavetable '" << wavetable_cache_filename << "'\n";
+	} else {
+		std::cout << "Saved wavetable '" << wavetable_cache_filename << "'\n";
+	}
+
+	return !file.fail();
 }

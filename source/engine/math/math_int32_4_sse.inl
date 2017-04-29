@@ -172,6 +172,10 @@ inline c_int32_4 max_unsigned(const c_int32_4 &a, const c_int32_4 &b) {
 	return _mm_max_epu32(a, b);
 }
 
+inline c_real32_4 convert_to_real32_4(const c_int32_4 &v) {
+	return _mm_cvtepi32_ps(v);
+}
+
 inline int32 mask_from_msb(const c_int32_4 &v) {
 	return _mm_movemask_ps(v.real32_4_from_bits());
 }

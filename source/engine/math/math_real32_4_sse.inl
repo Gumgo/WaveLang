@@ -169,6 +169,10 @@ inline void sincos(const c_real32_4 &v, c_real32_4 &out_sin, c_real32_4 &out_cos
 	sincos_ps(v, reinterpret_cast<t_simd_real32 *>(&out_sin), reinterpret_cast<t_simd_real32 *>(&out_cos));
 }
 
+inline c_int32_4 convert_to_int32_4(const c_real32_4 &v) {
+	return _mm_cvtps_epi32(v);
+}
+
 inline c_real32_4 single_element(const c_real32_4 &v, int32 pos) {
 	wl_assert(VALID_INDEX(pos, 4));
 	switch (pos) {

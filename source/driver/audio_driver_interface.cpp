@@ -1,6 +1,12 @@
 #include "driver/audio_driver_interface.h"
 
 #include <portaudio.h>
+#include <iostream>
+
+#if IS_TRUE(PLATFORM_LINUX)
+// For the Raspberry Pi
+#include <pa_linux_alsa.h>
+#endif // IS_TRUE(PLATFORM_LINUX)
 
 static PaSampleFormat get_pa_sample_format(e_sample_format sample_format) {
 	switch (sample_format) {
@@ -73,7 +79,13 @@ s_audio_driver_result c_audio_driver_interface::initialize() {
 	}
 
 	m_device_count = cast_integer_verify<uint32>(device_count);
-	m_default_device_index = cast_integer_verify<uint32>(Pa_GetDefaultOutputDevice());
+
+	int32 default_device_index = Pa_GetDefaultOutputDevice();
+	if (default_device_index == paNoDevice) {
+		default_device_index = 0;
+	}
+
+	m_default_device_index = cast_integer_verify<uint32>(default_device_index);
 
 	m_initialized = true;
 	return result;
@@ -159,6 +171,10 @@ s_audio_driver_result c_audio_driver_interface::start_stream(const s_audio_drive
 		result.message = Pa_GetErrorText(error);
 		return result;
 	}
+
+#if IS_TRUE(PLATFORM_LINUX)
+	PaAlsa_EnableRealtimeScheduling(m_stream, true);
+#endif // IS_TRUE(PLATFORM_LINUX)
 
 	error = Pa_StartStream(m_stream);
 	if (error != paNoError) {

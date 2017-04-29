@@ -15,7 +15,7 @@ class c_diagnostic;
 static const size_t k_max_native_module_library_name_length = 64;
 static const size_t k_max_native_module_name_length = 64;
 static const size_t k_max_native_module_arguments = 10;
-static const size_t k_max_native_module_argument_name_length = 16;
+static const size_t k_max_native_module_argument_name_length = 20;
 static const size_t k_invalid_argument_index = static_cast<size_t>(-1);
 
 struct s_native_module_library {

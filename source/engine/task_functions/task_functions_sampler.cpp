@@ -74,7 +74,8 @@ static void get_sample_time_data(const c_sample *sample,
 // To avoid rewriting the algorithm in multiple variations, we create a base template class and implement the variants
 // using https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern.
 
-template<typename t_derived>
+// $TODO it would be great if we could use constexpr-if for k_loop, but it's not supported yet
+template<bool k_loop, typename t_derived>
 struct s_sampler_algorithm {
 	// "Overridden" methods:
 
@@ -87,92 +88,7 @@ struct s_sampler_algorithm {
 	//void run_loop();
 
 	//c_real32_4 get_advance() const;
-	//c_real32_4 get_speed_adjusted_sample_rate_0() const;
-
-	// Fields available to derived implementations:
-	real32 stream_sample_rate;
-	real32 sample_rate_0;
-
-	// Utility functions for subclasses
-	c_real32_4 compute_advance(const c_real32_4 &speed_val) const {
-		return speed_val * c_real32_4(sample_rate_0) / c_real32_4(stream_sample_rate);
-	}
-
-	c_real32_4 compute_speed_adjusted_sample_rate_0(const c_real32_4 &speed_val) const {
-		return c_real32_4(sample_rate_0) * speed_val;
-	}
-
-	void run(c_event_interface *event_interface, const char *sample_name, c_sample_library_accessor *sample_accessor,
-		s_buffer_operation_sampler *context, size_t buffer_size, uint32 sample_rate) {
-		// Allows us to call "overridden" methods without inheritance
-		t_derived *this_derived = static_cast<t_derived *>(this);
-
-		const c_sample *sample = sample_accessor->get_sample(context->sample_handle);
-		if (context->handle_failed_sample(sample, this_derived->get_out(), event_interface, sample_name) ||
-			context->handle_reached_end(this_derived->get_out())) {
-			return;
-		}
-
-		wl_assert(sample->get_loop_mode() == k_sample_loop_mode_none);
-
-		bool is_mipmap = sample->is_mipmap();
-		const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
-		real64 length_samples, loop_start_sample, loop_end_sample;
-		get_sample_time_data(sample_0, length_samples, loop_start_sample, loop_end_sample);
-
-		stream_sample_rate = static_cast<real32>(sample_rate);
-		sample_rate_0 = static_cast<real32>(sample_0->get_sample_rate());
-
-		size_t samples_written = 0;
-		size_t buffer_samples_remaining = buffer_size;
-		for (this_derived->begin_loop(); this_derived->is_valid(); this_derived->advance()) {
-			this_derived->run_loop();
-			real32 *out_ptr = this_derived->get_out_pointer();
-			c_real32_4 advance = this_derived->get_advance();
-			c_real32_4 speed_adjusted_sample_rate_0 = this_derived->get_speed_adjusted_sample_rate_0();
-
-			// Increment the time first, storing each intermediate time value
-			ALIGNAS_SIMD s_static_array<real64, k_simd_block_elements> samples;
-			size_t increment_count = context->increment_time(
-				length_samples, advance, buffer_samples_remaining, samples);
-			wl_assert(increment_count > 0);
-
-			if (is_mipmap) {
-				fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
-					increment_count, samples, out_ptr);
-			} else {
-				for (size_t i = 0; i < increment_count; i++) {
-					out_ptr[i] = fetch_sample(sample, context->channel, samples[i]);
-				}
-			}
-
-			samples_written += increment_count;
-			if (context->reached_end) {
-				break;
-			}
-		}
-
-		// If the sample ended before the end of the buffer, fill the rest with 0
-		size_t samples_remaining = buffer_size - samples_written;
-		memset(this_derived->get_out_pointer(), 0, samples_remaining * sizeof(real32));
-		this_derived->get_out()->set_constant(false);
-	}
-};
-
-template<typename t_derived>
-struct s_sampler_loop_algorithm {
-	// "Overridden" methods:
-
-	//c_real_buffer_out get_out() const;
-	//real32 *get_out_pointer() const;
-
-	//void begin_loop();
-	//bool is_valid() const;
-	//void advance();
-	//void run_loop();
-
-	//c_real32_4 get_advance() const;
-	//c_real32_4 get_speed_adjusted_sample_rate_0() const;
+	//c_real32_4 get_speed() const;
 	//real64 get_sample_offset(size_t index) const;
 
 	// Fields available to derived implementations:
@@ -181,11 +97,11 @@ struct s_sampler_loop_algorithm {
 	real64 phase_to_sample_offset_multiplier;
 
 	// Utility functions for subclasses
-	c_real32_4 compute_advance(const c_real32_4 &speed_val) {
+	c_real32_4 compute_advance(const c_real32_4 &speed_val) const {
 		return speed_val * c_real32_4(sample_rate_0) / c_real32_4(stream_sample_rate);
 	}
 
-	c_real32_4 compute_speed_adjusted_sample_rate_0(const c_real32_4 &speed_val) {
+	c_real32_4 compute_speed_adjusted_sample_rate_0(const c_real32_4 &speed_val) const {
 		return c_real32_4(sample_rate_0) * speed_val;
 	}
 
@@ -205,52 +121,73 @@ struct s_sampler_loop_algorithm {
 		t_derived *this_derived = static_cast<t_derived *>(this);
 
 		const c_sample *sample = sample_accessor->get_sample(context->sample_handle);
-		if (context->handle_failed_sample(sample, this_derived->get_out(), event_interface, sample_name)) {
+		if (context->handle_failed_sample(sample, this_derived->get_out(), event_interface, sample_name) ||
+			context->handle_reached_end(this_derived->get_out())) {
 			return;
 		}
 
-		// Bidi loops are preprocessed so at this point they act as normal loops
-		wl_assert(sample->get_loop_mode() != k_sample_loop_mode_none);
-		wl_assert(!context->reached_end);
+		if (k_loop) {
+			// Bidi loops are preprocessed so at this point they act as normal loops
+			wl_assert(sample->get_loop_mode() == k_sample_loop_mode_loop ||
+				sample->get_loop_mode() == k_sample_loop_mode_bidi_loop);
+			wl_assert(!context->reached_end);
+		} else {
+			wl_assert(sample->get_loop_mode() == k_sample_loop_mode_none);
+		}
 
-		bool is_mipmap = sample->is_mipmap();
-		const c_sample *sample_0 = is_mipmap ? sample->get_mipmap_sample(0) : sample;
+		bool is_wavetable = sample->is_wavetable();
 		real64 length_samples, loop_start_sample, loop_end_sample;
-		get_sample_time_data(sample_0, length_samples, loop_start_sample, loop_end_sample);
+		get_sample_time_data(sample, length_samples, loop_start_sample, loop_end_sample);
 		phase_to_sample_offset_multiplier = loop_end_sample - loop_start_sample;
 
 		stream_sample_rate = static_cast<real32>(sample_rate);
-		sample_rate_0 = static_cast<real32>(sample_0->get_sample_rate());
+		sample_rate_0 = static_cast<real32>(sample->get_sample_rate());
 
+		size_t samples_written = 0;
 		size_t buffer_samples_remaining = buffer_size;
 		for (this_derived->begin_loop(); this_derived->is_valid(); this_derived->advance()) {
 			this_derived->run_loop();
 			real32 *out_ptr = this_derived->get_out_pointer();
 			c_real32_4 advance = this_derived->get_advance();
-			c_real32_4 speed_adjusted_sample_rate_0 = this_derived->get_speed_adjusted_sample_rate_0();
 
 			// Increment the time first, storing each intermediate time value
 			ALIGNAS_SIMD s_static_array<real64, k_simd_block_elements> samples;
-			size_t increment_count = context->increment_time_looping(
-				loop_start_sample, loop_end_sample, advance, buffer_samples_remaining, samples);
+			size_t increment_count = sampler_context_increment_time<k_loop>(
+				*context, loop_start_sample, loop_end_sample, advance, buffer_samples_remaining, samples);
 			wl_assert(increment_count > 0);
 
-			for (size_t i = 0; i < k_simd_block_elements; i++) {
-				// Apply sample offset for phase
-				samples[i] += this_derived->get_sample_offset(i);
+			if (k_loop) {
+				for (size_t i = 0; i < k_simd_block_elements; i++) {
+					// Apply sample offset for phase
+					samples[i] += this_derived->get_sample_offset(i);
+				}
 			}
 
-			if (is_mipmap) {
-				fetch_mipmapped_samples(sample, context->channel, stream_sample_rate, speed_adjusted_sample_rate_0,
-					increment_count, samples, out_ptr);
+			if (is_wavetable) {
+				fetch_wavetable_samples(sample, context->channel, stream_sample_rate, sample_rate_0,
+					this_derived->get_speed(), increment_count, samples, out_ptr);
 			} else {
 				for (size_t i = 0; i < increment_count; i++) {
 					out_ptr[i] = fetch_sample(sample, context->channel, samples[i]);
 				}
 			}
+
+			samples_written += increment_count;
+			if (!k_loop && context->reached_end) {
+				break;
+			}
 		}
 
-		this_derived->get_out()->set_constant(false);
+		size_t samples_remaining = buffer_size - samples_written;
+		if (k_loop) {
+			wl_assert(samples_remaining == 0);
+		} else {
+			// If the sample ended before the end of the buffer, fill the rest with 0
+			memset(this_derived->get_out_pointer(), 0, samples_remaining * sizeof(real32));
+		}
+
+		// If samples_written is 0, the buffer is filled with 0
+		this_derived->get_out()->set_constant(samples_written == 0);
 	}
 };
 
@@ -266,14 +203,14 @@ void s_buffer_operation_sampler::in_out(
 		return;
 	}
 
-	struct s_sampler_subalgorithm : public s_sampler_algorithm<s_sampler_subalgorithm> {
+	struct s_sampler_subalgorithm : public s_sampler_algorithm<false, s_sampler_subalgorithm> {
 		// Fields
 		c_real_buffer_out out;
 		real32 *out_ptr;
 		real32 *out_ptr_end;
 		const real32 *speed_ptr;
+		c_real32_4 speed_val;
 		c_real32_4 advance_val;
-		c_real32_4 speed_adjusted_sample_rate_0_val;
 
 		s_sampler_subalgorithm(size_t buffer_size, c_real_buffer_in speed, c_real_buffer_out out) {
 			this->out = out;
@@ -290,13 +227,13 @@ void s_buffer_operation_sampler::in_out(
 		void advance() { out_ptr += k_simd_block_elements; speed_ptr += k_simd_block_elements; }
 
 		void run_loop() {
-			c_real32_4 speed_val(speed_ptr);
+			speed_val.load(speed_ptr);
 			advance_val = compute_advance(speed_val);
-			speed_adjusted_sample_rate_0_val = compute_speed_adjusted_sample_rate_0(speed_val);
 		}
 
 		c_real32_4 get_advance() const { return advance_val; }
-		c_real32_4 get_speed_adjusted_sample_rate_0() const { return speed_adjusted_sample_rate_0_val; }
+		c_real32_4 get_speed() const { return speed_val; }
+		real64 get_sample_offset(size_t index) const { return 0.0; }
 	};
 
 	s_sampler_subalgorithm(buffer_size, speed.get_buffer(), out).
@@ -318,13 +255,13 @@ void s_buffer_operation_sampler::inout(
 		return;
 	}
 
-	struct s_sampler_subalgorithm : public s_sampler_algorithm<s_sampler_subalgorithm> {
+	struct s_sampler_subalgorithm : public s_sampler_algorithm<false, s_sampler_subalgorithm> {
 		// Fields
 		c_real_buffer_out out;
 		real32 *speed_out_ptr;
 		real32 *speed_out_ptr_end;
+		c_real32_4 speed_val;
 		c_real32_4 advance_val;
-		c_real32_4 speed_adjusted_sample_rate_0_val;
 
 		s_sampler_subalgorithm(size_t buffer_size, c_real_buffer_inout speed_out) {
 			out = speed_out;
@@ -340,13 +277,13 @@ void s_buffer_operation_sampler::inout(
 		void advance() { speed_out_ptr += k_simd_block_elements; }
 
 		void run_loop() {
-			c_real32_4 speed_val(speed_out_ptr);
+			speed_val.load(speed_out_ptr);
 			advance_val = compute_advance(speed_val);
-			speed_adjusted_sample_rate_0_val = compute_speed_adjusted_sample_rate_0(speed_val);
 		}
 
 		c_real32_4 get_advance() const { return advance_val; }
-		c_real32_4 get_speed_adjusted_sample_rate_0() const { return speed_adjusted_sample_rate_0_val; }
+		c_real32_4 get_speed() const { return speed_val; }
+		real64 get_sample_offset(size_t index) const { return 0.0; }
 	};
 
 	s_sampler_subalgorithm(buffer_size, speed_out).
@@ -359,28 +296,26 @@ void s_buffer_operation_sampler::const_out(
 	size_t buffer_size, uint32 sample_rate, real32 speed, c_real_buffer_out out) {
 	validate_buffer(out);
 
-	struct s_sampler_subalgorithm : public s_sampler_algorithm<s_sampler_subalgorithm> {
+	struct s_sampler_subalgorithm : public s_sampler_algorithm<false, s_sampler_subalgorithm> {
 		// Fields
 		c_real_buffer_out out;
 		real32 *out_ptr;
 		real32 *out_ptr_end;
-		real32 speed_val;
+		c_real32_4 speed_val;
 		c_real32_4 advance_val;
-		c_real32_4 speed_adjusted_sample_rate_0_val;
 
 		s_sampler_subalgorithm(size_t buffer_size, real32 speed, c_real_buffer_out out) {
 			this->out = out;
 			out_ptr = out->get_data<real32>();
 			out_ptr_end = out_ptr + align_size(buffer_size, k_simd_block_elements);
-			speed_val = speed;
+			speed_val = c_real32_4(speed);
 		}
 
 		c_real_buffer_out get_out() const { return out; }
 		real32 *get_out_pointer() const { return out_ptr; }
 
 		void begin_loop() {
-			advance_val = compute_advance(c_real32_4(speed_val));
-			speed_adjusted_sample_rate_0_val = compute_speed_adjusted_sample_rate_0(speed_val);
+			advance_val = compute_advance(speed_val);
 		}
 
 		bool is_valid() const { return out_ptr < out_ptr_end; }
@@ -388,7 +323,8 @@ void s_buffer_operation_sampler::const_out(
 		void run_loop() {}
 
 		c_real32_4 get_advance() const { return advance_val; }
-		c_real32_4 get_speed_adjusted_sample_rate_0() const { return speed_adjusted_sample_rate_0_val; }
+		c_real32_4 get_speed() const { return speed_val; }
+		real64 get_sample_offset(size_t index) const { return 0.0; }
 	};
 
 	s_sampler_subalgorithm(buffer_size, speed, out).
@@ -421,7 +357,7 @@ void s_buffer_operation_sampler::loop_in_in_out(
 		return;
 	}
 
-	struct s_sampler_loop_subalgorithm : public s_sampler_loop_algorithm<s_sampler_loop_subalgorithm> {
+	struct s_sampler_loop_subalgorithm : public s_sampler_algorithm<true, s_sampler_loop_subalgorithm> {
 		// Fields
 		c_real_buffer_out out;
 		real32 *out_ptr;
@@ -429,7 +365,7 @@ void s_buffer_operation_sampler::loop_in_in_out(
 		const real32 *speed_ptr;
 		const real32 *phase_ptr;
 		c_real32_4 advance_val;
-		c_real32_4 speed_adjusted_sample_rate_0_val;
+		c_real32_4 speed_val;
 		s_static_array<real64, k_simd_block_elements> sample_offset_val;
 
 		s_sampler_loop_subalgorithm(size_t buffer_size,
@@ -453,15 +389,14 @@ void s_buffer_operation_sampler::loop_in_in_out(
 		}
 
 		void run_loop() {
-			c_real32_4 speed_val(speed_ptr);
+			speed_val.load(speed_ptr);
 			advance_val = compute_advance(speed_val);
-			speed_adjusted_sample_rate_0_val = compute_speed_adjusted_sample_rate_0(speed_val);
 			c_real32_4 phase_val(phase_ptr);
 			compute_sample_offset(phase_val, sample_offset_val);
 		}
 
 		c_real32_4 get_advance() const { return advance_val; }
-		c_real32_4 get_speed_adjusted_sample_rate_0() const { return speed_adjusted_sample_rate_0_val; }
+		c_real32_4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return sample_offset_val[index]; }
 	};
 
@@ -494,14 +429,14 @@ void s_buffer_operation_sampler::loop_inout_in(
 		return;
 	}
 
-	struct s_sampler_loop_subalgorithm : public s_sampler_loop_algorithm<s_sampler_loop_subalgorithm> {
+	struct s_sampler_loop_subalgorithm : public s_sampler_algorithm<true, s_sampler_loop_subalgorithm> {
 		// Fields
 		c_real_buffer_out out;
 		real32 *speed_out_ptr;
 		real32 *speed_out_ptr_end;
 		const real32 *phase_ptr;
 		c_real32_4 advance_val;
-		c_real32_4 speed_adjusted_sample_rate_0_val;
+		c_real32_4 speed_val;
 		s_static_array<real64, k_simd_block_elements> sample_offset_val;
 
 		s_sampler_loop_subalgorithm(size_t buffer_size,
@@ -523,15 +458,14 @@ void s_buffer_operation_sampler::loop_inout_in(
 		}
 
 		void run_loop() {
-			c_real32_4 speed_val(speed_out_ptr);
+			speed_val.load(speed_out_ptr);
 			advance_val = compute_advance(speed_val);
-			speed_adjusted_sample_rate_0_val = compute_speed_adjusted_sample_rate_0(speed_val);
 			c_real32_4 phase_val(phase_ptr);
 			compute_sample_offset(phase_val, sample_offset_val);
 		}
 
 		c_real32_4 get_advance() const { return advance_val; }
-		c_real32_4 get_speed_adjusted_sample_rate_0() const { return speed_adjusted_sample_rate_0_val; }
+		c_real32_4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return sample_offset_val[index]; }
 	};
 
@@ -564,14 +498,14 @@ void s_buffer_operation_sampler::loop_in_inout(
 		return;
 	}
 
-	struct s_sampler_loop_subalgorithm : public s_sampler_loop_algorithm<s_sampler_loop_subalgorithm> {
+	struct s_sampler_loop_subalgorithm : public s_sampler_algorithm<true, s_sampler_loop_subalgorithm> {
 		// Fields
 		c_real_buffer_out out;
 		real32 *phase_out_ptr;
 		real32 *phase_out_ptr_end;
 		const real32 *speed_ptr;
 		c_real32_4 advance_val;
-		c_real32_4 speed_adjusted_sample_rate_0_val;
+		c_real32_4 speed_val;
 		s_static_array<real64, k_simd_block_elements> sample_offset_val;
 
 		s_sampler_loop_subalgorithm(size_t buffer_size,
@@ -593,15 +527,14 @@ void s_buffer_operation_sampler::loop_in_inout(
 		}
 
 		void run_loop() {
-			c_real32_4 speed_val(speed_ptr);
+			speed_val.load(speed_ptr);
 			advance_val = compute_advance(speed_val);
-			speed_adjusted_sample_rate_0_val = compute_speed_adjusted_sample_rate_0(speed_val);
 			c_real32_4 phase_val(phase_out_ptr);
 			compute_sample_offset(phase_val, sample_offset_val);
 		}
 
 		c_real32_4 get_advance() const { return advance_val; }
-		c_real32_4 get_speed_adjusted_sample_rate_0() const { return speed_adjusted_sample_rate_0_val; }
+		c_real32_4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return sample_offset_val[index]; }
 	};
 
@@ -621,7 +554,7 @@ void s_buffer_operation_sampler::loop_in_const_out(
 		return;
 	}
 
-	struct s_sampler_loop_subalgorithm : public s_sampler_loop_algorithm<s_sampler_loop_subalgorithm> {
+	struct s_sampler_loop_subalgorithm : public s_sampler_algorithm<true, s_sampler_loop_subalgorithm> {
 		// Fields
 		c_real_buffer_out out;
 		real32 *out_ptr;
@@ -629,7 +562,7 @@ void s_buffer_operation_sampler::loop_in_const_out(
 		const real32 *speed_ptr;
 		real32 phase_val;
 		c_real32_4 advance_val;
-		c_real32_4 speed_adjusted_sample_rate_0_val;
+		c_real32_4 speed_val;
 		s_static_array<real64, k_simd_block_elements> sample_offset_val;
 
 		s_sampler_loop_subalgorithm(size_t buffer_size,
@@ -655,13 +588,12 @@ void s_buffer_operation_sampler::loop_in_const_out(
 		}
 
 		void run_loop() {
-			c_real32_4 speed_val(speed_ptr);
+			speed_val.load(speed_ptr);
 			advance_val = compute_advance(speed_val);
-			speed_adjusted_sample_rate_0_val = compute_speed_adjusted_sample_rate_0(speed_val);
 		}
 
 		c_real32_4 get_advance() const { return advance_val; }
-		c_real32_4 get_speed_adjusted_sample_rate_0() const { return speed_adjusted_sample_rate_0_val; }
+		c_real32_4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return sample_offset_val[index]; }
 	};
 
@@ -683,14 +615,14 @@ void s_buffer_operation_sampler::loop_inout_const(
 		return;
 	}
 
-	struct s_sampler_loop_subalgorithm : public s_sampler_loop_algorithm<s_sampler_loop_subalgorithm> {
+	struct s_sampler_loop_subalgorithm : public s_sampler_algorithm<true, s_sampler_loop_subalgorithm> {
 		// Fields
 		c_real_buffer_out out;
 		real32 *speed_out_ptr;
 		real32 *speed_out_ptr_end;
 		real32 phase_val;
 		c_real32_4 advance_val;
-		c_real32_4 speed_adjusted_sample_rate_0_val;
+		c_real32_4 speed_val;
 		s_static_array<real64, k_simd_block_elements> sample_offset_val;
 
 		s_sampler_loop_subalgorithm(size_t buffer_size,
@@ -714,13 +646,12 @@ void s_buffer_operation_sampler::loop_inout_const(
 		}
 
 		void run_loop() {
-			c_real32_4 speed_val(speed_out_ptr);
+			speed_val.load(speed_out_ptr);
 			advance_val = compute_advance(speed_val);
-			speed_adjusted_sample_rate_0_val = compute_speed_adjusted_sample_rate_0(speed_val);
 		}
 
 		c_real32_4 get_advance() const { return advance_val; }
-		c_real32_4 get_speed_adjusted_sample_rate_0() const { return speed_adjusted_sample_rate_0_val; }
+		c_real32_4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return sample_offset_val[index]; }
 	};
 
@@ -740,12 +671,12 @@ void s_buffer_operation_sampler::loop_const_in_out(
 		return;
 	}
 
-	struct s_sampler_loop_subalgorithm : public s_sampler_loop_algorithm<s_sampler_loop_subalgorithm> {
+	struct s_sampler_loop_subalgorithm : public s_sampler_algorithm<true, s_sampler_loop_subalgorithm> {
 		// Fields
 		c_real_buffer_out out;
 		real32 *out_ptr;
 		real32 *out_ptr_end;
-		real32 speed_val;
+		c_real32_4 speed_val;
 		const real32 *phase_ptr;
 		c_real32_4 advance_val;
 		c_real32_4 speed_adjusted_sample_rate_0_val;
@@ -756,7 +687,7 @@ void s_buffer_operation_sampler::loop_const_in_out(
 			this->out = out;
 			out_ptr = out->get_data<real32>();
 			out_ptr_end = out_ptr + align_size(buffer_size, k_simd_block_elements);
-			speed_val = speed;
+			speed_val = c_real32_4(speed);
 			phase_ptr = phase->get_data<real32>();
 		}
 
@@ -764,8 +695,7 @@ void s_buffer_operation_sampler::loop_const_in_out(
 		real32 *get_out_pointer() const { return out_ptr; }
 
 		void begin_loop() {
-			advance_val = compute_advance(c_real32_4(speed_val));
-			speed_adjusted_sample_rate_0_val = compute_speed_adjusted_sample_rate_0(speed_val);
+			advance_val = compute_advance(speed_val);
 		}
 
 		bool is_valid() const { return out_ptr < out_ptr_end; }
@@ -780,7 +710,7 @@ void s_buffer_operation_sampler::loop_const_in_out(
 		}
 
 		c_real32_4 get_advance() const { return advance_val; }
-		c_real32_4 get_speed_adjusted_sample_rate_0() const { return speed_adjusted_sample_rate_0_val; }
+		c_real32_4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return sample_offset_val[index]; }
 	};
 
@@ -802,12 +732,12 @@ void s_buffer_operation_sampler::loop_const_inout(
 		return;
 	}
 
-	struct s_sampler_loop_subalgorithm : public s_sampler_loop_algorithm<s_sampler_loop_subalgorithm> {
+	struct s_sampler_loop_subalgorithm : public s_sampler_algorithm<true, s_sampler_loop_subalgorithm> {
 		// Fields
 		c_real_buffer_out out;
 		real32 *phase_out_ptr;
 		real32 *phase_out_ptr_end;
-		real32 speed_val;
+		c_real32_4 speed_val;
 		c_real32_4 advance_val;
 		c_real32_4 speed_adjusted_sample_rate_0_val;
 		s_static_array<real64, k_simd_block_elements> sample_offset_val;
@@ -817,15 +747,14 @@ void s_buffer_operation_sampler::loop_const_inout(
 			out = phase_out;
 			phase_out_ptr = phase_out->get_data<real32>();
 			phase_out_ptr_end = phase_out_ptr + align_size(buffer_size, k_simd_block_elements);
-			speed_val = speed;
+			speed_val = c_real32_4(speed);
 		}
 
 		c_real_buffer_out get_out() const { return out; }
 		real32 *get_out_pointer() const { return phase_out_ptr; }
 
 		void begin_loop() {
-			advance_val = compute_advance(c_real32_4(speed_val));
-			speed_adjusted_sample_rate_0_val = compute_speed_adjusted_sample_rate_0(speed_val);
+			advance_val = compute_advance(speed_val);
 		}
 
 		bool is_valid() const { return phase_out_ptr < phase_out_ptr_end; }
@@ -839,7 +768,7 @@ void s_buffer_operation_sampler::loop_const_inout(
 		}
 
 		c_real32_4 get_advance() const { return advance_val; }
-		c_real32_4 get_speed_adjusted_sample_rate_0() const { return speed_adjusted_sample_rate_0_val; }
+		c_real32_4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return sample_offset_val[index]; }
 	};
 
@@ -853,12 +782,12 @@ void s_buffer_operation_sampler::loop_const_const_out(
 	size_t buffer_size, uint32 sample_rate, real32 speed, real32 phase, c_real_buffer_out out) {
 	validate_buffer(out);
 
-	struct s_sampler_loop_subalgorithm : public s_sampler_loop_algorithm<s_sampler_loop_subalgorithm> {
+	struct s_sampler_loop_subalgorithm : public s_sampler_algorithm<true, s_sampler_loop_subalgorithm> {
 		// Fields
 		c_real_buffer_out out;
 		real32 *out_ptr;
 		real32 *out_ptr_end;
-		real32 speed_val;
+		c_real32_4 speed_val;
 		real32 phase_val;
 		c_real32_4 advance_val;
 		c_real32_4 speed_adjusted_sample_rate_0_val;
@@ -869,7 +798,7 @@ void s_buffer_operation_sampler::loop_const_const_out(
 			this->out = out;
 			out_ptr = out->get_data<real32>();
 			out_ptr_end = out_ptr + align_size(buffer_size, k_simd_block_elements);
-			speed_val = speed;
+			speed_val = c_real32_4(speed);
 			phase_val = phase;
 		}
 
@@ -877,8 +806,7 @@ void s_buffer_operation_sampler::loop_const_const_out(
 		real32 *get_out_pointer() const { return out_ptr; }
 
 		void begin_loop() {
-			advance_val = compute_advance(c_real32_4(speed_val));
-			speed_adjusted_sample_rate_0_val = compute_speed_adjusted_sample_rate_0(speed_val);
+			advance_val = compute_advance(speed_val);
 			compute_sample_offset(c_real32_4(phase_val), sample_offset_val);
 		}
 
@@ -887,7 +815,7 @@ void s_buffer_operation_sampler::loop_const_const_out(
 		void run_loop() {}
 
 		c_real32_4 get_advance() const { return advance_val; }
-		c_real32_4 get_speed_adjusted_sample_rate_0() const { return speed_adjusted_sample_rate_0_val; }
+		c_real32_4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return sample_offset_val[index]; }
 	};
 
@@ -912,7 +840,7 @@ namespace sampler_task_functions {
 	void sampler_initializer(const s_task_function_context &context,
 		const char *name,
 		real32 channel) {
-		static_cast<s_buffer_operation_sampler *>(context.task_memory)->initialize(
+		static_cast<s_buffer_operation_sampler *>(context.task_memory)->initialize_file(
 			context.event_interface,
 			context.sample_requester,
 			name, k_sample_loop_mode_none, false, channel);
@@ -953,7 +881,7 @@ namespace sampler_task_functions {
 		c_real_const_buffer_or_constant phase) {
 		bool phase_shift_enabled = !phase.is_constant() || (clamp(phase.get_constant(), 0.0f, 1.0f) != 0.0f);
 		e_sample_loop_mode loop_mode = bidi ? k_sample_loop_mode_bidi_loop : k_sample_loop_mode_loop;
-		static_cast<s_buffer_operation_sampler *>(context.task_memory)->initialize(
+		static_cast<s_buffer_operation_sampler *>(context.task_memory)->initialize_file(
 			context.event_interface,
 			context.sample_requester,
 			name, loop_mode, phase_shift_enabled, channel);
@@ -987,7 +915,7 @@ namespace sampler_task_functions {
 		real32 channel,
 		bool bidi) {
 		e_sample_loop_mode loop_mode = bidi ? k_sample_loop_mode_bidi_loop : k_sample_loop_mode_loop;
-		static_cast<s_buffer_operation_sampler *>(context.task_memory)->initialize(
+		static_cast<s_buffer_operation_sampler *>(context.task_memory)->initialize_file(
 			context.event_interface,
 			context.sample_requester,
 			name, loop_mode, true, channel);
@@ -1002,6 +930,57 @@ namespace sampler_task_functions {
 			context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
 			context.buffer_size, context.sample_rate,
 			speed, phase_result);
+	}
+
+	void sampler_wavetable_initializer(const s_task_function_context &context,
+		c_real_array harmonic_weights,
+		real32 sample_count,
+		c_real_const_buffer_or_constant phase) {
+		bool phase_shift_enabled = !phase.is_constant() || (clamp(phase.get_constant(), 0.0f, 1.0f) != 0.0f);
+		static_cast<s_buffer_operation_sampler *>(context.task_memory)->initialize_wavetable(
+			context.event_interface,
+			context.sample_requester,
+			harmonic_weights, sample_count, phase_shift_enabled);
+	}
+
+	void sampler_wavetable_in_in_out(const s_task_function_context &context,
+		c_real_const_buffer_or_constant frequency,
+		c_real_const_buffer_or_constant phase,
+		c_real_buffer *result) {
+		s_buffer_operation_sampler::loop_in_in_out(
+			context.event_interface, "<generated_wavetable>",
+			context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
+			context.buffer_size, context.sample_rate,
+			frequency, phase, result);
+	}
+
+	void sampler_wavetable_inout_in(const s_task_function_context &context,
+		c_real_buffer *frequency_result,
+		c_real_const_buffer_or_constant phase) {
+		s_buffer_operation_sampler::loop_inout_in(
+			context.event_interface, "<generated_wavetable>",
+			context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
+			context.buffer_size, context.sample_rate,
+			frequency_result, phase);
+	}
+
+	void sampler_wavetable_in_inout_initializer(const s_task_function_context &context,
+		c_real_array harmonic_weights,
+		real32 sample_count) {
+		static_cast<s_buffer_operation_sampler *>(context.task_memory)->initialize_wavetable(
+			context.event_interface,
+			context.sample_requester,
+			harmonic_weights, sample_count, false);
+	}
+
+	void sampler_wavetable_in_inout(const s_task_function_context &context,
+		c_real_const_buffer_or_constant frequency,
+		c_real_buffer *phase_result) {
+		s_buffer_operation_sampler::loop_in_inout(
+			context.event_interface, "<generated_wavetable>",
+			context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
+			context.buffer_size, context.sample_rate,
+			frequency, phase_result);
 	}
 
 }

@@ -103,3 +103,11 @@ bool get_file_last_modified_timestamp(const char *path, uint64 &out_timestamp) {
 
 	return result;
 }
+
+void create_directory(const char *path) {
+#if IS_TRUE(PLATFORM_WINDOWS)
+	CreateDirectoryA(path, nullptr);
+#else // IS_TRUE(PLATFORM_WINDOWS)
+	mkdir(path, 0777);
+#endif // IS_TRUE(PLATFORM_WINDOWS)
+}

@@ -70,6 +70,7 @@ inline c_int32_4 min(const c_int32_4 &a, const c_int32_4 &b);
 inline c_int32_4 max(const c_int32_4 &a, const c_int32_4 &b);
 inline c_int32_4 min_unsigned(const c_int32_4 &a, const c_int32_4 &b);
 inline c_int32_4 max_unsigned(const c_int32_4 &a, const c_int32_4 &b);
+inline c_real32_4 convert_to_real32_4(const c_int32_4 &v);
 
 // Masking
 inline int32 mask_from_msb(const c_int32_4 &v);

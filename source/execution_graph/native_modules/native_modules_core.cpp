@@ -114,11 +114,11 @@ namespace core_native_modules {
 	// The string version is only there for overload-completeness.
 
 	void enforce_const_real(real32 a, real32 &result) {
-		a = result;
+		result = a;
 	}
 
 	void enforce_const_bool (bool a, bool &result) {
-		a = result;
+		result = a;
 	}
 
 	void enforce_const_string(const c_native_module_string &a, c_native_module_string &result) {

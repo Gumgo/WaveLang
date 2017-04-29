@@ -7,17 +7,80 @@ size_t s_sampler_context::query_memory() {
 	return sizeof(s_sampler_context);
 }
 
-void s_sampler_context::initialize(c_event_interface *event_interface, c_sample_library_requester *sample_requester,
+void s_sampler_context::initialize_file(
+	c_event_interface *event_interface, c_sample_library_requester *sample_requester,
 	const char *sample, e_sample_loop_mode loop_mode, bool phase_shift_enabled, real32 channel_real) {
 	wl_assert(VALID_INDEX(loop_mode, k_sample_loop_mode_count));
 
-	sample_handle = sample_requester->request_sample(sample, loop_mode, phase_shift_enabled);
+	s_file_sample_parameters parameters;
+	parameters.filename = sample;
+	parameters.loop_mode = loop_mode;
+	parameters.phase_shift_enabled = phase_shift_enabled;
+	sample_handle = sample_requester->request_sample(parameters);
 	if (channel_real < 0.0f ||
 		std::floor(channel_real) != channel_real) {
 		sample_handle = c_sample_library::k_invalid_handle;
 		event_interface->submit(EVENT_ERROR << "Invalid sample channel '" << channel_real << "'");
 	}
 	channel = static_cast<uint32>(channel_real);
+	sample_index = 0.0;
+	reached_end = false;
+}
+
+void s_sampler_context::initialize_wavetable(
+	c_event_interface *event_interface, c_sample_library_requester *sample_requester,
+	c_real_array harmonic_weights, real32 sample_count_real, bool phase_shift_enabled) {
+	bool valid = true;
+
+	if (harmonic_weights.get_count() == 0) {
+		valid = false;
+	}
+
+	// $TODO I don't love this allocation, but it's in the initializer so I guess it's alright...
+	std::vector<real32> harmonic_weights_copy(harmonic_weights.get_count());
+	for (size_t index = 0; index < harmonic_weights.get_count(); index++) {
+		if (!harmonic_weights[index].is_constant) {
+			event_interface->submit(EVENT_ERROR << "Wavetable sample harmonic weights must be constants");
+			valid = false;
+			break;
+		}
+
+		harmonic_weights_copy[index] = harmonic_weights[index].constant_value;
+	}
+
+	if (sample_count_real < 0.0f ||
+		std::floor(sample_count_real) != sample_count_real) {
+		event_interface->submit(
+			EVENT_ERROR << "Invalid wavetable sample count '" << sample_count_real << "'");
+		valid = false;
+	}
+
+	uint32 sample_count = static_cast<uint32>(sample_count_real);
+	{
+		uint32 sample_count_pow2_check = 1;
+		while (sample_count_pow2_check < sample_count) {
+			sample_count_pow2_check *= 2;
+		}
+
+		if (sample_count != sample_count_pow2_check) {
+			event_interface->submit(
+				EVENT_ERROR << "Wavetable sample count must be a power of 2");
+			valid = false;
+		}
+	}
+
+	if (valid) {
+		s_wavetable_sample_parameters parameters;
+		parameters.harmonic_weights = c_wrapped_array_const<real32>(
+			&harmonic_weights_copy.front(), harmonic_weights_copy.size());
+		parameters.sample_count = sample_count;
+		parameters.phase_shift_enabled = phase_shift_enabled;
+		sample_handle = sample_requester->request_sample(parameters);
+	} else {
+		sample_handle = c_sample_library::k_invalid_handle;
+	}
+
+	channel = 0;
 	sample_index = 0.0;
 	reached_end = false;
 }
@@ -39,19 +102,13 @@ bool s_sampler_context::handle_failed_sample(const c_sample *sample, c_real_buff
 			sample_failure_reported = true;
 			event_interface->submit(EVENT_ERROR << "Failed to load sample '" << c_dstr(sample_name) << "'");
 		}
-	} else {
-		uint32 channel_count = sample->is_mipmap() ?
-			sample->get_mipmap_sample(0)->get_channel_count() :
-			sample->get_channel_count();
+	} if (sample->get_channel_count() < channel) {
+		failed = true;
 
-		if (channel_count < channel) {
-			failed = true;
-
-			if (!sample_failure_reported) {
-				sample_failure_reported = true;
-				event_interface->submit(
-					EVENT_ERROR << "Invalid sample channel '" << channel << "' for sample '" << c_dstr(sample_name) << "'");
-			}
+		if (!sample_failure_reported) {
+			sample_failure_reported = true;
+			event_interface->submit(
+				EVENT_ERROR << "Invalid sample channel '" << channel << "' for sample '" << c_dstr(sample_name) << "'");
 		}
 	}
 
@@ -138,4 +195,19 @@ size_t s_sampler_context::increment_time_looping(
 	}
 
 	return increment_count;
+}
+
+template<>
+size_t sampler_context_increment_time<false>(s_sampler_context &context,
+	real64 loop_start_sample, real64 loop_end_sample, const c_real32_4 &advance, size_t &inout_buffer_samples_remaining,
+	s_static_array<real64, k_simd_block_elements> &out_samples) {
+	return context.increment_time(loop_end_sample, advance, inout_buffer_samples_remaining, out_samples);
+}
+
+template<>
+size_t sampler_context_increment_time<true>(s_sampler_context &context,
+	real64 loop_start_sample, real64 loop_end_sample, const c_real32_4 &advance, size_t &inout_buffer_samples_remaining,
+	s_static_array<real64, k_simd_block_elements> &out_samples) {
+	return context.increment_time_looping(
+		loop_start_sample, loop_end_sample, advance, inout_buffer_samples_remaining, out_samples);
 }

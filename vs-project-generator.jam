@@ -14,7 +14,7 @@ rule null-if-empty ( values * )
 	}
 }
 
-rule setup-vs-project-config ( top-dir : project-name : defines * : features * : source-files * : include-directories * )
+rule setup-vs-project-config ( top-dir : project-name : is-linux : defines * : features * : source-files * : include-directories * )
 {
 	local native-include-directories = [ sequence.transform path.native : $(include-directories) ] ;
 
@@ -58,6 +58,7 @@ rule setup-vs-project-config ( top-dir : project-name : defines * : features * :
 			setup-vs-project-config-internal
 				$(top-dir) :
 				$(project-name) :
+				$(is-linux) :
 				$(configuration) :
 				$(platform) :
 				$(build-command) :
@@ -109,6 +110,7 @@ local rule get-base-build-command ( top-dir : project-name : configuration : pla
 local rule setup-vs-project-config-internal (
 	top-dir :
 	project-name :
+	is-linux :
 	configuration :
 	platform :
 	build-command :
@@ -126,6 +128,7 @@ local rule setup-vs-project-config-internal (
 	local filename = [ path.native $(top-dir)/projects/vs_projects/$(project-configuration-platform).vs_project_config ] ;
 	local contents = [ string.join
 		$(project-name)
+		$(is-linux)
 		$(configuration)
 		$(platform)
 		$(build-command)

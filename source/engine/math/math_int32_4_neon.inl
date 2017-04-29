@@ -177,6 +177,10 @@ inline c_int32_4 max_unsigned(const c_int32_4 &a, const c_int32_4 &b) {
 	return vreinterpretq_s32_u32(vmaxq_u32(vreinterpretq_u32_s32(a), vreinterpretq_u32_s32(b)));
 }
 
+inline c_real32_4 convert_to_real32_4(const c_int32_4 &v) {
+	return vcvtq_f32_s32(v);
+}
+
 inline int32 mask_from_msb(const c_int32_4 &v) {
 	// AND all bits but the MSB
 	int32x4_t msb = vandq_s32(v, vdupq_n_s32(0x80000000));

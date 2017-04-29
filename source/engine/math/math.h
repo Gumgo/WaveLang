@@ -1,6 +1,7 @@
 #ifndef WAVELANG_ENGINE_MATH_MATH_H__
 #define WAVELANG_ENGINE_MATH_MATH_H__
 
+#include "engine/math/math_constants.h"
 #include "engine/math/simd.h"
 
 // Math type declaration includes

@@ -34,6 +34,12 @@ public:
 		return m_pointer;
 	}
 
+	c_wrapped_array_const<t_element> get_range(size_t index, size_t count) const {
+		wl_assert(count == 0 || VALID_INDEX(index, m_count));
+		wl_assert(index + count <= m_count);
+		return c_wrapped_array_const<t_element>(m_pointer + index, count);
+	}
+
 	const t_element &operator[](size_t index) const {
 		wl_assert(VALID_INDEX(index, m_count));
 		return m_pointer[index];
@@ -77,6 +83,18 @@ public:
 
 	const t_element *get_pointer() const {
 		return m_pointer;
+	}
+
+	c_wrapped_array<t_element> get_range(size_t index, size_t count) {
+		wl_assert(count == 0 || VALID_INDEX(index, m_count));
+		wl_assert(index + count <= m_count);
+		return c_wrapped_array<t_element>(m_pointer + index, count);
+	}
+
+	c_wrapped_array_const<t_element> get_range(size_t index, size_t count) const {
+		wl_assert(count == 0 || VALID_INDEX(index, m_count));
+		wl_assert(index + count <= m_count);
+		return c_wrapped_array_const<t_element>(m_pointer + index, count);
 	}
 
 	t_element &operator[](size_t index) {

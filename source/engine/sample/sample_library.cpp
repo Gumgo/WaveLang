@@ -1,11 +1,10 @@
 #include "common/utility/file_utility.h"
 
-#include "engine/sample/native_samples.h"
+#include "engine/math/math_constants.h" // MEGA HACK
 #include "engine/sample/sample.h"
 #include "engine/sample/sample_library.h"
 
 const uint32 c_sample_library::k_invalid_handle;
-static const uint32 k_native_sample_handle_mask = 0x80000000;
 
 c_sample_library::c_sample_library() {
 }
@@ -16,28 +15,11 @@ c_sample_library::~c_sample_library() {
 	update_loaded_samples();
 	wl_assert(m_requested_samples.empty());
 	wl_assert(m_previous_requested_samples.empty());
-
-	for (size_t index = 0; index < m_native_samples.size(); index++) {
-		delete m_native_samples[index].sample;
-	}
 }
 
 void c_sample_library::initialize(const char *root_path) {
 	wl_assert(m_root_path.empty());
-	wl_assert(m_native_samples.empty());
-
 	m_root_path = root_path;
-
-	// Add all native samples
-	for (uint32 index = 0; index < k_native_sample_count; index++) {
-		m_native_samples.push_back(s_requested_sample());
-		s_requested_sample &requested_sample = m_native_samples.back();
-		requested_sample.file_path = get_native_sample_name(index);
-		requested_sample.timestamp = 0;
-		requested_sample.sample = build_native_sample(index);
-		requested_sample.loop_mode = requested_sample.sample->get_loop_mode();
-		requested_sample.phase_shift_enabled = requested_sample.sample->is_phase_shift_enabled();
-	}
 }
 
 void c_sample_library::clear_requested_samples() {
@@ -45,86 +27,90 @@ void c_sample_library::clear_requested_samples() {
 	m_previous_requested_samples.swap(m_requested_samples);
 }
 
-uint32 c_sample_library::request_sample(const char *filename, e_sample_loop_mode loop_mode, bool phase_shift_enabled) {
-	wl_assert(filename);
-	wl_assert(VALID_INDEX(loop_mode, k_sample_loop_mode_count));
+uint32 c_sample_library::request_sample(const s_file_sample_parameters &parameters) {
+	wl_assert(parameters.filename);
+	wl_assert(VALID_INDEX(parameters.loop_mode, k_sample_loop_mode_count));
 
-	if (loop_mode == k_sample_loop_mode_none) {
-		// Phase doesn't exist without looping
-		phase_shift_enabled = false;
-	}
+	// MEGA HACK: currently, scriptable wavetables don't really work because the compiler is too slow to deal with large
+	// arrays. To work around this for now, hardcode a few predefined wavetables here.
 
-	uint32 result;
-
-	const char *native_prefix = get_native_sample_prefix();
-	bool is_native = (strncmp(filename, native_prefix, strlen(native_prefix)) == 0);
-
-	if (is_native) {
-		// It's okay to return phase-shift enabled samples even if we don't request them
-		for (result = 0; result < m_native_samples.size(); result++) {
-			if (m_native_samples[result].file_path == filename &&
-				m_native_samples[result].loop_mode == loop_mode &&
-				(m_native_samples[result].phase_shift_enabled || !phase_shift_enabled)) {
-				break;
+	if (strcmp(parameters.filename, "__native_sin") == 0) {
+		s_wavetable_sample_parameters wavetable_parameters;
+		std::vector<real32> harmonic_weights(1024, 0.0f);
+		harmonic_weights[0] = 1.0f;
+		wavetable_parameters.harmonic_weights =
+			c_wrapped_array_const<real32>(&harmonic_weights.front(), harmonic_weights.size());
+		wavetable_parameters.sample_count = 2048;
+		wavetable_parameters.phase_shift_enabled = parameters.phase_shift_enabled;
+		return request_sample(wavetable_parameters);
+	} else if (strcmp(parameters.filename, "__native_sawtooth") == 0) {
+		s_wavetable_sample_parameters wavetable_parameters;
+		std::vector<real32> harmonic_weights(1024, 0.0f);
+		for (size_t index = 0; index < harmonic_weights.size(); index++) {
+			harmonic_weights[index] = static_cast<real32>(-2.0 / (k_pi * static_cast<real64>(index + 1)));
+		}
+		wavetable_parameters.harmonic_weights =
+			c_wrapped_array_const<real32>(&harmonic_weights.front(), harmonic_weights.size());
+		wavetable_parameters.sample_count = 2048;
+		wavetable_parameters.phase_shift_enabled = parameters.phase_shift_enabled;
+		return request_sample(wavetable_parameters);
+	} else if (strcmp(parameters.filename, "__native_triangle") == 0) {
+		s_wavetable_sample_parameters wavetable_parameters;
+		std::vector<real32> harmonic_weights(1024, 0.0f);
+		for (size_t index = 0; index < harmonic_weights.size(); index++) {
+			if ((index + 1) % 2 != 0) {
+				real64 s = (index / 2) % 2 == 0 ? 1.0 : -1.0;
+				real64 sqrt_denom = k_pi * static_cast<real64>(index + 1);
+				harmonic_weights[index] = static_cast<real32>(s * 8.0 / (sqrt_denom * sqrt_denom));
 			}
 		}
+		wavetable_parameters.harmonic_weights =
+			c_wrapped_array_const<real32>(&harmonic_weights.front(), harmonic_weights.size());
+		wavetable_parameters.sample_count = 2048;
+		wavetable_parameters.phase_shift_enabled = parameters.phase_shift_enabled;
+		return request_sample(wavetable_parameters);
+	}
 
-		if (result < m_native_samples.size()) {
-			// Succcess, add the native bit to the handle
-			result |= k_native_sample_handle_mask;
-		} else {
-			result = k_invalid_handle;
-		}
+	// END MEGA HACK
+
+	s_requested_sample requested_sample;
+	requested_sample.sample_type = k_sample_type_file;
+	if (is_path_relative(parameters.filename)) {
+		requested_sample.file_path = m_root_path + parameters.filename;
 	} else {
-		std::string full_path;
-		if (is_path_relative(filename)) {
-			full_path = m_root_path + filename;
-		} else {
-			full_path = filename;
-		}
-
-		// Check for duplicates
-		bool found = false;
-		for (uint32 index = 0; !found && index < m_requested_samples.size(); index++) {
-			if (are_file_paths_equivalent(full_path.c_str(), m_requested_samples[index].file_path.c_str()) &&
-				m_requested_samples[index].loop_mode == loop_mode &&
-				m_requested_samples[index].phase_shift_enabled == phase_shift_enabled) {
-				result = index;
-				found = true;
-			}
-		}
-
-		if (!found) {
-			// Search through previously requested sample list
-			for (uint32 index = 0; !found && index < m_previous_requested_samples.size(); index++) {
-				s_requested_sample &previous_requested_sample = m_previous_requested_samples[index];
-				if (are_file_paths_equivalent(full_path.c_str(), previous_requested_sample.file_path.c_str()) &&
-					previous_requested_sample.loop_mode == loop_mode &&
-					previous_requested_sample.phase_shift_enabled == phase_shift_enabled) {
-					// Move from the previous to the current list
-					result = static_cast<uint32>(m_requested_samples.size());
-					m_requested_samples.push_back(s_requested_sample());
-					std::swap(previous_requested_sample, m_previous_requested_samples.back());
-					std::swap(m_requested_samples.back(), m_previous_requested_samples.back());
-					m_previous_requested_samples.pop_back();
-					found = true;
-				}
-			}
-		}
-
-		if (!found) {
-			result = static_cast<uint32>(m_requested_samples.size());
-			m_requested_samples.push_back(s_requested_sample());
-			s_requested_sample &new_request = m_requested_samples.back();
-			new_request.file_path = full_path;
-			new_request.loop_mode = loop_mode;
-			new_request.phase_shift_enabled = phase_shift_enabled;
-			new_request.timestamp = 0;
-			new_request.sample = nullptr;
-		}
+		requested_sample.file_path = parameters.filename;
 	}
+	requested_sample.loop_mode = parameters.loop_mode;
+	requested_sample.timestamp = 0;
 
-	return result;
+	requested_sample.sample_count = 0;
+
+	requested_sample.phase_shift_enabled = parameters.phase_shift_enabled;
+	if (parameters.loop_mode == k_sample_loop_mode_none) {
+		// Phase doesn't exist without looping
+		requested_sample.phase_shift_enabled = false;
+	}
+	requested_sample.sample = nullptr;
+
+	return request_sample(requested_sample);
+}
+
+uint32 c_sample_library::request_sample(const s_wavetable_sample_parameters &parameters) {
+	s_requested_sample requested_sample;
+	requested_sample.sample_type = k_sample_type_wavetable;
+
+	requested_sample.loop_mode = k_sample_loop_mode_loop;
+	requested_sample.timestamp = 0;
+
+	for (size_t index = 0; index < parameters.harmonic_weights.get_count(); index++) {
+		requested_sample.harmonic_weights.push_back(parameters.harmonic_weights[index]);
+	}
+	requested_sample.sample_count = parameters.sample_count;
+
+	requested_sample.phase_shift_enabled = parameters.phase_shift_enabled;
+	requested_sample.sample = nullptr;
+
+	return request_sample(requested_sample);
 }
 
 void c_sample_library::update_loaded_samples() {
@@ -139,20 +125,30 @@ void c_sample_library::update_loaded_samples() {
 	for (size_t index = 0; index < m_requested_samples.size(); index++) {
 		s_requested_sample &request = m_requested_samples[index];
 
-		uint64 new_timestamp = 0;
-		bool obtained_timestamp = get_file_last_modified_timestamp(request.file_path.c_str(), new_timestamp);
+		if (request.sample_type == k_sample_type_file) {
+			uint64 new_timestamp = 0;
+			bool obtained_timestamp = get_file_last_modified_timestamp(request.file_path.c_str(), new_timestamp);
 
-		if (request.sample == nullptr ||
-			!obtained_timestamp ||
-			new_timestamp > request.timestamp) {
-			// Clear out the current sample for reload
-			delete request.sample;
-			request.sample = nullptr;
-		}
+			if (request.sample == nullptr ||
+				!obtained_timestamp ||
+				new_timestamp > request.timestamp) {
+				// Clear out the current sample for reload
+				delete request.sample;
+				request.sample = nullptr;
+			}
 
-		if (!request.sample) {
-			request.timestamp = new_timestamp;
-			request.sample = c_sample::load(request.file_path.c_str(), request.loop_mode, request.phase_shift_enabled);
+			if (!request.sample) {
+				request.timestamp = new_timestamp;
+				request.sample =
+					c_sample::load_file(request.file_path.c_str(), request.loop_mode, request.phase_shift_enabled);
+			}
+		} else if (request.sample_type == k_sample_type_wavetable) {
+			if (!request.sample) {
+				c_wrapped_array_const<real32> harmonic_weights(
+					&request.harmonic_weights.front(), request.harmonic_weights.size());
+				request.sample =
+					c_sample::generate_wavetable(harmonic_weights, request.sample_count, request.phase_shift_enabled);
+			}
 		}
 	}
 }
@@ -160,11 +156,73 @@ void c_sample_library::update_loaded_samples() {
 const c_sample *c_sample_library::get_sample(uint32 handle) const {
 	if (handle == k_invalid_handle) {
 		return nullptr;
-	} else if ((handle & k_native_sample_handle_mask) == 0) {
-		return m_requested_samples[handle].sample;
 	} else {
-		return m_native_samples[handle & ~k_native_sample_handle_mask].sample;
+		return m_requested_samples[handle].sample;
 	}
+}
+
+bool c_sample_library::are_requested_samples_equal(
+	const s_requested_sample &requested_sample_a, const s_requested_sample &requested_sample_b) {
+	if (requested_sample_a.sample_type != requested_sample_b.sample_type) {
+		return false;
+	}
+
+	if (requested_sample_a.sample_type == k_sample_type_file) {
+		return are_file_paths_equivalent(requested_sample_a.file_path.c_str(), requested_sample_b.file_path.c_str()) &&
+			requested_sample_a.loop_mode == requested_sample_b.loop_mode &&
+			requested_sample_a.timestamp == requested_sample_b.timestamp &&
+			requested_sample_a.phase_shift_enabled == requested_sample_b.phase_shift_enabled;
+	} else if (requested_sample_a.sample_type == k_sample_type_wavetable) {
+		if (requested_sample_a.harmonic_weights.size() != requested_sample_b.harmonic_weights.size()) {
+			return false;
+		}
+
+		for (size_t index = 0; index < requested_sample_a.harmonic_weights.size(); index++) {
+			if (requested_sample_a.harmonic_weights[index] != requested_sample_b.harmonic_weights[index]) {
+				return false;
+			}
+		}
+
+		return requested_sample_a.sample_count == requested_sample_b.sample_count &&
+			requested_sample_a.phase_shift_enabled == requested_sample_b.phase_shift_enabled;
+	} else {
+		wl_unreachable();
+	}
+
+	return false;
+}
+
+uint32 c_sample_library::request_sample(const s_requested_sample &requested_sample) {
+	uint32 result;
+
+	// Check for duplicates
+	bool found = false;
+	for (uint32 index = 0; !found && index < m_requested_samples.size(); index++) {
+		const s_requested_sample &existing_sample = m_requested_samples[index];
+		if (are_requested_samples_equal(existing_sample, requested_sample)) {
+			result = index;
+			found = true;
+		}
+	}
+
+	for (uint32 index = 0; !found && index < m_previous_requested_samples.size(); index++) {
+		s_requested_sample &existing_sample = m_previous_requested_samples[index];
+		if (are_requested_samples_equal(existing_sample, requested_sample)) {
+			// Move from the previous to the current list
+			result = static_cast<uint32>(m_requested_samples.size());
+			m_requested_samples.push_back(s_requested_sample());
+			std::swap(existing_sample, m_requested_samples.back());
+			std::swap(existing_sample, m_previous_requested_samples.back());
+			m_previous_requested_samples.pop_back();
+			found = true;
+		}
+	}
+	if (!found) {
+		result = static_cast<uint32>(m_requested_samples.size());
+		m_requested_samples.push_back(requested_sample);
+	}
+
+	return result;
 }
 
 c_sample_library_accessor::c_sample_library_accessor(const c_sample_library &sample_library)
@@ -177,7 +235,10 @@ const c_sample *c_sample_library_accessor::get_sample(uint32 handle) const {
 c_sample_library_requester::c_sample_library_requester(c_sample_library &sample_library)
 	: m_sample_library(sample_library) {}
 
-uint32 c_sample_library_requester::request_sample(const char *filename, e_sample_loop_mode loop_mode,
-	bool phase_shift_enabled) {
-	return m_sample_library.request_sample(filename, loop_mode, phase_shift_enabled);
+uint32 c_sample_library_requester::request_sample(const s_file_sample_parameters &parameters) {
+	return m_sample_library.request_sample(parameters);
+}
+
+uint32 c_sample_library_requester::request_sample(const s_wavetable_sample_parameters &parameters) {
+	return m_sample_library.request_sample(parameters);
 }

@@ -12,8 +12,10 @@ class c_sample_library_requester;
 
 struct s_sampler_context {
 	static size_t query_memory();
-	void initialize(c_event_interface *event_interface, c_sample_library_requester *sample_requester,
+	void initialize_file(c_event_interface *event_interface, c_sample_library_requester *sample_requester,
 		const char *sample, e_sample_loop_mode loop_mode, bool phase_shift_enabled, real32 channel_real);
+	void initialize_wavetable(c_event_interface *event_interface, c_sample_library_requester *sample_requester,
+		c_real_array harmonic_weights, real32 sample_count_real, bool phase_shift_enabled);
 	void voice_initialize();
 
 	// Common utility functions used in all versions of the sampler:
@@ -43,5 +45,20 @@ struct s_sampler_context {
 	bool reached_end;
 	bool sample_failure_reported;
 };
+
+template<bool k_loop>
+size_t sampler_context_increment_time(s_sampler_context &context,
+	real64 loop_start_sample, real64 loop_end_sample, const c_real32_4 &advance, size_t &inout_buffer_samples_remaining,
+	s_static_array<real64, k_simd_block_elements> &out_samples);
+
+template<>
+size_t sampler_context_increment_time<false>(s_sampler_context &context,
+	real64 loop_start_sample, real64 loop_end_sample, const c_real32_4 &advance, size_t &inout_buffer_samples_remaining,
+	s_static_array<real64, k_simd_block_elements> &out_samples);
+
+template<>
+size_t sampler_context_increment_time<true>(s_sampler_context &context,
+	real64 loop_start_sample, real64 loop_end_sample, const c_real32_4 &advance, size_t &inout_buffer_samples_remaining,
+	s_static_array<real64, k_simd_block_elements> &out_samples);
 
 #endif // WAVELANG_ENGINE_TASK_FUNCTIONS_SAMPLER_SAMPLER_CONTEXT_H__

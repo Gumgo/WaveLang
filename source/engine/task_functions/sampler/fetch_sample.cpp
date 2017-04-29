@@ -1,41 +1,17 @@
-#include "engine/task_functions/sampler/fast_log2.h"
 #include "engine/task_functions/sampler/fetch_sample.h"
 
-static const real64 k_mipmap_level_sample_multipliers[] = {
-	1.0,
-	0.5,
-	0.25,
-	0.125,
-	0.0625,
-	0.03125,
-	0.015625,
-	0.0078125,
-	0.00390625,
-	0.001953125,
-	0.0009765625,
-	0.00048828125,
-	0.000244140625,
-	0.0001220703125,
-	0.00006103515625,
-	0.000030517578125
-};
-static_assert(NUMBEROF(k_mipmap_level_sample_multipliers) == k_max_sample_mipmap_levels,
-	"Mipmap level sample multipliers mismatch");
-
-// Returns the two mipmap levels to blend between for a given speed-adjusted sample rate, as well as the blend ratio. If
-// the two returned mip levels are the same, no blending is required.
-static void choose_mipmap_levels(
-	real32 stream_sample_rate, const c_real32_4 &speed_adjusted_sample_rate_0, uint32 mip_count,
-	c_int32_4 &out_mip_index_a, c_int32_4 &out_mip_index_b, c_real32_4 &out_mip_blend_ratio);
+// Returns the two wavetable levels to blend between for a given speed-adjusted sample rate, as well as the blend ratio.
+// If the two returned wavetable levels are the same, no blending is required.
+static void choose_wavetable_levels(
+	real32 stream_sample_rate, real32 sample_rate_0, const c_real32_4 &speed, uint32 wavetable_count,
+	c_int32_4 &out_wavetable_index_a, c_int32_4 &out_wavetable_index_b, c_real32_4 &out_wavetable_blend_ratio);
 
 real32 fetch_sample(const c_sample *sample, uint32 channel, real64 sample_index) {
-	wl_assert(!sample->is_mipmap());
+	wl_assert(!sample->is_wavetable());
 
 	// Determine which sample we want and split it into fractional and integer parts
 	real64 sample_index_rounded_down;
-	real32 sample_index_frac_part = static_cast<real32>(std::modf(sample_index, &sample_index_rounded_down));
-	real32 unused;
-	sample_index_frac_part = std::modf(sample_index_frac_part, &unused); // The above line can fail and produce 1.0f
+	real64 sample_index_frac_part = static_cast<real32>(std::modf(sample_index, &sample_index_rounded_down));
 	uint32 sample_index_int_part = static_cast<uint32>(sample_index_rounded_down);
 	sample_index_int_part += sample->get_first_sampling_frame();
 
@@ -58,10 +34,10 @@ real32 fetch_sample(const c_sample *sample, uint32 channel, real64 sample_index)
 	wl_assert(VALID_INDEX(simd_offset, k_simd_block_elements));
 
 	// Determine which windowed sinc lookup table to use
-	real32 sinc_window_table_index = sample_index_frac_part * static_cast<real32>(k_sinc_window_sample_resolution);
-	real32 sinc_window_table_index_rounded_down;
-	real32 sinc_window_table_index_frac_part =
-		std::modf(sinc_window_table_index, &sinc_window_table_index_rounded_down);
+	real64 sinc_window_table_index = sample_index_frac_part * static_cast<real64>(k_sinc_window_sample_resolution);
+	real64 sinc_window_table_index_rounded_down;
+	real32 sinc_window_table_index_frac_part = static_cast<real32>(
+		std::modf(sinc_window_table_index, &sinc_window_table_index_rounded_down));
 	uint32 sinc_window_table_index_int_part = static_cast<uint32>(sinc_window_table_index_rounded_down);
 	wl_assert(VALID_INDEX(sinc_window_table_index_int_part, k_sinc_window_sample_resolution));
 	const s_sinc_window_coefficients *sinc_window_ptr = k_sinc_window_coefficients[sinc_window_table_index_int_part];
@@ -88,7 +64,7 @@ real32 fetch_sample(const c_sample *sample, uint32 channel, real64 sample_index)
 		sample_ptr += k_simd_block_elements;
 		for (; sample_ptr < sample_end_ptr; sample_ptr += k_simd_block_elements, sinc_window_ptr++) {
 			c_real32_4 curr_block(sample_ptr);
-			c_real32_4 samples = extract<0>(prev_block, curr_block);
+			c_real32_4 samples = extract<1>(prev_block, curr_block);
 			prev_block = curr_block;
 
 			c_real32_4 sinc_window_values(sinc_window_ptr->values);
@@ -141,37 +117,40 @@ real32 fetch_sample(const c_sample *sample, uint32 channel, real64 sample_index)
 	return result[0];
 }
 
-void fetch_mipmapped_samples(const c_sample *sample, uint32 channel,
-	real32 stream_sample_rate, const c_real32_4 &speed_adjusted_sample_rate_0, size_t count,
-	const s_static_array<real64, k_simd_block_elements> &samples, real32 *out_ptr) {
+void fetch_wavetable_samples(
+	const c_sample *sample, uint32 channel, real32 stream_sample_rate, real32 sample_rate_0, const c_real32_4 &speed,
+	size_t count, const s_static_array<real64, k_simd_block_elements> &samples, real32 *out_ptr) {
 	wl_assert(count > 0 && count <= k_simd_block_elements);
 
-	// Compute the mip indices and blend factors for these 4 samples (if we incremented less than 4 times, some
+	// Compute the wavetabble indices and blend factors for these 4 samples (if we incremented less than 4 times, some
 	// are unused)
-	c_int32_4 mip_index_a;
-	c_int32_4 mip_index_b;
-	c_real32_4 mip_blend_ratio;
-	choose_mipmap_levels(stream_sample_rate, speed_adjusted_sample_rate_0, sample->get_mipmap_count(),
-		mip_index_a, mip_index_b, mip_blend_ratio);
+	c_int32_4 wavetable_index_a;
+	c_int32_4 wavetable_index_b;
+	c_real32_4 wavetable_blend_ratio;
+	choose_wavetable_levels(stream_sample_rate, sample_rate_0, speed, sample->get_wavetable_entry_count(),
+		wavetable_index_a, wavetable_index_b, wavetable_blend_ratio);
 
-	ALIGNAS_SIMD s_static_array<int32, k_simd_block_elements> mip_index_a_array;
-	ALIGNAS_SIMD s_static_array<int32, k_simd_block_elements> mip_index_b_array;
-	mip_index_a.store(mip_index_a_array.get_elements());
-	mip_index_b.store(mip_index_b_array.get_elements());
+	ALIGNAS_SIMD s_static_array<int32, k_simd_block_elements> wavetable_index_a_array;
+	ALIGNAS_SIMD s_static_array<int32, k_simd_block_elements> wavetable_index_b_array;
+	wavetable_index_a.store(wavetable_index_a_array.get_elements());
+	wavetable_index_b.store(wavetable_index_b_array.get_elements());
 
 	ALIGNAS_SIMD s_static_array<real32, k_simd_block_elements> samples_a_array;
 	ALIGNAS_SIMD s_static_array<real32, k_simd_block_elements> samples_b_array;
 
 	for (size_t i = 0; i < count; i++) {
-		if (mip_index_a_array[i] == mip_index_b_array[i]) {
-			real64 sample_index = samples[i] * k_mipmap_level_sample_multipliers[mip_index_a_array[i]];
-			samples_a_array[i] = samples_b_array[i] = fetch_sample(
-				sample->get_mipmap_sample(mip_index_a_array[i]), channel, sample_index);
+		const c_sample *sample_a = sample->get_wavetable_entry(wavetable_index_a_array[i]);
+
+		if (wavetable_index_a_array[i] == wavetable_index_b_array[i]) {
+			real64 sample_index = samples[i] * sample_a->get_base_sample_rate_ratio();
+			samples_a_array[i] = samples_b_array[i] = fetch_sample(sample_a, channel, sample_index);
 		} else {
-			real64 sample_a_index = samples[i] * k_mipmap_level_sample_multipliers[mip_index_a_array[i]];
-			real64 sample_b_index = samples[i] * k_mipmap_level_sample_multipliers[mip_index_b_array[i]];
-			samples_a_array[i] = fetch_sample(sample->get_mipmap_sample(mip_index_a_array[i]), channel, sample_a_index);
-			samples_b_array[i] = fetch_sample(sample->get_mipmap_sample(mip_index_b_array[i]), channel, sample_b_index);
+			const c_sample *sample_b = sample->get_wavetable_entry(wavetable_index_b_array[i]);
+
+			real64 sample_a_index = samples[i] * sample_a->get_base_sample_rate_ratio();
+			real64 sample_b_index = samples[i] * sample_b->get_base_sample_rate_ratio();
+			samples_a_array[i] = fetch_sample(sample_a, channel, sample_a_index);
+			samples_b_array[i] = fetch_sample(sample_b, channel, sample_b_index);
 		}
 	}
 
@@ -180,36 +159,39 @@ void fetch_mipmapped_samples(const c_sample *sample, uint32 channel,
 	// buffer will be filled with 0 because we've reached the end of the loop.
 	c_real32_4 samples_a(samples_a_array.get_elements());
 	c_real32_4 samples_b(samples_b_array.get_elements());
-	c_real32_4 samples_interpolated = samples_a + (samples_b - samples_a) * mip_blend_ratio;
+	c_real32_4 samples_interpolated = samples_a + (samples_b - samples_a) * wavetable_blend_ratio;
 	samples_interpolated.store(out_ptr);
 }
 
-static void choose_mipmap_levels(
-	real32 stream_sample_rate, const c_real32_4 &speed_adjusted_sample_rate_0, uint32 mip_count,
-	c_int32_4 &out_mip_index_a, c_int32_4 &out_mip_index_b, c_real32_4 &out_mip_blend_ratio) {
-	// We wish to find a mipmap level to sample from which avoids exceeding the nyquist frequency. We can't just return
-	// a single mip level though, or pitch-bending would cause "pops" when we switched between levels. Instead, we
-	// pick two mip levels, a and b, such that level a is the lowest mip level which has no frequencies exceeding the
+static void choose_wavetable_levels(
+	real32 stream_sample_rate, real32 sample_rate_0, const c_real32_4 &speed, uint32 wavetable_count,
+	c_int32_4 &out_wavetable_index_a, c_int32_4 &out_wavetable_index_b, c_real32_4 &out_wavetable_blend_ratio) {
+	// We wish to find a wavetable entry index to sample from which avoids exceeding the nyquist frequency. We can't
+	// just return a single level though, or pitch-bending would cause "pops" when we switched between levels. Instead,
+	// we pick two mip levels, a and b, such that level a is the lowest level which has no frequencies exceeding the
 	// stream's nyquist frequency, and b is the level above that, and blend between them.
 
-	// Our mip levels are set up such that a mip level with a sample rate X is guaranteed to have no frequencies above
-	// (X/2)hz. Therefore, we search for two mip levels a and b with sample rates surrounding half the stream's sample
-	// rate, which is equivalent to finding the two mip levels directly below the stream's sample rate.
-	c_real32_4 sample_stream_ratio = speed_adjusted_sample_rate_0 / c_real32_4(stream_sample_rate * 0.5f);
+	// For wavetable selection, if speed is 0 this will cause issues
+	c_real32_4 clamped_speed = max(speed, c_real32_4(0.125f));
 
-	// Ratios below 1 mean that the stream's sample rate is fast enough for the highest mip level to always be valid.
-	// Therefore, limit the ratio to 1.
-	sample_stream_ratio = max(sample_stream_ratio, c_real32_4(1.0f));
+	// Our wavetable levels are set up such that for a wavetable with a base sampling rate of sample_rate_0, level i
+	// contains frequencies up to, and not exceeding, sample_rate_0/2 - i. Therefore, for a stream sampling rate of
+	// stream_sample_rate, we want to find level i such that:
+	//   speed * (sample_rate_0/2 - i) <= stream_sample_rate/2
+	//   sample_rate_0/2 - i <= stream_sample_rate / (2 * speed)
+	//   -i <= stream_sample_rate / (2 * speed) - sample_rate_0/2
+	//   i >= sample_rate_0/2 - stream_sample_rate / (2 * speed)
+	//   i >= (sample_rate_0 - stream_sample_rate/speed) * 0.5
+	c_real32_4 wavetable_index = (c_real32_4(sample_rate_0) - c_real32_4(stream_sample_rate) / clamped_speed) * 0.5f;
 
-	// Taking the log2 of the ratio will give us the first mip index with a sample rate of at least that of the stream
-	// in the integer component, and the fractional component will give us the interpolation factor between that mip
-	// level and the next one, guaranteed to have a sample rate less than that of the stream. However, in this case,
-	// since we pre-halved input sample rate of the stream, the mip index returned is actually safe to directly use.
-	// Since we clamped the ratio to 1, this will always be at least 0.
-	out_mip_index_a = fast_log2(sample_stream_ratio, out_mip_blend_ratio);
+	// If we blend between floor(wavetable_index) and ceil(wavetable_index), then we will still get aliasing because
+	// floor(wavetable_index) has one harmonic above our nyquist limit. Therefore, to be safe, we bias up by one index.
+	c_real32_4 wavetable_index_floor = floor(wavetable_index);
+	out_wavetable_blend_ratio = wavetable_index - wavetable_index_floor;
+	c_int32_4 index_a = convert_to_int32_4(wavetable_index_floor) + c_int32_4(1);
+	c_int32_4 index_b = index_a + c_int32_4(1);
 
-	// Clamp to the number of mips actually available
-	c_int32_4 max_mip_index(cast_integer_verify<int32>(mip_count - 1));
-	out_mip_index_a = min(out_mip_index_a, max_mip_index);
-	out_mip_index_b = min(out_mip_index_a + c_int32_4(1), max_mip_index);
+	int32 max_wavetable_index = cast_integer_verify<int32>(wavetable_count - 1);
+	out_wavetable_index_a = min(max(index_a, c_int32_4(0)), c_int32_4(max_wavetable_index));
+	out_wavetable_index_b = min(max(index_b, c_int32_4(0)), c_int32_4(max_wavetable_index));
 }
