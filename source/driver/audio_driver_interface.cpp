@@ -1,7 +1,6 @@
 #include "driver/audio_driver_interface.h"
 
 #include <portaudio.h>
-#include <iostream>
 
 #if IS_TRUE(PLATFORM_LINUX)
 // For the Raspberry Pi

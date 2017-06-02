@@ -39,6 +39,7 @@ public:
 		uint32 executor_max_controller_parameters;
 		bool executor_console_enabled;
 		bool executor_profiling_enabled;
+		real32 executor_profiling_threshold;
 	};
 
 	// Produces a self-documenting settings file

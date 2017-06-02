@@ -45,6 +45,9 @@ bool c_controller_driver_interface::are_settings_supported(const s_controller_dr
 }
 
 s_controller_driver_result c_controller_driver_interface::start_stream(const s_controller_driver_settings &settings) {
+	// Lock to ensure that we don't try to submit events while the stream is starting
+	c_scoped_lock stream_lock(m_stream_lock);
+
 	// Initialize the event queue
 	m_controller_event_queue_element_memory.allocate(settings.controller_event_queue_size + 1);
 	m_controller_event_queue_queue_memory.allocate(settings.controller_event_queue_size + 1);
@@ -69,6 +72,9 @@ s_controller_driver_result c_controller_driver_interface::start_stream(const s_c
 }
 
 void c_controller_driver_interface::stop_stream() {
+	// Lock to make sure we don't submit events while the stream is stopping
+	c_scoped_lock stream_lock(m_stream_lock);
+
 	m_controller_driver_midi.stop_stream();
 
 	m_controller_event_queue_element_memory.free();
@@ -154,6 +160,13 @@ void c_controller_driver_interface::submit_controller_event_wrapper(
 }
 
 void c_controller_driver_interface::submit_controller_event(const s_controller_event &controller_event) {
+	// Lock to make sure we don't submit events while the stream is starting or stopping
+	c_scoped_lock stream_lock(m_stream_lock);
+
+	if (!is_stream_running()) {
+		return;
+	}
+
 	const s_controller_driver_settings &settings = get_settings();
 
 	s_controller_event_queue_element element;

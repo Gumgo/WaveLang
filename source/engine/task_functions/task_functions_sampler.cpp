@@ -87,6 +87,7 @@ struct s_sampler_algorithm {
 	//void advance();
 	//void run_loop();
 
+	//bool is_zero_speed_and_constant_phase() const;
 	//c_real32_4 get_advance() const;
 	//c_real32_4 get_speed() const;
 	//real64 get_sample_offset(size_t index) const;
@@ -143,6 +144,8 @@ struct s_sampler_algorithm {
 		stream_sample_rate = static_cast<real32>(sample_rate);
 		sample_rate_0 = static_cast<real32>(sample->get_sample_rate());
 
+		bool is_result_constant = this_derived->is_zero_speed_and_constant_phase();
+
 		size_t samples_written = 0;
 		size_t buffer_samples_remaining = buffer_size;
 		for (this_derived->begin_loop(); this_derived->is_valid(); this_derived->advance()) {
@@ -173,21 +176,32 @@ struct s_sampler_algorithm {
 			}
 
 			samples_written += increment_count;
-			if (!k_loop && context->reached_end) {
+			if (is_result_constant || (!k_loop && context->reached_end)) {
 				break;
 			}
 		}
 
-		size_t samples_remaining = buffer_size - samples_written;
-		if (k_loop) {
-			wl_assert(samples_remaining == 0);
-		} else {
-			// If the sample ended before the end of the buffer, fill the rest with 0
-			memset(this_derived->get_out_pointer(), 0, samples_remaining * sizeof(real32));
-		}
+		if (is_result_constant) {
+			if (samples_written == 0) {
+				// We reached the end without writing any samples
+				wl_assert(!k_loop);
+				*this_derived->get_out_pointer() = 0.0f;
+			}
 
-		// If samples_written is 0, the buffer is filled with 0
-		this_derived->get_out()->set_constant(samples_written == 0);
+			this_derived->get_out()->set_constant(true);
+		} else {
+			size_t samples_remaining = buffer_size - samples_written;
+
+			if (k_loop) {
+				wl_assert(samples_remaining == 0);
+			} else {
+				// If the sample ended before the end of the buffer, fill the rest with 0
+				memset(this_derived->get_out_pointer(), 0, samples_remaining * sizeof(real32));
+			}
+
+			// If samples_written is 0, the buffer is filled with 0
+			this_derived->get_out()->set_constant(samples_written == 0);
+		}
 	}
 };
 
@@ -231,6 +245,7 @@ void s_buffer_operation_sampler::in_out(
 			advance_val = compute_advance(speed_val);
 		}
 
+		bool is_zero_speed_and_constant_phase() const { return false; }
 		c_real32_4 get_advance() const { return advance_val; }
 		c_real32_4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return 0.0; }
@@ -281,6 +296,7 @@ void s_buffer_operation_sampler::inout(
 			advance_val = compute_advance(speed_val);
 		}
 
+		bool is_zero_speed_and_constant_phase() const { return false; }
 		c_real32_4 get_advance() const { return advance_val; }
 		c_real32_4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return 0.0; }
@@ -303,12 +319,14 @@ void s_buffer_operation_sampler::const_out(
 		real32 *out_ptr_end;
 		c_real32_4 speed_val;
 		c_real32_4 advance_val;
+		bool zero_speed;
 
 		s_sampler_subalgorithm(size_t buffer_size, real32 speed, c_real_buffer_out out) {
 			this->out = out;
 			out_ptr = out->get_data<real32>();
 			out_ptr_end = out_ptr + align_size(buffer_size, k_simd_block_elements);
 			speed_val = c_real32_4(speed);
+			zero_speed = speed == 0.0f;
 		}
 
 		c_real_buffer_out get_out() const { return out; }
@@ -322,6 +340,7 @@ void s_buffer_operation_sampler::const_out(
 		void advance() { out_ptr += k_simd_block_elements; }
 		void run_loop() {}
 
+		bool is_zero_speed_and_constant_phase() const { return zero_speed; }
 		c_real32_4 get_advance() const { return advance_val; }
 		c_real32_4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return 0.0; }
@@ -395,6 +414,7 @@ void s_buffer_operation_sampler::loop_in_in_out(
 			compute_sample_offset(phase_val, sample_offset_val);
 		}
 
+		bool is_zero_speed_and_constant_phase() const { return false; }
 		c_real32_4 get_advance() const { return advance_val; }
 		c_real32_4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return sample_offset_val[index]; }
@@ -464,6 +484,7 @@ void s_buffer_operation_sampler::loop_inout_in(
 			compute_sample_offset(phase_val, sample_offset_val);
 		}
 
+		bool is_zero_speed_and_constant_phase() const { return false; }
 		c_real32_4 get_advance() const { return advance_val; }
 		c_real32_4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return sample_offset_val[index]; }
@@ -533,6 +554,7 @@ void s_buffer_operation_sampler::loop_in_inout(
 			compute_sample_offset(phase_val, sample_offset_val);
 		}
 
+		bool is_zero_speed_and_constant_phase() const { return false; }
 		c_real32_4 get_advance() const { return advance_val; }
 		c_real32_4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return sample_offset_val[index]; }
@@ -592,6 +614,7 @@ void s_buffer_operation_sampler::loop_in_const_out(
 			advance_val = compute_advance(speed_val);
 		}
 
+		bool is_zero_speed_and_constant_phase() const { return false; }
 		c_real32_4 get_advance() const { return advance_val; }
 		c_real32_4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return sample_offset_val[index]; }
@@ -650,6 +673,7 @@ void s_buffer_operation_sampler::loop_inout_const(
 			advance_val = compute_advance(speed_val);
 		}
 
+		bool is_zero_speed_and_constant_phase() const { return false; }
 		c_real32_4 get_advance() const { return advance_val; }
 		c_real32_4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return sample_offset_val[index]; }
@@ -709,6 +733,7 @@ void s_buffer_operation_sampler::loop_const_in_out(
 			compute_sample_offset(phase_val, sample_offset_val);
 		}
 
+		bool is_zero_speed_and_constant_phase() const { return false; }
 		c_real32_4 get_advance() const { return advance_val; }
 		c_real32_4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return sample_offset_val[index]; }
@@ -767,6 +792,7 @@ void s_buffer_operation_sampler::loop_const_inout(
 			compute_sample_offset(phase_val, sample_offset_val);
 		}
 
+		bool is_zero_speed_and_constant_phase() const { return false; }
 		c_real32_4 get_advance() const { return advance_val; }
 		c_real32_4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return sample_offset_val[index]; }
@@ -792,6 +818,7 @@ void s_buffer_operation_sampler::loop_const_const_out(
 		c_real32_4 advance_val;
 		c_real32_4 speed_adjusted_sample_rate_0_val;
 		s_static_array<real64, k_simd_block_elements> sample_offset_val;
+		bool is_zero_speed;
 
 		s_sampler_loop_subalgorithm(size_t buffer_size,
 			real32 speed, real32 phase, c_real_buffer_out out) {
@@ -800,6 +827,7 @@ void s_buffer_operation_sampler::loop_const_const_out(
 			out_ptr_end = out_ptr + align_size(buffer_size, k_simd_block_elements);
 			speed_val = c_real32_4(speed);
 			phase_val = phase;
+			is_zero_speed = speed == 0.0f;
 		}
 
 		c_real_buffer_out get_out() const { return out; }
@@ -814,6 +842,7 @@ void s_buffer_operation_sampler::loop_const_const_out(
 		void advance() { out_ptr += k_simd_block_elements; }
 		void run_loop() {}
 
+		bool is_zero_speed_and_constant_phase() const { return is_zero_speed; }
 		c_real32_4 get_advance() const { return advance_val; }
 		c_real32_4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return sample_offset_val[index]; }

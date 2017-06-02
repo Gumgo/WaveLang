@@ -38,6 +38,7 @@ static const uint32 k_default_executor_thread_count = 0;
 static const uint32 k_default_executor_max_controller_parameters = 1024;
 static const bool k_default_executor_console_enabled = true;
 static const bool k_default_executor_profiling_enabled = false;
+static const real32 k_default_executor_profiling_threshold = 0.0f;
 
 static bool try_to_get_value_from_child_node(
 	const rapidxml::xml_node<> *parent_node, const char *child_node_name, uint32 default_value, uint32 &out_value) {
@@ -94,6 +95,41 @@ static bool try_to_get_value_from_child_node(
 	}
 
 	return false;
+}
+
+static bool try_to_get_value_from_child_node(
+	const rapidxml::xml_node<> *parent_node, const char *child_node_name, real32 default_value, real32 &out_value) {
+	const rapidxml::xml_node<> *node = parent_node->first_node(child_node_name);
+	if (node) {
+		const char *value = node->value();
+
+		if (strcmp(value, k_default_xml_string) == 0) {
+			out_value = default_value;
+			return true;
+		}
+
+		try {
+			out_value = std::stof(value);
+			return true;
+		} catch (const std::out_of_range &) {
+			std::cout << "Failed to parse '" << child_node_name << "'\n";
+		}
+	}
+
+	return false;
+}
+
+static real32 try_to_get_value_from_child_node(
+	const rapidxml::xml_node<> *parent_node, const char *child_node_name,
+	real32 range_min, real32 range_max, real32 default_value, real32 &out_value) {
+	if (try_to_get_value_from_child_node(parent_node, child_node_name, default_value, out_value)) {
+		if (out_value < range_min || out_value > range_max) {
+			std::cout << "'" << child_node_name << "'out of range\n";
+			return false;
+		}
+	}
+
+	return true;
 }
 
 template<typename t_enum>
@@ -209,6 +245,12 @@ bool c_runtime_config::write_default_settings(const char *fname) {
 		("Whether profiling should occur when running the instrument - default is " +
 			std::string(k_bool_xml_strings[k_default_executor_profiling_enabled])).c_str())));
 	executor_node->append_node(document.allocate_node(rapidxml::node_element, "profiling_enabled",
+		k_default_xml_string));
+
+	executor_node->append_node(document.allocate_node(rapidxml::node_comment, nullptr, document.allocate_string(
+		("Threshold for when profiling occurs as a ratio of chunk time - default is " +
+			std::to_string(k_default_executor_profiling_threshold)).c_str())));
+	executor_node->append_node(document.allocate_node(rapidxml::node_element, "profiling_threshold",
 		k_default_xml_string));
 
 	std::ofstream file(fname);
@@ -379,6 +421,8 @@ e_runtime_config_result c_runtime_config::read_settings(
 				m_settings.executor_console_enabled, m_settings.executor_console_enabled);
 			try_to_get_value_from_child_node(executor_node, "profiling_enabled",
 				m_settings.executor_profiling_enabled, m_settings.executor_profiling_enabled);
+			try_to_get_value_from_child_node(executor_node, "profiling_threshold",
+				0.0f, 1.0f, m_settings.executor_profiling_threshold, m_settings.executor_profiling_threshold);
 		}
 	} catch (const rapidxml::parse_error &) {
 		std::cout << "'" << fname << "' is not valid XML\n";
@@ -427,4 +471,5 @@ void c_runtime_config::set_default_executor() {
 	m_settings.executor_max_controller_parameters = k_default_executor_max_controller_parameters;
 	m_settings.executor_console_enabled = k_default_controller_enabled;
 	m_settings.executor_profiling_enabled = k_default_executor_profiling_enabled;
+	m_settings.executor_profiling_threshold = k_default_executor_profiling_threshold;
 }

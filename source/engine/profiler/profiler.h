@@ -66,7 +66,7 @@ public:
 	void end_voice();
 	void begin_fx();
 	void end_fx();
-	void end_execution();
+	void end_execution(int64 min_total_time_threshold_ns);
 
 	void begin_task(e_instrument_stage instrument_stage, uint32 worker_thread, uint32 task_index,
 		uint32 task_function_index);
@@ -113,8 +113,15 @@ private:
 		s_profiler_record total_time;
 		s_profiler_record function_time;
 		s_profiler_record overhead_time;
+		bool did_run;
 		s_static_array<int64, k_task_query_point_count> query_points;
 	};
+
+	void commit();
+	void commit_task(s_task &task);
+
+	void discard();
+	void discard_task(s_task &task);
 
 	s_execution m_execution;
 	c_lock_free_aligned_allocator<s_thread_context> m_thread_contexts;

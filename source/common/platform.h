@@ -21,6 +21,9 @@
 #define ENDIANNESS_LITTLE			0
 #define ENDIANNESS_BIG				0
 
+// More detailed target info, some or none of these may be set
+#define TARGET_RASPBERRY_PI			0
+
 #if defined(_WIN32)
 	#undef PLATFORM_WINDOWS
 	#define PLATFORM_WINDOWS 1
@@ -93,6 +96,11 @@
 #else // endianness detection
 	#error Unknown endianness
 #endif // endianness detection
+
+#ifdef RASPBERRY_PI
+	#undef TARGET_RASPBERRY_PI
+	#define TARGET_RASPBERRY_PI 1
+#endif // RASPBERRY_PI
 
 #ifndef CACHE_LINE_SIZE
 #error Cache line size not defined

@@ -47,6 +47,7 @@ struct s_executor_settings {
 
 	bool event_console_enabled;
 	bool profiling_enabled;
+	real32 profiling_threshold;
 };
 
 // $TODO we probably don't need these settings to be both in settings and chunk context. We should instead store off the

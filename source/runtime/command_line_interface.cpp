@@ -281,7 +281,7 @@ void c_command_line_interface::initialize_from_runtime_config() {
 
 		s_audio_driver_result result = m_runtime_context.audio_driver_interface.start_stream(settings);
 		if (result.result != k_audio_driver_result_success) {
-			std::cout << result.message << "\n";
+			std::cout << "Failed to start audio stream: " << result.message << "\n";
 		}
 	}
 
@@ -302,7 +302,7 @@ void c_command_line_interface::initialize_from_runtime_config() {
 
 		s_controller_driver_result result = m_runtime_context.controller_driver_interface.start_stream(settings);
 		if (result.result != k_controller_driver_result_success) {
-			std::cout << result.message << "\n";
+			std::cout << "Failed to start controller stream: " << result.message << "\n";
 		}
 	}
 }
@@ -377,6 +377,7 @@ void c_command_line_interface::process_command_load_synth(const s_command &comma
 			settings.process_controller_events_context = &m_runtime_context;
 			settings.event_console_enabled = runtime_config_settings.executor_console_enabled;
 			settings.profiling_enabled = runtime_config_settings.executor_profiling_enabled;
+			settings.profiling_threshold = runtime_config_settings.executor_profiling_threshold;
 			m_runtime_context.executor.initialize(settings);
 		}
 

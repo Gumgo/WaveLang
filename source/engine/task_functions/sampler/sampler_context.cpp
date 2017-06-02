@@ -185,7 +185,11 @@ size_t s_sampler_context::increment_time_looping(
 		if (sample_index >= loop_end_sample) {
 			// Return to the loop start point
 			real64 wrap_offset = std::remainder(sample_index - loop_start_sample, loop_end_sample - loop_start_sample);
+			if (wrap_offset < 0.0) {
+				wrap_offset += (loop_end_sample - loop_start_sample);
+			}
 			sample_index = loop_start_sample + wrap_offset;
+			wl_assert(sample_index >= 0.0);
 		}
 	}
 

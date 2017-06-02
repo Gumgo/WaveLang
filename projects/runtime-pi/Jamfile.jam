@@ -9,7 +9,7 @@ project : requirements <address-model>64 ;
 
 local project-name = runtime-pi ;
 
-local defines = ;
+local defines = RASPBERRY_PI ;
 
 local features = ;
 

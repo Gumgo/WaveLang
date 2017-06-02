@@ -3,6 +3,7 @@
 
 #include "common/common.h"
 #include "common/threading/lock_free_queue.h"
+#include "common/threading/mutex.h"
 #include "common/utility/stopwatch.h"
 
 #include "driver/controller_driver.h"
@@ -38,6 +39,8 @@ private:
 
 	static void submit_controller_event_wrapper(void *context, const s_controller_event &controller_event);
 	void submit_controller_event(const s_controller_event &controller_event);
+
+	c_mutex m_stream_lock;
 
 	c_controller_driver_midi m_controller_driver_midi;
 	// c_controller_driver_osc m_controller_driver_osc; // $TODO

@@ -14,6 +14,14 @@ namespace delay_native_modules wl_library(k_delay_library_id, "delay", 0) {
 	wl_runtime_only
 	void delay(wl_in_const real32 duration, wl_in real32 signal, wl_out_return real32 &result);
 
+	wl_native_module(0x2dcd7ea7, "memory$real")
+	wl_runtime_only
+	void memory(wl_in real32 value, wl_in bool write, wl_out_return real32 &result);
+
+	wl_native_module(0xe5cd6275, "memory$bool")
+	wl_runtime_only
+	void memory(wl_in bool value, wl_in bool write, wl_out_return bool &result);
+
 }
 
 #endif // WAVELANG_EXECUTION_GRAPH_NATIVE_MODULES_NATIVE_MODULES_DELAY_H__

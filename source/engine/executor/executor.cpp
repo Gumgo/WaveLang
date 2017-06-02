@@ -344,7 +344,11 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 	m_buffer_manager.mix_channel_buffers_to_output_buffer(chunk_context.sample_format, chunk_context.output_buffer);
 
 	if (m_settings.profiling_enabled) {
-		m_profiler.end_execution();
+		int64 min_total_time_threshold = static_cast<int64>(
+			(static_cast<real64>(chunk_context.frames) / static_cast<real64>(chunk_context.sample_rate)) *
+			m_settings.profiling_threshold *
+			static_cast<real64>(k_nanoseconds_per_second));
+		m_profiler.end_execution(min_total_time_threshold);
 	}
 }
 

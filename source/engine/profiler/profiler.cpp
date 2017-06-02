@@ -135,6 +135,7 @@ void c_profiler::start() {
 			task.total_time.reset();
 			task.function_time.reset();
 			task.overhead_time.reset();
+			task.did_run = false;
 		}
 	}
 }
@@ -217,21 +218,15 @@ void c_profiler::end_fx() {
 	m_execution.fx_time.update(time);
 }
 
-void c_profiler::end_execution() {
+void c_profiler::end_execution(int64 min_total_time_threshold_ns) {
 	m_execution.query_points[k_execution_query_point_end_execution] = m_execution.stopwatch.query();
 
-	int64 total_time =
-		m_execution.query_points[k_execution_query_point_end_execution];
-	int64 voice_time =
-		m_execution.query_points[k_execution_query_point_end_voices] -
-		m_execution.query_points[k_execution_query_point_begin_voices];
-	int64 fx_time =
-		m_execution.query_points[k_execution_query_point_end_fx] -
-		m_execution.query_points[k_execution_query_point_begin_fx];
-	int64 overhead_time = total_time - voice_time - fx_time;
-
-	m_execution.total_time.update(total_time);
-	m_execution.overhead_time.update(overhead_time);
+	int64 total_time = m_execution.query_points[k_execution_query_point_end_execution];
+	if (total_time >= min_total_time_threshold_ns) {
+		commit();
+	} else {
+		discard();
+	}
 }
 
 void c_profiler::begin_task(e_instrument_stage instrument_stage, uint32 worker_thread, uint32 task_index,
@@ -259,15 +254,60 @@ void c_profiler::end_task(e_instrument_stage instrument_stage, uint32 worker_thr
 	s_thread_context &thread_context = m_thread_contexts.get_array()[worker_thread];
 	s_task &task = m_tasks[instrument_stage].get_array()[task_index];
 	task.query_points[k_task_query_point_end_task] = thread_context.stopwatch.query();
+	task.did_run = true;
+}
 
+void c_profiler::commit() {
+	// Commit each task
+	for (size_t instrument_stage = 0; instrument_stage < k_instrument_stage_count; instrument_stage++) {
+		for (size_t index = 0; index < m_tasks[instrument_stage].get_array().get_count(); index++) {
+			s_task &task = m_tasks[instrument_stage].get_array()[index];
+			commit_task(task);
+		}
+	}
+
+	// Commit overall execution
 	int64 total_time =
-		task.query_points[k_task_query_point_end_task];
-	int64 function_time =
-		task.query_points[k_task_query_point_end_function] -
-		task.query_points[k_task_query_point_begin_function];
-	int64 overhead_time = total_time - function_time;
+		m_execution.query_points[k_execution_query_point_end_execution];
+	int64 voice_time =
+		m_execution.query_points[k_execution_query_point_end_voices] -
+		m_execution.query_points[k_execution_query_point_begin_voices];
+	int64 fx_time =
+		m_execution.query_points[k_execution_query_point_end_fx] -
+		m_execution.query_points[k_execution_query_point_begin_fx];
+	int64 overhead_time = total_time - voice_time - fx_time;
 
-	task.total_time.update(total_time);
-	task.function_time.update(function_time);
-	task.overhead_time.update(overhead_time);
+	m_execution.total_time.update(total_time);
+	m_execution.overhead_time.update(overhead_time);
+}
+
+void c_profiler::commit_task(s_task &task) {
+	if (task.did_run) {
+		task.did_run = false;
+
+		int64 total_time =
+			task.query_points[k_task_query_point_end_task];
+		int64 function_time =
+			task.query_points[k_task_query_point_end_function] -
+			task.query_points[k_task_query_point_begin_function];
+		int64 overhead_time = total_time - function_time;
+
+		task.total_time.update(total_time);
+		task.function_time.update(function_time);
+		task.overhead_time.update(overhead_time);
+	}
+}
+
+void c_profiler::discard() {
+	// Discard each task
+	for (size_t instrument_stage = 0; instrument_stage < k_instrument_stage_count; instrument_stage++) {
+		for (size_t index = 0; index < m_tasks[instrument_stage].get_array().get_count(); index++) {
+			s_task &task = m_tasks[instrument_stage].get_array()[index];
+			discard_task(task);
+		}
+	}
+}
+
+void c_profiler::discard_task(s_task &task) {
+	task.did_run = false;
 }

@@ -691,22 +691,40 @@ void buffer_operator_in_in_in_out(const t_operation &op, size_t buffer_size,
 					iterator_mapping.get_iterator_d(iterator).should_set_buffer_constant());
 			}
 		} else {
-			c_buffer_iterator_4<t_iterator_a, t_iterator_b, t_iterator_c, t_iterator_d> iterator(
-				iterable_buffer_a.get_buffer(),
-				iterable_buffer_b.get_buffer(),
-				iterable_buffer_c.get_buffer(),
-				iterable_buffer_d.get_buffer(),
-				buffer_size);
+			if (iterable_buffer_c.is_constant()) {
+				c_buffer_iterator_3<t_iterator_a, t_iterator_b, t_iterator_d> iterator(
+					iterable_buffer_a.get_buffer(), iterable_buffer_b.get_buffer(), iterable_buffer_d.get_buffer(),
+					buffer_size);
+				s_buffer_iterator_3_mapping_abd iterator_mapping;
 
-			for (; iterator.is_valid(); iterator.next()) {
-				t_value_a value_a = iterator.get_iterator_a().get_value();
-				t_value_b value_b = iterator.get_iterator_b().get_value();
-				t_value_c value_c = iterator.get_iterator_c().get_value();
-				t_value_d value_d = op(value_a, value_b, value_c);
-				iterator.get_iterator_d().set_value(value_d);
+				t_value_c value_c = iterable_buffer_c.get_constant();
+				for (; iterator.is_valid(); iterator.next()) {
+					t_value_a value_a = iterator_mapping.get_iterator_a(iterator).get_value();
+					t_value_b value_b = iterator_mapping.get_iterator_b(iterator).get_value();
+					t_value_d value_d = op(value_a, value_b, value_c);
+					iterator_mapping.get_iterator_d(iterator).set_value(value_d);
+				}
+
+				iterable_buffer_d.get_buffer()->set_constant(
+					iterator_mapping.get_iterator_d(iterator).should_set_buffer_constant());
+			} else {
+				c_buffer_iterator_4<t_iterator_a, t_iterator_b, t_iterator_c, t_iterator_d> iterator(
+					iterable_buffer_a.get_buffer(),
+					iterable_buffer_b.get_buffer(),
+					iterable_buffer_c.get_buffer(),
+					iterable_buffer_d.get_buffer(),
+					buffer_size);
+
+				for (; iterator.is_valid(); iterator.next()) {
+					t_value_a value_a = iterator.get_iterator_a().get_value();
+					t_value_b value_b = iterator.get_iterator_b().get_value();
+					t_value_c value_c = iterator.get_iterator_c().get_value();
+					t_value_d value_d = op(value_a, value_b, value_c);
+					iterator.get_iterator_d().set_value(value_d);
+				}
+
+				iterable_buffer_d.get_buffer()->set_constant(iterator.get_iterator_d().should_set_buffer_constant());
 			}
-
-			iterable_buffer_d.get_buffer()->set_constant(iterator.get_iterator_d().should_set_buffer_constant());
 		}
 	}
 }
@@ -819,19 +837,36 @@ void buffer_operator_inout_in_in(const t_operation &op, size_t buffer_size,
 					iterator_mapping.get_iterator_a(iterator).should_set_buffer_constant());
 			}
 		} else {
-			c_buffer_iterator_3<t_iterator_a, t_iterator_b, t_iterator_c> iterator(
-				iterable_buffer_a.get_buffer(), iterable_buffer_b.get_buffer(), iterable_buffer_c.get_buffer(),
-				buffer_size);
+			if (iterable_buffer_c.is_constant()) {
+				c_buffer_iterator_2<t_iterator_a, t_iterator_b> iterator(
+					iterable_buffer_a.get_buffer(), iterable_buffer_b.get_buffer(), buffer_size);
+				s_buffer_iterator_2_mapping_ab iterator_mapping;
 
-			for (; iterator.is_valid(); iterator.next()) {
-				t_value_a value_a_in = iterator.get_iterator_a().get_value();
-				t_value_b value_b = iterator.get_iterator_b().get_value();
-				t_value_c value_c = iterator.get_iterator_c().get_value();
-				t_value_a value_a_out = op(value_a_in, value_b, value_c);
-				iterator.get_iterator_a().set_value(value_a_out);
+				t_value_c value_c = iterable_buffer_c.get_constant();
+				for (; iterator.is_valid(); iterator.next()) {
+					t_value_a value_a_in = iterator_mapping.get_iterator_a(iterator).get_value();
+					t_value_c value_b = iterator_mapping.get_iterator_b(iterator).get_value();
+					t_value_a value_a_out = op(value_a_in, value_b, value_c);
+					iterator_mapping.get_iterator_a(iterator).set_value(value_a_out);
+				}
+
+				iterable_buffer_a.get_buffer()->set_constant(
+					iterator_mapping.get_iterator_a(iterator).should_set_buffer_constant());
+			} else {
+				c_buffer_iterator_3<t_iterator_a, t_iterator_b, t_iterator_c> iterator(
+					iterable_buffer_a.get_buffer(), iterable_buffer_b.get_buffer(), iterable_buffer_c.get_buffer(),
+					buffer_size);
+
+				for (; iterator.is_valid(); iterator.next()) {
+					t_value_a value_a_in = iterator.get_iterator_a().get_value();
+					t_value_b value_b = iterator.get_iterator_b().get_value();
+					t_value_c value_c = iterator.get_iterator_c().get_value();
+					t_value_a value_a_out = op(value_a_in, value_b, value_c);
+					iterator.get_iterator_a().set_value(value_a_out);
+				}
+
+				iterable_buffer_a.get_buffer()->set_constant(iterator.get_iterator_a().should_set_buffer_constant());
 			}
-
-			iterable_buffer_a.get_buffer()->set_constant(iterator.get_iterator_a().should_set_buffer_constant());
 		}
 	}
 }
@@ -943,19 +978,36 @@ void buffer_operator_in_inout_in(const t_operation &op, size_t buffer_size,
 					iterator_mapping.get_iterator_b(iterator).should_set_buffer_constant());
 			}
 		} else {
-			c_buffer_iterator_3<t_iterator_a, t_iterator_b, t_iterator_c> iterator(
-				iterable_buffer_a.get_buffer(), iterable_buffer_b.get_buffer(), iterable_buffer_c.get_buffer(),
-				buffer_size);
+			if (iterable_buffer_c.is_constant()) {
+				c_buffer_iterator_2<t_iterator_a, t_iterator_b> iterator(
+					iterable_buffer_a.get_buffer(), iterable_buffer_b.get_buffer(), buffer_size);
+				s_buffer_iterator_2_mapping_ab iterator_mapping;
 
-			for (; iterator.is_valid(); iterator.next()) {
-				t_value_a value_a = iterator.get_iterator_a().get_value();
-				t_value_b value_b_in = iterator.get_iterator_b().get_value();
-				t_value_c value_c = iterator.get_iterator_c().get_value();
-				t_value_b value_b_out = op(value_a, value_b_in, value_c);
-				iterator.get_iterator_b().set_value(value_b_out);
+				t_value_c value_c = iterable_buffer_c.get_constant();
+				for (; iterator.is_valid(); iterator.next()) {
+					t_value_a value_a = iterator_mapping.get_iterator_a(iterator).get_value();
+					t_value_b value_b_in = iterator_mapping.get_iterator_b(iterator).get_value();
+					t_value_b value_b_out = op(value_a, value_b_in, value_c);
+					iterator_mapping.get_iterator_b(iterator).set_value(value_b_out);
+				}
+
+				iterable_buffer_b.get_buffer()->set_constant(
+					iterator_mapping.get_iterator_b(iterator).should_set_buffer_constant());
+			} else {
+				c_buffer_iterator_3<t_iterator_a, t_iterator_b, t_iterator_c> iterator(
+					iterable_buffer_a.get_buffer(), iterable_buffer_b.get_buffer(), iterable_buffer_c.get_buffer(),
+					buffer_size);
+
+				for (; iterator.is_valid(); iterator.next()) {
+					t_value_a value_a = iterator.get_iterator_a().get_value();
+					t_value_b value_b_in = iterator.get_iterator_b().get_value();
+					t_value_c value_c = iterator.get_iterator_c().get_value();
+					t_value_b value_b_out = op(value_a, value_b_in, value_c);
+					iterator.get_iterator_b().set_value(value_b_out);
+				}
+
+				iterable_buffer_b.get_buffer()->set_constant(iterator.get_iterator_b().should_set_buffer_constant());
 			}
-
-			iterable_buffer_b.get_buffer()->set_constant(iterator.get_iterator_b().should_set_buffer_constant());
 		}
 	}
 }
@@ -1066,19 +1118,37 @@ void buffer_operator_in_in_inout(const t_operation &op, size_t buffer_size,
 					iterator_mapping.get_iterator_c(iterator).should_set_buffer_constant());
 			}
 		} else {
-			c_buffer_iterator_3<t_iterator_a, t_iterator_b, t_iterator_c> iterator(
-				iterable_buffer_a.get_buffer(), iterable_buffer_b.get_buffer(), iterable_buffer_c.get_buffer(),
-				buffer_size);
+			if (iterable_buffer_c.is_constant()) {
+				c_buffer_iterator_3<t_iterator_a, t_iterator_b, t_iterator_c> iterator(
+					iterable_buffer_a.get_buffer(), iterable_buffer_b.get_buffer(), iterable_buffer_c.get_buffer(),
+					buffer_size);
+				s_buffer_iterator_3_mapping_abc iterator_mapping;
 
-			for (; iterator.is_valid(); iterator.next()) {
-				t_value_a value_a = iterator.get_iterator_a().get_value();
-				t_value_b value_b = iterator.get_iterator_b().get_value();
-				t_value_c value_c_in = iterator.get_iterator_c().get_value();
-				t_value_c value_c_out = op(value_a, value_b, value_c_in);
-				iterator.get_iterator_c().set_value(value_c_out);
+				t_value_c value_c_in = iterable_buffer_c.get_constant();
+				for (; iterator.is_valid(); iterator.next()) {
+					t_value_a value_a = iterator_mapping.get_iterator_a(iterator).get_value();
+					t_value_b value_b = iterator_mapping.get_iterator_b(iterator).get_value();
+					t_value_c value_c_out = op(value_a, value_b, value_c_in);
+					iterator_mapping.get_iterator_c(iterator).set_value(value_c_out);
+				}
+
+				iterable_buffer_c.get_buffer()->set_constant(
+					iterator_mapping.get_iterator_c(iterator).should_set_buffer_constant());
+			} else {
+				c_buffer_iterator_3<t_iterator_a, t_iterator_b, t_iterator_c> iterator(
+					iterable_buffer_a.get_buffer(), iterable_buffer_b.get_buffer(), iterable_buffer_c.get_buffer(),
+					buffer_size);
+
+				for (; iterator.is_valid(); iterator.next()) {
+					t_value_a value_a = iterator.get_iterator_a().get_value();
+					t_value_b value_b = iterator.get_iterator_b().get_value();
+					t_value_c value_c_in = iterator.get_iterator_c().get_value();
+					t_value_c value_c_out = op(value_a, value_b, value_c_in);
+					iterator.get_iterator_c().set_value(value_c_out);
+				}
+
+				iterable_buffer_c.get_buffer()->set_constant(iterator.get_iterator_c().should_set_buffer_constant());
 			}
-
-			iterable_buffer_c.get_buffer()->set_constant(iterator.get_iterator_c().should_set_buffer_constant());
 		}
 	}
 }

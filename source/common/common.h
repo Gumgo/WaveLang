@@ -111,6 +111,11 @@ bool test_bit(t_storage storage) {
 	return (storage & k_mask) != 0;
 }
 
+template<typename t_storage, typename t_bit>
+bool test_bit(t_storage storage, t_bit bit) {
+	return (storage & (1 << bit)) != 0;
+}
+
 class c_uncopyable {
 public:
 	c_uncopyable() {}

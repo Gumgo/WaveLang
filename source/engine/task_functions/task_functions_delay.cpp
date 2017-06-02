@@ -23,6 +23,32 @@ struct s_buffer_operation_delay {
 	bool is_constant;
 };
 
+struct s_buffer_operation_memory_real {
+	static size_t query_memory();
+	static void voice_initialize(s_buffer_operation_memory_real *context);
+
+	static void in_in_out(s_buffer_operation_memory_real *context, size_t buffer_size,
+		c_real_buffer_or_constant_in value, c_bool_buffer_or_constant_in write, c_real_buffer_out result);
+	static void inout_in(s_buffer_operation_memory_real *context, size_t buffer_size,
+		c_real_buffer_inout value_result, c_bool_buffer_or_constant_in write);
+
+	real32 m_value;
+};
+
+struct s_buffer_operation_memory_bool {
+	static size_t query_memory();
+	static void voice_initialize(s_buffer_operation_memory_bool *context);
+
+	static void in_in_out(s_buffer_operation_memory_bool *context, size_t buffer_size,
+		c_bool_buffer_or_constant_in value, c_bool_buffer_or_constant_in write, c_bool_buffer_out result);
+	static void inout_in(s_buffer_operation_memory_bool *context, size_t buffer_size,
+		c_bool_buffer_inout value_result, c_bool_buffer_or_constant_in write);
+	static void in_inout(s_buffer_operation_memory_bool *context, size_t buffer_size,
+		c_bool_buffer_or_constant_in value, c_bool_buffer_inout write_result);
+
+	bool m_value;
+};
+
 static real32 *get_delay_buffer(s_buffer_operation_delay *context) {
 	// Delay buffer is allocated directly after the context
 	return reinterpret_cast<real32 *>(context + 1);
@@ -209,6 +235,315 @@ void s_buffer_operation_delay::in_out(
 	out->set_constant(false);
 }
 
+size_t s_buffer_operation_memory_real::query_memory() {
+	return sizeof(s_buffer_operation_memory_real);
+}
+
+void s_buffer_operation_memory_real::voice_initialize(s_buffer_operation_memory_real *context) {
+	context->m_value = 0.0f;
+}
+
+void s_buffer_operation_memory_real::in_in_out(s_buffer_operation_memory_real *context, size_t buffer_size,
+	c_real_buffer_or_constant_in value, c_bool_buffer_or_constant_in write, c_real_buffer_out result) {
+	real32 *result_ptr = result->get_data<real32>();
+
+	// Put this value on the stack to avoid memory reads each iteration
+	real32 memory_value = context->m_value;
+
+	if (value.is_constant()) {
+		real32 value_val = value.get_constant();
+
+		if (write.is_constant()) {
+			bool write_val = write.get_constant();
+			memory_value = write_val ? value_val : memory_value;
+			*result_ptr = memory_value;
+			result->set_constant(true);
+		} else {
+			const uint32 *write_ptr = write.get_buffer()->get_data<uint32>();
+
+			for (size_t index = 0; index < buffer_size; index++) {
+				bool write_val = test_bit(write_ptr[index / 32], index % 32);
+				memory_value = write_val ? value_val : memory_value;
+				result_ptr[index] = memory_value;
+			}
+
+			result->set_constant(false);
+		}
+	} else {
+		const real32 *value_ptr = value.get_buffer()->get_data<real32>();
+
+		if (write.is_constant()) {
+			bool write_val = write.get_constant();
+
+			if (write_val) {
+				memcpy(result_ptr, value_ptr, buffer_size * sizeof(real32));
+				memory_value = value_ptr[buffer_size - 1];
+				result->set_constant(false);
+			} else {
+				*result_ptr = memory_value;
+				result->set_constant(true);
+			}
+		} else {
+			const uint32 *write_ptr = write.get_buffer()->get_data<uint32>();
+
+			for (size_t index = 0; index < buffer_size; index++) {
+				real32 value_val = value_ptr[index];
+				bool write_val = test_bit(write_ptr[index / 32], index % 32);
+				memory_value = write_val ? value_val : memory_value;
+				result_ptr[index] = memory_value;
+			}
+
+			result->set_constant(false);
+		}
+	}
+
+	context->m_value = memory_value;
+}
+
+void s_buffer_operation_memory_real::inout_in(s_buffer_operation_memory_real *context, size_t buffer_size,
+	c_real_buffer_inout value_result, c_bool_buffer_or_constant_in write) {
+	real32 *value_result_ptr = value_result->get_data<real32>();
+
+	// Put this value on the stack to avoid memory reads each iteration
+	real32 memory_value = context->m_value;
+
+	if (value_result->is_constant()) {
+		real32 value_val = *value_result->get_data<real32>();
+
+		if (write.is_constant()) {
+			bool write_val = write.get_constant();
+			memory_value = write_val ? value_val : memory_value;
+			*value_result_ptr = memory_value;
+			value_result->set_constant(true);
+		} else {
+			const uint32 *write_ptr = write.get_buffer()->get_data<uint32>();
+
+			for (size_t index = 0; index < buffer_size; index++) {
+				bool write_val = test_bit(write_ptr[index / 32], index % 32);
+				memory_value = write_val ? value_val : memory_value;
+				value_result_ptr[index] = memory_value;
+			}
+
+			value_result->set_constant(false);
+		}
+	} else {
+		if (write.is_constant()) {
+			bool write_val = write.get_constant();
+
+			if (write_val) {
+				// Nothing to do! The input already equals the output
+				memory_value = value_result_ptr[buffer_size - 1];
+			} else {
+				*value_result_ptr = memory_value;
+				value_result->set_constant(true);
+			}
+		} else {
+			const uint32 *write_ptr = write.get_buffer()->get_data<uint32>();
+
+			for (size_t index = 0; index < buffer_size; index++) {
+				real32 value_val = value_result_ptr[index];
+				bool write_val = test_bit(write_ptr[index / 32], index % 32);
+				memory_value = write_val ? value_val : memory_value;
+				value_result_ptr[index] = memory_value;
+			}
+
+			value_result->set_constant(false);
+		}
+	}
+
+	context->m_value = memory_value;
+}
+
+size_t s_buffer_operation_memory_bool::query_memory() {
+	return sizeof(s_buffer_operation_memory_bool);
+}
+
+void s_buffer_operation_memory_bool::voice_initialize(s_buffer_operation_memory_bool *context) {
+	context->m_value = false;
+}
+
+void s_buffer_operation_memory_bool::in_in_out(s_buffer_operation_memory_bool *context, size_t buffer_size,
+	c_bool_buffer_or_constant_in value, c_bool_buffer_or_constant_in write, c_bool_buffer_out result) {
+	uint32 *result_ptr = result->get_data<uint32>();
+
+	// Put this value on the stack to avoid memory reads each iteration
+	bool memory_value = context->m_value;
+
+	if (value.is_constant()) {
+		bool value_val = value.get_constant();
+
+		if (write.is_constant()) {
+			bool write_val = write.get_constant();
+			memory_value = write_val ? value_val : memory_value;
+			*result_ptr = memory_value ? 1 : 0;
+			result->set_constant(true);
+		} else {
+			const uint32 *write_ptr = write.get_buffer()->get_data<uint32>();
+
+			// $TODO could optimize this (and similar loops) to use uint32 blocks
+			for (size_t index = 0; index < buffer_size; index++) {
+				bool write_val = test_bit(write_ptr[index / 32], index % 32);
+				memory_value = write_val ? value_val : memory_value;
+				result_ptr[index] = memory_value ?
+					result_ptr[index] | (1 << index % 32) :
+					result_ptr[index] & ~(1 << index % 32);
+			}
+
+			result->set_constant(false);
+		}
+	} else {
+		const uint32 *value_ptr = value.get_buffer()->get_data<uint32>();
+
+		if (write.is_constant()) {
+			bool write_val = write.get_constant();
+
+			if (write_val) {
+				memcpy(result_ptr, value_ptr, BOOL_BUFFER_INT32_COUNT(buffer_size) * sizeof(uint32));
+				size_t last_index = buffer_size - 1;
+				memory_value = test_bit(value_ptr[last_index / 32], last_index % 32);
+				result->set_constant(false);
+			} else {
+				*result_ptr = memory_value;
+				result->set_constant(true);
+			}
+		} else {
+			const uint32 *write_ptr = write.get_buffer()->get_data<uint32>();
+
+			for (size_t index = 0; index < buffer_size; index++) {
+				bool value_val = test_bit(value_ptr[index / 32], index % 32);
+				bool write_val = test_bit(write_ptr[index / 32], index % 32);
+				memory_value = write_val ? value_val : memory_value;
+				result_ptr[index] = memory_value ?
+					result_ptr[index] | (1 << index % 32) :
+					result_ptr[index] & ~(1 << index % 32);
+			}
+
+			result->set_constant(false);
+		}
+	}
+
+	context->m_value = memory_value;
+}
+
+void s_buffer_operation_memory_bool::inout_in(s_buffer_operation_memory_bool *context, size_t buffer_size,
+	c_bool_buffer_inout value_result, c_bool_buffer_or_constant_in write) {
+	uint32 *value_result_ptr = value_result->get_data<uint32>();
+
+	// Put this value on the stack to avoid memory reads each iteration
+	bool memory_value = context->m_value;
+
+	if (value_result->is_constant()) {
+		bool value_val = (*value_result->get_data<uint32>() & 1) != 0;
+
+		if (write.is_constant()) {
+			bool write_val = write.get_constant();
+			memory_value = write_val ? value_val : memory_value;
+			*value_result_ptr = memory_value ? 1 : 0;
+			value_result->set_constant(true);
+		} else {
+			const uint32 *write_ptr = write.get_buffer()->get_data<uint32>();
+
+			// $TODO could optimize this (and similar loops) to use uint32 blocks
+			for (size_t index = 0; index < buffer_size; index++) {
+				bool write_val = test_bit(write_ptr[index / 32], index % 32);
+				memory_value = write_val ? value_val : memory_value;
+				value_result_ptr[index] = memory_value ?
+					value_result_ptr[index] | (1 << index % 32) :
+					value_result_ptr[index] & ~(1 << index % 32);
+			}
+
+			value_result->set_constant(false);
+		}
+	} else {
+		if (write.is_constant()) {
+			bool write_val = write.get_constant();
+
+			if (write_val) {
+				// Nothing to do! The input already equals the output
+				size_t last_index = buffer_size - 1;
+				memory_value = test_bit(value_result_ptr[last_index / 32], last_index % 32);
+			} else {
+				*value_result_ptr = memory_value ? 1 : 0;
+				value_result->set_constant(true);
+			}
+		} else {
+			const uint32 *write_ptr = write.get_buffer()->get_data<uint32>();
+
+			for (size_t index = 0; index < buffer_size; index++) {
+				bool value_val = test_bit(value_result_ptr[index / 32], index % 32);
+				bool write_val = test_bit(write_ptr[index / 32], index % 32);
+				memory_value = write_val ? value_val : memory_value;
+				value_result_ptr[index] = memory_value ?
+					value_result_ptr[index] | (1 << index % 32) :
+					value_result_ptr[index] & ~(1 << index % 32);
+			}
+
+			value_result->set_constant(false);
+		}
+	}
+
+	context->m_value = memory_value;
+}
+
+void s_buffer_operation_memory_bool::in_inout(s_buffer_operation_memory_bool *context, size_t buffer_size,
+	c_bool_buffer_or_constant_in value, c_bool_buffer_inout write_result) {
+	uint32 *write_result_ptr = write_result->get_data<uint32>();
+
+	// Put this value on the stack to avoid memory reads each iteration
+	bool memory_value = context->m_value;
+
+	if (value.is_constant()) {
+		bool value_val = value.get_constant();
+
+		if (write_result->is_constant()) {
+			bool write_val = (*write_result->get_data<uint32>() & 1) != 0;
+			memory_value = write_val ? value_val : memory_value;
+			*write_result_ptr = memory_value ? 1 : 0;
+			write_result->set_constant(true);
+		} else {
+			// $TODO could optimize this (and similar loops) to use uint32 blocks
+			for (size_t index = 0; index < buffer_size; index++) {
+				bool write_val = test_bit(write_result_ptr[index / 32], index % 32);
+				memory_value = write_val ? value_val : memory_value;
+				write_result_ptr[index] = memory_value ?
+					write_result_ptr[index] | (1 << index % 32) :
+					write_result_ptr[index] & ~(1 << index % 32);
+			}
+
+			write_result->set_constant(false);
+		}
+	} else {
+		const uint32 *value_ptr = value.get_buffer()->get_data<uint32>();
+
+		if (write_result->is_constant()) {
+			bool write_val = (*write_result->get_data<uint32>() & 1) != 0;
+
+			if (write_val) {
+				memcpy(write_result_ptr, value_ptr, BOOL_BUFFER_INT32_COUNT(buffer_size) * sizeof(uint32));
+				size_t last_index = buffer_size - 1;
+				memory_value = test_bit(value_ptr[last_index / 32], last_index % 32);
+				write_result->set_constant(false);
+			} else {
+				*write_result_ptr = memory_value;
+				write_result->set_constant(true);
+			}
+		} else {
+			for (size_t index = 0; index < buffer_size; index++) {
+				bool value_val = test_bit(value_ptr[index / 32], index % 32);
+				bool write_val = test_bit(write_result_ptr[index / 32], index % 32);
+				memory_value = write_val ? value_val : memory_value;
+				write_result_ptr[index] = memory_value ?
+					write_result_ptr[index] | (1 << index % 32) :
+					write_result_ptr[index] & ~(1 << index % 32);
+			}
+
+			write_result->set_constant(false);
+		}
+	}
+
+	context->m_value = memory_value;
+}
+
 namespace delay_task_functions {
 
 	size_t delay_memory_query(const s_task_function_context &context,
@@ -239,6 +574,78 @@ namespace delay_task_functions {
 			context.buffer_size,
 			signal,
 			result);
+	}
+
+	size_t memory_real_memory_query(const s_task_function_context &context) {
+		return s_buffer_operation_memory_real::query_memory();
+	}
+
+	void memory_real_voice_initializer(const s_task_function_context &context) {
+		s_buffer_operation_memory_real::voice_initialize(
+			static_cast<s_buffer_operation_memory_real *>(context.task_memory));
+	}
+
+	void memory_real_in_in_out(const s_task_function_context &context,
+		c_real_const_buffer_or_constant value,
+		c_bool_const_buffer_or_constant write,
+		c_real_buffer *result) {
+		s_buffer_operation_memory_real::in_in_out(
+			static_cast<s_buffer_operation_memory_real *>(context.task_memory),
+			context.buffer_size,
+			value,
+			write,
+			result);
+	}
+
+	void memory_real_inout_in(const s_task_function_context &context,
+		wl_inout_source("value", "result") c_real_buffer *value_result,
+		wl_in_source("write") c_bool_const_buffer_or_constant write) {
+		s_buffer_operation_memory_real::inout_in(
+			static_cast<s_buffer_operation_memory_real *>(context.task_memory),
+			context.buffer_size,
+			value_result,
+			write);
+	}
+
+	size_t memory_bool_memory_query(const s_task_function_context &context) {
+		return s_buffer_operation_memory_bool::query_memory();
+	}
+
+	void memory_bool_voice_initializer(const s_task_function_context &context) {
+		s_buffer_operation_memory_bool::voice_initialize(
+			static_cast<s_buffer_operation_memory_bool *>(context.task_memory));
+	}
+
+	void memory_bool_in_in_out(const s_task_function_context &context,
+		c_bool_const_buffer_or_constant value,
+		c_bool_const_buffer_or_constant write,
+		c_bool_buffer *result) {
+		s_buffer_operation_memory_bool::in_in_out(
+			static_cast<s_buffer_operation_memory_bool *>(context.task_memory),
+			context.buffer_size,
+			value,
+			write,
+			result);
+	}
+
+	void memory_bool_inout_in(const s_task_function_context &context,
+		c_bool_buffer *value_result,
+		c_bool_const_buffer_or_constant write) {
+		s_buffer_operation_memory_bool::inout_in(
+			static_cast<s_buffer_operation_memory_bool *>(context.task_memory),
+			context.buffer_size,
+			value_result,
+			write);
+	}
+
+	void memory_bool_in_inout(const s_task_function_context &context,
+		c_bool_const_buffer_or_constant value,
+		c_bool_buffer *write_result) {
+		s_buffer_operation_memory_bool::in_inout(
+			static_cast<s_buffer_operation_memory_bool *>(context.task_memory),
+			context.buffer_size,
+			value,
+			write_result);
 	}
 
 }
