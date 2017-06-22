@@ -169,6 +169,13 @@ void c_controller_driver_interface::submit_controller_event(const s_controller_e
 
 	const s_controller_driver_settings &settings = get_settings();
 
+	if (settings.event_hook) {
+		bool consumed = settings.event_hook(settings.event_hook_context, controller_event);
+		if (consumed) {
+			return;
+		}
+	}
+
 	s_controller_event_queue_element element;
 	element.timestamp_sec = settings.clock ? settings.clock(settings.clock_context) : 0.0;
 	element.controller_event = controller_event;

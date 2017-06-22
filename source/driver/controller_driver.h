@@ -25,6 +25,7 @@ struct s_controller_driver_result {
 };
 
 typedef real64 (*f_controller_clock)(void *context);
+typedef bool (*f_controller_event_hook)(void *context, const s_controller_event &controller_event);
 
 struct s_controller_driver_settings {
 	size_t device_count;
@@ -42,6 +43,11 @@ struct s_controller_driver_settings {
 	f_controller_clock clock;
 	void *clock_context;
 
+	// Controller event hook, used to perform custom processing on controller events (e.g. MIDI SysEx messages), returns
+	// true if the event was consumed and should not be processed
+	f_controller_event_hook event_hook;
+	void *event_hook_context;
+
 	void set_default() {
 		device_count = 1;
 		ZERO_STRUCT(&device_indices);
@@ -49,6 +55,8 @@ struct s_controller_driver_settings {
 		unknown_latency = 0.015;
 		clock = nullptr;
 		clock_context = nullptr;
+		event_hook = nullptr;
+		event_hook_context = nullptr;
 	}
 };
 

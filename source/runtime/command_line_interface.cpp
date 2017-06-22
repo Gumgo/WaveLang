@@ -1,4 +1,7 @@
 #include "common/common.h"
+#include "common/threading/mutex.h"
+#include "common/threading/semaphore.h"
+#include "common/threading/thread.h"
 
 #include "engine/events/event_data_types.h"
 #include "engine/task_function_registry.h"
@@ -14,6 +17,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <queue>
 #include <string>
 #include <vector>
 
@@ -32,18 +36,32 @@ private:
 		std::vector<std::string> arguments;
 	};
 
-	static s_command process_command();
+	static s_command read_command();
 	static size_t skip_whitespace(const std::string &str, size_t pos);
 	static size_t skip_to_whitespace(const std::string &str, size_t pos);
 	static size_t skip_to_quote(const std::string &str, size_t pos, std::string &out_result);
 	static bool is_whitespace(char c);
 
+	bool run_command(const s_command &command);
+
 	void list_devices();
 	void initialize_from_runtime_config();
 	void process_command_load_synth(const s_command &command);
 
+	static bool controller_hook_wrapper(void *context, const s_controller_event &controller_event);
+	bool controller_hook(const s_controller_event &controller_event);
+
+	static void controller_command_thread_entry_point(const s_thread_parameter_block *params);
+	void controller_command_thread_main();
+
 	c_runtime_config m_runtime_config;
 	s_runtime_context m_runtime_context;
+	c_mutex m_command_lock;
+
+	c_thread m_controller_command_thread;
+	c_mutex m_controller_command_lock;
+	c_semaphore m_controller_command_semaphore;
+	std::queue<s_command> m_controller_commands;
 
 	// Command-line options:
 	bool m_list_enabled;			// Whether to list all native modules and immediately exit
@@ -129,20 +147,30 @@ int c_command_line_interface::main_function() {
 			process_command_load_synth(command);
 		}
 
+		s_thread_definition controller_command_thread_definition;
+		ZERO_STRUCT(&controller_command_thread_definition);
+		controller_command_thread_definition.thread_name = "controller command thread";
+		controller_command_thread_definition.thread_priority = k_thread_priority_normal;
+		controller_command_thread_definition.processor = -1;
+		controller_command_thread_definition.thread_entry_point = controller_command_thread_entry_point;
+		*controller_command_thread_definition.parameter_block.get_memory_typed<c_command_line_interface *>() = this;
+		m_controller_command_thread.start(controller_command_thread_definition);
+
 		bool done = false;
 		while (!done) {
-			s_command command = process_command();
-
-			if (command.command.empty()) {
-				std::cout << "Invalid command\n";
-			} else if (command.command == "exit") {
-				done = true;
-			} else if (command.command == "load_synth") {
-				process_command_load_synth(command);
-			} else {
-				std::cout << "Invalid command\n";
-			}
+			s_command command = read_command();
+			done = run_command(command);
 		}
+
+		{
+			c_scoped_lock lock(m_controller_command_lock);
+			s_command exit_command;
+			exit_command.command = "exit";
+			m_controller_commands.push(exit_command);
+		}
+
+		m_controller_command_semaphore.notify();
+		m_controller_command_thread.join();
 	}
 
 	m_runtime_context.executor.shutdown();
@@ -157,7 +185,7 @@ int c_command_line_interface::main_function() {
 	return 0;
 }
 
-c_command_line_interface::s_command c_command_line_interface::process_command() {
+c_command_line_interface::s_command c_command_line_interface::read_command() {
 	s_command command;
 
 	std::string command_string;
@@ -248,6 +276,20 @@ bool c_command_line_interface::is_whitespace(char c) {
 	return (c == ' ' || c == '\t' || c == '\n');
 }
 
+bool c_command_line_interface::run_command(const s_command &command) {
+	bool done = false;
+	if (command.command.empty()) {
+		std::cout << "Invalid command\n";
+	} else if (command.command == "exit") {
+		done = true;
+	} else if (command.command == "load_synth") {
+		process_command_load_synth(command);
+	} else {
+		std::cout << "Invalid command\n";
+	}
+	return done;
+}
+
 void c_command_line_interface::list_devices() {
 	std::cout << "Audio devices:\n";
 	for (uint32 index = 0; index < m_runtime_context.audio_driver_interface.get_device_count(); index++) {
@@ -300,6 +342,9 @@ void c_command_line_interface::initialize_from_runtime_config() {
 			m_runtime_context.audio_driver_interface.get_stream_clock(settings.clock, settings.clock_context);
 		}
 
+		settings.event_hook = controller_hook_wrapper;
+		settings.event_hook_context = this;
+
 		s_controller_driver_result result = m_runtime_context.controller_driver_interface.start_stream(settings);
 		if (result.result != k_controller_driver_result_success) {
 			std::cout << "Failed to start controller stream: " << result.message << "\n";
@@ -308,6 +353,8 @@ void c_command_line_interface::initialize_from_runtime_config() {
 }
 
 void c_command_line_interface::process_command_load_synth(const s_command &command) {
+	c_scoped_lock lock(m_command_lock);
+
 	if (command.arguments.size() == 1) {
 		if (!m_runtime_context.audio_driver_interface.is_stream_running()) {
 			std::cout << "Audio stream is not running\n";
@@ -386,4 +433,57 @@ void c_command_line_interface::process_command_load_synth(const s_command &comma
 	}
 
 	std::cout << "Invalid command\n";
+}
+
+bool c_command_line_interface::controller_hook_wrapper(void *context, const s_controller_event &controller_event) {
+	return static_cast<c_command_line_interface *>(context)->controller_hook(controller_event);
+}
+
+bool c_command_line_interface::controller_hook(const s_controller_event &controller_event) {
+#if IS_TRUE(TARGET_RASPBERRY_PI)
+	// Hack: use events on MIDI parameter 15 to load a different synths!
+	static const uint32 k_synth_parameter = 15;
+	if (controller_event.event_type == k_controller_event_type_parameter_change) {
+		const s_controller_event_data_parameter_change *parameter_change_controller_event =
+			controller_event.get_data<s_controller_event_data_parameter_change>();
+		if (parameter_change_controller_event->parameter_id == k_synth_parameter) {
+			int32 synth_index = static_cast<int32>(std::round(parameter_change_controller_event->value * 127.0f));
+			s_command command;
+			command.command = "load_synth";
+			command.arguments.push_back(std::to_string(synth_index) + ".wls");
+			{
+				c_scoped_lock lock(m_controller_command_lock);
+				m_controller_commands.push(command);
+			}
+			m_controller_command_semaphore.notify();
+			return true;
+		}
+	}
+#endif // IS_TRUE(TARGET_RASPBERRY_PI)
+
+	return false;
+}
+
+void c_command_line_interface::controller_command_thread_entry_point(const s_thread_parameter_block *params) {
+	(*params->get_memory_typed<c_command_line_interface *>())->controller_command_thread_main();
+}
+
+void c_command_line_interface::controller_command_thread_main() {
+	bool done = false;
+	while (!done) {
+		m_controller_command_semaphore.wait();
+
+		s_command command;
+		{
+			c_scoped_lock lock(m_controller_command_lock);
+			if (!m_controller_commands.empty()) {
+				command = m_controller_commands.front();
+				m_controller_commands.pop();
+			}
+		}
+
+		if (!command.command.empty()) {
+			done = run_command(command);
+		}
+	}
 }
