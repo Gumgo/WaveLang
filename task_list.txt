@@ -18,6 +18,15 @@
 		- Once the accumulator fills up to the chunk size it is processed and discarded
 		- This avoids situations where we need to fill the driver buffer but don't have enough input samples to process a full (fixed-size) chunk
 
+- Task function simplification
+	- Remove explicit inout arguments and instead only support in and out
+		- In and out arguments can still share the same buffer unless one of the arguments is marked with wl_unshared
+	- Create multi-buffer iterators using variadic templates if possible
+		- iterate_buffers(buffer_a, buffer_b, buffer_c, <lambda>)
+		- Lambda is provided with SIMD values (or pointers in the case of output buffers) for each buffer being iterated
+		- Const buffers are handled automatically
+		- How should we handle const output? Maybe a bool for "if all inputs are const, mark all outputs as const and only iterate on the first value"?
+
 - Delay types
 	- Delay
 		- Takes input, returns delayed output
@@ -34,9 +43,22 @@
 		- During initialization, reads/writes
 		- Constraint: decay time must be at least as big as chunk processing size
 			- Emit error on initialize if this is not true
+	- Variable delay
+		- Max delay is specified as a constant, actual delay can be variable
+		- Delay is sub-sample accurate
+
+- Latency compensation
+	- Each variable should have a latency value associated with it
+	- If an operation is performed on variables with mismatched latencies, delay operations are inserted to make them match
+		- Applies to all outputs as well
+		- Constants also get delayed if they are e.g. being added to a variable with latency (I think)
+	- The instrument reports a total latency equal to the latency of the outputs
 
 - Fix sampler
 	- Remove branching from fetch_sample by using multiple sinc tables to remove the sample shift operations
+	- Improve polyphase filtering implementation
+
+- Switch to Flex/Lemon for lexer/parser
 
 - Plugin system ($PLUGIN)
 	- Allow users to register their own native modules and tasks
