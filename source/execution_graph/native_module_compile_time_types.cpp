@@ -8,10 +8,10 @@ const std::string &c_native_module_string::get_string() const {
 	return m_string;
 }
 
-std::vector<uint32> &c_native_module_array::get_array() {
+std::vector<c_node_reference> &c_native_module_array::get_array() {
 	return m_array;
 }
 
-const std::vector<uint32> &c_native_module_array::get_array() const {
+const std::vector<c_node_reference> &c_native_module_array::get_array() const {
 	return m_array;
 }

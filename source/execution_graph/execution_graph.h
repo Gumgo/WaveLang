@@ -6,6 +6,7 @@
 
 #include "execution_graph/instrument_constants.h"
 #include "execution_graph/native_module.h"
+#include "execution_graph/node_reference.h"
 
 #include <fstream>
 #include <vector>
@@ -35,12 +36,15 @@ enum e_execution_graph_node_type {
 	// Has exactly 1 input and no outputs
 	k_execution_graph_node_type_output,
 
+	// Used to temporarily reference other nodes to ensure that they don't get removed when building the graph
+	k_execution_graph_node_type_temporary_reference,
+
 	k_execution_graph_node_type_count
 };
 
 class c_execution_graph {
 public:
-	static const uint32 k_invalid_index = static_cast<uint32>(-1);
+	typedef void (*f_on_node_removed)(void *context, c_node_reference node_reference);
 
 	// Special output index representing whether processing should remain active - once a voice drops to 0 volume it can
 	// be disabled for improved performance
@@ -53,35 +57,44 @@ public:
 
 	bool validate() const;
 
-	uint32 add_constant_node(real32 constant_value);
-	uint32 add_constant_node(bool constant_value);
-	uint32 add_constant_node(const std::string &constant_value);
-	uint32 add_constant_array_node(c_native_module_data_type element_data_type);
-	void add_constant_array_value(uint32 constant_array_node_index, uint32 value_node_index);
-	uint32 add_native_module_call_node(uint32 native_module_index);
-	uint32 add_input_node(uint32 input_index);
-	uint32 add_output_node(uint32 output_index);
-	void remove_node(uint32 node_index);
+	c_node_reference add_constant_node(real32 constant_value);
+	c_node_reference add_constant_node(bool constant_value);
+	c_node_reference add_constant_node(const std::string &constant_value);
+	c_node_reference add_constant_array_node(c_native_module_data_type element_data_type);
+	void add_constant_array_value(
+		c_node_reference constant_array_node_reference, c_node_reference value_node_reference);
+	// Returns the old value
+	c_node_reference set_constant_array_value_at_index(
+		c_node_reference constant_array_node_reference, uint32 index, c_node_reference value_node_reference);
+	c_node_reference add_native_module_call_node(uint32 native_module_index);
+	c_node_reference add_input_node(uint32 input_index);
+	c_node_reference add_output_node(uint32 output_index);
+	c_node_reference add_temporary_reference_node();
+	void remove_node(c_node_reference node_reference,
+		f_on_node_removed on_node_removed = nullptr, void *on_node_removed_context = nullptr);
 
-	void add_edge(uint32 from_index, uint32 to_index);
-	void remove_edge(uint32 from_index, uint32 to_index);
+	void add_edge(c_node_reference from_reference, c_node_reference to_reference);
+	void remove_edge(c_node_reference from_reference, c_node_reference to_reference);
 
 	uint32 get_node_count() const;
-	e_execution_graph_node_type get_node_type(uint32 node_index) const;
-	c_native_module_data_type get_constant_node_data_type(uint32 node_index) const;
-	real32 get_constant_node_real_value(uint32 node_index) const;
-	bool get_constant_node_bool_value(uint32 node_index) const;
-	const char *get_constant_node_string_value(uint32 node_index) const;
-	uint32 get_native_module_call_native_module_index(uint32 node_index) const;
-	uint32 get_input_node_input_index(uint32 node_index) const;
-	uint32 get_output_node_output_index(uint32 node_index) const;
-	size_t get_node_incoming_edge_count(uint32 node_index) const;
-	uint32 get_node_incoming_edge_index(uint32 node_index, size_t edge) const;
-	size_t get_node_outgoing_edge_count(uint32 node_index) const;
-	uint32 get_node_outgoing_edge_index(uint32 node_index, size_t edge) const;
+	c_node_reference nodes_begin() const;
+	c_node_reference nodes_next(c_node_reference node_reference) const;
 
-	bool does_node_use_indexed_inputs(uint32 node_index) const;
-	bool does_node_use_indexed_outputs(uint32 node_index) const;
+	e_execution_graph_node_type get_node_type(c_node_reference node_reference) const;
+	c_native_module_data_type get_constant_node_data_type(c_node_reference node_reference) const;
+	real32 get_constant_node_real_value(c_node_reference node_reference) const;
+	bool get_constant_node_bool_value(c_node_reference node_reference) const;
+	const char *get_constant_node_string_value(c_node_reference node_reference) const;
+	uint32 get_native_module_call_native_module_index(c_node_reference node_reference) const;
+	uint32 get_input_node_input_index(c_node_reference node_reference) const;
+	uint32 get_output_node_output_index(c_node_reference node_reference) const;
+	size_t get_node_incoming_edge_count(c_node_reference node_reference) const;
+	c_node_reference get_node_incoming_edge_reference(c_node_reference node_reference, size_t edge) const;
+	size_t get_node_outgoing_edge_count(c_node_reference node_reference) const;
+	c_node_reference get_node_outgoing_edge_reference(c_node_reference node_reference, size_t edge) const;
+
+	bool does_node_use_indexed_inputs(c_node_reference node_reference) const;
+	bool does_node_use_indexed_outputs(c_node_reference node_reference) const;
 
 	void remove_unused_nodes_and_reassign_node_indices();
 
@@ -91,7 +104,6 @@ public:
 
 private:
 	struct s_node {
-		e_execution_graph_node_type type;
 		union u_node_data {
 			u_node_data() {}
 
@@ -118,30 +130,45 @@ private:
 			} output;
 		};
 
+		e_execution_graph_node_type type;
+#if IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
+		uint32 salt;
+#endif // IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
 		u_node_data node_data;
-		std::vector<uint32> incoming_edge_indices;
-		std::vector<uint32> outgoing_edge_indices;
+		std::vector<c_node_reference> incoming_edge_references;
+		std::vector<c_node_reference> outgoing_edge_references;
 	};
 
 	static bool does_node_use_indexed_inputs(const s_node &node);
 	static bool does_node_use_indexed_outputs(const s_node &node);
-	uint32 allocate_node();
-	void add_edge_internal(uint32 from_index, uint32 to_index);
-	bool add_edge_for_load(uint32 from_index, uint32 to_index);
-	void remove_edge_internal(uint32 from_index, uint32 to_index);
 
-	bool validate_node(uint32 index) const;
-	bool validate_edge(uint32 from_index, uint32 to_index) const;
+	c_node_reference allocate_node();
+	c_node_reference node_reference_from_index(uint32 node_index) const;
+	s_node &get_node(c_node_reference node_reference);
+	const s_node &get_node(c_node_reference node_reference) const;
+
+	void add_edge_internal(c_node_reference from_reference, c_node_reference to_reference);
+	bool add_edge_for_load(
+		c_node_reference from_reference,
+		c_node_reference to_reference,
+		size_t from_edge,
+		size_t to_edge);
+	void remove_edge_internal(c_node_reference from_reference, c_node_reference to_reference);
+	void sort_edges(c_node_reference node_reference);
+
+	bool validate_node(c_node_reference node_reference) const;
+	bool validate_edge(c_node_reference from_reference, c_node_reference to_reference) const;
 	bool validate_constants() const;
 	bool validate_string_table() const;
-	bool get_type_from_node(uint32 node_index, c_native_module_data_type &out_type) const;
+	bool get_type_from_node(c_node_reference node_reference, c_native_module_data_type &out_type) const;
 
-	bool visit_node_for_cycle_detection(uint32 node_index,
+	bool visit_node_for_cycle_detection(c_node_reference node_reference,
 		std::vector<bool> &nodes_visited, std::vector<bool> &nodes_marked) const;
 
 	void remove_unused_strings();
 
 	std::vector<s_node> m_nodes;
+	std::vector<uint32> m_free_node_indices;
 
 	c_string_table m_string_table;
 };

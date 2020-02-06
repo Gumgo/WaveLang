@@ -1,3 +1,7 @@
+- Codebase improvements
+	- Add simple s_typed_index<t_type> type to add type safety to all the various indices we use (e.g. buffer index)
+		- This is just a wrapper around t_type
+
 - Divorce driver chunk size from processing chunk size
 	- Use chunk_size synth global
 	- Processing chunk size is always fixed, and defined as an execution graph global in the synth source file
@@ -76,8 +80,9 @@
 - Expand the timing library ($TIMING)
 	- Add edge triggers
 
-- Scriptable wavetables
-	- Introduce sampler_wavetable(const real[] table) function
-		- table argument is a constant array of frequency weights where index i represents base_frequency*2^i
-		- Generates band-limited mipmap (currently happens in hardcoded C++)
-	- Replace hardcoded samplers with utility script
+- Structs ($STRUCT)
+	- Purely syntactic sugar, allows grouping of variables
+
+- Node refcounting
+	- Change the execution graph to refcount nodes and automatically eliminate nodes which are no longer in use
+	- Reuse nodes but add salt in debug builds to catch reuse errors

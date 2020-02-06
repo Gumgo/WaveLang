@@ -1,5 +1,9 @@
 #include "common/threading/thread.h"
 
+#if IS_TRUE(PLATFORM_LINUX)
+#include <pthread.h>
+#endif // IS_TRUE(PLATFORM_LINUX)
+
 #if !IS_TRUE(USE_THREAD_IMPLEMENTATION_WINDOWS)
 
 c_thread::c_thread() {
@@ -26,6 +30,24 @@ void c_thread::start(const s_thread_definition &thread_definition) {
 	// Create the thread using the definition provided
 	// Currently, no way to specify stack size, priority, or processor...
 	m_thread = std::thread(c_thread::thread_entry_point, this);
+
+#if IS_TRUE(PLATFORM_LINUX)
+	/*static const int k_thread_priority_map[] = {
+		1,
+		10,
+		40,
+		70,
+		80
+	};
+	static_assert(NUMBEROF(k_thread_priority_map) == k_thread_priority_count, "Thread priority mapping mismatch");
+
+	sched_param sch_params;
+	sch_params.sched_priority = k_thread_priority_map[thread_definition.thread_priority];
+	int policy = SCHED_FIFO;
+	if (pthread_setschedparam(m_thread.native_handle(), policy, &sch_params)) {
+		wl_vhalt("Failed to set thread priority");
+	}*/
+#endif // IS_TRUE(PLATFORM_LINUX)
 
 	// Cache the thread ID
 	m_thread_id = m_thread.get_id();

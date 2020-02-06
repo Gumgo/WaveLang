@@ -7,7 +7,9 @@
 #include "engine/task_function.h"
 
 #include "execution_graph/instrument_stage.h"
+#include "execution_graph/node_reference.h"
 
+#include <map>
 #include <vector>
 
 class c_execution_graph;
@@ -24,8 +26,8 @@ struct s_task_graph_data {
 
 			struct {
 				// Used when building the graph
-				uint32 execution_graph_index_a;
-				uint32 execution_graph_index_b;
+				c_node_reference execution_graph_reference_a;
+				c_node_reference execution_graph_reference_b;
 			};
 
 			uint32 buffer; // Shared accessor for any buffer, no accessor function for this
@@ -148,11 +150,10 @@ public:
 	bool is_valid() const;
 	void next();
 	uint32 get_buffer_index() const;
-	uint32 get_node_index() const; // For internal use only - used when constructing the graph
 	c_task_qualified_data_type get_buffer_type() const;
 	const s_task_graph_data &get_task_graph_data() const;
 
-private:
+protected:
 	c_task_graph_data_array m_data_array;
 	c_task_data_type m_type_mask; // Only buffers of this type are returned
 	size_t m_argument_index;
@@ -193,6 +194,8 @@ public:
 	uint32 get_buffer_usages(uint32 buffer_index) const;
 
 private:
+	friend class c_task_buffer_iterator_internal;
+
 	static const size_t k_invalid_list_index = static_cast<size_t>(-1);
 
 	struct s_task {
@@ -212,17 +215,24 @@ private:
 
 	void resolve_arrays();
 	void resolve_strings();
-	bool add_task_for_node(const c_execution_graph &execution_graph, uint32 node_index,
-		std::vector<uint32> &nodes_to_tasks);
-	void setup_task(const c_execution_graph &execution_graph, uint32 node_index,
+	bool add_task_for_node(const c_execution_graph &execution_graph, c_node_reference node_reference,
+		std::map<c_node_reference, uint32> &nodes_to_tasks);
+	void setup_task(const c_execution_graph &execution_graph, c_node_reference node_reference,
 		uint32 task_index, const s_task_function_mapping &task_function_mapping);
-	uint32 *get_task_data_array_element_buffer(const s_task_graph_data &argument, size_t index);
+	uint32 *get_task_data_array_element_buffer_and_node_reference(const s_task_graph_data &argument, size_t index,
+		c_node_reference *out_node_reference = nullptr);
 	void build_task_successor_lists(const c_execution_graph &execution_graph,
-		const std::vector<uint32> &nodes_to_tasks);
+		const std::map<c_node_reference, uint32> &nodes_to_tasks);
 	void allocate_buffers(const c_execution_graph &execution_graph);
-	void convert_nodes_to_buffers(s_task_graph_data &task_graph_data, const std::vector<uint32> &nodes_to_buffers);
-	void assign_buffer_to_related_nodes(const c_execution_graph &execution_graph, uint32 node_index,
-		const std::vector<uint32> &inout_connections, std::vector<uint32> &nodes_to_buffers, uint32 buffer_index);
+	void convert_nodes_to_buffers(
+		s_task_graph_data &task_graph_data,
+		const std::map<c_node_reference, uint32> &nodes_to_buffers);
+	void assign_buffer_to_related_nodes(
+		const c_execution_graph &execution_graph,
+		c_node_reference node_reference,
+		const std::map<c_node_reference, c_node_reference> &inout_connections,
+		std::map<c_node_reference, uint32> &nodes_to_buffers,
+		uint32 buffer_index);
 	void calculate_max_concurrency();
 	void add_usage_info_for_buffer_type(const c_predecessor_resolver &predecessor_resolver, c_task_data_type type);
 	uint32 calculate_max_buffer_concurrency(
@@ -240,6 +250,11 @@ private:
 	std::vector<s_real_array_element> m_real_array_element_lists;
 	std::vector<s_bool_array_element> m_bool_array_element_lists;
 	std::vector<s_string_array_element> m_string_array_element_lists;
+
+	// These are used only to temporarily hold node references while constructing arrays
+	// Strings are always constant so they don't need a node reference list
+	std::vector<c_node_reference> m_real_array_node_reference_lists;
+	std::vector<c_node_reference> m_bool_array_node_reference_lists;
 
 	// Total number of unique buffers required
 	uint32 m_buffer_count;

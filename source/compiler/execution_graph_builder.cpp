@@ -38,8 +38,8 @@ private:
 	struct s_expression_result {
 		// Type of data
 		c_ast_data_type type;
-		// Node index in which the returned value is stored
-		uint32 node_index;
+		// Node reference in which the returned value is stored
+		c_node_reference node_reference;
 		// If non-empty, this result contains an assignable named value and can be used as an out argument
 		std::string identifier_name;
 	};
@@ -48,9 +48,9 @@ private:
 	struct s_identifier {
 		static const size_t k_invalid_argument = static_cast<size_t>(-1);
 
-		c_ast_data_type data_type;			// Data type associated with this identifier
-		uint32 current_value_node_index;	// Index of the node holding the most recent value
-		size_t argument_index;				// Argument index, if this identifier is an argument
+		c_ast_data_type data_type;						// Data type associated with this identifier
+		c_node_reference current_value_node_reference;	// Reference to the node holding the most recent value
+		size_t argument_index;							// Argument index, if this identifier is an argument
 	};
 
 	struct s_scope {
@@ -63,7 +63,7 @@ private:
 
 	const c_ast_node *m_ast_root;								// Root of the AST
 	c_execution_graph *m_execution_graph;						// The execution graph we are building
-	const s_instrument_globals *m_instrument_globals;		// The globals for this graph
+	const s_instrument_globals *m_instrument_globals;			// The globals for this graph
 	const c_ast_node_module_declaration *m_module_declaration;	// The module we are adding to the graph
 
 	// The number of arguments we have visited so far
@@ -71,10 +71,10 @@ private:
 
 	// List of argument nodes; follows argument order
 	// Inputs should be assigned before we begin, outputs should all be assigned by the end of iteration
-	std::vector<uint32> m_argument_node_indices;
+	std::vector<c_node_reference> m_argument_node_references;
 
-	// Index of the node containing the return value, should be assigned by the end of iteration
-	uint32 m_return_node_index;
+	// Reference to the node containing the return value, should be assigned by the end of iteration
+	c_node_reference m_return_node_reference;
 
 	// Stack of scopes
 	std::deque<s_scope> m_scope_stack;
@@ -92,6 +92,9 @@ private:
 	// Used to evaluate constants as we build the graph
 	c_execution_graph_constant_evaluator m_constant_evaluator;
 
+	// Used to remove unused nodes as we build the graph
+	c_execution_graph_trimmer m_trimmer;
+
 	// Adds initially unassigned identifier
 	void add_identifier_to_scope(const std::string &name, c_ast_data_type data_type) {
 #if IS_TRUE(ASSERTS_ENABLED)
@@ -102,7 +105,7 @@ private:
 
 		s_identifier identifier;
 		identifier.data_type = data_type;
-		identifier.current_value_node_index = c_execution_graph::k_invalid_index;
+		identifier.current_value_node_reference = c_node_reference();
 		identifier.argument_index = s_identifier::k_invalid_argument;
 		m_scope_stack.front().identifiers.insert(std::make_pair(name, identifier));
 	}
@@ -120,51 +123,109 @@ private:
 		return nullptr;
 	}
 
-	void update_identifier_node_index(const std::string &name, uint32 node_index) {
+	void update_identifier_node_reference(const std::string &name, c_node_reference node_reference) {
 		s_identifier *identifier = get_identifier(name);
 
 		// Update the node
-		identifier->current_value_node_index = node_index;
+		c_node_reference old_value_node_reference = identifier->current_value_node_reference;
+		identifier->current_value_node_reference = node_reference;
 		if (identifier->argument_index != s_identifier::k_invalid_argument) {
 			const c_ast_node_named_value_declaration *argument = m_module_declaration->get_argument(
 				identifier->argument_index);
 
 			if (argument->get_qualifier() == k_ast_qualifier_out) {
 				// Update the out argument node
-				m_argument_node_indices[identifier->argument_index] = node_index;
+				// Add an extra reference to assigned outputs so they don't go out of scope and get deleted too soon
+				swap_temporary_reference(m_argument_node_references[identifier->argument_index], node_reference);
+				m_argument_node_references[identifier->argument_index] = node_reference;
 			}
 		}
+
+		swap_temporary_reference(old_value_node_reference, node_reference);
 	}
 
-	void update_array_identifier_single_value_node_index(
-		const std::string &name, size_t array_index, uint32 node_index) {
+	void update_array_identifier_single_value_node_reference(
+		const std::string &name, size_t array_index, c_node_reference node_reference) {
 		s_identifier *identifier = get_identifier(name);
 
 		// Create a new array with all values identical except for the one specified
-		wl_assert(m_execution_graph->get_node_type(identifier->current_value_node_index) ==
+		wl_assert(m_execution_graph->get_node_type(identifier->current_value_node_reference) ==
 			k_execution_graph_node_type_constant);
 		c_native_module_data_type array_type =
-			m_execution_graph->get_constant_node_data_type(identifier->current_value_node_index);
+			m_execution_graph->get_constant_node_data_type(identifier->current_value_node_reference);
 		wl_assert(array_type.is_array());
 
-		uint32 new_array_node_index = m_execution_graph->add_constant_array_node(
-			array_type.get_element_type());
+		if (m_execution_graph->get_node_outgoing_edge_count(identifier->current_value_node_reference) == 1) {
+			// Simply update this array in-place, since nothing else is referencing it
+			c_node_reference old_value_node_reference = m_execution_graph->set_constant_array_value_at_index(
+				identifier->current_value_node_reference,
+				cast_integer_verify<uint32>(array_index),
+				node_reference);
 
-		// Add the identical array values for all indices except the specified one
-		size_t array_count = m_execution_graph->get_node_incoming_edge_count(identifier->current_value_node_index);
-		for (size_t index = 0; index < array_count; index++) {
-			uint32 source_node_index;
-			if (index == array_index) {
-				source_node_index = node_index;
-			} else {
-				source_node_index = m_execution_graph->get_node_incoming_edge_index(
-					m_execution_graph->get_node_incoming_edge_index(identifier->current_value_node_index, index), 0);
+			// See if we can remove the old value node
+			m_trimmer.try_trim_node(old_value_node_reference);
+		} else {
+			c_node_reference new_array_node_reference = m_execution_graph->add_constant_array_node(
+				array_type.get_element_type());
+
+			// Add the identical array values for all indices except the specified one
+			size_t array_count =
+				m_execution_graph->get_node_incoming_edge_count(identifier->current_value_node_reference);
+			for (size_t index = 0; index < array_count; index++) {
+				c_node_reference source_node_reference;
+				if (index == array_index) {
+					source_node_reference = node_reference;
+				} else {
+					source_node_reference = m_execution_graph->get_node_incoming_edge_reference(
+						m_execution_graph->get_node_incoming_edge_reference(
+							identifier->current_value_node_reference, index), 0);
+				}
+
+				m_execution_graph->add_constant_array_value(new_array_node_reference, source_node_reference);
 			}
 
-			m_execution_graph->add_constant_array_value(new_array_node_index, source_node_index);
+			c_node_reference old_value_node_reference = identifier->current_value_node_reference;
+			identifier->current_value_node_reference = new_array_node_reference;
+			swap_temporary_reference(old_value_node_reference, new_array_node_reference);
 		}
+	}
 
-		identifier->current_value_node_index = new_array_node_index;
+	void add_temporary_reference(c_node_reference node_reference) {
+		if (node_reference.is_valid()) {
+			c_node_reference temporary_node_reference = m_execution_graph->add_temporary_reference_node();
+			m_execution_graph->add_edge(node_reference, temporary_node_reference);
+		}
+	}
+
+	void remove_temporary_reference(c_node_reference node_reference) {
+		if (node_reference.is_valid()) {
+			IF_ASSERTS_ENABLED(bool found = false;)
+			size_t edge_count = m_execution_graph->get_node_outgoing_edge_count(node_reference);
+			for (size_t edge_index = 0; edge_index < edge_count; edge_index++) {
+				c_node_reference to_node_reference =
+					m_execution_graph->get_node_outgoing_edge_reference(node_reference, edge_index);
+
+				e_execution_graph_node_type to_node_type = m_execution_graph->get_node_type(to_node_reference);
+				if (to_node_type == k_execution_graph_node_type_temporary_reference) {
+					m_execution_graph->remove_node(to_node_reference);
+					m_trimmer.try_trim_node(node_reference);
+					IF_ASSERTS_ENABLED(found = true;)
+					break;
+				}
+			}
+
+			wl_assert(found);
+		}
+	}
+
+	void swap_temporary_reference(c_node_reference old_node_reference, c_node_reference new_node_reference) {
+		add_temporary_reference(new_node_reference);
+		remove_temporary_reference(old_node_reference);
+	}
+
+	static void on_node_removed(void *context, c_node_reference node_reference) {
+		c_execution_graph_module_builder *this_ptr = static_cast<c_execution_graph_module_builder *>(context);
+		this_ptr->m_constant_evaluator.remove_cached_result(node_reference);
 	}
 
 public:
@@ -188,32 +249,47 @@ public:
 		m_loop_count_for_next_scope = 1;
 
 		m_constant_evaluator.initialize(execution_graph, instrument_globals, error_accumulator);
+		m_trimmer.initialize(execution_graph, on_node_removed, this);
 
-		m_argument_node_indices.resize(module_declaration->get_argument_count(), c_execution_graph::k_invalid_index);
-		m_return_node_index = c_execution_graph::k_invalid_index;
+		m_argument_node_references.resize(module_declaration->get_argument_count());
+		m_return_node_reference = c_node_reference();
 	}
 
-	void set_in_argument_node_index(size_t argument_index, uint32 node_index) {
+	~c_execution_graph_module_builder() {
+		wl_assert(m_expression_stack.empty());
+		remove_temporary_reference(m_last_assigned_expression_result.node_reference);
+		remove_temporary_reference(m_return_node_reference);
+
+		// Remove extra references we made to output arguments
+		for (size_t arg = 0; arg < m_module_declaration->get_argument_count(); arg++) {
+			if (m_module_declaration->get_argument(arg)->get_qualifier() == k_ast_qualifier_out) {
+				// Remove the extra reference we added
+				remove_temporary_reference(m_argument_node_references[arg]);
+			}
+		}
+	}
+
+	void set_in_argument_node_reference(size_t argument_index, c_node_reference node_reference) {
 		const c_ast_node_named_value_declaration *argument = m_module_declaration->get_argument(argument_index);
 		wl_assert(argument->get_qualifier() == k_ast_qualifier_in);
 
 		// We shouldn't be double assigning
-		wl_assert(m_argument_node_indices[argument_index] == c_execution_graph::k_invalid_index);
-		m_argument_node_indices[argument_index] = node_index;
+		wl_assert(!m_argument_node_references[argument_index].is_valid());
+		m_argument_node_references[argument_index] = node_reference;
 	}
 
-	uint32 get_out_argument_node_index(size_t argument_index) const {
+	c_node_reference get_out_argument_node_reference(size_t argument_index) const {
 		const c_ast_node_named_value_declaration *argument = m_module_declaration->get_argument(argument_index);
 		wl_assert(argument->get_qualifier() == k_ast_qualifier_out);
 
 		// All outputs should be assigned
-		wl_assert(m_argument_node_indices[argument_index] != c_execution_graph::k_invalid_index);
-		return m_argument_node_indices[argument_index];
+		wl_assert(m_argument_node_references[argument_index].is_valid());
+		return m_argument_node_references[argument_index];
 	}
 
-	uint32 get_return_value_node_index() const {
+	c_node_reference get_return_value_node_reference() const {
 		wl_assert(m_module_declaration->get_return_type() != c_ast_data_type(k_ast_primitive_type_void));
-		return m_return_node_index;
+		return m_return_node_reference;
 	}
 
 	static const c_ast_node_module_declaration *find_module_declaration(const c_ast_node *ast_root, const char *name,
@@ -290,6 +366,12 @@ public:
 	}
 
 	virtual void end_visit(const c_ast_node_scope *node) {
+		// Decrement refcount of all nodes in this scope
+		s_scope &scope = m_scope_stack.front();
+		for (auto identifier = scope.identifiers.begin(); identifier != scope.identifiers.end(); identifier++) {
+			remove_temporary_reference(identifier->second.current_value_node_reference);
+		}
+
 		m_scope_stack.pop_front();
 	}
 
@@ -304,12 +386,13 @@ public:
 				(node->get_return_type() != c_ast_data_type(k_ast_primitive_type_void)));
 
 			// Create a native module call node
-			uint32 native_module_call_node_index = m_execution_graph->add_native_module_call_node(native_module_index);
+			c_node_reference native_module_call_node_reference =
+				m_execution_graph->add_native_module_call_node(native_module_index);
 
 			if (native_module.return_argument_index != k_invalid_argument_index) {
-				wl_assert(native_module.argument_count == m_argument_node_indices.size() + 1);
+				wl_assert(native_module.argument_count == m_argument_node_references.size() + 1);
 			} else {
-				wl_assert(native_module.argument_count == m_argument_node_indices.size());
+				wl_assert(native_module.argument_count == m_argument_node_references.size());
 			}
 
 			// Hook up the native module inputs and outputs to the arguments
@@ -320,8 +403,10 @@ public:
 				size_t output_index = get_native_module_output_index_for_argument_index(
 					native_module, native_module.return_argument_index);
 
-				m_return_node_index = m_execution_graph->get_node_outgoing_edge_index(
-					native_module_call_node_index, output_index);
+				m_return_node_reference = m_execution_graph->get_node_outgoing_edge_reference(
+					native_module_call_node_reference, output_index);
+				add_temporary_reference(m_return_node_reference);
+
 				next_output++;
 			}
 
@@ -330,16 +415,19 @@ public:
 
 				if (qualifier == k_ast_qualifier_in) {
 					// This argument feeds into the module call input node
-					uint32 input_node_index = m_execution_graph->get_node_incoming_edge_index(
-						native_module_call_node_index, next_input);
-					m_execution_graph->add_edge(m_argument_node_indices[arg], input_node_index);
+					c_node_reference input_node_reference = m_execution_graph->get_node_incoming_edge_reference(
+						native_module_call_node_reference, next_input);
+					m_execution_graph->add_edge(m_argument_node_references[arg], input_node_reference);
+
 					next_input++;
 				} else {
 					wl_assert(qualifier == k_ast_qualifier_out);
 					// This argument is assigned by the module call output node
-					uint32 output_node_index = m_execution_graph->get_node_outgoing_edge_index(
-						native_module_call_node_index, next_output);
-					m_argument_node_indices[arg] = output_node_index;
+					c_node_reference output_node_reference = m_execution_graph->get_node_outgoing_edge_reference(
+						native_module_call_node_reference, next_output);
+					m_argument_node_references[arg] = output_node_reference;
+					add_temporary_reference(output_node_reference);
+
 					next_output++;
 				}
 			}
@@ -369,8 +457,7 @@ public:
 			m_arguments_found++;
 
 			// Inputs already have a value assigned
-			uint32 argument_node_index = m_argument_node_indices[identifier->argument_index];
-			identifier->current_value_node_index = argument_node_index;
+			update_identifier_node_reference(node->get_name(), m_argument_node_references[identifier->argument_index]);
 		} else if (qualifier == k_ast_qualifier_out) {
 			// Associate the argument node with the named value
 			identifier->argument_index = m_arguments_found;
@@ -393,7 +480,6 @@ public:
 	virtual void end_visit(const c_ast_node_named_value_assignment *node) {
 		s_expression_result result = m_expression_stack.top();
 		m_expression_stack.pop();
-		m_last_assigned_expression_result = result;
 
 		s_expression_result array_index_result;
 		if (node->get_array_index_expression()) {
@@ -404,20 +490,73 @@ public:
 
 		wl_assert(node->get_is_valid_named_value());
 
+		// Optimization: see if we can immediately evaluate as a constant
+		if (result.node_reference.is_valid() &&
+			m_execution_graph->get_node_type(result.node_reference) != k_execution_graph_node_type_constant &&
+			m_constant_evaluator.evaluate_constant(result.node_reference)) {
+			c_execution_graph_constant_evaluator::s_result constant_result =
+				m_constant_evaluator.get_result();
+
+			c_node_reference constant_node_reference;
+			if (constant_result.type.is_array()) {
+				constant_node_reference =
+					m_execution_graph->add_constant_array_node(constant_result.type.get_element_type());
+				for (size_t index = 0; index < constant_result.array_value.get_array().size(); index++) {
+					m_execution_graph->add_constant_array_value(
+						constant_node_reference, constant_result.array_value.get_array()[index]);
+				}
+			} else {
+				switch (constant_result.type.get_primitive_type()) {
+				case k_native_module_primitive_type_real:
+					constant_node_reference = m_execution_graph->add_constant_node(constant_result.real_value);
+					break;
+
+				case k_native_module_primitive_type_bool:
+					constant_node_reference = m_execution_graph->add_constant_node(constant_result.bool_value);
+					break;
+
+				case k_native_module_primitive_type_string:
+					constant_node_reference =
+						m_execution_graph->add_constant_node(constant_result.string_value.get_string());
+					break;
+
+				default:
+					wl_unreachable();
+				}
+			}
+
+			wl_assert(constant_node_reference.is_valid());
+
+			swap_temporary_reference(result.node_reference, constant_node_reference);
+			result.node_reference = constant_node_reference;
+		}
+
+		swap_temporary_reference(m_last_assigned_expression_result.node_reference, result.node_reference);
+		m_last_assigned_expression_result = result;
+
 		if (node->get_named_value().empty()) {
 			// If this assignment node has no name, it means it's just a placeholder for an expression; nothing to do.
 		} else {
 			// We expect a non-void return-type
-			wl_assert(result.node_index != c_execution_graph::k_invalid_index);
+			wl_assert(result.node_reference.is_valid());
 
 			if (node->get_array_index_expression()) {
-				if (!m_constant_evaluator.evaluate_constant(array_index_result.node_index)) {
+				// Updating an array value requires several steps, bail if we fail any of them
+				bool array_failed = false;
+
+				// First make sure the index is a constant
+				if (!m_constant_evaluator.evaluate_constant(array_index_result.node_reference)) {
+					array_failed = true;
 					s_compiler_result error;
 					error.result = k_compiler_result_constant_expected;
 					error.source_location = node->get_array_index_expression()->get_source_location();
 					error.message = "Array index is not constant";
 					m_errors->push_back(error);
-				} else {
+				}
+
+				// Ensure that the index is a valid integer
+				int32 array_index = 0;
+				if (!array_failed) {
 					// We should have caught this with a type mismatch error in the validator
 					wl_assert(m_constant_evaluator.get_result().type ==
 						c_native_module_data_type(k_native_module_primitive_type_real));
@@ -426,42 +565,88 @@ public:
 					if (std::isnan(array_index_real) ||
 						std::isinf(array_index_real) ||
 						array_index_real != std::floor(array_index_real)) {
+						array_failed = true;
 						s_compiler_result error;
 						error.result = k_compiler_result_invalid_array_index;
 						error.source_location = node->get_array_index_expression()->get_source_location();
 						error.message = "Array index '" + std::to_string(array_index_real) + "' is not an integer";
 						m_errors->push_back(error);
 					} else {
-						const s_identifier *identifier = get_identifier(node->get_named_value());
-						wl_assert(identifier);
+						array_index = static_cast<int32>(array_index_real);
+					}
+				}
 
-						size_t array_count =
-							m_execution_graph->get_node_incoming_edge_count(identifier->current_value_node_index);
-						int32 array_index = static_cast<int32>(array_index_real);
-						if (array_index < 0 || cast_integer_verify<size_t>(array_index) >= array_count) {
+				// Make sure the array itself has been evaluated to a constant - note that this does not mean that the
+				// array element values must be constant
+				s_identifier *identifier = nullptr;
+				if (!array_failed) {
+					identifier = get_identifier(node->get_named_value());
+					wl_assert(identifier);
+
+					e_execution_graph_node_type array_value_node_type =
+						m_execution_graph->get_node_type(identifier->current_value_node_reference);
+
+					if (array_value_node_type != k_execution_graph_node_type_constant) {
+						if (!m_constant_evaluator.evaluate_constant(identifier->current_value_node_reference)) {
+							array_failed = true;
+							// I don't believe this case is actually possible because the language syntax should not
+							// allow construction of non-constant arrays
 							s_compiler_result error;
-							error.result = k_compiler_result_invalid_array_index;
-							error.source_location = node->get_array_index_expression()->get_source_location();
-							error.message = "Array index '" + std::to_string(array_index_real) +
-								"' out of range for array of size " + std::to_string(array_count);
+							error.result = k_compiler_result_constant_expected;
+							error.source_location = node->get_expression()->get_source_location();
+							error.message = "Array is not constant";
 							m_errors->push_back(error);
 						} else {
-							// Success - valid array index
-							update_array_identifier_single_value_node_index(
-								node->get_named_value(),
-								cast_integer_verify<size_t>(array_index),
-								result.node_index);
+							wl_assert(m_constant_evaluator.get_result().type.is_array());
+							c_execution_graph_constant_evaluator::s_result constant_evaluator_result =
+								m_constant_evaluator.get_result();
+							wl_assert(constant_evaluator_result.type.is_array());
+
+							c_node_reference new_array_node_reference = m_execution_graph->add_constant_array_node(
+								constant_evaluator_result.type.get_element_type());
+
+							size_t array_count = constant_evaluator_result.array_value.get_array().size();
+							for (size_t index = 0; index < array_count; index++) {
+								m_execution_graph->add_constant_array_value(
+									new_array_node_reference,
+									constant_evaluator_result.array_value.get_array()[index]);
+							}
+
+							update_identifier_node_reference(node->get_named_value(), new_array_node_reference);
 						}
 					}
 				}
+
+				if (!array_failed) {
+					size_t array_count = m_execution_graph->get_node_incoming_edge_count(
+						identifier->current_value_node_reference);
+					if (array_index < 0 || cast_integer_verify<size_t>(array_index) >= array_count) {
+						s_compiler_result error;
+						error.result = k_compiler_result_invalid_array_index;
+						error.source_location = node->get_array_index_expression()->get_source_location();
+						error.message = "Array index '" + std::to_string(array_index) +
+							"' out of range for array of size " + std::to_string(array_count);
+						m_errors->push_back(error);
+					} else {
+						// Success - valid array index
+						update_array_identifier_single_value_node_reference(
+							node->get_named_value(),
+							cast_integer_verify<size_t>(array_index),
+							result.node_reference);
+					}
+				}
+
 				// If we encountered an error, it's okay that we didn't update the array's value because arrays must
 				// always be either completely initialized with valid values, or entirely uninitialized. So we will
 				// have a valid array.
 			} else {
 				// Update the identifier with the new node
-				update_identifier_node_index(node->get_named_value(), result.node_index);
+				update_identifier_node_reference(node->get_named_value(), result.node_reference);
 			}
 		}
+
+		remove_temporary_reference(result.node_reference);
+		remove_temporary_reference(array_index_result.node_reference);
 
 		wl_assert(m_expression_stack.empty());
 	}
@@ -475,11 +660,13 @@ public:
 		m_expression_stack.pop();
 
 		// We expect a non-void return-type
-		wl_assert(result.node_index != c_execution_graph::k_invalid_index);
+		wl_assert(result.node_reference.is_valid());
 
 		// We should only be assigning a return value once
-		wl_assert(m_return_node_index == c_execution_graph::k_invalid_index);
-		m_return_node_index = result.node_index;
+		wl_assert(!m_return_node_reference.is_valid());
+		m_return_node_reference = result.node_reference;
+
+		// Don't decrement node refcount since we simply swapped it into the return value node reference
 
 		wl_assert(m_expression_stack.empty());
 	}
@@ -488,7 +675,7 @@ public:
 		wl_assert(m_last_assigned_expression_result.type == c_ast_data_type(k_ast_primitive_type_real));
 
 		// Try to evaluate the expression down to a constant
-		if (!m_constant_evaluator.evaluate_constant(m_last_assigned_expression_result.node_index)) {
+		if (!m_constant_evaluator.evaluate_constant(m_last_assigned_expression_result.node_reference)) {
 			s_compiler_result error;
 			error.result = k_compiler_result_constant_expected;
 			error.source_location = node->get_source_location();
@@ -556,29 +743,29 @@ public:
 
 	virtual void end_visit(const c_ast_node_constant *node) {
 		// Add a constant node and return it through the expression stack
-		uint32 constant_node_index;
+		c_node_reference constant_node_reference;
 		if (node->get_data_type().is_array()) {
 			e_ast_primitive_type ast_primitive_type = node->get_data_type().get_primitive_type();
 			e_native_module_primitive_type native_module_primitive_type =
 				convert_ast_primitive_type_to_native_module_primitive_type(ast_primitive_type);
-			constant_node_index = m_execution_graph->add_constant_array_node(
+			constant_node_reference = m_execution_graph->add_constant_array_node(
 				c_native_module_data_type(native_module_primitive_type));
 		} else {
 			switch (node->get_data_type().get_primitive_type()) {
 			case k_ast_primitive_type_real:
-				constant_node_index = m_execution_graph->add_constant_node(node->get_real_value());
+				constant_node_reference = m_execution_graph->add_constant_node(node->get_real_value());
 				break;
 
 			case k_ast_primitive_type_bool:
-				constant_node_index = m_execution_graph->add_constant_node(node->get_bool_value());
+				constant_node_reference = m_execution_graph->add_constant_node(node->get_bool_value());
 				break;
 
 			case k_ast_primitive_type_string:
-				constant_node_index = m_execution_graph->add_constant_node(node->get_string_value());
+				constant_node_reference = m_execution_graph->add_constant_node(node->get_string_value());
 				break;
 
 			default:
-				constant_node_index = c_execution_graph::k_invalid_index;
+				constant_node_reference = c_node_reference();
 				wl_unreachable();
 			}
 		}
@@ -596,14 +783,20 @@ public:
 
 			for (size_t index = 0; index < node->get_array_count(); index++) {
 				m_execution_graph->add_constant_array_value(
-					constant_node_index, value_expression_results[index].node_index);
+					constant_node_reference, value_expression_results[index].node_reference);
+			}
+
+			for (size_t index = 0; index < value_expression_results.size(); index++) {
+				remove_temporary_reference(value_expression_results[index].node_reference);
 			}
 		}
 
 		s_expression_result result;
 		result.type = node->get_data_type();
-		result.node_index = constant_node_index;
+		result.node_reference = constant_node_reference;
 		m_expression_stack.push(result);
+
+		add_temporary_reference(constant_node_reference);
 	}
 
 	virtual bool begin_visit(const c_ast_node_named_value *node) {
@@ -616,9 +809,11 @@ public:
 
 		s_expression_result result;
 		result.type = identifier->data_type;
-		result.node_index = identifier->current_value_node_index;
+		result.node_reference = identifier->current_value_node_reference;
 		result.identifier_name = node->get_name();
 		m_expression_stack.push(result);
+
+		add_temporary_reference(result.node_reference);
 	}
 
 	virtual bool begin_visit(const c_ast_node_module_call *node) {
@@ -650,8 +845,8 @@ public:
 			e_ast_qualifier qualifier = argument->get_qualifier();
 			if (qualifier == k_ast_qualifier_in) {
 				// We expect to be able to provide a node as input
-				wl_assert(result.node_index != c_execution_graph::k_invalid_index);
-				module_builder.set_in_argument_node_index(arg, result.node_index);
+				wl_assert(result.node_reference.is_valid());
+				module_builder.set_in_argument_node_reference(arg, result.node_reference);
 			} else {
 				wl_assert(qualifier == k_ast_qualifier_out);
 				// We expect a named value to store the output in
@@ -662,6 +857,12 @@ public:
 
 		module_call_declaration->iterate(&module_builder);
 
+		// Remove temporary references from the input arguments after building the module so they don't go out of scope
+		// too soon
+		for (size_t arg = 0; arg < argument_expression_results.size(); arg++) {
+			remove_temporary_reference(argument_expression_results[arg].node_reference);
+		}
+
 		// Hook up the output arguments
 		for (size_t arg = 0; arg < module_call_declaration->get_argument_count(); arg++) {
 			const c_ast_node_named_value_declaration *argument = module_call_declaration->get_argument(arg);
@@ -669,9 +870,9 @@ public:
 
 			e_ast_qualifier qualifier = argument->get_qualifier();
 			if (qualifier == k_ast_qualifier_out) {
-				uint32 out_node_index = module_builder.get_out_argument_node_index(arg);
-				wl_assert(out_node_index != c_execution_graph::k_invalid_index);
-				update_identifier_node_index(result.identifier_name, out_node_index);
+				c_node_reference out_node_reference = module_builder.get_out_argument_node_reference(arg);
+				wl_assert(out_node_reference.is_valid());
+				update_identifier_node_reference(result.identifier_name, out_node_reference);
 			}
 		}
 
@@ -679,13 +880,15 @@ public:
 		s_expression_result result;
 		result.type = module_call_declaration->get_return_type();
 		if (module_call_declaration->get_return_type() != c_ast_data_type(k_ast_primitive_type_void)) {
-			result.node_index = module_builder.get_return_value_node_index();
-			wl_assert(result.node_index != c_execution_graph::k_invalid_index);
+			result.node_reference = module_builder.get_return_value_node_reference();
+			wl_assert(result.node_reference.is_valid());
 		} else {
 			// Void return value
-			result.node_index = c_execution_graph::k_invalid_index;
+			result.node_reference = c_node_reference();
 		}
+
 		m_expression_stack.push(result);
+		add_temporary_reference(result.node_reference);
 	}
 };
 
@@ -714,19 +917,19 @@ s_compiler_result c_execution_graph_builder::build_execution_graphs(
 		for (size_t arg = 0; arg < voice_entry_point_module->get_argument_count(); arg++) {
 			wl_assert(voice_entry_point_module->get_argument(arg)->get_qualifier() == k_ast_qualifier_out);
 
-			uint32 output_node_index = execution_graph->add_output_node(cast_integer_verify<uint32>(arg));
-			uint32 out_argument_node_index = builder.get_out_argument_node_index(arg);
-			execution_graph->add_edge(out_argument_node_index, output_node_index);
+			c_node_reference output_node_reference = execution_graph->add_output_node(cast_integer_verify<uint32>(arg));
+			c_node_reference out_argument_node_reference = builder.get_out_argument_node_reference(arg);
+			execution_graph->add_edge(out_argument_node_reference, output_node_reference);
 		}
 
 		// Add an output for the remain-active result
 		{
 			wl_assert(voice_entry_point_module->get_return_type() == c_ast_data_type(k_ast_primitive_type_bool));
 
-			uint32 output_node_index = execution_graph->add_output_node(
+			c_node_reference output_node_reference = execution_graph->add_output_node(
 				c_execution_graph::k_remain_active_output_index);
-			uint32 out_argument_node_index = builder.get_return_value_node_index();
-			execution_graph->add_edge(out_argument_node_index, output_node_index);
+			c_node_reference out_argument_node_reference = builder.get_return_value_node_reference();
+			execution_graph->add_edge(out_argument_node_reference, output_node_reference);
 		}
 	}
 
@@ -743,8 +946,8 @@ s_compiler_result c_execution_graph_builder::build_execution_graphs(
 			const c_ast_node_named_value_declaration *argument = fx_entry_point_module->get_argument(arg);
 
 			if (argument->get_qualifier() == k_ast_qualifier_in) {
-				uint32 input_node_index = execution_graph->add_input_node(input_index);
-				builder.set_in_argument_node_index(arg, input_node_index);
+				c_node_reference input_node_reference = execution_graph->add_input_node(input_index);
+				builder.set_in_argument_node_reference(arg, input_node_reference);
 				input_index++;
 			} else {
 				wl_assert(argument->get_qualifier() == k_ast_qualifier_out);
@@ -759,9 +962,9 @@ s_compiler_result c_execution_graph_builder::build_execution_graphs(
 			const c_ast_node_named_value_declaration *argument = fx_entry_point_module->get_argument(arg);
 
 			if (argument->get_qualifier() == k_ast_qualifier_out) {
-				uint32 output_node_index = execution_graph->add_output_node(output_index);
-				uint32 out_argument_node_index = builder.get_out_argument_node_index(arg);
-				execution_graph->add_edge(out_argument_node_index, output_node_index);
+				c_node_reference output_node_reference = execution_graph->add_output_node(output_index);
+				c_node_reference out_argument_node_reference = builder.get_out_argument_node_reference(arg);
+				execution_graph->add_edge(out_argument_node_reference, output_node_reference);
 				output_index++;
 			} else {
 				wl_assert(argument->get_qualifier() == k_ast_qualifier_in);
@@ -777,10 +980,10 @@ s_compiler_result c_execution_graph_builder::build_execution_graphs(
 		{
 			wl_assert(fx_entry_point_module->get_return_type() == c_ast_data_type(k_ast_primitive_type_bool));
 
-			uint32 output_node_index = execution_graph->add_output_node(
+			c_node_reference output_node_reference = execution_graph->add_output_node(
 				c_execution_graph::k_remain_active_output_index);
-			uint32 out_argument_node_index = builder.get_return_value_node_index();
-			execution_graph->add_edge(out_argument_node_index, output_node_index);
+			c_node_reference out_argument_node_reference = builder.get_return_value_node_reference();
+			execution_graph->add_edge(out_argument_node_reference, output_node_reference);
 		}
 	}
 

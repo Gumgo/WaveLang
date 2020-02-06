@@ -3,6 +3,8 @@
 
 #include "common/common.h"
 
+#include "execution_graph/node_reference.h"
+
 #include <string>
 #include <vector>
 
@@ -21,12 +23,12 @@ private:
 class c_native_module_array {
 public:
 	// $TODO make a real interface for this
-	std::vector<uint32> &get_array();
-	const std::vector<uint32> &get_array() const;
+	std::vector<c_node_reference> &get_array();
+	const std::vector<c_node_reference> &get_array() const;
 
 private:
 	// Vector of node indices in the execution graph
-	std::vector<uint32> m_array;
+	std::vector<c_node_reference> m_array;
 };
 
 class c_native_module_real_array : public c_native_module_array {};
