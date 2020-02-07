@@ -197,7 +197,7 @@ namespace controller_task_functions {
 
 		uint32 integer_parameter_id = static_cast<uint32>(parameter_id);
 		real32 previous_value = 0.0f;
-		c_wrapped_array_const<s_timestamped_controller_event> parameter_change_events =
+		c_wrapped_array<const s_timestamped_controller_event> parameter_change_events =
 			context.controller_interface->get_parameter_change_events(integer_parameter_id, previous_value);
 
 		if (parameter_change_events.get_count() == 0) {

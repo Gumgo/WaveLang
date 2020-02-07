@@ -30,7 +30,7 @@ void c_buffer_manager::initialize(
 
 	if (runtime_instrument->get_voice_task_graph()) {
 		// During the voice processing phase, start with the buffers from the voice task graph
-		c_wrapped_array_const<c_task_graph::s_buffer_usage_info> voice_graph_buffer_usage_info =
+		c_wrapped_array<const c_task_graph::s_buffer_usage_info> voice_graph_buffer_usage_info =
 			runtime_instrument->get_voice_task_graph()->get_buffer_usage_info();
 
 		voice_buffer_usage_info.assign(
@@ -57,7 +57,7 @@ void c_buffer_manager::initialize(
 
 	if (runtime_instrument->get_fx_task_graph()) {
 		// During the FX processing phase, start with the buffers from the FX task graph
-		c_wrapped_array_const<c_task_graph::s_buffer_usage_info> fx_graph_buffer_usage_info =
+		c_wrapped_array<const c_task_graph::s_buffer_usage_info> fx_graph_buffer_usage_info =
 			runtime_instrument->get_fx_task_graph()->get_buffer_usage_info();
 
 		fx_buffer_usage_info.assign(
@@ -111,7 +111,7 @@ void c_buffer_manager::initialize(
 
 	// Combine to get worst-case concurrency requirements across all phases
 	std::vector<c_task_graph::s_buffer_usage_info> buffer_usage_info = combine_buffer_usage_info(
-		c_wrapped_array_const<const std::vector<c_task_graph::s_buffer_usage_info> *>::construct(
+		c_wrapped_array<const std::vector<c_task_graph::s_buffer_usage_info> *const>::construct(
 			buffer_usage_info_array));
 
 	initialize_buffer_contexts(buffer_usage_info);
@@ -254,7 +254,7 @@ void c_buffer_manager::mix_fx_output_to_channel_buffers() {
 
 void c_buffer_manager::mix_channel_buffers_to_output_buffer(
 	e_sample_format sample_format, c_wrapped_array<uint8> output_buffer) {
-	c_wrapped_array_const<uint32> channel_buffers(
+	c_wrapped_array<const uint32> channel_buffers(
 		&m_channel_mix_buffers.front(), m_channel_mix_buffers.size());
 	convert_and_interleave_to_output_buffer(
 		m_chunk_size,
@@ -328,7 +328,7 @@ uint32 c_buffer_manager::get_or_add_buffer_pool(
 }
 
 std::vector<c_task_graph::s_buffer_usage_info> c_buffer_manager::combine_buffer_usage_info(
-	c_wrapped_array_const<const std::vector<c_task_graph::s_buffer_usage_info> *> buffer_usage_info_array) const {
+	c_wrapped_array<const std::vector<c_task_graph::s_buffer_usage_info> *const> buffer_usage_info_array) const {
 	std::vector<c_task_graph::s_buffer_usage_info> result;
 
 	for (size_t array_index = 0; array_index < buffer_usage_info_array.get_count(); array_index++) {
@@ -379,7 +379,7 @@ void c_buffer_manager::initialize_buffer_allocator(
 	}
 
 	s_buffer_allocator_settings buffer_allocator_settings;
-	buffer_allocator_settings.buffer_pool_descriptions = c_wrapped_array_const<s_buffer_pool_description>(
+	buffer_allocator_settings.buffer_pool_descriptions = c_wrapped_array<const s_buffer_pool_description>(
 		&buffer_pool_descriptions.front(), buffer_pool_descriptions.size());
 
 	m_buffer_allocator.initialize(buffer_allocator_settings);
@@ -664,8 +664,8 @@ void c_buffer_manager::mix_to_channel_buffers(std::vector<uint32> &source_buffer
 			m_channel_mix_buffers[channel] = m_buffer_allocator.allocate_buffer(m_real_buffer_pool_index);
 		}
 
-		c_wrapped_array_const<uint32> source_buffer_list(&source_buffers.front(), source_buffers.size());
-		c_wrapped_array_const<uint32> channel_buffers(&m_channel_mix_buffers.front(), m_channel_mix_buffers.size());
+		c_wrapped_array<const uint32> source_buffer_list(&source_buffers.front(), source_buffers.size());
+		c_wrapped_array<const uint32> channel_buffers(&m_channel_mix_buffers.front(), m_channel_mix_buffers.size());
 
 		mix_output_buffers_to_channel_buffers(m_chunk_size, m_buffer_allocator, source_buffer_list, channel_buffers);
 

@@ -434,8 +434,8 @@ void c_lr_action_goto_table::output_action_goto_tables() const {
 void c_lr_action_goto_table::initialize(
 	uint16 terminal_count,
 	uint16 nonterminal_count,
-	c_wrapped_array_const<c_lr_action> action_table,
-	c_wrapped_array_const<uint32> goto_table) {
+	c_wrapped_array<const c_lr_action> action_table,
+	c_wrapped_array<const uint32> goto_table) {
 	m_terminal_count = terminal_count;
 	m_nonterminal_count = nonterminal_count;
 
@@ -554,8 +554,8 @@ void c_lr_parser::initialize(const c_lr_production_set &production_set) {
 
 void c_lr_parser::initialize(
 	const c_lr_production_set &production_set,
-	c_wrapped_array_const<c_lr_action> action_table,
-	c_wrapped_array_const<uint32> goto_table) {
+	c_wrapped_array<const c_lr_action> action_table,
+	c_wrapped_array<const uint32> goto_table) {
 	create_augmented_production_set(production_set);
 	m_action_goto_table.initialize(
 		m_production_set.get_terminal_count(),

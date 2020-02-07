@@ -147,9 +147,9 @@ struct s_string_array_element {
 	const char *constant_value;
 };
 
-typedef c_wrapped_array_const<s_real_array_element> c_real_array;
-typedef c_wrapped_array_const<s_bool_array_element> c_bool_array;
-typedef c_wrapped_array_const<s_string_array_element> c_string_array;
+typedef c_wrapped_array<const s_real_array_element> c_real_array;
+typedef c_wrapped_array<const s_bool_array_element> c_bool_array;
+typedef c_wrapped_array<const s_string_array_element> c_string_array;
 
 struct s_task_function_argument {
 	// Do not access these directly
@@ -290,7 +290,7 @@ struct s_task_function_argument {
 	}
 };
 
-typedef c_wrapped_array_const<s_task_function_argument> c_task_function_arguments;
+typedef c_wrapped_array<const s_task_function_argument> c_task_function_arguments;
 
 struct s_task_function_context {
 	c_array_dereference_interface *array_dereference_interface;
@@ -409,6 +409,6 @@ struct s_task_function_mapping {
 
 // A list of task function mappings. The first valid mapping encountered is used, so mappings using the branchless
 // optimization should come first.
-typedef c_wrapped_array_const<s_task_function_mapping> c_task_function_mapping_list;
+typedef c_wrapped_array<const s_task_function_mapping> c_task_function_mapping_list;
 
 #endif // WAVELANG_ENGINE_TASK_FUNCTION_H__

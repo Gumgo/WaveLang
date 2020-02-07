@@ -70,7 +70,7 @@ public:
 		return m_array;
 	}
 
-	c_wrapped_array_const<t_element> get_array() const {
+	c_wrapped_array<const t_element> get_array() const {
 		return m_array;
 	}
 

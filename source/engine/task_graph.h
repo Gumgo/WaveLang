@@ -139,8 +139,8 @@ struct s_task_graph_data {
 	}
 };
 
-typedef c_wrapped_array_const<s_task_graph_data> c_task_graph_data_array;
-typedef c_wrapped_array_const<uint32> c_task_graph_task_array;
+typedef c_wrapped_array<const s_task_graph_data> c_task_graph_data_array;
+typedef c_wrapped_array<const uint32> c_task_graph_task_array;
 
 // Iterates through all buffers associated with a task
 class c_task_buffer_iterator {
@@ -190,7 +190,7 @@ public:
 	const s_task_graph_data &get_remain_active_output() const;
 
 	uint32 get_buffer_count() const;
-	c_wrapped_array_const<s_buffer_usage_info> get_buffer_usage_info() const;
+	c_wrapped_array<const s_buffer_usage_info> get_buffer_usage_info() const;
 	uint32 get_buffer_usages(uint32 buffer_index) const;
 
 private:

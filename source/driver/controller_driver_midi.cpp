@@ -135,13 +135,13 @@ const s_controller_driver_settings &c_controller_driver_midi::get_settings() con
 void c_controller_driver_midi::message_callback_wrapper(
 	real64 time_stamp, std::vector<uint8> *message, void *user_data) {
 	c_controller_driver_midi *this_ptr = static_cast<c_controller_driver_midi *>(user_data);
-	c_wrapped_array_const<uint8> message_array(
+	c_wrapped_array<const uint8> message_array(
 		message->empty() ? nullptr : &message->front(),
 		message->size());
 	this_ptr->message_callback(time_stamp, message_array);
 }
 
-void c_controller_driver_midi::message_callback(real64 time_stamp, c_wrapped_array_const<uint8> message) {
+void c_controller_driver_midi::message_callback(real64 time_stamp, c_wrapped_array<const uint8> message) {
 	// Process MIDI messages here
 	// $TODO support more messages
 

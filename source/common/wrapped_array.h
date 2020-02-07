@@ -9,48 +9,6 @@
 // $TODO consider switching to s_wrapped_array and making them POD
 
 template<typename t_element>
-class c_wrapped_array_const {
-public:
-	c_wrapped_array_const()
-		: m_pointer(nullptr)
-		, m_count(0) {
-	}
-
-	c_wrapped_array_const(const t_element *pointer, size_t count)
-		: m_pointer(pointer)
-		, m_count(count) {
-	}
-
-	template<size_t k_count>
-	static c_wrapped_array_const<t_element> construct(const t_element(&arr)[k_count]) {
-		return c_wrapped_array_const<t_element>(arr, k_count);
-	}
-
-	size_t get_count() const {
-		return m_count;
-	}
-
-	const t_element *get_pointer() const {
-		return m_pointer;
-	}
-
-	c_wrapped_array_const<t_element> get_range(size_t index, size_t count) const {
-		wl_assert(count == 0 || VALID_INDEX(index, m_count));
-		wl_assert(index + count <= m_count);
-		return c_wrapped_array_const<t_element>(m_pointer + index, count);
-	}
-
-	const t_element &operator[](size_t index) const {
-		wl_assert(VALID_INDEX(index, m_count));
-		return m_pointer[index];
-	}
-
-private:
-	const t_element *m_pointer;
-	size_t m_count;
-};
-
-template<typename t_element>
 class c_wrapped_array {
 public:
 	c_wrapped_array()
@@ -58,10 +16,8 @@ public:
 		, m_count(0) {
 	}
 
-	c_wrapped_array(const c_wrapped_array &other)
-		: m_pointer(other.m_pointer)
-		, m_count(other.m_count) {
-	}
+	c_wrapped_array(const c_wrapped_array &) = default;
+	c_wrapped_array &operator=(const c_wrapped_array &) = default;
 
 	c_wrapped_array(t_element *pointer, size_t count)
 		: m_pointer(pointer)
@@ -91,10 +47,10 @@ public:
 		return c_wrapped_array<t_element>(m_pointer + index, count);
 	}
 
-	c_wrapped_array_const<t_element> get_range(size_t index, size_t count) const {
+	c_wrapped_array<const t_element> get_range(size_t index, size_t count) const {
 		wl_assert(count == 0 || VALID_INDEX(index, m_count));
 		wl_assert(index + count <= m_count);
-		return c_wrapped_array_const<t_element>(m_pointer + index, count);
+		return c_wrapped_array<const t_element>(m_pointer + index, count);
 	}
 
 	t_element &operator[](size_t index) {
@@ -107,8 +63,8 @@ public:
 		return m_pointer[index];
 	}
 
-	operator c_wrapped_array_const<t_element>() const {
-		return c_wrapped_array_const<t_element>(m_pointer, m_count);
+	operator c_wrapped_array<const t_element>() const {
+		return c_wrapped_array<const t_element>(m_pointer, m_count);
 	}
 
 private:

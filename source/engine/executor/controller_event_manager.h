@@ -14,8 +14,8 @@ public:
 
 	c_wrapped_array<s_timestamped_controller_event> get_writable_controller_events();
 	void process_controller_events(size_t controller_event_count);
-	c_wrapped_array_const<s_timestamped_controller_event> get_note_events() const;
-	c_wrapped_array_const<s_timestamped_controller_event> get_parameter_change_events(
+	c_wrapped_array<const s_timestamped_controller_event> get_note_events() const;
+	c_wrapped_array<const s_timestamped_controller_event> get_parameter_change_events(
 		uint32 parameter_id, real32 &out_previous_value) const;
 
 private:
@@ -31,7 +31,7 @@ private:
 		real32 next_previous_value;
 
 		// Sorted list of parameter change events for this parameter for this buffer
-		c_wrapped_array_const<s_timestamped_controller_event> current_events;
+		c_wrapped_array<const s_timestamped_controller_event> current_events;
 	};
 
 	struct s_parameter_id_hash {
@@ -49,7 +49,7 @@ private:
 	std::vector<s_timestamped_controller_event> m_sort_scratch_buffer;
 
 	// Sorted list of note events for this buffer
-	c_wrapped_array_const<s_timestamped_controller_event> m_note_events;
+	c_wrapped_array<const s_timestamped_controller_event> m_note_events;
 
 	// Hash table mapping parameter ID to parameter state
 	c_hash_table<uint32, s_parameter_state, s_parameter_id_hash> m_parameter_state_table;

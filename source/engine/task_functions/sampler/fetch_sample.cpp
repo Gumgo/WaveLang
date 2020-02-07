@@ -31,7 +31,7 @@ static void choose_wavetable_levels(
 real32 fetch_sample(const c_sample *sample, uint32 channel, real64 sample_index) {
 	wl_assert(!sample->is_wavetable());
 
-	c_wrapped_array_const<real32> sample_data = sample->get_channel_sample_data(channel);
+	c_wrapped_array<const real32> sample_data = sample->get_channel_sample_data(channel);
 
 	// Determine which sample we want and split it into fractional and integer parts
 	real64 sample_index_rounded_down;

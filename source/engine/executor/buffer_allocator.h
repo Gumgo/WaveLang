@@ -17,7 +17,7 @@ struct s_buffer_pool_description {
 
 struct s_buffer_allocator_settings {
 	// List of buffer pools to allocate. The pools are indexed by the element order provided here.
-	c_wrapped_array_const<s_buffer_pool_description> buffer_pool_descriptions;
+	c_wrapped_array<const s_buffer_pool_description> buffer_pool_descriptions;
 };
 
 class c_buffer_allocator {

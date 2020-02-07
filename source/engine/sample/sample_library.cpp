@@ -39,7 +39,7 @@ uint32 c_sample_library::request_sample(const s_file_sample_parameters &paramete
 		std::vector<real32> harmonic_weights(1024, 0.0f);
 		harmonic_weights[0] = 1.0f;
 		wavetable_parameters.harmonic_weights =
-			c_wrapped_array_const<real32>(&harmonic_weights.front(), harmonic_weights.size());
+			c_wrapped_array<const real32>(&harmonic_weights.front(), harmonic_weights.size());
 		wavetable_parameters.sample_count = 2048;
 		wavetable_parameters.phase_shift_enabled = parameters.phase_shift_enabled;
 		return request_sample(wavetable_parameters);
@@ -50,7 +50,7 @@ uint32 c_sample_library::request_sample(const s_file_sample_parameters &paramete
 			harmonic_weights[index] = static_cast<real32>(-2.0 / (k_pi * static_cast<real64>(index + 1)));
 		}
 		wavetable_parameters.harmonic_weights =
-			c_wrapped_array_const<real32>(&harmonic_weights.front(), harmonic_weights.size());
+			c_wrapped_array<const real32>(&harmonic_weights.front(), harmonic_weights.size());
 		wavetable_parameters.sample_count = 2048;
 		wavetable_parameters.phase_shift_enabled = parameters.phase_shift_enabled;
 		return request_sample(wavetable_parameters);
@@ -65,7 +65,7 @@ uint32 c_sample_library::request_sample(const s_file_sample_parameters &paramete
 			}
 		}
 		wavetable_parameters.harmonic_weights =
-			c_wrapped_array_const<real32>(&harmonic_weights.front(), harmonic_weights.size());
+			c_wrapped_array<const real32>(&harmonic_weights.front(), harmonic_weights.size());
 		wavetable_parameters.sample_count = 2048;
 		wavetable_parameters.phase_shift_enabled = parameters.phase_shift_enabled;
 		return request_sample(wavetable_parameters);
@@ -144,7 +144,7 @@ void c_sample_library::update_loaded_samples() {
 			}
 		} else if (request.sample_type == k_sample_type_wavetable) {
 			if (!request.sample) {
-				c_wrapped_array_const<real32> harmonic_weights(
+				c_wrapped_array<const real32> harmonic_weights(
 					&request.harmonic_weights.front(), request.harmonic_weights.size());
 				request.sample =
 					c_sample::generate_wavetable(harmonic_weights, request.sample_count, request.phase_shift_enabled);

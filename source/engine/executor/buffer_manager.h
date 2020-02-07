@@ -52,7 +52,7 @@ private:
 
 	// Produces a buffer usage info list which accounts for the concurrency requirements from several lists
 	std::vector<c_task_graph::s_buffer_usage_info> combine_buffer_usage_info(
-		c_wrapped_array_const<const std::vector<c_task_graph::s_buffer_usage_info> *> buffer_usage_info_array) const;
+		c_wrapped_array<const std::vector<c_task_graph::s_buffer_usage_info> *const> buffer_usage_info_array) const;
 
 	void initialize_buffer_allocator(
 		size_t max_buffer_size,

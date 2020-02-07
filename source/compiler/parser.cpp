@@ -86,8 +86,8 @@ void c_parser::initialize_parser() {
 #else // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 	g_lr_parser.initialize(
 		production_set,
-		c_wrapped_array_const<c_lr_action>::construct(k_lr_action_table),
-		c_wrapped_array_const<uint32>::construct(k_lr_goto_table));
+		c_wrapped_array<const c_lr_action>::construct(k_lr_action_table),
+		c_wrapped_array<const uint32>::construct(k_lr_goto_table));
 #endif // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 	g_parser_initialized = true;
 }

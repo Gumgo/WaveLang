@@ -31,7 +31,7 @@ public:
 
 private:
 	static void message_callback_wrapper(real64 time_stamp, std::vector<uint8> *message, void *user_data);
-	void message_callback(real64 time_stamp, c_wrapped_array_const<uint8> message);
+	void message_callback(real64 time_stamp, c_wrapped_array<const uint8> message);
 
 	bool m_initialized;
 	f_submit_controller_event m_submit_controller_event;

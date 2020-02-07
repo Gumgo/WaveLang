@@ -45,8 +45,8 @@ public:
 		return true;
 	}
 
-	c_wrapped_array_const<uint8> get_event_data() const {
-		return c_wrapped_array_const<uint8>(m_event_data.get_elements(), m_event_size);
+	c_wrapped_array<const uint8> get_event_data() const {
+		return c_wrapped_array<const uint8>(m_event_data.get_elements(), m_event_size);
 	}
 
 private:
@@ -90,7 +90,7 @@ public:
 		return *this;
 	}
 
-	c_wrapped_array_const<uint8> get_event_data() const {
+	c_wrapped_array<const uint8> get_event_data() const {
 		return m_event_data_stack.get_event_data();
 	}
 

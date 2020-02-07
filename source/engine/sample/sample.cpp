@@ -40,21 +40,21 @@ struct s_wave_data_subchunk {
 // $TODO add cue-points to wav files: http://bleepsandpops.com/post/37792760450/adding-cue-points-to-wav-files-in-c
 
 static std::string hash_wavetable_parameters(
-	c_wrapped_array_const<real32> harmonic_weights,
+	c_wrapped_array<const real32> harmonic_weights,
 	uint32 sample_count,
 	bool phase_shift_enabled);
 
 static bool read_wavetable_cache(
-	c_wrapped_array_const<real32> harmonic_weights,
+	c_wrapped_array<const real32> harmonic_weights,
 	uint32 sample_count,
 	bool phase_shift_enabled,
 	c_wrapped_array<real32> out_sample_data);
 
 static bool write_wavetable_cache(
-	c_wrapped_array_const<real32> harmonic_weights,
+	c_wrapped_array<const real32> harmonic_weights,
 	uint32 sample_count,
 	bool phase_shift_enabled,
-	c_wrapped_array_const<real32> sample_data);
+	c_wrapped_array<const real32> sample_data);
 
 c_sample *c_sample::load_file(const char *filename, e_sample_loop_mode loop_mode, bool phase_shift_enabled) {
 	c_sample *sample = new c_sample();
@@ -75,7 +75,7 @@ c_sample *c_sample::load_file(const char *filename, e_sample_loop_mode loop_mode
 }
 
 c_sample *c_sample::generate_wavetable(
-	c_wrapped_array_const<real32> harmonic_weights,
+	c_wrapped_array<const real32> harmonic_weights,
 	uint32 sample_count,
 	bool phase_shift_enabled) {
 	if (harmonic_weights.get_count() == 0) {
@@ -194,7 +194,7 @@ c_sample *c_sample::generate_wavetable(
 					sample->m_wavetable[wavetable_entry_index].initialize_data_with_padding(
 						1,
 						entry_sample_count,
-						c_wrapped_array_const<real32>(entry_sample_data_pointer, entry_sample_data.size()),
+						c_wrapped_array<const real32>(entry_sample_data_pointer, entry_sample_data.size()),
 						&sample_data_destination,
 						loaded_from_cache);
 				}
@@ -293,7 +293,7 @@ bool c_sample::is_phase_shift_enabled() const {
 	return m_phase_shift_enabled;
 }
 
-c_wrapped_array_const<real32> c_sample::get_channel_sample_data(uint32 channel) const {
+c_wrapped_array<const real32> c_sample::get_channel_sample_data(uint32 channel) const {
 	wl_assert(VALID_INDEX(channel, m_channel_count));
 	return m_sample_data.get_range(m_total_frame_count * channel, m_total_frame_count);
 }
@@ -455,7 +455,7 @@ bool c_sample::load_wave(
 		0,
 		frames,
 		phase_shift_enabled,
-		c_wrapped_array_const<real32>(sample_data.empty() ? nullptr : &sample_data.front(), sample_data.size()));
+		c_wrapped_array<const real32>(sample_data.empty() ? nullptr : &sample_data.front(), sample_data.size()));
 	return true;
 }
 
@@ -467,7 +467,7 @@ void c_sample::initialize(
 	uint32 loop_start,
 	uint32 loop_end,
 	bool phase_shift_enabled,
-	c_wrapped_array_const<real32> sample_data) {
+	c_wrapped_array<const real32> sample_data) {
 	wl_assert(!m_sample_data_allocator.get_array().get_pointer());
 	wl_assert(!m_sample_data.get_pointer());
 	wl_assert(m_wavetable.empty());
@@ -545,7 +545,7 @@ void c_sample::initialize_wavetable() {
 void c_sample::initialize_data_with_padding(
 	uint32 channel_count,
 	uint32 frame_count,
-	c_wrapped_array_const<real32> sample_data,
+	c_wrapped_array<const real32> sample_data,
 	c_wrapped_array<real32> *destination,
 	bool initialize_metadata_only) {
 	// Add zero padding to the beginning of the sound
@@ -742,7 +742,7 @@ void c_sample::initialize_data_with_padding(
 }
 
 static std::string hash_wavetable_parameters(
-	c_wrapped_array_const<real32> harmonic_weights,
+	c_wrapped_array<const real32> harmonic_weights,
 	uint32 sample_count,
 	bool phase_shift_enabled) {
 	CSHA1 hash;
@@ -764,7 +764,7 @@ static std::string hash_wavetable_parameters(
 }
 
 static bool read_wavetable_cache(
-	c_wrapped_array_const<real32> harmonic_weights,
+	c_wrapped_array<const real32> harmonic_weights,
 	uint32 sample_count,
 	bool phase_shift_enabled,
 	c_wrapped_array<real32> out_sample_data) {
@@ -853,10 +853,10 @@ static bool read_wavetable_cache(
 }
 
 static bool write_wavetable_cache(
-	c_wrapped_array_const<real32> harmonic_weights,
+	c_wrapped_array<const real32> harmonic_weights,
 	uint32 sample_count,
 	bool phase_shift_enabled,
-	c_wrapped_array_const<real32> sample_data) {
+	c_wrapped_array<const real32> sample_data) {
 	std::string hash_string = hash_wavetable_parameters(harmonic_weights, sample_count, phase_shift_enabled);
 	std::string wavetable_cache_filename = k_wavetable_cache_folder;
 	wavetable_cache_filename += '/';

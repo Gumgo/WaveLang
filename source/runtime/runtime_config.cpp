@@ -144,7 +144,7 @@ template<typename t_enum>
 static bool try_to_get_value_from_child_node(
 	const rapidxml::xml_node<> *parent_node,
 	const char *child_node_name,
-	c_wrapped_array_const<const char *> enum_strings,
+	c_wrapped_array<const char *const> enum_strings,
 	t_enum default_value,
 	t_enum &out_value) {
 	const rapidxml::xml_node<> *node = parent_node->first_node(child_node_name);
@@ -473,7 +473,7 @@ e_runtime_config_result c_runtime_config::read_settings(
 			try_to_get_value_from_child_node(
 				audio_node,
 				"sample_format",
-				c_wrapped_array_const<const char *>::construct(k_sample_format_xml_strings),
+				c_wrapped_array<const char *const>::construct(k_sample_format_xml_strings),
 				m_settings.audio_sample_format,
 				m_settings.audio_sample_format);
 			try_to_get_value_from_child_node(

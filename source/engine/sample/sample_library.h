@@ -16,7 +16,7 @@ struct s_file_sample_parameters {
 };
 
 struct s_wavetable_sample_parameters {
-	c_wrapped_array_const<real32> harmonic_weights;
+	c_wrapped_array<const real32> harmonic_weights;
 	uint32 sample_count;
 	bool phase_shift_enabled;
 };

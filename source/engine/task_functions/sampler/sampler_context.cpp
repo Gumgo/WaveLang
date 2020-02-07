@@ -78,7 +78,7 @@ void s_sampler_context::initialize_wavetable(
 
 	if (valid) {
 		s_wavetable_sample_parameters parameters;
-		parameters.harmonic_weights = c_wrapped_array_const<real32>(
+		parameters.harmonic_weights = c_wrapped_array<const real32>(
 			&harmonic_weights_copy.front(), harmonic_weights_copy.size());
 		parameters.sample_count = sample_count;
 		parameters.phase_shift_enabled = phase_shift_enabled;

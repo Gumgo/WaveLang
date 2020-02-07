@@ -63,7 +63,7 @@ void c_controller_event_manager::process_controller_events(size_t controller_eve
 		s_controller_event_comparator());
 
 	// Form groups of note events
-	m_note_events = c_wrapped_array_const<s_timestamped_controller_event>();
+	m_note_events = c_wrapped_array<const s_timestamped_controller_event>();
 
 	size_t parameter_change_start_index = 0;
 	size_t parameter_change_count = 0;
@@ -75,7 +75,7 @@ void c_controller_event_manager::process_controller_events(size_t controller_eve
 
 		if (controller_event.controller_event.event_type == k_controller_event_type_note_on ||
 			controller_event.controller_event.event_type == k_controller_event_type_note_off) {
-			m_note_events = c_wrapped_array_const<s_timestamped_controller_event>(
+			m_note_events = c_wrapped_array<const s_timestamped_controller_event>(
 				&m_controller_events.front(), m_note_events.get_count() + 1);
 		} else {
 			wl_assert(controller_event.controller_event.event_type == k_controller_event_type_parameter_change);
@@ -110,13 +110,13 @@ void c_controller_event_manager::process_controller_events(size_t controller_eve
 	}
 }
 
-c_wrapped_array_const<s_timestamped_controller_event> c_controller_event_manager::get_note_events() const {
+c_wrapped_array<const s_timestamped_controller_event> c_controller_event_manager::get_note_events() const {
 	return m_note_events;
 }
 
-c_wrapped_array_const<s_timestamped_controller_event> c_controller_event_manager::get_parameter_change_events(
+c_wrapped_array<const s_timestamped_controller_event> c_controller_event_manager::get_parameter_change_events(
 	uint32 parameter_id, real32 &out_previous_value) const {
-	c_wrapped_array_const<s_timestamped_controller_event> result;
+	c_wrapped_array<const s_timestamped_controller_event> result;
 
 	const s_parameter_state *parameter_state = m_parameter_state_table.find(parameter_id);
 	if (!parameter_state) {
@@ -151,7 +151,7 @@ void c_controller_event_manager::update_parameter_state(
 	}
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
-	c_wrapped_array_const<s_timestamped_controller_event> events(&m_controller_events[event_start_index], event_count);
+	c_wrapped_array<const s_timestamped_controller_event> events(&m_controller_events[event_start_index], event_count);
 	s_parameter_state *parameter_state = m_parameter_state_table.find(parameter_id);
 
 	if (!parameter_state) {

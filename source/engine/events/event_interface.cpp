@@ -31,7 +31,7 @@ void c_event_interface::initialize(c_async_event_handler *event_handler) {
 
 void c_event_interface::submit(const c_event &e) {
 	if (m_event_handler) {
-		c_wrapped_array_const<uint8> event_data = e.get_event_data();
+		c_wrapped_array<const uint8> event_data = e.get_event_data();
 		m_event_handler->submit_event(event_data.get_count(), event_data.get_pointer());
 	}
 }

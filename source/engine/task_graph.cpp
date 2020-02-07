@@ -361,8 +361,8 @@ uint32 c_task_graph::get_buffer_count() const {
 	return m_buffer_count;
 }
 
-c_wrapped_array_const<c_task_graph::s_buffer_usage_info> c_task_graph::get_buffer_usage_info() const {
-	return c_wrapped_array_const<c_task_graph::s_buffer_usage_info>(
+c_wrapped_array<const c_task_graph::s_buffer_usage_info> c_task_graph::get_buffer_usage_info() const {
+	return c_wrapped_array<const c_task_graph::s_buffer_usage_info>(
 		m_buffer_usage_info.empty() ? nullptr : &m_buffer_usage_info.front(),
 		m_buffer_usage_info.size());
 }

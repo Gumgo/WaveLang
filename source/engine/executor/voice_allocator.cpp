@@ -36,7 +36,7 @@ void c_voice_allocator::shutdown() {
 }
 
 void c_voice_allocator::allocate_voices_for_chunk(
-	c_wrapped_array_const<s_timestamped_controller_event> controller_events,
+	c_wrapped_array<const s_timestamped_controller_event> controller_events,
 	uint32 sample_rate, uint32 chunk_sample_count) {
 	wl_assert(!m_voices.empty());
 

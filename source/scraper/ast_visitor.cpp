@@ -538,7 +538,7 @@ void c_ast_visitor::build_task_type_table() {
 	type.is_constant = true; // The array itself is always constant
 	type.is_possibly_constant = true;
 	m_task_type_table.insert(std::make_pair( // "class c_real_array"
-		"class c_wrapped_array_const<struct s_real_array_element>", type));
+		"class c_wrapped_array<const struct s_real_array_element>", type));
 
 	type.data_type = c_task_qualified_data_type(c_task_data_type(k_task_primitive_type_bool), k_task_qualifier_in);
 	type.is_constant = false;
@@ -561,7 +561,7 @@ void c_ast_visitor::build_task_type_table() {
 	type.is_constant = true; // The array itself is always constant
 	type.is_possibly_constant = true;
 	m_task_type_table.insert(std::make_pair( // "class c_bool_array"
-		"class c_wrapped_array_const<struct s_bool_array_element>", type));
+		"class c_wrapped_array<const struct s_bool_array_element>", type));
 
 	type.data_type = c_task_qualified_data_type(c_task_data_type(k_task_primitive_type_string), k_task_qualifier_in);
 	type.is_constant = true;
@@ -573,7 +573,7 @@ void c_ast_visitor::build_task_type_table() {
 	type.is_constant = true; // The array itself is always constant
 	type.is_possibly_constant = true;
 	m_task_type_table.insert(std::make_pair( // "class c_string_array",
-		"class c_wrapped_array_const<struct s_string_array_element>", type));
+		"class c_wrapped_array<const struct s_string_array_element>", type));
 }
 
 c_ast_visitor::s_task_argument_type c_ast_visitor::get_task_qualified_data_type(clang::QualType type) const {

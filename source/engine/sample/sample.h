@@ -29,7 +29,7 @@ public:
 		bool phase_shift_enabled);
 
 	static c_sample *generate_wavetable(
-		c_wrapped_array_const<real32> harmonic_weights,
+		c_wrapped_array<const real32> harmonic_weights,
 		uint32 sample_count,
 		bool phase_shift_enabled);
 
@@ -50,7 +50,7 @@ public:
 	e_sample_loop_mode get_loop_mode() const;
 	uint32 get_loop_start() const;
 	uint32 get_loop_end() const;
-	c_wrapped_array_const<real32> get_channel_sample_data(uint32 channel) const;
+	c_wrapped_array<const real32> get_channel_sample_data(uint32 channel) const;
 	bool is_phase_shift_enabled() const;
 
 	uint32 get_wavetable_entry_count() const;
@@ -78,7 +78,7 @@ private:
 		uint32 loop_start,
 		uint32 loop_end,
 		bool phase_shift_enabled,
-		c_wrapped_array_const<real32> sample_data);
+		c_wrapped_array<const real32> sample_data);
 
 	// Initializes the sample using the already filled in wavetable array of sub samples, verifying the following:
 	// For any two adjacent wavetable entries n and n+1:
@@ -95,7 +95,7 @@ private:
 	void initialize_data_with_padding(
 		uint32 channel_count,
 		uint32 frame_count,
-		c_wrapped_array_const<real32> sample_data,
+		c_wrapped_array<const real32> sample_data,
 		c_wrapped_array<real32> *destination,
 		bool initialize_metadata_only);
 
@@ -115,7 +115,7 @@ private:
 	bool m_phase_shift_enabled;			// Whether phase shifting is allowed (implemented by doubling the loop)
 
 	c_aligned_allocator<real32, k_simd_alignment> m_sample_data_allocator;
-	c_wrapped_array_const<real32> m_sample_data;
+	c_wrapped_array<const real32> m_sample_data;
 	std::vector<c_sample> m_wavetable;
 };
 

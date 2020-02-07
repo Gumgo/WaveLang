@@ -165,7 +165,7 @@ void c_profiler::get_report(s_profiler_report &out_report) const {
 	out_report.fx_time = m_execution.fx_time;
 
 	for (size_t instrument_stage = 0; instrument_stage < k_instrument_stage_count; instrument_stage++) {
-		c_wrapped_array_const<s_task> tasks = m_tasks[instrument_stage].get_array();
+		c_wrapped_array<const s_task> tasks = m_tasks[instrument_stage].get_array();
 		std::vector<s_profiler_report::s_task> &report_tasks = out_report.tasks[instrument_stage];
 		report_tasks.resize(tasks.get_count());
 

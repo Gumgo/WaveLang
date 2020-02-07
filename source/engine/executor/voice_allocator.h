@@ -30,7 +30,7 @@ public:
 
 	// Assigns new voices for this chunk, possibly replacing existing voices
 	void allocate_voices_for_chunk(
-		c_wrapped_array_const<s_timestamped_controller_event> controller_events,
+		c_wrapped_array<const s_timestamped_controller_event> controller_events,
 		uint32 sample_rate, uint32 chunk_sample_count);
 
 	// Marks a voice as inactive, freeing up the slot. The synth must explicitly notify the runtime when a voice should
