@@ -8,31 +8,31 @@
 // A set of core buffer operations which are used internally in the executor. These are also wrapped in task functions.
 
 struct s_op_assignment {
-	c_real32_4 operator()(const c_real32_4 &a) const { return a; }
+	real32x4 operator()(const real32x4 &a) const { return a; }
 };
 
 struct s_op_negation {
-	c_real32_4 operator()(const c_real32_4 &a) const { return -a; }
+	real32x4 operator()(const real32x4 &a) const { return -a; }
 };
 
 struct s_op_addition {
-	c_real32_4 operator()(const c_real32_4 &a, const c_real32_4 &b) const { return a + b; }
+	real32x4 operator()(const real32x4 &a, const real32x4 &b) const { return a + b; }
 };
 
 struct s_op_subtraction {
-	c_real32_4 operator()(const c_real32_4 &a, const c_real32_4 &b) const { return a - b; }
+	real32x4 operator()(const real32x4 &a, const real32x4 &b) const { return a - b; }
 };
 
 struct s_op_multiplication {
-	c_real32_4 operator()(const c_real32_4 &a, const c_real32_4 &b) const { return a * b; }
+	real32x4 operator()(const real32x4 &a, const real32x4 &b) const { return a * b; }
 };
 
 struct s_op_division {
-	c_real32_4 operator()(const c_real32_4 &a, const c_real32_4 &b) const { return a / b; }
+	real32x4 operator()(const real32x4 &a, const real32x4 &b) const { return a / b; }
 };
 
 struct s_op_modulo {
-	c_real32_4 operator()(const c_real32_4 &a, const c_real32_4 &b) const { return a % b; }
+	real32x4 operator()(const real32x4 &a, const real32x4 &b) const { return a % b; }
 };
 
 typedef s_buffer_operation_real_real<s_op_assignment> s_buffer_operation_assignment;

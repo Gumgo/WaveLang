@@ -1,19 +1,19 @@
 struct s_op_select_real {
-	c_real32_4 operator()(
-		const c_int32_4 &condition,
-		const c_real32_4 &true_value,
-		const c_real32_4 &false_value) const {
-		c_int32_4 result =
-			(condition & true_value.int32_4_from_bits()) | (~condition & false_value.int32_4_from_bits());
-		return result.real32_4_from_bits();
+	real32x4 operator()(
+		const int32x4 &condition,
+		const real32x4 &true_value,
+		const real32x4 &false_value) const {
+		int32x4 result =
+			(condition & true_value.int32x4_from_bits()) | (~condition & false_value.int32x4_from_bits());
+		return result.real32x4_from_bits();
 	}
 };
 
 struct s_op_select_bool {
-	c_int32_4 operator()(
-		const c_int32_4 &condition,
-		const c_int32_4 &true_value,
-		const c_int32_4 &false_value) const {
+	int32x4 operator()(
+		const int32x4 &condition,
+		const int32x4 &true_value,
+		const int32x4 &false_value) const {
 		// Operates on 128 bits at a time
 		return (condition & true_value) | (~condition & false_value);
 	}

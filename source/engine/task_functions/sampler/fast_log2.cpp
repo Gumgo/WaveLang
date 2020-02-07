@@ -123,9 +123,9 @@ int main(int argc, char **argv) {
 
 void test_fast_log2() {
 	for (real32 f = 0.0f; f < 10.0f; f += 0.05f) {
-		c_real32_4 x(f);
-		c_real32_4 frac_part;
-		c_int32_4 int_part = fast_log2(x, frac_part);
+		real32x4 x(f);
+		real32x4 frac_part;
+		int32x4 int_part = fast_log2(x, frac_part);
 
 		ALIGNAS_SIMD real32 frac_out[4];
 		ALIGNAS_SIMD int32 int_out[4];

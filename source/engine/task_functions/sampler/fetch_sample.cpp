@@ -22,11 +22,11 @@
 static void choose_wavetable_levels(
 	real32 stream_sample_rate,
 	real32 sample_rate_0,
-	const c_real32_4 &speed,
+	const real32x4 &speed,
 	uint32 wavetable_count,
-	c_int32_4 &out_wavetable_index_a,
-	c_int32_4 &out_wavetable_index_b,
-	c_real32_4 &out_wavetable_blend_ratio);
+	int32x4 &out_wavetable_index_a,
+	int32x4 &out_wavetable_index_b,
+	real32x4 &out_wavetable_blend_ratio);
 
 real32 fetch_sample(const c_sample *sample, uint32 channel, real64 sample_index) {
 	wl_assert(!sample->is_wavetable());
@@ -74,17 +74,17 @@ real32 fetch_sample(const c_sample *sample, uint32 channel, real64 sample_index)
 	wl_assert(VALID_INDEX(sinc_window_table_index_int_part, k_sinc_window_sample_resolution));
 	const s_sinc_window_coefficients *sinc_window_ptr = k_sinc_window_coefficients[sinc_window_table_index_int_part];
 
-	c_real32_4 slope_multiplier(sinc_window_table_index_frac_part);
-	c_real32_4 result_4(0.0f);
+	real32x4 slope_multiplier(sinc_window_table_index_frac_part);
+	real32x4 result_4(0.0f);
 
 	switch (simd_offset) {
 	case 0:
 	{
 		for (; sample_ptr < sample_end_ptr; sample_ptr += k_simd_block_elements, sinc_window_ptr++) {
-			c_real32_4 samples(sample_ptr);
+			real32x4 samples(sample_ptr);
 
-			c_real32_4 sinc_window_values(sinc_window_ptr->values);
-			c_real32_4 sinc_window_slopes(sinc_window_ptr->slopes);
+			real32x4 sinc_window_values(sinc_window_ptr->values);
+			real32x4 sinc_window_slopes(sinc_window_ptr->slopes);
 			result_4 = result_4 + (samples * sinc_window_values) + (slope_multiplier * sinc_window_slopes);
 		}
 		break;
@@ -92,15 +92,15 @@ real32 fetch_sample(const c_sample *sample, uint32 channel, real64 sample_index)
 
 	case 1:
 	{
-		c_real32_4 prev_block(sample_ptr);
+		real32x4 prev_block(sample_ptr);
 		sample_ptr += k_simd_block_elements;
 		for (; sample_ptr < sample_end_ptr; sample_ptr += k_simd_block_elements, sinc_window_ptr++) {
-			c_real32_4 curr_block(sample_ptr);
-			c_real32_4 samples = extract<1>(prev_block, curr_block);
+			real32x4 curr_block(sample_ptr);
+			real32x4 samples = extract<1>(prev_block, curr_block);
 			prev_block = curr_block;
 
-			c_real32_4 sinc_window_values(sinc_window_ptr->values);
-			c_real32_4 sinc_window_slopes(sinc_window_ptr->slopes);
+			real32x4 sinc_window_values(sinc_window_ptr->values);
+			real32x4 sinc_window_slopes(sinc_window_ptr->slopes);
 			result_4 = result_4 + (samples * sinc_window_values) + (slope_multiplier * sinc_window_slopes);
 		}
 		break;
@@ -108,15 +108,15 @@ real32 fetch_sample(const c_sample *sample, uint32 channel, real64 sample_index)
 
 	case 2:
 	{
-		c_real32_4 prev_block(sample_ptr);
+		real32x4 prev_block(sample_ptr);
 		sample_ptr += k_simd_block_elements;
 		for (; sample_ptr < sample_end_ptr; sample_ptr += k_simd_block_elements, sinc_window_ptr++) {
-			c_real32_4 curr_block(sample_ptr);
-			c_real32_4 samples = extract<2>(prev_block, curr_block);
+			real32x4 curr_block(sample_ptr);
+			real32x4 samples = extract<2>(prev_block, curr_block);
 			prev_block = curr_block;
 
-			c_real32_4 sinc_window_values(sinc_window_ptr->values);
-			c_real32_4 sinc_window_slopes(sinc_window_ptr->slopes);
+			real32x4 sinc_window_values(sinc_window_ptr->values);
+			real32x4 sinc_window_slopes(sinc_window_ptr->slopes);
 			result_4 = result_4 + (samples * sinc_window_values) + (slope_multiplier * sinc_window_slopes);
 		}
 		break;
@@ -124,15 +124,15 @@ real32 fetch_sample(const c_sample *sample, uint32 channel, real64 sample_index)
 
 	case 3:
 	{
-		c_real32_4 prev_block(sample_ptr);
+		real32x4 prev_block(sample_ptr);
 		sample_ptr += k_simd_block_elements;
 		for (; sample_ptr < sample_end_ptr; sample_ptr += k_simd_block_elements, sinc_window_ptr++) {
-			c_real32_4 curr_block(sample_ptr);
-			c_real32_4 samples = extract<3>(prev_block, curr_block);
+			real32x4 curr_block(sample_ptr);
+			real32x4 samples = extract<3>(prev_block, curr_block);
 			prev_block = curr_block;
 
-			c_real32_4 sinc_window_values(sinc_window_ptr->values);
-			c_real32_4 sinc_window_slopes(sinc_window_ptr->slopes);
+			real32x4 sinc_window_values(sinc_window_ptr->values);
+			real32x4 sinc_window_slopes(sinc_window_ptr->slopes);
 			result_4 = result_4 + (samples * sinc_window_values) + (slope_multiplier * sinc_window_slopes);
 		}
 		break;
@@ -143,7 +143,7 @@ real32 fetch_sample(const c_sample *sample, uint32 channel, real64 sample_index)
 	}
 
 	// Perform the final sum and return the result
-	c_real32_4 result_4_sum = result_4.sum_elements();
+	real32x4 result_4_sum = result_4.sum_elements();
 	ALIGNAS_SIMD real32 result[k_simd_block_elements];
 	result_4_sum.store(result);
 	return result[0];
@@ -158,7 +158,7 @@ void fetch_wavetable_samples(
 	uint32 channel,
 	real32 stream_sample_rate,
 	real32 sample_rate_0,
-	const c_real32_4 &speed,
+	const real32x4 &speed,
 	size_t count,
 	const s_static_array<real64, k_simd_block_elements> &samples,
 	real32 *out_ptr) {
@@ -166,9 +166,9 @@ void fetch_wavetable_samples(
 
 	// Compute the wavetabble indices and blend factors for these 4 samples (if we incremented less than 4 times, some
 	// are unused)
-	c_int32_4 wavetable_index_a;
-	c_int32_4 wavetable_index_b;
-	c_real32_4 wavetable_blend_ratio;
+	int32x4 wavetable_index_a;
+	int32x4 wavetable_index_b;
+	real32x4 wavetable_blend_ratio;
 	choose_wavetable_levels(
 		stream_sample_rate,
 		sample_rate_0,
@@ -219,9 +219,9 @@ void fetch_wavetable_samples(
 	// Interpolate and write to the array. If increment_count < 4, we will be writing some extra (garbage
 	// values) to the array, but that's okay - it's either greater than buffer size, or the remainder if the
 	// buffer will be filled with 0 because we've reached the end of the loop.
-	c_real32_4 samples_a(samples_a_array.get_elements());
-	c_real32_4 samples_b(samples_b_array.get_elements());
-	c_real32_4 samples_interpolated = samples_a + (samples_b - samples_a) * wavetable_blend_ratio;
+	real32x4 samples_a(samples_a_array.get_elements());
+	real32x4 samples_b(samples_b_array.get_elements());
+	real32x4 samples_interpolated = samples_a + (samples_b - samples_a) * wavetable_blend_ratio;
 	samples_interpolated.store(out_ptr);
 #endif // IS_TRUE(BLEND_MODE_LINEAR)
 }
@@ -229,18 +229,18 @@ void fetch_wavetable_samples(
 static void choose_wavetable_levels(
 	real32 stream_sample_rate,
 	real32 sample_rate_0,
-	const c_real32_4 &speed,
+	const real32x4 &speed,
 	uint32 wavetable_count,
-	c_int32_4 &out_wavetable_index_a,
-	c_int32_4 &out_wavetable_index_b,
-	c_real32_4 &out_wavetable_blend_ratio) {
+	int32x4 &out_wavetable_index_a,
+	int32x4 &out_wavetable_index_b,
+	real32x4 &out_wavetable_blend_ratio) {
 	// We wish to find a wavetable entry index to sample from which avoids exceeding the nyquist frequency. We can't
 	// just return a single level though, or pitch-bending would cause "pops" when we switched between levels. Instead,
 	// we pick two mip levels, a and b, such that level a is the lowest level which has no frequencies exceeding the
 	// stream's nyquist frequency, and b is the level above that, and blend between them.
 
 	// For wavetable selection, if speed is 0 this will cause issues
-	c_real32_4 clamped_speed = max(speed, c_real32_4(0.125f));
+	real32x4 clamped_speed = max(speed, real32x4(0.125f));
 
 	// Our wavetable levels are set up such that for a wavetable with a base sampling rate of sample_rate_0, level i
 	// contains frequencies up to, and not exceeding, sample_rate_0/2 - i. Therefore, for a stream sampling rate of
@@ -250,22 +250,22 @@ static void choose_wavetable_levels(
 	//   -i <= stream_sample_rate / (2 * speed) - sample_rate_0/2
 	//   i >= sample_rate_0/2 - stream_sample_rate / (2 * speed)
 	//   i >= (sample_rate_0 - stream_sample_rate/speed) * 0.5
-	c_real32_4 wavetable_index = (c_real32_4(sample_rate_0) - c_real32_4(stream_sample_rate) / clamped_speed) * 0.5f;
+	real32x4 wavetable_index = (real32x4(sample_rate_0) - real32x4(stream_sample_rate) / clamped_speed) * 0.5f;
 
 	// If we blend between floor(wavetable_index) and ceil(wavetable_index), then we will still get aliasing because
 	// floor(wavetable_index) has one harmonic above our nyquist limit. Therefore, to be safe, we bias up by one index.
-	c_real32_4 wavetable_index_floor = floor(wavetable_index);
+	real32x4 wavetable_index_floor = floor(wavetable_index);
 	out_wavetable_blend_ratio = wavetable_index - wavetable_index_floor;
 	int32 max_wavetable_index = cast_integer_verify<int32>(wavetable_count - 1);
 
-	c_int32_4 index_a = convert_to_int32_4(wavetable_index_floor) + c_int32_4(1);
-	out_wavetable_index_a = min(max(index_a, c_int32_4(0)), c_int32_4(max_wavetable_index));
+	int32x4 index_a = convert_to_int32x4(wavetable_index_floor) + int32x4(1);
+	out_wavetable_index_a = min(max(index_a, int32x4(0)), int32x4(max_wavetable_index));
 
 #if IS_TRUE(BLEND_MODE_MIN)
 	out_wavetable_index_b = out_wavetable_index_a;
 #elif IS_TRUE(BLEND_MODE_LINEAR)
-	c_int32_4 index_b = index_a + c_int32_4(1);
-	out_wavetable_index_b = min(max(index_b, c_int32_4(0)), c_int32_4(max_wavetable_index));
+	int32x4 index_b = index_a + int32x4(1);
+	out_wavetable_index_b = min(max(index_b, int32x4(0)), int32x4(max_wavetable_index));
 #else // BLEND_MODE
 #error Unknown blend mode
 #endif // BLEND_MODE

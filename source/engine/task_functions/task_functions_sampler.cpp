@@ -145,8 +145,8 @@ struct s_sampler_algorithm {
 	//void run_loop();
 
 	//bool is_zero_speed_and_constant_phase() const;
-	//c_real32_4 get_advance() const;
-	//c_real32_4 get_speed() const;
+	//real32x4 get_advance() const;
+	//real32x4 get_speed() const;
 	//real64 get_sample_offset(size_t index) const;
 
 	// Fields available to derived implementations:
@@ -155,17 +155,17 @@ struct s_sampler_algorithm {
 	real64 phase_to_sample_offset_multiplier;
 
 	// Utility functions for subclasses
-	c_real32_4 compute_advance(const c_real32_4 &speed_val) const {
-		return speed_val * c_real32_4(sample_rate_0) / c_real32_4(stream_sample_rate);
+	real32x4 compute_advance(const real32x4 &speed_val) const {
+		return speed_val * real32x4(sample_rate_0) / real32x4(stream_sample_rate);
 	}
 
-	c_real32_4 compute_speed_adjusted_sample_rate_0(const c_real32_4 &speed_val) const {
-		return c_real32_4(sample_rate_0) * speed_val;
+	real32x4 compute_speed_adjusted_sample_rate_0(const real32x4 &speed_val) const {
+		return real32x4(sample_rate_0) * speed_val;
 	}
 
 	void compute_sample_offset(
-		const c_real32_4 &phase_val, s_static_array<real64, k_simd_block_elements> &out_sample_offset) {
-		c_real32_4 clamped_phase = min(max(phase_val, c_real32_4(0.0f)), c_real32_4(1.0f));
+		const real32x4 &phase_val, s_static_array<real64, k_simd_block_elements> &out_sample_offset) {
+		real32x4 clamped_phase = min(max(phase_val, real32x4(0.0f)), real32x4(1.0f));
 		ALIGNAS_SIMD s_static_array<real32, k_simd_block_elements> phase;
 		clamped_phase.store(phase.get_elements());
 		for (size_t i = 0; i < k_simd_block_elements; i++) {
@@ -213,7 +213,7 @@ struct s_sampler_algorithm {
 		for (this_derived->begin_loop(); this_derived->is_valid(); this_derived->advance()) {
 			this_derived->run_loop();
 			real32 *out_ptr = this_derived->get_out_pointer();
-			c_real32_4 advance = this_derived->get_advance();
+			real32x4 advance = this_derived->get_advance();
 
 			// Increment the time first, storing each intermediate time value
 			ALIGNAS_SIMD s_static_array<real64, k_simd_block_elements> samples;
@@ -303,8 +303,8 @@ void s_buffer_operation_sampler::in_out(
 		real32 *out_ptr;
 		real32 *out_ptr_end;
 		const real32 *speed_ptr;
-		c_real32_4 speed_val;
-		c_real32_4 advance_val;
+		real32x4 speed_val;
+		real32x4 advance_val;
 
 		s_sampler_subalgorithm(size_t buffer_size, c_real_buffer_in speed, c_real_buffer_out out) {
 			this->out = out;
@@ -326,8 +326,8 @@ void s_buffer_operation_sampler::in_out(
 		}
 
 		bool is_zero_speed_and_constant_phase() const { return false; }
-		c_real32_4 get_advance() const { return advance_val; }
-		c_real32_4 get_speed() const { return speed_val; }
+		real32x4 get_advance() const { return advance_val; }
+		real32x4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return 0.0; }
 	};
 
@@ -366,8 +366,8 @@ void s_buffer_operation_sampler::inout(
 		c_real_buffer_out out;
 		real32 *speed_out_ptr;
 		real32 *speed_out_ptr_end;
-		c_real32_4 speed_val;
-		c_real32_4 advance_val;
+		real32x4 speed_val;
+		real32x4 advance_val;
 
 		s_sampler_subalgorithm(size_t buffer_size, c_real_buffer_inout speed_out) {
 			out = speed_out;
@@ -388,8 +388,8 @@ void s_buffer_operation_sampler::inout(
 		}
 
 		bool is_zero_speed_and_constant_phase() const { return false; }
-		c_real32_4 get_advance() const { return advance_val; }
-		c_real32_4 get_speed() const { return speed_val; }
+		real32x4 get_advance() const { return advance_val; }
+		real32x4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return 0.0; }
 	};
 
@@ -413,15 +413,15 @@ void s_buffer_operation_sampler::const_out(
 		c_real_buffer_out out;
 		real32 *out_ptr;
 		real32 *out_ptr_end;
-		c_real32_4 speed_val;
-		c_real32_4 advance_val;
+		real32x4 speed_val;
+		real32x4 advance_val;
 		bool zero_speed;
 
 		s_sampler_subalgorithm(size_t buffer_size, real32 speed, c_real_buffer_out out) {
 			this->out = out;
 			out_ptr = out->get_data<real32>();
 			out_ptr_end = out_ptr + align_size(buffer_size, k_simd_block_elements);
-			speed_val = c_real32_4(speed);
+			speed_val = real32x4(speed);
 			zero_speed = speed == 0.0f;
 		}
 
@@ -437,8 +437,8 @@ void s_buffer_operation_sampler::const_out(
 		void run_loop() {}
 
 		bool is_zero_speed_and_constant_phase() const { return zero_speed; }
-		c_real32_4 get_advance() const { return advance_val; }
-		c_real32_4 get_speed() const { return speed_val; }
+		real32x4 get_advance() const { return advance_val; }
+		real32x4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return 0.0; }
 	};
 
@@ -508,8 +508,8 @@ void s_buffer_operation_sampler::loop_in_in_out(
 		real32 *out_ptr_end;
 		const real32 *speed_ptr;
 		const real32 *phase_ptr;
-		c_real32_4 advance_val;
-		c_real32_4 speed_val;
+		real32x4 advance_val;
+		real32x4 speed_val;
 		s_static_array<real64, k_simd_block_elements> sample_offset_val;
 
 		s_sampler_loop_subalgorithm(
@@ -535,13 +535,13 @@ void s_buffer_operation_sampler::loop_in_in_out(
 		void run_loop() {
 			speed_val.load(speed_ptr);
 			advance_val = compute_advance(speed_val);
-			c_real32_4 phase_val(phase_ptr);
+			real32x4 phase_val(phase_ptr);
 			compute_sample_offset(phase_val, sample_offset_val);
 		}
 
 		bool is_zero_speed_and_constant_phase() const { return false; }
-		c_real32_4 get_advance() const { return advance_val; }
-		c_real32_4 get_speed() const { return speed_val; }
+		real32x4 get_advance() const { return advance_val; }
+		real32x4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return sample_offset_val[index]; }
 	};
 
@@ -608,8 +608,8 @@ void s_buffer_operation_sampler::loop_inout_in(
 		real32 *speed_out_ptr;
 		real32 *speed_out_ptr_end;
 		const real32 *phase_ptr;
-		c_real32_4 advance_val;
-		c_real32_4 speed_val;
+		real32x4 advance_val;
+		real32x4 speed_val;
 		s_static_array<real64, k_simd_block_elements> sample_offset_val;
 
 		s_sampler_loop_subalgorithm(
@@ -635,13 +635,13 @@ void s_buffer_operation_sampler::loop_inout_in(
 		void run_loop() {
 			speed_val.load(speed_out_ptr);
 			advance_val = compute_advance(speed_val);
-			c_real32_4 phase_val(phase_ptr);
+			real32x4 phase_val(phase_ptr);
 			compute_sample_offset(phase_val, sample_offset_val);
 		}
 
 		bool is_zero_speed_and_constant_phase() const { return false; }
-		c_real32_4 get_advance() const { return advance_val; }
-		c_real32_4 get_speed() const { return speed_val; }
+		real32x4 get_advance() const { return advance_val; }
+		real32x4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return sample_offset_val[index]; }
 	};
 
@@ -708,8 +708,8 @@ void s_buffer_operation_sampler::loop_in_inout(
 		real32 *phase_out_ptr;
 		real32 *phase_out_ptr_end;
 		const real32 *speed_ptr;
-		c_real32_4 advance_val;
-		c_real32_4 speed_val;
+		real32x4 advance_val;
+		real32x4 speed_val;
 		s_static_array<real64, k_simd_block_elements> sample_offset_val;
 
 		s_sampler_loop_subalgorithm(
@@ -733,13 +733,13 @@ void s_buffer_operation_sampler::loop_in_inout(
 		void run_loop() {
 			speed_val.load(speed_ptr);
 			advance_val = compute_advance(speed_val);
-			c_real32_4 phase_val(phase_out_ptr);
+			real32x4 phase_val(phase_out_ptr);
 			compute_sample_offset(phase_val, sample_offset_val);
 		}
 
 		bool is_zero_speed_and_constant_phase() const { return false; }
-		c_real32_4 get_advance() const { return advance_val; }
-		c_real32_4 get_speed() const { return speed_val; }
+		real32x4 get_advance() const { return advance_val; }
+		real32x4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return sample_offset_val[index]; }
 	};
 
@@ -780,8 +780,8 @@ void s_buffer_operation_sampler::loop_in_const_out(
 		real32 *out_ptr_end;
 		const real32 *speed_ptr;
 		real32 phase_val;
-		c_real32_4 advance_val;
-		c_real32_4 speed_val;
+		real32x4 advance_val;
+		real32x4 speed_val;
 		s_static_array<real64, k_simd_block_elements> sample_offset_val;
 
 		s_sampler_loop_subalgorithm(
@@ -812,8 +812,8 @@ void s_buffer_operation_sampler::loop_in_const_out(
 		}
 
 		bool is_zero_speed_and_constant_phase() const { return false; }
-		c_real32_4 get_advance() const { return advance_val; }
-		c_real32_4 get_speed() const { return speed_val; }
+		real32x4 get_advance() const { return advance_val; }
+		real32x4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return sample_offset_val[index]; }
 	};
 
@@ -854,8 +854,8 @@ void s_buffer_operation_sampler::loop_inout_const(
 		real32 *speed_out_ptr;
 		real32 *speed_out_ptr_end;
 		real32 phase_val;
-		c_real32_4 advance_val;
-		c_real32_4 speed_val;
+		real32x4 advance_val;
+		real32x4 speed_val;
 		s_static_array<real64, k_simd_block_elements> sample_offset_val;
 
 		s_sampler_loop_subalgorithm(
@@ -884,8 +884,8 @@ void s_buffer_operation_sampler::loop_inout_const(
 		}
 
 		bool is_zero_speed_and_constant_phase() const { return false; }
-		c_real32_4 get_advance() const { return advance_val; }
-		c_real32_4 get_speed() const { return speed_val; }
+		real32x4 get_advance() const { return advance_val; }
+		real32x4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return sample_offset_val[index]; }
 	};
 
@@ -924,10 +924,10 @@ void s_buffer_operation_sampler::loop_const_in_out(
 		c_real_buffer_out out;
 		real32 *out_ptr;
 		real32 *out_ptr_end;
-		c_real32_4 speed_val;
+		real32x4 speed_val;
 		const real32 *phase_ptr;
-		c_real32_4 advance_val;
-		c_real32_4 speed_adjusted_sample_rate_0_val;
+		real32x4 advance_val;
+		real32x4 speed_adjusted_sample_rate_0_val;
 		s_static_array<real64, k_simd_block_elements> sample_offset_val;
 
 		s_sampler_loop_subalgorithm(
@@ -935,7 +935,7 @@ void s_buffer_operation_sampler::loop_const_in_out(
 			this->out = out;
 			out_ptr = out->get_data<real32>();
 			out_ptr_end = out_ptr + align_size(buffer_size, k_simd_block_elements);
-			speed_val = c_real32_4(speed);
+			speed_val = real32x4(speed);
 			phase_ptr = phase->get_data<real32>();
 		}
 
@@ -953,13 +953,13 @@ void s_buffer_operation_sampler::loop_const_in_out(
 		}
 
 		void run_loop() {
-			c_real32_4 phase_val(phase_ptr);
+			real32x4 phase_val(phase_ptr);
 			compute_sample_offset(phase_val, sample_offset_val);
 		}
 
 		bool is_zero_speed_and_constant_phase() const { return false; }
-		c_real32_4 get_advance() const { return advance_val; }
-		c_real32_4 get_speed() const { return speed_val; }
+		real32x4 get_advance() const { return advance_val; }
+		real32x4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return sample_offset_val[index]; }
 	};
 
@@ -999,9 +999,9 @@ void s_buffer_operation_sampler::loop_const_inout(
 		c_real_buffer_out out;
 		real32 *phase_out_ptr;
 		real32 *phase_out_ptr_end;
-		c_real32_4 speed_val;
-		c_real32_4 advance_val;
-		c_real32_4 speed_adjusted_sample_rate_0_val;
+		real32x4 speed_val;
+		real32x4 advance_val;
+		real32x4 speed_adjusted_sample_rate_0_val;
 		s_static_array<real64, k_simd_block_elements> sample_offset_val;
 
 		s_sampler_loop_subalgorithm(
@@ -1009,7 +1009,7 @@ void s_buffer_operation_sampler::loop_const_inout(
 			out = phase_out;
 			phase_out_ptr = phase_out->get_data<real32>();
 			phase_out_ptr_end = phase_out_ptr + align_size(buffer_size, k_simd_block_elements);
-			speed_val = c_real32_4(speed);
+			speed_val = real32x4(speed);
 		}
 
 		c_real_buffer_out get_out() const { return out; }
@@ -1025,13 +1025,13 @@ void s_buffer_operation_sampler::loop_const_inout(
 		}
 
 		void run_loop() {
-			c_real32_4 phase_val(phase_out_ptr);
+			real32x4 phase_val(phase_out_ptr);
 			compute_sample_offset(phase_val, sample_offset_val);
 		}
 
 		bool is_zero_speed_and_constant_phase() const { return false; }
-		c_real32_4 get_advance() const { return advance_val; }
-		c_real32_4 get_speed() const { return speed_val; }
+		real32x4 get_advance() const { return advance_val; }
+		real32x4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return sample_offset_val[index]; }
 	};
 
@@ -1056,10 +1056,10 @@ void s_buffer_operation_sampler::loop_const_const_out(
 		c_real_buffer_out out;
 		real32 *out_ptr;
 		real32 *out_ptr_end;
-		c_real32_4 speed_val;
+		real32x4 speed_val;
 		real32 phase_val;
-		c_real32_4 advance_val;
-		c_real32_4 speed_adjusted_sample_rate_0_val;
+		real32x4 advance_val;
+		real32x4 speed_adjusted_sample_rate_0_val;
 		s_static_array<real64, k_simd_block_elements> sample_offset_val;
 		bool is_zero_speed;
 
@@ -1067,7 +1067,7 @@ void s_buffer_operation_sampler::loop_const_const_out(
 			this->out = out;
 			out_ptr = out->get_data<real32>();
 			out_ptr_end = out_ptr + align_size(buffer_size, k_simd_block_elements);
-			speed_val = c_real32_4(speed);
+			speed_val = real32x4(speed);
 			phase_val = phase;
 			is_zero_speed = speed == 0.0f;
 		}
@@ -1077,7 +1077,7 @@ void s_buffer_operation_sampler::loop_const_const_out(
 
 		void begin_loop() {
 			advance_val = compute_advance(speed_val);
-			compute_sample_offset(c_real32_4(phase_val), sample_offset_val);
+			compute_sample_offset(real32x4(phase_val), sample_offset_val);
 		}
 
 		bool is_valid() const { return out_ptr < out_ptr_end; }
@@ -1085,8 +1085,8 @@ void s_buffer_operation_sampler::loop_const_const_out(
 		void run_loop() {}
 
 		bool is_zero_speed_and_constant_phase() const { return is_zero_speed; }
-		c_real32_4 get_advance() const { return advance_val; }
-		c_real32_4 get_speed() const { return speed_val; }
+		real32x4 get_advance() const { return advance_val; }
+		real32x4 get_speed() const { return speed_val; }
 		real64 get_sample_offset(size_t index) const { return sample_offset_val[index]; }
 	};
 

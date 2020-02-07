@@ -693,15 +693,15 @@ bool c_buffer_manager::scan_remain_active_buffer(
 		for (; iter.is_valid(); iter.next()) {
 			wl_assert(samples_remaining > 0);
 
-			c_int32_4 elements_remaining = c_int32_4(samples_remaining) - c_int32_4(0, 32, 64, 96);
-			c_int32_4 clamped_elements_remaining = min(max(elements_remaining, c_int32_4(0)), c_int32_4(32));
-			c_int32_4 zeros_to_shift = c_int32_4(32) - clamped_elements_remaining;
-			c_int32_4 overflow_mask = c_int32_4(0xffffffff) << zeros_to_shift;
+			int32x4 elements_remaining = int32x4(samples_remaining) - int32x4(0, 32, 64, 96);
+			int32x4 clamped_elements_remaining = min(max(elements_remaining, int32x4(0)), int32x4(32));
+			int32x4 zeros_to_shift = int32x4(32) - clamped_elements_remaining;
+			int32x4 overflow_mask = int32x4(0xffffffff) << zeros_to_shift;
 
 			// We now have zeros in the positions of all bits past the end of the buffer
 			// Mask the value being tested so we don't get false positives
-			c_int32_4 padded_value = iter.get_iterator_a().get_value() & overflow_mask;
-			c_int32_4 all_zero_test = (padded_value == c_int32_4(0));
+			int32x4 padded_value = iter.get_iterator_a().get_value() & overflow_mask;
+			int32x4 all_zero_test = (padded_value == int32x4(0));
 			int32 all_zero_msb = mask_from_msb(all_zero_test);
 
 			if (all_zero_msb != 15) {

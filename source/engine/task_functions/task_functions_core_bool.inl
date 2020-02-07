@@ -1,45 +1,45 @@
 struct s_op_not {
-	c_int32_4 operator()(const c_int32_4 &a) const { return ~a; }
+	int32x4 operator()(const int32x4 &a) const { return ~a; }
 };
 
 struct s_op_equal_real {
-	c_int32_4 operator()(const c_real32_4 &a, const c_real32_4 &b) const { return a == b; }
+	int32x4 operator()(const real32x4 &a, const real32x4 &b) const { return a == b; }
 };
 
 struct s_op_not_equal_real {
-	c_int32_4 operator()(const c_real32_4 &a, const c_real32_4 &b) const { return a != b; }
+	int32x4 operator()(const real32x4 &a, const real32x4 &b) const { return a != b; }
 };
 
 struct s_op_equal_bool {
-	c_int32_4 operator()(const c_int32_4 &a, const c_int32_4 &b) const { return a == b; }
+	int32x4 operator()(const int32x4 &a, const int32x4 &b) const { return a == b; }
 };
 
 struct s_op_not_equal_bool {
-	c_int32_4 operator()(const c_int32_4 &a, const c_int32_4 &b) const { return a != b; }
+	int32x4 operator()(const int32x4 &a, const int32x4 &b) const { return a != b; }
 };
 
 struct s_op_greater {
-	c_int32_4 operator()(const c_real32_4 &a, const c_real32_4 &b) const { return a > b; }
+	int32x4 operator()(const real32x4 &a, const real32x4 &b) const { return a > b; }
 };
 
 struct s_op_less {
-	c_int32_4 operator()(const c_real32_4 &a, const c_real32_4 &b) const { return a < b; }
+	int32x4 operator()(const real32x4 &a, const real32x4 &b) const { return a < b; }
 };
 
 struct s_op_greater_equal {
-	c_int32_4 operator()(const c_real32_4 &a, const c_real32_4 &b) const { return a >= b; }
+	int32x4 operator()(const real32x4 &a, const real32x4 &b) const { return a >= b; }
 };
 
 struct s_op_less_equal {
-	c_int32_4 operator()(const c_real32_4 &a, const c_real32_4 &b) const { return a <= b; }
+	int32x4 operator()(const real32x4 &a, const real32x4 &b) const { return a <= b; }
 };
 
 struct s_op_and {
-	c_int32_4 operator()(const c_int32_4 &a, const c_int32_4 &b) const { return a & b; }
+	int32x4 operator()(const int32x4 &a, const int32x4 &b) const { return a & b; }
 };
 
 struct s_op_or {
-	c_int32_4 operator()(const c_int32_4 &a, const c_int32_4 &b) const { return a | b; }
+	int32x4 operator()(const int32x4 &a, const int32x4 &b) const { return a | b; }
 };
 
 typedef s_buffer_operation_bool_bool<s_op_not> s_buffer_operation_not;

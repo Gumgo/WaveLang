@@ -4,65 +4,65 @@
 #include "engine/task_functions/task_functions_math.h"
 
 struct s_op_abs {
-	c_real32_4 operator()(const c_real32_4 &a) const { return abs(a); }
+	real32x4 operator()(const real32x4 &a) const { return abs(a); }
 };
 
 struct s_op_floor {
-	c_real32_4 operator()(const c_real32_4 &a) const { return floor(a); }
+	real32x4 operator()(const real32x4 &a) const { return floor(a); }
 };
 
 struct s_op_ceil {
-	c_real32_4 operator()(const c_real32_4 &a) const { return ceil(a); }
+	real32x4 operator()(const real32x4 &a) const { return ceil(a); }
 };
 
 struct s_op_round {
-	c_real32_4 operator()(const c_real32_4 &a) const { return round(a); }
+	real32x4 operator()(const real32x4 &a) const { return round(a); }
 };
 
 struct s_op_min {
-	c_real32_4 operator()(const c_real32_4 &a, const c_real32_4 &b) const { return min(a, b); }
+	real32x4 operator()(const real32x4 &a, const real32x4 &b) const { return min(a, b); }
 };
 
 struct s_op_max {
-	c_real32_4 operator()(const c_real32_4 &a, const c_real32_4 &b) const { return max(a, b); }
+	real32x4 operator()(const real32x4 &a, const real32x4 &b) const { return max(a, b); }
 };
 
 struct s_op_exp {
-	c_real32_4 operator()(const c_real32_4 &a) const { return exp(a); }
+	real32x4 operator()(const real32x4 &a) const { return exp(a); }
 };
 
 struct s_op_log {
-	c_real32_4 operator()(const c_real32_4 &a) const { return log(a); }
+	real32x4 operator()(const real32x4 &a) const { return log(a); }
 };
 
 struct s_op_sqrt {
-	c_real32_4 operator()(const c_real32_4 &a) const { return sqrt(a); }
+	real32x4 operator()(const real32x4 &a) const { return sqrt(a); }
 };
 
 struct s_op_pow {
-	c_real32_4 operator()(const c_real32_4 &a, const c_real32_4 &b) const { return pow(a, b); }
+	real32x4 operator()(const real32x4 &a, const real32x4 &b) const { return pow(a, b); }
 };
 
 struct s_op_pow_reverse {
-	c_real32_4 operator()(const c_real32_4 &a, const c_real32_4 &b) const { return pow(b, a); }
+	real32x4 operator()(const real32x4 &a, const real32x4 &b) const { return pow(b, a); }
 };
 
 struct s_op_pow_constant_base {
-	c_real32_4 log_a;
+	real32x4 log_a;
 	s_op_pow_constant_base(real32 a) : log_a(std::log(a)) {}
-	c_real32_4 operator()(const c_real32_4 &b) const { return exp(log_a * b); }
+	real32x4 operator()(const real32x4 &b) const { return exp(log_a * b); }
 };
 
 struct s_op_sin {
-	c_real32_4 operator()(const c_real32_4 &a) const { return sin(a); }
+	real32x4 operator()(const real32x4 &a) const { return sin(a); }
 };
 
 struct s_op_cos {
-	c_real32_4 operator()(const c_real32_4 &a) const { return cos(a); }
+	real32x4 operator()(const real32x4 &a) const { return cos(a); }
 };
 
 struct s_op_sincos {
-	void operator()(const c_real32_4 &a, c_real32_4 &out_sin, c_real32_4 &out_cos) const {
+	void operator()(const real32x4 &a, real32x4 &out_sin, real32x4 &out_cos) const {
 		sincos(a, out_sin, out_cos);
 	}
 };

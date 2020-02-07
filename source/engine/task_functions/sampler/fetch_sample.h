@@ -20,7 +20,7 @@ void fetch_wavetable_samples(
 	uint32 channel,
 	real32 stream_sample_rate,
 	real32 sample_rate_0,
-	const c_real32_4 &speed,
+	const real32x4 &speed,
 	size_t count,
 	const s_static_array<real64, k_simd_block_elements> &samples,
 	real32 *out_ptr);

@@ -28,9 +28,9 @@ public:
 	bool is_constant() const { return m_buffer.is_constant(); }
 	const c_buffer *get_buffer() const { wl_assert(!is_constant()); return m_buffer.get_buffer(); }
 
-	c_real32_4 get_constant() const {
+	real32x4 get_constant() const {
 		wl_assert(is_constant());
-		return c_real32_4(m_buffer.get_constant());
+		return real32x4(m_buffer.get_constant());
 	}
 
 private:
@@ -45,7 +45,7 @@ public:
 	c_iterable_buffer_real_out(c_buffer *buffer) : m_buffer(buffer) {}
 	c_buffer *get_buffer() const { return m_buffer; }
 
-	void set_constant(const c_real32_4 &value) {
+	void set_constant(const real32x4 &value) {
 		value.store(m_buffer->get_data<real32>());
 		m_buffer->set_constant(true);
 	}
@@ -63,12 +63,12 @@ public:
 	bool is_constant() const { return m_buffer->is_constant(); }
 	c_buffer *get_buffer() const { return m_buffer; }
 
-	c_real32_4 get_constant() const {
+	real32x4 get_constant() const {
 		wl_assert(m_buffer->is_constant());
-		return c_real32_4(*m_buffer->get_data<real32>());
+		return real32x4(*m_buffer->get_data<real32>());
 	}
 
-	void set_constant(const c_real32_4 &value) {
+	void set_constant(const real32x4 &value) {
 		value.store(m_buffer->get_data<real32>());
 		m_buffer->set_constant(true);
 	}
@@ -86,9 +86,9 @@ public:
 	bool is_constant() const { return m_buffer.is_constant(); }
 	const c_buffer *get_buffer() const { wl_assert(!is_constant()); return m_buffer.get_buffer(); }
 
-	c_int32_4 get_constant() const {
+	int32x4 get_constant() const {
 		wl_assert(is_constant());
-		return c_int32_4(-static_cast<int32>(m_buffer.get_constant()));
+		return int32x4(-static_cast<int32>(m_buffer.get_constant()));
 	}
 
 private:
@@ -103,7 +103,7 @@ public:
 	c_iterable_buffer_bool_4_out(c_buffer *buffer) : m_buffer(buffer) {}
 	c_buffer *get_buffer() const { return m_buffer; }
 
-	void set_constant(const c_int32_4 &value) {
+	void set_constant(const int32x4 &value) {
 		value.store(m_buffer->get_data<int32>());
 		m_buffer->set_constant(true);
 	}
@@ -121,12 +121,12 @@ public:
 	bool is_constant() const { return m_buffer->is_constant(); }
 	c_buffer *get_buffer() const { return m_buffer; }
 
-	c_int32_4 get_constant() const {
+	int32x4 get_constant() const {
 		wl_assert(m_buffer->is_constant());
-		return c_int32_4(-(*m_buffer->get_data<int32>() & 1));
+		return int32x4(-(*m_buffer->get_data<int32>() & 1));
 	}
 
-	void set_constant(const c_int32_4 &value) {
+	void set_constant(const int32x4 &value) {
 		value.store(m_buffer->get_data<int32>());
 		m_buffer->set_constant(true);
 	}
@@ -144,9 +144,9 @@ public:
 	bool is_constant() const { return m_buffer.is_constant(); }
 	const c_buffer *get_buffer() const { wl_assert(!is_constant()); return m_buffer.get_buffer(); }
 
-	c_int32_4 get_constant() const {
+	int32x4 get_constant() const {
 		wl_assert(is_constant());
-		return c_int32_4(-static_cast<int32>(m_buffer.get_constant()));
+		return int32x4(-static_cast<int32>(m_buffer.get_constant()));
 	}
 
 private:
@@ -161,7 +161,7 @@ public:
 	c_iterable_buffer_bool_128_out(c_buffer *buffer) : m_buffer(buffer) {}
 	c_buffer *get_buffer() const { return m_buffer; }
 
-	void set_constant(const c_int32_4 &value) {
+	void set_constant(const int32x4 &value) {
 		value.store(m_buffer->get_data<int32>());
 		m_buffer->set_constant(true);
 	}
@@ -179,12 +179,12 @@ public:
 	bool is_constant() const { return m_buffer->is_constant(); }
 	c_buffer *get_buffer() const { return m_buffer; }
 
-	c_int32_4 get_constant() const {
+	int32x4 get_constant() const {
 		wl_assert(m_buffer->is_constant());
-		return c_int32_4(-(*m_buffer->get_data<int32>() & 1));
+		return int32x4(-(*m_buffer->get_data<int32>() & 1));
 	}
 
-	void set_constant(const c_int32_4 &value) {
+	void set_constant(const int32x4 &value) {
 		value.store(m_buffer->get_data<int32>());
 		m_buffer->set_constant(true);
 	}

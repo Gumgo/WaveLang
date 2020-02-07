@@ -141,7 +141,7 @@ bool s_sampler_context::handle_reached_end(c_real_buffer_out out) {
 
 size_t s_sampler_context::increment_time(
 	real64 length_samples,
-	const c_real32_4 &advance,
+	const real32x4 &advance,
 	size_t &inout_buffer_samples_remaining,
 	s_static_array<real64, k_simd_block_elements> &out_samples) {
 	// We haven't vectorized this, so extract the reals
@@ -178,7 +178,7 @@ size_t s_sampler_context::increment_time(
 size_t s_sampler_context::increment_time_looping(
 	real64 loop_start_sample,
 	real64 loop_end_sample,
-	const c_real32_4 &advance,
+	const real32x4 &advance,
 	size_t &inout_buffer_samples_remaining,
 	s_static_array<real64, k_simd_block_elements> &out_samples) {
 	// We haven't vectorized this, so extract the reals
@@ -219,14 +219,14 @@ size_t s_sampler_context::increment_time_looping(
 
 template<>
 size_t sampler_context_increment_time<false>(s_sampler_context &context,
-	real64 loop_start_sample, real64 loop_end_sample, const c_real32_4 &advance, size_t &inout_buffer_samples_remaining,
+	real64 loop_start_sample, real64 loop_end_sample, const real32x4 &advance, size_t &inout_buffer_samples_remaining,
 	s_static_array<real64, k_simd_block_elements> &out_samples) {
 	return context.increment_time(loop_end_sample, advance, inout_buffer_samples_remaining, out_samples);
 }
 
 template<>
 size_t sampler_context_increment_time<true>(s_sampler_context &context,
-	real64 loop_start_sample, real64 loop_end_sample, const c_real32_4 &advance, size_t &inout_buffer_samples_remaining,
+	real64 loop_start_sample, real64 loop_end_sample, const real32x4 &advance, size_t &inout_buffer_samples_remaining,
 	s_static_array<real64, k_simd_block_elements> &out_samples) {
 	return context.increment_time_looping(
 		loop_start_sample, loop_end_sample, advance, inout_buffer_samples_remaining, out_samples);

@@ -39,7 +39,7 @@ inline void validate_buffer(const c_buffer *buffer) {
 // Iterates a real buffer 4 elements at a time
 class c_real_buffer_iterator {
 public:
-	typedef c_real32_4 t_value;
+	typedef real32x4 t_value;
 	typedef c_buffer t_buffer;
 
 	static const size_t k_elements_per_value = 4;
@@ -53,11 +53,11 @@ public:
 		m_pointer += k_simd_block_elements;
 	}
 
-	c_real32_4 get_value() const {
-		return c_real32_4(m_pointer);
+	real32x4 get_value() const {
+		return real32x4(m_pointer);
 	}
 
-	void set_value(const c_real32_4 &value) {
+	void set_value(const real32x4 &value) {
 		value.store(m_pointer);
 	}
 
@@ -73,7 +73,7 @@ private:
 // Const version of the above
 class c_const_real_buffer_iterator {
 public:
-	typedef c_real32_4 t_value;
+	typedef real32x4 t_value;
 	typedef const c_buffer t_buffer;
 
 	static const size_t k_elements_per_value = 4;
@@ -88,8 +88,8 @@ public:
 		m_pointer += k_simd_block_elements;
 	}
 
-	c_real32_4 get_value() const {
-		return c_real32_4(m_pointer);
+	real32x4 get_value() const {
+		return real32x4(m_pointer);
 	}
 
 private:
@@ -99,7 +99,7 @@ private:
 // Iterates a bool buffer 4 elements at a time, value contains 4 elements (with all bits cleared or set)
 class c_bool_buffer_iterator_4 {
 public:
-	typedef c_int32_4 t_value;
+	typedef int32x4 t_value;
 	typedef c_buffer t_buffer;
 
 	static const size_t k_elements_per_value = 4;
@@ -128,39 +128,39 @@ public:
 		read_cached_value_if_necessary();
 	}
 
-	c_int32_4 get_value() const {
+	int32x4 get_value() const {
 		int32 element_index = cast_integer_verify<int32>(m_offset / 32) % 4;
 		int32 shift_amount = cast_integer_verify<int32>(m_offset % 32);
 		wl_assert(element_index < 4);
 
 		// Copy the desired bits to all elements
-		c_int32_4 unshifted_value_bits = single_element(m_cached_value, element_index);
+		int32x4 unshifted_value_bits = single_element(m_cached_value, element_index);
 
 		// Shift so that the correct 4 bits are in the front of the desired element, and then shift each bit to its
 		// proper place within its element
-		c_int32_4 element_shift_amounts = c_int32_4(shift_amount) + c_int32_4(0, 1, 2, 3);
-		c_int32_4 value_bits = unshifted_value_bits >> element_shift_amounts;
+		int32x4 element_shift_amounts = int32x4(shift_amount) + int32x4(0, 1, 2, 3);
+		int32x4 value_bits = unshifted_value_bits >> element_shift_amounts;
 
 		// Mask everything but the LSB and then negate, which will turn 0 => 0 and 1 => 0xffffffff
-		return -(value_bits & c_int32_4(0x00000001));
+		return -(value_bits & int32x4(0x00000001));
 	}
 
-	void set_value(const c_int32_4 &value) {
+	void set_value(const int32x4 &value) {
 		int32 element_index = cast_integer_verify<int32>(m_offset / 32) % 4;
 		int32 shift_amount = cast_integer_verify<int32>(m_offset % 32);
 		wl_assert(element_index < 4);
 
 		// Mask only the correct element with 0xffffffff, all other bits are 0
-		c_int32_4 element_mask = (c_int32_4(element_index) == c_int32_4(0, 1, 2, 3));
+		int32x4 element_mask = (int32x4(element_index) == int32x4(0, 1, 2, 3));
 
 		// Mask only the correct bits in the correct element with 0xf, all other bits are 0
-		c_int32_4 element_value_mask = element_mask & c_int32_4(0x0000000f << shift_amount);
+		int32x4 element_value_mask = element_mask & int32x4(0x0000000f << shift_amount);
 
 		// Convert the MSB of the value into a 4-bit mask and shift it to the proper spot in the element
 		int32 value_bits = mask_from_msb(value) << shift_amount;
 
 		// Copy our value bits into each element and mask to only the desired element
-		c_int32_4 element_value_bits(value_bits & element_value_mask);
+		int32x4 element_value_bits(value_bits & element_value_mask);
 
 		// Clear bits in the cached value, then overwrite them with the new value
 		m_cached_value = (m_cached_value & ~element_value_mask) | element_value_bits;
@@ -195,14 +195,14 @@ private:
 	int32 *m_pointer;
 	size_t m_offset;
 	size_t m_buffer_size;
-	c_int32_4 m_cached_value;
+	int32x4 m_cached_value;
 	bool m_dirty_cache;
 };
 
 // Const version of the above
 class c_const_bool_buffer_iterator_4 {
 public:
-	typedef c_int32_4 t_value;
+	typedef int32x4 t_value;
 	typedef const c_buffer t_buffer;
 
 	static const size_t k_elements_per_value = 4;
@@ -226,21 +226,21 @@ public:
 		read_cached_value_if_necessary();
 	}
 
-	c_int32_4 get_value() const {
+	int32x4 get_value() const {
 		int32 element_index = cast_integer_verify<int32>(m_offset / 32) % 4;
 		int32 shift_amount = cast_integer_verify<int32>(m_offset % 32);
 		wl_assert(element_index < 4);
 
 		// Copy the desired bits to all elements
-		c_int32_4 unshifted_value_bits = single_element(m_cached_value, element_index);
+		int32x4 unshifted_value_bits = single_element(m_cached_value, element_index);
 
 		// Shift so that the correct 4 bits are in the front of the desired element, and then shift each bit to its
 		// proper place within its element
-		c_int32_4 element_shift_amounts = c_int32_4(shift_amount) + c_int32_4(0, 1, 2, 3);
-		c_int32_4 value_bits = unshifted_value_bits >> element_shift_amounts;
+		int32x4 element_shift_amounts = int32x4(shift_amount) + int32x4(0, 1, 2, 3);
+		int32x4 value_bits = unshifted_value_bits >> element_shift_amounts;
 
 		// Mask everything but the LSB and then negate, which will turn 0 => 0 and 1 => 0xffffffff
-		return -(value_bits & c_int32_4(0x00000001));
+		return -(value_bits & int32x4(0x00000001));
 	}
 
 private:
@@ -254,13 +254,13 @@ private:
 	const int32 *m_pointer;
 	size_t m_offset;
 	size_t m_buffer_size;
-	c_int32_4 m_cached_value;
+	int32x4 m_cached_value;
 };
 
 // Iterates a bool buffer 128 elements at a time, value contains 4x32 elements
 class c_bool_buffer_iterator_128 {
 public:
-	typedef c_int32_4 t_value;
+	typedef int32x4 t_value;
 	typedef c_buffer t_buffer;
 
 	static const size_t k_elements_per_value = 128;
@@ -278,20 +278,20 @@ public:
 		m_elements_remaining -= 128;
 	}
 
-	c_int32_4 get_value() const {
+	int32x4 get_value() const {
 		wl_assert(m_elements_remaining > 0);
-		return c_int32_4(m_pointer);
+		return int32x4(m_pointer);
 	}
 
-	void set_value(const c_int32_4 &value) {
+	void set_value(const int32x4 &value) {
 		wl_assert(m_elements_remaining > 0);
 		value.store(m_pointer);
 
 		// Mask out any bits at the end that go beyond the buffer
-		c_int32_4 elements_remaining = c_int32_4(m_elements_remaining) - c_int32_4(0, 32, 64, 96);
-		c_int32_4 clamped_elements_remaining = min(max(elements_remaining, c_int32_4(0)), c_int32_4(32));
-		c_int32_4 zeros_to_shift = c_int32_4(32) - clamped_elements_remaining;
-		c_int32_4 overflow_mask = c_int32_4(0xffffffff) << zeros_to_shift;
+		int32x4 elements_remaining = int32x4(m_elements_remaining) - int32x4(0, 32, 64, 96);
+		int32x4 clamped_elements_remaining = min(max(elements_remaining, int32x4(0)), int32x4(32));
+		int32x4 zeros_to_shift = int32x4(32) - clamped_elements_remaining;
+		int32x4 overflow_mask = int32x4(0xffffffff) << zeros_to_shift;
 
 		// We now have zeros in the positions of all bits past the end of the buffer
 		m_all_zero = m_all_zero | (value & overflow_mask);
@@ -302,8 +302,8 @@ public:
 		// If the buffer is constant, we expect m_all_zero to be all zeros or m_all_one to be all ones. Perform this
 		// check and make an integer mask out of the resulting boolean masks (a 4-bit value). If either integer mask has
 		// a value of 3 (i.e. all 4 bits set), the buffer is constant.
-		c_int32_4 all_zero = (m_all_zero == c_int32_4(0));
-		c_int32_4 all_one = (m_all_one == c_int32_4(0xffffffff));
+		int32x4 all_zero = (m_all_zero == int32x4(0));
+		int32x4 all_one = (m_all_one == int32x4(0xffffffff));
 		int32 all_zero_msb = mask_from_msb(all_zero);
 		int32 all_one_msb = mask_from_msb(all_one);
 
@@ -314,14 +314,14 @@ private:
 	int32 *m_pointer;
 	int32 m_elements_remaining;
 
-	c_int32_4 m_all_zero;
-	c_int32_4 m_all_one;
+	int32x4 m_all_zero;
+	int32x4 m_all_one;
 };
 
 // Const version of the above
 class c_const_bool_buffer_iterator_128 {
 public:
-	typedef c_int32_4 t_value;
+	typedef int32x4 t_value;
 	typedef const c_buffer t_buffer;
 
 	static const size_t k_elements_per_value = 128;
@@ -336,8 +336,8 @@ public:
 		m_pointer += k_simd_block_elements;
 	}
 
-	c_int32_4 get_value() const {
-		return c_int32_4(m_pointer);
+	int32x4 get_value() const {
+		return int32x4(m_pointer);
 	}
 
 private:
