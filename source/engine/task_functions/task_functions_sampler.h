@@ -14,7 +14,8 @@ namespace sampler_task_functions wl_library(k_sampler_library_id, "sampler", 0) 
 	size_t sampler_memory_query(const s_task_function_context &context);
 
 	wl_task_initializer
-	void sampler_initializer(const s_task_function_context &context,
+	void sampler_initializer(
+		const s_task_function_context &context,
 		wl_in_source("name") const char *name,
 		wl_in_source("channel") real32 channel);
 
@@ -25,7 +26,8 @@ namespace sampler_task_functions wl_library(k_sampler_library_id, "sampler", 0) 
 	wl_task_memory_query_function("sampler_memory_query")
 	wl_task_initializer_function("sampler_initializer")
 	wl_task_voice_initializer_function("sampler_voice_initializer")
-	void sampler_in_out(const s_task_function_context &context,
+	void sampler_in_out(
+		const s_task_function_context &context,
 		wl_in_source("name") const char *name,
 		wl_in_source("speed") c_real_const_buffer_or_constant speed,
 		wl_out_source("result") c_real_buffer *result);
@@ -34,12 +36,14 @@ namespace sampler_task_functions wl_library(k_sampler_library_id, "sampler", 0) 
 	wl_task_memory_query_function("sampler_memory_query")
 	wl_task_initializer_function("sampler_initializer")
 	wl_task_voice_initializer_function("sampler_voice_initializer")
-	void sampler_inout(const s_task_function_context &context,
+	void sampler_inout(
+		const s_task_function_context &context,
 		wl_in_source("name") const char *name,
 		wl_inout_source("speed", "result") c_real_buffer *speed_result);
 
 	wl_task_initializer
-	void sampler_loop_initializer(const s_task_function_context &context,
+	void sampler_loop_initializer(
+		const s_task_function_context &context,
 		wl_in_source("name") const char *name,
 		wl_in_source("channel") real32 channel,
 		wl_in_source("bidi") bool bidi,
@@ -49,7 +53,8 @@ namespace sampler_task_functions wl_library(k_sampler_library_id, "sampler", 0) 
 	wl_task_memory_query_function("sampler_memory_query")
 	wl_task_initializer_function("sampler_loop_initializer")
 	wl_task_voice_initializer_function("sampler_voice_initializer")
-	void sampler_loop_in_in_out(const s_task_function_context &context,
+	void sampler_loop_in_in_out(
+		const s_task_function_context &context,
 		wl_in_source("name") const char *name,
 		wl_in_source("speed") c_real_const_buffer_or_constant speed,
 		wl_in_source("phase") c_real_const_buffer_or_constant phase,
@@ -59,14 +64,16 @@ namespace sampler_task_functions wl_library(k_sampler_library_id, "sampler", 0) 
 	wl_task_memory_query_function("sampler_memory_query")
 	wl_task_initializer_function("sampler_loop_initializer")
 	wl_task_voice_initializer_function("sampler_voice_initializer")
-	void sampler_loop_inout_in(const s_task_function_context &context,
+	void sampler_loop_inout_in(
+		const s_task_function_context &context,
 		wl_in_source("name") const char *name,
 		wl_inout_source("speed", "result") c_real_buffer *speed_result,
 		wl_in_source("phase") c_real_const_buffer_or_constant phase);
 
 	// Version where phase cannot ever be a constant
 	wl_task_initializer
-	void sampler_loop_in_inout_initializer(const s_task_function_context &context,
+	void sampler_loop_in_inout_initializer(
+		const s_task_function_context &context,
 		wl_in_source("name") const char *name,
 		wl_in_source("channel") real32 channel,
 		wl_in_source("bidi") bool bidi);
@@ -75,13 +82,15 @@ namespace sampler_task_functions wl_library(k_sampler_library_id, "sampler", 0) 
 	wl_task_memory_query_function("sampler_memory_query")
 	wl_task_initializer_function("sampler_loop_in_inout_initializer")
 	wl_task_voice_initializer_function("sampler_voice_initializer")
-	void sampler_loop_in_inout(const s_task_function_context &context,
+	void sampler_loop_in_inout(
+		const s_task_function_context &context,
 		wl_in_source("name") const char *name,
 		wl_in_source("speed") c_real_const_buffer_or_constant speed,
 		wl_inout_source("phase", "result") c_real_buffer *phase_result);
 
 	wl_task_initializer
-	void sampler_wavetable_initializer(const s_task_function_context &context,
+	void sampler_wavetable_initializer(
+		const s_task_function_context &context,
 		wl_in_source("harmonic_weights") c_real_array harmonic_weights,
 		wl_in_source("sample_count") real32 sample_count,
 		wl_in_source("phase") c_real_const_buffer_or_constant phase); // We can use this if it's a constant
@@ -90,7 +99,8 @@ namespace sampler_task_functions wl_library(k_sampler_library_id, "sampler", 0) 
 	wl_task_memory_query_function("sampler_memory_query")
 	wl_task_initializer_function("sampler_wavetable_initializer")
 	wl_task_voice_initializer_function("sampler_voice_initializer")
-	void sampler_wavetable_in_in_out(const s_task_function_context &context,
+	void sampler_wavetable_in_in_out(
+		const s_task_function_context &context,
 		wl_in_source("frequency") c_real_const_buffer_or_constant frequency,
 		wl_in_source("phase") c_real_const_buffer_or_constant phase,
 		wl_out_source("result") c_real_buffer *result);
@@ -99,13 +109,15 @@ namespace sampler_task_functions wl_library(k_sampler_library_id, "sampler", 0) 
 	wl_task_memory_query_function("sampler_memory_query")
 	wl_task_initializer_function("sampler_wavetable_initializer")
 	wl_task_voice_initializer_function("sampler_voice_initializer")
-	void sampler_wavetable_inout_in(const s_task_function_context &context,
+	void sampler_wavetable_inout_in(
+		const s_task_function_context &context,
 		wl_inout_source("frequency", "result") c_real_buffer *frequency_result,
 		wl_in_source("phase") c_real_const_buffer_or_constant phase);
 
 	// Version where phase cannot ever be a constant
 	wl_task_initializer
-	void sampler_wavetable_in_inout_initializer(const s_task_function_context &context,
+	void sampler_wavetable_in_inout_initializer(
+		const s_task_function_context &context,
 		wl_in_source("harmonic_weights") c_real_array harmonic_weights,
 		wl_in_source("sample_count") real32 sample_count);
 
@@ -113,7 +125,8 @@ namespace sampler_task_functions wl_library(k_sampler_library_id, "sampler", 0) 
 	wl_task_memory_query_function("sampler_memory_query")
 	wl_task_initializer_function("sampler_wavetable_in_inout_initializer")
 	wl_task_voice_initializer_function("sampler_voice_initializer")
-	void sampler_wavetable_in_inout(const s_task_function_context &context,
+	void sampler_wavetable_in_inout(
+		const s_task_function_context &context,
 		wl_in_source("frequency") c_real_const_buffer_or_constant frequency,
 		wl_inout_source("phase", "result") c_real_buffer *phase_result);
 

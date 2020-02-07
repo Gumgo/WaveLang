@@ -20,8 +20,13 @@
 // Returns the two wavetable levels to blend between for a given speed-adjusted sample rate, as well as the blend ratio.
 // If the two returned wavetable levels are the same, no blending is required.
 static void choose_wavetable_levels(
-	real32 stream_sample_rate, real32 sample_rate_0, const c_real32_4 &speed, uint32 wavetable_count,
-	c_int32_4 &out_wavetable_index_a, c_int32_4 &out_wavetable_index_b, c_real32_4 &out_wavetable_blend_ratio);
+	real32 stream_sample_rate,
+	real32 sample_rate_0,
+	const c_real32_4 &speed,
+	uint32 wavetable_count,
+	c_int32_4 &out_wavetable_index_a,
+	c_int32_4 &out_wavetable_index_b,
+	c_real32_4 &out_wavetable_blend_ratio);
 
 real32 fetch_sample(const c_sample *sample, uint32 channel, real64 sample_index) {
 	wl_assert(!sample->is_wavetable());
@@ -149,8 +154,14 @@ real32 fetch_sample(const c_sample *sample, uint32 channel, real64 sample_index)
 }
 
 void fetch_wavetable_samples(
-	const c_sample *sample, uint32 channel, real32 stream_sample_rate, real32 sample_rate_0, const c_real32_4 &speed,
-	size_t count, const s_static_array<real64, k_simd_block_elements> &samples, real32 *out_ptr) {
+	const c_sample *sample,
+	uint32 channel,
+	real32 stream_sample_rate,
+	real32 sample_rate_0,
+	const c_real32_4 &speed,
+	size_t count,
+	const s_static_array<real64, k_simd_block_elements> &samples,
+	real32 *out_ptr) {
 	wl_assert(count > 0 && count <= k_simd_block_elements);
 
 	// Compute the wavetabble indices and blend factors for these 4 samples (if we incremented less than 4 times, some
@@ -158,8 +169,14 @@ void fetch_wavetable_samples(
 	c_int32_4 wavetable_index_a;
 	c_int32_4 wavetable_index_b;
 	c_real32_4 wavetable_blend_ratio;
-	choose_wavetable_levels(stream_sample_rate, sample_rate_0, speed, sample->get_wavetable_entry_count(),
-		wavetable_index_a, wavetable_index_b, wavetable_blend_ratio);
+	choose_wavetable_levels(
+		stream_sample_rate,
+		sample_rate_0,
+		speed,
+		sample->get_wavetable_entry_count(),
+		wavetable_index_a,
+		wavetable_index_b,
+		wavetable_blend_ratio);
 
 	ALIGNAS_SIMD s_static_array<int32, k_simd_block_elements> wavetable_index_a_array;
 	ALIGNAS_SIMD s_static_array<int32, k_simd_block_elements> wavetable_index_b_array;
@@ -210,8 +227,13 @@ void fetch_wavetable_samples(
 }
 
 static void choose_wavetable_levels(
-	real32 stream_sample_rate, real32 sample_rate_0, const c_real32_4 &speed, uint32 wavetable_count,
-	c_int32_4 &out_wavetable_index_a, c_int32_4 &out_wavetable_index_b, c_real32_4 &out_wavetable_blend_ratio) {
+	real32 stream_sample_rate,
+	real32 sample_rate_0,
+	const c_real32_4 &speed,
+	uint32 wavetable_count,
+	c_int32_4 &out_wavetable_index_a,
+	c_int32_4 &out_wavetable_index_b,
+	c_real32_4 &out_wavetable_blend_ratio) {
 	// We wish to find a wavetable entry index to sample from which avoids exceeding the nyquist frequency. We can't
 	// just return a single level though, or pitch-bending would cause "pops" when we switched between levels. Instead,
 	// we pick two mip levels, a and b, such that level a is the lowest level which has no frequencies exceeding the

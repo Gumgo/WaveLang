@@ -5,9 +5,10 @@
 #include "common/threading/condition_variable.h"
 #include "common/threading/mutex.h"
 
-class c_semaphore : private c_uncopyable {
+class c_semaphore {
 public:
 	c_semaphore();
+	UNCOPYABLE(c_semaphore);
 	~c_semaphore();
 
 	void notify(uint32 count = 1);

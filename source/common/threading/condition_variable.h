@@ -7,9 +7,10 @@
 
 class c_scoped_lock;
 
-class c_condition_variable : private c_uncopyable {
+class c_condition_variable {
 public:
 	c_condition_variable();
+	UNCOPYABLE(c_condition_variable);
 	~c_condition_variable();
 
 	void wait(c_scoped_lock &scoped_lock);

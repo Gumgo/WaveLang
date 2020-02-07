@@ -83,15 +83,22 @@ typedef s_buffer_operation_real_real_real<s_op_sincos> s_buffer_operation_sincos
 
 // Exponentiation is special because it is cheaper if the base is constant
 struct s_buffer_operation_pow {
-	static void in_in_out(size_t buffer_size,
-		c_real_buffer_or_constant_in a, c_real_buffer_or_constant_in b, c_real_buffer_out c) {
+	static void in_in_out(
+		size_t buffer_size,
+		c_real_buffer_or_constant_in a,
+		c_real_buffer_or_constant_in b,
+		c_real_buffer_out c) {
 		if (a.is_constant()) {
 			real32 base = a.get_constant();
-			buffer_operator_in_out(s_op_pow_constant_base(base), buffer_size,
+			buffer_operator_in_out(
+				s_op_pow_constant_base(base),
+				buffer_size,
 				c_iterable_buffer_real_in(b),
 				c_iterable_buffer_real_out(c));
 		} else {
-			buffer_operator_in_in_out(s_op_pow(), buffer_size,
+			buffer_operator_in_in_out(
+				s_op_pow(),
+				buffer_size,
 				c_iterable_buffer_real_in(a),
 				c_iterable_buffer_real_in(b),
 				c_iterable_buffer_real_out(c));
@@ -101,11 +108,15 @@ struct s_buffer_operation_pow {
 	static void inout_in(size_t buffer_size, c_real_buffer_inout a, c_real_buffer_or_constant_in b) {
 		if (a->is_constant()) {
 			real32 base = *a->get_data<real32>();
-			buffer_operator_in_out(s_op_pow_constant_base(base), buffer_size,
+			buffer_operator_in_out(
+				s_op_pow_constant_base(base),
+				buffer_size,
 				c_iterable_buffer_real_in(b),
 				c_iterable_buffer_real_out(a));
 		} else {
-			buffer_operator_inout_in(s_op_pow(), buffer_size,
+			buffer_operator_inout_in(
+				s_op_pow(),
+				buffer_size,
 				c_iterable_buffer_real_inout(a),
 				c_iterable_buffer_real_in(b));
 		}
@@ -114,10 +125,14 @@ struct s_buffer_operation_pow {
 	static void in_inout(size_t buffer_size, c_real_buffer_or_constant_in a, c_real_buffer_inout b) {
 		if (a.is_constant()) {
 			real32 base = a.get_constant();
-			buffer_operator_inout(s_op_pow_constant_base(base), buffer_size,
+			buffer_operator_inout(
+				s_op_pow_constant_base(base),
+				buffer_size,
 				c_iterable_buffer_real_inout(b));
 		} else {
-			buffer_operator_inout_in(s_op_pow_reverse(), buffer_size,
+			buffer_operator_inout_in(
+				s_op_pow_reverse(),
+				buffer_size,
 				c_iterable_buffer_real_inout(b),
 				c_iterable_buffer_real_in(a));
 		}
@@ -126,176 +141,206 @@ struct s_buffer_operation_pow {
 
 namespace math_task_functions {
 
-	void abs_in_out(const s_task_function_context &context,
+	void abs_in_out(
+		const s_task_function_context &context,
 		c_real_const_buffer_or_constant a,
 		c_real_buffer *result) {
 		s_buffer_operation_abs::in_out(context.buffer_size, a, result);
 	}
 
-	void abs_inout(const s_task_function_context &context,
+	void abs_inout(
+		const s_task_function_context &context,
 		c_real_buffer *a_result) {
 		s_buffer_operation_abs::inout(context.buffer_size, a_result);
 	}
 
-	void floor_in_out(const s_task_function_context &context,
+	void floor_in_out(
+		const s_task_function_context &context,
 		c_real_const_buffer_or_constant a,
 		c_real_buffer *result) {
 		s_buffer_operation_floor::in_out(context.buffer_size, a, result);
 	}
 
-	void floor_inout(const s_task_function_context &context,
+	void floor_inout(
+		const s_task_function_context &context,
 		c_real_buffer *a_result) {
 		s_buffer_operation_floor::inout(context.buffer_size, a_result);
 	}
 
-	void ceil_in_out(const s_task_function_context &context,
+	void ceil_in_out(
+		const s_task_function_context &context,
 		c_real_const_buffer_or_constant a,
 		c_real_buffer *result) {
 		s_buffer_operation_ceil::in_out(context.buffer_size, a, result);
 	}
 
-	void ceil_inout(const s_task_function_context &context,
+	void ceil_inout(
+		const s_task_function_context &context,
 		c_real_buffer *a_result) {
 		s_buffer_operation_ceil::inout(context.buffer_size, a_result);
 	}
 
-	void round_in_out(const s_task_function_context &context,
+	void round_in_out(
+		const s_task_function_context &context,
 		c_real_const_buffer_or_constant a,
 		c_real_buffer *result) {
 		s_buffer_operation_round::in_out(context.buffer_size, a, result);
 	}
 
-	void round_inout(const s_task_function_context &context,
+	void round_inout(
+		const s_task_function_context &context,
 		c_real_buffer *a_result) {
 		s_buffer_operation_round::inout(context.buffer_size, a_result);
 	}
 
-	void min_in_in_out(const s_task_function_context &context,
+	void min_in_in_out(
+		const s_task_function_context &context,
 		c_real_const_buffer_or_constant a,
 		c_real_const_buffer_or_constant b,
 		c_real_buffer *result) {
 		s_buffer_operation_min::in_in_out(context.buffer_size, a, b, result);
 	}
 
-	void min_inout_in(const s_task_function_context &context,
+	void min_inout_in(
+		const s_task_function_context &context,
 		c_real_buffer *a_result,
 		c_real_const_buffer_or_constant b) {
 		s_buffer_operation_min::inout_in(context.buffer_size, a_result, b);
 	}
 
-	void min_in_inout(const s_task_function_context &context,
+	void min_in_inout(
+		const s_task_function_context &context,
 		c_real_const_buffer_or_constant a,
 		c_real_buffer *b_result) {
 		s_buffer_operation_min::in_inout(context.buffer_size, a, b_result);
 	}
 
-	void max_in_in_out(const s_task_function_context &context,
+	void max_in_in_out(
+		const s_task_function_context &context,
 		c_real_const_buffer_or_constant a,
 		c_real_const_buffer_or_constant b,
 		c_real_buffer *result) {
 		s_buffer_operation_max::in_in_out(context.buffer_size, a, b, result);
 	}
 
-	void max_inout_in(const s_task_function_context &context,
+	void max_inout_in(
+		const s_task_function_context &context,
 		c_real_buffer *a_result,
 		c_real_const_buffer_or_constant b) {
 		s_buffer_operation_max::inout_in(context.buffer_size, a_result, b);
 	}
 
-	void max_in_inout(const s_task_function_context &context,
+	void max_in_inout(
+		const s_task_function_context &context,
 		c_real_const_buffer_or_constant a,
 		c_real_buffer *b_result) {
 		s_buffer_operation_max::in_inout(context.buffer_size, a, b_result);
 	}
 
-	void exp_in_out(const s_task_function_context &context,
+	void exp_in_out(
+		const s_task_function_context &context,
 		c_real_const_buffer_or_constant a,
 		c_real_buffer *result) {
 		s_buffer_operation_exp::in_out(context.buffer_size, a, result);
 	}
 
-	void exp_inout(const s_task_function_context &context,
+	void exp_inout(
+		const s_task_function_context &context,
 		c_real_buffer *a_result) {
 		s_buffer_operation_exp::inout(context.buffer_size, a_result);
 	}
 
-	void log_in_out(const s_task_function_context &context,
+	void log_in_out(
+		const s_task_function_context &context,
 		c_real_const_buffer_or_constant a,
 		c_real_buffer *result) {
 		s_buffer_operation_log::in_out(context.buffer_size, a, result);
 	}
 
-	void log_inout(const s_task_function_context &context,
+	void log_inout(
+		const s_task_function_context &context,
 		c_real_buffer *a_result) {
 		s_buffer_operation_log::inout(context.buffer_size, a_result);
 	}
 
-	void sqrt_in_out(const s_task_function_context &context,
+	void sqrt_in_out(
+		const s_task_function_context &context,
 		c_real_const_buffer_or_constant a,
 		c_real_buffer *result) {
 		s_buffer_operation_sqrt::in_out(context.buffer_size, a, result);
 	}
 
-	void sqrt_inout(const s_task_function_context &context,
+	void sqrt_inout(
+		const s_task_function_context &context,
 		c_real_buffer *a_result) {
 		s_buffer_operation_sqrt::inout(context.buffer_size, a_result);
 	}
 
-	void pow_in_in_out(const s_task_function_context &context,
+	void pow_in_in_out(
+		const s_task_function_context &context,
 		c_real_const_buffer_or_constant a,
 		c_real_const_buffer_or_constant b,
 		c_real_buffer *result) {
 		s_buffer_operation_pow::in_in_out(context.buffer_size, a, b, result);
 	}
 
-	void pow_inout_in(const s_task_function_context &context,
+	void pow_inout_in(
+		const s_task_function_context &context,
 		c_real_buffer *a_result,
 		c_real_const_buffer_or_constant b) {
 		s_buffer_operation_pow::inout_in(context.buffer_size, a_result, b);
 	}
 
-	void pow_in_inout(const s_task_function_context &context,
+	void pow_in_inout(
+		const s_task_function_context &context,
 		c_real_const_buffer_or_constant a,
 		c_real_buffer *b_result) {
 		s_buffer_operation_pow::in_inout(context.buffer_size, a, b_result);
 	}
 
-	void sin_in_out(const s_task_function_context &context,
+	void sin_in_out(
+		const s_task_function_context &context,
 		c_real_const_buffer_or_constant a,
 		c_real_buffer *result) {
 		s_buffer_operation_sin::in_out(context.buffer_size, a, result);
 	}
 
-	void sin_inout(const s_task_function_context &context,
+	void sin_inout(
+		const s_task_function_context &context,
 		c_real_buffer *a_result) {
 		s_buffer_operation_sin::inout(context.buffer_size, a_result);
 	}
 
-	void cos_in_out(const s_task_function_context &context,
+	void cos_in_out(
+		const s_task_function_context &context,
 		c_real_const_buffer_or_constant a,
 		c_real_buffer *result) {
 		s_buffer_operation_cos::in_out(context.buffer_size, a, result);
 	}
 
-	void cos_inout(const s_task_function_context &context,
+	void cos_inout(
+		const s_task_function_context &context,
 		c_real_buffer *a_result) {
 		s_buffer_operation_cos::inout(context.buffer_size, a_result);
 	}
 
-	void sincos_in_out_out(const s_task_function_context &context,
+	void sincos_in_out_out(
+		const s_task_function_context &context,
 		c_real_const_buffer_or_constant a,
 		c_real_buffer *out_sin,
 		c_real_buffer *out_cos) {
 		s_buffer_operation_sincos::in_out_out(context.buffer_size, a, out_sin, out_cos);
 	}
 
-	void sincos_inout_out(const s_task_function_context &context,
+	void sincos_inout_out(
+		const s_task_function_context &context,
 		c_real_buffer *a_out_sin,
 		c_real_buffer *out_cos) {
 		s_buffer_operation_sincos::inout_out(context.buffer_size, a_out_sin, out_cos);
 	}
 
-	void sincos_out_inout(const s_task_function_context &context,
+	void sincos_out_inout(
+		const s_task_function_context &context,
 		c_real_buffer *out_sin,
 		c_real_buffer *a_out_cos) {
 		s_buffer_operation_sincos::out_inout(context.buffer_size, out_sin, a_out_cos);

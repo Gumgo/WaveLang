@@ -201,7 +201,9 @@ private:
 // that buffers are allocated as a multiple of buffer_size, even if the provided size is not.
 
 template<typename t_operation, typename t_iterable_buffer_a>
-void buffer_operator_out(const t_operation &op, size_t buffer_size,
+void buffer_operator_out(
+	const t_operation &op,
+	size_t buffer_size,
 	t_iterable_buffer_a iterable_buffer_a) {
 	static_assert(t_iterable_buffer_a::k_task_qualifier == k_task_qualifier_in, "Incorrect qualifier");
 
@@ -213,7 +215,9 @@ void buffer_operator_out(const t_operation &op, size_t buffer_size,
 }
 
 template<typename t_operation, typename t_iterable_buffer_a, typename t_iterable_buffer_b>
-void buffer_operator_in_out(const t_operation &op, size_t buffer_size,
+void buffer_operator_in_out(
+	const t_operation &op,
+	size_t buffer_size,
 	t_iterable_buffer_a iterable_buffer_a,
 	t_iterable_buffer_b iterable_buffer_b) {
 	static_assert(t_iterable_buffer_a::k_task_qualifier == k_task_qualifier_in, "Incorrect qualifier");
@@ -243,7 +247,9 @@ void buffer_operator_in_out(const t_operation &op, size_t buffer_size,
 }
 
 template<typename t_operation, typename t_iterable_buffer_a>
-void buffer_operator_inout(const t_operation &op, size_t buffer_size,
+void buffer_operator_inout(
+	const t_operation &op,
+	size_t buffer_size,
 	t_iterable_buffer_a iterable_buffer_a) {
 	static_assert(t_iterable_buffer_a::k_task_qualifier == k_task_qualifier_inout, "Incorrect qualifier");
 
@@ -269,7 +275,9 @@ void buffer_operator_inout(const t_operation &op, size_t buffer_size,
 }
 
 template<typename t_operation, typename t_iterable_buffer_a, typename t_iterable_buffer_b, typename t_iterable_buffer_c>
-void buffer_operator_in_in_out(const t_operation &op, size_t buffer_size,
+void buffer_operator_in_in_out(
+	const t_operation &op,
+	size_t buffer_size,
 	t_iterable_buffer_a iterable_buffer_a,
 	t_iterable_buffer_b iterable_buffer_b,
 	t_iterable_buffer_c iterable_buffer_c) {
@@ -322,7 +330,9 @@ void buffer_operator_in_in_out(const t_operation &op, size_t buffer_size,
 				iterator_mapping.get_iterator_c(iterator).should_set_buffer_constant());
 		} else {
 			c_buffer_iterator_3<t_iterator_a, t_iterator_b, t_iterator_c> iterator(
-				iterable_buffer_a.get_buffer(), iterable_buffer_b.get_buffer(), iterable_buffer_c.get_buffer(),
+				iterable_buffer_a.get_buffer(),
+				iterable_buffer_b.get_buffer(),
+				iterable_buffer_c.get_buffer(),
 				buffer_size);
 
 			for (; iterator.is_valid(); iterator.next()) {
@@ -338,7 +348,9 @@ void buffer_operator_in_in_out(const t_operation &op, size_t buffer_size,
 }
 
 template<typename t_operation, typename t_iterable_buffer_a, typename t_iterable_buffer_b>
-void buffer_operator_inout_in(const t_operation &op, size_t buffer_size,
+void buffer_operator_inout_in(
+	const t_operation &op,
+	size_t buffer_size,
 	t_iterable_buffer_a iterable_buffer_a,
 	t_iterable_buffer_b iterable_buffer_b) {
 	static_assert(t_iterable_buffer_a::k_task_qualifier == k_task_qualifier_inout, "Incorrect qualifier");
@@ -398,7 +410,9 @@ void buffer_operator_inout_in(const t_operation &op, size_t buffer_size,
 }
 
 template<typename t_operation, typename t_iterable_buffer_a, typename t_iterable_buffer_b>
-void buffer_operator_in_inout(const t_operation &op, size_t buffer_size,
+void buffer_operator_in_inout(
+	const t_operation &op,
+	size_t buffer_size,
 	t_iterable_buffer_a iterable_buffer_a,
 	t_iterable_buffer_b iterable_buffer_b) {
 	static_assert(t_iterable_buffer_a::k_task_qualifier == k_task_qualifier_in, "Incorrect qualifier");
@@ -462,7 +476,9 @@ void buffer_operator_in_inout(const t_operation &op, size_t buffer_size,
 }
 
 template<typename t_operation, typename t_iterable_buffer_a, typename t_iterable_buffer_b, typename t_iterable_buffer_c>
-void buffer_operator_in_out_out(const t_operation &op, size_t buffer_size,
+void buffer_operator_in_out_out(
+	const t_operation &op,
+	size_t buffer_size,
 	t_iterable_buffer_a iterable_buffer_a,
 	t_iterable_buffer_b iterable_buffer_b,
 	t_iterable_buffer_c iterable_buffer_c) {
@@ -486,7 +502,9 @@ void buffer_operator_in_out_out(const t_operation &op, size_t buffer_size,
 		iterable_buffer_c.set_constant(value_c);
 	} else {
 		c_buffer_iterator_3<t_iterator_a, t_iterator_b, t_iterator_c> iterator(
-			iterable_buffer_a.get_buffer(), iterable_buffer_b.get_buffer(), iterable_buffer_c.get_buffer(),
+			iterable_buffer_a.get_buffer(),
+			iterable_buffer_b.get_buffer(),
+			iterable_buffer_c.get_buffer(),
 			buffer_size);
 
 		for (; iterator.is_valid(); iterator.next()) {
@@ -504,7 +522,9 @@ void buffer_operator_in_out_out(const t_operation &op, size_t buffer_size,
 }
 
 template<typename t_operation, typename t_iterable_buffer_a, typename t_iterable_buffer_b>
-void buffer_operator_inout_out(const t_operation &op, size_t buffer_size,
+void buffer_operator_inout_out(
+	const t_operation &op,
+	size_t buffer_size,
 	t_iterable_buffer_a iterable_buffer_a,
 	t_iterable_buffer_b iterable_buffer_b) {
 	static_assert(t_iterable_buffer_a::k_task_qualifier == k_task_qualifier_inout, "Incorrect qualifier");
@@ -541,7 +561,9 @@ void buffer_operator_inout_out(const t_operation &op, size_t buffer_size,
 }
 
 template<typename t_operation, typename t_iterable_buffer_a, typename t_iterable_buffer_b>
-void buffer_operator_out_inout(const t_operation &op, size_t buffer_size,
+void buffer_operator_out_inout(
+	const t_operation &op,
+	size_t buffer_size,
 	t_iterable_buffer_a iterable_buffer_a,
 	t_iterable_buffer_b iterable_buffer_b) {
 	static_assert(t_iterable_buffer_a::k_task_qualifier == k_task_qualifier_out, "Incorrect qualifier");
@@ -579,7 +601,9 @@ void buffer_operator_out_inout(const t_operation &op, size_t buffer_size,
 
 template<typename t_operation, typename t_iterable_buffer_a, typename t_iterable_buffer_b,
 	typename t_iterable_buffer_c, typename t_iterable_buffer_d>
-void buffer_operator_in_in_in_out(const t_operation &op, size_t buffer_size,
+void buffer_operator_in_in_in_out(
+	const t_operation &op,
+	size_t buffer_size,
 	t_iterable_buffer_a iterable_buffer_a,
 	t_iterable_buffer_b iterable_buffer_b,
 	t_iterable_buffer_c iterable_buffer_c,
@@ -640,7 +664,9 @@ void buffer_operator_in_in_in_out(const t_operation &op, size_t buffer_size,
 					iterator_mapping.get_iterator_d(iterator).should_set_buffer_constant());
 			} else {
 				c_buffer_iterator_3<t_iterator_b, t_iterator_c, t_iterator_d> iterator(
-					iterable_buffer_b.get_buffer(), iterable_buffer_c.get_buffer(), iterable_buffer_d.get_buffer(),
+					iterable_buffer_b.get_buffer(),
+					iterable_buffer_c.get_buffer(),
+					iterable_buffer_d.get_buffer(),
 					buffer_size);
 				s_buffer_iterator_3_mapping_bcd iterator_mapping;
 
@@ -675,7 +701,9 @@ void buffer_operator_in_in_in_out(const t_operation &op, size_t buffer_size,
 					iterator_mapping.get_iterator_d(iterator).should_set_buffer_constant());
 			} else {
 				c_buffer_iterator_3<t_iterator_a, t_iterator_c, t_iterator_d> iterator(
-					iterable_buffer_a.get_buffer(), iterable_buffer_c.get_buffer(), iterable_buffer_d.get_buffer(),
+					iterable_buffer_a.get_buffer(),
+					iterable_buffer_c.get_buffer(),
+					iterable_buffer_d.get_buffer(),
 					buffer_size);
 				s_buffer_iterator_3_mapping_acd iterator_mapping;
 
@@ -693,7 +721,9 @@ void buffer_operator_in_in_in_out(const t_operation &op, size_t buffer_size,
 		} else {
 			if (iterable_buffer_c.is_constant()) {
 				c_buffer_iterator_3<t_iterator_a, t_iterator_b, t_iterator_d> iterator(
-					iterable_buffer_a.get_buffer(), iterable_buffer_b.get_buffer(), iterable_buffer_d.get_buffer(),
+					iterable_buffer_a.get_buffer(),
+					iterable_buffer_b.get_buffer(),
+					iterable_buffer_d.get_buffer(),
 					buffer_size);
 				s_buffer_iterator_3_mapping_abd iterator_mapping;
 
@@ -730,7 +760,9 @@ void buffer_operator_in_in_in_out(const t_operation &op, size_t buffer_size,
 }
 
 template<typename t_operation, typename t_iterable_buffer_a, typename t_iterable_buffer_b, typename t_iterable_buffer_c>
-void buffer_operator_inout_in_in(const t_operation &op, size_t buffer_size,
+void buffer_operator_inout_in_in(
+	const t_operation &op,
+	size_t buffer_size,
 	t_iterable_buffer_a iterable_buffer_a,
 	t_iterable_buffer_b iterable_buffer_b,
 	t_iterable_buffer_c iterable_buffer_c) {
@@ -787,7 +819,9 @@ void buffer_operator_inout_in_in(const t_operation &op, size_t buffer_size,
 					iterator_mapping.get_iterator_a(iterator).should_set_buffer_constant());
 			} else {
 				c_buffer_iterator_3<t_iterator_a, t_iterator_b, t_iterator_c> iterator(
-					iterable_buffer_a.get_buffer(), iterable_buffer_b.get_buffer(), iterable_buffer_c.get_buffer(),
+					iterable_buffer_a.get_buffer(),
+					iterable_buffer_b.get_buffer(),
+					iterable_buffer_c.get_buffer(),
 					buffer_size);
 				s_buffer_iterator_3_mapping_abc iterator_mapping;
 
@@ -854,7 +888,9 @@ void buffer_operator_inout_in_in(const t_operation &op, size_t buffer_size,
 					iterator_mapping.get_iterator_a(iterator).should_set_buffer_constant());
 			} else {
 				c_buffer_iterator_3<t_iterator_a, t_iterator_b, t_iterator_c> iterator(
-					iterable_buffer_a.get_buffer(), iterable_buffer_b.get_buffer(), iterable_buffer_c.get_buffer(),
+					iterable_buffer_a.get_buffer(),
+					iterable_buffer_b.get_buffer(),
+					iterable_buffer_c.get_buffer(),
 					buffer_size);
 
 				for (; iterator.is_valid(); iterator.next()) {
@@ -872,7 +908,9 @@ void buffer_operator_inout_in_in(const t_operation &op, size_t buffer_size,
 }
 
 template<typename t_operation, typename t_iterable_buffer_a, typename t_iterable_buffer_b, typename t_iterable_buffer_c>
-void buffer_operator_in_inout_in(const t_operation &op, size_t buffer_size,
+void buffer_operator_in_inout_in(
+	const t_operation &op,
+	size_t buffer_size,
 	t_iterable_buffer_a iterable_buffer_a,
 	t_iterable_buffer_b iterable_buffer_b,
 	t_iterable_buffer_c iterable_buffer_c) {
@@ -962,7 +1000,9 @@ void buffer_operator_in_inout_in(const t_operation &op, size_t buffer_size,
 					iterator_mapping.get_iterator_b(iterator).should_set_buffer_constant());
 			} else {
 				c_buffer_iterator_3<t_iterator_a, t_iterator_b, t_iterator_c> iterator(
-					iterable_buffer_a.get_buffer(), iterable_buffer_b.get_buffer(), iterable_buffer_c.get_buffer(),
+					iterable_buffer_a.get_buffer(),
+					iterable_buffer_b.get_buffer(),
+					iterable_buffer_c.get_buffer(),
 					buffer_size);
 				s_buffer_iterator_3_mapping_abc iterator_mapping;
 
@@ -995,7 +1035,9 @@ void buffer_operator_in_inout_in(const t_operation &op, size_t buffer_size,
 					iterator_mapping.get_iterator_b(iterator).should_set_buffer_constant());
 			} else {
 				c_buffer_iterator_3<t_iterator_a, t_iterator_b, t_iterator_c> iterator(
-					iterable_buffer_a.get_buffer(), iterable_buffer_b.get_buffer(), iterable_buffer_c.get_buffer(),
+					iterable_buffer_a.get_buffer(),
+					iterable_buffer_b.get_buffer(),
+					iterable_buffer_c.get_buffer(),
 					buffer_size);
 
 				for (; iterator.is_valid(); iterator.next()) {
@@ -1013,7 +1055,9 @@ void buffer_operator_in_inout_in(const t_operation &op, size_t buffer_size,
 }
 
 template<typename t_operation, typename t_iterable_buffer_a, typename t_iterable_buffer_b, typename t_iterable_buffer_c>
-void buffer_operator_in_in_inout(const t_operation &op, size_t buffer_size,
+void buffer_operator_in_in_inout(
+	const t_operation &op,
+	size_t buffer_size,
 	t_iterable_buffer_a iterable_buffer_a,
 	t_iterable_buffer_b iterable_buffer_b,
 	t_iterable_buffer_c iterable_buffer_c) {
@@ -1120,7 +1164,9 @@ void buffer_operator_in_in_inout(const t_operation &op, size_t buffer_size,
 		} else {
 			if (iterable_buffer_c.is_constant()) {
 				c_buffer_iterator_3<t_iterator_a, t_iterator_b, t_iterator_c> iterator(
-					iterable_buffer_a.get_buffer(), iterable_buffer_b.get_buffer(), iterable_buffer_c.get_buffer(),
+					iterable_buffer_a.get_buffer(),
+					iterable_buffer_b.get_buffer(),
+					iterable_buffer_c.get_buffer(),
 					buffer_size);
 				s_buffer_iterator_3_mapping_abc iterator_mapping;
 
@@ -1136,7 +1182,9 @@ void buffer_operator_in_in_inout(const t_operation &op, size_t buffer_size,
 					iterator_mapping.get_iterator_c(iterator).should_set_buffer_constant());
 			} else {
 				c_buffer_iterator_3<t_iterator_a, t_iterator_b, t_iterator_c> iterator(
-					iterable_buffer_a.get_buffer(), iterable_buffer_b.get_buffer(), iterable_buffer_c.get_buffer(),
+					iterable_buffer_a.get_buffer(),
+					iterable_buffer_b.get_buffer(),
+					iterable_buffer_c.get_buffer(),
 					buffer_size);
 
 				for (; iterator.is_valid(); iterator.next()) {
@@ -1156,57 +1204,76 @@ void buffer_operator_in_in_inout(const t_operation &op, size_t buffer_size,
 template<typename t_operation>
 struct s_buffer_operation_real_real {
 	static void in_out(size_t buffer_size, c_real_buffer_or_constant_in a, c_real_buffer_out b) {
-		buffer_operator_in_out(t_operation(), buffer_size,
+		buffer_operator_in_out(
+			t_operation(),
+			buffer_size,
 			c_iterable_buffer_real_in(a),
 			c_iterable_buffer_real_out(b));
 	}
 
 	static void inout(size_t buffer_size, c_real_buffer_inout a) {
-		buffer_operator_inout(t_operation(), buffer_size,
-			c_iterable_buffer_real_inout(a));
+		buffer_operator_inout(t_operation(), buffer_size, c_iterable_buffer_real_inout(a));
 	}
 };
 
 template<typename t_operation>
 struct s_buffer_operation_real_real_real {
-	static void in_in_out(size_t buffer_size,
-		c_real_buffer_or_constant_in a, c_real_buffer_or_constant_in b, c_real_buffer_out c) {
-		buffer_operator_in_in_out(t_operation(), buffer_size,
+	static void in_in_out(
+		size_t buffer_size,
+		c_real_buffer_or_constant_in a,
+		c_real_buffer_or_constant_in b,
+		c_real_buffer_out c) {
+		buffer_operator_in_in_out(
+			t_operation(),
+			buffer_size,
 			c_iterable_buffer_real_in(a),
 			c_iterable_buffer_real_in(b),
 			c_iterable_buffer_real_out(c));
 	}
 
 	static void inout_in(size_t buffer_size, c_real_buffer_inout a, c_real_buffer_or_constant_in b) {
-		buffer_operator_inout_in(t_operation(), buffer_size,
+		buffer_operator_inout_in(
+			t_operation(),
+			buffer_size,
 			c_iterable_buffer_real_inout(a),
 			c_iterable_buffer_real_in(b));
 	}
 
 	static void in_inout(size_t buffer_size, c_real_buffer_or_constant_in a, c_real_buffer_inout b) {
-		buffer_operator_in_inout(t_operation(), buffer_size,
+		buffer_operator_in_inout(
+			t_operation(),
+			buffer_size,
 			c_iterable_buffer_real_in(a),
 			c_iterable_buffer_real_inout(b));
 	}
 
 	// Two-output functions are rare but they do exist (e.g. sincos)
 
-	static void in_out_out(size_t buffer_size,
-		c_real_buffer_or_constant_in a, c_real_buffer_out b, c_real_buffer_out c) {
-		buffer_operator_in_out_out(t_operation(), buffer_size,
+	static void in_out_out(
+		size_t buffer_size,
+		c_real_buffer_or_constant_in a,
+		c_real_buffer_out b,
+		c_real_buffer_out c) {
+		buffer_operator_in_out_out(
+			t_operation(),
+			buffer_size,
 			c_iterable_buffer_real_in(a),
 			c_iterable_buffer_real_out(b),
 			c_iterable_buffer_real_out(c));
 	}
 
 	static void inout_out(size_t buffer_size, c_real_buffer_inout a, c_real_buffer_out b) {
-		buffer_operator_inout_out(t_operation(), buffer_size,
+		buffer_operator_inout_out(
+			t_operation(),
+			buffer_size,
 			c_iterable_buffer_real_inout(a),
 			c_iterable_buffer_real_out(b));
 	}
 
 	static void out_inout(size_t buffer_size, c_real_buffer_out a, c_real_buffer_inout b) {
-		buffer_operator_out_inout(t_operation(), buffer_size,
+		buffer_operator_out_inout(
+			t_operation(),
+			buffer_size,
 			c_iterable_buffer_real_out(a),
 			c_iterable_buffer_real_inout(b));
 	}
@@ -1214,9 +1281,14 @@ struct s_buffer_operation_real_real_real {
 
 template<typename t_operation>
 struct s_buffer_operation_real_real_bool {
-	static void in_in_out(size_t buffer_size,
-		c_real_buffer_or_constant_in a, c_real_buffer_or_constant_in b, c_bool_buffer_out c) {
-		buffer_operator_in_in_out(t_operation(), buffer_size,
+	static void in_in_out(
+		size_t buffer_size,
+		c_real_buffer_or_constant_in a,
+		c_real_buffer_or_constant_in b,
+		c_bool_buffer_out c) {
+		buffer_operator_in_in_out(
+			t_operation(),
+			buffer_size,
 			c_iterable_buffer_real_in(a),
 			c_iterable_buffer_real_in(b),
 			c_iterable_buffer_bool_4_out(c));
@@ -1226,35 +1298,47 @@ struct s_buffer_operation_real_real_bool {
 template<typename t_operation>
 struct s_buffer_operation_bool_bool {
 	static void in_out(size_t buffer_size, c_bool_buffer_or_constant_in a, c_bool_buffer_out b) {
-		buffer_operator_in_out(t_operation(), buffer_size,
+		buffer_operator_in_out(
+			t_operation(),
+			buffer_size,
 			c_iterable_buffer_bool_128_in(a),
 			c_iterable_buffer_bool_128_out(b));
 	}
 
 	static void inout(size_t buffer_size, c_bool_buffer_inout a) {
-		buffer_operator_inout(t_operation(), buffer_size,
+		buffer_operator_inout(
+			t_operation(),
+			buffer_size,
 			c_iterable_buffer_bool_128_inout(a));
 	}
 };
 
 template<typename t_operation>
 struct s_buffer_operation_bool_bool_bool {
-	static void in_in_out(size_t buffer_size,
-		c_bool_buffer_or_constant_in a, c_bool_buffer_or_constant_in b, c_bool_buffer_out c) {
-		buffer_operator_in_in_out(t_operation(), buffer_size,
+	static void in_in_out(
+		size_t buffer_size,
+		c_bool_buffer_or_constant_in a,
+		c_bool_buffer_or_constant_in b,
+		c_bool_buffer_out c) {
+		buffer_operator_in_in_out(t_operation(),
+			buffer_size,
 			c_iterable_buffer_bool_128_in(a),
 			c_iterable_buffer_bool_128_in(b),
 			c_iterable_buffer_bool_128_out(c));
 	}
 
 	static void inout_in(size_t buffer_size, c_bool_buffer_inout a, c_bool_buffer_or_constant_in b) {
-		buffer_operator_inout_in(t_operation(), buffer_size,
+		buffer_operator_inout_in(
+			t_operation(),
+			buffer_size,
 			c_iterable_buffer_bool_128_inout(a),
 			c_iterable_buffer_bool_128_in(b));
 	}
 
 	static void in_inout(size_t buffer_size, c_bool_buffer_or_constant_in a, c_bool_buffer_inout b) {
-		buffer_operator_in_inout(t_operation(), buffer_size,
+		buffer_operator_in_inout(
+			t_operation(),
+			buffer_size,
 			c_iterable_buffer_bool_128_in(a),
 			c_iterable_buffer_bool_128_inout(b));
 	}

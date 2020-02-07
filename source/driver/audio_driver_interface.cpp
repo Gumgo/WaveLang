@@ -18,8 +18,11 @@ static PaSampleFormat get_pa_sample_format(e_sample_format sample_format) {
 	}
 }
 
-static void setup_stream_parameters(const s_audio_driver_settings &settings, uint32 device_count,
-	PaStreamParameters &out_input_params, PaStreamParameters &out_output_params) {
+static void setup_stream_parameters(
+	const s_audio_driver_settings &settings,
+	uint32 device_count,
+	PaStreamParameters &out_input_params,
+	PaStreamParameters &out_output_params) {
 	wl_assert(VALID_INDEX(settings.device_index, device_count));
 	wl_assert(settings.frames_per_buffer > 0);
 
@@ -227,8 +230,12 @@ void c_audio_driver_interface::get_stream_clock(f_audio_driver_stream_clock &out
 }
 
 int c_audio_driver_interface::stream_callback_internal(
-	const void *input, void *output, unsigned long frame_count,
-	const PaStreamCallbackTimeInfo *time_info, PaStreamCallbackFlags status_flags, void *user_data) {
+	const void *input,
+	void *output,
+	unsigned long frame_count,
+	const PaStreamCallbackTimeInfo *time_info,
+	PaStreamCallbackFlags status_flags,
+	void *user_data) {
 	c_audio_driver_interface *this_ptr = static_cast<c_audio_driver_interface *>(user_data);
 
 	wl_assert(frame_count == this_ptr->m_settings.frames_per_buffer);

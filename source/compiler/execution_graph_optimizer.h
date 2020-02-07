@@ -30,7 +30,9 @@ public:
 	};
 
 	c_execution_graph_constant_evaluator();
-	void initialize(const c_execution_graph *execution_graph, const s_instrument_globals *instrument_globals,
+	void initialize(
+		const c_execution_graph *execution_graph,
+		const s_instrument_globals *instrument_globals,
 		std::vector<s_compiler_result> *errors);
 
 	// Each time a constant is evaluated, the evaluation progress is retained. This way, we can avoid re-evaluating the
@@ -43,10 +45,12 @@ public:
 
 private:
 	void try_evaluate_node(c_node_reference node_reference);
-	bool build_module_call_arguments(const s_native_module &native_module,
+	bool build_module_call_arguments(
+		const s_native_module &native_module,
 		c_node_reference native_module_node_reference,
 		std::vector<s_native_module_compile_time_argument> &out_arg_list);
-	void store_native_module_call_results(const s_native_module &native_module,
+	void store_native_module_call_results(
+		const s_native_module &native_module,
 		c_node_reference native_module_node_reference,
 		const std::vector<s_native_module_compile_time_argument> &arg_list);
 
@@ -96,8 +100,10 @@ private:
 
 class c_execution_graph_optimizer {
 public:
-	static s_compiler_result optimize_graph(c_execution_graph *execution_graph,
-		const s_instrument_globals *instrument_globals, std::vector<s_compiler_result> &out_errors);
+	static s_compiler_result optimize_graph(
+		c_execution_graph *execution_graph,
+		const s_instrument_globals *instrument_globals,
+		std::vector<s_compiler_result> &out_errors);
 };
 
 #endif // WAVELANG_COMPILER_EXECUTION_GRAPH_OPTIMIZER_H__

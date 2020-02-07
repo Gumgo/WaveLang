@@ -19,8 +19,11 @@ struct s_buffer_operation_controller_get_note_velocity {
 struct s_buffer_operation_controller_get_note_press_duration {
 	static size_t query_memory();
 	static void voice_initialize(s_buffer_operation_controller_get_note_press_duration *context);
-	static void out(s_buffer_operation_controller_get_note_press_duration *context,
-		size_t buffer_size, uint32 sample_rate, c_real_buffer_out out);
+	static void out(
+		s_buffer_operation_controller_get_note_press_duration *context,
+		size_t buffer_size,
+		uint32 sample_rate,
+		c_real_buffer_out out);
 
 	int64 current_sample;
 };
@@ -28,8 +31,12 @@ struct s_buffer_operation_controller_get_note_press_duration {
 struct s_buffer_operation_controller_get_note_release_duration {
 	static size_t query_memory();
 	static void voice_initialize(s_buffer_operation_controller_get_note_release_duration *context);
-	static void out(s_buffer_operation_controller_get_note_release_duration *context,
-		size_t buffer_size, uint32 sample_rate, int32 note_release_sample, c_real_buffer_out out);
+	static void out(
+		s_buffer_operation_controller_get_note_release_duration *context,
+		size_t buffer_size,
+		uint32 sample_rate,
+		int32 note_release_sample,
+		c_real_buffer_out out);
 
 	bool released;
 	int64 current_sample;
@@ -55,7 +62,9 @@ void s_buffer_operation_controller_get_note_press_duration::voice_initialize(
 }
 
 void s_buffer_operation_controller_get_note_press_duration::out(
-	s_buffer_operation_controller_get_note_press_duration *context, size_t buffer_size, uint32 sample_rate,
+	s_buffer_operation_controller_get_note_press_duration *context,
+	size_t buffer_size,
+	uint32 sample_rate,
 	c_real_buffer_out out) {
 	real32 *out_ptr = out->get_data<real32>();
 
@@ -81,8 +90,11 @@ void s_buffer_operation_controller_get_note_release_duration::voice_initialize(
 }
 
 void s_buffer_operation_controller_get_note_release_duration::out(
-	s_buffer_operation_controller_get_note_release_duration *context, size_t buffer_size, uint32 sample_rate,
-	int32 note_release_sample, c_real_buffer_out out) {
+	s_buffer_operation_controller_get_note_release_duration *context,
+	size_t buffer_size,
+	uint32 sample_rate,
+	int32 note_release_sample,
+	c_real_buffer_out out) {
 	real32 *out_ptr = out->get_data<real32>();
 
 	if (!context->released && note_release_sample < 0) {
@@ -111,13 +123,15 @@ void s_buffer_operation_controller_get_note_release_duration::out(
 
 namespace controller_task_functions {
 
-	void get_note_id_out(const s_task_function_context &context,
+	void get_note_id_out(
+		const s_task_function_context &context,
 		c_real_buffer *result) {
 		s_buffer_operation_controller_get_note_id::out(
 			context.voice_interface->get_note_id(), result);
 	}
 
-	void get_note_velocity_out(const s_task_function_context &context,
+	void get_note_velocity_out(
+		const s_task_function_context &context,
 		c_real_buffer *result) {
 		s_buffer_operation_controller_get_note_velocity::out(
 			context.voice_interface->get_note_velocity(), result);
@@ -132,7 +146,8 @@ namespace controller_task_functions {
 			static_cast<s_buffer_operation_controller_get_note_press_duration *>(context.task_memory));
 	}
 
-	void get_note_press_duration_out(const s_task_function_context &context,
+	void get_note_press_duration_out(
+		const s_task_function_context &context,
 		c_real_buffer *result) {
 		s_buffer_operation_controller_get_note_press_duration::out(
 			static_cast<s_buffer_operation_controller_get_note_press_duration *>(context.task_memory),
@@ -150,7 +165,8 @@ namespace controller_task_functions {
 			static_cast<s_buffer_operation_controller_get_note_release_duration *>(context.task_memory));
 	}
 
-	void get_note_release_duration_out(const s_task_function_context &context,
+	void get_note_release_duration_out(
+		const s_task_function_context &context,
 		c_real_buffer *result) {
 		s_buffer_operation_controller_get_note_release_duration::out(
 			static_cast<s_buffer_operation_controller_get_note_release_duration *>(context.task_memory),
@@ -160,7 +176,8 @@ namespace controller_task_functions {
 			result);
 	}
 
-	void get_parameter_value_initializer(const s_task_function_context &context,
+	void get_parameter_value_initializer(
+		const s_task_function_context &context,
 		real32 parameter_id) {
 		// Perform error check only once
 		if (parameter_id < 0.0f || parameter_id != std::floor(parameter_id)) {
@@ -168,7 +185,8 @@ namespace controller_task_functions {
 		}
 	}
 
-	void get_parameter_value_out(const s_task_function_context &context,
+	void get_parameter_value_out(
+		const s_task_function_context &context,
 		real32 parameter_id,
 		c_real_buffer *result) {
 		if (parameter_id < 0.0f || parameter_id != std::floor(parameter_id)) {

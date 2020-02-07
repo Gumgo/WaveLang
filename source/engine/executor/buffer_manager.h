@@ -43,24 +43,29 @@ private:
 		bool swapped_into_voice_accumulation_buffer;
 	};
 
-	uint32 get_buffer_pool(c_task_data_type buffer_type,
+	uint32 get_buffer_pool(
+		c_task_data_type buffer_type,
 		const std::vector<c_task_graph::s_buffer_usage_info> &buffer_pools) const;
-	uint32 get_or_add_buffer_pool(c_task_data_type buffer_type,
+	uint32 get_or_add_buffer_pool(
+		c_task_data_type buffer_type,
 		std::vector<c_task_graph::s_buffer_usage_info> &buffer_pools) const;
 
 	// Produces a buffer usage info list which accounts for the concurrency requirements from several lists
 	std::vector<c_task_graph::s_buffer_usage_info> combine_buffer_usage_info(
 		c_wrapped_array_const<const std::vector<c_task_graph::s_buffer_usage_info> *> buffer_usage_info_array) const;
 
-	void initialize_buffer_allocator(size_t max_buffer_size,
+	void initialize_buffer_allocator(
+		size_t max_buffer_size,
 		const std::vector<c_task_graph::s_buffer_usage_info> &buffer_usage_info);
 	void initialize_buffer_contexts(
 		const std::vector<c_task_graph::s_buffer_usage_info> &buffer_usage_info);
 
 	void shift_voice_output_buffers(uint32 voice_sample_offset);
 	void swap_and_deduplicate_output_buffers(
-		c_task_graph_data_array outputs, const std::vector<uint32> &buffer_pool_indices,
-		std::vector<uint32> &destination, uint32 voice_sample_offset);
+		c_task_graph_data_array outputs,
+		const std::vector<uint32> &buffer_pool_indices,
+		std::vector<uint32> &destination,
+		uint32 voice_sample_offset);
 	void swap_output_buffers_with_voice_accumulation_buffers(uint32 voice_sample_offset);
 	void add_output_buffers_to_voice_accumulation_buffers(uint32 voice_sample_offset);
 	void mix_to_channel_buffers(std::vector<uint32> &source_buffers);

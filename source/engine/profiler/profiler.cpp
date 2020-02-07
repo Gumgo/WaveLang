@@ -229,7 +229,10 @@ void c_profiler::end_execution(int64 min_total_time_threshold_ns) {
 	}
 }
 
-void c_profiler::begin_task(e_instrument_stage instrument_stage, uint32 worker_thread, uint32 task_index,
+void c_profiler::begin_task(
+	e_instrument_stage instrument_stage,
+	uint32 worker_thread,
+	uint32 task_index,
 	uint32 task_function_index) {
 	s_thread_context &thread_context = m_thread_contexts.get_array()[worker_thread];
 	s_task &task = m_tasks[instrument_stage].get_array()[task_index];

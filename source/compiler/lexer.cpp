@@ -125,7 +125,9 @@ void c_lexer::shutdown_lexer() {
 	g_lexer_initialized = false;
 }
 
-s_compiler_result c_lexer::process(const s_compiler_context &context, s_lexer_output &output,
+s_compiler_result c_lexer::process(
+	const s_compiler_context &context,
+	s_lexer_output &output,
 	std::vector<s_compiler_result> &out_errors) {
 	wl_assert(g_lexer_initialized);
 	s_compiler_result result;
@@ -137,8 +139,8 @@ s_compiler_result c_lexer::process(const s_compiler_context &context, s_lexer_ou
 	for (size_t source_file_index = 0; source_file_index < context.source_files.size(); source_file_index++) {
 		const s_compiler_source_file &source_file = context.source_files[source_file_index];
 		output.source_file_output.push_back(s_lexer_source_file_output());
-		failed |= !process_source_file(source_file, cast_integer_verify<int32>(source_file_index),
-			output.source_file_output.back(), out_errors);
+		failed |= !process_source_file(
+			source_file, cast_integer_verify<int32>(source_file_index), output.source_file_output.back(), out_errors);
 	}
 
 	if (failed) {

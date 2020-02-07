@@ -76,8 +76,8 @@ void c_instrument_globals_parser::register_preprocessor_commands(
 	c_preprocessor::register_preprocessor_command("max_voices", globals_context, preprocessor_command_max_voices);
 	c_preprocessor::register_preprocessor_command("sample_rate", globals_context, preprocessor_command_sample_rate);
 	c_preprocessor::register_preprocessor_command("chunk_size", globals_context, preprocessor_command_chunk_size);
-	c_preprocessor::register_preprocessor_command("activate_fx_immediately", globals_context,
-		preprocessor_command_activate_fx_immediately);
+	c_preprocessor::register_preprocessor_command(
+		"activate_fx_immediately", globals_context, preprocessor_command_activate_fx_immediately);
 }
 
 static bool get_unsigned_integer(const s_token &token, uint32 &out_value) {

@@ -27,13 +27,17 @@ static bool is_task_data_array_element_constant(const s_task_graph_data &data, s
 static uint32 get_task_data_array_element_buffer_const(const s_task_graph_data &data, size_t index);
 
 // Fills out the input types for the given native module call node
-static void get_native_module_call_input_types(const c_execution_graph &execution_graph,
-	c_node_reference node_reference, s_task_function_mapping_native_module_input_type_array &out_input_types);
+static void get_native_module_call_input_types(
+	const c_execution_graph &execution_graph,
+	c_node_reference node_reference,
+	s_task_function_mapping_native_module_input_type_array &out_input_types);
 
 // Returns true if the given input is used as more than once. This indicates that the input cannot be used as an inout
 // because overwriting the buffer would invalidate its second usage as an input.
-static bool does_native_module_call_input_branch(const c_execution_graph &execution_graph,
-	c_node_reference node_reference, size_t in_arg_index);
+static bool does_native_module_call_input_branch(
+	const c_execution_graph &execution_graph,
+	c_node_reference node_reference,
+	size_t in_arg_index);
 
 static bool do_native_module_inputs_match(
 	size_t argument_count,
@@ -45,8 +49,11 @@ static const s_task_function_mapping *get_task_mapping_for_native_module_and_inp
 	const s_task_function_mapping_native_module_input_type_array &native_module_inputs);
 
 template<typename t_build_array_settings>
-typename t_build_array_settings::t_array build_array(const c_execution_graph &execution_graph,
-	t_build_array_settings &settings, c_node_reference node_reference, bool &out_is_constant);
+typename t_build_array_settings::t_array build_array(
+	const c_execution_graph &execution_graph,
+	t_build_array_settings &settings,
+	c_node_reference node_reference,
+	bool &out_is_constant);
 
 #if IS_TRUE(OUTPUT_TASK_GRAPH_BUILD_RESULT)
 bool output_task_graph_build_result(const c_task_graph &task_graph, const char *filename);
@@ -517,8 +524,10 @@ static uint32 get_task_data_array_element_buffer_const(const s_task_graph_data &
 	return result;
 }
 
-static void get_native_module_call_input_types(const c_execution_graph &execution_graph,
-	c_node_reference node_reference, s_task_function_mapping_native_module_input_type_array &out_input_types) {
+static void get_native_module_call_input_types(
+	const c_execution_graph &execution_graph,
+	c_node_reference node_reference,
+	s_task_function_mapping_native_module_input_type_array &out_input_types) {
 	wl_assert(execution_graph.get_node_type(node_reference) == k_execution_graph_node_type_native_module_call);
 
 	const s_native_module &native_module = c_native_module_registry::get_native_module(
@@ -559,8 +568,10 @@ static void get_native_module_call_input_types(const c_execution_graph &executio
 	}
 }
 
-static bool does_native_module_call_input_branch(const c_execution_graph &execution_graph,
-	c_node_reference node_reference, size_t in_arg_index) {
+static bool does_native_module_call_input_branch(
+	const c_execution_graph &execution_graph,
+	c_node_reference node_reference,
+	size_t in_arg_index) {
 	wl_assert(execution_graph.get_node_type(node_reference) == k_execution_graph_node_type_native_module_call);
 
 	c_node_reference input_node_reference =
@@ -726,7 +737,9 @@ void c_task_graph::resolve_strings() {
 	}
 }
 
-bool c_task_graph::add_task_for_node(const c_execution_graph &execution_graph, c_node_reference node_reference,
+bool c_task_graph::add_task_for_node(
+	const c_execution_graph &execution_graph,
+	c_node_reference node_reference,
 	std::map<c_node_reference, uint32> &nodes_to_tasks) {
 	wl_assert(execution_graph.get_node_type(node_reference) == k_execution_graph_node_type_native_module_call);
 
@@ -753,8 +766,11 @@ bool c_task_graph::add_task_for_node(const c_execution_graph &execution_graph, c
 	}
 }
 
-void c_task_graph::setup_task(const c_execution_graph &execution_graph, c_node_reference node_reference,
-	uint32 task_index, const s_task_function_mapping &task_function_mapping) {
+void c_task_graph::setup_task(
+	const c_execution_graph &execution_graph,
+	c_node_reference node_reference,
+	uint32 task_index,
+	const s_task_function_mapping &task_function_mapping) {
 	wl_assert(execution_graph.get_node_type(node_reference) == k_execution_graph_node_type_native_module_call);
 
 	s_task &task = m_tasks[task_index];
@@ -789,7 +805,8 @@ void c_task_graph::setup_task(const c_execution_graph &execution_graph, c_node_r
 	size_t output_index = 0;
 	for (size_t index = 0; index < input_output_count; index++) {
 		// Determine if this is an input or output from the task function mapping input type
-		wl_assert(VALID_INDEX(task_function_mapping.native_module_argument_mapping[index].input_type,
+		wl_assert(VALID_INDEX(
+			task_function_mapping.native_module_argument_mapping[index].input_type,
 			k_task_function_mapping_native_module_input_type_count));
 
 		bool is_input = task_function_mapping.native_module_argument_mapping[index].input_type !=
@@ -953,7 +970,9 @@ void c_task_graph::setup_task(const c_execution_graph &execution_graph, c_node_r
 #endif // IS_TRUE(ASSERTS_ENABLED)
 }
 
-uint32 *c_task_graph::get_task_data_array_element_buffer_and_node_reference(const s_task_graph_data &data, size_t index,
+uint32 *c_task_graph::get_task_data_array_element_buffer_and_node_reference(
+	const s_task_graph_data &data,
+	size_t index,
 	c_node_reference *out_node_reference) {
 	wl_assert(data.data.type.get_data_type().is_array());
 	wl_assert(!is_task_data_array_element_constant(data, index));
@@ -994,7 +1013,8 @@ uint32 *c_task_graph::get_task_data_array_element_buffer_and_node_reference(cons
 	return result;
 }
 
-void c_task_graph::build_task_successor_lists(const c_execution_graph &execution_graph,
+void c_task_graph::build_task_successor_lists(
+	const c_execution_graph &execution_graph,
 	const std::map<c_node_reference, uint32> &nodes_to_tasks) {
 	// Clear predecessor counts first since those are set in a random order
 	for (uint32 task_index = 0; task_index < m_tasks.size(); task_index++) {
@@ -1697,8 +1717,11 @@ void c_task_graph::calculate_buffer_usages() {
 }
 
 template<typename t_build_array_settings>
-typename t_build_array_settings::t_array build_array(const c_execution_graph &execution_graph,
-	t_build_array_settings &settings, c_node_reference node_reference, bool &out_is_constant) {
+typename t_build_array_settings::t_array build_array(
+	const c_execution_graph &execution_graph,
+	t_build_array_settings &settings,
+	c_node_reference node_reference,
+	bool &out_is_constant) {
 	// Build a list of array elements using the array node at node_reference.
 
 	typedef typename t_build_array_settings::t_array t_array;

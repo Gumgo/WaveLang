@@ -113,8 +113,12 @@ public:
 
 private:
 	static int stream_callback_internal(
-		const void *input, void *output, unsigned long frame_count,
-		const PaStreamCallbackTimeInfo *time_info, PaStreamCallbackFlags status_flags, void *user_data);
+		const void *input,
+		void *output,
+		unsigned long frame_count,
+		const PaStreamCallbackTimeInfo *time_info,
+		PaStreamCallbackFlags status_flags,
+		void *user_data);
 
 	bool m_initialized;
 

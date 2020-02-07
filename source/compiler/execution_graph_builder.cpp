@@ -292,7 +292,9 @@ public:
 		return m_return_node_reference;
 	}
 
-	static const c_ast_node_module_declaration *find_module_declaration(const c_ast_node *ast_root, const char *name,
+	static const c_ast_node_module_declaration *find_module_declaration(
+		const c_ast_node *ast_root,
+		const char *name,
 		const std::vector<s_expression_result> &argument_types) {
 		// Native modules must all be at the root
 		wl_assert(ast_root->get_type() == k_ast_node_type_scope);
@@ -909,8 +911,12 @@ s_compiler_result c_execution_graph_builder::build_execution_graphs(
 		c_execution_graph *execution_graph = new c_execution_graph();
 		out_instrument_variant->set_voice_execution_graph(execution_graph);
 
-		c_execution_graph_module_builder builder(&out_errors, ast, execution_graph,
-			&out_instrument_variant->get_instrument_globals(), voice_entry_point_module);
+		c_execution_graph_module_builder builder(
+			&out_errors,
+			ast,
+			execution_graph,
+			&out_instrument_variant->get_instrument_globals(),
+			voice_entry_point_module);
 		voice_entry_point_module->iterate(&builder);
 
 		// Add an output node for each argument (they should all be out arguments)
@@ -937,8 +943,12 @@ s_compiler_result c_execution_graph_builder::build_execution_graphs(
 		c_execution_graph *execution_graph = new c_execution_graph();
 		out_instrument_variant->set_fx_execution_graph(execution_graph);
 
-		c_execution_graph_module_builder builder(&out_errors, ast, execution_graph,
-			&out_instrument_variant->get_instrument_globals(), fx_entry_point_module);
+		c_execution_graph_module_builder builder(
+			&out_errors,
+			ast,
+			execution_graph,
+			&out_instrument_variant->get_instrument_globals(),
+			fx_entry_point_module);
 
 		// Add an input node for each input argument
 		uint32 input_index = 0;

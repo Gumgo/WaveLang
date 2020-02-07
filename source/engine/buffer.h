@@ -13,8 +13,10 @@ enum e_buffer_type {
 	k_buffer_type_count
 };
 
-class ALIGNAS_LOCK_FREE c_buffer : private c_uncopyable {
+class ALIGNAS_LOCK_FREE c_buffer {
 public:
+	UNCOPYABLE(c_buffer);
+
 	bool is_constant() const {
 		return m_constant;
 	}

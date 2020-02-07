@@ -97,7 +97,8 @@ static bool is_task_argument_compatible_with_native_module_argument(
 static void write_task_arguments(
 	std::ofstream &out, const s_task_mapping &mapping, const std::vector<size_t> argument_indices);
 static bool generate_native_module_to_task_function_mappings(
-	const c_scraper_result *result, const std::vector<s_task_mapping> &task_mappings,
+	const c_scraper_result *result,
+	const std::vector<s_task_mapping> &task_mappings,
 	std::vector<s_native_module_to_task_function_mapping> &mappings);
 
 bool generate_task_function_registration(
@@ -417,26 +418,50 @@ static bool generate_task_function_mapping(
 		}
 	}
 
-	if (!map_native_module_arguments_to_task_arguments(*native_module, task_function.arguments, false,
-		"task function", task_function.name.c_str(), mapping, mapping.task_function_argument_indices)) {
+	if (!map_native_module_arguments_to_task_arguments(
+		*native_module,
+		task_function.arguments,
+		false,
+		"task function",
+		task_function.name.c_str(),
+		mapping,
+		mapping.task_function_argument_indices)) {
 		return false;
 	}
 
-	if (task_memory_query && !map_native_module_arguments_to_task_arguments(
-		*native_module, task_memory_query->arguments, false, "task memory query", task_memory_query->name.c_str(),
-		mapping, mapping.task_memory_query_argument_indices)) {
+	if (task_memory_query &&
+		!map_native_module_arguments_to_task_arguments(
+			*native_module,
+			task_memory_query->arguments,
+			false,
+			"task memory query",
+			task_memory_query->name.c_str(),
+			mapping,
+			mapping.task_memory_query_argument_indices)) {
 		return false;
 	}
 
-	if (task_initializer && !map_native_module_arguments_to_task_arguments(
-		*native_module, task_initializer->arguments, false, "task initializer", task_initializer->name.c_str(),
-		mapping, mapping.task_initializer_argument_indices)) {
+	if (task_initializer &&
+		!map_native_module_arguments_to_task_arguments(
+			*native_module,
+			task_initializer->arguments,
+			false,
+			"task initializer",
+			task_initializer->name.c_str(),
+			mapping,
+			mapping.task_initializer_argument_indices)) {
 		return false;
 	}
 
-	if (task_voice_initializer && !map_native_module_arguments_to_task_arguments(
-		*native_module, task_voice_initializer->arguments, false, "task voice initializer",
-		task_voice_initializer->name.c_str(), mapping, mapping.task_voice_initializer_argument_indices)) {
+	if (task_voice_initializer &&
+		!map_native_module_arguments_to_task_arguments(
+			*native_module,
+			task_voice_initializer->arguments,
+			false,
+			"task voice initializer",
+			task_voice_initializer->name.c_str(),
+			mapping,
+			mapping.task_voice_initializer_argument_indices)) {
 		return false;
 	}
 
@@ -519,8 +544,10 @@ static bool map_native_module_arguments_to_task_arguments(
 				wl_assert(argument_mapping.in_source_index != k_invalid_argument_index);
 
 				if (!is_task_argument_compatible_with_native_module_argument(
-					argument, native_module.arguments[argument_mapping.in_source_index],
-					function_name, native_module.identifier.c_str())) {
+					argument,
+					native_module.arguments[argument_mapping.in_source_index],
+					function_name,
+					native_module.identifier.c_str())) {
 					return false;
 				}
 			} else {
@@ -534,8 +561,10 @@ static bool map_native_module_arguments_to_task_arguments(
 				wl_assert(argument_mapping.out_source_index != k_invalid_argument_index);
 
 				if (!is_task_argument_compatible_with_native_module_argument(
-					argument, native_module.arguments[argument_mapping.out_source_index],
-					function_name, native_module.identifier.c_str())) {
+					argument,
+					native_module.arguments[argument_mapping.out_source_index],
+					function_name,
+					native_module.identifier.c_str())) {
 					return false;
 				}
 			} else {
@@ -659,7 +688,8 @@ static void write_task_arguments(
 }
 
 static bool generate_native_module_to_task_function_mappings(
-	const c_scraper_result *result, const std::vector<s_task_mapping> &task_mappings,
+	const c_scraper_result *result,
+	const std::vector<s_task_mapping> &task_mappings,
 	std::vector<s_native_module_to_task_function_mapping> &mappings) {
 	wl_assert(result);
 	wl_assert(mappings.empty());
@@ -734,7 +764,9 @@ static bool generate_native_module_to_task_function_mappings(
 		s_native_module_to_task_function_mapping_comparator comparator;
 		comparator.task_mappings = &task_mappings;
 
-		std::sort(mapping.sorted_task_function_indices.begin(), mapping.sorted_task_function_indices.end(),
+		std::sort(
+			mapping.sorted_task_function_indices.begin(),
+			mapping.sorted_task_function_indices.end(),
 			comparator);
 
 		mappings.push_back(mapping);

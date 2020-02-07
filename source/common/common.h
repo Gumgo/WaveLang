@@ -116,15 +116,10 @@ bool test_bit(t_storage storage, t_bit bit) {
 	return (storage & (1 << bit)) != 0;
 }
 
-class c_uncopyable {
-public:
-	c_uncopyable() {}
-
-private:
-	// Not implemented
-	c_uncopyable(const c_uncopyable &other);
-	c_uncopyable &operator=(const c_uncopyable &other);
-};
+// Add this to a class's declaration to disable copy constructor and assignment operator
+#define UNCOPYABLE(class_name)							\
+	class_name(const class_name &) = delete;			\
+	class_name &operator=(const class_name &) = delete
 
 template<typename t_to, typename t_from>
 t_to reinterpret_bits(t_from from) {

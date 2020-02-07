@@ -309,7 +309,8 @@ private:
 		return added;
 	}
 
-	const c_ast_node_module_declaration *find_matching_module_overload(const s_identifier *identifier,
+	const c_ast_node_module_declaration *find_matching_module_overload(
+		const s_identifier *identifier,
 		const std::vector<s_expression_result> &argument_types) {
 		wl_assert(identifier);
 		wl_assert(identifier->data_type == c_ast_data_type(k_ast_primitive_type_module));
@@ -408,7 +409,9 @@ private:
 		m_errors->push_back(error);
 	}
 
-	void unassignable_type_error(s_compiler_source_location source_location, const std::string &name,
+	void unassignable_type_error(
+		s_compiler_source_location source_location,
+		const std::string &name,
 		c_ast_data_type type) {
 		s_compiler_result error;
 		error.result = k_compiler_result_type_mismatch;
@@ -417,7 +420,9 @@ private:
 		m_errors->push_back(error);
 	}
 
-	void uncallable_type_error(s_compiler_source_location source_location, const std::string &name,
+	void uncallable_type_error(
+		s_compiler_source_location source_location,
+		const std::string &name,
 		c_ast_data_type type) {
 		s_compiler_result error;
 		error.result = k_compiler_result_type_mismatch;
@@ -426,8 +431,10 @@ private:
 		m_errors->push_back(error);
 	}
 
-	void type_mismatch_error(s_compiler_source_location source_location,
-		c_ast_data_type expected, c_ast_data_type actual) {
+	void type_mismatch_error(
+		s_compiler_source_location source_location,
+		c_ast_data_type expected,
+		c_ast_data_type actual) {
 		s_compiler_result error;
 		error.result = k_compiler_result_type_mismatch;
 		error.source_location = source_location;
@@ -768,8 +775,10 @@ public:
 				} else if (node->get_array_index_expression() &&
 					array_index_result.type != c_ast_data_type(k_ast_primitive_type_real)) {
 					// The array index should be a real
-					type_mismatch_error(node->get_array_index_expression()->get_source_location(),
-						c_ast_data_type(k_ast_primitive_type_real), array_index_result.type);
+					type_mismatch_error(
+						node->get_array_index_expression()->get_source_location(),
+						c_ast_data_type(k_ast_primitive_type_real),
+						array_index_result.type);
 				} else {
 					// Look up the context
 					s_named_value *match = get_named_value(identifier->ast_node);
@@ -805,10 +814,13 @@ public:
 
 		// Validate that the loop expression type is correct - a named value assignment node immediately preceded this
 		if (m_last_assigned_expression_result.type != c_ast_data_type(k_ast_primitive_type_real)) {
-			type_mismatch_error(node->get_source_location(),
-				m_last_assigned_expression_result.type, c_ast_data_type(k_ast_primitive_type_real));
+			type_mismatch_error(
+				node->get_source_location(),
+				m_last_assigned_expression_result.type,
+				c_ast_data_type(k_ast_primitive_type_real));
 		} else if (!m_last_assigned_expression_result.has_value) {
-			unassigned_named_value_error(node->get_source_location(),
+			unassigned_named_value_error(
+				node->get_source_location(),
 				m_last_assigned_expression_result.identifier_name);
 		}
 
@@ -1063,8 +1075,10 @@ public:
 							// We already validated the expression, which would have provided errors for things like
 							// invalid identifier, so all we need to do here is validate that the type matches
 							if (argument_result.type != argument->get_data_type()) {
-								type_mismatch_error(node->get_argument(arg)->get_source_location(),
-									argument->get_data_type(), argument_result.type);
+								type_mismatch_error(
+									node->get_argument(arg)->get_source_location(),
+									argument->get_data_type(),
+									argument_result.type);
 							}
 						}
 
@@ -1081,7 +1095,8 @@ public:
 
 						if (argument->get_qualifier() == k_ast_qualifier_in &&
 							!argument_result.has_value) {
-							unassigned_named_value_error(node->get_argument(arg)->get_source_location(),
+							unassigned_named_value_error(
+								node->get_argument(arg)->get_source_location(),
 								argument_result.identifier_name);
 						}
 
@@ -1130,7 +1145,9 @@ public:
 	}
 };
 
-s_compiler_result c_ast_validator::validate(const s_compiler_context *compiler_context, const c_ast_node *ast,
+s_compiler_result c_ast_validator::validate(
+	const s_compiler_context *compiler_context,
+	const c_ast_node *ast,
 	std::vector<s_compiler_result> &out_errors) {
 	wl_assert(ast);
 

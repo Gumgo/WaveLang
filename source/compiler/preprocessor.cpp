@@ -29,8 +29,10 @@ void c_preprocessor::shutdown_preprocessor() {
 
 // Registers a callback to be called when a preprocessor token with the provided name is encountered. Note that
 // command_name should have static lifetime as the string is not copied internally upon registration.
-void c_preprocessor::register_preprocessor_command(const char *command_name,
-	void *context, f_preprocessor_command_executor command_executor) {
+void c_preprocessor::register_preprocessor_command(
+	const char *command_name,
+	void *context,
+	f_preprocessor_command_executor command_executor) {
 	wl_vassert(g_preprocessor_command_executor_count < k_max_preprocessor_command_executors,
 		"Too many preprocessor commands");
 

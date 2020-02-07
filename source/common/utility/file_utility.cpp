@@ -15,18 +15,25 @@ bool are_file_paths_equivalent(const char *path_a, const char *path_b) {
 #if IS_TRUE(PLATFORM_WINDOWS)
 	{
 		bool result = false;
+		s_static_array<HANDLE, 2> file_handles;
 
-		HANDLE file_a_handle = CreateFileA(path_a, 0, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
-			OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-		HANDLE file_b_handle = CreateFileA(path_b, 0, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
-			OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+		for (size_t i = 0; i < 2; i++) {
+			file_handles[i] = CreateFileA(
+				i == 0 ? path_a : path_b,
+				0,
+				FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
+				nullptr,
+				OPEN_EXISTING,
+				FILE_ATTRIBUTE_NORMAL,
+				NULL);
+		}
 
-		if (file_a_handle != INVALID_HANDLE_VALUE &&
-			file_b_handle != INVALID_HANDLE_VALUE) {
+		if (file_handles[0] != INVALID_HANDLE_VALUE &&
+			file_handles[1] != INVALID_HANDLE_VALUE) {
 			BY_HANDLE_FILE_INFORMATION file_a_info;
 			BY_HANDLE_FILE_INFORMATION file_b_info;
-			if (GetFileInformationByHandle(file_a_handle, &file_a_info) &&
-				GetFileInformationByHandle(file_b_handle, &file_b_info)) {
+			if (GetFileInformationByHandle(file_handles[0], &file_a_info) &&
+				GetFileInformationByHandle(file_handles[1], &file_b_info)) {
 				result =
 					(file_a_info.dwVolumeSerialNumber == file_b_info.dwVolumeSerialNumber) &&
 					(file_a_info.nFileIndexHigh == file_b_info.nFileIndexHigh) &&
@@ -34,12 +41,10 @@ bool are_file_paths_equivalent(const char *path_a, const char *path_b) {
 			}
 		}
 
-		if (file_a_handle != INVALID_HANDLE_VALUE) {
-			CloseHandle(file_a_handle);
-		}
-
-		if (file_b_handle != INVALID_HANDLE_VALUE) {
-			CloseHandle(file_b_handle);
+		for (size_t i = 0; i < 2; i++) {
+			if (file_handles[i] != INVALID_HANDLE_VALUE) {
+				CloseHandle(file_handles[i]);
+			}
 		}
 
 		return result;
@@ -74,8 +79,14 @@ bool get_file_last_modified_timestamp(const char *path, uint64 &out_timestamp) {
 	bool result = false;
 
 #if IS_TRUE(PLATFORM_WINDOWS)
-	HANDLE file_handle = CreateFileA(path, 0, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
-		OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	HANDLE file_handle = CreateFileA(
+		path,
+		0,
+		FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
+		nullptr,
+		OPEN_EXISTING,
+		FILE_ATTRIBUTE_NORMAL,
+		NULL);
 
 	if (file_handle != INVALID_HANDLE_VALUE) {
 		FILETIME last_write_time;

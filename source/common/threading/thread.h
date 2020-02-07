@@ -64,7 +64,7 @@ struct s_thread_definition {
 };
 
 // Class encapsulating a thread
-class c_thread : private c_uncopyable {
+class c_thread {
 public:
 #if IS_TRUE(USE_THREAD_IMPLEMENTATION_WINDOWS)
 	typedef uint32 t_thread_id;
@@ -74,6 +74,8 @@ public:
 
 	// Initializes to not running state
 	c_thread();
+
+	UNCOPYABLE(c_thread);
 
 	// Move constructor
 	c_thread(c_thread &&other);

@@ -27,7 +27,9 @@ static s_compiler_result read_and_preprocess_source_file(
 
 static void fixup_source(std::vector<char> &inout_source);
 
-s_compiler_result c_compiler::compile(const char *root_path, const char *source_filename,
+s_compiler_result c_compiler::compile(
+	const char *root_path,
+	const char *source_filename,
 	c_instrument *out_instrument) {
 	wl_assert(root_path);
 	wl_assert(source_filename);

@@ -8,8 +8,12 @@ size_t s_sampler_context::query_memory() {
 }
 
 void s_sampler_context::initialize_file(
-	c_event_interface *event_interface, c_sample_library_requester *sample_requester,
-	const char *sample, e_sample_loop_mode loop_mode, bool phase_shift_enabled, real32 channel_real) {
+	c_event_interface *event_interface,
+	c_sample_library_requester *sample_requester,
+	const char *sample,
+	e_sample_loop_mode loop_mode,
+	bool phase_shift_enabled,
+	real32 channel_real) {
 	wl_assert(VALID_INDEX(loop_mode, k_sample_loop_mode_count));
 
 	s_file_sample_parameters parameters;
@@ -28,8 +32,11 @@ void s_sampler_context::initialize_file(
 }
 
 void s_sampler_context::initialize_wavetable(
-	c_event_interface *event_interface, c_sample_library_requester *sample_requester,
-	c_real_array harmonic_weights, real32 sample_count_real, bool phase_shift_enabled) {
+	c_event_interface *event_interface,
+	c_sample_library_requester *sample_requester,
+	c_real_array harmonic_weights,
+	real32 sample_count_real,
+	bool phase_shift_enabled) {
 	bool valid = true;
 
 	if (harmonic_weights.get_count() == 0) {
@@ -90,8 +97,11 @@ void s_sampler_context::voice_initialize() {
 	reached_end = false;
 }
 
-bool s_sampler_context::handle_failed_sample(const c_sample *sample, c_real_buffer_out out,
-	c_event_interface *event_interface, const char *sample_name) {
+bool s_sampler_context::handle_failed_sample(
+	const c_sample *sample,
+	c_real_buffer_out out,
+	c_event_interface *event_interface,
+	const char *sample_name) {
 	bool failed = false;
 
 	// If the sample failed, fill with 0
@@ -129,8 +139,11 @@ bool s_sampler_context::handle_reached_end(c_real_buffer_out out) {
 	return reached_end;
 }
 
-size_t s_sampler_context::increment_time(real64 length_samples, const c_real32_4 &advance,
-	size_t &inout_buffer_samples_remaining, s_static_array<real64, k_simd_block_elements> &out_samples) {
+size_t s_sampler_context::increment_time(
+	real64 length_samples,
+	const c_real32_4 &advance,
+	size_t &inout_buffer_samples_remaining,
+	s_static_array<real64, k_simd_block_elements> &out_samples) {
 	// We haven't vectorized this, so extract the reals
 	ALIGNAS_SIMD s_static_array<real32, k_simd_block_elements> advance_array;
 	advance.store(advance_array.get_elements());
@@ -163,8 +176,11 @@ size_t s_sampler_context::increment_time(real64 length_samples, const c_real32_4
 }
 
 size_t s_sampler_context::increment_time_looping(
-	real64 loop_start_sample, real64 loop_end_sample, const c_real32_4 &advance,
-	size_t &inout_buffer_samples_remaining, s_static_array<real64, k_simd_block_elements> &out_samples) {
+	real64 loop_start_sample,
+	real64 loop_end_sample,
+	const c_real32_4 &advance,
+	size_t &inout_buffer_samples_remaining,
+	s_static_array<real64, k_simd_block_elements> &out_samples) {
 	// We haven't vectorized this, so extract the reals
 	ALIGNAS_SIMD s_static_array<real32, k_simd_block_elements> advance_array;
 	advance.store(advance_array.get_elements());

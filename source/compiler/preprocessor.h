@@ -51,8 +51,10 @@ public:
 
 	// Registers a callback to be called when a preprocessor token with the provided name is encountered. Note that
 	// command_name should have static lifetime as the string is not copied internally upon registration.
-	static void register_preprocessor_command(const char *command_name,
-		void *context, f_preprocessor_command_executor command_executor);
+	static void register_preprocessor_command(
+		const char *command_name,
+		void *context,
+		f_preprocessor_command_executor command_executor);
 
 	static s_compiler_result preprocess(
 		c_compiler_string source, int32 source_file_index, c_preprocessor_output &output);

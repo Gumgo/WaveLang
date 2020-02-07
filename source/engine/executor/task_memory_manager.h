@@ -14,8 +14,10 @@ class c_task_memory_manager {
 public:
 	typedef size_t (*f_task_memory_query_callback)(void *context, const c_task_graph *task_graph, uint32 task_index);
 
-	void initialize(const c_runtime_instrument *runtime_instrument,
-		f_task_memory_query_callback task_memory_query_callback, void *task_memory_query_callback_context);
+	void initialize(
+		const c_runtime_instrument *runtime_instrument,
+		f_task_memory_query_callback task_memory_query_callback,
+		void *task_memory_query_callback_context);
 
 	inline void *get_task_memory(e_instrument_stage instrument_stage, uint32 task_index, uint32 voice_index) const {
 		wl_assert(instrument_stage == k_instrument_stage_voice || voice_index == 0);
@@ -23,12 +25,16 @@ public:
 	}
 
 private:
-	size_t calculate_required_memory_for_task_graph(const c_task_graph *task_graph,
-		f_task_memory_query_callback task_memory_query_callback, void *task_memory_query_callback_context,
+	size_t calculate_required_memory_for_task_graph(
+		const c_task_graph *task_graph,
+		f_task_memory_query_callback task_memory_query_callback,
+		void *task_memory_query_callback_context,
 		std::vector<void *> &task_memory_pointers);
 
 	void resolve_task_memory_pointers(
-		void *task_memory_base, std::vector<void *> &task_memory_pointers, uint32 max_voices,
+		void *task_memory_base,
+		std::vector<void *> &task_memory_pointers,
+		uint32 max_voices,
 		size_t required_memory_per_voice);
 
 	// Allocator for task-persistent memory

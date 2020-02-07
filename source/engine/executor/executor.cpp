@@ -56,8 +56,11 @@ void c_executor::execute(const s_executor_chunk_context &chunk_context) {
 		execute_internal(chunk_context);
 	} else {
 		// Zero buffer if disabled
-		zero_output_buffers(chunk_context.frames, chunk_context.output_channels,
-			chunk_context.sample_format, chunk_context.output_buffer);
+		zero_output_buffers(
+			chunk_context.frames,
+			chunk_context.output_channels,
+			chunk_context.sample_format,
+			chunk_context.output_buffer);
 
 		if (old_state == k_state_terminating) {
 			// We successfully terminated, so signal the main thread
@@ -478,7 +481,10 @@ void c_executor::process_task_wrapper(uint32 thread_index, const s_thread_parame
 
 void c_executor::process_task(uint32 thread_index, const s_task_parameters *params) {
 	if (m_settings.profiling_enabled) {
-		m_profiler.begin_task(m_active_instrument_stage, thread_index, params->task_index,
+		m_profiler.begin_task(
+			m_active_instrument_stage,
+			thread_index,
+			params->task_index,
 			m_active_task_graph->get_task_function_index(params->task_index));
 	}
 
@@ -551,7 +557,9 @@ void c_executor::process_task(uint32 thread_index, const s_task_parameters *para
 	}
 }
 
-size_t c_executor::setup_task_arguments(uint32 task_index, bool include_dynamic_arguments,
+size_t c_executor::setup_task_arguments(
+	uint32 task_index,
+	bool include_dynamic_arguments,
 	s_static_array<s_task_function_argument, k_max_task_function_arguments> &out_arguments) {
 	// Obtain argument data from the graph
 	c_task_graph_data_array argument_data = m_active_task_graph->get_task_arguments(task_index);

@@ -128,8 +128,11 @@ bool c_annotation_specifications::execute(
 				spec.found = true;
 			} else if (spec.type == k_annotation_type_uint32) {
 				bool lookup_result = lookup_uint32(
-					annotation_value, it.get_source_location(),
-					compiler_instance, decl_context, &ast_context,
+					annotation_value,
+					it.get_source_location(),
+					compiler_instance,
+					decl_context,
+					&ast_context,
 					*spec.uint32_storage);
 
 				if (!lookup_result) {
@@ -158,7 +161,11 @@ bool c_annotation_specifications::execute(
 }
 
 void c_annotation_specifications::add_specification_internal(
-	e_annotation_type type, const char *annotation_or_prefix, const char *name, bool required, void *storage) {
+	e_annotation_type type,
+	const char *annotation_or_prefix,
+	const char *name,
+	bool required,
+	void *storage) {
 	wl_assert(VALID_INDEX(type, k_annotation_type_count));
 	wl_assert(annotation_or_prefix);
 	wl_assert(name);
@@ -174,8 +181,10 @@ void c_annotation_specifications::add_specification_internal(
 }
 
 clang::NamedDecl *c_annotation_specifications::lookup_decl(
-	const char *name, clang::SourceLocation name_source_location,
-	clang::CompilerInstance *compiler_instance, clang::DeclContext *decl_context) {
+	const char *name,
+	clang::SourceLocation name_source_location,
+	clang::CompilerInstance *compiler_instance,
+	clang::DeclContext *decl_context) {
 	clang::IdentifierInfo *identifier_info = compiler_instance->getPreprocessor().getIdentifierInfo(name);
 	if (!identifier_info) {
 		return nullptr;
@@ -192,8 +201,12 @@ clang::NamedDecl *c_annotation_specifications::lookup_decl(
 		clang::Sema::NotForRedeclaration);
 }
 
-bool c_annotation_specifications::lookup_uint32(const char *name_or_value, clang::SourceLocation name_source_location,
-	clang::CompilerInstance *compiler_instance, clang::DeclContext *decl_context, clang::ASTContext *ast_context,
+bool c_annotation_specifications::lookup_uint32(
+	const char *name_or_value,
+	clang::SourceLocation name_source_location,
+	clang::CompilerInstance *compiler_instance,
+	clang::DeclContext *decl_context,
+	clang::ASTContext *ast_context,
 	uint32 &result) {
 	wl_assert(name_or_value);
 

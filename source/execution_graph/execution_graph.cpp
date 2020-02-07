@@ -670,8 +670,10 @@ c_node_reference c_execution_graph::add_temporary_reference_node() {
 	return node_reference;
 }
 
-void c_execution_graph::remove_node(c_node_reference node_reference,
-	f_on_node_removed on_node_removed, void *on_node_removed_context) {
+void c_execution_graph::remove_node(
+	c_node_reference node_reference,
+	f_on_node_removed on_node_removed,
+	void *on_node_removed_context) {
 	s_node &node = get_node(node_reference);
 
 	if (does_node_use_indexed_inputs(node)) {
@@ -1153,8 +1155,10 @@ bool c_execution_graph::get_type_from_node(c_node_reference node_reference, c_na
 }
 
 
-bool c_execution_graph::visit_node_for_cycle_detection(c_node_reference node_reference,
-	std::vector<bool> &nodes_visited, std::vector<bool> &nodes_marked) const {
+bool c_execution_graph::visit_node_for_cycle_detection(
+	c_node_reference node_reference,
+	std::vector<bool> &nodes_visited,
+	std::vector<bool> &nodes_marked) const {
 	if (nodes_marked[node_reference.get_node_index()]) {
 		// Cycle
 		return false;

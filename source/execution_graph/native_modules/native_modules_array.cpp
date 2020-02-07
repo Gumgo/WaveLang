@@ -34,7 +34,9 @@ namespace array_native_modules {
 		result = static_cast<real32>(a.get_array().size());
 	}
 
-	void combine_real(const c_native_module_real_array &a, const c_native_module_real_array &b,
+	void combine_real(
+		const c_native_module_real_array &a,
+		const c_native_module_real_array &b,
 		c_native_module_real_array &result) {
 		result.get_array() = array_combine(a.get_array(), b.get_array());
 	}
@@ -55,7 +57,9 @@ namespace array_native_modules {
 		result = static_cast<real32>(a.get_array().size());
 	}
 
-	void combine_bool(const c_native_module_bool_array &a, const c_native_module_bool_array &b,
+	void combine_bool(
+		const c_native_module_bool_array &a,
+		const c_native_module_bool_array &b,
 		c_native_module_bool_array &result) {
 		result.get_array() = array_combine(a.get_array(), b.get_array());
 	}
@@ -76,7 +80,9 @@ namespace array_native_modules {
 		result = static_cast<real32>(a.get_array().size());
 	}
 
-	void combine_string(const c_native_module_string_array &a, const c_native_module_string_array &b,
+	void combine_string(
+		const c_native_module_string_array &a,
+		const c_native_module_string_array &b,
 		c_native_module_string_array &result) {
 		result.get_array() = array_combine(a.get_array(), b.get_array());
 	}

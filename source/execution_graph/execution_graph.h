@@ -70,8 +70,10 @@ public:
 	c_node_reference add_input_node(uint32 input_index);
 	c_node_reference add_output_node(uint32 output_index);
 	c_node_reference add_temporary_reference_node();
-	void remove_node(c_node_reference node_reference,
-		f_on_node_removed on_node_removed = nullptr, void *on_node_removed_context = nullptr);
+	void remove_node(
+		c_node_reference node_reference,
+		f_on_node_removed on_node_removed = nullptr,
+		void *on_node_removed_context = nullptr);
 
 	void add_edge(c_node_reference from_reference, c_node_reference to_reference);
 	void remove_edge(c_node_reference from_reference, c_node_reference to_reference);
@@ -162,8 +164,10 @@ private:
 	bool validate_string_table() const;
 	bool get_type_from_node(c_node_reference node_reference, c_native_module_data_type &out_type) const;
 
-	bool visit_node_for_cycle_detection(c_node_reference node_reference,
-		std::vector<bool> &nodes_visited, std::vector<bool> &nodes_marked) const;
+	bool visit_node_for_cycle_detection(
+		c_node_reference node_reference,
+		std::vector<bool> &nodes_visited,
+		std::vector<bool> &nodes_marked) const;
 
 	void remove_unused_strings();
 

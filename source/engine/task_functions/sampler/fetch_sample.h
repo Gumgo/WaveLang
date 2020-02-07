@@ -17,8 +17,14 @@ real32 fetch_sample(const c_sample *sample, uint32 channel, real64 sample_index)
 // samples are requested, the remaining ones up to 4 will be filled with garbage data; it is expected that these will
 // later be overwritten, or are past the end of the buffer but exist for padding.
 void fetch_wavetable_samples(
-	const c_sample *sample, uint32 channel, real32 stream_sample_rate, real32 sample_rate_0, const c_real32_4 &speed,
-	size_t count, const s_static_array<real64, k_simd_block_elements> &samples, real32 *out_ptr);
+	const c_sample *sample,
+	uint32 channel,
+	real32 stream_sample_rate,
+	real32 sample_rate_0,
+	const c_real32_4 &speed,
+	size_t count,
+	const s_static_array<real64, k_simd_block_elements> &samples,
+	real32 *out_ptr);
 
 /*
 Windowed sinc sampling chart

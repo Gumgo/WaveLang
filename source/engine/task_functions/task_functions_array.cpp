@@ -26,7 +26,8 @@ static uint32 get_index_or_invalid(uint32 array_count, real32 real_index) {
 
 namespace array_task_functions {
 
-	void dereference_real_in_out(const s_task_function_context &context,
+	void dereference_real_in_out(
+		const s_task_function_context &context,
 		c_real_array a,
 		c_real_const_buffer_or_constant index,
 		c_real_buffer *result) {
@@ -133,7 +134,8 @@ namespace array_task_functions {
 		}
 	}
 
-	void dereference_real_inout(const s_task_function_context &context,
+	void dereference_real_inout(
+		const s_task_function_context &context,
 		c_real_array a,
 		c_real_buffer *index_result) {
 		validate_buffer(index_result);
@@ -237,7 +239,8 @@ namespace array_task_functions {
 		}
 	}
 
-	void dereference_bool_in_out(const s_task_function_context &context,
+	void dereference_bool_in_out(
+		const s_task_function_context &context,
 		c_bool_array a,
 		c_real_const_buffer_or_constant index,
 		c_bool_buffer *result) {
@@ -275,7 +278,9 @@ namespace array_task_functions {
 						*out_ptr = *array_buffer->get_data<int32>();
 						result->set_constant(true);
 					} else {
-						memcpy(out_ptr, array_buffer->get_data<int32>(),
+						memcpy(
+							out_ptr,
+							array_buffer->get_data<int32>(),
 							BOOL_BUFFER_INT32_COUNT(context.buffer_size) * sizeof(real32));
 						result->set_constant(false);
 					}

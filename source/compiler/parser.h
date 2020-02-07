@@ -74,8 +74,11 @@ public:
 	static void initialize_parser();
 	static void shutdown_parser();
 
-	static s_compiler_result process(const s_compiler_context &context, const s_lexer_output &input,
-		s_parser_output &output, std::vector<s_compiler_result> &out_errors);
+	static s_compiler_result process(
+		const s_compiler_context &context,
+		const s_lexer_output &input,
+		s_parser_output &output,
+		std::vector<s_compiler_result> &out_errors);
 };
 
 #endif // WAVELANG_COMPILER_PARSER_H__

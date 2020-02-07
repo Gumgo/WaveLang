@@ -215,13 +215,21 @@ private:
 
 	void resolve_arrays();
 	void resolve_strings();
-	bool add_task_for_node(const c_execution_graph &execution_graph, c_node_reference node_reference,
+	bool add_task_for_node(
+		const c_execution_graph &execution_graph,
+		c_node_reference node_reference,
 		std::map<c_node_reference, uint32> &nodes_to_tasks);
-	void setup_task(const c_execution_graph &execution_graph, c_node_reference node_reference,
-		uint32 task_index, const s_task_function_mapping &task_function_mapping);
-	uint32 *get_task_data_array_element_buffer_and_node_reference(const s_task_graph_data &argument, size_t index,
+	void setup_task(
+		const c_execution_graph &execution_graph,
+		c_node_reference node_reference,
+		uint32 task_index,
+		const s_task_function_mapping &task_function_mapping);
+	uint32 *get_task_data_array_element_buffer_and_node_reference(
+		const s_task_graph_data &argument,
+		size_t index,
 		c_node_reference *out_node_reference = nullptr);
-	void build_task_successor_lists(const c_execution_graph &execution_graph,
+	void build_task_successor_lists(
+		const c_execution_graph &execution_graph,
 		const std::map<c_node_reference, uint32> &nodes_to_tasks);
 	void allocate_buffers(const c_execution_graph &execution_graph);
 	void convert_nodes_to_buffers(

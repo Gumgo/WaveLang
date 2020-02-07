@@ -50,7 +50,8 @@ bool c_event_console::start_platform() {
 			m_pipe = -1;
 			return false;
 		} else if (process_id == 0) {
-			int exec_result = execl(k_event_console_executable_name,
+			int exec_result = execl(
+				k_event_console_executable_name,
 				k_event_console_executable_name,	// Argument 0 is executable name
 				pipe_name.c_str(),					// Argument 1 is pipe name
 				nullptr);

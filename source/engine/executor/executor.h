@@ -125,7 +125,9 @@ private:
 
 	static void process_task_wrapper(uint32 thread_index, const s_thread_parameter_block *params);
 	void process_task(uint32 thread_index, const s_task_parameters *params);
-	size_t setup_task_arguments(uint32 task_index, bool include_dynamic_arguments,
+	size_t setup_task_arguments(
+		uint32 task_index,
+		bool include_dynamic_arguments,
 		s_static_array<s_task_function_argument, k_max_task_function_arguments> &out_arguments);
 
 	void allocate_output_buffers(uint32 task_index);

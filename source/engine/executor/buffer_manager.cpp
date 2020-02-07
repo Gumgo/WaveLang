@@ -7,8 +7,10 @@
 // $TODO $UPSAMPLE this has (mostly) been build to support the eventual addition of upsampled data being passed from the
 // voice graph to the FX graph. should probably double check everything though.
 
-void c_buffer_manager::initialize(const c_runtime_instrument *runtime_instrument,
-	uint32 max_buffer_size, uint32 output_channels) {
+void c_buffer_manager::initialize(
+	const c_runtime_instrument *runtime_instrument,
+	uint32 max_buffer_size,
+	uint32 output_channels) {
 	wl_assert(runtime_instrument);
 	wl_assert(max_buffer_size > 0);
 	wl_assert(output_channels > 0);
@@ -127,12 +129,12 @@ void c_buffer_manager::begin_chunk(uint32 chunk_size) {
 	m_voices_processed = 0;
 	m_fx_processed = false;
 
-	std::fill(m_voice_accumulation_buffers.begin(), m_voice_accumulation_buffers.end(),
-		k_lock_free_invalid_handle);
-	std::fill(m_fx_output_buffers.begin(), m_fx_output_buffers.end(),
-		k_lock_free_invalid_handle);
-	std::fill(m_channel_mix_buffers.begin(), m_channel_mix_buffers.end(),
-		k_lock_free_invalid_handle);
+	std::fill(
+		m_voice_accumulation_buffers.begin(), m_voice_accumulation_buffers.end(), k_lock_free_invalid_handle);
+	std::fill(
+		m_fx_output_buffers.begin(), m_fx_output_buffers.end(), k_lock_free_invalid_handle);
+	std::fill(
+		m_channel_mix_buffers.begin(), m_channel_mix_buffers.end(), k_lock_free_invalid_handle);
 }
 
 void c_buffer_manager::initialize_buffers_for_graph(e_instrument_stage instrument_stage) {
@@ -209,8 +211,7 @@ void c_buffer_manager::accumulate_voice_output(uint32 voice_sample_offset) {
 void c_buffer_manager::store_fx_output() {
 	wl_assert(m_runtime_instrument->get_fx_task_graph());
 	swap_and_deduplicate_output_buffers(
-		m_runtime_instrument->get_fx_task_graph()->get_outputs(),
-		m_fx_output_pool_indices, m_fx_output_buffers, 0);
+		m_runtime_instrument->get_fx_task_graph()->get_outputs(), m_fx_output_pool_indices, m_fx_output_buffers, 0);
 
 	assert_all_output_buffers_free(k_instrument_stage_fx);
 	m_fx_processed = true;
@@ -298,7 +299,8 @@ const c_buffer *c_buffer_manager::get_buffer(uint32 buffer_index) const {
 	return m_buffer_allocator.get_buffer(buffer_context.handle);
 }
 
-uint32 c_buffer_manager::get_buffer_pool(c_task_data_type buffer_type,
+uint32 c_buffer_manager::get_buffer_pool(
+	c_task_data_type buffer_type,
 	const std::vector<c_task_graph::s_buffer_usage_info> &buffer_pools) const {
 	for (uint32 index = 0; index < buffer_pools.size(); index++) {
 		if (buffer_pools[index].type == buffer_type) {
@@ -309,7 +311,8 @@ uint32 c_buffer_manager::get_buffer_pool(c_task_data_type buffer_type,
 	return static_cast<uint32>(-1);
 }
 
-uint32 c_buffer_manager::get_or_add_buffer_pool(c_task_data_type buffer_type,
+uint32 c_buffer_manager::get_or_add_buffer_pool(
+	c_task_data_type buffer_type,
 	std::vector<c_task_graph::s_buffer_usage_info> &buffer_pools) const {
 	uint32 pool_index = get_buffer_pool(buffer_type, buffer_pools);
 	if (pool_index != static_cast<uint32>(-1)) {
@@ -342,7 +345,8 @@ std::vector<c_task_graph::s_buffer_usage_info> c_buffer_manager::combine_buffer_
 	return result;
 }
 
-void c_buffer_manager::initialize_buffer_allocator(size_t max_buffer_size,
+void c_buffer_manager::initialize_buffer_allocator(
+	size_t max_buffer_size,
 	const std::vector<c_task_graph::s_buffer_usage_info> &buffer_usage_info) {
 	std::vector<s_buffer_pool_description> buffer_pool_descriptions;
 
@@ -451,7 +455,8 @@ void c_buffer_manager::initialize_buffer_contexts(
 
 		// Make sure all buffers got pool assignments
 		for (uint32 index = 0; index < task_graph->get_buffer_count(); index++) {
-			wl_assert(VALID_INDEX(m_buffer_contexts.get_array()[index].pool_indices[instrument_stage],
+			wl_assert(VALID_INDEX(
+				m_buffer_contexts.get_array()[index].pool_indices[instrument_stage],
 				buffer_usage_info.size()));
 		}
 	}
@@ -499,8 +504,8 @@ void c_buffer_manager::shift_voice_output_buffers(uint32 voice_sample_offset) {
 			}
 		} else {
 			uint32 sample_count = m_chunk_size - voice_sample_offset;
-			memmove(buffer->get_data<real32>() + voice_sample_offset, buffer->get_data(),
-				sizeof(real32) * sample_count);
+			memmove(
+				buffer->get_data<real32>() + voice_sample_offset, buffer->get_data(), sizeof(real32) * sample_count);
 		}
 		memset(buffer->get_data(), 0, sizeof(real32) * voice_sample_offset);
 		buffer_context.shifted_samples = true;
@@ -508,8 +513,10 @@ void c_buffer_manager::shift_voice_output_buffers(uint32 voice_sample_offset) {
 }
 
 void c_buffer_manager::swap_and_deduplicate_output_buffers(
-	c_task_graph_data_array outputs, const std::vector<uint32> &buffer_pool_indices,
-	std::vector<uint32> &destination, uint32 voice_sample_offset) {
+	c_task_graph_data_array outputs,
+	const std::vector<uint32> &buffer_pool_indices,
+	std::vector<uint32> &destination,
+	uint32 voice_sample_offset) {
 	wl_assert(outputs.get_count() == destination.size());
 
 	for (uint32 output = 0; output < outputs.get_count(); output++) {
@@ -581,8 +588,10 @@ void c_buffer_manager::swap_and_deduplicate_output_buffers(
 
 void c_buffer_manager::swap_output_buffers_with_voice_accumulation_buffers(uint32 voice_sample_offset) {
 	swap_and_deduplicate_output_buffers(
-		m_runtime_instrument->get_voice_task_graph()->get_outputs(), m_voice_output_pool_indices,
-		m_voice_accumulation_buffers, voice_sample_offset);
+		m_runtime_instrument->get_voice_task_graph()->get_outputs(),
+		m_voice_output_pool_indices,
+		m_voice_accumulation_buffers,
+		voice_sample_offset);
 }
 
 void c_buffer_manager::add_output_buffers_to_voice_accumulation_buffers(uint32 voice_sample_offset) {

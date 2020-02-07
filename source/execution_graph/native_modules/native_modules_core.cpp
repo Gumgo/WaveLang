@@ -40,7 +40,9 @@ namespace core_native_modules {
 		result = std::fmod(a, b);
 	}
 
-	void concatenation(const c_native_module_string &a, const c_native_module_string &b,
+	void concatenation(
+		const c_native_module_string &a,
+		const c_native_module_string &b,
 		c_native_module_string &result) {
 		result.get_string() = a.get_string() + b.get_string();
 	}
@@ -105,8 +107,11 @@ namespace core_native_modules {
 		result = condition ? true_value : false_value;
 	}
 
-	void select_string(bool condition, const c_native_module_string &true_value,
-		const c_native_module_string &false_value, c_native_module_string &result) {
+	void select_string(
+		bool condition,
+		const c_native_module_string &true_value,
+		const c_native_module_string &false_value,
+		c_native_module_string &result) {
 		result.get_string() = condition ? true_value.get_string() : false_value.get_string();
 	}
 

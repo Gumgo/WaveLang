@@ -50,7 +50,9 @@ namespace core_native_modules wl_library(k_core_library_id, "core", 0) {
 
 	wl_native_module(0x9e71b219, "concatenation")
 	wl_operator(k_native_operator_addition)
-	void concatenation(wl_in_const const c_native_module_string &a, wl_in_const const c_native_module_string &b,
+	void concatenation(
+		wl_in_const const c_native_module_string &a,
+		wl_in_const const c_native_module_string &b,
 		wl_out_return c_native_module_string &result);
 
 	wl_native_module(0xa0581ec6, "not")
@@ -75,13 +77,17 @@ namespace core_native_modules wl_library(k_core_library_id, "core", 0) {
 
 	wl_native_module(0xc33f00a6, "equal$string")
 	wl_operator(k_native_operator_equal)
-	void equal_string(wl_in_const const c_native_module_string &a,
-		wl_in_const const c_native_module_string &b, wl_out_return bool &result);
+	void equal_string(
+		wl_in_const const c_native_module_string &a,
+		wl_in_const const c_native_module_string &b,
+		wl_out_return bool &result);
 
 	wl_native_module(0xcf137e06, "not_equal$string")
 	wl_operator(k_native_operator_not_equal)
-	void not_equal_string(wl_in_const const c_native_module_string &a,
-		wl_in_const const c_native_module_string &b, wl_out_return bool &result);
+	void not_equal_string(
+		wl_in_const const c_native_module_string &a,
+		wl_in_const const c_native_module_string &b,
+		wl_out_return bool &result);
 
 	wl_native_module(0x383b72fd, "greater")
 	wl_operator(k_native_operator_greater)
@@ -108,15 +114,21 @@ namespace core_native_modules wl_library(k_core_library_id, "core", 0) {
 	void or_(wl_in bool a, wl_in bool b, wl_out_return bool &result);
 
 	wl_native_module(0x94ca7bc2, "select$real")
-	void select_real(wl_in bool condition, wl_in real32 true_value, wl_in real32 false_value,
+	void select_real(
+		wl_in bool condition,
+		wl_in real32 true_value,
+		wl_in real32 false_value,
 		wl_out_return real32 &result);
 
 	wl_native_module(0xd3880d8c, "select$bool")
 	void select_bool(wl_in bool condition, wl_in bool true_value, wl_in bool false_value, wl_out_return bool &result);
 
 	wl_native_module(0x7ea6fc04, "select$string")
-	void select_string(wl_in bool condition, wl_in_const const c_native_module_string &true_value,
-		wl_in_const const c_native_module_string &false_value, wl_out_return c_native_module_string &result);
+	void select_string(
+		wl_in bool condition,
+		wl_in_const const c_native_module_string &true_value,
+		wl_in_const const c_native_module_string &false_value,
+		wl_out_return c_native_module_string &result);
 
 	wl_native_module(0x443b421c, "enforce_const$real")
 	void enforce_const_real(wl_in_const real32 a, wl_out_return real32 &result);
@@ -125,7 +137,8 @@ namespace core_native_modules wl_library(k_core_library_id, "core", 0) {
 	void enforce_const_bool(wl_in_const bool a, wl_out_return bool &result);
 
 	wl_native_module(0x5de97a3b, "enforce_const$string")
-	void enforce_const_string(wl_in_const const c_native_module_string &a,
+	void enforce_const_string(
+		wl_in_const const c_native_module_string &a,
 		wl_out_return c_native_module_string &result);
 
 	struct

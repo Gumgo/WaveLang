@@ -54,7 +54,9 @@ private:
 	bool parse_optimization_rule(const char *rule, std::vector<std::string> &out_tokens) const;
 
 	std::vector<s_task_function_argument_declaration> parse_task_arguments(
-		clang::FunctionDecl *decl, const char *function_type, const char *function_type_cap,
+		clang::FunctionDecl *decl,
+		const char *function_type,
+		const char *function_type_cap,
 		bool allow_only_possible_constants);
 
 	std::string get_function_call(const clang::FunctionDecl *decl) const;
@@ -110,7 +112,8 @@ c_ast_visitor::c_ast_visitor(
 void c_ast_visitor::HandleTranslationUnit(clang::ASTContext &context) {
 	if (m_compiler_instance.getDiagnosticClient().getNumErrors() > 0 ||
 		m_compiler_instance.getDiagnosticClient().getNumWarnings() > 0) {
-		m_diag.error(context.getTranslationUnitDecl(),
+		m_diag.error(
+			context.getTranslationUnitDecl(),
 			"Compilation finished with errors or warnings, skipping scraping phase");
 	} else {
 		TraverseDecl(context.getTranslationUnitDecl());
@@ -414,8 +417,8 @@ void c_ast_visitor::visit_task_function_declaration(clang::FunctionDecl *decl) {
 	specs.add_string(WL_SOURCE_PREFIX, "native module source", true, &task_function.native_module_source);
 	specs.add_string(WL_TASK_MEMORY_QUERY_FUNCTION_PREFIX, "task memory query", false, &task_function.memory_query);
 	specs.add_string(WL_TASK_INITIALIZER_FUNCTION_PREFIX, "task initializer", false, &task_function.initializer);
-	specs.add_string(WL_TASK_VOICE_INITIALIZER_FUNCTION_PREFIX, "task voice initializer", false,
-		&task_function.voice_initializer);
+	specs.add_string(
+		WL_TASK_VOICE_INITIALIZER_FUNCTION_PREFIX, "task voice initializer", false, &task_function.voice_initializer);
 
 	bool spec_result = specs.execute(
 		annotations,
@@ -649,7 +652,9 @@ bool c_ast_visitor::parse_optimization_rule(const char *rule, std::vector<std::s
 }
 
 std::vector<s_task_function_argument_declaration> c_ast_visitor::parse_task_arguments(
-	clang::FunctionDecl *decl, const char *function_type, const char *function_type_cap,
+	clang::FunctionDecl *decl,
+	const char *function_type,
+	const char *function_type_cap,
 	bool allow_only_possible_constants) {
 	std::vector<s_task_function_argument_declaration> result;
 
@@ -706,7 +711,8 @@ std::vector<s_task_function_argument_declaration> c_ast_visitor::parse_task_argu
 		if (in_argument && out_argument) {
 			if (argument_declaration.type.get_qualifier() == k_task_qualifier_out) {
 				// Convert out to inout
-				argument_declaration.type = c_task_qualified_data_type(argument_declaration.type.get_data_type(),
+				argument_declaration.type = c_task_qualified_data_type(
+					argument_declaration.type.get_data_type(),
 					k_task_qualifier_inout);
 				argument_declaration.in_source = in_argument + strlen(WL_IN_SOURCE_PREFIX);
 				argument_declaration.out_source = out_argument + strlen(WL_OUT_SOURCE_PREFIX);

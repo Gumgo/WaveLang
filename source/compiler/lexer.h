@@ -114,7 +114,9 @@ public:
 	static void initialize_lexer();
 	static void shutdown_lexer();
 
-	static s_compiler_result process(const s_compiler_context &context, s_lexer_output &output,
+	static s_compiler_result process(
+		const s_compiler_context &context,
+		s_lexer_output &output,
 		std::vector<s_compiler_result> &out_errors);
 
 	// Token parsing is used in the preprocessor as well

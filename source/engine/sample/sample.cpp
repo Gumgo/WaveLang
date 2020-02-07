@@ -74,7 +74,9 @@ c_sample *c_sample::load_file(const char *filename, e_sample_loop_mode loop_mode
 	return sample;
 }
 
-c_sample *c_sample::generate_wavetable(c_wrapped_array_const<real32> harmonic_weights, uint32 sample_count,
+c_sample *c_sample::generate_wavetable(
+	c_wrapped_array_const<real32> harmonic_weights,
+	uint32 sample_count,
 	bool phase_shift_enabled) {
 	if (harmonic_weights.get_count() == 0) {
 		// If no harmonics are provided, that's an error
@@ -189,9 +191,12 @@ c_sample *c_sample::generate_wavetable(c_wrapped_array_const<real32> harmonic_we
 
 					const real32 *entry_sample_data_pointer =
 						entry_sample_data.empty() ? nullptr : &entry_sample_data.front();
-					sample->m_wavetable[wavetable_entry_index].initialize_data_with_padding(1, entry_sample_count,
+					sample->m_wavetable[wavetable_entry_index].initialize_data_with_padding(
+						1,
+						entry_sample_count,
 						c_wrapped_array_const<real32>(entry_sample_data_pointer, entry_sample_data.size()),
-						&sample_data_destination, loaded_from_cache);
+						&sample_data_destination,
+						loaded_from_cache);
 				}
 
 				total_sample_count += align_size(padded_sample_count, static_cast<uint32>(k_simd_block_elements));
@@ -442,14 +447,26 @@ bool c_sample::load_wave(
 	}
 
 	// $TODO add loop point data if it exists (make sure to verify that it's valid first)
-	out_sample->initialize(fmt_subchunk.sample_rate, fmt_subchunk.num_channels, frames,
-		loop_mode, 0, frames, phase_shift_enabled,
+	out_sample->initialize(
+		fmt_subchunk.sample_rate,
+		fmt_subchunk.num_channels,
+		frames,
+		loop_mode,
+		0,
+		frames,
+		phase_shift_enabled,
 		c_wrapped_array_const<real32>(sample_data.empty() ? nullptr : &sample_data.front(), sample_data.size()));
 	return true;
 }
 
-void c_sample::initialize(uint32 sample_rate, uint32 channel_count, uint32 frame_count,
-	e_sample_loop_mode loop_mode, uint32 loop_start, uint32 loop_end, bool phase_shift_enabled,
+void c_sample::initialize(
+	uint32 sample_rate,
+	uint32 channel_count,
+	uint32 frame_count,
+	e_sample_loop_mode loop_mode,
+	uint32 loop_start,
+	uint32 loop_end,
+	bool phase_shift_enabled,
 	c_wrapped_array_const<real32> sample_data) {
 	wl_assert(!m_sample_data_allocator.get_array().get_pointer());
 	wl_assert(!m_sample_data.get_pointer());
@@ -525,8 +542,12 @@ void c_sample::initialize_wavetable() {
 	m_phase_shift_enabled = first_sample.m_phase_shift_enabled;
 }
 
-void c_sample::initialize_data_with_padding(uint32 channel_count, uint32 frame_count,
-	c_wrapped_array_const<real32> sample_data, c_wrapped_array<real32> *destination, bool initialize_metadata_only) {
+void c_sample::initialize_data_with_padding(
+	uint32 channel_count,
+	uint32 frame_count,
+	c_wrapped_array_const<real32> sample_data,
+	c_wrapped_array<real32> *destination,
+	bool initialize_metadata_only) {
 	// Add zero padding to the beginning of the sound
 	m_first_sampling_frame = k_max_sample_padding;
 	uint32 loop_frame_count = 0;
@@ -587,7 +608,8 @@ void c_sample::initialize_data_with_padding(uint32 channel_count, uint32 frame_c
 
 	// Add padding to the beginning and end
 	// Round up to account for SSE padding
-	m_total_frame_count = align_size(m_sampling_frame_count + (2 * k_max_sample_padding),
+	m_total_frame_count = align_size(
+		m_sampling_frame_count + (2 * k_max_sample_padding),
 		static_cast<uint32>(k_simd_block_elements));
 	if (m_phase_shift_enabled) {
 		m_total_frame_count += loop_frame_count;
@@ -725,10 +747,15 @@ static std::string hash_wavetable_parameters(
 	bool phase_shift_enabled) {
 	CSHA1 hash;
 	uint32 harmonic_weights_count = cast_integer_verify<uint32>(harmonic_weights.get_count());
-	hash.Update(reinterpret_cast<const uint8 *>(&harmonic_weights_count), sizeof(harmonic_weights_count));
-	hash.Update(reinterpret_cast<const uint8 *>(harmonic_weights.get_pointer()),
+	hash.Update(
+		reinterpret_cast<const uint8 *>(&harmonic_weights_count),
+		sizeof(harmonic_weights_count));
+	hash.Update(
+		reinterpret_cast<const uint8 *>(harmonic_weights.get_pointer()),
 		cast_integer_verify<uint32>(sizeof(harmonic_weights[0]) * harmonic_weights.get_count()));
-	hash.Update(reinterpret_cast<const uint8 *>(&phase_shift_enabled), sizeof(phase_shift_enabled));
+	hash.Update(
+		reinterpret_cast<const uint8 *>(&phase_shift_enabled),
+		sizeof(phase_shift_enabled));
 	hash.Final();
 
 	std::string hash_string;
@@ -809,7 +836,8 @@ static bool read_wavetable_cache(
 
 	if (result) {
 		// Read sample data if everything has matched so far
-		file.read(reinterpret_cast<char *>(out_sample_data.get_pointer()),
+		file.read(
+			reinterpret_cast<char *>(out_sample_data.get_pointer()),
 			sizeof(out_sample_data[0]) * out_sample_data.get_count());
 		if (file.fail()) {
 			result = false;
@@ -856,7 +884,8 @@ static bool write_wavetable_cache(
 	file.write(reinterpret_cast<const char *>(&file_phase_shift_enabled), sizeof(file_phase_shift_enabled));
 
 	// Write sample data
-	file.write(reinterpret_cast<const char *>(sample_data.get_pointer()),
+	file.write(
+		reinterpret_cast<const char *>(sample_data.get_pointer()),
 		sizeof(sample_data[0]) * sample_data.get_count());
 
 	if (file.fail()) {

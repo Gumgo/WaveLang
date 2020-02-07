@@ -4,8 +4,11 @@
 #include "common/common.h"
 
 template<typename t_value, typename t_comparator>
-void merge_sort_merge_helper(c_wrapped_array<t_value> left_values, c_wrapped_array<t_value> right_values,
-	c_wrapped_array<t_value> scratch_buffer, const t_comparator &comparator) {
+void merge_sort_merge_helper(
+	c_wrapped_array<t_value> left_values,
+	c_wrapped_array<t_value> right_values,
+	c_wrapped_array<t_value> scratch_buffer,
+	const t_comparator &comparator) {
 	wl_assert(left_values.get_count() + right_values.get_count() == scratch_buffer.get_count());
 
 	size_t left = 0;
@@ -28,7 +31,9 @@ void merge_sort_merge_helper(c_wrapped_array<t_value> left_values, c_wrapped_arr
 }
 
 template<typename t_value, typename t_comparator>
-void merge_sort(c_wrapped_array<t_value> values, c_wrapped_array<t_value> scratch_buffer,
+void merge_sort(
+	c_wrapped_array<t_value> values,
+	c_wrapped_array<t_value> scratch_buffer,
 	const t_comparator &comparator) {
 	wl_assert(values.get_count() == scratch_buffer.get_count());
 

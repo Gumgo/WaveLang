@@ -6,12 +6,17 @@
 
 struct s_buffer_operation_time_period {
 	static size_t query_memory();
-	static void initialize(c_event_interface *event_interface, s_buffer_operation_time_period *context,
+	static void initialize(
+		c_event_interface *event_interface,
+		s_buffer_operation_time_period *context,
 		real32 duration);
 	static void voice_initialize(s_buffer_operation_time_period *context);
 
 	static void out(
-		s_buffer_operation_time_period *context, size_t buffer_size, uint32 sample_rate, real32 duration,
+		s_buffer_operation_time_period *context,
+		size_t buffer_size,
+		uint32 sample_rate,
+		real32 duration,
 		c_real_buffer_out out);
 
 	real64 current_sample;
@@ -21,8 +26,10 @@ size_t s_buffer_operation_time_period::query_memory() {
 	return sizeof(s_buffer_operation_time_period);
 }
 
-void s_buffer_operation_time_period::initialize(c_event_interface *event_interface,
-	s_buffer_operation_time_period *context, real32 duration) {
+void s_buffer_operation_time_period::initialize(
+	c_event_interface *event_interface,
+	s_buffer_operation_time_period *context,
+	real32 duration) {
 	if (std::isnan(duration) || std::isinf(duration) || duration <= 0.0f) {
 		event_interface->submit(EVENT_WARNING << "Invalid time period duration, defaulting to 0");
 	}
@@ -34,7 +41,10 @@ void s_buffer_operation_time_period::voice_initialize(s_buffer_operation_time_pe
 }
 
 void s_buffer_operation_time_period::out(
-	s_buffer_operation_time_period *context, size_t buffer_size, uint32 sample_rate, real32 duration,
+	s_buffer_operation_time_period *context,
+	size_t buffer_size,
+	uint32 sample_rate,
+	real32 duration,
 	c_real_buffer_out out) {
 	validate_buffer(out);
 
@@ -69,7 +79,8 @@ namespace time_task_functions {
 		return s_buffer_operation_time_period::query_memory();
 	}
 
-	void period_initializer(const s_task_function_context &context,
+	void period_initializer(
+		const s_task_function_context &context,
 		real32 duration) {
 		s_buffer_operation_time_period::initialize(
 			context.event_interface,
@@ -82,7 +93,8 @@ namespace time_task_functions {
 			static_cast<s_buffer_operation_time_period *>(context.task_memory));
 	}
 
-	void period_out(const s_task_function_context &context,
+	void period_out(
+		const s_task_function_context &context,
 		real32 duration,
 		c_real_buffer *result) {
 		s_buffer_operation_time_period::out(

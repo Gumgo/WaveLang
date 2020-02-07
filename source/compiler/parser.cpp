@@ -63,8 +63,12 @@ static bool process_source_file(
 
 #if IS_TRUE(OUTPUT_PARSE_TREE_ENABLED)
 static const char *k_parse_tree_output_filename = "parse_tree.gv";
-static void print_parse_tree(c_graphviz_generator &graph, const s_lexer_source_file_output &tokens,
-	const c_lr_parse_tree &tree, size_t index, size_t parent_index = static_cast<size_t>(-1));
+static void print_parse_tree(
+	c_graphviz_generator &graph,
+	const s_lexer_source_file_output &tokens,
+	const c_lr_parse_tree &tree,
+	size_t index,
+	size_t parent_index = static_cast<size_t>(-1));
 #endif // IS_TRUE(OUTPUT_PARSE_TREE_ENABLED)
 
 void c_parser::initialize_parser() {
@@ -80,7 +84,8 @@ void c_parser::initialize_parser() {
 #if IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 	g_lr_parser.initialize(production_set);
 #else // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
-	g_lr_parser.initialize(production_set,
+	g_lr_parser.initialize(
+		production_set,
 		c_wrapped_array_const<c_lr_action>::construct(k_lr_action_table),
 		c_wrapped_array_const<uint32>::construct(k_lr_goto_table));
 #endif // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
@@ -95,8 +100,11 @@ void c_parser::shutdown_parser() {
 	g_parser_initialized = false;
 }
 
-s_compiler_result c_parser::process(const s_compiler_context &context, const s_lexer_output &input,
-	s_parser_output &output, std::vector<s_compiler_result> &out_errors) {
+s_compiler_result c_parser::process(
+	const s_compiler_context &context,
+	const s_lexer_output &input,
+	s_parser_output &output,
+	std::vector<s_compiler_result> &out_errors) {
 	wl_assert(g_parser_initialized);
 	s_compiler_result result;
 	result.clear();
@@ -114,8 +122,11 @@ s_compiler_result c_parser::process(const s_compiler_context &context, const s_l
 	for (size_t source_file_index = 0; source_file_index < context.source_files.size(); source_file_index++) {
 		const s_compiler_source_file &source_file = context.source_files[source_file_index];
 		output.source_file_output.push_back(s_parser_source_file_output());
-		failed |= !process_source_file(source_file, input.source_file_output[source_file_index],
-			cast_integer_verify<int32>(source_file_index), output.source_file_output.back(), out_errors);
+		failed |= !process_source_file(
+			source_file,
+			input.source_file_output[source_file_index],
+			cast_integer_verify<int32>(source_file_index),
+			output.source_file_output.back(), out_errors);
 	}
 
 	if (failed) {
@@ -159,14 +170,19 @@ static bool process_source_file(
 	context.next_token_index = 0;
 
 	std::vector<size_t> error_tokens;
-	source_file_output.parse_tree = g_lr_parser.parse_token_stream(s_parser_context::get_next_token, &context,
+	source_file_output.parse_tree = g_lr_parser.parse_token_stream(
+		s_parser_context::get_next_token,
+		&context,
 		error_tokens);
 #if IS_TRUE(OUTPUT_PARSE_TREE_ENABLED)
 	if (error_tokens.empty()) {
 		c_graphviz_generator parse_tree_graph;
 		parse_tree_graph.set_graph_name("parse_tree");
-		print_parse_tree(parse_tree_graph, source_file_input,
-			source_file_output.parse_tree, source_file_output.parse_tree.get_root_node_index());
+		print_parse_tree(
+			parse_tree_graph,
+			source_file_input,
+			source_file_output.parse_tree,
+			source_file_output.parse_tree.get_root_node_index());
 		parse_tree_graph.output_to_file(k_parse_tree_output_filename);
 	}
 #endif // IS_TRUE(OUTPUT_PARSE_TREE_ENABLED)
@@ -273,8 +289,12 @@ static_assert(NUMBEROF(k_parse_tree_output_nonterminal_strings) == k_parser_nont
 
 #define PRINT_TERMINAL_STRINGS 1
 
-static void print_parse_tree(c_graphviz_generator &graph, const s_lexer_source_file_output &tokens,
-	const c_lr_parse_tree &tree, size_t index, size_t parent_index) {
+static void print_parse_tree(
+	c_graphviz_generator &graph,
+	const s_lexer_source_file_output &tokens,
+	const c_lr_parse_tree &tree,
+	size_t index,
+	size_t parent_index) {
 	const c_lr_parse_tree_node &node = tree.get_node(index);
 
 	c_graphviz_node graph_node;

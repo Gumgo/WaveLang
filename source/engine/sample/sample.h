@@ -71,8 +71,13 @@ private:
 	// Initializes the sample to contain audio data.
 	// sample_data should contain channel_count sets of frame_count samples, non-interleaved
 	void initialize(
-		uint32 sample_rate, uint32 channel_count, uint32 frame_count,
-		e_sample_loop_mode loop_mode, uint32 loop_start, uint32 loop_end, bool phase_shift_enabled,
+		uint32 sample_rate,
+		uint32 channel_count,
+		uint32 frame_count,
+		e_sample_loop_mode loop_mode,
+		uint32 loop_start,
+		uint32 loop_end,
+		bool phase_shift_enabled,
 		c_wrapped_array_const<real32> sample_data);
 
 	// Initializes the sample using the already filled in wavetable array of sub samples, verifying the following:
@@ -87,8 +92,12 @@ private:
 
 	// Loop mode and points should already be set when calling this
 	// If destination is null, the sample's allocator will be used
-	void initialize_data_with_padding(uint32 channel_count, uint32 frame_count,
-		c_wrapped_array_const<real32> sample_data, c_wrapped_array<real32> *destination, bool initialize_metadata_only);
+	void initialize_data_with_padding(
+		uint32 channel_count,
+		uint32 frame_count,
+		c_wrapped_array_const<real32> sample_data,
+		c_wrapped_array<real32> *destination,
+		bool initialize_metadata_only);
 
 	e_type m_type;						// What type of sample this is
 

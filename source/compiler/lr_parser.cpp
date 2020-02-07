@@ -431,8 +431,11 @@ void c_lr_action_goto_table::output_action_goto_tables() const {
 
 #else // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 
-void c_lr_action_goto_table::initialize(uint16 terminal_count, uint16 nonterminal_count,
-	c_wrapped_array_const<c_lr_action> action_table, c_wrapped_array_const<uint32> goto_table) {
+void c_lr_action_goto_table::initialize(
+	uint16 terminal_count,
+	uint16 nonterminal_count,
+	c_wrapped_array_const<c_lr_action> action_table,
+	c_wrapped_array_const<uint32> goto_table) {
 	m_terminal_count = terminal_count;
 	m_nonterminal_count = nonterminal_count;
 
@@ -549,16 +552,23 @@ void c_lr_parser::initialize(const c_lr_production_set &production_set) {
 
 #else // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 
-void c_lr_parser::initialize(const c_lr_production_set &production_set,
-	c_wrapped_array_const<c_lr_action> action_table, c_wrapped_array_const<uint32> goto_table) {
+void c_lr_parser::initialize(
+	const c_lr_production_set &production_set,
+	c_wrapped_array_const<c_lr_action> action_table,
+	c_wrapped_array_const<uint32> goto_table) {
 	create_augmented_production_set(production_set);
-	m_action_goto_table.initialize(m_production_set.get_terminal_count(), m_production_set.get_nonterminal_count(),
-		action_table, goto_table);
+	m_action_goto_table.initialize(
+		m_production_set.get_terminal_count(),
+		m_production_set.get_nonterminal_count(),
+		action_table,
+		goto_table);
 }
 
 #endif // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 
-c_lr_parse_tree c_lr_parser::parse_token_stream(t_lr_parser_get_next_token get_next_token, void *context,
+c_lr_parse_tree c_lr_parser::parse_token_stream(
+	t_lr_parser_get_next_token get_next_token,
+	void *context,
 	std::vector<size_t> &out_error_tokens) const {
 	c_lr_parse_tree result_tree;
 
@@ -953,7 +963,9 @@ void c_lr_parser::compute_item_sets() {
 					wl_assert(conflict == k_lr_conflict_none);
 				} else {
 					// This is a reduce action
-					e_lr_conflict conflict = m_action_goto_table.set_action(item_set_index, item.lookahead.get_index(),
+					e_lr_conflict conflict = m_action_goto_table.set_action(
+						item_set_index,
+						item.lookahead.get_index(),
 						c_lr_action(k_lr_action_type_reduce, static_cast<uint32>(item.production_index)));
 
 					// $TODO Better error handling

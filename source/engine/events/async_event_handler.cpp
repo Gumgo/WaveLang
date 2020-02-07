@@ -220,8 +220,10 @@ void c_async_event_handler::flush() {
 			wl_assert(event_size <= m_settings.max_event_size);
 
 			// Process the event data - since the buffer has a tail, don't worry about wrapping
-			m_settings.event_handler(m_settings.event_handler_context,
-				event_size, buffer.get_pointer() + current_position.read + sizeof(uint32));
+			m_settings.event_handler(
+				m_settings.event_handler_context,
+				event_size,
+				buffer.get_pointer() + current_position.read + sizeof(uint32));
 
 			// Advance the read position, making sure we first align the size
 			uint32 read_advance = static_cast<uint32>(align_size(sizeof(uint32) + event_size, k_buffer_alignment));

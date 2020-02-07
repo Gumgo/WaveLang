@@ -13,29 +13,49 @@ struct s_native_module_diagnostic_callback_context {
 	const s_native_module *native_module;
 };
 
-static void build_array_value(const c_execution_graph *execution_graph, c_node_reference array_node_reference,
+static void build_array_value(
+	const c_execution_graph *execution_graph,
+	c_node_reference array_node_reference,
 	c_native_module_array &out_array_value);
-static bool sanitize_array_index(const c_execution_graph *execution_graph, c_node_reference array_node_reference,
-	real32 array_index, uint32 &out_sanitized_array_index);
+static bool sanitize_array_index(
+	const c_execution_graph *execution_graph,
+	c_node_reference array_node_reference,
+	real32 array_index,
+	uint32 &out_sanitized_array_index);
 
-static void native_module_diagnostic_callback(void *context, e_diagnostic_level diagnostic_level,
+static void native_module_diagnostic_callback(
+	void *context,
+	e_diagnostic_level diagnostic_level,
 	const std::string &message);
-static void execute_compile_time_call(const c_execution_graph *execution_graph,
-	const s_instrument_globals *instrument_globals, const s_native_module &native_module,
-	c_native_module_compile_time_argument_list arguments, std::vector<s_compiler_result> *errors);
-
-static bool optimize_node(c_execution_graph *execution_graph, const s_instrument_globals *instrument_globals,
-	c_node_reference node_reference, std::vector<s_compiler_result> *errors);
-static bool optimize_native_module_call(c_execution_graph *execution_graph,
-	const s_instrument_globals *instrument_globals, c_node_reference node_reference,
+static void execute_compile_time_call(
+	const c_execution_graph *execution_graph,
+	const s_instrument_globals *instrument_globals,
+	const s_native_module &native_module,
+	c_native_module_compile_time_argument_list arguments,
 	std::vector<s_compiler_result> *errors);
-static bool try_to_apply_optimization_rule(c_execution_graph *execution_graph,
-	c_node_reference node_reference, uint32 rule_index);
+
+static bool optimize_node(
+	c_execution_graph *execution_graph,
+	const s_instrument_globals *instrument_globals,
+	c_node_reference node_reference,
+	std::vector<s_compiler_result> *errors);
+static bool optimize_native_module_call(
+	c_execution_graph *execution_graph,
+	const s_instrument_globals *instrument_globals,
+	c_node_reference node_reference,
+	std::vector<s_compiler_result> *errors);
+static bool try_to_apply_optimization_rule(
+	c_execution_graph *execution_graph,
+	c_node_reference node_reference,
+	uint32 rule_index);
 static void remove_useless_nodes(c_execution_graph *execution_graph);
-static void transfer_outputs(c_execution_graph *execution_graph,
-	c_node_reference destination_reference, c_node_reference source_reference);
+static void transfer_outputs(
+	c_execution_graph *execution_graph,
+	c_node_reference destination_reference,
+	c_node_reference source_reference);
 static void deduplicate_nodes(c_execution_graph *execution_graph);
-static void validate_optimized_constants(const c_execution_graph *execution_graph,
+static void validate_optimized_constants(
+	const c_execution_graph *execution_graph,
 	std::vector<s_compiler_result> &out_errors);
 
 c_execution_graph_constant_evaluator::c_execution_graph_constant_evaluator() {
@@ -43,8 +63,10 @@ c_execution_graph_constant_evaluator::c_execution_graph_constant_evaluator() {
 	m_instrument_globals = nullptr;
 }
 
-void c_execution_graph_constant_evaluator::initialize(const c_execution_graph *execution_graph,
-	const s_instrument_globals *instrument_globals, std::vector<s_compiler_result> *errors) {
+void c_execution_graph_constant_evaluator::initialize(
+	const c_execution_graph *execution_graph,
+	const s_instrument_globals *instrument_globals,
+	std::vector<s_compiler_result> *errors) {
 	wl_assert(!m_execution_graph);
 	wl_assert(!m_instrument_globals);
 	m_execution_graph = execution_graph;
@@ -155,9 +177,13 @@ void c_execution_graph_constant_evaluator::try_evaluate_node(c_node_reference no
 
 		// Make the compile time call to resolve the outputs
 		if (all_inputs_evaluated) {
-			execute_compile_time_call(m_execution_graph, m_instrument_globals, native_module,
+			execute_compile_time_call(
+				m_execution_graph,
+				m_instrument_globals,
+				native_module,
 				c_native_module_compile_time_argument_list(
-					arg_list.empty() ? nullptr : &arg_list.front(), arg_list.size()),
+					arg_list.empty() ? nullptr : &arg_list.front(),
+					arg_list.size()),
 				m_errors);
 			store_native_module_call_results(native_module, native_module_node_reference, arg_list);
 		}
@@ -167,8 +193,10 @@ void c_execution_graph_constant_evaluator::try_evaluate_node(c_node_reference no
 	}
 }
 
-bool c_execution_graph_constant_evaluator::build_module_call_arguments(const s_native_module &native_module,
-	c_node_reference native_module_node_reference, std::vector<s_native_module_compile_time_argument> &out_arg_list) {
+bool c_execution_graph_constant_evaluator::build_module_call_arguments(
+	const s_native_module &native_module,
+	c_node_reference native_module_node_reference,
+	std::vector<s_native_module_compile_time_argument> &out_arg_list) {
 	wl_assert(out_arg_list.empty());
 	out_arg_list.resize(native_module.argument_count);
 
@@ -237,8 +265,10 @@ bool c_execution_graph_constant_evaluator::build_module_call_arguments(const s_n
 	return all_inputs_evaluated;
 }
 
-void c_execution_graph_constant_evaluator::store_native_module_call_results(const s_native_module &native_module,
-	c_node_reference native_module_node_reference, const std::vector<s_native_module_compile_time_argument> &arg_list) {
+void c_execution_graph_constant_evaluator::store_native_module_call_results(
+	const s_native_module &native_module,
+	c_node_reference native_module_node_reference,
+	const std::vector<s_native_module_compile_time_argument> &arg_list) {
 	size_t next_output = 0;
 
 	for (size_t arg = 0; arg < native_module.argument_count; arg++) {
@@ -416,8 +446,10 @@ void c_execution_graph_trimmer::add_pending_node(c_node_reference node_reference
 	}
 }
 
-s_compiler_result c_execution_graph_optimizer::optimize_graph(c_execution_graph *execution_graph,
-	const s_instrument_globals *instrument_globals, std::vector<s_compiler_result> &out_errors) {
+s_compiler_result c_execution_graph_optimizer::optimize_graph(
+	c_execution_graph *execution_graph,
+	const s_instrument_globals *instrument_globals,
+	std::vector<s_compiler_result> &out_errors) {
 	s_compiler_result result;
 	result.clear();
 
@@ -451,7 +483,9 @@ s_compiler_result c_execution_graph_optimizer::optimize_graph(c_execution_graph 
 	return result;
 }
 
-static void build_array_value(const c_execution_graph *execution_graph, c_node_reference array_node_reference,
+static void build_array_value(
+	const c_execution_graph *execution_graph,
+	c_node_reference array_node_reference,
 	c_native_module_array &out_array_value) {
 	wl_assert(execution_graph->get_node_type(array_node_reference) == k_execution_graph_node_type_constant);
 	wl_assert(execution_graph->get_constant_node_data_type(array_node_reference).is_array());
@@ -470,8 +504,11 @@ static void build_array_value(const c_execution_graph *execution_graph, c_node_r
 	}
 }
 
-static bool sanitize_array_index(const c_execution_graph *execution_graph, c_node_reference array_node_reference,
-	real32 array_index, uint32 &out_sanitized_array_index) {
+static bool sanitize_array_index(
+	const c_execution_graph *execution_graph,
+	c_node_reference array_node_reference,
+	real32 array_index,
+	uint32 &out_sanitized_array_index) {
 	if (std::isnan(array_index) || std::isinf(array_index)) {
 		return false;
 	}
@@ -491,7 +528,9 @@ static bool sanitize_array_index(const c_execution_graph *execution_graph, c_nod
 	return true;
 }
 
-static void native_module_diagnostic_callback(void *context, e_diagnostic_level diagnostic_level,
+static void native_module_diagnostic_callback(
+	void *context,
+	e_diagnostic_level diagnostic_level,
 	const std::string &message) {
 	s_native_module_diagnostic_callback_context *native_module_diagnostic_callback_context =
 		static_cast<s_native_module_diagnostic_callback_context *>(context);
@@ -510,9 +549,12 @@ static void native_module_diagnostic_callback(void *context, e_diagnostic_level 
 	}
 }
 
-static void execute_compile_time_call(const c_execution_graph *execution_graph,
-	const s_instrument_globals *instrument_globals, const s_native_module &native_module,
-	c_native_module_compile_time_argument_list arguments, std::vector<s_compiler_result> *errors) {
+static void execute_compile_time_call(
+	const c_execution_graph *execution_graph,
+	const s_instrument_globals *instrument_globals,
+	const s_native_module &native_module,
+	c_native_module_compile_time_argument_list arguments,
+	std::vector<s_compiler_result> *errors) {
 	wl_assert(execution_graph);
 
 	// Make the compile time call to resolve the outputs
@@ -532,8 +574,11 @@ static void execute_compile_time_call(const c_execution_graph *execution_graph,
 	native_module.compile_time_call(native_module_context);
 }
 
-static bool optimize_node(c_execution_graph *execution_graph, const s_instrument_globals *instrument_globals,
-	c_node_reference node_reference, std::vector<s_compiler_result> *errors) {
+static bool optimize_node(
+	c_execution_graph *execution_graph,
+	const s_instrument_globals *instrument_globals,
+	c_node_reference node_reference,
+	std::vector<s_compiler_result> *errors) {
 	bool optimized = false;
 
 	switch (execution_graph->get_node_type(node_reference)) {
@@ -577,8 +622,10 @@ static bool optimize_node(c_execution_graph *execution_graph, const s_instrument
 	return optimized;
 }
 
-static bool optimize_native_module_call(c_execution_graph *execution_graph,
-	const s_instrument_globals *instrument_globals, c_node_reference node_reference,
+static bool optimize_native_module_call(
+	c_execution_graph *execution_graph,
+	const s_instrument_globals *instrument_globals,
+	c_node_reference node_reference,
 	std::vector<s_compiler_result> *errors) {
 	wl_assert(execution_graph->get_node_type(node_reference) == k_execution_graph_node_type_native_module_call);
 	const s_native_module &native_module = c_native_module_registry::get_native_module(
@@ -657,9 +704,13 @@ static bool optimize_native_module_call(c_execution_graph *execution_graph,
 			wl_assert(next_output == native_module.out_argument_count);
 
 			// Make the compile time call to resolve the outputs
-			execute_compile_time_call(execution_graph, instrument_globals, native_module,
+			execute_compile_time_call(
+				execution_graph,
+				instrument_globals,
+				native_module,
 				c_native_module_compile_time_argument_list(
-					arg_list.empty() ? nullptr : &arg_list.front(), arg_list.size()),
+					arg_list.empty() ? nullptr : &arg_list.front(),
+					arg_list.size()),
 				errors);
 
 			next_output = 0;
@@ -818,8 +869,10 @@ private:
 			(m_execution_graph->get_native_module_call_native_module_index(node_reference) == native_module_index);
 	}
 
-	bool handle_source_value_symbol_match(const s_native_module_optimization_symbol &symbol,
-		c_node_reference node_reference, c_node_reference node_output_reference) {
+	bool handle_source_value_symbol_match(
+		const s_native_module_optimization_symbol &symbol,
+		c_node_reference node_reference,
+		c_node_reference node_output_reference) {
 		if (symbol.type == k_native_module_optimization_symbol_type_variable) {
 			// Match anything except for constants
 			if (m_execution_graph->get_node_type(node_reference) == k_execution_graph_node_type_constant) {
@@ -1160,10 +1213,10 @@ public:
 		wl_assert(m_rule);
 
 		// Initially we haven't matched any values
-		std::fill(m_matched_variable_node_references.begin(), m_matched_variable_node_references.end(),
-			c_node_reference());
-		std::fill(m_matched_constant_node_references.begin(), m_matched_constant_node_references.end(),
-			c_node_reference());
+		std::fill(
+			m_matched_variable_node_references.begin(), m_matched_variable_node_references.end(), c_node_reference());
+		std::fill(
+			m_matched_constant_node_references.begin(), m_matched_constant_node_references.end(), c_node_reference());
 
 		if (try_to_match_source_pattern()) {
 			c_node_reference target_root_node_reference = build_target_pattern();
@@ -1230,8 +1283,10 @@ void remove_useless_nodes(c_execution_graph *execution_graph) {
 	}
 }
 
-static void transfer_outputs(c_execution_graph *execution_graph,
-	c_node_reference destination_reference, c_node_reference source_reference) {
+static void transfer_outputs(
+	c_execution_graph *execution_graph,
+	c_node_reference destination_reference,
+	c_node_reference source_reference) {
 	// Redirect the inputs of input_node directly to the outputs of output_node
 	while (execution_graph->get_node_outgoing_edge_count(source_reference) > 0) {
 		c_node_reference to_node_reference = execution_graph->get_node_outgoing_edge_reference(source_reference, 0);
@@ -1295,9 +1350,9 @@ static void deduplicate_nodes(c_execution_graph *execution_graph) {
 			if (equal) {
 				// Redirect node B's outputs as outputs of node A
 				while (execution_graph->get_node_outgoing_edge_count(node_b_reference) > 0) {
-					c_node_reference to_node_reference =
-						execution_graph->get_node_outgoing_edge_reference(node_b_reference,
-							execution_graph->get_node_outgoing_edge_count(node_b_reference) - 1);
+					c_node_reference to_node_reference = execution_graph->get_node_outgoing_edge_reference(
+						node_b_reference,
+						execution_graph->get_node_outgoing_edge_count(node_b_reference) - 1);
 					execution_graph->remove_edge(node_b_reference, to_node_reference);
 					execution_graph->add_edge(node_a_reference, to_node_reference);
 				}
@@ -1391,9 +1446,9 @@ static void deduplicate_nodes(c_execution_graph *execution_graph) {
 								execution_graph->get_node_outgoing_edge_reference(node_b_reference, edge);
 
 							while (execution_graph->get_node_outgoing_edge_count(output_node_b) > 0) {
-								c_node_reference to_node_reference =
-									execution_graph->get_node_outgoing_edge_reference(output_node_b,
-										execution_graph->get_node_outgoing_edge_count(output_node_b) - 1);
+								c_node_reference to_node_reference = execution_graph->get_node_outgoing_edge_reference(
+									output_node_b,
+									execution_graph->get_node_outgoing_edge_count(output_node_b) - 1);
 								execution_graph->remove_edge(output_node_b, to_node_reference);
 								execution_graph->add_edge(output_node_a, to_node_reference);
 							}
@@ -1401,9 +1456,9 @@ static void deduplicate_nodes(c_execution_graph *execution_graph) {
 					} else {
 						// Directly remap outputs
 						while (execution_graph->get_node_outgoing_edge_count(node_b_reference) > 0) {
-							c_node_reference to_node_reference =
-								execution_graph->get_node_outgoing_edge_reference(node_b_reference,
-									execution_graph->get_node_outgoing_edge_count(node_b_reference) - 1);
+							c_node_reference to_node_reference = execution_graph->get_node_outgoing_edge_reference(
+								node_b_reference,
+								execution_graph->get_node_outgoing_edge_count(node_b_reference) - 1);
 							execution_graph->remove_edge(node_b_reference, to_node_reference);
 							execution_graph->add_edge(node_a_reference, to_node_reference);
 						}
@@ -1418,7 +1473,8 @@ static void deduplicate_nodes(c_execution_graph *execution_graph) {
 	} while (graph_changed);
 }
 
-static void validate_optimized_constants(const c_execution_graph *execution_graph,
+static void validate_optimized_constants(
+	const c_execution_graph *execution_graph,
 	std::vector<s_compiler_result> &out_errors) {
 	for (c_node_reference node_reference = execution_graph->nodes_begin();
 		 node_reference.is_valid();

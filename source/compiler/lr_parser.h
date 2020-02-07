@@ -202,8 +202,11 @@ public:
 
 	void output_action_goto_tables() const;
 #else // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
-	void initialize(uint16 terminal_count, uint16 nonterminal_count,
-		c_wrapped_array_const<c_lr_action> action_table, c_wrapped_array_const<uint32> goto_table);
+	void initialize(
+		uint16 terminal_count,
+		uint16 nonterminal_count,
+		c_wrapped_array_const<c_lr_action> action_table,
+		c_wrapped_array_const<uint32> goto_table);
 #endif // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 
 private:
@@ -280,11 +283,15 @@ public:
 #if IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 	void initialize(const c_lr_production_set &production_set);
 #else // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
-	void initialize(const c_lr_production_set &production_set,
-		c_wrapped_array_const<c_lr_action> action_table, c_wrapped_array_const<uint32> goto_table);
+	void initialize(
+		const c_lr_production_set &production_set,
+		c_wrapped_array_const<c_lr_action> action_table,
+		c_wrapped_array_const<uint32> goto_table);
 #endif // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 
-	c_lr_parse_tree parse_token_stream(t_lr_parser_get_next_token get_next_token, void *context,
+	c_lr_parse_tree parse_token_stream(
+		t_lr_parser_get_next_token get_next_token,
+		void *context,
 		std::vector<size_t> &out_error_tokens) const;
 
 private:

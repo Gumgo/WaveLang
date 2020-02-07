@@ -16,8 +16,11 @@ struct s_get_integer_byte {
 // - t_get_key_byte should return the Nth byte of the given key, used for bucketing. For integer sorting, this is
 // trivial. To support floats, some bit manipulation is required. By default, an integer implementation is provided.
 template<typename t_key, typename t_value, typename t_get_key, typename t_get_key_byte = s_get_integer_byte<t_key>>
-void radix_sort_stable(c_wrapped_array<t_value> values, c_wrapped_array<t_value> intermediate_storage,
-	const t_get_key &get_key, const t_get_key_byte &get_key_byte = t_get_key_byte()) {
+void radix_sort_stable(
+	c_wrapped_array<t_value> values,
+	c_wrapped_array<t_value> intermediate_storage,
+	const t_get_key &get_key,
+	const t_get_key_byte &get_key_byte = t_get_key_byte()) {
 	static const size_t k_key_size = sizeof(t_key);
 
 	struct s_bucket {

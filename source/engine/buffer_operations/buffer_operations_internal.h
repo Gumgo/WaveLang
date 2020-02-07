@@ -43,8 +43,11 @@ typedef s_buffer_operation_real_real_real<s_op_subtraction> s_buffer_operation_s
 
 // Multiplication is a special case because we can mark buffers as constant if we're multiplying by 0
 struct s_buffer_operation_multiplication {
-	static void in_in_out(size_t buffer_size,
-		c_real_buffer_or_constant_in a, c_real_buffer_or_constant_in b, c_real_buffer_out c) {
+	static void in_in_out(
+		size_t buffer_size,
+		c_real_buffer_or_constant_in a,
+		c_real_buffer_or_constant_in b,
+		c_real_buffer_out c) {
 		if ((a.is_constant() && a.get_constant() == 0.0f) ||
 			(b.is_constant() && b.get_constant() == 0.0f)) {
 			*c->get_data<real32>() = 0.0f;
@@ -52,7 +55,9 @@ struct s_buffer_operation_multiplication {
 			return;
 		}
 
-		buffer_operator_in_in_out(s_op_multiplication(), buffer_size,
+		buffer_operator_in_in_out(
+			s_op_multiplication(),
+			buffer_size,
 			c_iterable_buffer_real_in(a),
 			c_iterable_buffer_real_in(b),
 			c_iterable_buffer_real_out(c));
@@ -66,7 +71,9 @@ struct s_buffer_operation_multiplication {
 			return;
 		}
 
-		buffer_operator_inout_in(s_op_multiplication(), buffer_size,
+		buffer_operator_inout_in(
+			s_op_multiplication(),
+			buffer_size,
 			c_iterable_buffer_real_inout(a),
 			c_iterable_buffer_real_in(b));
 	}
@@ -79,7 +86,9 @@ struct s_buffer_operation_multiplication {
 			return;
 		}
 
-		buffer_operator_in_inout(s_op_multiplication(), buffer_size,
+		buffer_operator_in_inout(
+			s_op_multiplication(),
+			buffer_size,
 			c_iterable_buffer_real_in(a),
 			c_iterable_buffer_real_inout(b));
 	}

@@ -86,14 +86,24 @@ private:
 	};
 
 	void add_specification_internal(
-		e_annotation_type type, const char *annotation_or_prefix, const char *name, bool required, void *storage);
+		e_annotation_type type,
+		const char *annotation_or_prefix,
+		const char *name,
+		bool required,
+		void *storage);
 
 	clang::NamedDecl *lookup_decl(
-		const char *name, clang::SourceLocation name_source_location,
-		clang::CompilerInstance *compiler_instance, clang::DeclContext *decl_context);
+		const char *name,
+		clang::SourceLocation name_source_location,
+		clang::CompilerInstance *compiler_instance,
+		clang::DeclContext *decl_context);
 
-	bool lookup_uint32(const char *name_or_value, clang::SourceLocation name_source_location,
-		clang::CompilerInstance *compiler_instance, clang::DeclContext *decl_context, clang::ASTContext *ast_context,
+	bool lookup_uint32(
+		const char *name_or_value,
+		clang::SourceLocation name_source_location,
+		clang::CompilerInstance *compiler_instance,
+		clang::DeclContext *decl_context,
+		clang::ASTContext *ast_context,
 		uint32 &result);
 
 	std::vector<s_annotation_specification> m_annotation_specifications;

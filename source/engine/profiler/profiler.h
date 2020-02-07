@@ -68,7 +68,10 @@ public:
 	void end_fx();
 	void end_execution(int64 min_total_time_threshold_ns);
 
-	void begin_task(e_instrument_stage instrument_stage, uint32 worker_thread, uint32 task_index,
+	void begin_task(
+		e_instrument_stage instrument_stage,
+		uint32 worker_thread,
+		uint32 task_index,
 		uint32 task_function_index);
 	void begin_task_function(e_instrument_stage instrument_stage, uint32 worker_thread, uint32 task_index);
 	void end_task_function(e_instrument_stage instrument_stage, uint32 worker_thread, uint32 task_index);

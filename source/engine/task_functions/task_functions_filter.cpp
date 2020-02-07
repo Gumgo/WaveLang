@@ -678,7 +678,8 @@ namespace filter_task_functions {
 		static_cast<s_buffer_operation_biquad *>(context.task_memory)->voice_initialize();
 	}
 
-	void biquad_in_in_in_in_in_in_out(const s_task_function_context &context,
+	void biquad_in_in_in_in_in_in_out(
+		const s_task_function_context &context,
 		c_real_const_buffer_or_constant a1,
 		c_real_const_buffer_or_constant a2,
 		c_real_const_buffer_or_constant b0,
@@ -690,7 +691,8 @@ namespace filter_task_functions {
 			context.buffer_size, a1, a2, b0, b1, b2, signal, result);
 	}
 
-	void biquad_inout_in_in_in_in_in(const s_task_function_context &context,
+	void biquad_inout_in_in_in_in_in(
+		const s_task_function_context &context,
 		c_real_buffer *a1_result,
 		c_real_const_buffer_or_constant a2,
 		c_real_const_buffer_or_constant b0,
@@ -701,7 +703,8 @@ namespace filter_task_functions {
 			context.buffer_size, a1_result, a2, b0, b1, b2, signal);
 	}
 
-	void biquad_in_inout_in_in_in_in(const s_task_function_context &context,
+	void biquad_in_inout_in_in_in_in(
+		const s_task_function_context &context,
 		c_real_const_buffer_or_constant a1,
 		c_real_buffer *a2_result,
 		c_real_const_buffer_or_constant b0,
@@ -712,7 +715,8 @@ namespace filter_task_functions {
 			context.buffer_size, a1, a2_result, b0, b1, b2, signal);
 	}
 
-	void biquad_in_in_inout_in_in_in(const s_task_function_context &context,
+	void biquad_in_in_inout_in_in_in(
+		const s_task_function_context &context,
 		c_real_const_buffer_or_constant a1,
 		c_real_const_buffer_or_constant a2,
 		c_real_buffer *b0_result,
@@ -723,7 +727,8 @@ namespace filter_task_functions {
 			context.buffer_size, a1, a2, b0_result, b1, b2, signal);
 	}
 
-	void biquad_in_in_in_inout_in_in(const s_task_function_context &context,
+	void biquad_in_in_in_inout_in_in(
+		const s_task_function_context &context,
 		c_real_const_buffer_or_constant a1,
 		c_real_const_buffer_or_constant a2,
 		c_real_const_buffer_or_constant b0,
@@ -734,7 +739,8 @@ namespace filter_task_functions {
 			context.buffer_size, a1, a2, b0, b1_result, b2, signal);
 	}
 
-	void biquad_in_in_in_in_inout_in(const s_task_function_context &context,
+	void biquad_in_in_in_in_inout_in(
+		const s_task_function_context &context,
 		c_real_const_buffer_or_constant a1,
 		c_real_const_buffer_or_constant a2,
 		c_real_const_buffer_or_constant b0,
@@ -745,7 +751,8 @@ namespace filter_task_functions {
 			context.buffer_size, a1, a2, b0, b1, b2_result, signal);
 	}
 
-	void biquad_in_in_in_in_in_inout(const s_task_function_context &context,
+	void biquad_in_in_in_in_in_inout(
+		const s_task_function_context &context,
 		c_real_const_buffer_or_constant a1,
 		c_real_const_buffer_or_constant a2,
 		c_real_const_buffer_or_constant b0,

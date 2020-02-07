@@ -131,15 +131,25 @@ void run_math_tests() {
 		test("sincos_2", sincos_cos, c_real32_4(cos(2.0f)));
 	}
 
-	test("extract_0", extract<0>(c_real32_4(0.0f, 1.0f, 2.0f, 3.0f), c_real32_4(4.0f, 5.0f, 6.0f, 7.0f)),
+	test(
+		"extract_0",
+		extract<0>(c_real32_4(0.0f, 1.0f, 2.0f, 3.0f), c_real32_4(4.0f, 5.0f, 6.0f, 7.0f)),
 		c_real32_4(0.0f, 1.0f, 2.0f, 3.0f));
-	test("extract_1", extract<1>(c_real32_4(0.0f, 1.0f, 2.0f, 3.0f), c_real32_4(4.0f, 5.0f, 6.0f, 7.0f)),
+	test(
+		"extract_1",
+		extract<1>(c_real32_4(0.0f, 1.0f, 2.0f, 3.0f), c_real32_4(4.0f, 5.0f, 6.0f, 7.0f)),
 		c_real32_4(1.0f, 2.0f, 3.0f, 4.0f));
-	test("extract_2", extract<2>(c_real32_4(0.0f, 1.0f, 2.0f, 3.0f), c_real32_4(4.0f, 5.0f, 6.0f, 7.0f)),
+	test(
+		"extract_2",
+		extract<2>(c_real32_4(0.0f, 1.0f, 2.0f, 3.0f), c_real32_4(4.0f, 5.0f, 6.0f, 7.0f)),
 		c_real32_4(2.0f, 3.0f, 4.0f, 5.0f));
-	test("extract_3", extract<3>(c_real32_4(0.0f, 1.0f, 2.0f, 3.0f), c_real32_4(4.0f, 5.0f, 6.0f, 7.0f)),
+	test(
+		"extract_3",
+		extract<3>(c_real32_4(0.0f, 1.0f, 2.0f, 3.0f), c_real32_4(4.0f, 5.0f, 6.0f, 7.0f)),
 		c_real32_4(3.0f, 4.0f, 5.0f, 6.0f));
-	test("extract_4", extract<4>(c_real32_4(0.0f, 1.0f, 2.0f, 3.0f), c_real32_4(4.0f, 5.0f, 6.0f, 7.0f)),
+	test(
+		"extract_4",
+		extract<4>(c_real32_4(0.0f, 1.0f, 2.0f, 3.0f), c_real32_4(4.0f, 5.0f, 6.0f, 7.0f)),
 		c_real32_4(4.0f, 5.0f, 6.0f, 7.0f));
 
 	// c_int32_4:
@@ -191,15 +201,25 @@ void run_math_tests() {
 	test("max", max(c_int32_4(1), c_int32_4(2)), c_int32_4(2));
 	test("mask_from_msb", mask_from_msb(c_int32_4(0, -1, -1, 0)), 6);
 
-	test("extract_0", extract<0>(c_int32_4(0, 1, 2, 3), c_int32_4(4, 5, 6, 7)),
+	test(
+		"extract_0",
+		extract<0>(c_int32_4(0, 1, 2, 3), c_int32_4(4, 5, 6, 7)),
 		c_int32_4(0, 1, 2, 3));
-	test("extract_1", extract<1>(c_int32_4(0, 1, 2, 3), c_int32_4(4, 5, 6, 7)),
+	test(
+		"extract_1",
+		extract<1>(c_int32_4(0, 1, 2, 3), c_int32_4(4, 5, 6, 7)),
 		c_int32_4(1, 2, 3, 4));
-	test("extract_2", extract<2>(c_int32_4(0, 1, 2, 3), c_int32_4(4, 5, 6, 7)),
+	test(
+		"extract_2",
+		extract<2>(c_int32_4(0, 1, 2, 3), c_int32_4(4, 5, 6, 7)),
 		c_int32_4(2, 3, 4, 5));
-	test("extract_3", extract<3>(c_int32_4(0, 1, 2, 3), c_int32_4(4, 5, 6, 7)),
+	test(
+		"extract_3",
+		extract<3>(c_int32_4(0, 1, 2, 3), c_int32_4(4, 5, 6, 7)),
 		c_int32_4(3, 4, 5, 6));
-	test("extract_4", extract<4>(c_int32_4(0, 1, 2, 3), c_int32_4(4, 5, 6, 7)),
+	test(
+		"extract_4",
+		extract<4>(c_int32_4(0, 1, 2, 3), c_int32_4(4, 5, 6, 7)),
 		c_int32_4(4, 5, 6, 7));
 }
 

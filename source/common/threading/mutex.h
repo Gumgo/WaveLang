@@ -5,9 +5,10 @@
 
 #include <mutex>
 
-class c_mutex : private c_uncopyable {
+class c_mutex {
 public:
 	c_mutex();
+	UNCOPYABLE(c_mutex);
 	~c_mutex();
 
 	void lock();

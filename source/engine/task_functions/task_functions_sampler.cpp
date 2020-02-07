@@ -13,63 +13,120 @@ class c_event_interface;
 
 struct s_buffer_operation_sampler : public s_sampler_context {
 	static void in_out(
-		c_event_interface *event_interface, const char *sample_name,
-		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-		size_t buffer_size, uint32 sample_rate, c_real_buffer_or_constant_in speed, c_real_buffer_out out);
+		c_event_interface *event_interface,
+		const char *sample_name,
+		c_sample_library_accessor *sample_accessor,
+		s_buffer_operation_sampler *context,
+		size_t buffer_size,
+		uint32 sample_rate,
+		c_real_buffer_or_constant_in speed,
+		c_real_buffer_out out);
 	static void inout(
-		c_event_interface *event_interface, const char *sample_name,
-		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-		size_t buffer_size, uint32 sample_rate, c_real_buffer_inout speed_out);
+		c_event_interface *event_interface,
+		const char *sample_name,
+		c_sample_library_accessor *sample_accessor,
+		s_buffer_operation_sampler *context,
+		size_t buffer_size,
+		uint32 sample_rate,
+		c_real_buffer_inout speed_out);
 
 	// Constant versions
 	static void const_out(
-		c_event_interface *event_interface, const char *sample_name,
-		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-		size_t buffer_size, uint32 sample_rate, real32 speed, c_real_buffer_out out);
+		c_event_interface *event_interface,
+		const char *sample_name,
+		c_sample_library_accessor *sample_accessor,
+		s_buffer_operation_sampler *context,
+		size_t buffer_size,
+		uint32 sample_rate,
+		real32 speed,
+		c_real_buffer_out out);
 
 	static void loop_in_in_out(
-		c_event_interface *event_interface, const char *sample_name,
-		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-		size_t buffer_size, uint32 sample_rate,
-		c_real_buffer_or_constant_in speed, c_real_buffer_or_constant_in phase, c_real_buffer_out out);
+		c_event_interface *event_interface,
+		const char *sample_name,
+		c_sample_library_accessor *sample_accessor,
+		s_buffer_operation_sampler *context,
+		size_t buffer_size,
+		uint32 sample_rate,
+		c_real_buffer_or_constant_in speed,
+		c_real_buffer_or_constant_in phase,
+		c_real_buffer_out out);
 	static void loop_inout_in(
-		c_event_interface *event_interface, const char *sample_name,
-		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-		size_t buffer_size, uint32 sample_rate, c_real_buffer_inout speed_out, c_real_buffer_or_constant_in phase);
+		c_event_interface *event_interface,
+		const char *sample_name,
+		c_sample_library_accessor *sample_accessor,
+		s_buffer_operation_sampler *context,
+		size_t buffer_size,
+		uint32 sample_rate,
+		c_real_buffer_inout speed_out,
+		c_real_buffer_or_constant_in phase);
 	static void loop_in_inout(
-		c_event_interface *event_interface, const char *sample_name,
-		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-		size_t buffer_size, uint32 sample_rate, c_real_buffer_or_constant_in speed, c_real_buffer_inout phase_out);
+		c_event_interface *event_interface,
+		const char *sample_name,
+		c_sample_library_accessor *sample_accessor,
+		s_buffer_operation_sampler *context,
+		size_t buffer_size,
+		uint32 sample_rate,
+		c_real_buffer_or_constant_in speed,
+		c_real_buffer_inout phase_out);
 
 	// Constant versions
 	static void loop_const_in_out(
-		c_event_interface *event_interface, const char *sample_name,
-		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-		size_t buffer_size, uint32 sample_rate,
-		real32 speed, c_real_buffer_or_constant_in phase, c_real_buffer_out out);
+		c_event_interface *event_interface,
+		const char *sample_name,
+		c_sample_library_accessor *sample_accessor,
+		s_buffer_operation_sampler *context,
+		size_t buffer_size,
+		uint32 sample_rate,
+		real32 speed,
+		c_real_buffer_or_constant_in phase,
+		c_real_buffer_out out);
 	static void loop_in_const_out(
-		c_event_interface *event_interface, const char *sample_name,
-		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-		size_t buffer_size, uint32 sample_rate,
-		c_real_buffer_or_constant_in speed, real32 phase, c_real_buffer_out out);
+		c_event_interface *event_interface,
+		const char *sample_name,
+		c_sample_library_accessor *sample_accessor,
+		s_buffer_operation_sampler *context,
+		size_t buffer_size,
+		uint32 sample_rate,
+		c_real_buffer_or_constant_in speed,
+		real32 phase,
+		c_real_buffer_out out);
 	static void loop_const_const_out(
-		c_event_interface *event_interface, const char *sample_name,
-		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-		size_t buffer_size, uint32 sample_rate,
-		real32 speed, real32 phase, c_real_buffer_out out);
+		c_event_interface *event_interface,
+		const char *sample_name,
+		c_sample_library_accessor *sample_accessor,
+		s_buffer_operation_sampler *context,
+		size_t buffer_size,
+		uint32 sample_rate,
+		real32 speed,
+		real32 phase,
+		c_real_buffer_out out);
 	static void loop_inout_const(
-		c_event_interface *event_interface, const char *sample_name,
-		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-		size_t buffer_size, uint32 sample_rate, c_real_buffer_inout speed_out, real32 phase);
+		c_event_interface *event_interface,
+		const char *sample_name,
+		c_sample_library_accessor *sample_accessor,
+		s_buffer_operation_sampler *context,
+		size_t buffer_size,
+		uint32 sample_rate,
+		c_real_buffer_inout speed_out,
+		real32 phase);
 	static void loop_const_inout(
-		c_event_interface *event_interface, const char *sample_name,
-		c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-		size_t buffer_size, uint32 sample_rate, real32 speed, c_real_buffer_inout phase_out);
+		c_event_interface *event_interface,
+		const char *sample_name,
+		c_sample_library_accessor *sample_accessor,
+		s_buffer_operation_sampler *context,
+		size_t buffer_size,
+		uint32 sample_rate,
+		real32 speed,
+		c_real_buffer_inout phase_out);
 };
 
 // Extracts sample data
-static void get_sample_time_data(const c_sample *sample,
-	real64 &out_length_samples, real64 &out_loop_start_sample, real64 &out_loop_end_sample);
+static void get_sample_time_data(
+	const c_sample *sample,
+	real64 &out_length_samples,
+	real64 &out_loop_start_sample,
+	real64 &out_loop_end_sample);
 
 // To avoid rewriting the algorithm in multiple variations, we create a base template class and implement the variants
 // using https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern.
@@ -116,8 +173,13 @@ struct s_sampler_algorithm {
 		}
 	}
 
-	void run(c_event_interface *event_interface, const char *sample_name, c_sample_library_accessor *sample_accessor,
-		s_buffer_operation_sampler *context, size_t buffer_size, uint32 sample_rate) {
+	void run(
+		c_event_interface *event_interface,
+		const char *sample_name,
+		c_sample_library_accessor *sample_accessor,
+		s_buffer_operation_sampler *context,
+		size_t buffer_size,
+		uint32 sample_rate) {
 		// Allows us to call "overridden" methods without inheritance
 		t_derived *this_derived = static_cast<t_derived *>(this);
 
@@ -167,8 +229,14 @@ struct s_sampler_algorithm {
 			}
 
 			if (is_wavetable) {
-				fetch_wavetable_samples(sample, context->channel, stream_sample_rate, sample_rate_0,
-					this_derived->get_speed(), increment_count, samples, out_ptr);
+				fetch_wavetable_samples(
+					sample,
+					context->channel,
+					stream_sample_rate,
+					sample_rate_0,
+					this_derived->get_speed(),
+					increment_count,
+					samples, out_ptr);
 			} else {
 				for (size_t i = 0; i < increment_count; i++) {
 					out_ptr[i] = fetch_sample(sample, context->channel, samples[i]);
@@ -206,14 +274,26 @@ struct s_sampler_algorithm {
 };
 
 void s_buffer_operation_sampler::in_out(
-	c_event_interface *event_interface, const char *sample_name,
-	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-	size_t buffer_size, uint32 sample_rate, c_real_buffer_or_constant_in speed, c_real_buffer_out out) {
+	c_event_interface *event_interface,
+	const char *sample_name,
+	c_sample_library_accessor *sample_accessor,
+	s_buffer_operation_sampler *context,
+	size_t buffer_size,
+	uint32 sample_rate,
+	c_real_buffer_or_constant_in speed,
+	c_real_buffer_out out) {
 	if (speed.is_constant()) {
 		// If speed is constant, simply use the constant-speed version
 		real32 speed_constant = speed.get_constant();
-		const_out(event_interface, sample_name, sample_accessor,
-			context, buffer_size, sample_rate, speed_constant, out);
+		const_out(
+			event_interface,
+			sample_name,
+			sample_accessor,
+			context,
+			buffer_size,
+			sample_rate,
+			speed_constant,
+			out);
 		return;
 	}
 
@@ -256,17 +336,28 @@ void s_buffer_operation_sampler::in_out(
 }
 
 void s_buffer_operation_sampler::inout(
-	c_event_interface *event_interface, const char *sample_name,
-	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-	size_t buffer_size, uint32 sample_rate, c_real_buffer_inout speed_out) {
+	c_event_interface *event_interface,
+	const char *sample_name,
+	c_sample_library_accessor *sample_accessor,
+	s_buffer_operation_sampler *context,
+	size_t buffer_size,
+	uint32 sample_rate,
+	c_real_buffer_inout speed_out) {
 	validate_buffer(speed_out);
 
 	if (speed_out->is_constant()) {
 		// If speed is constant, simply use the constant-speed version
 		// We can store the first value of the buffer and then convert it to a pure output buffer
 		real32 speed_constant = *speed_out->get_data<real32>();
-		const_out(event_interface, sample_name, sample_accessor,
-			context, buffer_size, sample_rate, speed_constant, speed_out);
+		const_out(
+			event_interface,
+			sample_name,
+			sample_accessor,
+			context,
+			buffer_size,
+			sample_rate,
+			speed_constant,
+			speed_out);
 		return;
 	}
 
@@ -307,9 +398,14 @@ void s_buffer_operation_sampler::inout(
 }
 
 void s_buffer_operation_sampler::const_out(
-	c_event_interface *event_interface, const char *sample_name,
-	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-	size_t buffer_size, uint32 sample_rate, real32 speed, c_real_buffer_out out) {
+	c_event_interface *event_interface,
+	const char *sample_name,
+	c_sample_library_accessor *sample_accessor,
+	s_buffer_operation_sampler *context,
+	size_t buffer_size,
+	uint32 sample_rate,
+	real32 speed,
+	c_real_buffer_out out) {
 	validate_buffer(out);
 
 	struct s_sampler_subalgorithm : public s_sampler_algorithm<false, s_sampler_subalgorithm> {
@@ -351,27 +447,56 @@ void s_buffer_operation_sampler::const_out(
 }
 
 void s_buffer_operation_sampler::loop_in_in_out(
-	c_event_interface *event_interface, const char *sample_name,
-	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-	size_t buffer_size, uint32 sample_rate, c_real_buffer_or_constant_in speed, c_real_buffer_or_constant_in phase,
+	c_event_interface *event_interface,
+	const char *sample_name,
+	c_sample_library_accessor *sample_accessor,
+	s_buffer_operation_sampler *context,
+	size_t buffer_size,
+	uint32 sample_rate,
+	c_real_buffer_or_constant_in speed,
+	c_real_buffer_or_constant_in phase,
 	c_real_buffer_out out) {
 	// Identify constant optimizations
 	if (speed.is_constant()) {
 		real32 speed_constant = speed.get_constant();
 		if (phase.is_constant()) {
 			real32 phase_constant = phase.get_constant();
-			loop_const_const_out(event_interface, sample_name, sample_accessor,
-				context, buffer_size, sample_rate, speed_constant, phase_constant, out);
+			loop_const_const_out(
+				event_interface,
+				sample_name,
+				sample_accessor,
+				context,
+				buffer_size,
+				sample_rate,
+				speed_constant,
+				phase_constant,
+				out);
 		} else {
-			loop_const_in_out(event_interface, sample_name, sample_accessor,
-				context, buffer_size, sample_rate, speed_constant, phase, out);
+			loop_const_in_out(
+				event_interface,
+				sample_name,
+				sample_accessor,
+				context,
+				buffer_size,
+				sample_rate,
+				speed_constant,
+				phase,
+				out);
 		}
 		return;
 	} else {
 		if (phase.is_constant()) {
 			real32 phase_constant = phase.get_constant();
-			loop_in_const_out(event_interface, sample_name, sample_accessor,
-				context, buffer_size, sample_rate, speed, phase_constant, out);
+			loop_in_const_out(
+				event_interface,
+				sample_name,
+				sample_accessor,
+				context,
+				buffer_size,
+				sample_rate,
+				speed,
+				phase_constant,
+				out);
 		}
 		return;
 	}
@@ -387,8 +512,8 @@ void s_buffer_operation_sampler::loop_in_in_out(
 		c_real32_4 speed_val;
 		s_static_array<real64, k_simd_block_elements> sample_offset_val;
 
-		s_sampler_loop_subalgorithm(size_t buffer_size,
-			c_real_buffer_in speed, c_real_buffer_in phase, c_real_buffer_out out) {
+		s_sampler_loop_subalgorithm(
+			size_t buffer_size, c_real_buffer_in speed, c_real_buffer_in phase, c_real_buffer_out out) {
 			this->out = out;
 			out_ptr = out->get_data<real32>();
 			out_ptr_end = out_ptr + align_size(buffer_size, k_simd_block_elements);
@@ -425,26 +550,54 @@ void s_buffer_operation_sampler::loop_in_in_out(
 }
 
 void s_buffer_operation_sampler::loop_inout_in(
-	c_event_interface *event_interface, const char *sample_name,
-	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-	size_t buffer_size, uint32 sample_rate, c_real_buffer_inout speed_out, c_real_buffer_or_constant_in phase) {
+	c_event_interface *event_interface,
+	const char *sample_name,
+	c_sample_library_accessor *sample_accessor,
+	s_buffer_operation_sampler *context,
+	size_t buffer_size,
+	uint32 sample_rate,
+	c_real_buffer_inout speed_out,
+	c_real_buffer_or_constant_in phase) {
 	// Identify constant optimizations
 	if (speed_out->is_constant()) {
 		real32 speed_constant = *speed_out->get_data<real32>();
 		if (phase.is_constant()) {
 			real32 phase_constant = phase.get_constant();
-			loop_const_const_out(event_interface, sample_name, sample_accessor,
-				context, buffer_size, sample_rate, speed_constant, phase_constant, speed_out);
+			loop_const_const_out(
+				event_interface,
+				sample_name,
+				sample_accessor,
+				context,
+				buffer_size,
+				sample_rate,
+				speed_constant,
+				phase_constant,
+				speed_out);
 		} else {
-			loop_const_in_out(event_interface, sample_name, sample_accessor,
-				context, buffer_size, sample_rate, speed_constant, phase, speed_out);
+			loop_const_in_out(
+				event_interface,
+				sample_name,
+				sample_accessor,
+				context,
+				buffer_size,
+				sample_rate,
+				speed_constant,
+				phase,
+				speed_out);
 		}
 		return;
 	} else {
 		if (phase.is_constant()) {
 			real32 phase_constant = phase.get_constant();
-			loop_inout_const(event_interface, sample_name, sample_accessor,
-				context, buffer_size, sample_rate, speed_out, phase_constant);
+			loop_inout_const(
+				event_interface,
+				sample_name,
+				sample_accessor,
+				context,
+				buffer_size,
+				sample_rate,
+				speed_out,
+				phase_constant);
 		}
 		return;
 	}
@@ -459,8 +612,10 @@ void s_buffer_operation_sampler::loop_inout_in(
 		c_real32_4 speed_val;
 		s_static_array<real64, k_simd_block_elements> sample_offset_val;
 
-		s_sampler_loop_subalgorithm(size_t buffer_size,
-			c_real_buffer_inout speed_out, c_real_buffer_in phase) {
+		s_sampler_loop_subalgorithm(
+			size_t buffer_size,
+			c_real_buffer_inout speed_out,
+			c_real_buffer_in phase) {
 			out = speed_out;
 			speed_out_ptr = speed_out->get_data<real32>();
 			speed_out_ptr_end = speed_out_ptr + align_size(buffer_size, k_simd_block_elements);
@@ -495,26 +650,54 @@ void s_buffer_operation_sampler::loop_inout_in(
 }
 
 void s_buffer_operation_sampler::loop_in_inout(
-	c_event_interface *event_interface, const char *sample_name,
-	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-	size_t buffer_size, uint32 sample_rate, c_real_buffer_or_constant_in speed, c_real_buffer_inout phase_out) {
+	c_event_interface *event_interface,
+	const char *sample_name,
+	c_sample_library_accessor *sample_accessor,
+	s_buffer_operation_sampler *context,
+	size_t buffer_size,
+	uint32 sample_rate,
+	c_real_buffer_or_constant_in speed,
+	c_real_buffer_inout phase_out) {
 	// Identify constant optimizations
 	if (speed.is_constant()) {
 		real32 speed_constant = speed.get_constant();
 		if (phase_out->is_constant()) {
 			real32 phase_constant = *phase_out->get_data<real32>();
-			loop_const_const_out(event_interface, sample_name, sample_accessor,
-				context, buffer_size, sample_rate, speed_constant, phase_constant, phase_out);
+			loop_const_const_out(
+				event_interface,
+				sample_name,
+				sample_accessor,
+				context,
+				buffer_size,
+				sample_rate,
+				speed_constant,
+				phase_constant,
+				phase_out);
 		} else {
-			loop_const_inout(event_interface, sample_name, sample_accessor,
-				context, buffer_size, sample_rate, speed_constant, phase_out);
+			loop_const_inout(
+				event_interface,
+				sample_name,
+				sample_accessor,
+				context,
+				buffer_size,
+				sample_rate,
+				speed_constant,
+				phase_out);
 		}
 		return;
 	} else {
 		if (phase_out->is_constant()) {
 			real32 phase_constant = *phase_out->get_data<real32>();
-			loop_in_const_out(event_interface, sample_name, sample_accessor,
-				context, buffer_size, sample_rate, speed, phase_constant, phase_out);
+			loop_in_const_out(
+				event_interface,
+				sample_name,
+				sample_accessor,
+				context,
+				buffer_size,
+				sample_rate,
+				speed,
+				phase_constant,
+				phase_out);
 		}
 		return;
 	}
@@ -529,8 +712,8 @@ void s_buffer_operation_sampler::loop_in_inout(
 		c_real32_4 speed_val;
 		s_static_array<real64, k_simd_block_elements> sample_offset_val;
 
-		s_sampler_loop_subalgorithm(size_t buffer_size,
-			c_real_buffer_in speed, c_real_buffer_inout phase_out) {
+		s_sampler_loop_subalgorithm(
+			size_t buffer_size, c_real_buffer_in speed, c_real_buffer_inout phase_out) {
 			out = phase_out;
 			phase_out_ptr = phase_out->get_data<real32>();
 			phase_out_ptr_end = phase_out_ptr + align_size(buffer_size, k_simd_block_elements);
@@ -565,14 +748,28 @@ void s_buffer_operation_sampler::loop_in_inout(
 }
 
 void s_buffer_operation_sampler::loop_in_const_out(
-	c_event_interface *event_interface, const char *sample_name,
-	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-	size_t buffer_size, uint32 sample_rate, c_real_buffer_or_constant_in speed, real32 phase, c_real_buffer_out out) {
+	c_event_interface *event_interface,
+	const char *sample_name,
+	c_sample_library_accessor *sample_accessor,
+	s_buffer_operation_sampler *context,
+	size_t buffer_size,
+	uint32 sample_rate,
+	c_real_buffer_or_constant_in speed,
+	real32 phase,
+	c_real_buffer_out out) {
 	// Identify constant optimizations
 	if (speed.is_constant()) {
 		real32 speed_constant = speed.get_constant();
-		loop_const_const_out(event_interface, sample_name, sample_accessor,
-			context, buffer_size, sample_rate, speed_constant, phase, out);
+		loop_const_const_out(
+			event_interface,
+			sample_name,
+			sample_accessor,
+			context,
+			buffer_size,
+			sample_rate,
+			speed_constant,
+			phase,
+			out);
 		return;
 	}
 
@@ -587,8 +784,8 @@ void s_buffer_operation_sampler::loop_in_const_out(
 		c_real32_4 speed_val;
 		s_static_array<real64, k_simd_block_elements> sample_offset_val;
 
-		s_sampler_loop_subalgorithm(size_t buffer_size,
-			c_real_buffer_in speed, real32 phase, c_real_buffer_out out) {
+		s_sampler_loop_subalgorithm(
+			size_t buffer_size, c_real_buffer_in speed, real32 phase, c_real_buffer_out out) {
 			this->out = out;
 			out_ptr = out->get_data<real32>();
 			out_ptr_end = out_ptr + align_size(buffer_size, k_simd_block_elements);
@@ -625,16 +822,29 @@ void s_buffer_operation_sampler::loop_in_const_out(
 }
 
 void s_buffer_operation_sampler::loop_inout_const(
-	c_event_interface *event_interface, const char *sample_name,
-	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-	size_t buffer_size, uint32 sample_rate, c_real_buffer_inout speed_out, real32 phase) {
+	c_event_interface *event_interface,
+	const char *sample_name,
+	c_sample_library_accessor *sample_accessor,
+	s_buffer_operation_sampler *context,
+	size_t buffer_size,
+	uint32 sample_rate,
+	c_real_buffer_inout speed_out,
+	real32 phase) {
 	validate_buffer(speed_out);
 
 	// Identify constant optimizations
 	if (speed_out->is_constant()) {
 		real32 speed_constant = *speed_out->get_data<real32>();
-		loop_const_const_out(event_interface, sample_name, sample_accessor,
-			context, buffer_size, sample_rate, speed_constant, phase, speed_out);
+		loop_const_const_out(
+			event_interface,
+			sample_name,
+			sample_accessor,
+			context,
+			buffer_size,
+			sample_rate,
+			speed_constant,
+			phase,
+			speed_out);
 		return;
 	}
 
@@ -648,8 +858,8 @@ void s_buffer_operation_sampler::loop_inout_const(
 		c_real32_4 speed_val;
 		s_static_array<real64, k_simd_block_elements> sample_offset_val;
 
-		s_sampler_loop_subalgorithm(size_t buffer_size,
-			c_real_buffer_inout speed_out, real32 phase) {
+		s_sampler_loop_subalgorithm(
+			size_t buffer_size, c_real_buffer_inout speed_out, real32 phase) {
 			out = speed_out;
 			speed_out_ptr = speed_out->get_data<real32>();
 			speed_out_ptr_end = speed_out_ptr + align_size(buffer_size, k_simd_block_elements);
@@ -684,14 +894,28 @@ void s_buffer_operation_sampler::loop_inout_const(
 }
 
 void s_buffer_operation_sampler::loop_const_in_out(
-	c_event_interface *event_interface, const char *sample_name,
-	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-	size_t buffer_size, uint32 sample_rate, real32 speed, c_real_buffer_or_constant_in phase, c_real_buffer_out out) {
+	c_event_interface *event_interface,
+	const char *sample_name,
+	c_sample_library_accessor *sample_accessor,
+	s_buffer_operation_sampler *context,
+	size_t buffer_size,
+	uint32 sample_rate,
+	real32 speed,
+	c_real_buffer_or_constant_in phase,
+	c_real_buffer_out out) {
 	// Identify constant optimizations
 	if (phase.is_constant()) {
 		real32 phase_constant = phase.get_constant();
-		loop_const_const_out(event_interface, sample_name, sample_accessor,
-			context, buffer_size, sample_rate, speed, phase_constant, out);
+		loop_const_const_out(
+			event_interface,
+			sample_name,
+			sample_accessor,
+			context,
+			buffer_size,
+			sample_rate,
+			speed,
+			phase_constant,
+			out);
 		return;
 	}
 
@@ -706,8 +930,8 @@ void s_buffer_operation_sampler::loop_const_in_out(
 		c_real32_4 speed_adjusted_sample_rate_0_val;
 		s_static_array<real64, k_simd_block_elements> sample_offset_val;
 
-		s_sampler_loop_subalgorithm(size_t buffer_size,
-			real32 speed, c_real_buffer_in phase, c_real_buffer_out out) {
+		s_sampler_loop_subalgorithm(
+			size_t buffer_size, real32 speed, c_real_buffer_in phase, c_real_buffer_out out) {
 			this->out = out;
 			out_ptr = out->get_data<real32>();
 			out_ptr_end = out_ptr + align_size(buffer_size, k_simd_block_elements);
@@ -744,16 +968,29 @@ void s_buffer_operation_sampler::loop_const_in_out(
 }
 
 void s_buffer_operation_sampler::loop_const_inout(
-	c_event_interface *event_interface, const char *sample_name,
-	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-	size_t buffer_size, uint32 sample_rate, real32 speed, c_real_buffer_inout phase_out) {
+	c_event_interface *event_interface,
+	const char *sample_name,
+	c_sample_library_accessor *sample_accessor,
+	s_buffer_operation_sampler *context,
+	size_t buffer_size,
+	uint32 sample_rate,
+	real32 speed,
+	c_real_buffer_inout phase_out) {
 	validate_buffer(phase_out);
 
 	// Identify constant optimizations
 	if (phase_out->is_constant()) {
 		real32 phase_constant = *phase_out->get_data<real32>();
-		loop_const_const_out(event_interface, sample_name, sample_accessor,
-			context, buffer_size, sample_rate, speed, phase_constant, phase_out);
+		loop_const_const_out(
+			event_interface,
+			sample_name,
+			sample_accessor,
+			context,
+			buffer_size,
+			sample_rate,
+			speed,
+			phase_constant,
+			phase_out);
 		return;
 	}
 
@@ -767,8 +1004,8 @@ void s_buffer_operation_sampler::loop_const_inout(
 		c_real32_4 speed_adjusted_sample_rate_0_val;
 		s_static_array<real64, k_simd_block_elements> sample_offset_val;
 
-		s_sampler_loop_subalgorithm(size_t buffer_size,
-			real32 speed, c_real_buffer_inout phase_out) {
+		s_sampler_loop_subalgorithm(
+			size_t buffer_size, real32 speed, c_real_buffer_inout phase_out) {
 			out = phase_out;
 			phase_out_ptr = phase_out->get_data<real32>();
 			phase_out_ptr_end = phase_out_ptr + align_size(buffer_size, k_simd_block_elements);
@@ -803,9 +1040,15 @@ void s_buffer_operation_sampler::loop_const_inout(
 }
 
 void s_buffer_operation_sampler::loop_const_const_out(
-	c_event_interface *event_interface, const char *sample_name,
-	c_sample_library_accessor *sample_accessor, s_buffer_operation_sampler *context,
-	size_t buffer_size, uint32 sample_rate, real32 speed, real32 phase, c_real_buffer_out out) {
+	c_event_interface *event_interface,
+	const char *sample_name,
+	c_sample_library_accessor *sample_accessor,
+	s_buffer_operation_sampler *context,
+	size_t buffer_size,
+	uint32 sample_rate,
+	real32 speed,
+	real32 phase,
+	c_real_buffer_out out) {
 	validate_buffer(out);
 
 	struct s_sampler_loop_subalgorithm : public s_sampler_algorithm<true, s_sampler_loop_subalgorithm> {
@@ -820,8 +1063,7 @@ void s_buffer_operation_sampler::loop_const_const_out(
 		s_static_array<real64, k_simd_block_elements> sample_offset_val;
 		bool is_zero_speed;
 
-		s_sampler_loop_subalgorithm(size_t buffer_size,
-			real32 speed, real32 phase, c_real_buffer_out out) {
+		s_sampler_loop_subalgorithm(size_t buffer_size, real32 speed, real32 phase, c_real_buffer_out out) {
 			this->out = out;
 			out_ptr = out->get_data<real32>();
 			out_ptr_end = out_ptr + align_size(buffer_size, k_simd_block_elements);
@@ -852,8 +1094,11 @@ void s_buffer_operation_sampler::loop_const_const_out(
 		run(event_interface, sample_name, sample_accessor, context, buffer_size, sample_rate);
 }
 
-static void get_sample_time_data(const c_sample *sample,
-	real64 &out_length_samples, real64 &out_loop_start_sample, real64 &out_loop_end_sample) {
+static void get_sample_time_data(
+	const c_sample *sample,
+	real64 &out_length_samples,
+	real64 &out_loop_start_sample,
+	real64 &out_loop_end_sample) {
 	uint32 first_sampling_frame = sample->get_first_sampling_frame();
 	out_length_samples = static_cast<real64>(sample->get_sampling_frame_count());
 	out_loop_start_sample = static_cast<real64>(sample->get_loop_start() - first_sampling_frame);
@@ -866,7 +1111,8 @@ namespace sampler_task_functions {
 		return s_buffer_operation_sampler::query_memory();
 	}
 
-	void sampler_initializer(const s_task_function_context &context,
+	void sampler_initializer(
+		const s_task_function_context &context,
 		const char *name,
 		real32 channel) {
 		static_cast<s_buffer_operation_sampler *>(context.task_memory)->initialize_file(
@@ -879,31 +1125,38 @@ namespace sampler_task_functions {
 		static_cast<s_buffer_operation_sampler *>(context.task_memory)->voice_initialize();
 	}
 
-	void sampler_in_out(const s_task_function_context &context,
+	void sampler_in_out(
+		const s_task_function_context &context,
 		const char *name,
 		c_real_const_buffer_or_constant speed,
 		c_real_buffer *result) {
 		s_buffer_operation_sampler::in_out(
-			context.event_interface, name,
-			context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
+			context.event_interface,
+			name,
+			context.sample_accessor,
+			static_cast<s_buffer_operation_sampler *>(context.task_memory),
 			context.buffer_size,
 			context.sample_rate,
 			speed,
 			result);
 	}
 
-	void sampler_inout(const s_task_function_context &context,
+	void sampler_inout(
+		const s_task_function_context &context,
 		const char *name,
 		c_real_buffer *speed_result) {
 		s_buffer_operation_sampler::inout(
-			context.event_interface, name,
-			context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
+			context.event_interface,
+			name,
+			context.sample_accessor,
+			static_cast<s_buffer_operation_sampler *>(context.task_memory),
 			context.buffer_size,
 			context.sample_rate,
 			speed_result);
 	}
 
-	void sampler_loop_initializer(const s_task_function_context &context,
+	void sampler_loop_initializer(
+		const s_task_function_context &context,
 		const char *name,
 		real32 channel,
 		bool bidi,
@@ -916,30 +1169,42 @@ namespace sampler_task_functions {
 			name, loop_mode, phase_shift_enabled, channel);
 	}
 
-	void sampler_loop_in_in_out(const s_task_function_context &context,
+	void sampler_loop_in_in_out(
+		const s_task_function_context &context,
 		const char *name,
 		c_real_const_buffer_or_constant speed,
 		c_real_const_buffer_or_constant phase,
 		c_real_buffer *result) {
 		s_buffer_operation_sampler::loop_in_in_out(
-			context.event_interface, name,
-			context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
-			context.buffer_size, context.sample_rate,
-			speed, phase, result);
+			context.event_interface,
+			name,
+			context.sample_accessor,
+			static_cast<s_buffer_operation_sampler *>(context.task_memory),
+			context.buffer_size,
+			context.sample_rate,
+			speed,
+			phase,
+			result);
 	}
 
-	void sampler_loop_inout_in(const s_task_function_context &context,
+	void sampler_loop_inout_in(
+		const s_task_function_context &context,
 		const char *name,
 		c_real_buffer *speed_result,
 		c_real_const_buffer_or_constant phase) {
 		s_buffer_operation_sampler::loop_inout_in(
-			context.event_interface, name,
-			context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
-			context.buffer_size, context.sample_rate,
-			speed_result, phase);
+			context.event_interface,
+			name,
+			context.sample_accessor,
+			static_cast<s_buffer_operation_sampler *>(context.task_memory),
+			context.buffer_size,
+			context.sample_rate,
+			speed_result,
+			phase);
 	}
 
-	void sampler_loop_in_inout_initializer(const s_task_function_context &context,
+	void sampler_loop_in_inout_initializer(
+		const s_task_function_context &context,
 		const char *name,
 		real32 channel,
 		bool bidi) {
@@ -950,18 +1215,24 @@ namespace sampler_task_functions {
 			name, loop_mode, true, channel);
 	}
 
-	void sampler_loop_in_inout(const s_task_function_context &context,
+	void sampler_loop_in_inout(
+		const s_task_function_context &context,
 		const char *name,
 		c_real_const_buffer_or_constant speed,
 		c_real_buffer *phase_result) {
 		s_buffer_operation_sampler::loop_in_inout(
-			context.event_interface, name,
-			context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
-			context.buffer_size, context.sample_rate,
-			speed, phase_result);
+			context.event_interface,
+			name,
+			context.sample_accessor,
+			static_cast<s_buffer_operation_sampler *>(context.task_memory),
+			context.buffer_size,
+			context.sample_rate,
+			speed,
+			phase_result);
 	}
 
-	void sampler_wavetable_initializer(const s_task_function_context &context,
+	void sampler_wavetable_initializer(
+		const s_task_function_context &context,
 		c_real_array harmonic_weights,
 		real32 sample_count,
 		c_real_const_buffer_or_constant phase) {
@@ -972,28 +1243,40 @@ namespace sampler_task_functions {
 			harmonic_weights, sample_count, phase_shift_enabled);
 	}
 
-	void sampler_wavetable_in_in_out(const s_task_function_context &context,
+	void sampler_wavetable_in_in_out(
+		const s_task_function_context &context,
 		c_real_const_buffer_or_constant frequency,
 		c_real_const_buffer_or_constant phase,
 		c_real_buffer *result) {
 		s_buffer_operation_sampler::loop_in_in_out(
-			context.event_interface, "<generated_wavetable>",
-			context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
-			context.buffer_size, context.sample_rate,
-			frequency, phase, result);
+			context.event_interface,
+			"<generated_wavetable>",
+			context.sample_accessor,
+			static_cast<s_buffer_operation_sampler *>(context.task_memory),
+			context.buffer_size,
+			context.sample_rate,
+			frequency,
+			phase,
+			result);
 	}
 
-	void sampler_wavetable_inout_in(const s_task_function_context &context,
+	void sampler_wavetable_inout_in(
+		const s_task_function_context &context,
 		c_real_buffer *frequency_result,
 		c_real_const_buffer_or_constant phase) {
 		s_buffer_operation_sampler::loop_inout_in(
-			context.event_interface, "<generated_wavetable>",
-			context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
-			context.buffer_size, context.sample_rate,
-			frequency_result, phase);
+			context.event_interface,
+			"<generated_wavetable>",
+			context.sample_accessor,
+			static_cast<s_buffer_operation_sampler *>(context.task_memory),
+			context.buffer_size,
+			context.sample_rate,
+			frequency_result,
+			phase);
 	}
 
-	void sampler_wavetable_in_inout_initializer(const s_task_function_context &context,
+	void sampler_wavetable_in_inout_initializer(
+		const s_task_function_context &context,
 		c_real_array harmonic_weights,
 		real32 sample_count) {
 		static_cast<s_buffer_operation_sampler *>(context.task_memory)->initialize_wavetable(
@@ -1002,14 +1285,19 @@ namespace sampler_task_functions {
 			harmonic_weights, sample_count, false);
 	}
 
-	void sampler_wavetable_in_inout(const s_task_function_context &context,
+	void sampler_wavetable_in_inout(
+		const s_task_function_context &context,
 		c_real_const_buffer_or_constant frequency,
 		c_real_buffer *phase_result) {
 		s_buffer_operation_sampler::loop_in_inout(
-			context.event_interface, "<generated_wavetable>",
-			context.sample_accessor, static_cast<s_buffer_operation_sampler *>(context.task_memory),
-			context.buffer_size, context.sample_rate,
-			frequency, phase_result);
+			context.event_interface,
+			"<generated_wavetable>",
+			context.sample_accessor,
+			static_cast<s_buffer_operation_sampler *>(context.task_memory),
+			context.buffer_size,
+			context.sample_rate,
+			frequency,
+			phase_result);
 	}
 
 }

@@ -8,8 +8,11 @@
 
 struct s_buffer_operation_delay {
 	static size_t query_memory(uint32 sample_rate, real32 delay);
-	static void initialize(c_event_interface *event_interface, s_buffer_operation_delay *context,
-		uint32 sample_rate, real32 delay);
+	static void initialize(
+		c_event_interface *event_interface,
+		s_buffer_operation_delay *context,
+		uint32 sample_rate,
+		real32 delay);
 	static void voice_initialize(s_buffer_operation_delay *context);
 
 	static void in_out(
@@ -27,10 +30,17 @@ struct s_buffer_operation_memory_real {
 	static size_t query_memory();
 	static void voice_initialize(s_buffer_operation_memory_real *context);
 
-	static void in_in_out(s_buffer_operation_memory_real *context, size_t buffer_size,
-		c_real_buffer_or_constant_in value, c_bool_buffer_or_constant_in write, c_real_buffer_out result);
-	static void inout_in(s_buffer_operation_memory_real *context, size_t buffer_size,
-		c_real_buffer_inout value_result, c_bool_buffer_or_constant_in write);
+	static void in_in_out(
+		s_buffer_operation_memory_real *context,
+		size_t buffer_size,
+		c_real_buffer_or_constant_in value,
+		c_bool_buffer_or_constant_in write,
+		c_real_buffer_out result);
+	static void inout_in(
+		s_buffer_operation_memory_real *context,
+		size_t buffer_size,
+		c_real_buffer_inout value_result,
+		c_bool_buffer_or_constant_in write);
 
 	real32 m_value;
 };
@@ -39,12 +49,22 @@ struct s_buffer_operation_memory_bool {
 	static size_t query_memory();
 	static void voice_initialize(s_buffer_operation_memory_bool *context);
 
-	static void in_in_out(s_buffer_operation_memory_bool *context, size_t buffer_size,
-		c_bool_buffer_or_constant_in value, c_bool_buffer_or_constant_in write, c_bool_buffer_out result);
-	static void inout_in(s_buffer_operation_memory_bool *context, size_t buffer_size,
-		c_bool_buffer_inout value_result, c_bool_buffer_or_constant_in write);
-	static void in_inout(s_buffer_operation_memory_bool *context, size_t buffer_size,
-		c_bool_buffer_or_constant_in value, c_bool_buffer_inout write_result);
+	static void in_in_out(
+		s_buffer_operation_memory_bool *context,
+		size_t buffer_size,
+		c_bool_buffer_or_constant_in value,
+		c_bool_buffer_or_constant_in write,
+		c_bool_buffer_out result);
+	static void inout_in(
+		s_buffer_operation_memory_bool *context,
+		size_t buffer_size,
+		c_bool_buffer_inout value_result,
+		c_bool_buffer_or_constant_in write);
+	static void in_inout(
+		s_buffer_operation_memory_bool *context,
+		size_t buffer_size,
+		c_bool_buffer_or_constant_in value,
+		c_bool_buffer_inout write_result);
 
 	bool m_value;
 };
@@ -57,8 +77,12 @@ static real32 *get_delay_buffer(s_buffer_operation_delay *context) {
 // Circular buffer functions: it is assumed that pop() will always be followed by push() using the same size. Therefore,
 // we only track one head pointer, and assume all pushes will exactly replace popped data.
 
-static void circular_buffer_pop(const void *circular_buffer, size_t circular_buffer_size, size_t &head_index,
-	void *destination, size_t size) {
+static void circular_buffer_pop(
+	const void *circular_buffer,
+	size_t circular_buffer_size,
+	size_t &head_index,
+	void *destination,
+	size_t size) {
 	wl_assert(size <= circular_buffer_size);
 	if (head_index + size > circular_buffer_size) {
 		// Need to do 2 copies
@@ -73,8 +97,12 @@ static void circular_buffer_pop(const void *circular_buffer, size_t circular_buf
 	}
 }
 
-static void circular_buffer_push(void *circular_buffer, size_t circular_buffer_size, size_t head_index,
-	const void *source, size_t size) {
+static void circular_buffer_push(
+	void *circular_buffer,
+	size_t circular_buffer_size,
+	size_t head_index,
+	const void *source,
+	size_t size) {
 	wl_assert(size <= circular_buffer_size);
 	if (head_index < size) {
 		// Need to do 2 copies
@@ -90,8 +118,12 @@ static void circular_buffer_push(void *circular_buffer, size_t circular_buffer_s
 }
 
 template<typename t_source>
-static void circular_buffer_push_constant(void *circular_buffer, size_t circular_buffer_size, size_t head_index,
-	t_source source_value, size_t size) {
+static void circular_buffer_push_constant(
+	void *circular_buffer,
+	size_t circular_buffer_size,
+	size_t head_index,
+	t_source source_value,
+	size_t size) {
 	wl_assert(size <= circular_buffer_size);
 	if (head_index < size) {
 		// Need to do 2 copies
@@ -140,8 +172,11 @@ size_t s_buffer_operation_delay::query_memory(uint32 sample_rate, real32 delay) 
 	return sizeof(s_buffer_operation_delay) + (delay_samples * sizeof(real32));
 }
 
-void s_buffer_operation_delay::initialize(c_event_interface *event_interface,
-	s_buffer_operation_delay *context, uint32 sample_rate, real32 delay) {
+void s_buffer_operation_delay::initialize(
+	c_event_interface *event_interface,
+	s_buffer_operation_delay *context,
+	uint32 sample_rate,
+	real32 delay) {
 	if (std::isnan(delay) || std::isinf(delay)) {
 		event_interface->submit(EVENT_WARNING << "Invalid delay duration, defaulting to 0");
 		delay = 0.0f;
@@ -203,17 +238,29 @@ void s_buffer_operation_delay::in_out(
 	size_t samples_to_process_size = samples_to_process * sizeof(real32);
 
 	// 1) Copy delay buffer to beginning of output
-	circular_buffer_pop(delay_buffer_ptr, delay_samples_size, context->delay_buffer_head_index,
-		out_ptr, samples_to_process_size);
+	circular_buffer_pop(
+		delay_buffer_ptr,
+		delay_samples_size,
+		context->delay_buffer_head_index,
+		out_ptr,
+		samples_to_process_size);
 
 	// 2) Copy end of input to delay buffer
 	if (in.is_constant()) {
-		circular_buffer_push_constant(delay_buffer_ptr, delay_samples_size, context->delay_buffer_head_index,
-			in.get_constant(), samples_to_process_size);
+		circular_buffer_push_constant(
+			delay_buffer_ptr,
+			delay_samples_size,
+			context->delay_buffer_head_index,
+			in.get_constant(),
+			samples_to_process_size);
 	} else {
 		const real32 *in_ptr = in.get_buffer()->get_data<real32>();
-		circular_buffer_push(delay_buffer_ptr, delay_samples_size, context->delay_buffer_head_index,
-			in_ptr + (buffer_size - samples_to_process), samples_to_process_size);
+		circular_buffer_push(
+			delay_buffer_ptr,
+			delay_samples_size,
+			context->delay_buffer_head_index,
+			in_ptr + (buffer_size - samples_to_process),
+			samples_to_process_size);
 	}
 
 	if (context->delay_samples < buffer_size) {
@@ -243,8 +290,12 @@ void s_buffer_operation_memory_real::voice_initialize(s_buffer_operation_memory_
 	context->m_value = 0.0f;
 }
 
-void s_buffer_operation_memory_real::in_in_out(s_buffer_operation_memory_real *context, size_t buffer_size,
-	c_real_buffer_or_constant_in value, c_bool_buffer_or_constant_in write, c_real_buffer_out result) {
+void s_buffer_operation_memory_real::in_in_out(
+	s_buffer_operation_memory_real *context,
+	size_t buffer_size,
+	c_real_buffer_or_constant_in value,
+	c_bool_buffer_or_constant_in write,
+	c_real_buffer_out result) {
 	real32 *result_ptr = result->get_data<real32>();
 
 	// Put this value on the stack to avoid memory reads each iteration
@@ -300,8 +351,11 @@ void s_buffer_operation_memory_real::in_in_out(s_buffer_operation_memory_real *c
 	context->m_value = memory_value;
 }
 
-void s_buffer_operation_memory_real::inout_in(s_buffer_operation_memory_real *context, size_t buffer_size,
-	c_real_buffer_inout value_result, c_bool_buffer_or_constant_in write) {
+void s_buffer_operation_memory_real::inout_in(
+	s_buffer_operation_memory_real *context,
+	size_t buffer_size,
+	c_real_buffer_inout value_result,
+	c_bool_buffer_or_constant_in write) {
 	real32 *value_result_ptr = value_result->get_data<real32>();
 
 	// Put this value on the stack to avoid memory reads each iteration
@@ -362,8 +416,12 @@ void s_buffer_operation_memory_bool::voice_initialize(s_buffer_operation_memory_
 	context->m_value = false;
 }
 
-void s_buffer_operation_memory_bool::in_in_out(s_buffer_operation_memory_bool *context, size_t buffer_size,
-	c_bool_buffer_or_constant_in value, c_bool_buffer_or_constant_in write, c_bool_buffer_out result) {
+void s_buffer_operation_memory_bool::in_in_out(
+	s_buffer_operation_memory_bool *context,
+	size_t buffer_size,
+	c_bool_buffer_or_constant_in value,
+	c_bool_buffer_or_constant_in write,
+	c_bool_buffer_out result) {
 	uint32 *result_ptr = result->get_data<uint32>();
 
 	// Put this value on the stack to avoid memory reads each iteration
@@ -425,8 +483,11 @@ void s_buffer_operation_memory_bool::in_in_out(s_buffer_operation_memory_bool *c
 	context->m_value = memory_value;
 }
 
-void s_buffer_operation_memory_bool::inout_in(s_buffer_operation_memory_bool *context, size_t buffer_size,
-	c_bool_buffer_inout value_result, c_bool_buffer_or_constant_in write) {
+void s_buffer_operation_memory_bool::inout_in(
+	s_buffer_operation_memory_bool *context,
+	size_t buffer_size,
+	c_bool_buffer_inout value_result,
+	c_bool_buffer_or_constant_in write) {
 	uint32 *value_result_ptr = value_result->get_data<uint32>();
 
 	// Put this value on the stack to avoid memory reads each iteration
@@ -485,8 +546,11 @@ void s_buffer_operation_memory_bool::inout_in(s_buffer_operation_memory_bool *co
 	context->m_value = memory_value;
 }
 
-void s_buffer_operation_memory_bool::in_inout(s_buffer_operation_memory_bool *context, size_t buffer_size,
-	c_bool_buffer_or_constant_in value, c_bool_buffer_inout write_result) {
+void s_buffer_operation_memory_bool::in_inout(
+	s_buffer_operation_memory_bool *context,
+	size_t buffer_size,
+	c_bool_buffer_or_constant_in value,
+	c_bool_buffer_inout write_result) {
 	uint32 *write_result_ptr = write_result->get_data<uint32>();
 
 	// Put this value on the stack to avoid memory reads each iteration
@@ -546,14 +610,16 @@ void s_buffer_operation_memory_bool::in_inout(s_buffer_operation_memory_bool *co
 
 namespace delay_task_functions {
 
-	size_t delay_memory_query(const s_task_function_context &context,
+	size_t delay_memory_query(
+		const s_task_function_context &context,
 		real32 duration) {
 		return s_buffer_operation_delay::query_memory(
 			context.sample_rate,
 			duration);
 	}
 
-	void delay_initializer(const s_task_function_context &context,
+	void delay_initializer(
+		const s_task_function_context &context,
 		real32 duration) {
 		s_buffer_operation_delay::initialize(
 			context.event_interface,
@@ -566,7 +632,8 @@ namespace delay_task_functions {
 		s_buffer_operation_delay::voice_initialize(static_cast<s_buffer_operation_delay *>(context.task_memory));
 	}
 
-	void delay_in_out(const s_task_function_context &context,
+	void delay_in_out(
+		const s_task_function_context &context,
 		c_real_const_buffer_or_constant signal,
 		c_real_buffer *result) {
 		s_buffer_operation_delay::in_out(
@@ -585,7 +652,8 @@ namespace delay_task_functions {
 			static_cast<s_buffer_operation_memory_real *>(context.task_memory));
 	}
 
-	void memory_real_in_in_out(const s_task_function_context &context,
+	void memory_real_in_in_out(
+		const s_task_function_context &context,
 		c_real_const_buffer_or_constant value,
 		c_bool_const_buffer_or_constant write,
 		c_real_buffer *result) {
@@ -597,9 +665,10 @@ namespace delay_task_functions {
 			result);
 	}
 
-	void memory_real_inout_in(const s_task_function_context &context,
-		wl_inout_source("value", "result") c_real_buffer *value_result,
-		wl_in_source("write") c_bool_const_buffer_or_constant write) {
+	void memory_real_inout_in(
+		const s_task_function_context &context,
+		c_real_buffer *value_result,
+		c_bool_const_buffer_or_constant write) {
 		s_buffer_operation_memory_real::inout_in(
 			static_cast<s_buffer_operation_memory_real *>(context.task_memory),
 			context.buffer_size,
@@ -616,7 +685,8 @@ namespace delay_task_functions {
 			static_cast<s_buffer_operation_memory_bool *>(context.task_memory));
 	}
 
-	void memory_bool_in_in_out(const s_task_function_context &context,
+	void memory_bool_in_in_out(
+		const s_task_function_context &context,
 		c_bool_const_buffer_or_constant value,
 		c_bool_const_buffer_or_constant write,
 		c_bool_buffer *result) {
@@ -628,7 +698,8 @@ namespace delay_task_functions {
 			result);
 	}
 
-	void memory_bool_inout_in(const s_task_function_context &context,
+	void memory_bool_inout_in(
+		const s_task_function_context &context,
 		c_bool_buffer *value_result,
 		c_bool_const_buffer_or_constant write) {
 		s_buffer_operation_memory_bool::inout_in(
@@ -638,7 +709,8 @@ namespace delay_task_functions {
 			write);
 	}
 
-	void memory_bool_in_inout(const s_task_function_context &context,
+	void memory_bool_in_inout(
+		const s_task_function_context &context,
 		c_bool_const_buffer_or_constant value,
 		c_bool_buffer *write_result) {
 		s_buffer_operation_memory_bool::in_inout(

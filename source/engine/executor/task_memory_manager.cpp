@@ -6,8 +6,10 @@
 // Since we initially store offsets when computing memory requirements, this value cast to a pointer represents null
 static const size_t k_invalid_memory_pointer = static_cast<size_t>(-1);
 
-void c_task_memory_manager::initialize(const c_runtime_instrument *runtime_instrument,
-	f_task_memory_query_callback task_memory_query_callback, void *task_memory_query_callback_context) {
+void c_task_memory_manager::initialize(
+	const c_runtime_instrument *runtime_instrument,
+	f_task_memory_query_callback task_memory_query_callback,
+	void *task_memory_query_callback_context) {
 	m_task_memory_pointers[k_instrument_stage_voice].clear();
 	m_task_memory_pointers[k_instrument_stage_fx].clear();
 
@@ -32,14 +34,18 @@ void c_task_memory_manager::initialize(const c_runtime_instrument *runtime_instr
 	size_t required_voice_task_memory_per_voice = 0;
 	if (voice_task_graph) {
 		required_voice_task_memory_per_voice = calculate_required_memory_for_task_graph(
-			voice_task_graph, task_memory_query_callback, task_memory_query_callback_context,
+			voice_task_graph,
+			task_memory_query_callback,
+			task_memory_query_callback_context,
 			m_task_memory_pointers[k_instrument_stage_voice]);
 	}
 
 	size_t required_fx_task_memory = 0;
 	if (fx_task_graph) {
 		required_fx_task_memory = calculate_required_memory_for_task_graph(
-			fx_task_graph, task_memory_query_callback, task_memory_query_callback_context,
+			fx_task_graph,
+			task_memory_query_callback,
+			task_memory_query_callback_context,
 			m_task_memory_pointers[k_instrument_stage_fx]);
 	}
 
@@ -59,10 +65,16 @@ void c_task_memory_manager::initialize(const c_runtime_instrument *runtime_instr
 		void *fx_task_memory_base = reinterpret_cast<void *>(
 			reinterpret_cast<size_t>(voice_task_memory_base) + required_voice_task_memory);
 
-		resolve_task_memory_pointers(voice_task_memory_base, m_task_memory_pointers[k_instrument_stage_voice],
-			max_voices, required_voice_task_memory_per_voice);
-		resolve_task_memory_pointers(fx_task_memory_base, m_task_memory_pointers[k_instrument_stage_fx],
-			1, required_fx_task_memory);
+		resolve_task_memory_pointers(
+			voice_task_memory_base,
+			m_task_memory_pointers[k_instrument_stage_voice],
+			max_voices,
+			required_voice_task_memory_per_voice);
+		resolve_task_memory_pointers(
+			fx_task_memory_base,
+			m_task_memory_pointers[k_instrument_stage_fx],
+			1,
+			required_fx_task_memory);
 
 		// Zero out all the memory - tasks can detect whether it is initialized by providing an "initialized" field
 		memset(m_task_memory_allocator.get_array().get_pointer(), 0, m_task_memory_allocator.get_array().get_count());
@@ -89,8 +101,10 @@ void c_task_memory_manager::initialize(const c_runtime_instrument *runtime_instr
 	}
 }
 
-size_t c_task_memory_manager::calculate_required_memory_for_task_graph(const c_task_graph *task_graph,
-	f_task_memory_query_callback task_memory_query_callback, void *task_memory_query_callback_context,
+size_t c_task_memory_manager::calculate_required_memory_for_task_graph(
+	const c_task_graph *task_graph,
+	f_task_memory_query_callback task_memory_query_callback,
+	void *task_memory_query_callback_context,
 	std::vector<void *> &task_memory_pointers) {
 	size_t required_memory_per_voice = 0;
 
@@ -112,8 +126,10 @@ size_t c_task_memory_manager::calculate_required_memory_for_task_graph(const c_t
 }
 
 void c_task_memory_manager::resolve_task_memory_pointers(
-	void *task_memory_base, std::vector<void *> &task_memory_pointers,
-	uint32 max_voices, size_t required_memory_per_voice) {
+	void *task_memory_base,
+	std::vector<void *> &task_memory_pointers,
+	uint32 max_voices,
+	size_t required_memory_per_voice) {
 	size_t task_memory_base_uint = reinterpret_cast<size_t>(task_memory_base);
 
 	// Compute offset pointers
