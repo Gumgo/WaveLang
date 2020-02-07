@@ -1,5 +1,4 @@
-#ifndef WAVELANG_COMMON_UTILITY_POD_H__
-#define WAVELANG_COMMON_UTILITY_POD_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -25,4 +24,3 @@ struct alignas(alignof(t_value)) s_pod {
 	}
 };
 
-#endif // WAVELANG_COMMON_UTILITY_POD_H__

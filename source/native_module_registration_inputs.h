@@ -1,5 +1,4 @@
-#ifndef WAVELANG_NATIVE_MODULE_REGISTRATION_INPUTS_H__
-#define WAVELANG_NATIVE_MODULE_REGISTRATION_INPUTS_H__
+#pragma once
 
 // Include all native module declarations here
 
@@ -13,4 +12,3 @@
 #include "execution_graph/native_modules/native_modules_stream.h"
 #include "execution_graph/native_modules/native_modules_time.h"
 
-#endif // WAVELANG_NATIVE_MODULE_REGISTRATION_INPUTS_H__

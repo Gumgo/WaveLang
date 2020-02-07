@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_EXECUTOR_BUFFER_ALLOCATOR_H__
-#define WAVELANG_ENGINE_EXECUTOR_BUFFER_ALLOCATOR_H__
+#pragma once
 
 #include "common/common.h"
 #include "common/threading/lock_free.h"
@@ -72,4 +71,3 @@ inline const c_buffer *c_buffer_allocator::get_buffer(uint32 buffer_handle) cons
 	return &m_buffers.get_array()[buffer_handle];
 }
 
-#endif // WAVELANG_ENGINE_EXECUTOR_BUFFER_ALLOCATOR_H__

@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_BUFFER_OPERATIONS_BUFFER_ITERATORS_H__
-#define WAVELANG_ENGINE_BUFFER_OPERATIONS_BUFFER_ITERATORS_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -683,4 +682,3 @@ struct s_buffer_iterator_3_mapping_bcd {
 	}
 };
 
-#endif // WAVELANG_ENGINE_BUFFER_OPERATIONS_BUFFER_ITERATORS_H__

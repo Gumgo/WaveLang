@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_TASK_FUNCTIONS_TASK_FUNCTIONS_ARRAY_H__
-#define WAVELANG_ENGINE_TASK_FUNCTIONS_TASK_FUNCTIONS_ARRAY_H__
+#pragma once
 
 #include "common/common.h"
 #include "common/scraper_attributes.h"
@@ -32,4 +31,3 @@ namespace array_task_functions wl_library(k_array_library_id, "array", 0) {
 
 }
 
-#endif // WAVELANG_ENGINE_TASK_FUNCTIONS_TASK_FUNCTIONS_ARRAY_H__

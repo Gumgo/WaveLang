@@ -1,5 +1,4 @@
-#ifndef WAVELANG_EXECUTION_GRAPH_NATIVE_MODULES_NATIVE_MODULES_CONTROLLER_H__
-#define WAVELANG_EXECUTION_GRAPH_NATIVE_MODULES_NATIVE_MODULES_CONTROLLER_H__
+#pragma once
 
 #include "common/common.h"
 #include "common/scraper_attributes.h"
@@ -32,4 +31,3 @@ namespace controller_native_modules wl_library(k_controller_library_id, "control
 
 }
 
-#endif // WAVELANG_EXECUTION_GRAPH_NATIVE_MODULES_NATIVE_MODULES_CONTROLLER_H__

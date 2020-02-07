@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_PREDECESSOR_RESOLVER_H__
-#define WAVELANG_ENGINE_PREDECESSOR_RESOLVER_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -36,4 +35,3 @@ private:
 	std::vector<uint32> m_data;
 };
 
-#endif // WAVELANG_ENGINE_PREDECESSOR_RESOLVER_H__

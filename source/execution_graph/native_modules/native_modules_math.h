@@ -1,5 +1,4 @@
-#ifndef WAVELANG_EXECUTION_GRAPH_NATIVE_MODULES_NATIVE_MODULES_MATH_H__
-#define WAVELANG_EXECUTION_GRAPH_NATIVE_MODULES_NATIVE_MODULES_MATH_H__
+#pragma once
 
 #include "common/common.h"
 #include "common/scraper_attributes.h"
@@ -50,4 +49,3 @@ namespace math_native_modules wl_library(k_math_library_id, "math", 0) {
 	void sincos(wl_in real32 a, wl_out real32 &out_sin, wl_out real32 &out_cos);
 }
 
-#endif // WAVELANG_EXECUTION_GRAPH_NATIVE_MODULES_NATIVE_MODULES_MATH_H__

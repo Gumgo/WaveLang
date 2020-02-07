@@ -1,5 +1,4 @@
-#ifndef WAVELANG_COMMON_UTILITY_ENDIAN_H__
-#define WAVELANG_COMMON_UTILITY_ENDIAN_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -37,4 +36,3 @@ template<typename t_value> t_value little_to_native_endian(t_value value) { retu
 
 #endif // ENDIANNESS
 
-#endif // WAVELANG_COMMON_UTILITY_ENDIAN_H__

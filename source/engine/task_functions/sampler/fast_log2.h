@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_TASK_FUNCTIONS_SAMPLER_FAST_LOG2_H__
-#define WAVELANG_ENGINE_TASK_FUNCTIONS_SAMPLER_FAST_LOG2_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -34,4 +33,3 @@ inline c_int32_4 fast_log2(const c_real32_4 &x, c_real32_4 &out_frac) {
 	return x_e;
 }
 
-#endif // WAVELANG_ENGINE_TASK_FUNCTIONS_SAMPLER_FAST_LOG2_H__

@@ -1,5 +1,4 @@
-#ifndef WAVELANG_COMMON_STATIC_ARRAY_H__
-#define WAVELANG_COMMON_STATIC_ARRAY_H__
+#pragma once
 
 #include "common/asserts.h"
 #include "common/macros.h"
@@ -36,4 +35,3 @@ private:
 	t_element elements[k_count];
 };
 
-#endif // WAVELANG_COMMON_STATIC_ARRAY_H__

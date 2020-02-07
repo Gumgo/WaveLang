@@ -1,5 +1,4 @@
-#ifndef WAVELANG_RUNTIME_CONTEXT_H__
-#define WAVELANG_RUNTIME_CONTEXT_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -31,5 +30,3 @@ struct s_runtime_context {
 	s_static_array<c_runtime_instrument, 2> runtime_instruments;
 	int32 active_instrument;
 };
-
-#endif // WAVELANG_RUNTIME_CONTEXT_H__

@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_TASK_GRAPH_H__
-#define WAVELANG_ENGINE_TASK_GRAPH_H__
+#pragma once
 
 #include "common/common.h"
 #include "common/utility/string_table.h"
@@ -292,4 +291,3 @@ private:
 	size_t m_remain_active_output;
 };
 
-#endif // WAVELANG_ENGINE_TASK_GRAPH_H__

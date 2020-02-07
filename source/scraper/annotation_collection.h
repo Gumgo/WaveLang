@@ -1,5 +1,4 @@
-#ifndef WAVELANG_SCRAPER_ANNOTATION_COLLECTION_H__
-#define WAVELANG_SCRAPER_ANNOTATION_COLLECTION_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -109,4 +108,3 @@ private:
 	std::vector<s_annotation_specification> m_annotation_specifications;
 };
 
-#endif // WAVELANG_SCRAPER_ANNOTATION_COLLECTION_H__

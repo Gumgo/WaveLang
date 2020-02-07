@@ -1,5 +1,4 @@
-#ifndef WAVELANG_DRIVER_CONTROLLER_DRIVER_MIDI_H__
-#define WAVELANG_DRIVER_CONTROLLER_DRIVER_MIDI_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -43,4 +42,3 @@ private:
 	s_controller_driver_settings m_settings;
 };
 
-#endif // WAVELANG_DRIVER_CONTROLLER_DRIVER_MIDI_H__

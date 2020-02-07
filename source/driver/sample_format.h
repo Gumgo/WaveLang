@@ -1,5 +1,4 @@
-#ifndef WAVELANG_DRIVER_SAMPLE_FORMAT_H__
-#define WAVELANG_DRIVER_SAMPLE_FORMAT_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -12,4 +11,3 @@ enum e_sample_format {
 
 size_t get_sample_format_size(e_sample_format sample_format);
 
-#endif // WAVELANG_DRIVER_SAMPLE_FORMAT_H__

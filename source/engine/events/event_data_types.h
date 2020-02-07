@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_EVENTS_EVENT_DATA_TYPES_H__
-#define WAVELANG_ENGINE_EVENTS_EVENT_DATA_TYPES_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -98,4 +97,3 @@ template<> struct s_event_data_type_definition<c_dstr> {
 
 void initialize_event_data_types();
 
-#endif // WAVELANG_ENGINE_EVENTS_EVENT_DATA_TYPES_H__

@@ -1,5 +1,4 @@
-#ifndef WAVELANG_COMMON_THREADING_CONDITION_VARIABLE_H__
-#define WAVELANG_COMMON_THREADING_CONDITION_VARIABLE_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -22,4 +21,3 @@ private:
 	std::condition_variable m_condition_variable;
 };
 
-#endif // WAVELANG_COMMON_THREADING_CONDITION_VARIABLE_H__

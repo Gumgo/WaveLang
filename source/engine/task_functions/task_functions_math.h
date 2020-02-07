@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_TASK_FUNCTIONS_TASK_FUNCTIONS_MATH_H__
-#define WAVELANG_ENGINE_TASK_FUNCTIONS_TASK_FUNCTIONS_MATH_H__
+#pragma once
 
 #include "common/common.h"
 #include "common/scraper_attributes.h"
@@ -187,4 +186,3 @@ namespace math_task_functions wl_library(k_math_library_id, "math", 0) {
 
 }
 
-#endif // WAVELANG_ENGINE_TASK_FUNCTIONS_TASK_FUNCTIONS_MATH_H__

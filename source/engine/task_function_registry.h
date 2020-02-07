@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_TASK_FUNCTION_REGISTRY_H__
-#define WAVELANG_ENGINE_TASK_FUNCTION_REGISTRY_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -29,4 +28,3 @@ public:
 	static c_task_function_mapping_list get_task_function_mapping_list(uint32 native_module_index);
 };
 
-#endif // WAVELANG_ENGINE_TASK_FUNCTION_REGISTRY_H__

@@ -1,5 +1,4 @@
-#ifndef WAVELANG_EXECUTION_GRAPH_INSTRUMENT_STAGE_H__
-#define WAVELANG_EXECUTION_GRAPH_INSTRUMENT_STAGE_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -12,4 +11,3 @@ enum e_instrument_stage {
 	k_instrument_stage_count
 };
 
-#endif // WAVELANG_EXECUTION_GRAPH_INSTRUMENT_STAGE_H__

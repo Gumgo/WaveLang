@@ -1,5 +1,4 @@
-#ifndef WAVELANG_RUNTIME_CONFIG_H__
-#define WAVELANG_RUNTIME_CONFIG_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -65,4 +64,3 @@ private:
 	s_settings m_settings;
 };
 
-#endif // WAVELANG_RUNTIME_CONFIG_H__

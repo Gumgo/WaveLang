@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_EVENTS_EVENT_INTERFACE_H__
-#define WAVELANG_ENGINE_EVENTS_EVENT_INTERFACE_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -133,4 +132,3 @@ private:
 #define EVENT_ERROR		c_event(k_event_level_error)
 #define EVENT_CRITICAL	c_event(k_event_level_critical)
 
-#endif // WAVELANG_ENGINE_EVENTS_EVENT_INTERFACE_H__

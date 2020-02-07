@@ -1,5 +1,4 @@
-#ifndef WAVELANG_COMMON_PLATFORM_MACROS_H__
-#define WAVELANG_COMMON_PLATFORM_MACROS_H__
+#pragma once
 
 #include "common/macros.h"
 #include "common/platform.h"
@@ -34,4 +33,3 @@
 
 #endif // COMPILER
 
-#endif // WAVELANG_COMMON_PLATFORM_MACROS_H__

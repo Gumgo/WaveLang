@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_CONTROLLER_INTERFACE_CONTROLLER_INTERFACE_H__
-#define WAVELANG_ENGINE_CONTROLLER_INTERFACE_CONTROLLER_INTERFACE_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -17,4 +16,3 @@ private:
 	const c_controller_event_manager *m_controller_event_manager;
 };
 
-#endif // WAVELANG_ENGINE_CONTROLLER_INTERFACE_CONTROLLER_INTERFACE_H__

@@ -1,5 +1,4 @@
-#ifndef WAVELANG_COMMON_SCRAPER_ATTRIBUTES_H__
-#define WAVELANG_COMMON_SCRAPER_ATTRIBUTES_H__
+#pragma once
 
 #include "common/macros.h"
 
@@ -138,4 +137,3 @@
 // Associates the provided task voice initializer function with the task function being declared
 #define wl_task_voice_initializer_function(func) SCRAPER_ATTRIBUTE(WL_TASK_VOICE_INITIALIZER_FUNCTION_PREFIX func)
 
-#endif // WAVELANG_COMMON_SCRAPER_ATTRIBUTES_H__

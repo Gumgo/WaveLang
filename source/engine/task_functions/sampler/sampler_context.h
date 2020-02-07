@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_TASK_FUNCTIONS_SAMPLER_SAMPLER_CONTEXT_H__
-#define WAVELANG_ENGINE_TASK_FUNCTIONS_SAMPLER_SAMPLER_CONTEXT_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -92,4 +91,3 @@ size_t sampler_context_increment_time<true>(
 	size_t &inout_buffer_samples_remaining,
 	s_static_array<real64, k_simd_block_elements> &out_samples);
 
-#endif // WAVELANG_ENGINE_TASK_FUNCTIONS_SAMPLER_SAMPLER_CONTEXT_H__

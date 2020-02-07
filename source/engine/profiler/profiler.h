@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_PROFILER_PROFILER_H__
-#define WAVELANG_ENGINE_PROFILER_PROFILER_H__
+#pragma once
 
 #include "common/common.h"
 #include "common/threading/lock_free.h"
@@ -131,4 +130,3 @@ private:
 	s_static_array<c_lock_free_aligned_allocator<s_task>, k_instrument_stage_count> m_tasks;
 };
 
-#endif // WAVELANG_ENGINE_PROFILER_PROFILER_H__

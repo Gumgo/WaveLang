@@ -1,5 +1,4 @@
-#ifndef WAVELANG_COMMON_THREADING_LOCK_FREE_POOL_H__
-#define WAVELANG_COMMON_THREADING_LOCK_FREE_POOL_H__
+#pragma once
 
 #include "common/common.h"
 #include "common/threading/lock_free.h"
@@ -35,4 +34,3 @@ private:
 	c_lock_free_handle_array m_free_list;
 };
 
-#endif // WAVELANG_COMMON_THREADING_LOCK_FREE_POOL_H__

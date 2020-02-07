@@ -1,5 +1,4 @@
-#ifndef WAVELANG_SCRAPER_DIAGNOSTIC_H__
-#define WAVELANG_SCRAPER_DIAGNOSTIC_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -23,4 +22,3 @@ private:
 	clang::CompilerInstance &m_compiler_instance;
 };
 
-#endif // WAVELANG_SCRAPER_DIAGNOSTIC_H__

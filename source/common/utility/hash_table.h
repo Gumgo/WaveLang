@@ -1,5 +1,4 @@
-#ifndef WAVELANG_COMMON_UTILITY_HASH_TABLE_H__
-#define WAVELANG_COMMON_UTILITY_HASH_TABLE_H__
+#pragma once
 
 #include "common/common.h"
 #include "common/utility/pod.h"
@@ -52,4 +51,3 @@ private:
 
 #include "common/utility/hash_table.inl"
 
-#endif // WAVELANG_COMMON_UTILITY_HASH_TABLE_H__

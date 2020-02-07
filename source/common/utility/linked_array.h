@@ -1,5 +1,4 @@
-#ifndef WAVELANG_COMMON_UTILITY_LINKED_ARRAY_H__
-#define WAVELANG_COMMON_UTILITY_LINKED_ARRAY_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -47,4 +46,3 @@ private:
 	size_t m_free_list_front;
 };
 
-#endif // WAVELANG_COMMON_UTILITY_LINKED_ARRAY_H__

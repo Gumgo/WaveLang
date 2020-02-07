@@ -1,5 +1,4 @@
-#ifndef WAVELANG_COMMON_THREADING_SEMAPHORE_H__
-#define WAVELANG_COMMON_THREADING_SEMAPHORE_H__
+#pragma once
 
 #include "common/common.h"
 #include "common/threading/condition_variable.h"
@@ -20,4 +19,3 @@ private:
 	uint32 m_count;
 };
 
-#endif // WAVELANG_COMMON_THREADING_SEMAPHORE_H__

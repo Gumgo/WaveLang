@@ -1,5 +1,4 @@
-#ifndef WAVELANG_EXECUTION_GRAPH_NATIVE_MODULE_REGISTRY_H__
-#define WAVELANG_EXECUTION_GRAPH_NATIVE_MODULE_REGISTRY_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -44,4 +43,3 @@ public:
 	static bool output_registered_native_modules(const char *filename);
 };
 
-#endif // WAVELANG_EXECUTION_GRAPH_NATIVE_MODULE_REGISTRY_H__

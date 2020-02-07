@@ -1,5 +1,4 @@
-#ifndef WAVELANG_DRIVER_CONTROLLER_DRIVER_H__
-#define WAVELANG_DRIVER_CONTROLLER_DRIVER_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -66,4 +65,3 @@ struct s_controller_device_info {
 
 typedef void (*f_submit_controller_event)(void *context, const s_controller_event &controller_event);
 
-#endif // WAVELANG_DRIVER_CONTROLLER_DRIVER_H__

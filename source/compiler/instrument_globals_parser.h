@@ -1,5 +1,4 @@
-#ifndef WAVELANG_COMPILER_INSTRUMENT_GLOBALS_PARSER_H__
-#define WAVELANG_COMPILER_INSTRUMENT_GLOBALS_PARSER_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -37,4 +36,3 @@ public:
 	static void register_preprocessor_commands(s_instrument_globals_context *globals_context);
 };
 
-#endif // WAVELANG_COMPILER_INSTRUMENT_GLOBALS_PARSER_H__

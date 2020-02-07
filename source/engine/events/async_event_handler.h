@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_EVENTS_ASYNC_EVENT_HANDLER_H__
-#define WAVELANG_ENGINE_EVENTS_ASYNC_EVENT_HANDLER_H__
+#pragma once
 
 #include "common/common.h"
 #include "common/threading/atomics.h"
@@ -97,4 +96,3 @@ private:
 	bool m_event_handling_thread_terminate_flag;
 };
 
-#endif // WAVELANG_ENGINE_EVENTS_ASYNC_EVENT_HANDLER_H__

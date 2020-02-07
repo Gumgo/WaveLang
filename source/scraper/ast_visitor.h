@@ -1,5 +1,4 @@
-#ifndef WAVELANG_SCRAPER_AST_VISITOR_H__
-#define WAVELANG_SCRAPER_AST_VISITOR_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -13,4 +12,3 @@ class c_scraper_result;
 clang::ASTConsumer *create_ast_visitor(
 	clang::CompilerInstance &compiler_instance, c_scraper_result *scraper_result);
 
-#endif // WAVELANG_SCRAPER_AST_VISITOR_H__

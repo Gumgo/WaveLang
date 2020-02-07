@@ -1,5 +1,4 @@
-#ifndef WAVELANG_COMMON_THREADING_THREAD_H__
-#define WAVELANG_COMMON_THREADING_THREAD_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -117,4 +116,3 @@ private:
 #endif // fallback
 };
 
-#endif // WAVELANG_COMMON_THREADING_THREAD_H__

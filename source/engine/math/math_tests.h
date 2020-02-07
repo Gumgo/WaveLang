@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_MATH_MATH_TESTS_H__
-#define WAVELANG_ENGINE_MATH_MATH_TESTS_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -7,4 +6,3 @@
 void run_math_tests();
 #endif // _DEBUG
 
-#endif // WAVELANG_ENGINE_MATH_MATH_TESTS_H__

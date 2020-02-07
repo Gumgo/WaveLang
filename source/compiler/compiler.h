@@ -1,5 +1,4 @@
-#ifndef WAVELANG_COMPILER_COMPILER_H__
-#define WAVELANG_COMPILER_COMPILER_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -17,4 +16,3 @@ public:
 		c_instrument *out_instrument);
 };
 
-#endif // WAVELANG_COMPILER_COMPILER_H__

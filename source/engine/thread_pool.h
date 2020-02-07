@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_THREAD_POOL_H__
-#define WAVELANG_ENGINE_THREAD_POOL_H__
+#pragma once
 
 #include "common/common.h"
 #include "common/threading/condition_variable.h"
@@ -85,4 +84,3 @@ private:
 	c_lock_free_aligned_allocator<s_aligned_lock_free_handle> m_pending_tasks_free_list_memory;
 };
 
-#endif // WAVELANG_ENGINE_THREAD_POOL_H__

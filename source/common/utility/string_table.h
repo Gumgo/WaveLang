@@ -1,5 +1,4 @@
-#ifndef WAVELANG_COMMON_UTILITY_STRING_TABLE_H__
-#define WAVELANG_COMMON_UTILITY_STRING_TABLE_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -33,4 +32,3 @@ private:
 	std::vector<char> m_table;
 };
 
-#endif // WAVELANG_COMMON_UTILITY_STRING_TABLE_H__

@@ -1,5 +1,4 @@
-#ifndef WAVELANG_EXECUTION_GRAPH_NATIVE_MODULES_NATIVE_MODULES_DELAY_H__
-#define WAVELANG_EXECUTION_GRAPH_NATIVE_MODULES_NATIVE_MODULES_DELAY_H__
+#pragma once
 
 #include "common/common.h"
 #include "common/scraper_attributes.h"
@@ -24,4 +23,3 @@ namespace delay_native_modules wl_library(k_delay_library_id, "delay", 0) {
 
 }
 
-#endif // WAVELANG_EXECUTION_GRAPH_NATIVE_MODULES_NATIVE_MODULES_DELAY_H__

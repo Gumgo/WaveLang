@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_TASK_FUNCTIONS_TASK_FUNCTIONS_CONTROLLER_H__
-#define WAVELANG_ENGINE_TASK_FUNCTIONS_TASK_FUNCTIONS_CONTROLLER_H__
+#pragma once
 
 #include "common/common.h"
 #include "common/scraper_attributes.h"
@@ -60,4 +59,3 @@ namespace controller_task_functions wl_library(k_controller_library_id, "control
 
 }
 
-#endif // WAVELANG_ENGINE_TASK_FUNCTIONS_TASK_FUNCTIONS_CONTROLLER_H__

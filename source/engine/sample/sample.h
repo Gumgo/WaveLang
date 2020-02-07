@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_SAMPLE_SAMPLE_H__
-#define WAVELANG_ENGINE_SAMPLE_SAMPLE_H__
+#pragma once
 
 #include "common/common.h"
 #include "common/utility/aligned_allocator.h"
@@ -119,4 +118,3 @@ private:
 	std::vector<c_sample> m_wavetable;
 };
 
-#endif // WAVELANG_ENGINE_SAMPLE_SAMPLE_H__

@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_RUNTIME_INSTRUMENT_H__
-#define WAVELANG_ENGINE_RUNTIME_INSTRUMENT_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -26,4 +25,3 @@ private:
 	s_instrument_globals m_instrument_globals;
 };
 
-#endif // WAVELANG_ENGINE_RUNTIME_INSTRUMENT_H__

@@ -1,5 +1,4 @@
-#ifndef WAVELANG_DRIVER_AUDIO_DRIVER_INTERFACE_H__
-#define WAVELANG_DRIVER_AUDIO_DRIVER_INTERFACE_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -128,4 +127,3 @@ private:
 	s_audio_driver_settings m_settings;
 };
 
-#endif // WAVELANG_DRIVER_AUDIO_DRIVER_INTERFACE_H__

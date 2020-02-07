@@ -1,5 +1,4 @@
-#ifndef WAVELANG_EXECUTION_GRAPH_NATIVE_MODULES_NATIVE_MODULES_CORE_H__
-#define WAVELANG_EXECUTION_GRAPH_NATIVE_MODULES_NATIVE_MODULES_CORE_H__
+#pragma once
 
 #include "common/common.h"
 #include "common/scraper_attributes.h"
@@ -230,4 +229,3 @@ namespace core_native_modules wl_library(k_core_library_id, "core", 0) {
 	s_optimization_rules;
 }
 
-#endif // WAVELANG_EXECUTION_GRAPH_NATIVE_MODULES_NATIVE_MODULES_CORE_H__

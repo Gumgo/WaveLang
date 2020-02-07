@@ -1,5 +1,4 @@
-#ifndef WAVELANG_COMMON_MACROS_H__
-#define WAVELANG_COMMON_MACROS_H__
+#pragma once
 
 // No-op statement which is optimized away
 #define NOOP do {} while (0)
@@ -24,4 +23,3 @@
 #define TOKEN_CONCATENATE_HELPER(x, y) x ## y
 #define TOKEN_CONCATENATE(x, y) TOKEN_CONCATENATE_HELPER(x, y)
 
-#endif // WAVELANG_COMMON_MACROS_H__

@@ -1,5 +1,4 @@
-#ifndef WAVELANG_COMMON_UTILITY_MERGE_SORT_H__
-#define WAVELANG_COMMON_UTILITY_MERGE_SORT_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -63,4 +62,3 @@ void merge_sort(
 	}
 }
 
-#endif // WAVELANG_COMMON_UTILITY_MERGE_SORT_H__

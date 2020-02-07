@@ -1,5 +1,4 @@
-#ifndef WAVELANG_COMMON_TYPES_H__
-#define WAVELANG_COMMON_TYPES_H__
+#pragma once
 
 #include <cstddef>
 #include <stddef.h> // Also need this for GCC for some reason
@@ -36,4 +35,3 @@ template<> struct s_integer_type<4, false> { typedef int32 type; };
 template<> struct s_integer_type<8, true> { typedef uint64 type; };
 template<> struct s_integer_type<8, false> { typedef int64 type; };
 
-#endif // WAVELANG_COMMON_TYPES_H__

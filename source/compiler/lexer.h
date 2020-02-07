@@ -1,5 +1,4 @@
-#ifndef WAVELANG_COMPILER_LEXER_H__
-#define WAVELANG_COMPILER_LEXER_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -123,4 +122,3 @@ public:
 	static s_token read_next_token(c_compiler_string str);
 };
 
-#endif // WAVELANG_COMPILER_LEXER_H__

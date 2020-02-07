@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_TASK_FUNCTIONS_SAMPLER_FETCH_SAMPLE_H__
-#define WAVELANG_ENGINE_TASK_FUNCTIONS_SAMPLER_FETCH_SAMPLE_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -60,4 +59,3 @@ are always the same. Therefore, we precompute the required sinc values for N pos
 between them.
 */
 
-#endif // WAVELANG_ENGINE_TASK_FUNCTIONS_SAMPLER_FETCH_SAMPLE_H__

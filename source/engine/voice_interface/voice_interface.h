@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_VOICE_INTERFACE_VOICE_INTERFACE_H__
-#define WAVELANG_ENGINE_VOICE_INTERFACE_VOICE_INTERFACE_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -18,4 +17,3 @@ private:
 	int32 m_note_release_sample;
 };
 
-#endif // WAVELANG_ENGINE_VOICE_INTERFACE_VOICE_INTERFACE_H__

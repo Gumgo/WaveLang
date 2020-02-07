@@ -1,5 +1,4 @@
-#ifndef WAVELANG_COMMON_UTILITY_RADIX_SORT_H__
-#define WAVELANG_COMMON_UTILITY_RADIX_SORT_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -74,4 +73,3 @@ void radix_sort_stable(
 	}
 }
 
-#endif // WAVELANG_COMMON_UTILITY_RADIX_SORT_H__

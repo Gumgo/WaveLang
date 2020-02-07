@@ -1,5 +1,4 @@
-#ifndef WAVELANG_COMMON_ASSERTS_H__
-#define WAVELANG_COMMON_ASSERTS_H__
+#pragma once
 
 #include "common/macros.h"
 #include "common/types.h"
@@ -46,4 +45,3 @@ void handle_assert(const char *message, const char *file, int32 line);
 
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
-#endif // WAVELANG_COMMON_ASSERTS_H__

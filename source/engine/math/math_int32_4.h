@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_MATH_MATH_INT32_4_H__
-#define WAVELANG_ENGINE_MATH_MATH_INT32_4_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -90,4 +89,3 @@ c_int32_4 shuffle(const c_int32_4 &a, const c_int32_4 &b);
 template<int32 k_shift_amount>
 c_int32_4 extract(const c_int32_4 &a, const c_int32_4 &b);
 
-#endif // WAVELANG_ENGINE_MATH_MATH_INT32_4_H__

@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_MATH_MATH_H__
-#define WAVELANG_ENGINE_MATH_MATH_H__
+#pragma once
 
 #include "engine/math/math_constants.h"
 #include "engine/math/simd.h"
@@ -19,4 +18,3 @@
 #error No SIMD implementation specified
 #endif // SIMD_IMPLEMENTATION_ENABLED
 
-#endif // WAVELANG_ENGINE_MATH_MATH_H__

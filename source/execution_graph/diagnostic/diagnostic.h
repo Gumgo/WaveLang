@@ -1,5 +1,4 @@
-#ifndef WAVELANG_EXECUTION_GRAPH_DIAGNOSTIC_DIAGNOSTIC_H__
-#define WAVELANG_EXECUTION_GRAPH_DIAGNOSTIC_DIAGNOSTIC_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -28,4 +27,3 @@ private:
 	void *m_diagnostic_callback_context;
 };
 
-#endif // WAVELANG_EXECUTION_GRAPH_DIAGNOSTIC_DIAGNOSTIC_H__

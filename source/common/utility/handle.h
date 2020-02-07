@@ -1,5 +1,4 @@
-#ifndef WAVELANG_COMMON_UTILITY_HANDLE_H__
-#define WAVELANG_COMMON_UTILITY_HANDLE_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -41,4 +40,3 @@ private:
 	t_data m_data;
 };
 
-#endif // WAVELANG_COMMON_UTILITY_HANDLE_H__

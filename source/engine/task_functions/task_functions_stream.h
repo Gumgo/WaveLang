@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_TASK_FUNCTIONS_TASK_FUNCTIONS_STREAM_H__
-#define WAVELANG_ENGINE_TASK_FUNCTIONS_TASK_FUNCTIONS_STREAM_H__
+#pragma once
 
 #include "common/common.h"
 #include "common/scraper_attributes.h"
@@ -14,4 +13,3 @@ namespace time_task_functions wl_library(k_stream_library_id, "stream", 0) {
 
 }
 
-#endif // WAVELANG_ENGINE_TASK_FUNCTIONS_TASK_FUNCTIONS_STREAM_H__

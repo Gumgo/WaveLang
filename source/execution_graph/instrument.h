@@ -1,5 +1,4 @@
-#ifndef WAVELANG_EXECUTION_GRAPH_INSTRUMENT_H__
-#define WAVELANG_EXECUTION_GRAPH_INSTRUMENT_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -81,4 +80,3 @@ private:
 	std::vector<c_instrument_variant *> m_instrument_variants;
 };
 
-#endif // WAVELANG_EXECUTION_GRAPH_INSTRUMENT_H__

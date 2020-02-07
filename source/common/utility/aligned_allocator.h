@@ -1,5 +1,4 @@
-#ifndef WAVELANG_COMMON_UTILITY_ALIGNED_ALLOCATOR_H__
-#define WAVELANG_COMMON_UTILITY_ALIGNED_ALLOCATOR_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -79,4 +78,3 @@ private:
 	c_wrapped_array<t_element> m_array;
 };
 
-#endif // WAVELANG_COMMON_UTILITY_ALIGNED_ALLOCATOR_H__

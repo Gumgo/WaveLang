@@ -1,5 +1,4 @@
-#ifndef WAVELANG_EXECUTION_GRAPH_NATIVE_MODULES_NATIVE_MODULES_SAMPLER_H__
-#define WAVELANG_EXECUTION_GRAPH_NATIVE_MODULES_NATIVE_MODULES_SAMPLER_H__
+#pragma once
 
 #include "common/common.h"
 #include "common/scraper_attributes.h"
@@ -39,4 +38,3 @@ namespace sampler_native_modules wl_library(k_sampler_library_id, "sampler", 0) 
 
 }
 
-#endif // WAVELANG_EXECUTION_GRAPH_NATIVE_MODULES_NATIVE_MODULES_SAMPLER_H__

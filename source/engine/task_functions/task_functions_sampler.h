@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_TASK_FUNCTIONS_TASK_FUNCTIONS_SAMPLER_H__
-#define WAVELANG_ENGINE_TASK_FUNCTIONS_TASK_FUNCTIONS_SAMPLER_H__
+#pragma once
 
 #include "common/common.h"
 #include "common/scraper_attributes.h"
@@ -132,4 +131,3 @@ namespace sampler_task_functions wl_library(k_sampler_library_id, "sampler", 0) 
 
 }
 
-#endif // WAVELANG_ENGINE_TASK_FUNCTIONS_TASK_FUNCTIONS_SAMPLER_H__

@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_MATH_SIMD_H__
-#define WAVELANG_ENGINE_MATH_SIMD_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -37,23 +36,20 @@ static const size_t k_simd_block_size = SIMD_BLOCK_SIZE;
 typedef __m128 t_simd_real32;
 typedef __m128i t_simd_int32;
 
-#ifndef WAVELANG_ENGINE_MATH_SSE_MATHFUN_H__
-#define WAVELANG_ENGINE_MATH_SSE_MATHFUN_H__
+#pragma once
 #define USE_SSE2
 #pragma warning(disable:4305)
 #pragma warning(disable:4838)
 #include "engine/math/sse_mathfun.h"
 #pragma warning(default:4305)
 #pragma warning(default:4838)
-#endif // WAVELANG_ENGINE_MATH_SSE_MATHFUN_H__
 
 #elif IS_TRUE(SIMD_IMPLEMENTATION_NEON_ENABLED)
 
 typedef float32x4_t t_simd_real32;
 typedef int32x4_t t_simd_int32;
 
-#ifndef WAVELANG_ENGINE_MATH_NEON_MATHFUN_H__
-#define WAVELANG_ENGINE_MATH_NEON_MATHFUN_H__
+#pragma once
 #if IS_TRUE(COMPILER_MSVC)
 #pragma warning(disable:4305)
 #pragma warning(disable:4838)
@@ -63,8 +59,6 @@ typedef int32x4_t t_simd_int32;
 #pragma warning(default:4305)
 #pragma warning(default:4838)
 #endif // IS_TRUE(COMPILER_MSVC)
-#endif // WAVELANG_ENGINE_MATH_NEON_MATHFUN_H__
 
 #endif // SIMD_IMPLEMENTATION
 
-#endif // WAVELANG_ENGINE_MATH_SIMD_H__

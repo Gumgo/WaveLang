@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_SAMPLE_SAMPLE_LIBRARY_H__
-#define WAVELANG_ENGINE_SAMPLE_SAMPLE_LIBRARY_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -102,4 +101,3 @@ private:
 	c_sample_library &m_sample_library;
 };
 
-#endif // WAVELANG_ENGINE_SAMPLE_SAMPLE_LIBRARY_H__

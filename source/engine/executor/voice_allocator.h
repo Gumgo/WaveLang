@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_EXECUTOR_VOICE_ALLOCATOR_H__
-#define WAVELANG_ENGINE_EXECUTOR_VOICE_ALLOCATOR_H__
+#pragma once
 
 #include "common/common.h"
 #include "common/utility/linked_array.h"
@@ -78,4 +77,3 @@ private:
 	bool m_fx_needs_activation;
 };
 
-#endif // WAVELANG_ENGINE_EXECUTOR_VOICE_ALLOCATOR_H__

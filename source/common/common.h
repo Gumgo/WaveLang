@@ -1,5 +1,4 @@
-#ifndef WAVELANG_COMMON_COMMON_H__
-#define WAVELANG_COMMON_COMMON_H__
+#pragma once
 
 #include "common/asserts.h"
 #include "common/cast_integer_verify.h"
@@ -131,4 +130,3 @@ t_to reinterpret_bits(t_from from) {
 	return to;
 }
 
-#endif // WAVELANG_COMMON_COMMON_H__

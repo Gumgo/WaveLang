@@ -1,5 +1,4 @@
-#ifndef WAVELANG_COMMON_THREADING_LOCK_FREE_H__
-#define WAVELANG_COMMON_THREADING_LOCK_FREE_H__
+#pragma once
 
 #include "common/common.h"
 #include "common/threading/atomics.h"
@@ -50,4 +49,3 @@ uint32 lock_free_list_pop(c_lock_free_handle_array &node_storage, s_lock_free_ha
 uint32 lock_free_list_count_unsafe(const c_lock_free_handle_array &node_storage, const s_lock_free_handle &list_head);
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
-#endif // WAVELANG_COMMON_THREADING_LOCK_FREE_H__

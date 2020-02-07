@@ -1,5 +1,4 @@
-#ifndef WAVELANG_EXECUTION_GRAPH_NODE_REFERENCE_H__
-#define WAVELANG_EXECUTION_GRAPH_NODE_REFERENCE_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -78,4 +77,3 @@ private:
 #endif // IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
 };
 
-#endif // WAVELANG_EXECUTION_GRAPH_NODE_REFERENCE_H__

@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_EXECUTOR_CONTROLLER_EVENT_MANAGER_H__
-#define WAVELANG_ENGINE_EXECUTOR_CONTROLLER_EVENT_MANAGER_H__
+#pragma once
 
 #include "common/common.h"
 #include "common/utility/hash_table.h"
@@ -55,4 +54,3 @@ private:
 	c_hash_table<uint32, s_parameter_state, s_parameter_id_hash> m_parameter_state_table;
 };
 
-#endif // WAVELANG_ENGINE_EXECUTOR_CONTROLLER_EVENT_MANAGER_H__

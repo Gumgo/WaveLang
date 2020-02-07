@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_BUFFER_OPERATIONS_BUFFER_OPERATIONS_H__
-#define WAVELANG_ENGINE_BUFFER_OPERATIONS_BUFFER_OPERATIONS_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -1344,4 +1343,3 @@ struct s_buffer_operation_bool_bool_bool {
 	}
 };
 
-#endif // WAVELANG_ENGINE_BUFFER_OPERATIONS_BUFFER_OPERATIONS_H__

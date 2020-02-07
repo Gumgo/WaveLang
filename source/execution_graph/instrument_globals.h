@@ -1,5 +1,4 @@
-#ifndef WAVELANG_EXECUTION_GRAPH_INSTRUMENT_GLOBALS_H__
-#define WAVELANG_EXECUTION_GRAPH_INSTRUMENT_GLOBALS_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -20,4 +19,3 @@ struct s_instrument_globals {
 	bool activate_fx_immediately;
 };
 
-#endif // WAVELANG_EXECUTION_GRAPH_INSTRUMENT_GLOBALS_H__

@@ -1,5 +1,4 @@
-#ifndef WAVELANG_COMMON_UTILITY_FILE_UTILITY_H__
-#define WAVELANG_COMMON_UTILITY_FILE_UTILITY_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -75,4 +74,3 @@ private:
 	std::ofstream &m_file;
 };
 
-#endif // WAVELANG_COMMON_UTILITY_FILE_UTILITY_H__

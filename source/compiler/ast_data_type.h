@@ -1,5 +1,4 @@
-#ifndef WAVELANG_COMPILER_AST_DATA_TYPE_H__
-#define WAVELANG_COMPILER_AST_DATA_TYPE_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -57,4 +56,3 @@ private:
 
 const s_ast_primitive_type_traits &get_ast_primitive_type_traits(e_ast_primitive_type primitive_type);
 
-#endif // WAVELANG_COMPILER_AST_DATA_TYPE_H__

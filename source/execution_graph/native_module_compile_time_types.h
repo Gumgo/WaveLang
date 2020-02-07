@@ -1,5 +1,4 @@
-#ifndef WAVELANG_EXECUTION_GRAPH_NATIVE_MODULE_COMPILE_TIME_TYPES_H__
-#define WAVELANG_EXECUTION_GRAPH_NATIVE_MODULE_COMPILE_TIME_TYPES_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -40,4 +39,3 @@ static_assert(sizeof(c_native_module_real_array) == sizeof(c_native_module_array
 static_assert(sizeof(c_native_module_bool_array) == sizeof(c_native_module_array), "Invalid array sizeof");
 static_assert(sizeof(c_native_module_string_array) == sizeof(c_native_module_array), "Invalid array sizeof");
 
-#endif // WAVELANG_EXECUTION_GRAPH_NATIVE_MODULE_COMPILE_TIME_TYPES_H__

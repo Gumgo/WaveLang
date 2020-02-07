@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_EXECUTOR_TASK_MEMORY_MANAGER_H__
-#define WAVELANG_ENGINE_EXECUTOR_TASK_MEMORY_MANAGER_H__
+#pragma once
 
 #include "common/common.h"
 #include "common/threading/lock_free.h"
@@ -48,4 +47,3 @@ private:
 	uint32 m_voice_graph_task_count;
 };
 
-#endif // WAVELANG_ENGINE_EXECUTOR_TASK_MEMORY_MANAGER_H__

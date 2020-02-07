@@ -1,5 +1,4 @@
-#ifndef WAVELANG_EXECUTION_GRAPH_NATIVE_MODULE_H__
-#define WAVELANG_EXECUTION_GRAPH_NATIVE_MODULE_H__
+#pragma once
 
 #include "common/common.h"
 #include "common/scraper_attributes.h"
@@ -419,4 +418,3 @@ struct s_native_module_optimization_rule {
 	s_native_module_optimization_pattern target;
 };
 
-#endif // WAVELANG_EXECUTION_GRAPH_NATIVE_MODULE_H__

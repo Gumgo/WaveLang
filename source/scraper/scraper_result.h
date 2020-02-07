@@ -1,5 +1,4 @@
-#ifndef WAVELANG_SCRAPER_SCRAPER_RESULT_H__
-#define WAVELANG_SCRAPER_SCRAPER_RESULT_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -133,4 +132,3 @@ private:
 	bool m_success;
 };
 
-#endif // WAVELANG_SCRAPER_SCRAPER_RESULT_H__

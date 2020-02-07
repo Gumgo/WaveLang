@@ -1,5 +1,4 @@
-#ifndef WAVELANG_TASK_FUNCTION_REGISTRATION_INPUTS_H__
-#define WAVELANG_TASK_FUNCTION_REGISTRATION_INPUTS_H__
+#pragma once
 
 // Include all task function declarations here
 
@@ -13,4 +12,3 @@
 #include "engine/task_functions/task_functions_stream.h"
 #include "engine/task_functions/task_functions_time.h"
 
-#endif // WAVELANG_TASK_FUNCTION_REGISTRATION_INPUTS_H__

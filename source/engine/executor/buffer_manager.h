@@ -1,5 +1,4 @@
-#ifndef WAVELANG_ENGINE_EXECUTOR_BUFFER_MANAGER_H__
-#define WAVELANG_ENGINE_EXECUTOR_BUFFER_MANAGER_H__
+#pragma once
 
 #include "common/common.h"
 #include "common/threading/lock_free.h"
@@ -116,4 +115,3 @@ private:
 	bool m_fx_processed;
 };
 
-#endif // WAVELANG_ENGINE_EXECUTOR_BUFFER_MANAGER_H__

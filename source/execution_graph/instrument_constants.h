@@ -1,5 +1,4 @@
-#ifndef WAVELANG_EXECUTION_GRAPH_INSTRUMENT_CONSTANTS_H__
-#define WAVELANG_EXECUTION_GRAPH_INSTRUMENT_CONSTANTS_H__
+#pragma once
 
 #include "common/common.h"
 
@@ -20,4 +19,3 @@ enum e_instrument_result {
 	k_instrument_result_count
 };
 
-#endif // WAVELANG_EXECUTION_GRAPH_INSTRUMENT_CONSTANTS_H__
