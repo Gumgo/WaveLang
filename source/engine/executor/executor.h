@@ -134,7 +134,7 @@ private:
 
 	// Used for array dereference
 	friend class c_array_dereference_interface;
-	const c_buffer *get_buffer_by_index(uint32 buffer_index) const;
+	const c_buffer *get_buffer(h_buffer buffer_handle) const;
 
 	static void handle_event_wrapper(void *context, size_t event_size, const void *event_data);
 	void handle_event(size_t event_size, const void *event_data);

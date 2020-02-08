@@ -130,11 +130,11 @@ void c_buffer_manager::begin_chunk(uint32 chunk_size) {
 	m_fx_processed = false;
 
 	std::fill(
-		m_voice_accumulation_buffers.begin(), m_voice_accumulation_buffers.end(), k_lock_free_invalid_handle);
+		m_voice_accumulation_buffers.begin(), m_voice_accumulation_buffers.end(), h_allocated_buffer::invalid());
 	std::fill(
-		m_fx_output_buffers.begin(), m_fx_output_buffers.end(), k_lock_free_invalid_handle);
+		m_fx_output_buffers.begin(), m_fx_output_buffers.end(), h_allocated_buffer::invalid());
 	std::fill(
-		m_channel_mix_buffers.begin(), m_channel_mix_buffers.end(), k_lock_free_invalid_handle);
+		m_channel_mix_buffers.begin(), m_channel_mix_buffers.end(), h_allocated_buffer::invalid());
 }
 
 void c_buffer_manager::initialize_buffers_for_graph(e_instrument_stage instrument_stage) {
@@ -144,10 +144,10 @@ void c_buffer_manager::initialize_buffers_for_graph(e_instrument_stage instrumen
 	c_task_graph_data_array inputs = task_graph->get_inputs();
 
 	// Initially all buffers are unassigned
-	for (uint32 buffer = 0; buffer < task_graph->get_buffer_count(); buffer++) {
-		s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer];
-		buffer_context.handle = k_lock_free_invalid_handle;
-		buffer_context.usages_remaining.initialize(task_graph->get_buffer_usages(buffer));
+	for (h_buffer buffer_handle : task_graph->iterate_buffers()) {
+		s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer_handle.get_data()];
+		buffer_context.handle = h_allocated_buffer::invalid();
+		buffer_context.usages_remaining.initialize(task_graph->get_buffer_usages(buffer_handle));
 
 #if IS_TRUE(ASSERTS_ENABLED)
 		if (buffer_context.usages_remaining.get_unsafe() == 0) {
@@ -155,7 +155,7 @@ void c_buffer_manager::initialize_buffers_for_graph(e_instrument_stage instrumen
 			bool is_input = false;
 			for (size_t index = 0; !is_input && index < inputs.get_count(); index++) {
 				wl_assert(!inputs[index].is_constant());
-				is_input = (buffer == inputs[index].data.value.buffer);
+				is_input = (buffer_handle == inputs[index].data.value.buffer_handle);
 			}
 			wl_assert(is_input);
 		}
@@ -167,25 +167,25 @@ void c_buffer_manager::initialize_buffers_for_graph(e_instrument_stage instrumen
 	wl_assert(inputs.get_count() == 0 || instrument_stage == k_instrument_stage_fx);
 	for (size_t index = 0; index < inputs.get_count(); index++) {
 		wl_assert(!inputs[index].is_constant());
-		uint32 buffer_index = inputs[index].data.value.buffer;
+		h_buffer buffer_handle = inputs[index].data.value.buffer_handle;
 
-		s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer_index];
+		s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer_handle.get_data()];
 
 		if (m_voices_processed == 0) {
-			wl_assert(m_voice_accumulation_buffers[index] == k_lock_free_invalid_handle);
+			wl_assert(!m_voice_accumulation_buffers[index].is_valid());
 			// No voices were active, so allocate an empty buffer
 			buffer_context.handle = m_buffer_allocator.allocate_buffer(m_voice_output_pool_indices[index]);
 			c_buffer *buffer = m_buffer_allocator.get_buffer(buffer_context.handle);
 			*buffer->get_data<real32>() = 0.0f;
 			buffer->set_constant(true);
 		} else {
-			wl_assert(m_voice_accumulation_buffers[index] != k_lock_free_invalid_handle);
+			wl_assert(m_voice_accumulation_buffers[index].is_valid());
 			std::swap(buffer_context.handle, m_voice_accumulation_buffers[index]);
 		}
 
 		if (buffer_context.usages_remaining.get_unsafe() == 0) {
 			m_buffer_allocator.free_buffer(buffer_context.handle);
-			buffer_context.handle = k_lock_free_invalid_handle;
+			buffer_context.handle = h_allocated_buffer::invalid();
 		}
 	}
 }
@@ -229,16 +229,17 @@ bool c_buffer_manager::process_remain_active_output(e_instrument_stage instrumen
 	} else {
 		wl_assert(task_graph->get_remain_active_output().get_type() ==
 			c_task_qualified_data_type(k_task_primitive_type_bool, k_task_qualifier_in));
-		uint32 remain_active_buffer_index = task_graph->get_remain_active_output().get_bool_buffer_in();
-		uint32 remain_active_buffer_handle = m_buffer_contexts.get_array()[remain_active_buffer_index].handle;
-		wl_assert(remain_active_buffer_handle != k_lock_free_invalid_handle);
+		h_buffer remain_active_buffer_handle = task_graph->get_remain_active_output().get_bool_buffer_in();
+		h_allocated_buffer remain_active_allocated_buffer_handle =
+			m_buffer_contexts.get_array()[remain_active_buffer_handle.get_data()].handle;
+		wl_assert(remain_active_allocated_buffer_handle.is_valid());
 
 		// Scan the buffer for any "false" values. Don't bother shifting the buffer, just scan up to the number of
 		// samples written.
-		const c_buffer *remain_active_buffer = m_buffer_allocator.get_buffer(remain_active_buffer_handle);
+		const c_buffer *remain_active_buffer = m_buffer_allocator.get_buffer(remain_active_allocated_buffer_handle);
 		remain_active = scan_remain_active_buffer(remain_active_buffer, voice_sample_offset);
 
-		decrement_buffer_usage(remain_active_buffer_index);
+		decrement_buffer_usage(remain_active_buffer_handle);
 	}
 
 	return remain_active;
@@ -254,7 +255,7 @@ void c_buffer_manager::mix_fx_output_to_channel_buffers() {
 
 void c_buffer_manager::mix_channel_buffers_to_output_buffer(
 	e_sample_format sample_format, c_wrapped_array<uint8> output_buffer) {
-	c_wrapped_array<const uint32> channel_buffers(
+	c_wrapped_array<const h_allocated_buffer> channel_buffers(
 		&m_channel_mix_buffers.front(), m_channel_mix_buffers.size());
 	convert_and_interleave_to_output_buffer(
 		m_chunk_size,
@@ -267,35 +268,35 @@ void c_buffer_manager::mix_channel_buffers_to_output_buffer(
 	assert_all_buffers_free();
 }
 
-void c_buffer_manager::allocate_buffer(e_instrument_stage instrument_stage, uint32 buffer_index) {
-	wl_assert(!is_buffer_allocated(buffer_index));
-	s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer_index];
+void c_buffer_manager::allocate_buffer(e_instrument_stage instrument_stage, h_buffer buffer_handle) {
+	wl_assert(!is_buffer_allocated(buffer_handle));
+	s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer_handle.get_data()];
 	buffer_context.handle = m_buffer_allocator.allocate_buffer(buffer_context.pool_indices[instrument_stage]);
 }
 
-void c_buffer_manager::decrement_buffer_usage(uint32 buffer_index) {
+void c_buffer_manager::decrement_buffer_usage(h_buffer buffer_handle) {
 	// Free the buffer if usage reaches 0
-	s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer_index];
+	s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer_handle.get_data()];
 	int32 prev_usage = buffer_context.usages_remaining.decrement();
 	wl_assert(prev_usage > 0);
 	if (prev_usage == 1) {
 		m_buffer_allocator.free_buffer(buffer_context.handle);
-		buffer_context.handle = k_lock_free_invalid_handle;
+		buffer_context.handle = h_allocated_buffer::invalid();
 	}
 }
 
-bool c_buffer_manager::is_buffer_allocated(uint32 buffer_index) const {
-	const s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer_index];
-	return buffer_context.handle != k_lock_free_invalid_handle;
+bool c_buffer_manager::is_buffer_allocated(h_buffer buffer_handle) const {
+	const s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer_handle.get_data()];
+	return buffer_context.handle.is_valid();
 }
 
-c_buffer *c_buffer_manager::get_buffer(uint32 buffer_index) {
-	const s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer_index];
+c_buffer *c_buffer_manager::get_buffer(h_buffer buffer_handle) {
+	const s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer_handle.get_data()];
 	return m_buffer_allocator.get_buffer(buffer_context.handle);
 }
 
-const c_buffer *c_buffer_manager::get_buffer(uint32 buffer_index) const {
-	const s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer_index];
+const c_buffer *c_buffer_manager::get_buffer(h_buffer buffer_handle) const {
+	const s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer_handle.get_data()];
 	return m_buffer_allocator.get_buffer(buffer_context.handle);
 }
 
@@ -404,7 +405,7 @@ void c_buffer_manager::initialize_buffer_contexts(
 		for (size_t instrument_stage = 0; instrument_stage < k_instrument_stage_count; instrument_stage++) {
 			m_buffer_contexts.get_array()[index].pool_indices[instrument_stage] = static_cast<uint32>(-1);
 		}
-		buffer_context.handle = k_lock_free_invalid_handle;
+		buffer_context.handle = h_allocated_buffer::invalid();
 		buffer_context.shifted_samples = false;
 		buffer_context.swapped_into_voice_accumulation_buffer = false;
 	}
@@ -427,7 +428,8 @@ void c_buffer_manager::initialize_buffer_contexts(
 			uint32 pool_index = get_buffer_pool(input_data.get_type().get_data_type(), buffer_usage_info);
 			wl_assert(VALID_INDEX(pool_index, buffer_usage_info.size()));
 
-			m_buffer_contexts.get_array()[input_data.data.value.buffer].pool_indices[instrument_stage] = pool_index;
+			h_buffer buffer_handle = input_data.data.value.buffer_handle;
+			m_buffer_contexts.get_array()[buffer_handle.get_data()].pool_indices[instrument_stage] = pool_index;
 		}
 
 		for (uint32 task_index = 0; task_index < task_graph->get_task_count(); task_index++) {
@@ -440,7 +442,8 @@ void c_buffer_manager::initialize_buffer_contexts(
 				uint32 pool_index = get_buffer_pool(type_to_match, buffer_usage_info);
 				wl_assert(VALID_INDEX(pool_index, buffer_usage_info.size()));
 
-				m_buffer_contexts.get_array()[it.get_buffer_index()].pool_indices[instrument_stage] = pool_index;
+				h_buffer buffer_handle = it.get_buffer_handle();
+				m_buffer_contexts.get_array()[buffer_handle.get_data()].pool_indices[instrument_stage] = pool_index;
 			}
 		}
 	}
@@ -476,7 +479,7 @@ void c_buffer_manager::shift_voice_output_buffers(uint32 voice_sample_offset) {
 		// Clear the shifted flag. We need this flag because buffers may be shared between multiple outputs, and we only
 		// want to shift each one once.
 		s_buffer_context &buffer_context =
-			m_buffer_contexts.get_array()[outputs[output].get_real_buffer_in()];
+			m_buffer_contexts.get_array()[outputs[output].get_real_buffer_in().get_data()];
 		buffer_context.shifted_samples = false;
 	}
 
@@ -486,7 +489,7 @@ void c_buffer_manager::shift_voice_output_buffers(uint32 voice_sample_offset) {
 		}
 
 		s_buffer_context &buffer_context =
-			m_buffer_contexts.get_array()[outputs[output].get_real_buffer_in()];
+			m_buffer_contexts.get_array()[outputs[output].get_real_buffer_in().get_data()];
 
 		if (buffer_context.shifted_samples) {
 			// We already shifted this buffer
@@ -515,7 +518,7 @@ void c_buffer_manager::shift_voice_output_buffers(uint32 voice_sample_offset) {
 void c_buffer_manager::swap_and_deduplicate_output_buffers(
 	c_task_graph_data_array outputs,
 	const std::vector<uint32> &buffer_pool_indices,
-	std::vector<uint32> &destination,
+	std::vector<h_allocated_buffer> &destination,
 	uint32 voice_sample_offset) {
 	wl_assert(outputs.get_count() == destination.size());
 
@@ -527,16 +530,16 @@ void c_buffer_manager::swap_and_deduplicate_output_buffers(
 		// Clear the swapped flag. We need this flag because buffers may be shared between multiple outputs, and we only
 		// want to swap each one once.
 		s_buffer_context &buffer_context =
-			m_buffer_contexts.get_array()[outputs[output].get_real_buffer_in()];
+			m_buffer_contexts.get_array()[outputs[output].get_real_buffer_in().get_data()];
 		buffer_context.swapped_into_voice_accumulation_buffer = false;
 	}
 
 	for (uint32 output = 0; output < outputs.get_count(); output++) {
-		wl_assert(destination[output] == k_lock_free_invalid_handle);
-		wl_assert(outputs[output].get_type() ==
-			c_task_qualified_data_type(k_task_primitive_type_real, k_task_qualifier_in));
+		wl_assert(!destination[output].is_valid());
+		wl_assert(
+			outputs[output].get_type() == c_task_qualified_data_type(k_task_primitive_type_real, k_task_qualifier_in));
 		if (outputs[output].is_constant()) {
-			uint32 buffer_handle = m_buffer_allocator.allocate_buffer(buffer_pool_indices[output]);
+			h_allocated_buffer buffer_handle = m_buffer_allocator.allocate_buffer(buffer_pool_indices[output]);
 			destination[output] = buffer_handle;
 			if (voice_sample_offset == 0) {
 				s_buffer_operation_assignment::in_out(
@@ -559,7 +562,7 @@ void c_buffer_manager::swap_and_deduplicate_output_buffers(
 		} else {
 			// Swap out the buffer
 			s_buffer_context &buffer_context =
-				m_buffer_contexts.get_array()[outputs[output].get_real_buffer_in()];
+				m_buffer_contexts.get_array()[outputs[output].get_real_buffer_in().get_data()];
 
 			if (!buffer_context.swapped_into_voice_accumulation_buffer) {
 				destination[output] = buffer_context.handle;
@@ -568,7 +571,7 @@ void c_buffer_manager::swap_and_deduplicate_output_buffers(
 				// This case occurs when a single buffer is used for multiple outputs, and the buffer was already
 				// swapped to an accumulation slot. In this case, we must actually allocate an additional buffer and
 				// copy to it, because we need to keep the data separate both accumulations.
-				uint32 buffer_handle = m_buffer_allocator.allocate_buffer(buffer_pool_indices[output]);
+				h_allocated_buffer buffer_handle = m_buffer_allocator.allocate_buffer(buffer_pool_indices[output]);
 				destination[output] = buffer_handle;
 				s_buffer_operation_assignment::in_out(
 					m_chunk_size,
@@ -580,7 +583,7 @@ void c_buffer_manager::swap_and_deduplicate_output_buffers(
 			int32 prev_usage = buffer_context.usages_remaining.decrement();
 			wl_assert(prev_usage > 0);
 			if (prev_usage == 1) {
-				buffer_context.handle = k_lock_free_invalid_handle;
+				buffer_context.handle = h_allocated_buffer::invalid();
 			}
 		}
 	}
@@ -602,10 +605,10 @@ void c_buffer_manager::add_output_buffers_to_voice_accumulation_buffers(uint32 v
 
 	// Add to the accumulation buffers, which should already exist from the first voice
 	for (uint32 output = 0; output < outputs.get_count(); output++) {
-		uint32 accumulation_buffer_handle = m_voice_accumulation_buffers[output];
-		wl_assert(accumulation_buffer_handle != k_lock_free_invalid_handle);
-		wl_assert(outputs[output].get_type() ==
-			c_task_qualified_data_type(k_task_primitive_type_real, k_task_qualifier_in));
+		h_allocated_buffer accumulation_buffer_handle = m_voice_accumulation_buffers[output];
+		wl_assert(accumulation_buffer_handle.is_valid());
+		wl_assert(
+			outputs[output].get_type() == c_task_qualified_data_type(k_task_primitive_type_real, k_task_qualifier_in));
 		if (outputs[output].is_constant()) {
 			if (voice_sample_offset == 0) {
 				s_buffer_operation_addition::inout_in(
@@ -623,7 +626,7 @@ void c_buffer_manager::add_output_buffers_to_voice_accumulation_buffers(uint32 v
 			}
 		} else {
 			s_buffer_context &buffer_context =
-				m_buffer_contexts.get_array()[outputs[output].get_real_buffer_in()];
+				m_buffer_contexts.get_array()[outputs[output].get_real_buffer_in().get_data()];
 			s_buffer_operation_addition::inout_in(
 				m_chunk_size,
 				m_buffer_allocator.get_buffer(accumulation_buffer_handle),
@@ -634,18 +637,18 @@ void c_buffer_manager::add_output_buffers_to_voice_accumulation_buffers(uint32 v
 	// Free the output buffers
 	for (size_t index = 0; index < outputs.get_count(); index++) {
 		if (!outputs[index].is_constant()) {
-			uint32 buffer_index = outputs[index].get_real_buffer_in();
-			decrement_buffer_usage(buffer_index);
+			h_buffer buffer_handle = outputs[index].get_real_buffer_in();
+			decrement_buffer_usage(buffer_handle);
 		}
 	}
 }
 
-void c_buffer_manager::mix_to_channel_buffers(std::vector<uint32> &source_buffers) {
+void c_buffer_manager::mix_to_channel_buffers(std::vector<h_allocated_buffer> &source_buffers) {
 	if (m_voices_processed == 0 && !m_fx_processed) {
 		// We have no data, simply allocate zero'd buffers for the channel buffers
 		for (uint32 channel = 0; channel < m_channel_mix_buffers.size(); channel++) {
-			wl_assert(m_channel_mix_buffers[channel] == k_lock_free_invalid_handle);
-			uint32 buffer_handle = m_buffer_allocator.allocate_buffer(m_real_buffer_pool_index);
+			wl_assert(!m_channel_mix_buffers[channel].is_valid());
+			h_allocated_buffer buffer_handle = m_buffer_allocator.allocate_buffer(m_real_buffer_pool_index);
 			m_channel_mix_buffers[channel] = buffer_handle;
 			s_buffer_operation_assignment::in_out(
 				m_chunk_size,
@@ -660,12 +663,14 @@ void c_buffer_manager::mix_to_channel_buffers(std::vector<uint32> &source_buffer
 
 		// Allocate channel buffers
 		for (uint32 channel = 0; channel < m_channel_mix_buffers.size(); channel++) {
-			wl_assert(m_channel_mix_buffers[channel] == k_lock_free_invalid_handle);
+			wl_assert(!m_channel_mix_buffers[channel].is_valid());
 			m_channel_mix_buffers[channel] = m_buffer_allocator.allocate_buffer(m_real_buffer_pool_index);
 		}
 
-		c_wrapped_array<const uint32> source_buffer_list(&source_buffers.front(), source_buffers.size());
-		c_wrapped_array<const uint32> channel_buffers(&m_channel_mix_buffers.front(), m_channel_mix_buffers.size());
+		c_wrapped_array<const h_allocated_buffer> source_buffer_list(
+			&source_buffers.front(), source_buffers.size());
+		c_wrapped_array<const h_allocated_buffer> channel_buffers(
+			&m_channel_mix_buffers.front(), m_channel_mix_buffers.size());
 
 		mix_output_buffers_to_channel_buffers(m_chunk_size, m_buffer_allocator, source_buffer_list, channel_buffers);
 
@@ -677,7 +682,8 @@ void c_buffer_manager::mix_to_channel_buffers(std::vector<uint32> &source_buffer
 }
 
 bool c_buffer_manager::scan_remain_active_buffer(
-	const c_buffer *remain_active_buffer, uint32 voice_sample_offset) const {
+	const c_buffer *remain_active_buffer,
+	uint32 voice_sample_offset) const {
 	bool remain_active;
 
 	if (remain_active_buffer->is_constant()) {
@@ -730,7 +736,7 @@ void c_buffer_manager::assert_all_output_buffers_free(e_instrument_stage instrum
 	uint32 buffer_count = m_runtime_instrument->get_task_graph(instrument_stage)->get_buffer_count();
 	for (uint32 buffer = 0; buffer < buffer_count; buffer++) {
 		const s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer];
-		wl_assert(buffer_context.handle == k_lock_free_invalid_handle);
+		wl_assert(!buffer_context.handle.is_valid());
 		wl_assert(buffer_context.usages_remaining.get_unsafe() == 0);
 	}
 }

@@ -3,10 +3,14 @@
 #include "common/common.h"
 #include "common/threading/lock_free.h"
 #include "common/threading/lock_free_pool.h"
+#include "common/utility/handle.h"
 
 #include "engine/buffer.h"
 
 #include <vector>
+
+struct s_allocated_buffer_handle_identifier {};
+using h_allocated_buffer = c_handle<s_allocated_buffer_handle_identifier, uint32, k_lock_free_invalid_handle>;
 
 struct s_buffer_pool_description {
 	e_buffer_type type;	// Type of buffer
@@ -27,11 +31,11 @@ public:
 	uint32 get_buffer_pool_count() const;
 	const s_buffer_pool_description &get_buffer_pool_description(uint32 pool_index) const;
 
-	uint32 allocate_buffer(uint32 pool_index);
-	void free_buffer(uint32 buffer_handle);
+	h_allocated_buffer allocate_buffer(uint32 pool_index);
+	void free_buffer(h_allocated_buffer buffer_handle);
 
-	inline c_buffer *get_buffer(uint32 buffer_handle);
-	inline const c_buffer *get_buffer(uint32 buffer_handle) const;
+	inline c_buffer *get_buffer(h_allocated_buffer buffer_handle);
+	inline const c_buffer *get_buffer(h_allocated_buffer buffer_handle) const;
 
 #if IS_TRUE(ASSERTS_ENABLED)
 	void assert_all_buffers_free() const;
@@ -63,11 +67,11 @@ private:
 	c_lock_free_aligned_allocator<c_buffer> m_buffers;
 };
 
-inline c_buffer *c_buffer_allocator::get_buffer(uint32 buffer_handle) {
-	return &m_buffers.get_array()[buffer_handle];
+inline c_buffer *c_buffer_allocator::get_buffer(h_allocated_buffer buffer_handle) {
+	return &m_buffers.get_array()[buffer_handle.get_data()];
 }
 
-inline const c_buffer *c_buffer_allocator::get_buffer(uint32 buffer_handle) const {
-	return &m_buffers.get_array()[buffer_handle];
+inline const c_buffer *c_buffer_allocator::get_buffer(h_allocated_buffer buffer_handle) const {
+	return &m_buffers.get_array()[buffer_handle.get_data()];
 }
 

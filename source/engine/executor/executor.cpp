@@ -608,7 +608,7 @@ size_t c_executor::setup_task_arguments(
 			}
 		} else {
 			argument.data.value.buffer = include_dynamic_arguments ?
-				m_buffer_manager.get_buffer(argument_data[arg].data.value.buffer) : nullptr;
+				m_buffer_manager.get_buffer(argument_data[arg].data.value.buffer_handle) : nullptr;
 		}
 	}
 
@@ -627,11 +627,11 @@ void c_executor::allocate_output_buffers(uint32 task_index) {
 			e_task_qualifier qualifier = argument.data.type.get_qualifier();
 			if (qualifier == k_task_qualifier_out) {
 				// Allocate output buffers
-				m_buffer_manager.allocate_buffer(m_active_instrument_stage, argument.data.value.buffer);
+				m_buffer_manager.allocate_buffer(m_active_instrument_stage, argument.data.value.buffer_handle);
 			} else {
 				wl_assert(qualifier == k_task_qualifier_in || qualifier == k_task_qualifier_inout);
 				// Any input buffers should already be allocated (this includes inout buffers)
-				wl_assert(m_buffer_manager.is_buffer_allocated(argument.data.value.buffer));
+				wl_assert(m_buffer_manager.is_buffer_allocated(argument.data.value.buffer_handle));
 			}
 		}
 	}
@@ -657,7 +657,7 @@ void c_executor::decrement_buffer_usages(uint32 task_index) {
 				for (size_t index = 0; index < real_array.get_count(); index++) {
 					const s_real_array_element &element = real_array[index];
 					if (!element.is_constant) {
-						m_buffer_manager.decrement_buffer_usage(element.buffer_index_value);
+						m_buffer_manager.decrement_buffer_usage(element.buffer_handle_value);
 					}
 				}
 				break;
@@ -669,7 +669,7 @@ void c_executor::decrement_buffer_usages(uint32 task_index) {
 				for (size_t index = 0; index < bool_array.get_count(); index++) {
 					const s_bool_array_element &element = bool_array[index];
 					if (!element.is_constant) {
-						m_buffer_manager.decrement_buffer_usage(element.buffer_index_value);
+						m_buffer_manager.decrement_buffer_usage(element.buffer_handle_value);
 					}
 				}
 				break;
@@ -683,13 +683,13 @@ void c_executor::decrement_buffer_usages(uint32 task_index) {
 				wl_unreachable();
 			}
 		} else {
-			m_buffer_manager.decrement_buffer_usage(argument.data.value.buffer);
+			m_buffer_manager.decrement_buffer_usage(argument.data.value.buffer_handle);
 		}
 	}
 }
 
-const c_buffer *c_executor::get_buffer_by_index(uint32 buffer_index) const {
-	return m_buffer_manager.get_buffer(buffer_index);
+const c_buffer *c_executor::get_buffer(h_buffer buffer_handle) const {
+	return m_buffer_manager.get_buffer(buffer_handle);
 }
 
 void c_executor::handle_event_wrapper(void *context, size_t event_size, const void *event_data) {

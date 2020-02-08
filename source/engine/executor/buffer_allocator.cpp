@@ -82,22 +82,22 @@ const s_buffer_pool_description &c_buffer_allocator::get_buffer_pool_description
 	return m_buffer_pools[pool_index].description;
 }
 
-uint32 c_buffer_allocator::allocate_buffer(uint32 pool_index) {
+h_allocated_buffer c_buffer_allocator::allocate_buffer(uint32 pool_index) {
 	s_buffer_pool &pool = m_buffer_pools[pool_index];
 	uint32 buffer_handle = pool.buffer_pool.allocate();
 	wl_vassert(buffer_handle != k_lock_free_invalid_handle, "Out of buffers");
-	return pool.first_buffer_handle + buffer_handle;
+	return h_allocated_buffer::construct(pool.first_buffer_handle + buffer_handle);
 }
 
-void c_buffer_allocator::free_buffer(uint32 buffer_handle) {
-	wl_assert(buffer_handle != k_lock_free_invalid_handle);
-	uint32 pool_index = m_buffers.get_array()[buffer_handle].m_pool_index;
+void c_buffer_allocator::free_buffer(h_allocated_buffer buffer_handle) {
+	wl_assert(buffer_handle.is_valid());
+	uint32 pool_index = m_buffers.get_array()[buffer_handle.get_data()].m_pool_index;
 	s_buffer_pool &pool = m_buffer_pools[pool_index];
 
 	// Make sure the buffer handle is in the pool's handle range
-	wl_assert(buffer_handle >= pool.first_buffer_handle &&
-		buffer_handle < pool.first_buffer_handle + pool.description.count);
-	pool.buffer_pool.free(buffer_handle - pool.first_buffer_handle);
+	wl_assert(buffer_handle.get_data() >= pool.first_buffer_handle &&
+		buffer_handle.get_data() < pool.first_buffer_handle + pool.description.count);
+	pool.buffer_pool.free(buffer_handle.get_data() - pool.first_buffer_handle);
 }
 
 #if IS_TRUE(ASSERTS_ENABLED)

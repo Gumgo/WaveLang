@@ -59,7 +59,7 @@ namespace array_task_functions {
 					result->set_constant(true);
 				} else {
 					c_real_buffer_in array_buffer =
-						context.array_dereference_interface->get_buffer_by_index(element.buffer_index_value);
+						context.array_dereference_interface->get_buffer(element.buffer_handle_value);
 
 					if (array_buffer->is_constant()) {
 						*out_ptr = *array_buffer->get_data<real32>();
@@ -115,7 +115,7 @@ namespace array_task_functions {
 							reinterpret_bits<real32>(dereferenced_value_int);
 					} else {
 						c_real_buffer_in array_buffer =
-							context.array_dereference_interface->get_buffer_by_index(element.buffer_index_value);
+							context.array_dereference_interface->get_buffer(element.buffer_handle_value);
 						uint32 dereference_index = index;
 
 						// Zero if constant, 0xffffffff otherwise
@@ -164,7 +164,7 @@ namespace array_task_functions {
 					index_result->set_constant(true);
 				} else {
 					c_real_buffer_in array_buffer =
-						context.array_dereference_interface->get_buffer_by_index(element.buffer_index_value);
+						context.array_dereference_interface->get_buffer(element.buffer_handle_value);
 
 					if (array_buffer->is_constant()) {
 						*index_out_ptr = *array_buffer->get_data<real32>();
@@ -220,7 +220,7 @@ namespace array_task_functions {
 							reinterpret_bits<real32>(dereferenced_value_int);
 					} else {
 						c_real_buffer_in array_buffer =
-							context.array_dereference_interface->get_buffer_by_index(element.buffer_index_value);
+							context.array_dereference_interface->get_buffer(element.buffer_handle_value);
 						uint32 dereference_index = index;
 
 						// Zero if constant, 0xffffffff otherwise
@@ -272,7 +272,7 @@ namespace array_task_functions {
 					result->set_constant(true);
 				} else {
 					c_bool_buffer_in array_buffer =
-						context.array_dereference_interface->get_buffer_by_index(element.buffer_index_value);
+						context.array_dereference_interface->get_buffer(element.buffer_handle_value);
 
 					if (array_buffer->is_constant()) {
 						*out_ptr = *array_buffer->get_data<int32>();
@@ -334,7 +334,7 @@ namespace array_task_functions {
 							dereferenced_value = static_cast<int32>(element.constant_value) & array_dereference_mask;
 						} else {
 							c_bool_buffer_in array_buffer =
-								context.array_dereference_interface->get_buffer_by_index(element.buffer_index_value);
+								context.array_dereference_interface->get_buffer(element.buffer_handle_value);
 							uint32 dereference_index = index;
 
 							// Zero if constant, 0xffffffff otherwise

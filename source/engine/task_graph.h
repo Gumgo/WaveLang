@@ -3,6 +3,7 @@
 #include "common/common.h"
 #include "common/utility/string_table.h"
 
+#include "engine/buffer_handle.h"
 #include "engine/task_function.h"
 
 #include "execution_graph/instrument_stage.h"
@@ -29,17 +30,17 @@ struct s_task_graph_data {
 				c_node_reference execution_graph_reference_b;
 			};
 
-			uint32 buffer; // Shared accessor for any buffer, no accessor function for this
+			h_buffer buffer_handle; // Shared accessor for any buffer, no accessor function for this
 
-			uint32 real_buffer_in;
-			uint32 real_buffer_out;
-			uint32 real_buffer_inout;
+			h_buffer real_buffer_handle_in;
+			h_buffer real_buffer_handle_out;
+			h_buffer real_buffer_handle_inout;
 			real32 real_constant_in;
 			c_real_array real_array_in;
 
-			uint32 bool_buffer_in;
-			uint32 bool_buffer_out;
-			uint32 bool_buffer_inout;
+			h_buffer bool_buffer_handle_in;
+			h_buffer bool_buffer_handle_out;
+			h_buffer bool_buffer_handle_inout;
 			bool bool_constant_in;
 			c_bool_array bool_array_in;
 
@@ -56,25 +57,25 @@ struct s_task_graph_data {
 		return data.is_constant;
 	}
 
-	uint32 get_real_buffer_in() const {
+	h_buffer get_real_buffer_in() const {
 		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_real));
 		wl_assert(data.type.get_qualifier() == k_task_qualifier_in);
 		wl_assert(!is_constant());
-		return data.value.real_buffer_in;
+		return data.value.real_buffer_handle_in;
 	}
 
-	uint32 get_real_buffer_out() const {
+	h_buffer get_real_buffer_out() const {
 		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_real));
 		wl_assert(data.type.get_qualifier() == k_task_qualifier_out);
 		wl_assert(!is_constant());
-		return data.value.real_buffer_out;
+		return data.value.real_buffer_handle_out;
 	}
 
-	uint32 get_real_buffer_inout() const {
+	h_buffer get_real_buffer_inout() const {
 		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_real));
 		wl_assert(data.type.get_qualifier() == k_task_qualifier_inout);
 		wl_assert(!is_constant());
-		return data.value.real_buffer_inout;
+		return data.value.real_buffer_handle_inout;
 	}
 
 	real32 get_real_constant_in() const {
@@ -90,25 +91,25 @@ struct s_task_graph_data {
 		return data.value.real_array_in;
 	}
 
-	uint32 get_bool_buffer_in() const {
+	h_buffer get_bool_buffer_in() const {
 		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_bool));
 		wl_assert(data.type.get_qualifier() == k_task_qualifier_in);
 		wl_assert(!is_constant());
-		return data.value.bool_buffer_in;
+		return data.value.bool_buffer_handle_in;
 	}
 
-	uint32 get_bool_buffer_out() const {
+	h_buffer get_bool_buffer_out() const {
 		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_bool));
 		wl_assert(data.type.get_qualifier() == k_task_qualifier_out);
 		wl_assert(!is_constant());
-		return data.value.bool_buffer_out;
+		return data.value.bool_buffer_handle_out;
 	}
 
-	uint32 get_bool_buffer_inout() const {
+	h_buffer get_bool_buffer_inout() const {
 		wl_assert(data.type.get_data_type() == c_task_data_type(k_task_primitive_type_bool));
 		wl_assert(data.type.get_qualifier() == k_task_qualifier_inout);
 		wl_assert(!is_constant());
-		return data.value.bool_buffer_inout;
+		return data.value.bool_buffer_handle_inout;
 	}
 
 	bool get_bool_constant_in() const {
@@ -148,7 +149,7 @@ public:
 		c_task_graph_data_array data_array, c_task_data_type type_mask = c_task_data_type::invalid());
 	bool is_valid() const;
 	void next();
-	uint32 get_buffer_index() const;
+	h_buffer get_buffer_handle() const;
 	c_task_qualified_data_type get_buffer_type() const;
 	const s_task_graph_data &get_task_graph_data() const;
 
@@ -166,8 +167,6 @@ public:
 		c_task_data_type type;
 		uint32 max_concurrency;
 	};
-
-	static const uint32 k_invalid_buffer = static_cast<uint32>(-1);
 
 	c_task_graph();
 	~c_task_graph();
@@ -189,8 +188,9 @@ public:
 	const s_task_graph_data &get_remain_active_output() const;
 
 	uint32 get_buffer_count() const;
+	c_buffer_handle_iterator iterate_buffers() const;
 	c_wrapped_array<const s_buffer_usage_info> get_buffer_usage_info() const;
-	uint32 get_buffer_usages(uint32 buffer_index) const;
+	uint32 get_buffer_usages(h_buffer buffer_handle) const;
 
 private:
 	friend class c_task_buffer_iterator_internal;
@@ -223,7 +223,7 @@ private:
 		c_node_reference node_reference,
 		uint32 task_index,
 		const s_task_function_mapping &task_function_mapping);
-	uint32 *get_task_data_array_element_buffer_and_node_reference(
+	h_buffer *get_task_data_array_element_buffer_and_node_reference(
 		const s_task_graph_data &argument,
 		size_t index,
 		c_node_reference *out_node_reference = nullptr);
@@ -233,13 +233,13 @@ private:
 	void allocate_buffers(const c_execution_graph &execution_graph);
 	void convert_nodes_to_buffers(
 		s_task_graph_data &task_graph_data,
-		const std::map<c_node_reference, uint32> &nodes_to_buffers);
+		const std::map<c_node_reference, h_buffer> &nodes_to_buffers);
 	void assign_buffer_to_related_nodes(
 		const c_execution_graph &execution_graph,
 		c_node_reference node_reference,
 		const std::map<c_node_reference, c_node_reference> &inout_connections,
-		std::map<c_node_reference, uint32> &nodes_to_buffers,
-		uint32 buffer_index);
+		std::map<c_node_reference, h_buffer> &nodes_to_buffers,
+		h_buffer buffer_handle);
 	void calculate_max_concurrency();
 	void add_usage_info_for_buffer_type(const c_predecessor_resolver &predecessor_resolver, c_task_data_type type);
 	uint32 calculate_max_buffer_concurrency(

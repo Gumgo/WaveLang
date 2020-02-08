@@ -5,6 +5,7 @@
 
 #include "driver/sample_format.h"
 
+#include "engine/buffer_handle.h"
 #include "engine/runtime_instrument.h"
 #include "engine/task_graph.h"
 #include "engine/executor/buffer_allocator.h"
@@ -27,17 +28,18 @@ public:
 	void mix_channel_buffers_to_output_buffer(
 		e_sample_format sample_format, c_wrapped_array<uint8> output_buffer);
 
-	void allocate_buffer(e_instrument_stage instrument_stage, uint32 buffer_index);
-	void decrement_buffer_usage(uint32 buffer_index);
-	bool is_buffer_allocated(uint32 buffer_index) const;
-	c_buffer *get_buffer(uint32 buffer_index);
-	const c_buffer *get_buffer(uint32 buffer_index) const;
+	void allocate_buffer(e_instrument_stage instrument_stage, h_buffer buffer_handle);
+	void decrement_buffer_usage(h_buffer buffer_handle);
+	bool is_buffer_allocated(h_buffer buffer_handle) const;
+	c_buffer *get_buffer(h_buffer buffer_handle);
+	const c_buffer *get_buffer(h_buffer buffer_handle) const;
 
 private:
+	// nocheckin Need to update more of this
 	struct ALIGNAS_LOCK_FREE s_buffer_context {
 		c_atomic_int32 usages_remaining;
 		s_static_array<uint32, k_instrument_stage_count> pool_indices;
-		uint32 handle;
+		h_allocated_buffer handle;
 		bool shifted_samples;
 		bool swapped_into_voice_accumulation_buffer;
 	};
@@ -63,11 +65,11 @@ private:
 	void swap_and_deduplicate_output_buffers(
 		c_task_graph_data_array outputs,
 		const std::vector<uint32> &buffer_pool_indices,
-		std::vector<uint32> &destination,
+		std::vector<h_allocated_buffer> &destination,
 		uint32 voice_sample_offset);
 	void swap_output_buffers_with_voice_accumulation_buffers(uint32 voice_sample_offset);
 	void add_output_buffers_to_voice_accumulation_buffers(uint32 voice_sample_offset);
-	void mix_to_channel_buffers(std::vector<uint32> &source_buffers);
+	void mix_to_channel_buffers(std::vector<h_allocated_buffer> &source_buffers);
 	bool scan_remain_active_buffer(const c_buffer *remain_active_buffer, uint32 voice_sample_offset) const;
 	void free_channel_buffers();
 
@@ -97,13 +99,13 @@ private:
 	c_lock_free_aligned_allocator<s_buffer_context> m_buffer_contexts;
 
 	// Buffers to accumulate the final multi-voice result into
-	std::vector<uint32> m_voice_accumulation_buffers;
+	std::vector<h_allocated_buffer> m_voice_accumulation_buffers;
 
 	// Buffers to store the FX processing result in
-	std::vector<uint32> m_fx_output_buffers;
+	std::vector<h_allocated_buffer> m_fx_output_buffers;
 
 	// Buffers to mix to output channels
-	std::vector<uint32> m_channel_mix_buffers;
+	std::vector<h_allocated_buffer> m_channel_mix_buffers;
 
 	// Size of the current chunk
 	uint32 m_chunk_size;

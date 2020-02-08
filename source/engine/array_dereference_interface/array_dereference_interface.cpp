@@ -6,6 +6,6 @@ c_array_dereference_interface::c_array_dereference_interface(c_executor *executo
 	wl_assert(executor);
 }
 
-const c_buffer *c_array_dereference_interface::get_buffer_by_index(uint32 buffer_index) const {
-	return m_executor->get_buffer_by_index(buffer_index);
+const c_buffer *c_array_dereference_interface::get_buffer(h_buffer buffer_handle) const {
+	return m_executor->get_buffer(buffer_handle);
 }

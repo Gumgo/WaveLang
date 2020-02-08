@@ -3,6 +3,7 @@
 #include "common/common.h"
 
 #include "engine/buffer.h"
+#include "engine/buffer_handle.h"
 
 #include "execution_graph/native_module.h"
 
@@ -129,7 +130,7 @@ struct s_real_array_element {
 
 	union {
 		real32 constant_value;
-		uint32 buffer_index_value;
+		h_buffer buffer_handle_value;
 	};
 };
 
@@ -138,7 +139,7 @@ struct s_bool_array_element {
 
 	union {
 		bool constant_value;
-		uint32 buffer_index_value;
+		h_buffer buffer_handle_value;
 	};
 };
 
