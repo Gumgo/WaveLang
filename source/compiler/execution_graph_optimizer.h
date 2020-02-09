@@ -75,7 +75,7 @@ private:
 // Used to trim unused nodes from a partially-built graph to avoid having the graph grow to be unnecessarily big.
 class c_execution_graph_trimmer {
 public:
-	typedef void (*f_on_node_removed)(void *context, c_node_reference node_reference);
+	using f_on_node_removed = void (*)(void *context, c_node_reference node_reference);
 
 	c_execution_graph_trimmer();
 	void initialize(

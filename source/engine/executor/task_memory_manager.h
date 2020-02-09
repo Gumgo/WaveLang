@@ -11,7 +11,7 @@
 
 class c_task_memory_manager {
 public:
-	typedef size_t (*f_task_memory_query_callback)(void *context, const c_task_graph *task_graph, uint32 task_index);
+	using f_task_memory_query_callback = size_t (*)(void *context, const c_task_graph *task_graph, uint32 task_index);
 
 	void initialize(
 		const c_runtime_instrument *runtime_instrument,

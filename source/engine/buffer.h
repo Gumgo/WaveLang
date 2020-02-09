@@ -118,9 +118,9 @@ static_assert(sizeof(c_real_buffer) == sizeof(c_buffer), "Buffer size mismatch")
 static_assert(sizeof(c_bool_buffer) == sizeof(c_buffer), "Buffer size mismatch");
 
 // Buffer-or-constant types
-typedef c_buffer_or_constant_base<c_buffer, real32, s_constant_accessor_real> c_real_buffer_or_constant;
-typedef c_buffer_or_constant_base<const c_buffer, real32, s_constant_accessor_real> c_real_const_buffer_or_constant;
+using c_real_buffer_or_constant = c_buffer_or_constant_base<c_buffer, real32, s_constant_accessor_real>;
+using c_real_const_buffer_or_constant = c_buffer_or_constant_base<const c_buffer, real32, s_constant_accessor_real>;
 
-typedef c_buffer_or_constant_base<c_buffer, bool, s_constant_accessor_bool> c_bool_buffer_or_constant;
-typedef c_buffer_or_constant_base<const c_buffer, bool, s_constant_accessor_bool> c_bool_const_buffer_or_constant;
+using c_bool_buffer_or_constant = c_buffer_or_constant_base<c_buffer, bool, s_constant_accessor_bool>;
+using c_bool_const_buffer_or_constant = c_buffer_or_constant_base<const c_buffer, bool, s_constant_accessor_bool>;
 

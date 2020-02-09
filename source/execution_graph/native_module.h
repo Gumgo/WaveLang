@@ -268,7 +268,7 @@ struct s_native_module_compile_time_argument {
 };
 
 // A function which can be called at compile-time to resolve the value(s) of native module calls with constant inputs
-typedef c_wrapped_array<s_native_module_compile_time_argument> c_native_module_compile_time_argument_list;
+using c_native_module_compile_time_argument_list = c_wrapped_array<s_native_module_compile_time_argument>;
 
 struct s_native_module_context {
 	c_diagnostic *diagnostic;
@@ -278,7 +278,7 @@ struct s_native_module_context {
 	c_native_module_compile_time_argument_list *arguments;
 };
 
-typedef void (*f_native_module_compile_time_call)(const s_native_module_context &context);
+using f_native_module_compile_time_call = void (*)(const s_native_module_context &context);
 
 struct s_native_module {
 	// Unique identifier for this native module

@@ -275,7 +275,7 @@ private:
 	size_t m_current_node_index;
 };
 
-typedef bool (*t_lr_parser_get_next_token)(void *context, uint16 &out_token);
+using f_lr_parser_get_next_token = bool (*)(void *context, uint16 &out_token);
 
 class c_lr_parser {
 public:
@@ -289,7 +289,7 @@ public:
 #endif // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 
 	c_lr_parse_tree parse_token_stream(
-		t_lr_parser_get_next_token get_next_token,
+		f_lr_parser_get_next_token get_next_token,
 		void *context,
 		std::vector<size_t> &out_error_tokens) const;
 

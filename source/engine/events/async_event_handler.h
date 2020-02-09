@@ -8,7 +8,7 @@
 #include "common/utility/aligned_allocator.h"
 #include "common/utility/stopwatch.h"
 
-typedef void (*f_event_handler)(void *context, size_t event_size, const void *event_data);
+using f_event_handler = void (*)(void *context, size_t event_size, const void *event_data);
 
 struct s_async_event_handler_settings {
 	f_event_handler event_handler;

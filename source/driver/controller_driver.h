@@ -23,8 +23,8 @@ struct s_controller_driver_result {
 	}
 };
 
-typedef real64 (*f_controller_clock)(void *context);
-typedef bool (*f_controller_event_hook)(void *context, const s_controller_event &controller_event);
+using f_controller_clock = real64 (*)(void *context);
+using f_controller_event_hook = bool (*)(void *context, const s_controller_event &controller_event);
 
 struct s_controller_driver_settings {
 	size_t device_count;
@@ -63,5 +63,5 @@ struct s_controller_device_info {
 	const char *name;
 };
 
-typedef void (*f_submit_controller_event)(void *context, const s_controller_event &controller_event);
+using f_submit_controller_event = void (*)(void *context, const s_controller_event &controller_event);
 

@@ -12,7 +12,7 @@ enum class e_diagnostic_level {
 	k_count
 };
 
-typedef void (*f_diagnostic_callback)(void *context, e_diagnostic_level diagnostic_level, const std::string &message);
+using f_diagnostic_callback = void (*)(void *context, e_diagnostic_level diagnostic_level, const std::string &message);
 
 class c_diagnostic {
 public:

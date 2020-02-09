@@ -28,7 +28,7 @@ class c_task_graph;
 struct s_instrument_globals;
 struct s_task_function;
 
-typedef size_t (*f_process_controller_events)(
+using f_process_controller_events = size_t (*)(
 	void *context, c_wrapped_array<s_timestamped_controller_event> controller_events,
 	real64 buffer_time_sec, real64 buffer_duration_sec);
 

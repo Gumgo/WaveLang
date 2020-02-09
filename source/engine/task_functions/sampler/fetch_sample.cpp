@@ -258,7 +258,7 @@ static void choose_wavetable_levels(
 	out_wavetable_blend_ratio = wavetable_index - wavetable_index_floor;
 	int32 max_wavetable_index = cast_integer_verify<int32>(wavetable_count - 1);
 
-	int32x4 index_a = convert_to_int32x4(wavetable_index_floor) + int32x4(1);
+	int32x4 index_a = static_cast<int32x4>(wavetable_index_floor) + int32x4(1);
 	out_wavetable_index_a = min(max(index_a, int32x4(0)), int32x4(max_wavetable_index));
 
 #if IS_TRUE(BLEND_MODE_MIN)

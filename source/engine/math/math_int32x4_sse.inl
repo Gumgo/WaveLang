@@ -45,8 +45,8 @@ inline int32x4::operator t_simd_int32() const {
 	return m_value;
 }
 
-inline real32x4 int32x4::real32x4_from_bits() const {
-	return _mm_castsi128_ps(m_value);
+inline int32x4::operator real32x4() const {
+	return _mm_cvtepi32_ps(m_value);
 }
 
 inline int32x4 operator+(const int32x4 &v) {
@@ -172,12 +172,12 @@ inline int32x4 max_unsigned(const int32x4 &a, const int32x4 &b) {
 	return _mm_max_epu32(a, b);
 }
 
-inline real32x4 convert_to_real32x4(const int32x4 &v) {
-	return _mm_cvtepi32_ps(v);
+template<> inline real32x4 reinterpret_bits(const int32x4 &v) {
+	return _mm_castsi128_ps(v);
 }
 
 inline int32 mask_from_msb(const int32x4 &v) {
-	return _mm_movemask_ps(v.real32x4_from_bits());
+	return _mm_movemask_ps(reinterpret_bits<real32x4>(v));
 }
 
 inline int32x4 single_element(const int32x4 &v, int32 pos) {
@@ -218,8 +218,8 @@ int32x4 shuffle(const int32x4 &a, const int32x4 &b) {
 	static_assert(VALID_INDEX(k_pos_2, k_simd_block_elements), "Must be in range [0,3]");
 	static_assert(VALID_INDEX(k_pos_3, k_simd_block_elements), "Must be in range [0,3]");
 	static const int32 k_shuffle_pos = k_pos_0 | (k_pos_1 << 2) | (k_pos_2 << 4) | (k_pos_3 << 6);
-	return real32x4(_mm_shuffle_ps(
-		a.real32x4_from_bits(), b.real32x4_from_bits(), k_shuffle_pos)).int32x4_from_bits();
+	return reinterpret_bits<int32x4>(
+		real32x4(_mm_shuffle_ps(reinterpret_bits<real32x4>(a), reinterpret_bits<real32x4>(b), k_shuffle_pos)));
 }
 
 template<>

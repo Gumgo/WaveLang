@@ -28,8 +28,8 @@ public:
 private:
 	static const size_t k_invalid_element_index = static_cast<size_t>(-1);
 
-	typedef s_pod<t_key> s_pod_key;
-	typedef s_pod<t_value> s_pod_value;
+	using s_pod_key = s_pod<t_key>;
+	using s_pod_value = s_pod<t_value>;
 
 	struct s_bucket {
 		size_t first_element_index;

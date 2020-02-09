@@ -67,19 +67,19 @@ struct s_op_sincos {
 	}
 };
 
-typedef s_buffer_operation_real_real<s_op_abs> s_buffer_operation_abs;
-typedef s_buffer_operation_real_real<s_op_floor> s_buffer_operation_floor;
-typedef s_buffer_operation_real_real<s_op_ceil> s_buffer_operation_ceil;
-typedef s_buffer_operation_real_real<s_op_round> s_buffer_operation_round;
-typedef s_buffer_operation_real_real_real<s_op_min> s_buffer_operation_min;
-typedef s_buffer_operation_real_real_real<s_op_max> s_buffer_operation_max;
-typedef s_buffer_operation_real_real<s_op_exp> s_buffer_operation_exp;
-typedef s_buffer_operation_real_real<s_op_log > s_buffer_operation_log;
-typedef s_buffer_operation_real_real<s_op_sqrt> s_buffer_operation_sqrt;
-//typedef s_buffer_operation_real_real_real<s_op_pow> s_buffer_operation_pow;
-typedef s_buffer_operation_real_real<s_op_sin> s_buffer_operation_sin;
-typedef s_buffer_operation_real_real<s_op_cos> s_buffer_operation_cos;
-typedef s_buffer_operation_real_real_real<s_op_sincos> s_buffer_operation_sincos;
+using s_buffer_operation_abs = s_buffer_operation_real_real<s_op_abs>;
+using s_buffer_operation_floor = s_buffer_operation_real_real<s_op_floor>;
+using s_buffer_operation_ceil = s_buffer_operation_real_real<s_op_ceil>;
+using s_buffer_operation_round = s_buffer_operation_real_real<s_op_round>;
+using s_buffer_operation_min = s_buffer_operation_real_real_real<s_op_min>;
+using s_buffer_operation_max = s_buffer_operation_real_real_real<s_op_max>;
+using s_buffer_operation_exp = s_buffer_operation_real_real<s_op_exp>;
+using s_buffer_operation_log = s_buffer_operation_real_real<s_op_log >;
+using s_buffer_operation_sqrt = s_buffer_operation_real_real<s_op_sqrt>;
+//using s_buffer_operation_pow = s_buffer_operation_real_real_real<s_op_pow>;
+using s_buffer_operation_sin = s_buffer_operation_real_real<s_op_sin>;
+using s_buffer_operation_cos = s_buffer_operation_real_real<s_op_cos>;
+using s_buffer_operation_sincos = s_buffer_operation_real_real_real<s_op_sincos>;
 
 // Exponentiation is special because it is cheaper if the base is constant
 struct s_buffer_operation_pow {

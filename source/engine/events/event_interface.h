@@ -5,7 +5,7 @@
 class c_async_event_handler;
 
 const size_t k_max_event_string_length = 256;
-typedef c_static_string<k_max_event_string_length> c_event_string;
+using c_event_string = c_static_string<k_max_event_string_length>;
 
 enum class e_event_level {
 	k_invalid = -1,
@@ -101,7 +101,7 @@ private:
 	c_event_data_stack m_event_data_stack;
 };
 
-typedef size_t (*f_build_event_string)(c_event_string &event_string, const void *data_pointer);
+using f_build_event_string = size_t (*)(c_event_string &event_string, const void *data_pointer);
 
 uint8 register_event_data_type_internal(f_build_event_string build_event_string);
 

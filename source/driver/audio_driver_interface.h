@@ -9,9 +9,9 @@
 // $TODO VST integration will eventually just act as another driver
 
 // Forward declarations for PA
-typedef void PaStream;
+using PaStream = void;
 struct PaStreamCallbackTimeInfo;
-typedef unsigned long PaStreamCallbackFlags;
+using PaStreamCallbackFlags = unsigned long;
 
 enum class e_audio_driver_result {
 	k_success,
@@ -45,9 +45,9 @@ struct s_audio_driver_stream_callback_context {
 	void *user_data;
 };
 
-typedef void (*f_audio_driver_stream_callback)(const s_audio_driver_stream_callback_context &context);
+using f_audio_driver_stream_callback = void (*)(const s_audio_driver_stream_callback_context &context);
 
-typedef real64 (*f_audio_driver_stream_clock)(void *context);
+using f_audio_driver_stream_clock = real64 (*)(void *context);
 
 struct s_audio_driver_settings {
 	// Index of the device to use for the stream

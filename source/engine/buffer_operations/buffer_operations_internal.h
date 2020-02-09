@@ -35,10 +35,10 @@ struct s_op_modulo {
 	real32x4 operator()(const real32x4 &a, const real32x4 &b) const { return a % b; }
 };
 
-typedef s_buffer_operation_real_real<s_op_assignment> s_buffer_operation_assignment;
-typedef s_buffer_operation_real_real<s_op_negation> s_buffer_operation_negation;
-typedef s_buffer_operation_real_real_real<s_op_addition> s_buffer_operation_addition;
-typedef s_buffer_operation_real_real_real<s_op_subtraction> s_buffer_operation_subtraction;
+using s_buffer_operation_assignment = s_buffer_operation_real_real<s_op_assignment>;
+using s_buffer_operation_negation = s_buffer_operation_real_real<s_op_negation>;
+using s_buffer_operation_addition = s_buffer_operation_real_real_real<s_op_addition>;
+using s_buffer_operation_subtraction = s_buffer_operation_real_real_real<s_op_subtraction>;
 
 // Multiplication is a special case because we can mark buffers as constant if we're multiplying by 0
 struct s_buffer_operation_multiplication {
@@ -93,6 +93,6 @@ struct s_buffer_operation_multiplication {
 	}
 };
 
-typedef s_buffer_operation_real_real_real<s_op_division> s_buffer_operation_division;
-typedef s_buffer_operation_real_real_real<s_op_modulo> s_buffer_operation_modulo;
+using s_buffer_operation_division = s_buffer_operation_real_real_real<s_op_division>;
+using s_buffer_operation_modulo = s_buffer_operation_real_real_real<s_op_modulo>;
 

@@ -4,8 +4,9 @@ struct s_op_select_real {
 		const real32x4 &true_value,
 		const real32x4 &false_value) const {
 		int32x4 result =
-			(condition & true_value.int32x4_from_bits()) | (~condition & false_value.int32x4_from_bits());
-		return result.real32x4_from_bits();
+			(condition & reinterpret_bits<int32x4>(true_value))
+			| (~condition & reinterpret_bits<int32x4>(false_value));
+		return reinterpret_bits<real32x4>(result);
 	}
 };
 

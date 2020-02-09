@@ -45,8 +45,8 @@ inline real32x4::operator t_simd_real32() const {
 	return m_value;
 }
 
-inline int32x4 real32x4::int32x4_from_bits() const {
-	return _mm_castps_si128(m_value);
+inline real32x4::operator int32x4() const {
+	return _mm_cvtps_epi32(m_value);
 }
 
 inline real32x4 real32x4::sum_elements() const {
@@ -89,27 +89,27 @@ inline real32x4 operator%(const real32x4 &lhs, const real32x4 &rhs) {
 }
 
 inline int32x4 operator==(const real32x4 &lhs, const real32x4 &rhs) {
-	return real32x4(_mm_cmpeq_ps(lhs, rhs)).int32x4_from_bits();
+	return reinterpret_bits<int32x4>(real32x4(_mm_cmpeq_ps(lhs, rhs)));
 }
 
 inline int32x4 operator!=(const real32x4 &lhs, const real32x4 &rhs) {
-	return real32x4(_mm_cmpneq_ps(lhs, rhs)).int32x4_from_bits();
+	return reinterpret_bits<int32x4>(real32x4(_mm_cmpneq_ps(lhs, rhs)));
 }
 
 inline int32x4 operator>(const real32x4 &lhs, const real32x4 &rhs) {
-	return real32x4(_mm_cmpgt_ps(lhs, rhs)).int32x4_from_bits();
+	return reinterpret_bits<int32x4>(real32x4(_mm_cmpgt_ps(lhs, rhs)));
 }
 
 inline int32x4 operator<(const real32x4 &lhs, const real32x4 &rhs) {
-	return real32x4(_mm_cmplt_ps(lhs, rhs)).int32x4_from_bits();
+	return reinterpret_bits<int32x4>(real32x4(_mm_cmplt_ps(lhs, rhs)));
 }
 
 inline int32x4 operator>=(const real32x4 &lhs, const real32x4 &rhs) {
-	return real32x4(_mm_cmpge_ps(lhs, rhs)).int32x4_from_bits();
+	return reinterpret_bits<int32x4>(real32x4(_mm_cmpge_ps(lhs, rhs)));
 }
 
 inline int32x4 operator<=(const real32x4 &lhs, const real32x4 &rhs) {
-	return real32x4(_mm_cmple_ps(lhs, rhs)).int32x4_from_bits();
+	return reinterpret_bits<int32x4>(real32x4(_mm_cmple_ps(lhs, rhs)));
 }
 
 inline real32x4 abs(const real32x4 &v) {
@@ -169,28 +169,28 @@ inline void sincos(const real32x4 &v, real32x4 &out_sin, real32x4 &out_cos) {
 	sincos_ps(v, reinterpret_cast<t_simd_real32 *>(&out_sin), reinterpret_cast<t_simd_real32 *>(&out_cos));
 }
 
-inline int32x4 convert_to_int32x4(const real32x4 &v) {
-	return _mm_cvtps_epi32(v);
+template<> inline int32x4 reinterpret_bits(const real32x4 &v) {
+	return _mm_castps_si128(v);
 }
 
 inline real32x4 single_element(const real32x4 &v, int32 pos) {
 	wl_assert(VALID_INDEX(pos, 4));
 	switch (pos) {
 	case 0:
-		return int32x4(_mm_shuffle_epi32(
-			v.int32x4_from_bits(), 0)).real32x4_from_bits();
+		return reinterpret_bits<real32x4>(
+			int32x4(_mm_shuffle_epi32(reinterpret_bits<int32x4>(v), 0)));
 
 	case 1:
-		return int32x4(_mm_shuffle_epi32(
-			v.int32x4_from_bits(), (1 | (1 << 2) | (1 << 4) | (1 << 6)))).real32x4_from_bits();
+		return reinterpret_bits<real32x4>(
+			int32x4(_mm_shuffle_epi32(reinterpret_bits<int32x4>(v), (1 | (1 << 2) | (1 << 4) | (1 << 6)))));
 
 	case 2:
-		return int32x4(_mm_shuffle_epi32(
-			v.int32x4_from_bits(), (2 | (2 << 2) | (2 << 4) | (2 << 6)))).real32x4_from_bits();
+		return reinterpret_bits<real32x4>(
+			int32x4(_mm_shuffle_epi32(reinterpret_bits<int32x4>(v), (2 | (2 << 2) | (2 << 4) | (2 << 6)))));
 
 	case 3:
-		return int32x4(_mm_shuffle_epi32(
-			v.int32x4_from_bits(), (3 | (3 << 2) | (3 << 4) | (3 << 6)))).real32x4_from_bits();
+		return reinterpret_bits<real32x4>(
+			int32x4(_mm_shuffle_epi32(reinterpret_bits<int32x4>(v), (3 | (3 << 2) | (3 << 4) | (3 << 6)))));
 
 	default:
 		wl_unreachable();
@@ -205,7 +205,7 @@ real32x4 shuffle(const real32x4 &v) {
 	static_assert(VALID_INDEX(k_pos_2, k_simd_block_elements), "Must be in range [0,3]");
 	static_assert(VALID_INDEX(k_pos_3, k_simd_block_elements), "Must be in range [0,3]");
 	static const int32 k_shuffle_pos = k_pos_0 | (k_pos_1 << 2) | (k_pos_2 << 4) | (k_pos_3 << 6);
-	return int32x4(_mm_shuffle_epi32(v.int32x4_from_bits(), k_shuffle_pos)).real32x4_from_bits();
+	return reinterpret_bits<real32x4>(int32x4(_mm_shuffle_epi32(reinterpret_bits<int32x4>(v), k_shuffle_pos)));
 }
 
 template<int32 k_pos_0, int32 k_pos_1, int32 k_pos_2, int32 k_pos_3>

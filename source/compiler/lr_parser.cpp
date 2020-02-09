@@ -567,7 +567,7 @@ void c_lr_parser::initialize(
 #endif // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 
 c_lr_parse_tree c_lr_parser::parse_token_stream(
-	t_lr_parser_get_next_token get_next_token,
+	f_lr_parser_get_next_token get_next_token,
 	void *context,
 	std::vector<size_t> &out_error_tokens) const {
 	c_lr_parse_tree result_tree;

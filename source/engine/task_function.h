@@ -147,9 +147,9 @@ struct s_string_array_element {
 	const char *constant_value;
 };
 
-typedef c_wrapped_array<const s_real_array_element> c_real_array;
-typedef c_wrapped_array<const s_bool_array_element> c_bool_array;
-typedef c_wrapped_array<const s_string_array_element> c_string_array;
+using c_real_array = c_wrapped_array<const s_real_array_element>;
+using c_bool_array = c_wrapped_array<const s_bool_array_element>;
+using c_string_array = c_wrapped_array<const s_string_array_element>;
 
 struct s_task_function_argument {
 	// Do not access these directly
@@ -290,7 +290,7 @@ struct s_task_function_argument {
 	}
 };
 
-typedef c_wrapped_array<const s_task_function_argument> c_task_function_arguments;
+using c_task_function_arguments = c_wrapped_array<const s_task_function_argument>;
 
 struct s_task_function_context {
 	c_array_dereference_interface *array_dereference_interface;
@@ -311,18 +311,18 @@ struct s_task_function_context {
 
 // This function takes a partially-filled-in context and returns the amount of memory the task requires
 // Basic data such as sample rate is available, as well as any constant arguments - any buffer arguments are null
-typedef size_t (*f_task_memory_query)(const s_task_function_context &context);
+using f_task_memory_query = size_t (*)(const s_task_function_context &context);
 
 // Called after task memory has been allocated - should be used to initialize this memory
 // Basic data such as sample rate is available, as well as any constant arguments - any buffer arguments are null
 // In addition, this is the time where samples should be requested, as that interface is provided on the context
-typedef void (*f_task_initializer)(const s_task_function_context &context);
+using f_task_initializer = void (*)(const s_task_function_context &context);
 
 // Called when a voice becomes active
-typedef void (*f_task_voice_initializer)(const s_task_function_context &context);
+using f_task_voice_initializer = void (*)(const s_task_function_context &context);
 
 // Function executed for the task
-typedef void (*f_task_function)(const s_task_function_context &context);
+using f_task_function = void (*)(const s_task_function_context &context);
 
 static const size_t k_max_task_function_name_length = 64;
 static const size_t k_max_task_function_arguments = 10;
@@ -409,5 +409,5 @@ struct s_task_function_mapping {
 
 // A list of task function mappings. The first valid mapping encountered is used, so mappings using the branchless
 // optimization should come first.
-typedef c_wrapped_array<const s_task_function_mapping> c_task_function_mapping_list;
+using c_task_function_mapping_list = c_wrapped_array<const s_task_function_mapping>;
 

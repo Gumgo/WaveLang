@@ -57,8 +57,8 @@ inline real32x4::operator t_simd_real32() const {
 	return m_value;
 }
 
-inline int32x4 real32x4::int32x4_from_bits() const {
-	return vreinterpretq_s32_f32(m_value);
+inline real32x4::operator int32x4() const {
+	return vcvtq_s32_f32(m_value);
 }
 
 inline real32x4 real32x4::sum_elements() const {
@@ -215,8 +215,8 @@ inline void sincos(const real32x4 &v, real32x4 &out_sin, real32x4 &out_cos) {
 	sincos_ps(v, reinterpret_cast<t_simd_real32 *>(&out_sin), reinterpret_cast<t_simd_real32 *>(&out_cos));
 }
 
-inline int32x4 convert_to_int32x4(const real32x4 &v) {
-	return vcvtq_s32_f32(v);
+template<> inline int32x4 reinterpret_bits(const real32x4 &v) {
+	return vreinterpretq_s32_f32(v);
 }
 
 inline real32x4 single_element(const real32x4 &v, int32 pos) {

@@ -16,7 +16,7 @@ struct s_thread_pool_settings {
 };
 
 // Entry point worker thread function
-typedef void (*f_worker_thread_entry_point)(uint32 thread_index, const s_thread_parameter_block *param_block);
+using f_worker_thread_entry_point = void (*)(uint32 thread_index, const s_thread_parameter_block *param_block);
 
 // An individual thread pool task acts like its own thread
 struct s_thread_pool_task {

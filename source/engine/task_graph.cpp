@@ -16,8 +16,8 @@
 
 static const uint32 k_invalid_task = static_cast<uint32>(-1);
 
-typedef s_static_array<e_task_function_mapping_native_module_input_type, k_max_native_module_arguments>
-	s_task_function_mapping_native_module_input_type_array;
+using s_task_function_mapping_native_module_input_type_array =
+	s_static_array<e_task_function_mapping_native_module_input_type, k_max_native_module_arguments>;
 
 // Array helpers
 static size_t get_task_data_array_count(const s_task_graph_data &data);
@@ -72,8 +72,8 @@ private:
 };
 
 struct s_build_real_array_settings {
-	typedef s_real_array_element t_element;
-	typedef c_real_array t_array;
+	using t_element = s_real_array_element;
+	using t_array = c_real_array;
 	static const e_native_module_primitive_type k_native_module_primitive_type = e_native_module_primitive_type::k_real;
 	std::vector<t_element> *element_lists;
 	std::vector<c_node_reference> *node_reference_lists;
@@ -102,8 +102,8 @@ struct s_build_real_array_settings {
 };
 
 struct s_build_bool_array_settings {
-	typedef s_bool_array_element t_element;
-	typedef c_bool_array t_array;
+	using t_element = s_bool_array_element;
+	using t_array = c_bool_array;
 	static const e_native_module_primitive_type k_native_module_primitive_type = e_native_module_primitive_type::k_bool;
 	std::vector<t_element> *element_lists;
 	std::vector<c_node_reference> *node_reference_lists;
@@ -132,8 +132,8 @@ struct s_build_bool_array_settings {
 };
 
 struct s_build_string_array_settings {
-	typedef s_string_array_element t_element;
-	typedef c_string_array t_array;
+	using t_element = s_string_array_element;
+	using t_array = c_string_array;
 	static const e_native_module_primitive_type k_native_module_primitive_type =
 		e_native_module_primitive_type::k_string;
 	std::vector<t_element> *element_lists;
@@ -1742,8 +1742,8 @@ typename t_build_array_settings::t_array build_array(
 	bool &out_is_constant) {
 	// Build a list of array elements using the array node at node_reference.
 
-	typedef typename t_build_array_settings::t_array t_array;
-	typedef typename t_build_array_settings::t_element t_element;
+	using t_array = typename t_build_array_settings::t_array;
+	using t_element = typename t_build_array_settings::t_element;
 
 	wl_assert(execution_graph.get_node_type(node_reference) == e_execution_graph_node_type::k_constant);
 	wl_assert(execution_graph.get_constant_node_data_type(node_reference) ==

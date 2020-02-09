@@ -59,7 +59,7 @@ static_assert(NUMBEROF(k_lexer_token_table) == enum_count<e_token_type>(), "Inva
 const char *k_token_type_constant_bool_false_string = "false";
 const char *k_token_type_constant_bool_true_string = "true";
 
-typedef std::unordered_map<std::string, e_token_type> c_lexer_table;
+using c_lexer_table = std::unordered_map<std::string, e_token_type>;
 
 struct s_lexer_globals {
 	c_lexer_table keyword_table;

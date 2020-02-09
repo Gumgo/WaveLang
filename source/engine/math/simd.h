@@ -33,8 +33,8 @@ static const size_t k_simd_block_size = SIMD_BLOCK_SIZE;
 
 #if IS_TRUE(SIMD_IMPLEMENTATION_SSE_ENABLED)
 
-typedef __m128 t_simd_real32;
-typedef __m128i t_simd_int32;
+using t_simd_real32 = __m128;
+using t_simd_int32 = __m128i;
 
 #pragma once
 #define USE_SSE2
@@ -46,8 +46,8 @@ typedef __m128i t_simd_int32;
 
 #elif IS_TRUE(SIMD_IMPLEMENTATION_NEON_ENABLED)
 
-typedef float32x4_t t_simd_real32;
-typedef int32x4_t t_simd_int32;
+using t_simd_real32 = float32x4_t;
+using t_simd_int32 = int32x4_t;
 
 #pragma once
 #if IS_TRUE(COMPILER_MSVC)

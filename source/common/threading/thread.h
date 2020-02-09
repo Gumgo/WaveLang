@@ -49,7 +49,7 @@ struct alignas(16) s_thread_parameter_block {
 };
 
 // Entry point thread function
-typedef void (*f_thread_entry_point)(const s_thread_parameter_block *param_block);
+using f_thread_entry_point = void (*)(const s_thread_parameter_block *param_block);
 
 // Properties of a thread
 struct s_thread_definition {
@@ -66,9 +66,9 @@ struct s_thread_definition {
 class c_thread {
 public:
 #if IS_TRUE(USE_THREAD_IMPLEMENTATION_WINDOWS)
-	typedef uint32 t_thread_id;
+	using t_thread_id = uint32;
 #else // fallback
-	typedef std::thread::id t_thread_id;
+	using t_thread_id = std::thread::id;
 #endif // fallback
 
 	// Initializes to not running state

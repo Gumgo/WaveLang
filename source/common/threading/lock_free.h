@@ -26,7 +26,7 @@ struct s_lock_free_handle {
 struct ALIGNAS_LOCK_FREE s_aligned_lock_free_handle : public s_lock_free_handle {};
 
 // A list of handles pointing to the next node in the list
-typedef c_wrapped_array<s_aligned_lock_free_handle> c_lock_free_handle_array;
+using c_lock_free_handle_array = c_wrapped_array<s_aligned_lock_free_handle>;
 
 // Used to modify lock free handles
 struct s_lock_free_handle_data {

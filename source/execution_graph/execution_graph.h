@@ -43,7 +43,7 @@ enum class e_execution_graph_node_type {
 
 class c_execution_graph {
 public:
-	typedef void (*f_on_node_removed)(void *context, c_node_reference node_reference);
+	using f_on_node_removed = void (*)(void *context, c_node_reference node_reference);
 
 	// Special output index representing whether processing should remain active - once a voice drops to 0 volume it can
 	// be disabled for improved performance

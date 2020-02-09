@@ -7,7 +7,7 @@
 template<typename t_element>
 class c_lock_free_queue {
 public:
-	typedef c_wrapped_array<t_element> c_element_array;
+	using c_element_array = c_wrapped_array<t_element>;
 
 	// Non-thread-safe functions:
 

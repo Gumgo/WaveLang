@@ -8,7 +8,7 @@ class int32x4;
 
 class ALIGNAS_SIMD real32x4 {
 public:
-	typedef real32 t_element;
+	using t_element = real32;
 
 	inline real32x4();
 	inline real32x4(real32 v);
@@ -25,7 +25,7 @@ public:
 	// $TODO +=, etc.
 
 	inline operator t_simd_real32() const;
-	inline int32x4 int32x4_from_bits() const;
+	inline operator int32x4() const;
 	inline real32x4 sum_elements() const;
 
 private:
@@ -64,7 +64,9 @@ inline real32x4 pow(const real32x4 &a, const real32x4 &b);
 inline real32x4 sin(const real32x4 &v);
 inline real32x4 cos(const real32x4 &v);
 inline void sincos(const real32x4 &v, real32x4 &out_sin, real32x4 &out_cos);
-inline int32x4 convert_to_int32x4(const real32x4 &v);
+
+// Casting
+template<> inline int32x4 reinterpret_bits(const real32x4 &v);
 
 // Shuffle
 inline real32x4 single_element(const real32x4 &v, int32 pos);

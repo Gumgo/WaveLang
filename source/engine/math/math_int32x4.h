@@ -8,7 +8,7 @@ class real32x4;
 
 class ALIGNAS_SIMD int32x4 {
 public:
-	typedef int32 t_element;
+	using t_element = int32;
 
 	inline int32x4();
 	inline int32x4(int32 v);
@@ -25,7 +25,7 @@ public:
 	// $TODO +=, etc.
 
 	inline operator t_simd_int32() const;
-	inline real32x4 real32x4_from_bits() const; // $TODO replace with reinterpret_bits specialization
+	inline operator real32x4() const;
 
 	// Replacement for >>> operator
 	inline int32x4 shift_right_unsigned(int32 rhs) const;
@@ -69,7 +69,9 @@ inline int32x4 min(const int32x4 &a, const int32x4 &b);
 inline int32x4 max(const int32x4 &a, const int32x4 &b);
 inline int32x4 min_unsigned(const int32x4 &a, const int32x4 &b);
 inline int32x4 max_unsigned(const int32x4 &a, const int32x4 &b);
-inline real32x4 convert_to_real32x4(const int32x4 &v); // $TODO replace with cast operator
+
+// Casting
+template<> inline real32x4 reinterpret_bits(const int32x4 &v);
 
 // Masking
 inline int32 mask_from_msb(const int32x4 &v);

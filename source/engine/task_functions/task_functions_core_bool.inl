@@ -42,17 +42,17 @@ struct s_op_or {
 	int32x4 operator()(const int32x4 &a, const int32x4 &b) const { return a | b; }
 };
 
-typedef s_buffer_operation_bool_bool<s_op_not> s_buffer_operation_not;
-typedef s_buffer_operation_real_real_bool<s_op_equal_real> s_buffer_operation_equal_real;
-typedef s_buffer_operation_real_real_bool<s_op_not_equal_real> s_buffer_operation_not_equal_real;
-typedef s_buffer_operation_bool_bool_bool<s_op_equal_bool> s_buffer_operation_equal_bool;
-typedef s_buffer_operation_bool_bool_bool<s_op_not_equal_bool> s_buffer_operation_not_equal_bool;
-typedef s_buffer_operation_real_real_bool<s_op_greater> s_buffer_operation_greater;
-typedef s_buffer_operation_real_real_bool<s_op_less> s_buffer_operation_less;
-typedef s_buffer_operation_real_real_bool<s_op_greater_equal> s_buffer_operation_greater_equal;
-typedef s_buffer_operation_real_real_bool<s_op_less_equal> s_buffer_operation_less_equal;
-typedef s_buffer_operation_bool_bool_bool<s_op_and> s_buffer_operation_and;
-typedef s_buffer_operation_bool_bool_bool<s_op_or> s_buffer_operation_or;
+using s_buffer_operation_not = s_buffer_operation_bool_bool<s_op_not> ;
+using s_buffer_operation_equal_real = s_buffer_operation_real_real_bool<s_op_equal_real>;
+using s_buffer_operation_not_equal_real = s_buffer_operation_real_real_bool<s_op_not_equal_real>;
+using s_buffer_operation_equal_bool = s_buffer_operation_bool_bool_bool<s_op_equal_bool>;
+using s_buffer_operation_not_equal_bool = s_buffer_operation_bool_bool_bool<s_op_not_equal_bool>;
+using s_buffer_operation_greater = s_buffer_operation_real_real_bool<s_op_greater>;
+using s_buffer_operation_less = s_buffer_operation_real_real_bool<s_op_less>;
+using s_buffer_operation_greater_equal = s_buffer_operation_real_real_bool<s_op_greater_equal>;
+using s_buffer_operation_less_equal = s_buffer_operation_real_real_bool<s_op_less_equal>;
+using s_buffer_operation_and = s_buffer_operation_bool_bool_bool<s_op_and>;
+using s_buffer_operation_or = s_buffer_operation_bool_bool_bool<s_op_or>;
 
 namespace core_task_functions {
 

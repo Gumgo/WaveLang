@@ -14,8 +14,8 @@ inline void validate_buffer(const c_buffer *buffer) {
 // Base iterator interface:
 //class c_buffer_iterator {
 //public:
-//	typedef <simd_type> t_value;
-//	typedef [const] c_buffer t_buffer;
+//	using t_value = <simd_type>;
+//	using t_buffer = [const] c_buffer;
 //
 //	// Number of elements contained in each value type (e.g. SSE reals are 4 elements, SSE bools are 128)
 //	static const size_t k_elements_per_value;
@@ -39,8 +39,8 @@ inline void validate_buffer(const c_buffer *buffer) {
 // Iterates a real buffer 4 elements at a time
 class c_real_buffer_iterator {
 public:
-	typedef real32x4 t_value;
-	typedef c_buffer t_buffer;
+	using t_value = real32x4;
+	using t_buffer = c_buffer;
 
 	static const size_t k_elements_per_value = 4;
 
@@ -73,8 +73,8 @@ private:
 // Const version of the above
 class c_const_real_buffer_iterator {
 public:
-	typedef real32x4 t_value;
-	typedef const c_buffer t_buffer;
+	using t_value = real32x4;
+	using t_buffer = const c_buffer;
 
 	static const size_t k_elements_per_value = 4;
 
@@ -99,8 +99,8 @@ private:
 // Iterates a bool buffer 4 elements at a time, value contains 4 elements (with all bits cleared or set)
 class c_bool_buffer_iterator_4 {
 public:
-	typedef int32x4 t_value;
-	typedef c_buffer t_buffer;
+	using t_value = int32x4;
+	using t_buffer = c_buffer;
 
 	static const size_t k_elements_per_value = 4;
 
@@ -202,8 +202,8 @@ private:
 // Const version of the above
 class c_const_bool_buffer_iterator_4 {
 public:
-	typedef int32x4 t_value;
-	typedef const c_buffer t_buffer;
+	using t_value = int32x4;
+	using t_buffer = const c_buffer;
 
 	static const size_t k_elements_per_value = 4;
 
@@ -260,8 +260,8 @@ private:
 // Iterates a bool buffer 128 elements at a time, value contains 4x32 elements
 class c_bool_buffer_iterator_128 {
 public:
-	typedef int32x4 t_value;
-	typedef c_buffer t_buffer;
+	using t_value = int32x4;
+	using t_buffer = c_buffer;
 
 	static const size_t k_elements_per_value = 128;
 
@@ -321,8 +321,8 @@ private:
 // Const version of the above
 class c_const_bool_buffer_iterator_128 {
 public:
-	typedef int32x4 t_value;
-	typedef const c_buffer t_buffer;
+	using t_value = int32x4;
+	using t_buffer = const c_buffer;
 
 	static const size_t k_elements_per_value = 128;
 
@@ -349,7 +349,7 @@ private:
 template<typename t_iterator_a_typename>
 class c_buffer_iterator_1 {
 public:
-	typedef t_iterator_a_typename t_iterator_a;
+	using t_iterator_a = t_iterator_a_typename;
 
 	c_buffer_iterator_1(typename t_iterator_a::t_buffer *buffer_a, size_t buffer_size)
 		: m_offset(0)
@@ -379,8 +379,8 @@ private:
 template<typename t_iterator_a_typename, typename t_iterator_b_typename>
 class c_buffer_iterator_2 {
 public:
-	typedef t_iterator_a_typename t_iterator_a;
-	typedef t_iterator_b_typename t_iterator_b;
+	using t_iterator_a = t_iterator_a_typename;
+	using t_iterator_b = t_iterator_b_typename;
 
 	static_assert(t_iterator_a::k_elements_per_value == t_iterator_b::k_elements_per_value,
 		"k_elements_per_value mismatch");
@@ -421,9 +421,9 @@ private:
 template<typename t_iterator_a_typename, typename t_iterator_b_typename, typename t_iterator_c_typename>
 class c_buffer_iterator_3 {
 public:
-	typedef t_iterator_a_typename t_iterator_a;
-	typedef t_iterator_b_typename t_iterator_b;
-	typedef t_iterator_c_typename t_iterator_c;
+	using t_iterator_a = t_iterator_a_typename;
+	using t_iterator_b = t_iterator_b_typename;
+	using t_iterator_c = t_iterator_c_typename;
 
 	static_assert(t_iterator_a::k_elements_per_value == t_iterator_b::k_elements_per_value,
 		"k_elements_per_value mismatch");
@@ -477,10 +477,10 @@ template<typename t_iterator_a_typename, typename t_iterator_b_typename,
 	typename t_iterator_c_typename, typename t_iterator_d_typename>
 class c_buffer_iterator_4 {
 public:
-	typedef t_iterator_a_typename t_iterator_a;
-	typedef t_iterator_b_typename t_iterator_b;
-	typedef t_iterator_c_typename t_iterator_c;
-	typedef t_iterator_d_typename t_iterator_d;
+	using t_iterator_a = t_iterator_a_typename;
+	using t_iterator_b = t_iterator_b_typename;
+	using t_iterator_c = t_iterator_c_typename;
+	using t_iterator_d = t_iterator_d_typename;
 
 	static_assert(t_iterator_a::k_elements_per_value == t_iterator_b::k_elements_per_value,
 		"k_elements_per_value mismatch");

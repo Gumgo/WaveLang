@@ -40,7 +40,7 @@ private:
 };
 
 // Callback for executing a preprocessor command. Should return an error if something goes wrong.
-typedef s_compiler_result (*f_preprocessor_command_executor)(
+using f_preprocessor_command_executor = s_compiler_result (*)(
 	void *context, const c_preprocessor_command_arguments &arguments, c_preprocessor_output &output);
 
 class c_preprocessor {

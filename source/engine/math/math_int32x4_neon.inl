@@ -57,8 +57,8 @@ inline int32x4::operator t_simd_int32() const {
 	return m_value;
 }
 
-inline real32x4 int32x4::real32x4_from_bits() const {
-	return vreinterpretq_f32_s32(m_value);
+inline int32x4::operator real32x4() const {
+	return vcvtq_f32_s32(m_value);
 }
 
 inline int32x4 operator+(const int32x4 &v) {
@@ -177,8 +177,8 @@ inline int32x4 max_unsigned(const int32x4 &a, const int32x4 &b) {
 	return vreinterpretq_s32_u32(vmaxq_u32(vreinterpretq_u32_s32(a), vreinterpretq_u32_s32(b)));
 }
 
-inline real32x4 convert_to_real32x4(const int32x4 &v) {
-	return vcvtq_f32_s32(v);
+template<> inline real32x4 reinterpret_bits(const int32x4 &v) {
+	return vreinterpretq_f32_s32(v);
 }
 
 inline int32 mask_from_msb(const int32x4 &v) {
