@@ -13,15 +13,15 @@ typedef void PaStream;
 struct PaStreamCallbackTimeInfo;
 typedef unsigned long PaStreamCallbackFlags;
 
-enum e_audio_driver_result {
-	k_audio_driver_result_success,
-	k_audio_driver_result_initialization_failed,
-	k_audio_driver_result_failed_to_query_devices,
-	k_audio_driver_result_settings_not_supported,
-	k_audio_driver_result_failed_to_open_stream,
-	k_audio_driver_result_failed_to_start_stream,
+enum class e_audio_driver_result {
+	k_success,
+	k_initialization_failed,
+	k_failed_to_query_devices,
+	k_settings_not_supported,
+	k_failed_to_open_stream,
+	k_failed_to_start_stream,
 
-	k_audio_driver_result_count
+	k_count
 };
 
 struct s_audio_driver_result {
@@ -29,7 +29,7 @@ struct s_audio_driver_result {
 	std::string message;
 
 	inline void clear() {
-		result = k_audio_driver_result_success;
+		result = e_audio_driver_result::k_success;
 		message.clear();
 	}
 };
@@ -73,7 +73,7 @@ struct s_audio_driver_settings {
 		device_index = 0;
 		sample_rate = 44100.0;
 		output_channels = 2;
-		sample_format = k_sample_format_float32;
+		sample_format = e_sample_format::k_float32;
 		frames_per_buffer = 512;
 		stream_callback = nullptr;
 		stream_callback_user_data = nullptr;

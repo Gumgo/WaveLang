@@ -19,14 +19,14 @@
 #include <thread>
 #endif // fallback
 
-enum e_thread_priority {
-	k_thread_priority_lowest,
-	k_thread_priority_low,
-	k_thread_priority_normal,
-	k_thread_priority_high,
-	k_thread_priority_highest,
+enum class e_thread_priority {
+	k_lowest,
+	k_low,
+	k_normal,
+	k_high,
+	k_highest,
 
-	k_thread_priority_count
+	k_count
 };
 
 // Parameters for thread function

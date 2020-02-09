@@ -74,7 +74,7 @@ s_compiler_result c_compiler::compile(
 		// The list will grow as we are looping over it
 		for (size_t index = 0; index < context.source_files.size(); index++) {
 			result = read_and_preprocess_source_file(context, index);
-			if (result.result != k_compiler_result_success) {
+			if (result.result != e_compiler_result::k_success) {
 				output_error(context, result);
 				return result;
 			}
@@ -95,7 +95,7 @@ s_compiler_result c_compiler::compile(
 			output_error(context, lexer_errors[error]);
 		}
 
-		if (result.result != k_compiler_result_success) {
+		if (result.result != e_compiler_result::k_success) {
 			output_error(context, result);
 			return result;
 		}
@@ -115,7 +115,7 @@ s_compiler_result c_compiler::compile(
 			output_error(context, parser_errors[error]);
 		}
 
-		if (result.result != k_compiler_result_success) {
+		if (result.result != e_compiler_result::k_success) {
 			output_error(context, result);
 			return result;
 		}
@@ -126,7 +126,7 @@ s_compiler_result c_compiler::compile(
 	// Build the AST from the result of the parser
 	std::unique_ptr<c_ast_node> ast(c_ast_builder::build_ast(lexer_output, parser_output));
 
-	if (result.result != k_compiler_result_success) {
+	if (result.result != e_compiler_result::k_success) {
 		output_error(context, result);
 		return result;
 	}
@@ -140,7 +140,7 @@ s_compiler_result c_compiler::compile(
 			output_error(context, syntax_errors[error]);
 		}
 
-		if (result.result != k_compiler_result_success) {
+		if (result.result != e_compiler_result::k_success) {
 			output_error(context, result);
 			return result;
 		}
@@ -169,7 +169,7 @@ s_compiler_result c_compiler::compile(
 					output_error(context, graph_errors[error]);
 				}
 
-				if (result.result != k_compiler_result_success) {
+				if (result.result != e_compiler_result::k_success) {
 					output_error(context, result);
 					return result;
 				}
@@ -188,7 +188,7 @@ s_compiler_result c_compiler::compile(
 					output_error(context, optimization_errors[error]);
 				}
 
-				if (result.result != k_compiler_result_success) {
+				if (result.result != e_compiler_result::k_success) {
 					output_error(context, result);
 					return result;
 				}
@@ -205,7 +205,7 @@ s_compiler_result c_compiler::compile(
 					output_error(context, optimization_errors[error]);
 				}
 
-				if (result.result != k_compiler_result_success) {
+				if (result.result != e_compiler_result::k_success) {
 					output_error(context, result);
 					return result;
 				}
@@ -220,7 +220,7 @@ s_compiler_result c_compiler::compile(
 
 static void output_error(const s_compiler_context &context, const s_compiler_result &result) {
 	// $TODO reverse-escape characters in the message
-	std::cout << "COMPILE ERROR (code " << result.result << ")";
+	std::cout << "COMPILE ERROR (code " << enum_index(result.result) << ")";
 	if (result.source_location.source_file_index >= 0) {
 		std::cout << " in file " << context.source_files[result.source_location.source_file_index].filename;
 
@@ -260,7 +260,7 @@ static s_compiler_result read_and_preprocess_source_file(
 		std::ifstream source_file_in(full_filename.c_str(), std::ios::binary | std::ios::ate);
 
 		if (!source_file_in.is_open()) {
-			result.result = k_compiler_result_failed_to_open_file;
+			result.result = e_compiler_result::k_failed_to_open_file;
 			result.source_location.source_file_index = cast_integer_verify<int32>(source_file_index);
 			result.message = "Failed to open source file '" + full_filename + "'";
 			return result;
@@ -271,7 +271,7 @@ static s_compiler_result read_and_preprocess_source_file(
 
 		// cast_integer_verify doesn't work with std::streampos
 		if (full_file_size > static_cast<std::streampos>(std::numeric_limits<int32>::max())) {
-			result.result = k_compiler_result_failed_to_read_file;
+			result.result = e_compiler_result::k_failed_to_read_file;
 			result.source_location.source_file_index = cast_integer_verify<int32>(source_file_index);
 			result.message = "Source file '" + full_filename + "' is too big";
 			return result;
@@ -286,7 +286,7 @@ static s_compiler_result read_and_preprocess_source_file(
 		}
 
 		if (source_file_in.fail()) {
-			result.result = k_compiler_result_failed_to_read_file;
+			result.result = e_compiler_result::k_failed_to_read_file;
 			result.source_location.source_file_index = static_cast<int32>(source_file_index);
 			result.message = "Failed to read source file '" + full_filename + "'";
 			return result;
@@ -302,7 +302,7 @@ static s_compiler_result read_and_preprocess_source_file(
 		result = c_preprocessor::preprocess(
 			preprocessor_source, static_cast<int32>(source_file_index), preprocessor_output);
 
-		if (result.result != k_compiler_result_success) {
+		if (result.result != e_compiler_result::k_success) {
 			result.source_location.source_file_index = cast_integer_verify<int32>(source_file_index);
 			return result;
 		}
@@ -319,8 +319,8 @@ static s_compiler_result read_and_preprocess_source_file(
 
 			bool found_match = false;
 			for (size_t existing_index = 0;
-				 !found_match && existing_index < context.source_files.size();
-				 existing_index++) {
+				!found_match && existing_index < context.source_files.size();
+				existing_index++) {
 				// Check if the paths point to the same file
 				// If so, we won't add the import to the list
 				std::string full_existing_path;

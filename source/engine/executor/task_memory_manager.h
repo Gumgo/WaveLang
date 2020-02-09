@@ -19,8 +19,9 @@ public:
 		void *task_memory_query_callback_context);
 
 	inline void *get_task_memory(e_instrument_stage instrument_stage, uint32 task_index, uint32 voice_index) const {
-		wl_assert(instrument_stage == k_instrument_stage_voice || voice_index == 0);
-		return m_task_memory_pointers[instrument_stage][m_voice_graph_task_count * voice_index + task_index];
+		wl_assert(instrument_stage == e_instrument_stage::k_voice || voice_index == 0);
+		uint32 task_memory_index = m_voice_graph_task_count * voice_index + task_index;
+		return m_task_memory_pointers[enum_index(instrument_stage)][task_memory_index];
 	}
 
 private:
@@ -41,7 +42,7 @@ private:
 
 	// Pointer to each task's persistent memory for each graph (voice and FX)
 	// For the voice graph, the layout of this array is: voice_0:[task_0 ... task_n] ... voice_m:[task_0 ... task_n]
-	s_static_array<std::vector<void *>, k_instrument_stage_count> m_task_memory_pointers;
+	s_static_array<std::vector<void *>, enum_count<e_instrument_stage>()> m_task_memory_pointers;
 
 	// Task count for voice graph, used for voice offset
 	uint32 m_voice_graph_task_count;

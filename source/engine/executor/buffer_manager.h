@@ -35,10 +35,9 @@ public:
 	const c_buffer *get_buffer(h_buffer buffer_handle) const;
 
 private:
-	// nocheckin Need to update more of this
 	struct ALIGNAS_LOCK_FREE s_buffer_context {
 		c_atomic_int32 usages_remaining;
-		s_static_array<uint32, k_instrument_stage_count> pool_indices;
+		s_static_array<uint32, enum_count<e_instrument_stage>()> pool_indices;
 		h_allocated_buffer handle;
 		bool shifted_samples;
 		bool swapped_into_voice_accumulation_buffer;

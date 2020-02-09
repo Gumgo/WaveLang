@@ -14,7 +14,7 @@ static const char *k_event_console_executable_name = "console";
 void c_event_console::initialize_platform() {
 	m_pipe = -1;
 	m_process = -1;
-	m_last_color = k_console_color_count;
+	m_last_color = e_console_color::k_count;
 	m_write_stream = nullptr;
 }
 

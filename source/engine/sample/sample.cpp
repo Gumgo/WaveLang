@@ -98,17 +98,17 @@ c_sample *c_sample::generate_wavetable(
 		}
 	}
 
-	enum e_pass {
-		k_pass_compute_memory,
-		k_pass_generate_data,
+	enum class e_pass {
+		k_compute_memory,
+		k_generate_data,
 
-		k_pass_count
+		k_count
 	};
 
 	c_sample *sample = new c_sample();
 	std::vector<real32> entry_sample_data;
 	bool loaded_from_cache = false;
-	for (uint32 pass = 0; pass < k_pass_count; pass++) {
+	for (e_pass pass : iterate_enum<e_pass>()) {
 		uint32 wavetable_entry_count = 0;
 		uint32 total_sample_count = 0;
 		uint32 previous_entry_sample_count = 0;
@@ -141,7 +141,7 @@ c_sample *c_sample::generate_wavetable(
 				// This sample is identical to the previous one, just reuse the data
 				wl_assert(wavetable_entry_index > 0);
 
-				if (pass == k_pass_generate_data) {
+				if (pass == e_pass::k_generate_data) {
 					c_sample &entry_sample = sample->m_wavetable[wavetable_entry_index];
 					const c_sample &previous_entry_sample = sample->m_wavetable[wavetable_entry_index - 1];
 					entry_sample = previous_entry_sample;
@@ -153,17 +153,17 @@ c_sample *c_sample::generate_wavetable(
 					padded_sample_count += entry_sample_count;
 				}
 
-				if (pass == k_pass_generate_data) {
+				if (pass == e_pass::k_generate_data) {
 					// Grab a block of samples
 					c_wrapped_array<real32> sample_data_destination =
 						sample->m_sample_data_allocator.get_array().get_range(total_sample_count, padded_sample_count);
 
 					c_sample &entry_sample = sample->m_wavetable[wavetable_entry_index];
-					entry_sample.m_type = k_type_single_sample;
+					entry_sample.m_type = e_type::k_single_sample;
 					entry_sample.m_sample_rate = entry_sample_count;
 					entry_sample.m_base_sample_rate_ratio =
 						static_cast<real64>(entry_sample_count) / static_cast<real64>(sample_count);
-					entry_sample.m_loop_mode = k_sample_loop_mode_loop;
+					entry_sample.m_loop_mode = e_sample_loop_mode::k_loop;
 					entry_sample.m_loop_start = 0;
 					entry_sample.m_loop_end = entry_sample_count;
 					entry_sample.m_phase_shift_enabled = phase_shift_enabled;
@@ -207,7 +207,7 @@ c_sample *c_sample::generate_wavetable(
 
 		wl_assert(wavetable_entry_count > 0);
 
-		if (pass == k_pass_compute_memory) {
+		if (pass == e_pass::k_compute_memory) {
 			// Allocate memory to hold all wavetable entries
 			sample->m_sample_data_allocator.allocate(total_sample_count);
 			sample->m_wavetable.resize(wavetable_entry_count);
@@ -219,7 +219,7 @@ c_sample *c_sample::generate_wavetable(
 				std::cout << "Generating wavetable\n";
 			}
 		} else {
-			wl_assert(pass == k_pass_generate_data);
+			wl_assert(pass == e_pass::k_generate_data);
 			wl_assert(total_sample_count == sample->m_sample_data_allocator.get_array().get_count());
 
 			if (!loaded_from_cache) {
@@ -234,7 +234,7 @@ c_sample *c_sample::generate_wavetable(
 }
 
 c_sample::c_sample() {
-	m_type = k_type_none;
+	m_type = e_type::k_none;
 	m_sample_rate = 0;
 	m_base_sample_rate_ratio = 0.0;
 	m_channel_count = 0;
@@ -243,14 +243,14 @@ c_sample::c_sample() {
 	m_sampling_frame_count = 0;
 	m_total_frame_count = 0;
 
-	m_loop_mode = k_sample_loop_mode_none;
+	m_loop_mode = e_sample_loop_mode::k_none;
 	m_loop_start = 0;
 	m_loop_end = 0;
 	m_phase_shift_enabled = false;
 }
 
 bool c_sample::is_wavetable() const {
-	return m_type == k_type_wavetable;
+	return m_type == e_type::k_wavetable;
 }
 
 uint32 c_sample::get_sample_rate() const {
@@ -299,12 +299,12 @@ c_wrapped_array<const real32> c_sample::get_channel_sample_data(uint32 channel) 
 }
 
 uint32 c_sample::get_wavetable_entry_count() const {
-	wl_assert(m_type == k_type_wavetable);
+	wl_assert(m_type == e_type::k_wavetable);
 	return cast_integer_verify<uint32>(m_wavetable.size());
 }
 
 const c_sample *c_sample::get_wavetable_entry(uint32 index) const {
-	wl_assert(m_type == k_type_wavetable);
+	wl_assert(m_type == e_type::k_wavetable);
 	return &m_wavetable[index];
 }
 
@@ -474,16 +474,16 @@ void c_sample::initialize(
 
 	wl_assert(sample_data.get_count() > 0);
 
-	wl_assert(m_type == k_type_none);
-	m_type = k_type_single_sample;
+	wl_assert(m_type == e_type::k_none);
+	m_type = e_type::k_single_sample;
 
 	wl_assert(sample_rate > 0);
 	m_sample_rate = sample_rate;
 	m_base_sample_rate_ratio = 1.0;
 
-	wl_assert(VALID_INDEX(loop_mode, k_sample_loop_mode_count));
+	wl_assert(valid_enum_index(loop_mode));
 	m_loop_mode = loop_mode;
-	if (loop_mode == k_sample_loop_mode_none) {
+	if (loop_mode == e_sample_loop_mode::k_none) {
 		wl_assert(!phase_shift_enabled);
 		m_loop_start = 0;
 		m_loop_end = 0;
@@ -502,8 +502,8 @@ void c_sample::initialize_wavetable() {
 	wl_assert(!m_sample_data.get_pointer());
 	wl_assert(!m_wavetable.empty());
 
-	wl_assert(m_type == k_type_none);
-	m_type = k_type_wavetable;
+	wl_assert(m_type == e_type::k_none);
+	m_type = e_type::k_wavetable;
 
 #if IS_TRUE(ASSERTS_ENABLED)
 	for (uint32 index = 1; index < m_wavetable.size(); index++) {
@@ -511,8 +511,8 @@ void c_sample::initialize_wavetable() {
 		const c_sample &sample_a = m_wavetable[index - 1];
 		const c_sample &sample_b = m_wavetable[index];
 
-		wl_assert(sample_a.m_type == k_type_single_sample);
-		wl_assert(sample_b.m_type == k_type_single_sample);
+		wl_assert(sample_a.m_type == e_type::k_single_sample);
+		wl_assert(sample_b.m_type == e_type::k_single_sample);
 		wl_assert(sample_a.m_sample_rate == sample_b.m_sample_rate * 2 ||
 			sample_a.m_sample_rate == sample_b.m_sample_rate);
 		uint32 sample_rate_ratio = sample_a.m_sample_rate / sample_b.m_sample_rate;
@@ -553,7 +553,7 @@ void c_sample::initialize_data_with_padding(
 	uint32 loop_frame_count = 0;
 
 	switch (m_loop_mode) {
-	case k_sample_loop_mode_none:
+	case e_sample_loop_mode::k_none:
 		// With no looping, the sampling frame count is the same as the provided frame count
 		// Key: D = sample data, 0 = zero padding
 		// Orig:      [DDDDDDDD]
@@ -561,7 +561,7 @@ void c_sample::initialize_data_with_padding(
 		m_sampling_frame_count = frame_count;
 		break;
 
-	case k_sample_loop_mode_loop:
+	case e_sample_loop_mode::k_loop:
 		// With regular looping, we sample up to the end of the loop, and then we duplicate some samples for padding. We
 		// do this because if we're sampling using a window size of N, then the first time we loop, we actually want our
 		// window to touch the pre-loop samples. However, once we've looped enough (usually just once if the loop is
@@ -585,7 +585,7 @@ void c_sample::initialize_data_with_padding(
 		loop_frame_count = m_loop_end - m_loop_start;
 		break;
 
-	case k_sample_loop_mode_bidi_loop:
+	case e_sample_loop_mode::k_bidi_loop:
 		// Same logic as above, but the actual looping portion of the sound is duplicated and reversed:
 		// [01234567] -> [01234567654321]
 		m_sampling_frame_count = m_loop_end;
@@ -635,7 +635,7 @@ void c_sample::initialize_data_with_padding(
 			uint32 dst_offset = m_total_frame_count * channel;
 
 			switch (m_loop_mode) {
-			case k_sample_loop_mode_none:
+			case e_sample_loop_mode::k_none:
 				// Pad beginning with 0
 				for (uint32 index = 0; index < k_max_sample_padding; index++) {
 					sample_data_array[dst_offset] = 0.0f;
@@ -655,8 +655,8 @@ void c_sample::initialize_data_with_padding(
 				}
 				break;
 
-			case k_sample_loop_mode_loop:
-			case k_sample_loop_mode_bidi_loop:
+			case e_sample_loop_mode::k_loop:
+			case e_sample_loop_mode::k_bidi_loop:
 			{
 				// Pad beginning with 0 (if our loop start point is 0, we will later overwrite this with loop samples)
 				for (uint32 index = 0; index < k_max_sample_padding; index++) {
@@ -671,7 +671,7 @@ void c_sample::initialize_data_with_padding(
 				}
 
 				uint32 loop_mod = m_loop_end - m_loop_start;
-				if (m_loop_mode == k_sample_loop_mode_bidi_loop) {
+				if (m_loop_mode == e_sample_loop_mode::k_bidi_loop) {
 					// Copy reversed loop
 					uint32 loop_offset = dst_offset - loop_mod;
 					for (uint32 index = 1; index + 1 < loop_mod; index++) {

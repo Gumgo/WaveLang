@@ -15,7 +15,7 @@ static const char *k_sample_format_xml_strings[] = {
 	"float32"
 };
 
-static_assert(NUMBEROF(k_sample_format_xml_strings) == k_sample_format_count, "Sample format strings mismatch");
+static_assert(NUMBEROF(k_sample_format_xml_strings) == enum_count<e_sample_format>(), "Sample format strings mismatch");
 
 static const char *k_bool_xml_strings[] = {
 	"false",
@@ -27,7 +27,7 @@ static const char *k_none_xml_string = "none";
 
 static const uint32 k_default_audio_input_channels = 0;
 static const uint32 k_default_audio_output_channels = 2;
-static const e_sample_format k_default_audio_sample_format = k_sample_format_float32;
+static const e_sample_format k_default_audio_sample_format = e_sample_format::k_float32;
 static const uint32 k_default_audio_frames_per_buffer = 512;
 
 static const bool k_default_controller_enabled = false;
@@ -203,7 +203,7 @@ bool c_runtime_config::write_default_settings(const char *fname) {
 
 	audio_node->append_node(document.allocate_node(rapidxml::node_comment, nullptr, document.allocate_string(
 		("Sample format - default is " +
-			std::string(k_sample_format_xml_strings[k_default_audio_sample_format])).c_str())));
+			std::string(k_sample_format_xml_strings[enum_index(k_default_audio_sample_format)])).c_str())));
 	audio_node->append_node(document.allocate_node(rapidxml::node_element, "sample_format", k_default_xml_string));
 
 	audio_node->append_node(document.allocate_node(rapidxml::node_comment, nullptr, document.allocate_string(
@@ -347,7 +347,7 @@ e_runtime_config_result c_runtime_config::read_settings(
 			if (!file.is_open()) {
 				std::cout << "Failed to open '" << fname << "'\n";
 				initialize(audio_driver_interface, controller_driver_interface);
-				return k_runtime_config_result_does_not_exist;
+				return e_runtime_config_result::k_does_not_exist;
 			}
 
 			std::streampos file_size = file.tellg();
@@ -360,7 +360,7 @@ e_runtime_config_result c_runtime_config::read_settings(
 			if (file.fail()) {
 				std::cout << "Failed to read '" << fname << "'\n";
 				initialize(audio_driver_interface, controller_driver_interface);
-				return k_runtime_config_result_error;
+				return e_runtime_config_result::k_error;
 			}
 		}
 
@@ -418,8 +418,8 @@ e_runtime_config_result c_runtime_config::read_settings(
 							// Determine if this device is already in use
 							bool in_use = false;
 							for (size_t used_device = 0;
-								 !in_use && used_device < m_settings.controller_device_count;
-								 used_device++) {
+								!in_use && used_device < m_settings.controller_device_count;
+								used_device++) {
 								in_use = (m_settings.controller_device_indices[used_device] == index);
 							}
 
@@ -537,10 +537,10 @@ e_runtime_config_result c_runtime_config::read_settings(
 	} catch (const rapidxml::parse_error &) {
 		std::cout << "'" << fname << "' is not valid XML\n";
 		initialize(audio_driver_interface, controller_driver_interface);
-		return k_runtime_config_result_error;
+		return e_runtime_config_result::k_error;
 	}
 
-	return k_runtime_config_result_success;
+	return e_runtime_config_result::k_success;
 }
 
 const c_runtime_config::s_settings &c_runtime_config::get_settings() const {

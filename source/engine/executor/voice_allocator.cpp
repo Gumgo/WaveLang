@@ -45,8 +45,8 @@ void c_voice_allocator::allocate_voices_for_chunk(
 
 	// Any active voice with an offset the previous chunk should no longer have an offset
 	for (size_t index = m_voice_list.back;
-		 index != c_linked_array::k_invalid_linked_array_index;
-		 index = m_voice_list_nodes.get_prev_node(index)) {
+		index != c_linked_array::k_invalid_linked_array_index;
+		index = m_voice_list_nodes.get_prev_node(index)) {
 		s_voice &voice = m_voices[index];
 		if (!voice.active) {
 			break; // Break on first inactive voice
@@ -65,15 +65,15 @@ void c_voice_allocator::allocate_voices_for_chunk(
 	for (size_t event_index = 0; event_index < controller_events.get_count(); event_index++) {
 		const s_timestamped_controller_event &controller_event = controller_events[event_index];
 
-		if (controller_event.controller_event.event_type == k_controller_event_type_note_on) {
+		if (controller_event.controller_event.event_type == e_controller_event_type::k_note_on) {
 			const s_controller_event_data_note_on *note_on_data =
 				controller_event.controller_event.get_data<s_controller_event_data_note_on>();
 
 			// Ignore if this note is already active and not released
 			bool already_active = false;
 			for (size_t index = m_voice_list.back;
-				 !already_active && index != c_linked_array::k_invalid_linked_array_index;
-				 index = m_voice_list_nodes.get_prev_node(index)) {
+				!already_active && index != c_linked_array::k_invalid_linked_array_index;
+				index = m_voice_list_nodes.get_prev_node(index)) {
 				s_voice &voice = m_voices[index];
 				if (!voice.active) {
 					break;
@@ -113,14 +113,14 @@ void c_voice_allocator::allocate_voices_for_chunk(
 			voice.note_release_sample = -1;
 
 			activate_fx = true;
-		} else if (controller_event.controller_event.event_type == k_controller_event_type_note_off) {
+		} else if (controller_event.controller_event.event_type == e_controller_event_type::k_note_off) {
 			const s_controller_event_data_note_off *note_off_data =
 				controller_event.controller_event.get_data<s_controller_event_data_note_off>();
 
 			// Find the active voice with this note ID and set its release sample
 			for (size_t index = m_voice_list.back;
-				 index != c_linked_array::k_invalid_linked_array_index;
-				 index = m_voice_list_nodes.get_prev_node(index)) {
+				index != c_linked_array::k_invalid_linked_array_index;
+				index = m_voice_list_nodes.get_prev_node(index)) {
 				s_voice &voice = m_voices[index];
 				if (!voice.active) {
 					break;

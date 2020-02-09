@@ -20,7 +20,7 @@ c_thread::~c_thread() {
 
 void c_thread::start(const s_thread_definition &thread_definition) {
 	wl_assert(!is_running());
-	wl_assert(VALID_INDEX(thread_definition.thread_priority, k_thread_priority_count));
+	wl_assert(valid_enum_index(thread_definition.thread_priority));
 	wl_assert(thread_definition.thread_entry_point);
 
 	// Store thread function and parameter block for the thread to use
@@ -39,10 +39,10 @@ void c_thread::start(const s_thread_definition &thread_definition) {
 		70,
 		80
 	};
-	static_assert(NUMBEROF(k_thread_priority_map) == k_thread_priority_count, "Thread priority mapping mismatch");
+	static_assert(NUMBEROF(k_thread_priority_map) == enum_count(e_thread_priority), "Thread priority mapping mismatch");
 
 	sched_param sch_params;
-	sch_params.sched_priority = k_thread_priority_map[thread_definition.thread_priority];
+	sch_params.sched_priority = k_thread_priority_map[enum_index(thread_definition.thread_priority)];
 	int policy = SCHED_FIFO;
 	if (pthread_setschedparam(m_thread.native_handle(), policy, &sch_params)) {
 		wl_vhalt("Failed to set thread priority");

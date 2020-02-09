@@ -11,19 +11,19 @@ extern const char *k_voice_entry_point_name;
 extern const char *k_fx_entry_point_name;
 
 // List of all AST nodes
-enum e_ast_node_type {
-	k_ast_node_type_scope,						// A list of expressions
-	k_ast_node_type_module_declaration,			// Declaration of a module
-	k_ast_node_type_named_value_declaration,	// Declaration of a named value
-	k_ast_node_type_named_value_assignment,		// Assignment of an expression to a named value
-	k_ast_node_type_repeat_loop,				// Loop which repeats a constant number of times
-	k_ast_node_type_return_statement,			// Return statement of a module
-	k_ast_node_type_expression,					// An expression, which is either a constant or a module call
-	k_ast_node_type_constant,					// A constant value
-	k_ast_node_type_named_value,				// A named value
-	k_ast_node_type_module_call,				// A call to a module, which includes built in operators
+enum class e_ast_node_type {
+	k_scope,					// A list of expressions
+	k_module_declaration,		// Declaration of a module
+	k_named_value_declaration,	// Declaration of a named value
+	k_named_value_assignment,	// Assignment of an expression to a named value
+	k_repeat_loop,				// Loop which repeats a constant number of times
+	k_return_statement,			// Return statement of a module
+	k_expression,				// An expression, which is either a constant or a module call
+	k_constant,					// A constant value
+	k_named_value,				// A named value
+	k_module_call,				// A call to a module, which includes built in operators
 
-	k_ast_node_type_count
+	k_count
 };
 
 // Forward declare types

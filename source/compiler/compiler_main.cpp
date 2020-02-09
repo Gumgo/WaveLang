@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
 		c_instrument instrument;
 		s_compiler_result compile_result = c_compiler::compile(".\\", argv[arg], &instrument);
 
-		if (compile_result.result == k_compiler_result_success) {
+		if (compile_result.result == e_compiler_result::k_success) {
 			std::string fname_no_ext = argv[arg];
 			// Add or replace extension
 			size_t last_slash = fname_no_ext.find_last_of('/');
@@ -102,14 +102,14 @@ int main(int argc, char **argv) {
 			std::cout << "Compiled '" << argv[arg] << "' successfully, saving result to '" << out_fname << "'\n";
 
 			e_instrument_result save_result = instrument.save(out_fname.c_str());
-			if (save_result != k_instrument_result_success) {
-				std::cerr << "Failed to save '" << out_fname << "' (result code " << save_result << ")\n";
+			if (save_result != e_instrument_result::k_success) {
+				std::cerr << "Failed to save '" << out_fname << "' (result code " << enum_index(save_result) << ")\n";
 			}
 
 			if (output_execution_graph) {
 				for (uint32 variant_index = 0;
-					 variant_index < instrument.get_instrument_variant_count();
-					 variant_index++) {
+					variant_index < instrument.get_instrument_variant_count();
+					variant_index++) {
 					const c_instrument_variant *instrument_variant = instrument.get_instrument_variant(variant_index);
 
 					const c_execution_graph *execution_graphs[] = {

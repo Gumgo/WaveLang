@@ -324,15 +324,15 @@ void c_ast_visitor::visit_native_module_declaration(clang::FunctionDecl *decl) {
 		if ((in_argument + out_argument + in_const_argument + out_return_argument) != 1) {
 			param_error = true;
 		} else if (in_argument || in_const_argument) {
-			if (argument_declaration.type.get_qualifier() != k_native_module_qualifier_in) {
+			if (argument_declaration.type.get_qualifier() != e_native_module_qualifier::k_in) {
 				param_error = true;
 			} else if (in_const_argument) {
 				// Convert in to constant
 				argument_declaration.type = c_native_module_qualified_data_type(
-					argument_declaration.type.get_data_type(), k_native_module_qualifier_constant);
+					argument_declaration.type.get_data_type(), e_native_module_qualifier::k_constant);
 			}
 		} else if (out_argument || out_return_argument) {
-			if ((argument_declaration.type.get_qualifier() != k_native_module_qualifier_out) ||
+			if ((argument_declaration.type.get_qualifier() != e_native_module_qualifier::k_out) ||
 				(out_return_argument && found_out_return_argument)) {
 				param_error = true;
 			} else if (out_return_argument) {
@@ -442,15 +442,13 @@ void c_ast_visitor::build_native_module_type_table() {
 	// Map type string to type. A better/more robust way to do this would be to apply markup to base types in C++ so we
 	// could recognize them by their clang::Type, but this is easier.
 
-	for (uint32 index = 0; index < k_native_module_primitive_type_count; index++) {
-		e_native_module_primitive_type primitive_type = static_cast<e_native_module_primitive_type>(index);
-
+	for (e_native_module_primitive_type primitive_type : iterate_enum<e_native_module_primitive_type>()) {
 		static const char *k_cpp_primitive_type_names[] = {
 			"float",
 			"_Bool",
 			"class c_native_module_string"
 		};
-		static_assert(NUMBEROF(k_cpp_primitive_type_names) == k_native_module_primitive_type_count,
+		static_assert(NUMBEROF(k_cpp_primitive_type_names) == enum_count<e_native_module_primitive_type>(),
 			"Primitive type name mismatch");
 
 		static const char *k_cpp_primitive_type_array_names[] = {
@@ -458,7 +456,7 @@ void c_ast_visitor::build_native_module_type_table() {
 			"class c_native_module_bool_array",
 			"class c_native_module_string_array"
 		};
-		static_assert(NUMBEROF(k_cpp_primitive_type_array_names) == k_native_module_primitive_type_count,
+		static_assert(NUMBEROF(k_cpp_primitive_type_array_names) == enum_count<e_native_module_primitive_type>(),
 			"Primitive type array name mismatch");
 
 		c_native_module_data_type data_type(primitive_type, false);
@@ -471,29 +469,29 @@ void c_ast_visitor::build_native_module_type_table() {
 		// const type & - in
 		// type & - out
 
-		snprintf(buffer, NUMBEROF(buffer), "%s", k_cpp_primitive_type_names[primitive_type]);
+		snprintf(buffer, NUMBEROF(buffer), "%s", k_cpp_primitive_type_names[enum_index(primitive_type)]);
 		m_native_module_type_table.insert(std::make_pair(
-			buffer, c_native_module_qualified_data_type(data_type, k_native_module_qualifier_in)));
+			buffer, c_native_module_qualified_data_type(data_type, e_native_module_qualifier::k_in)));
 
-		snprintf(buffer, NUMBEROF(buffer), "const %s &", k_cpp_primitive_type_names[primitive_type]);
+		snprintf(buffer, NUMBEROF(buffer), "const %s &", k_cpp_primitive_type_names[enum_index(primitive_type)]);
 		m_native_module_type_table.insert(std::make_pair(
-			buffer, c_native_module_qualified_data_type(data_type, k_native_module_qualifier_in)));
+			buffer, c_native_module_qualified_data_type(data_type, e_native_module_qualifier::k_in)));
 
-		snprintf(buffer, NUMBEROF(buffer), "%s &", k_cpp_primitive_type_names[primitive_type]);
+		snprintf(buffer, NUMBEROF(buffer), "%s &", k_cpp_primitive_type_names[enum_index(primitive_type)]);
 		m_native_module_type_table.insert(std::make_pair(
-			buffer, c_native_module_qualified_data_type(data_type, k_native_module_qualifier_out)));
+			buffer, c_native_module_qualified_data_type(data_type, e_native_module_qualifier::k_out)));
 
-		snprintf(buffer, NUMBEROF(buffer), "%s", k_cpp_primitive_type_array_names[primitive_type]);
+		snprintf(buffer, NUMBEROF(buffer), "%s", k_cpp_primitive_type_array_names[enum_index(primitive_type)]);
 		m_native_module_type_table.insert(std::make_pair(
-			buffer, c_native_module_qualified_data_type(array_data_type, k_native_module_qualifier_in)));
+			buffer, c_native_module_qualified_data_type(array_data_type, e_native_module_qualifier::k_in)));
 
-		snprintf(buffer, NUMBEROF(buffer), "const %s &", k_cpp_primitive_type_array_names[primitive_type]);
+		snprintf(buffer, NUMBEROF(buffer), "const %s &", k_cpp_primitive_type_array_names[enum_index(primitive_type)]);
 		m_native_module_type_table.insert(std::make_pair(
-			buffer, c_native_module_qualified_data_type(array_data_type, k_native_module_qualifier_in)));
+			buffer, c_native_module_qualified_data_type(array_data_type, e_native_module_qualifier::k_in)));
 
-		snprintf(buffer, NUMBEROF(buffer), "%s &", k_cpp_primitive_type_array_names[primitive_type]);
+		snprintf(buffer, NUMBEROF(buffer), "%s &", k_cpp_primitive_type_array_names[enum_index(primitive_type)]);
 		m_native_module_type_table.insert(std::make_pair(
-			buffer, c_native_module_qualified_data_type(array_data_type, k_native_module_qualifier_out)));
+			buffer, c_native_module_qualified_data_type(array_data_type, e_native_module_qualifier::k_out)));
 	}
 }
 
@@ -517,59 +515,66 @@ void c_ast_visitor::build_task_type_table() {
 
 	s_task_argument_type type;
 
-	type.data_type = c_task_qualified_data_type(c_task_data_type(k_task_primitive_type_real), k_task_qualifier_in);
+	type.data_type =
+		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_real), e_task_qualifier::k_in);
 	type.is_constant = false;
 	type.is_possibly_constant = true;
 	m_task_type_table.insert(std::make_pair( // "class c_real_const_buffer_or_constant"
 		"class c_buffer_or_constant_base<const class c_buffer, float, struct s_constant_accessor_real>", type));
 
-	type.data_type = c_task_qualified_data_type(c_task_data_type(k_task_primitive_type_real), k_task_qualifier_out);
+	type.data_type =
+		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_real), e_task_qualifier::k_out);
 	type.is_constant = false;
 	type.is_possibly_constant = false;
 	m_task_type_table.insert(std::make_pair("class c_real_buffer *", type));
 
-	type.data_type = c_task_qualified_data_type(c_task_data_type(k_task_primitive_type_real), k_task_qualifier_in);
+	type.data_type =
+		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_real), e_task_qualifier::k_in);
 	type.is_constant = true;
 	type.is_possibly_constant = true;
 	m_task_type_table.insert(std::make_pair("float", type));
 
 	type.data_type =
-		c_task_qualified_data_type(c_task_data_type(k_task_primitive_type_real, true), k_task_qualifier_in);
+		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_real, true), e_task_qualifier::k_in);
 	type.is_constant = true; // The array itself is always constant
 	type.is_possibly_constant = true;
 	m_task_type_table.insert(std::make_pair( // "class c_real_array"
 		"class c_wrapped_array<const struct s_real_array_element>", type));
 
-	type.data_type = c_task_qualified_data_type(c_task_data_type(k_task_primitive_type_bool), k_task_qualifier_in);
+	type.data_type =
+		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_bool), e_task_qualifier::k_in);
 	type.is_constant = false;
 	type.is_possibly_constant = true;
 	m_task_type_table.insert(std::make_pair( // "class c_bool_const_buffer_or_constant"
 		"class c_buffer_or_constant_base<const class c_buffer, _Bool, struct s_constant_accessor_bool>", type));
 
-	type.data_type = c_task_qualified_data_type(c_task_data_type(k_task_primitive_type_bool), k_task_qualifier_out);
+	type.data_type =
+		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_bool), e_task_qualifier::k_out);
 	type.is_constant = false;
 	type.is_possibly_constant = false;
 	m_task_type_table.insert(std::make_pair("class c_bool_buffer *", type));
 
-	type.data_type = c_task_qualified_data_type(c_task_data_type(k_task_primitive_type_bool), k_task_qualifier_in);
+	type.data_type =
+		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_bool), e_task_qualifier::k_in);
 	type.is_constant = true;
 	type.is_possibly_constant = true;
 	m_task_type_table.insert(std::make_pair("_Bool", type));
 
 	type.data_type =
-		c_task_qualified_data_type(c_task_data_type(k_task_primitive_type_bool, true), k_task_qualifier_in);
+		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_bool, true), e_task_qualifier::k_in);
 	type.is_constant = true; // The array itself is always constant
 	type.is_possibly_constant = true;
 	m_task_type_table.insert(std::make_pair( // "class c_bool_array"
 		"class c_wrapped_array<const struct s_bool_array_element>", type));
 
-	type.data_type = c_task_qualified_data_type(c_task_data_type(k_task_primitive_type_string), k_task_qualifier_in);
+	type.data_type =
+		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_string), e_task_qualifier::k_in);
 	type.is_constant = true;
 	type.is_possibly_constant = true;
 	m_task_type_table.insert(std::make_pair("const char *", type));
 
 	type.data_type =
-		c_task_qualified_data_type(c_task_data_type(k_task_primitive_type_string, true), k_task_qualifier_in);
+		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_string, true), e_task_qualifier::k_in);
 	type.is_constant = true; // The array itself is always constant
 	type.is_possibly_constant = true;
 	m_task_type_table.insert(std::make_pair( // "class c_string_array",
@@ -709,24 +714,24 @@ std::vector<s_task_function_argument_declaration> c_ast_visitor::parse_task_argu
 		// Make sure the parameter markup matches the type
 		bool param_error = false;
 		if (in_argument && out_argument) {
-			if (argument_declaration.type.get_qualifier() == k_task_qualifier_out) {
+			if (argument_declaration.type.get_qualifier() == e_task_qualifier::k_out) {
 				// Convert out to inout
 				argument_declaration.type = c_task_qualified_data_type(
 					argument_declaration.type.get_data_type(),
-					k_task_qualifier_inout);
+					e_task_qualifier::k_inout);
 				argument_declaration.in_source = in_argument + strlen(WL_IN_SOURCE_PREFIX);
 				argument_declaration.out_source = out_argument + strlen(WL_OUT_SOURCE_PREFIX);
 			} else {
 				param_error = true;
 			}
 		} else if (in_argument) {
-			if (argument_declaration.type.get_qualifier() != k_task_qualifier_in) {
+			if (argument_declaration.type.get_qualifier() != e_task_qualifier::k_in) {
 				param_error = true;
 			} else {
 				argument_declaration.in_source = in_argument + strlen(WL_IN_SOURCE_PREFIX);
 			}
 		} else if (out_argument) {
-			if (argument_declaration.type.get_qualifier() != k_task_qualifier_out) {
+			if (argument_declaration.type.get_qualifier() != e_task_qualifier::k_out) {
 				param_error = true;
 			} else {
 				argument_declaration.out_source = out_argument + strlen(WL_OUT_SOURCE_PREFIX);

@@ -5,11 +5,11 @@
 
 #define BOOL_BUFFER_INT32_COUNT(element_count) (((element_count) + 31) / 32)
 
-enum e_buffer_type {
-	k_buffer_type_real,
-	k_buffer_type_bool,
+enum class e_buffer_type {
+	k_real,
+	k_bool,
 
-	k_buffer_type_count
+	k_count
 };
 
 class ALIGNAS_LOCK_FREE c_buffer {

@@ -4,12 +4,12 @@
 
 #include <string>
 
-enum e_diagnostic_level {
-	k_diagnostic_level_info,
-	k_diagnostic_level_warning,
-	k_diagnostic_level_error,
+enum class e_diagnostic_level {
+	k_info,
+	k_warning,
+	k_error,
 
-	k_diagnostic_level_count
+	k_count
 };
 
 typedef void (*f_diagnostic_callback)(void *context, e_diagnostic_level diagnostic_level, const std::string &message);

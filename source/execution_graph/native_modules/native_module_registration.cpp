@@ -13,8 +13,7 @@ void register_native_modules(bool optimizations_enabled) {
 	c_native_module_registry::begin_registration(optimizations_enabled);
 
 	// Register all operators first
-	for (uint32 op = 0; op < k_native_operator_count; op++) {
-		e_native_operator native_operator = static_cast<e_native_operator>(op);
+	for (e_native_operator native_operator : iterate_enum<e_native_operator>()) {
 		c_native_module_registry::register_native_operator(
 			native_operator, get_native_operator_native_module_name(native_operator));
 	}

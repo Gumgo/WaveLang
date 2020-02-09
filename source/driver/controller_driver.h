@@ -6,11 +6,11 @@
 
 static const size_t k_max_controller_devices = 16;
 
-enum e_controller_driver_result {
-	k_controller_driver_result_success,
-	k_controller_driver_result_failed_to_open_stream,
+enum class e_controller_driver_result {
+	k_success,
+	k_failed_to_open_stream,
 
-	k_controller_driver_result_count
+	k_count
 };
 
 struct s_controller_driver_result {
@@ -18,7 +18,7 @@ struct s_controller_driver_result {
 	std::string message;
 
 	void clear() {
-		result = k_controller_driver_result_success;
+		result = e_controller_driver_result::k_success;
 		message.clear();
 	}
 };

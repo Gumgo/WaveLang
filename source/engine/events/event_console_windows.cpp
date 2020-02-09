@@ -7,7 +7,7 @@ static const char *k_event_console_executable_name = "console.exe";
 void c_event_console::initialize_platform() {
 	m_pipe = INVALID_HANDLE_VALUE;
 	m_process = INVALID_HANDLE_VALUE;
-	m_last_color = k_console_color_count;
+	m_last_color = e_console_color::k_count;
 }
 
 void c_event_console::shutdown_platform() {

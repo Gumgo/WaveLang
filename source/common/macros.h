@@ -11,6 +11,7 @@
 
 #define NUMBEROF(x) (sizeof(x) / (sizeof(x[0])))
 
+// $TODO make constexpr version
 #define VALID_INDEX(i, c) ((i) >= 0 && (i) < (c))
 
 #define ZERO_STRUCT(s) memset(s, 0, sizeof(*s))
@@ -22,4 +23,3 @@
 
 #define TOKEN_CONCATENATE_HELPER(x, y) x ## y
 #define TOKEN_CONCATENATE(x, y) TOKEN_CONCATENATE_HELPER(x, y)
-

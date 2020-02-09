@@ -14,7 +14,7 @@ void s_sampler_context::initialize_file(
 	e_sample_loop_mode loop_mode,
 	bool phase_shift_enabled,
 	real32 channel_real) {
-	wl_assert(VALID_INDEX(loop_mode, k_sample_loop_mode_count));
+	wl_assert(valid_enum_index(loop_mode));
 
 	s_file_sample_parameters parameters;
 	parameters.filename = sample;

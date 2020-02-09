@@ -38,8 +38,8 @@ static bool process_next_command() {
 		return true;
 	}
 
-	switch (command) {
-	case k_console_command_print:
+	switch (static_cast<e_console_command>(command)) {
+	case e_console_command::k_print:
 	{
 		uint32 length;
 		if (!read_platform(sizeof(length), &length)) {
@@ -68,14 +68,14 @@ static bool process_next_command() {
 		break;
 	}
 
-	case k_console_command_set_text_color:
+	case e_console_command::k_set_text_color:
 	{
 		uint8 color;
 		if (!read_platform(sizeof(color), &color)) {
 			return true;
 		}
 
-		if (!VALID_INDEX(color, k_console_color_count)) {
+		if (!VALID_INDEX(color, enum_count<e_console_color>())) {
 			return true;
 		}
 
@@ -83,11 +83,11 @@ static bool process_next_command() {
 		break;
 	}
 
-	case k_console_command_clear:
+	case e_console_command::k_clear:
 		clear_platform();
 		break;
 
-	case k_console_command_exit:
+	case e_console_command::k_exit:
 		return true;
 
 	default:

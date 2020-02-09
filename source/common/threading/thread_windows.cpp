@@ -18,7 +18,7 @@ c_thread::~c_thread() {
 
 void c_thread::start(const s_thread_definition &thread_definition) {
 	wl_assert(!is_running());
-	wl_assert(VALID_INDEX(thread_definition.thread_priority, k_thread_priority_count));
+	wl_assert(valid_enum_index(thread_definition.thread_priority));
 	wl_assert(thread_definition.thread_entry_point);
 
 	// Store thread function and parameter block for the thread to use
@@ -48,9 +48,10 @@ void c_thread::start(const s_thread_definition &thread_definition) {
 		THREAD_PRIORITY_ABOVE_NORMAL,
 		THREAD_PRIORITY_HIGHEST
 	};
-	static_assert(NUMBEROF(k_thread_priority_map) == k_thread_priority_count, "Thread priority mapping mismatch");
+	static_assert(NUMBEROF(k_thread_priority_map) == enum_count<e_thread_priority>(),
+		"Thread priority mapping mismatch");
 
-	if (!SetThreadPriority(m_thread_handle, k_thread_priority_map[thread_definition.thread_priority])) {
+	if (!SetThreadPriority(m_thread_handle, k_thread_priority_map[enum_index(thread_definition.thread_priority)])) {
 		wl_vhalt("Failed to set thread priority");
 	}
 

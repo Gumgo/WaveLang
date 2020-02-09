@@ -7,12 +7,12 @@
 
 #include <vector>
 
-enum e_sample_loop_mode {
-	k_sample_loop_mode_none,
-	k_sample_loop_mode_loop,
-	k_sample_loop_mode_bidi_loop,
+enum class e_sample_loop_mode {
+	k_none,
+	k_loop,
+	k_bidi_loop,
 
-	k_sample_loop_mode_count
+	k_count
 };
 
 static const uint32 k_max_sample_padding = 4;
@@ -56,12 +56,12 @@ public:
 	const c_sample *get_wavetable_entry(uint32 index) const;
 
 private:
-	enum e_type {
-		k_type_none,							// The sample has no type yet
-		k_type_single_sample,					// A single sample, or an initialized sample in a wavetable
-		k_type_wavetable,						// A wavetable of samples
+	enum class e_type {
+		k_none,				// The sample has no type yet
+		k_single_sample,	// A single sample, or an initialized sample in a wavetable
+		k_wavetable,		// A wavetable of samples
 
-		k_type_count
+		k_count
 	};
 
 	static bool load_wave(

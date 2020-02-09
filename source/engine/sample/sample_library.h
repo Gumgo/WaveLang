@@ -45,11 +45,11 @@ public:
 	const c_sample *get_sample(uint32 handle) const;
 
 private:
-	enum e_sample_type {
-		k_sample_type_file,
-		k_sample_type_wavetable,
+	enum class e_sample_type {
+		k_file,
+		k_wavetable,
 
-		k_sample_type_count
+		k_count
 	};
 
 	struct s_requested_sample {

@@ -149,13 +149,13 @@ struct s_lr_item_set_transition {
 	std::vector<size_t> item_set_indices;
 };
 
-enum e_lr_action_type {
-	k_lr_action_type_invalid,
-	k_lr_action_type_shift,
-	k_lr_action_type_reduce,
-	k_lr_action_type_accept,
+enum class e_lr_action_type {
+	k_invalid,
+	k_shift,
+	k_reduce,
+	k_accept,
 
-	k_lr_action_type_count
+	k_count
 };
 
 class c_lr_action {
@@ -175,12 +175,12 @@ private:
 	uint32 m_action_type				: 2;
 };
 
-enum e_lr_conflict {
-	k_lr_conflict_none,
-	k_lr_conflict_shift_reduce,
-	k_lr_conflict_reduce_reduce,
+enum class e_lr_conflict {
+	k_none,
+	k_shift_reduce,
+	k_reduce_reduce,
 
-	k_lr_conflict_count
+	k_count
 };
 
 class c_lr_action_goto_table {

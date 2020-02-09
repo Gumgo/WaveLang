@@ -21,7 +21,7 @@ public:
 	const s_instrument_globals &get_instrument_globals() const;
 
 private:
-	s_static_array<c_task_graph *, k_instrument_stage_count> m_task_graphs;
+	s_static_array<c_task_graph *, enum_count<e_instrument_stage>()> m_task_graphs;
 	s_instrument_globals m_instrument_globals;
 };
 

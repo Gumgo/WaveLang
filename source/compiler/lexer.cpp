@@ -4,57 +4,57 @@
 #include <unordered_map>
 
 static const char *k_lexer_token_table[] = {
-	"",			// k_token_type_invalid
+	"",			// e_token_type::k_invalid
 
-	"const",	// k_token_type_keyword_const
-	"in",		// k_token_type_keyword_in
-	"out",		// k_token_type_keyword_out
-	"module",	// k_token_type_keyword_module
-	"void",		// k_token_type_keyword_void
-	"real",		// k_token_type_keyword_real
-	"bool",		// k_token_type_keyword_bool
-	"string",	// k_token_type_keyword_string
-	"return",	// k_token_type_keyword_return
-	"repeat",	// k_token_type_keyword_repeat
+	"const",	// e_token_type::k_keyword_const
+	"in",		// e_token_type::k_keyword_in
+	"out",		// e_token_type::k_keyword_out
+	"module",	// e_token_type::k_keyword_module
+	"void",		// e_token_type::k_keyword_void
+	"real",		// e_token_type::k_keyword_real
+	"bool",		// e_token_type::k_keyword_bool
+	"string",	// e_token_type::k_keyword_string
+	"return",	// e_token_type::k_keyword_return
+	"repeat",	// e_token_type::k_keyword_repeat
 
-	"",			// k_token_type_identifier
+	"",			// e_token_type::k_identifier
 
-	"",			// k_token_type_constant_real
-	"",			// k_token_type_constant_bool
-	"",			// k_token_type_constant_string
+	"",			// e_token_type::k_constant_real
+	"",			// e_token_type::k_constant_bool
+	"",			// e_token_type::k_constant_string
 
-	"(",		// k_token_type_left_parenthesis
-	")",		// k_token_type_right_parenthesis
+	"(",		// e_token_type::k_left_parenthesis
+	")",		// e_token_type::k_right_parenthesis
 
-	"{",		// k_token_type_left_brace
-	"}",		// k_token_type_right_brace
+	"{",		// e_token_type::k_left_brace
+	"}",		// e_token_type::k_right_brace
 
-	"[",		// k_token_type_left_bracket
-	"]",		// k_token_type_right_bracket
+	"[",		// e_token_type::k_left_bracket
+	"]",		// e_token_type::k_right_bracket
 
-	",",		// k_token_type_comma
-	";",		// k_token_type_semicolon
+	",",		// e_token_type::k_comma
+	";",		// e_token_type::k_semicolon
 
-	":=",		// k_token_type_operator_assignment
-	"+",		// k_token_type_operator_addition
-	"-",		// k_token_type_operator_subtraction
-	"*",		// k_token_type_operator_multiplication
-	"/",		// k_token_type_operator_division
-	"%",		// k_token_type_operator_modulo
-	"!",		// k_token_type_operator_not
-	"==",		// k_token_type_operator_equal
-	"!=",		// k_token_type_operator_not_equal
-	">",		// k_token_type_operator_greater
-	"<",		// k_token_type_operator_less
-	">=",		// k_token_type_operator_greater_equal
-	"<=",		// k_token_type_operator_less_equal
-	"&&",		// k_token_type_operator_and
-	"||",		// k_token_type_operator_or
+	":=",		// e_token_type::k_operator_assignment
+	"+",		// e_token_type::k_operator_addition
+	"-",		// e_token_type::k_operator_subtraction
+	"*",		// e_token_type::k_operator_multiplication
+	"/",		// e_token_type::k_operator_division
+	"%",		// e_token_type::k_operator_modulo
+	"!",		// e_token_type::k_operator_not
+	"==",		// e_token_type::k_operator_equal
+	"!=",		// e_token_type::k_operator_not_equal
+	">",		// e_token_type::k_operator_greater
+	"<",		// e_token_type::k_operator_less
+	">=",		// e_token_type::k_operator_greater_equal
+	"<=",		// e_token_type::k_operator_less_equal
+	"&&",		// e_token_type::k_operator_and
+	"||",		// e_token_type::k_operator_or
 
-	"//"		// k_token_type_comment
+	"//"		// e_token_type::k_comment
 };
 
-static_assert(NUMBEROF(k_lexer_token_table) == k_token_type_count, "Invalid lexer token table");
+static_assert(NUMBEROF(k_lexer_token_table) == enum_count<e_token_type>(), "Invalid lexer token table");
 
 const char *k_token_type_constant_bool_false_string = "false";
 const char *k_token_type_constant_bool_true_string = "true";
@@ -81,36 +81,36 @@ static s_token read_next_token(c_compiler_string str);
 void c_lexer::initialize_lexer() {
 	wl_assert(!g_lexer_initialized);
 
-	for (size_t token_type = k_token_type_first_keyword;
-		 token_type <= k_token_type_last_keyword;
-		 token_type++) {
+	for (size_t token_type = enum_index(e_token_type::k_first_keyword);
+		token_type <= enum_index(e_token_type::k_last_keyword);
+		token_type++) {
 		g_lexer_globals.keyword_table.insert(std::make_pair(
 			k_lexer_token_table[token_type], static_cast<e_token_type>(token_type)));
 	}
 
 	// Add bool values to the keyword table
 	g_lexer_globals.keyword_table.insert(std::make_pair(
-		k_token_type_constant_bool_false_string, k_token_type_constant_bool));
+		k_token_type_constant_bool_false_string, e_token_type::k_constant_bool));
 	g_lexer_globals.keyword_table.insert(std::make_pair(
-		k_token_type_constant_bool_true_string, k_token_type_constant_bool));
+		k_token_type_constant_bool_true_string, e_token_type::k_constant_bool));
 
-	for (size_t token_type = k_token_type_first_single_character_operator;
-		 token_type <= k_token_type_last_single_character_operator;
-		 token_type++) {
+	for (size_t token_type = enum_index(e_token_type::k_first_single_character_operator);
+		token_type <= enum_index(e_token_type::k_last_single_character_operator);
+		token_type++) {
 		g_lexer_globals.single_character_operator_table.insert(std::make_pair(
 			k_lexer_token_table[token_type], static_cast<e_token_type>(token_type)));
 	}
 
-	for (size_t token_type = k_token_type_first_operator;
-		 token_type <= k_token_type_last_operator;
-		 token_type++) {
+	for (size_t token_type = enum_index(e_token_type::k_first_operator);
+		token_type <= enum_index(e_token_type::k_last_operator);
+		token_type++) {
 		g_lexer_globals.operator_table.insert(std::make_pair(
 			k_lexer_token_table[token_type], static_cast<e_token_type>(token_type)));
 	}
 
 	// Comment token goes in the operator table
 	g_lexer_globals.operator_table.insert(std::make_pair(
-		k_lexer_token_table[k_token_type_comment], k_token_type_comment));
+		k_lexer_token_table[enum_index(e_token_type::k_comment)], e_token_type::k_comment));
 
 	g_lexer_initialized = true;
 }
@@ -145,7 +145,7 @@ s_compiler_result c_lexer::process(
 
 	if (failed) {
 		// Don't associate the error with a particular file, those errors are collected through out_errors
-		result.result = k_compiler_result_lexer_error;
+		result.result = e_compiler_result::k_lexer_error;
 		result.message = "Lexer encountered error(s)";
 	}
 
@@ -204,19 +204,19 @@ static bool process_source_file(
 				} else {
 					s_token token = read_next_token(line_remaining);
 
-					if (token.token_type == k_token_type_invalid) {
+					if (token.token_type == e_token_type::k_invalid) {
 						// Report the error using the string returned
 						out_errors.push_back(s_compiler_result());
 						s_compiler_result &error = out_errors.back();
 
 						error.clear();
-						error.result = k_compiler_result_invalid_token;
+						error.result = e_compiler_result::k_invalid_token;
 						error.source_location.source_file_index = source_file_index;
 						error.source_location.line = line_number;
 						error.source_location.pos = pos;
 						error.message = "Invalid token '" + token.token_string.to_std_string() + "'";
 						result = false;
-					} else if (token.token_type == k_token_type_comment) {
+					} else if (token.token_type == e_token_type::k_comment) {
 						// Ignore the rest of the line because it is a comment
 						eol = true;
 					} else {
@@ -227,7 +227,7 @@ static bool process_source_file(
 					}
 
 					line_remaining = line_remaining.advance(token.token_string.get_length());
-					if (token.token_type == k_token_type_constant_string) {
+					if (token.token_type == e_token_type::k_constant_string) {
 						// We need to also skip the quotes because they're not included in the string
 						line_remaining = line_remaining.advance(2);
 					}
@@ -262,7 +262,7 @@ static s_token read_next_token(
 	// 3) Detect operators, read up to any non-operator
 
 	s_token result;
-	result.token_type = k_token_type_invalid;
+	result.token_type = e_token_type::k_invalid;
 
 	// First check if the starting character is valid
 	if (!compiler_utility::is_valid_source_character(str[0])) {
@@ -279,7 +279,7 @@ static s_token read_next_token(
 		if (match != g_lexer_globals.keyword_table.end()) {
 			result.token_type = match->second;
 		} else {
-			result.token_type = k_token_type_identifier;
+			result.token_type = e_token_type::k_identifier;
 		}
 
 		return result;
@@ -310,16 +310,16 @@ static s_token read_next_token(
 		result.token_string = str.substr(0, index);
 
 		if (error) {
-			result.token_type = k_token_type_invalid;
+			result.token_type = e_token_type::k_invalid;
 		} else {
 			// Make sure the value is valid
 			try {
 				std::stof(result.token_string.to_std_string());
-				result.token_type = k_token_type_constant_real;
+				result.token_type = e_token_type::k_constant_real;
 			} catch (const std::invalid_argument &) {
-				result.token_type = k_token_type_invalid;
+				result.token_type = e_token_type::k_invalid;
 			} catch (const std::out_of_range &) {
-				result.token_type = k_token_type_invalid;
+				result.token_type = e_token_type::k_invalid;
 			}
 		}
 
@@ -365,9 +365,9 @@ static s_token read_next_token(
 		result.token_string = str.substr(1, index - 1);
 
 		if (error) {
-			result.token_type = k_token_type_invalid;
+			result.token_type = e_token_type::k_invalid;
 		} else {
-			result.token_type = k_token_type_constant_string;
+			result.token_type = e_token_type::k_constant_string;
 		}
 
 		return result;
@@ -430,7 +430,7 @@ static s_token read_next_token(
 			if (match != g_lexer_globals.operator_table.end()) {
 				result.token_type = match->second;
 			} else {
-				result.token_type = k_token_type_invalid;
+				result.token_type = e_token_type::k_invalid;
 			}
 
 			return result;

@@ -36,7 +36,7 @@ void c_thread_pool::start(const s_thread_pool_settings &settings) {
 		std::string thread_name = "worker_" + std::to_string(thread);
 		thread_definition.thread_name = thread_name.c_str();
 		thread_definition.stack_size = 0;
-		thread_definition.thread_priority = k_thread_priority_highest;// normal;
+		thread_definition.thread_priority = e_thread_priority::k_highest;// normal;
 		thread_definition.processor = -1;
 		thread_definition.thread_entry_point = worker_thread_entry_point;
 		

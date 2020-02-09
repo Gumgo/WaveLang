@@ -38,8 +38,8 @@ static s_lr_production make_production(
 
 // Shorthand
 #define PROD(x, ...) make_production(x, ##__VA_ARGS__), // Hack to allow the macro to accept commas
-#define TS(x) c_lr_symbol(true, static_cast<uint16>(k_token_type_ ## x))
-#define NS(x) c_lr_symbol(false, static_cast<uint16>(k_parser_nonterminal_ ## x))
+#define TS(x) c_lr_symbol(true, static_cast<uint16>(e_token_type::k_ ## x))
+#define NS(x) c_lr_symbol(false, static_cast<uint16>(e_parser_nonterminal::k_ ## x))
 
 // Production table
 static const s_lr_production k_production_table[] = {
@@ -76,7 +76,7 @@ void c_parser::initialize_parser() {
 
 	// Build the production set from the provided rules
 	c_lr_production_set production_set;
-	production_set.initialize(k_token_type_count, k_parser_nonterminal_count);
+	production_set.initialize(enum_count<e_token_type>(), enum_count<e_parser_nonterminal>());
 	for (size_t index = 0; index < NUMBEROF(k_production_table); index++) {
 		production_set.add_production(k_production_table[index]);
 	}
@@ -131,7 +131,7 @@ s_compiler_result c_parser::process(
 
 	if (failed) {
 		// Don't associate the error with a particular file, those errors are collected through out_errors
-		result.result = k_compiler_result_parser_error;
+		result.result = e_compiler_result::k_parser_error;
 		result.message = "Parser encountered error(s)";
 	}
 
@@ -190,7 +190,7 @@ static bool process_source_file(
 	for (size_t error_index = 0; error_index < error_tokens.size(); error_index++) {
 		const s_token &token = source_file_input.tokens[error_tokens[error_index]];
 		s_compiler_result error;
-		error.result = k_compiler_result_unexpected_token;
+		error.result = e_compiler_result::k_unexpected_token;
 		error.source_location = token.source_location;
 		error.message = "Unexpected token '" + token.token_string.to_std_string() + "'";
 		out_errors.push_back(error);
@@ -245,7 +245,7 @@ static const char *k_parse_tree_output_terminal_strings[] = {
 	"operator-or",
 	"comment"
 };
-static_assert(NUMBEROF(k_parse_tree_output_terminal_strings) == k_token_type_count, "Incorrect array size");
+static_assert(NUMBEROF(k_parse_tree_output_terminal_strings) == enum_count<e_token_type>(), "Incorrect array size");
 
 static const char *k_parse_tree_output_nonterminal_strings[] = {
 	"start",
@@ -285,7 +285,8 @@ static const char *k_parse_tree_output_nonterminal_strings[] = {
 	"constant-array-list",
 	"array-dereference"
 };
-static_assert(NUMBEROF(k_parse_tree_output_nonterminal_strings) == k_parser_nonterminal_count, "Incorrect array size");
+static_assert(NUMBEROF(k_parse_tree_output_nonterminal_strings) == enum_count<e_parser_nonterminal>(),
+	"Incorrect array size");
 
 #define PRINT_TERMINAL_STRINGS 1
 

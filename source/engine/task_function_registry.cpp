@@ -8,13 +8,13 @@
 // $TODO $PLUGIN error reporting for registration errors. Important when we have plugins - we will want a global error
 // reporting system for that.
 
-enum e_task_function_registry_state {
-	k_task_function_registry_state_uninitialized,
-	k_task_function_registry_state_initialized,
-	k_task_function_registry_state_registering,
-	k_task_function_registry_state_finalized,
+enum class e_task_function_registry_state {
+	k_uninitialized,
+	k_initialized,
+	k_registering,
+	k_finalized,
 
-	k_task_function_registry_state_count,
+	k_count,
 };
 
 struct s_task_function_mapping_list_internal {
@@ -40,7 +40,7 @@ struct s_task_function_registry_data {
 	std::vector<s_task_function_mapping> task_function_mappings;
 };
 
-static e_task_function_registry_state g_task_function_registry_state = k_task_function_registry_state_uninitialized;
+static e_task_function_registry_state g_task_function_registry_state = e_task_function_registry_state::k_uninitialized;
 static s_task_function_registry_data g_task_function_registry_data;
 
 #if IS_TRUE(ASSERTS_ENABLED)
@@ -48,28 +48,28 @@ static void validate_task_function_mapping(
 	const s_native_module &native_module, const s_task_function_mapping &task_function_mapping);
 
 static const e_task_primitive_type k_native_module_primitive_type_to_task_primitive_type_mapping[] = {
-	k_task_primitive_type_real,		// k_native_module_primitive_type_real
-	k_task_primitive_type_bool,		// k_native_module_primitive_type_bool
-	k_task_primitive_type_string	// k_native_module_primitive_type_string
+	e_task_primitive_type::k_real,	// e_native_module_primitive_type::k_real
+	e_task_primitive_type::k_bool,	// e_native_module_primitive_type::k_bool
+	e_task_primitive_type::k_string	// e_native_module_primitive_type::k_string
 };
 static_assert(NUMBEROF(k_native_module_primitive_type_to_task_primitive_type_mapping) ==
-	k_native_module_primitive_type_count,
+	enum_count<e_native_module_primitive_type>(),
 	"Native module primitive type to task primitive type mismatch");
 
 static e_task_primitive_type convert_native_module_primitive_type_to_task_primitive_type(
 	e_native_module_primitive_type native_module_primitive_type) {
-	wl_assert(VALID_INDEX(native_module_primitive_type, k_native_module_primitive_type_count));
-	return k_native_module_primitive_type_to_task_primitive_type_mapping[native_module_primitive_type];
+	wl_assert(valid_enum_index(native_module_primitive_type));
+	return k_native_module_primitive_type_to_task_primitive_type_mapping[enum_index(native_module_primitive_type)];
 }
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
 void c_task_function_registry::initialize() {
-	wl_assert(g_task_function_registry_state == k_task_function_registry_state_uninitialized);
-	g_task_function_registry_state = k_task_function_registry_state_initialized;
+	wl_assert(g_task_function_registry_state == e_task_function_registry_state::k_uninitialized);
+	g_task_function_registry_state = e_task_function_registry_state::k_initialized;
 }
 
 void c_task_function_registry::shutdown() {
-	wl_assert(g_task_function_registry_state != k_task_function_registry_state_uninitialized);
+	wl_assert(g_task_function_registry_state != e_task_function_registry_state::k_uninitialized);
 
 	// Clear and free all memory
 	g_task_function_registry_data.task_functions.clear();
@@ -81,11 +81,11 @@ void c_task_function_registry::shutdown() {
 	g_task_function_registry_data.task_function_mappings.clear();
 	g_task_function_registry_data.task_function_mappings.shrink_to_fit();
 
-	g_task_function_registry_state = k_task_function_registry_state_uninitialized;
+	g_task_function_registry_state = e_task_function_registry_state::k_uninitialized;
 }
 
 void c_task_function_registry::begin_registration() {
-	wl_assert(g_task_function_registry_state == k_task_function_registry_state_initialized);
+	wl_assert(g_task_function_registry_state == e_task_function_registry_state::k_initialized);
 
 	// Clear all task mappings initially
 	uint32 native_module_count = c_native_module_registry::get_native_module_count();
@@ -94,17 +94,17 @@ void c_task_function_registry::begin_registration() {
 		ZERO_STRUCT(&g_task_function_registry_data.task_function_mapping_lists[index]);
 	}
 
-	g_task_function_registry_state = k_task_function_registry_state_registering;
+	g_task_function_registry_state = e_task_function_registry_state::k_registering;
 }
 
 bool c_task_function_registry::end_registration() {
-	wl_assert(g_task_function_registry_state == k_task_function_registry_state_registering);
-	g_task_function_registry_state = k_task_function_registry_state_finalized;
+	wl_assert(g_task_function_registry_state == e_task_function_registry_state::k_registering);
+	g_task_function_registry_state = e_task_function_registry_state::k_finalized;
 	return true;
 }
 
 bool c_task_function_registry::register_task_function(const s_task_function &task_function) {
-	wl_assert(g_task_function_registry_state == k_task_function_registry_state_registering);
+	wl_assert(g_task_function_registry_state == e_task_function_registry_state::k_registering);
 
 	// Validate that the task function is set up correctly
 	// We don't need a memory query or initializer, but all task functions must have something to execute
@@ -140,7 +140,7 @@ bool c_task_function_registry::register_task_function(const s_task_function &tas
 bool c_task_function_registry::register_task_function_mapping_list(
 	s_native_module_uid native_module_uid,
 	c_task_function_mapping_list task_function_mapping_list) {
-	wl_assert(g_task_function_registry_state == k_task_function_registry_state_registering);
+	wl_assert(g_task_function_registry_state == e_task_function_registry_state::k_registering);
 
 	// Look up the native module
 	uint32 native_module_index = c_native_module_registry::get_native_module_index(native_module_uid);
@@ -236,24 +236,24 @@ static void validate_task_function_mapping(
 		if (native_module_qualifier_is_input(native_module.arguments[arg].type.get_qualifier())) {
 			// Input arguments should have a valid input mapping
 			wl_assert(
-				input_type == k_task_function_mapping_native_module_input_type_variable ||
-				input_type == k_task_function_mapping_native_module_input_type_branchless_variable);
+				input_type == e_task_function_mapping_native_module_input_type::k_variable ||
+				input_type == e_task_function_mapping_native_module_input_type::k_branchless_variable);
 
 			// Make sure the native module argument type matches up with what it's being mapped to
-			wl_assert(task_type.get_qualifier() == k_task_qualifier_in ||
-				task_type.get_qualifier() == k_task_qualifier_inout);
+			wl_assert(task_type.get_qualifier() == e_task_qualifier::k_in ||
+				task_type.get_qualifier() == e_task_qualifier::k_inout);
 
 			wl_assert(!task_argument_input_mappings[mapping_index]);
 			task_argument_input_mappings[mapping_index] = true;
 		} else {
-			wl_assert(native_module.arguments[arg].type.get_qualifier() == k_native_module_qualifier_out);
+			wl_assert(native_module.arguments[arg].type.get_qualifier() == e_native_module_qualifier::k_out);
 			// Output arguments should be "ignored" in the mapping
-			wl_assert(input_type == k_task_function_mapping_native_module_input_type_none);
+			wl_assert(input_type == e_task_function_mapping_native_module_input_type::k_none);
 
 			// Make sure the native module argument type matches up with what it's being mapped to
 			wl_assert(!native_module_type.is_array());
-			wl_assert(task_type.get_qualifier() == k_task_qualifier_out ||
-				task_type.get_qualifier() == k_task_qualifier_inout);
+			wl_assert(task_type.get_qualifier() == e_task_qualifier::k_out ||
+				task_type.get_qualifier() == e_task_qualifier::k_inout);
 
 			wl_assert(!task_argument_output_mappings[mapping_index]);
 			task_argument_output_mappings[mapping_index] = true;
@@ -266,17 +266,17 @@ static void validate_task_function_mapping(
 
 		c_task_qualified_data_type type = task_function.argument_types[task_arg];
 		switch (type.get_qualifier()) {
-		case k_task_qualifier_in:
+		case e_task_qualifier::k_in:
 			wl_assert(in_mapped);
 			wl_assert(!out_mapped);
 			break;
 
-		case k_task_qualifier_out:
+		case e_task_qualifier::k_out:
 			wl_assert(!in_mapped);
 			wl_assert(out_mapped);
 			break;
 
-		case k_task_qualifier_inout:
+		case e_task_qualifier::k_inout:
 			wl_assert(in_mapped);
 			wl_assert(out_mapped);
 			break;

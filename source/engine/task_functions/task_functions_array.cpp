@@ -330,7 +330,8 @@ namespace array_task_functions {
 						int32 dereferenced_value;
 
 						if (element.is_constant || !array_index_is_valid) {
-							// AND the value with the dereference mask. This will turn it into 0 if the index was invalid.
+							// AND the value with the dereference mask.
+							// This will turn it into 0 if the index was invalid.
 							dereferenced_value = static_cast<int32>(element.constant_value) & array_dereference_mask;
 						} else {
 							c_bool_buffer_in array_buffer =

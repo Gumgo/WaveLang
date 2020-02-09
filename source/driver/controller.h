@@ -2,12 +2,12 @@
 
 #include "common/common.h"
 
-enum e_controller_event_type {
-	k_controller_event_type_note_on,
-	k_controller_event_type_note_off,
-	k_controller_event_type_parameter_change,
+enum class e_controller_event_type {
+	k_note_on,
+	k_note_off,
+	k_parameter_change,
 
-	k_controller_event_type_count
+	k_count
 };
 
 struct s_controller_event {

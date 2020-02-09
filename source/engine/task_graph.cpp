@@ -74,7 +74,7 @@ private:
 struct s_build_real_array_settings {
 	typedef s_real_array_element t_element;
 	typedef c_real_array t_array;
-	static const e_native_module_primitive_type k_native_module_primitive_type = k_native_module_primitive_type_real;
+	static const e_native_module_primitive_type k_native_module_primitive_type = e_native_module_primitive_type::k_real;
 	std::vector<t_element> *element_lists;
 	std::vector<c_node_reference> *node_reference_lists;
 
@@ -104,7 +104,7 @@ struct s_build_real_array_settings {
 struct s_build_bool_array_settings {
 	typedef s_bool_array_element t_element;
 	typedef c_bool_array t_array;
-	static const e_native_module_primitive_type k_native_module_primitive_type = k_native_module_primitive_type_bool;
+	static const e_native_module_primitive_type k_native_module_primitive_type = e_native_module_primitive_type::k_bool;
 	std::vector<t_element> *element_lists;
 	std::vector<c_node_reference> *node_reference_lists;
 
@@ -134,7 +134,8 @@ struct s_build_bool_array_settings {
 struct s_build_string_array_settings {
 	typedef s_string_array_element t_element;
 	typedef c_string_array t_array;
-	static const e_native_module_primitive_type k_native_module_primitive_type = k_native_module_primitive_type_string;
+	static const e_native_module_primitive_type k_native_module_primitive_type =
+		e_native_module_primitive_type::k_string;
 	std::vector<t_element> *element_lists;
 	std::vector<c_node_reference> *node_reference_lists; // This is always null for strings
 	c_string_table *string_table;
@@ -401,14 +402,14 @@ bool c_task_graph::build(const c_execution_graph &execution_graph) {
 
 	// Loop over each node and build up the graph
 	for (c_node_reference node_reference = execution_graph.nodes_begin();
-		 success && node_reference.is_valid();
-		 node_reference = execution_graph.nodes_next(node_reference)) {
+		success && node_reference.is_valid();
+		node_reference = execution_graph.nodes_next(node_reference)) {
 		// We should never encounter these node types, even if the graph was loaded from a file (they should never
 		// appear in a file and if they do we should fail to load).
-		wl_assert(execution_graph.get_node_type(node_reference) != k_execution_graph_node_type_invalid);
+		wl_assert(execution_graph.get_node_type(node_reference) != e_execution_graph_node_type::k_invalid);
 
 		// We only care about native module calls - we access other node types through the call's edges
-		if (execution_graph.get_node_type(node_reference) == k_execution_graph_node_type_native_module_call) {
+		if (execution_graph.get_node_type(node_reference) == e_execution_graph_node_type::k_native_module_call) {
 			success &= add_task_for_node(execution_graph, node_reference, nodes_to_tasks);
 		}
 	}
@@ -457,15 +458,15 @@ static size_t get_task_data_array_count(const s_task_graph_data &data) {
 
 	size_t result = 0;
 	switch (data.data.type.get_data_type().get_primitive_type()) {
-	case k_task_primitive_type_real:
+	case e_task_primitive_type::k_real:
 		result = data.data.value.real_array_in.get_count();
 		break;
 
-	case k_task_primitive_type_bool:
+	case e_task_primitive_type::k_bool:
 		result = data.data.value.bool_array_in.get_count();
 		break;
 
-	case k_task_primitive_type_string:
+	case e_task_primitive_type::k_string:
 		result = data.data.value.string_array_in.get_count();
 		break;
 
@@ -481,15 +482,15 @@ static bool is_task_data_array_element_constant(const s_task_graph_data &data, s
 
 	bool result = true;
 	switch (data.data.type.get_data_type().get_primitive_type()) {
-	case k_task_primitive_type_real:
+	case e_task_primitive_type::k_real:
 		result = data.data.value.real_array_in[index].is_constant;
 		break;
 
-	case k_task_primitive_type_bool:
+	case e_task_primitive_type::k_bool:
 		result = data.data.value.bool_array_in[index].is_constant;
 		break;
 
-	case k_task_primitive_type_string:
+	case e_task_primitive_type::k_string:
 		result = true;
 		break;
 
@@ -506,15 +507,15 @@ static h_buffer get_task_data_array_element_buffer_const(const s_task_graph_data
 
 	h_buffer result = h_buffer::invalid();
 	switch (data.data.type.get_data_type().get_primitive_type()) {
-	case k_task_primitive_type_real:
+	case e_task_primitive_type::k_real:
 		result = data.data.value.real_array_in[index].buffer_handle_value;
 		break;
 
-	case k_task_primitive_type_bool:
+	case e_task_primitive_type::k_bool:
 		result = data.data.value.bool_array_in[index].buffer_handle_value;
 		break;
 
-	case k_task_primitive_type_string:
+	case e_task_primitive_type::k_string:
 		break;
 
 	default:
@@ -528,16 +529,16 @@ static void get_native_module_call_input_types(
 	const c_execution_graph &execution_graph,
 	c_node_reference node_reference,
 	s_task_function_mapping_native_module_input_type_array &out_input_types) {
-	wl_assert(execution_graph.get_node_type(node_reference) == k_execution_graph_node_type_native_module_call);
+	wl_assert(execution_graph.get_node_type(node_reference) == e_execution_graph_node_type::k_native_module_call);
 
 	const s_native_module &native_module = c_native_module_registry::get_native_module(
 		execution_graph.get_native_module_call_native_module_index(node_reference));
 
 	size_t input_index = 0;
 	for (size_t index = 0; index < native_module.argument_count; index++) {
-		if (native_module.arguments[index].type.get_qualifier() == k_native_module_qualifier_out) {
+		if (native_module.arguments[index].type.get_qualifier() == e_native_module_qualifier::k_out) {
 			// Skip outputs
-			out_input_types[index] = k_task_function_mapping_native_module_input_type_none;
+			out_input_types[index] = e_task_function_mapping_native_module_input_type::k_none;
 		} else {
 			wl_assert(native_module_qualifier_is_input(native_module.arguments[index].type.get_qualifier()));
 
@@ -546,21 +547,21 @@ static void get_native_module_call_input_types(
 			c_node_reference source_node_reference =
 				execution_graph.get_node_incoming_edge_reference(input_node_reference, 0);
 
-			if (execution_graph.get_node_type(source_node_reference) == k_execution_graph_node_type_constant) {
+			if (execution_graph.get_node_type(source_node_reference) == e_execution_graph_node_type::k_constant) {
 				// The input is a constant
-				out_input_types[index] = k_task_function_mapping_native_module_input_type_variable;
+				out_input_types[index] = e_task_function_mapping_native_module_input_type::k_variable;
 			} else {
 				// The input is the result of a module call
 				IF_ASSERTS_ENABLED(e_execution_graph_node_type node_type =
 					execution_graph.get_node_type(source_node_reference);)
 				wl_assert(
-					node_type == k_execution_graph_node_type_indexed_output ||
-					node_type == k_execution_graph_node_type_input);
+					node_type == e_execution_graph_node_type::k_indexed_output ||
+					node_type == e_execution_graph_node_type::k_input);
 
 				bool branches = does_native_module_call_input_branch(execution_graph, node_reference, input_index);
 				out_input_types[index] = branches ?
-					k_task_function_mapping_native_module_input_type_variable :
-					k_task_function_mapping_native_module_input_type_branchless_variable;
+					e_task_function_mapping_native_module_input_type::k_variable :
+					e_task_function_mapping_native_module_input_type::k_branchless_variable;
 			}
 
 			input_index++;
@@ -572,14 +573,14 @@ static bool does_native_module_call_input_branch(
 	const c_execution_graph &execution_graph,
 	c_node_reference node_reference,
 	size_t in_arg_index) {
-	wl_assert(execution_graph.get_node_type(node_reference) == k_execution_graph_node_type_native_module_call);
+	wl_assert(execution_graph.get_node_type(node_reference) == e_execution_graph_node_type::k_native_module_call);
 
 	c_node_reference input_node_reference =
 		execution_graph.get_node_incoming_edge_reference(node_reference, in_arg_index);
 	c_node_reference source_node_reference =
 		execution_graph.get_node_incoming_edge_reference(input_node_reference, 0);
 
-	if (execution_graph.get_node_type(source_node_reference) == k_execution_graph_node_type_constant) {
+	if (execution_graph.get_node_type(source_node_reference) == e_execution_graph_node_type::k_constant) {
 		// We don't care if a constant value is branched because constant values don't take up buffers, they are
 		// directly inlined into the task.
 		// Note: arrays do use buffers, but we don't perform branch optimization on them
@@ -588,8 +589,8 @@ static bool does_native_module_call_input_branch(
 		IF_ASSERTS_ENABLED(e_execution_graph_node_type node_type =
 			execution_graph.get_node_type(source_node_reference);)
 		wl_assert(
-			node_type == k_execution_graph_node_type_indexed_output ||
-			node_type == k_execution_graph_node_type_input);
+			node_type == e_execution_graph_node_type::k_indexed_output ||
+			node_type == e_execution_graph_node_type::k_input);
 		return (execution_graph.get_node_outgoing_edge_count(source_node_reference) > 1);
 	}
 }
@@ -601,26 +602,26 @@ static bool do_native_module_inputs_match(
 	for (size_t arg = 0; arg < argument_count; arg++) {
 		e_task_function_mapping_native_module_input_type native_module_input = native_module_inputs[arg];
 		e_task_function_mapping_native_module_input_type input_to_match = inputs_to_match[arg];
-		wl_assert(VALID_INDEX(native_module_input, k_task_function_mapping_native_module_input_type_count));
-		wl_assert(VALID_INDEX(input_to_match, k_task_function_mapping_native_module_input_type_count));
+		wl_assert(valid_enum_index(native_module_input));
+		wl_assert(valid_enum_index(input_to_match));
 
 		// "None" inputs should always match
-		wl_assert((native_module_input == k_task_function_mapping_native_module_input_type_none) ==
-			(input_to_match == k_task_function_mapping_native_module_input_type_none));
+		wl_assert((native_module_input == e_task_function_mapping_native_module_input_type::k_none) ==
+			(input_to_match == e_task_function_mapping_native_module_input_type::k_none));
 
-		if (input_to_match == k_task_function_mapping_native_module_input_type_variable) {
+		if (input_to_match == e_task_function_mapping_native_module_input_type::k_variable) {
 			// We expect a variable, either branching or branchless
-			if (native_module_input != k_task_function_mapping_native_module_input_type_variable &&
-				native_module_input != k_task_function_mapping_native_module_input_type_branchless_variable) {
+			if (native_module_input != e_task_function_mapping_native_module_input_type::k_variable &&
+				native_module_input != e_task_function_mapping_native_module_input_type::k_branchless_variable) {
 				return false;
 			}
-		} else if (input_to_match == k_task_function_mapping_native_module_input_type_branchless_variable) {
+		} else if (input_to_match == e_task_function_mapping_native_module_input_type::k_branchless_variable) {
 			// We expect a branchless variable
-			if (native_module_input != k_task_function_mapping_native_module_input_type_branchless_variable) {
+			if (native_module_input != e_task_function_mapping_native_module_input_type::k_branchless_variable) {
 				return false;
 			}
 		} else {
-			wl_assert(input_to_match == k_task_function_mapping_native_module_input_type_none);
+			wl_assert(input_to_match == e_task_function_mapping_native_module_input_type::k_none);
 		}
 	}
 
@@ -671,7 +672,7 @@ void c_task_graph::resolve_arrays() {
 
 			if (argument.data.type.get_data_type().is_array()) {
 				switch (argument.data.type.get_data_type().get_primitive_type()) {
-				case k_task_primitive_type_real:
+				case e_task_primitive_type::k_real:
 				{
 					// We previously stored the offset in the pointer
 					c_real_array real_array = argument.data.value.real_array_in;
@@ -681,7 +682,7 @@ void c_task_graph::resolve_arrays() {
 					break;
 				}
 
-				case k_task_primitive_type_bool:
+				case e_task_primitive_type::k_bool:
 				{
 					// We previously stored the offset in the pointer
 					c_bool_array bool_array = argument.data.value.bool_array_in;
@@ -691,7 +692,7 @@ void c_task_graph::resolve_arrays() {
 					break;
 				}
 
-				case k_task_primitive_type_string:
+				case e_task_primitive_type::k_string:
 				{
 					// We previously stored the offset in the pointer
 					c_string_array string_array = argument.data.value.string_array_in;
@@ -717,7 +718,7 @@ void c_task_graph::resolve_strings() {
 		for (size_t arg = 0; arg < task_function.argument_count; arg++) {
 			s_task_graph_data &argument = m_data_lists[task.arguments_start + arg];
 
-			if (argument.data.type.get_data_type().get_primitive_type() == k_task_primitive_type_string) {
+			if (argument.data.type.get_data_type().get_primitive_type() == e_task_primitive_type::k_string) {
 				if (argument.data.type.get_data_type().is_array()) {
 					for (size_t index = 0; index < argument.data.value.string_array_in.get_count(); index++) {
 						// Access the element in a non-const way
@@ -741,7 +742,7 @@ bool c_task_graph::add_task_for_node(
 	const c_execution_graph &execution_graph,
 	c_node_reference node_reference,
 	std::map<c_node_reference, uint32> &nodes_to_tasks) {
-	wl_assert(execution_graph.get_node_type(node_reference) == k_execution_graph_node_type_native_module_call);
+	wl_assert(execution_graph.get_node_type(node_reference) == e_execution_graph_node_type::k_native_module_call);
 
 	uint32 task_index = cast_integer_verify<uint32>(m_tasks.size());
 	m_tasks.push_back(s_task());
@@ -771,7 +772,7 @@ void c_task_graph::setup_task(
 	c_node_reference node_reference,
 	uint32 task_index,
 	const s_task_function_mapping &task_function_mapping) {
-	wl_assert(execution_graph.get_node_type(node_reference) == k_execution_graph_node_type_native_module_call);
+	wl_assert(execution_graph.get_node_type(node_reference) == e_execution_graph_node_type::k_native_module_call);
 
 	s_task &task = m_tasks[task_index];
 	task.task_function_index =
@@ -805,12 +806,10 @@ void c_task_graph::setup_task(
 	size_t output_index = 0;
 	for (size_t index = 0; index < input_output_count; index++) {
 		// Determine if this is an input or output from the task function mapping input type
-		wl_assert(VALID_INDEX(
-			task_function_mapping.native_module_argument_mapping[index].input_type,
-			k_task_function_mapping_native_module_input_type_count));
+		wl_assert(valid_enum_index(task_function_mapping.native_module_argument_mapping[index].input_type));
 
 		bool is_input = task_function_mapping.native_module_argument_mapping[index].input_type !=
-			k_task_function_mapping_native_module_input_type_none;
+			e_task_function_mapping_native_module_input_type::k_none;
 
 		if (is_input) {
 			uint32 argument_index =
@@ -827,14 +826,14 @@ void c_task_graph::setup_task(
 			e_execution_graph_node_type source_node_type = execution_graph.get_node_type(source_node_reference);
 
 			bool is_array = argument_data.data.type.get_data_type().is_array();
-			bool is_constant = (source_node_type == k_execution_graph_node_type_constant);
+			bool is_constant = (source_node_type == e_execution_graph_node_type::k_constant);
 			if (is_constant) {
-				wl_assert(argument_data.data.type.get_qualifier() == k_task_qualifier_in);
+				wl_assert(argument_data.data.type.get_qualifier() == e_task_qualifier::k_in);
 			}
 
 			bool is_buffer = false;
 			switch (argument_data.data.type.get_data_type().get_primitive_type()) {
-			case k_task_primitive_type_real:
+			case e_task_primitive_type::k_real:
 				if (is_array) {
 					s_build_real_array_settings settings;
 					settings.element_lists = &m_real_array_element_lists;
@@ -851,7 +850,7 @@ void c_task_graph::setup_task(
 				}
 				break;
 
-			case k_task_primitive_type_bool:
+			case e_task_primitive_type::k_bool:
 				if (is_array) {
 					s_build_bool_array_settings settings;
 					settings.element_lists = &m_bool_array_element_lists;
@@ -868,7 +867,7 @@ void c_task_graph::setup_task(
 				}
 				break;
 
-			case k_task_primitive_type_string:
+			case e_task_primitive_type::k_string:
 				if (is_array) {
 					s_build_string_array_settings settings;
 					settings.element_lists = &m_string_array_element_lists;
@@ -894,11 +893,11 @@ void c_task_graph::setup_task(
 			}
 
 			switch (argument_data.data.type.get_qualifier()) {
-			case k_task_qualifier_in:
+			case e_task_qualifier::k_in:
 				if (is_buffer) {
 					// Verify that this is a buffer input
-					wl_assert(source_node_type == k_execution_graph_node_type_indexed_output ||
-						source_node_type == k_execution_graph_node_type_input);
+					wl_assert(source_node_type == e_execution_graph_node_type::k_indexed_output ||
+						source_node_type == e_execution_graph_node_type::k_input);
 					wl_assert(!argument_data.data.value.execution_graph_reference_a.is_valid());
 					// Store the input node reference for now
 					argument_data.data.is_constant = false;
@@ -906,15 +905,15 @@ void c_task_graph::setup_task(
 				}
 				break;
 
-			case k_task_qualifier_out:
+			case e_task_qualifier::k_out:
 				wl_vhalt("Can't map inputs to outputs");
 				break;
 
-			case k_task_qualifier_inout:
+			case e_task_qualifier::k_inout:
 				wl_assert(is_buffer);
 				// Verify that this is a buffer input
-				wl_assert(source_node_type == k_execution_graph_node_type_indexed_output ||
-					source_node_type == k_execution_graph_node_type_input);
+				wl_assert(source_node_type == e_execution_graph_node_type::k_indexed_output ||
+					source_node_type == e_execution_graph_node_type::k_input);
 				wl_assert(!argument_data.data.value.execution_graph_reference_a.is_valid());
 				// Store the input node reference for now
 				argument_data.data.is_constant = false;
@@ -938,17 +937,17 @@ void c_task_graph::setup_task(
 				execution_graph.get_node_outgoing_edge_reference(node_reference, output_index);
 
 			switch (argument_data.data.type.get_qualifier()) {
-			case k_task_qualifier_in:
+			case e_task_qualifier::k_in:
 				wl_vhalt("Can't map outputs to inputs");
 				break;
 
-			case k_task_qualifier_out:
+			case e_task_qualifier::k_out:
 				wl_assert(!argument_data.data.value.execution_graph_reference_a.is_valid());
 				// Store the output node reference for now
 				argument_data.data.value.execution_graph_reference_a = output_node_reference;
 				break;
 
-			case k_task_qualifier_inout:
+			case e_task_qualifier::k_inout:
 				wl_assert(!argument_data.data.value.execution_graph_reference_b.is_valid());
 				// Store the output node reference for now
 				argument_data.data.value.execution_graph_reference_b = output_node_reference;
@@ -979,7 +978,7 @@ h_buffer *c_task_graph::get_task_data_array_element_buffer_and_node_reference(
 
 	h_buffer *result = nullptr;
 	switch (data.data.type.get_data_type().get_primitive_type()) {
-	case k_task_primitive_type_real:
+	case e_task_primitive_type::k_real:
 	{
 		size_t element_index = &data.data.value.real_array_in[index] - &m_real_array_element_lists.front();
 		result = &m_real_array_element_lists[element_index].buffer_handle_value;
@@ -989,7 +988,7 @@ h_buffer *c_task_graph::get_task_data_array_element_buffer_and_node_reference(
 		break;
 	}
 
-	case k_task_primitive_type_bool:
+	case e_task_primitive_type::k_bool:
 	{
 		size_t element_index = &data.data.value.bool_array_in[index] - &m_bool_array_element_lists.front();
 		result = &m_bool_array_element_lists[element_index].buffer_handle_value;
@@ -999,7 +998,7 @@ h_buffer *c_task_graph::get_task_data_array_element_buffer_and_node_reference(
 		break;
 	}
 
-	case k_task_primitive_type_string:
+	case e_task_primitive_type::k_string:
 		result = nullptr;
 		if (out_node_reference) {
 			*out_node_reference = c_node_reference();
@@ -1022,15 +1021,16 @@ void c_task_graph::build_task_successor_lists(
 	}
 
 	for (c_node_reference node_reference = execution_graph.nodes_begin();
-		 node_reference.is_valid();
-		 node_reference = execution_graph.nodes_next(node_reference)) {
+		node_reference.is_valid();
+		node_reference = execution_graph.nodes_next(node_reference)) {
 		if (nodes_to_tasks.find(node_reference) == nodes_to_tasks.end()) {
 			// This node is not a task
-			wl_assert(execution_graph.get_node_type(node_reference) != k_execution_graph_node_type_native_module_call);
+			wl_assert(
+				execution_graph.get_node_type(node_reference) != e_execution_graph_node_type::k_native_module_call);
 			continue;
 		}
 
-		wl_assert(execution_graph.get_node_type(node_reference) == k_execution_graph_node_type_native_module_call);
+		wl_assert(execution_graph.get_node_type(node_reference) == e_execution_graph_node_type::k_native_module_call);
 		uint32 task_index = nodes_to_tasks.at(node_reference);
 		s_task &task = m_tasks[task_index];
 
@@ -1045,7 +1045,8 @@ void c_task_graph::build_task_successor_lists(
 					execution_graph.get_node_outgoing_edge_reference(output_node_reference, dest);
 
 				// We only care about native module inputs
-				if (execution_graph.get_node_type(dest_node_reference) != k_execution_graph_node_type_indexed_input) {
+				if (execution_graph.get_node_type(dest_node_reference) !=
+					e_execution_graph_node_type::k_indexed_input) {
 					continue;
 				}
 
@@ -1054,7 +1055,7 @@ void c_task_graph::build_task_successor_lists(
 
 				// Skip arrays
 				if (execution_graph.get_node_type(input_native_module_call_node_reference) !=
-					k_execution_graph_node_type_native_module_call) {
+					e_execution_graph_node_type::k_native_module_call) {
 					continue;
 				}
 
@@ -1095,9 +1096,9 @@ void c_task_graph::allocate_buffers(const c_execution_graph &execution_graph) {
 	// Build the input buffer list. The buffers are listed in input-index order
 	m_inputs_count = 0;
 	for (c_node_reference node_reference = execution_graph.nodes_begin();
-		 node_reference.is_valid();
-		 node_reference = execution_graph.nodes_next(node_reference)) {
-		if (execution_graph.get_node_type(node_reference) == k_execution_graph_node_type_input) {
+		node_reference.is_valid();
+		node_reference = execution_graph.nodes_next(node_reference)) {
+		if (execution_graph.get_node_type(node_reference) == e_execution_graph_node_type::k_input) {
 			m_inputs_count++;
 		}
 	}
@@ -1113,16 +1114,16 @@ void c_task_graph::allocate_buffers(const c_execution_graph &execution_graph) {
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
 	for (c_node_reference node_reference = execution_graph.nodes_begin();
-		 node_reference.is_valid();
-		 node_reference = execution_graph.nodes_next(node_reference)) {
-		if (execution_graph.get_node_type(node_reference) == k_execution_graph_node_type_input) {
+		node_reference.is_valid();
+		node_reference = execution_graph.nodes_next(node_reference)) {
+		if (execution_graph.get_node_type(node_reference) == e_execution_graph_node_type::k_input) {
 			uint32 input_index = execution_graph.get_input_node_input_index(node_reference);
 
 			// Offset into the list by the output index
 			size_t data_list_index = m_inputs_start + input_index;
 			s_task_graph_data &input_data = m_data_lists[data_list_index];
 
-			input_data.data.type = c_task_qualified_data_type(k_task_primitive_type_real, k_task_qualifier_in);
+			input_data.data.type = c_task_qualified_data_type(e_task_primitive_type::k_real, e_task_qualifier::k_in);
 			input_data.data.value.execution_graph_reference_a = node_reference;
 			input_data.data.value.execution_graph_reference_b = c_node_reference();
 		}
@@ -1149,7 +1150,7 @@ void c_task_graph::allocate_buffers(const c_execution_graph &execution_graph) {
 		for (size_t arg = 0; arg < task_function.argument_count; arg++) {
 			const s_task_graph_data &argument = m_data_lists[task.arguments_start + arg];
 
-			if (argument.data.type.get_qualifier() == k_task_qualifier_inout) {
+			if (argument.data.type.get_qualifier() == e_task_qualifier::k_inout) {
 				inout_connections.insert(std::make_pair(
 					argument.data.value.execution_graph_reference_a,
 					argument.data.value.execution_graph_reference_b));
@@ -1161,9 +1162,9 @@ void c_task_graph::allocate_buffers(const c_execution_graph &execution_graph) {
 	}
 
 	for (c_node_reference node_reference = execution_graph.nodes_begin();
-		 node_reference.is_valid();
-		 node_reference = execution_graph.nodes_next(node_reference)) {
-		if (execution_graph.get_node_type(node_reference) == k_execution_graph_node_type_input) {
+		node_reference.is_valid();
+		node_reference = execution_graph.nodes_next(node_reference)) {
+		if (execution_graph.get_node_type(node_reference) == e_execution_graph_node_type::k_input) {
 			if (nodes_to_buffers.find(node_reference) != nodes_to_buffers.end()) {
 				// Already allocated, skip this one
 			} else {
@@ -1187,7 +1188,7 @@ void c_task_graph::allocate_buffers(const c_execution_graph &execution_graph) {
 
 			c_node_reference node_reference_a = argument.data.value.execution_graph_reference_a;
 			c_node_reference node_reference_b = argument.data.value.execution_graph_reference_b;
-			if (argument.data.type.get_qualifier() == k_task_qualifier_inout) {
+			if (argument.data.type.get_qualifier() == e_task_qualifier::k_inout) {
 				// Inout buffers should have both nodes filled in
 				wl_assert(node_reference_b.is_valid());
 				// This mapping should always be equal because this is an inout buffer - there is only one buffer
@@ -1217,9 +1218,9 @@ void c_task_graph::allocate_buffers(const c_execution_graph &execution_graph) {
 	}
 
 	for (c_node_reference node_reference = execution_graph.nodes_begin();
-		 node_reference.is_valid();
-		 node_reference = execution_graph.nodes_next(node_reference)) {
-		if (execution_graph.get_node_type(node_reference) == k_execution_graph_node_type_input) {
+		node_reference.is_valid();
+		node_reference = execution_graph.nodes_next(node_reference)) {
+		if (execution_graph.get_node_type(node_reference) == e_execution_graph_node_type::k_input) {
 			uint32 input_index = execution_graph.get_input_node_input_index(node_reference);
 
 			// Offset into the list by the output index
@@ -1247,9 +1248,9 @@ void c_task_graph::allocate_buffers(const c_execution_graph &execution_graph) {
 	// Build final output buffer list. The buffers are listed in output-index order
 	m_outputs_count = 0;
 	for (c_node_reference node_reference = execution_graph.nodes_begin();
-		 node_reference.is_valid();
-		 node_reference = execution_graph.nodes_next(node_reference)) {
-		if (execution_graph.get_node_type(node_reference) == k_execution_graph_node_type_output) {
+		node_reference.is_valid();
+		node_reference = execution_graph.nodes_next(node_reference)) {
+		if (execution_graph.get_node_type(node_reference) == e_execution_graph_node_type::k_output) {
 			uint32 output_index = execution_graph.get_output_node_output_index(node_reference);
 			if (output_index != c_execution_graph::k_remain_active_output_index) {
 				m_outputs_count++;
@@ -1268,9 +1269,9 @@ void c_task_graph::allocate_buffers(const c_execution_graph &execution_graph) {
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
 	for (c_node_reference node_reference = execution_graph.nodes_begin();
-		 node_reference.is_valid();
-		 node_reference = execution_graph.nodes_next(node_reference)) {
-		if (execution_graph.get_node_type(node_reference) == k_execution_graph_node_type_output) {
+		node_reference.is_valid();
+		node_reference = execution_graph.nodes_next(node_reference)) {
+		if (execution_graph.get_node_type(node_reference) == e_execution_graph_node_type::k_output) {
 			uint32 output_index = execution_graph.get_output_node_output_index(node_reference);
 			bool is_remain_active_output = (output_index == c_execution_graph::k_remain_active_output_index);
 
@@ -1286,8 +1287,8 @@ void c_task_graph::allocate_buffers(const c_execution_graph &execution_graph) {
 			wl_assert(!output_data.data.type.is_valid());
 
 			output_data.data.type = is_remain_active_output ?
-				c_task_qualified_data_type(k_task_primitive_type_bool, k_task_qualifier_in) :
-				c_task_qualified_data_type(k_task_primitive_type_real, k_task_qualifier_in);
+				c_task_qualified_data_type(e_task_primitive_type::k_bool, e_task_qualifier::k_in) :
+				c_task_qualified_data_type(e_task_primitive_type::k_real, e_task_qualifier::k_in);
 
 			if (nodes_to_buffers.find(node_reference) != nodes_to_buffers.end()) {
 				output_data.data.is_constant = false;
@@ -1298,7 +1299,7 @@ void c_task_graph::allocate_buffers(const c_execution_graph &execution_graph) {
 				c_node_reference constant_node_reference =
 					execution_graph.get_node_incoming_edge_reference(node_reference, 0);
 				wl_assert(
-					execution_graph.get_node_type(constant_node_reference) == k_execution_graph_node_type_constant);
+					execution_graph.get_node_type(constant_node_reference) == e_execution_graph_node_type::k_constant);
 				output_data.data.is_constant = true;
 
 				if (is_remain_active_output) {
@@ -1338,7 +1339,7 @@ void c_task_graph::convert_nodes_to_buffers(
 			}
 		}
 	} else if (!task_graph_data.data.is_constant) {
-		if (task_graph_data.data.type.get_qualifier() == k_task_qualifier_inout) {
+		if (task_graph_data.data.type.get_qualifier() == e_task_qualifier::k_inout) {
 			wl_assert(nodes_to_buffers.at(task_graph_data.data.value.execution_graph_reference_a) ==
 				nodes_to_buffers.at(task_graph_data.data.value.execution_graph_reference_b));
 		}
@@ -1368,14 +1369,14 @@ void c_task_graph::assign_buffer_to_related_nodes(
 	nodes_to_buffers[node_reference] = buffer_handle;
 
 	e_execution_graph_node_type node_type = execution_graph.get_node_type(node_reference);
-	if (node_type == k_execution_graph_node_type_indexed_input) {
+	if (node_type == e_execution_graph_node_type::k_indexed_input) {
 		// Recurse on all connected inputs
 		for (uint32 edge = 0; edge < execution_graph.get_node_incoming_edge_count(node_reference); edge++) {
 			c_node_reference edge_node_reference =
 				execution_graph.get_node_incoming_edge_reference(node_reference, edge);
 
 			// Skip constants (including arrays)
-			if (execution_graph.get_node_type(edge_node_reference) == k_execution_graph_node_type_constant) {
+			if (execution_graph.get_node_type(edge_node_reference) == e_execution_graph_node_type::k_constant) {
 				continue;
 			}
 
@@ -1384,7 +1385,7 @@ void c_task_graph::assign_buffer_to_related_nodes(
 			assign_buffer_to_related_nodes(
 				execution_graph, edge_node_reference, inout_connections, nodes_to_buffers, buffer_handle);
 		}
-	} else if (node_type == k_execution_graph_node_type_indexed_output) {
+	} else if (node_type == e_execution_graph_node_type::k_indexed_output) {
 		// Recurse on all connected outputs
 		for (uint32 edge = 0; edge < execution_graph.get_node_outgoing_edge_count(node_reference); edge++) {
 			c_node_reference edge_node_reference =
@@ -1395,7 +1396,7 @@ void c_task_graph::assign_buffer_to_related_nodes(
 			assign_buffer_to_related_nodes(
 				execution_graph, edge_node_reference, inout_connections, nodes_to_buffers, buffer_handle);
 		}
-	} else if (node_type == k_execution_graph_node_type_input) {
+	} else if (node_type == e_execution_graph_node_type::k_input) {
 		// Recurse on all connected outputs
 		for (uint32 edge = 0; edge < execution_graph.get_node_outgoing_edge_count(node_reference); edge++) {
 			c_node_reference edge_node_reference =
@@ -1406,7 +1407,7 @@ void c_task_graph::assign_buffer_to_related_nodes(
 			assign_buffer_to_related_nodes(
 				execution_graph, edge_node_reference, inout_connections, nodes_to_buffers, buffer_handle);
 		}
-	} else if (node_type == k_execution_graph_node_type_output) {
+	} else if (node_type == e_execution_graph_node_type::k_output) {
 		// No recursive work to do here
 	} else {
 		// We should never hit any other node types
@@ -1554,8 +1555,8 @@ uint32 c_task_graph::calculate_max_buffer_concurrency(
 			for (c_task_buffer_iterator it_a(get_task_arguments(task_a_index), type); it_a.is_valid(); it_a.next()) {
 				h_buffer buffer_a = it_a.get_buffer_handle();
 				for (c_task_buffer_iterator it_b(get_task_arguments(task_b_index), type);
-					 it_b.is_valid();
-					 it_b.next()) {
+					it_b.is_valid();
+					it_b.next()) {
 					h_buffer buffer_b = it_b.get_buffer_handle();
 					buffer_concurrency[buffer_a.get_data() * m_buffer_count + buffer_b.get_data()] = true;
 					buffer_concurrency[buffer_b.get_data() * m_buffer_count + buffer_a.get_data()] = true;
@@ -1659,8 +1660,8 @@ uint32 c_task_graph::estimate_max_concurrency(uint32 node_count, const std::vect
 	for (uint32 node_index_a = 0; node_index_a < node_count; node_index_a++) {
 		bool merged = false;
 		for (size_t merge_group_index = 0;
-			 !merged && merge_group_index < merge_group_heads.size();
-			 merge_group_index++) {
+			!merged && merge_group_index < merge_group_heads.size();
+			merge_group_index++) {
 			bool can_merge = true;
 			size_t node_index_b = merge_group_heads[merge_group_index];
 			while (node_index_b != k_none && can_merge) {
@@ -1744,7 +1745,7 @@ typename t_build_array_settings::t_array build_array(
 	typedef typename t_build_array_settings::t_array t_array;
 	typedef typename t_build_array_settings::t_element t_element;
 
-	wl_assert(execution_graph.get_node_type(node_reference) == k_execution_graph_node_type_constant);
+	wl_assert(execution_graph.get_node_type(node_reference) == e_execution_graph_node_type::k_constant);
 	wl_assert(execution_graph.get_constant_node_data_type(node_reference) ==
 		c_native_module_data_type(t_build_array_settings::k_native_module_primitive_type, true));
 
@@ -1763,7 +1764,7 @@ typename t_build_array_settings::t_array build_array(
 			c_node_reference source_node_reference =
 				execution_graph.get_node_incoming_edge_reference(input_node_reference, 0);
 			bool source_node_is_constant =
-				(execution_graph.get_node_type(source_node_reference) == k_execution_graph_node_type_constant);
+				(execution_graph.get_node_type(source_node_reference) == e_execution_graph_node_type::k_constant);
 
 			size_t element_index = start_index + array_index;
 			const t_element &element = (*settings.element_lists)[element_index];
@@ -1798,7 +1799,7 @@ typename t_build_array_settings::t_array build_array(
 			c_node_reference source_node_reference =
 				execution_graph.get_node_incoming_edge_reference(input_node_reference, 0);
 			bool source_node_is_constant =
-				(execution_graph.get_node_type(source_node_reference) == k_execution_graph_node_type_constant);
+				(execution_graph.get_node_type(source_node_reference) == e_execution_graph_node_type::k_constant);
 
 			settings.element_lists->push_back(t_element());
 			t_element &element = settings.element_lists->back();
@@ -1853,15 +1854,15 @@ static bool output_task_graph_build_result(const c_task_graph &task_graph, const
 			} else {
 				if (arguments[arg].data.is_constant) {
 					switch (arguments[arg].data.type.get_data_type().get_primitive_type()) {
-					case k_task_primitive_type_real:
+					case e_task_primitive_type::k_real:
 						out << arguments[arg].data.value.real_constant_in;
 						break;
 
-					case k_task_primitive_type_bool:
+					case e_task_primitive_type::k_bool:
 						out << (arguments[arg].data.value.bool_constant_in ? "true" : "false");
 						break;
 
-					case k_task_primitive_type_string:
+					case e_task_primitive_type::k_string:
 						out << arguments[arg].data.value.string_constant_in;
 						break;
 

@@ -12,104 +12,104 @@ namespace core_native_modules wl_library(k_core_library_id, "core", 0) {
 	// Note: "and", "or", and "not" are actually reserved C++ keywords, so we append an underscore to those functions
 
 	wl_native_module(0x50e37f45, "noop$real")
-	wl_operator(k_native_operator_noop)
+	wl_operator(e_native_operator::k_noop)
 	void noop_real(wl_in real32 a, wl_out_return real32 &result);
 
 	wl_native_module(0x31813363, "noop$bool")
-	wl_operator(k_native_operator_noop)
+	wl_operator(e_native_operator::k_noop)
 	void noop_bool(wl_in bool a, wl_out_return bool &result);
 
 	wl_native_module(0x243fcbca, "noop$string")
-	wl_operator(k_native_operator_noop)
+	wl_operator(e_native_operator::k_noop)
 	void noop_string(wl_in_const const c_native_module_string &a, wl_out_return c_native_module_string &result);
 
 	wl_native_module(0x3daee7de, "negation")
-	wl_operator(k_native_operator_negation)
+	wl_operator(e_native_operator::k_negation)
 	void negation(wl_in real32 a, wl_out_return real32 &result);
 
 	wl_native_module(0xe2f69812, "addition")
-	wl_operator(k_native_operator_addition)
+	wl_operator(e_native_operator::k_addition)
 	void addition(wl_in real32 a, wl_in real32 b, wl_out_return real32 &result);
 
 	wl_native_module(0xc5ecc7fc, "subtraction")
-	wl_operator(k_native_operator_subtraction)
+	wl_operator(e_native_operator::k_subtraction)
 	void subtraction(wl_in real32 a, wl_in real32 b, wl_out_return real32 &result);
 
 	wl_native_module(0x83cfe0ae, "multiplication")
-	wl_operator(k_native_operator_multiplication)
+	wl_operator(e_native_operator::k_multiplication)
 	void multiplication(wl_in real32 a, wl_in real32 b, wl_out_return real32 &result);
 
 	wl_native_module(0xe6fa619c, "division")
-	wl_operator(k_native_operator_division)
+	wl_operator(e_native_operator::k_division)
 	void division(wl_in real32 a, wl_in real32 b, wl_out_return real32 &result);
 
 	wl_native_module(0xa95858a3, "modulo")
-	wl_operator(k_native_operator_modulo)
+	wl_operator(e_native_operator::k_modulo)
 	void modulo(wl_in real32 a, wl_in real32 b, wl_out_return real32 &result);
 
 	wl_native_module(0x9e71b219, "concatenation")
-	wl_operator(k_native_operator_addition)
+	wl_operator(e_native_operator::k_addition)
 	void concatenation(
 		wl_in_const const c_native_module_string &a,
 		wl_in_const const c_native_module_string &b,
 		wl_out_return c_native_module_string &result);
 
 	wl_native_module(0xa0581ec6, "not")
-	wl_operator(k_native_operator_not)
+	wl_operator(e_native_operator::k_not)
 	void not_(wl_in bool a, wl_out_return bool &result);
 
 	wl_native_module(0x1e943a9d, "equal$real")
-	wl_operator(k_native_operator_equal)
+	wl_operator(e_native_operator::k_equal)
 	void equal_real(wl_in real32 a, wl_in real32 b, wl_out_return bool &result);
 
 	wl_native_module(0xbe67d153, "not_equal$real")
-	wl_operator(k_native_operator_not_equal)
+	wl_operator(e_native_operator::k_not_equal)
 	void not_equal_real(wl_in real32 a, wl_in real32 b, wl_out_return bool &result);
 
 	wl_native_module(0x606660f4, "equal$bool")
-	wl_operator(k_native_operator_equal)
+	wl_operator(e_native_operator::k_equal)
 	void equal_bool(wl_in bool a, wl_in bool b, wl_out_return bool &result);
 
 	wl_native_module(0xd8acbb09, "not_equal$bool")
-	wl_operator(k_native_operator_not_equal)
+	wl_operator(e_native_operator::k_not_equal)
 	void not_equal_bool(wl_in bool a, wl_in bool b, wl_out_return bool &result);
 
 	wl_native_module(0xc33f00a6, "equal$string")
-	wl_operator(k_native_operator_equal)
+	wl_operator(e_native_operator::k_equal)
 	void equal_string(
 		wl_in_const const c_native_module_string &a,
 		wl_in_const const c_native_module_string &b,
 		wl_out_return bool &result);
 
 	wl_native_module(0xcf137e06, "not_equal$string")
-	wl_operator(k_native_operator_not_equal)
+	wl_operator(e_native_operator::k_not_equal)
 	void not_equal_string(
 		wl_in_const const c_native_module_string &a,
 		wl_in_const const c_native_module_string &b,
 		wl_out_return bool &result);
 
 	wl_native_module(0x383b72fd, "greater")
-	wl_operator(k_native_operator_greater)
+	wl_operator(e_native_operator::k_greater)
 	void greater(wl_in real32 a, wl_in real32 b, wl_out_return bool &result);
 
 	wl_native_module(0x42e469cf, "less")
-	wl_operator(k_native_operator_less)
+	wl_operator(e_native_operator::k_less)
 	void less(wl_in real32 a, wl_in real32 b, wl_out_return bool &result);
 
 	wl_native_module(0x7a3c25af, "greater_equal")
-	wl_operator(k_native_operator_greater_equal)
+	wl_operator(e_native_operator::k_greater_equal)
 	void greater_equal(wl_in real32 a, wl_in real32 b, wl_out_return bool &result);
 
 	wl_native_module(0x6a09950a, "less_equal")
-	wl_operator(k_native_operator_less_equal)
+	wl_operator(e_native_operator::k_less_equal)
 	void less_equal(wl_in real32 a, wl_in real32 b, wl_out_return bool &result);
 
 	wl_native_module(0xaa43870c, "and")
-	wl_operator(k_native_operator_and)
+	wl_operator(e_native_operator::k_and)
 	void and_(wl_in bool a, wl_in bool b, wl_out_return bool &result);
 
 	wl_native_module(0x371bded7, "or")
-	wl_operator(k_native_operator_or)
+	wl_operator(e_native_operator::k_or)
 	void or_(wl_in bool a, wl_in bool b, wl_out_return bool &result);
 
 	wl_native_module(0x94ca7bc2, "select$real")

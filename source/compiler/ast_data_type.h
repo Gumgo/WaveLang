@@ -2,22 +2,22 @@
 
 #include "common/common.h"
 
-enum e_ast_primitive_type {
-	k_ast_primitive_type_void,
-	k_ast_primitive_type_module,
-	k_ast_primitive_type_real,
-	k_ast_primitive_type_bool,
-	k_ast_primitive_type_string,
+enum class e_ast_primitive_type {
+	k_void,
+	k_module,
+	k_real,
+	k_bool,
+	k_string,
 
-	k_ast_primitive_type_count
+	k_count
 };
 
-enum e_ast_qualifier {
-	k_ast_qualifier_none,
-	k_ast_qualifier_in,
-	k_ast_qualifier_out,
+enum class e_ast_qualifier {
+	k_none,
+	k_in,
+	k_out,
 
-	k_ast_qualifier_count
+	k_count
 };
 
 struct s_ast_primitive_type_traits {
@@ -44,10 +44,10 @@ public:
 	bool operator!=(const c_ast_data_type &other) const;
 
 private:
-	enum e_flag {
-		k_flag_is_array,
+	enum class e_flag {
+		k_is_array,
 
-		k_flag_count
+		k_count
 	};
 
 	e_ast_primitive_type m_primitive_type;

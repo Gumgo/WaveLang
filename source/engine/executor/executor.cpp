@@ -11,35 +11,37 @@
 #include <algorithm>
 
 c_executor::c_executor() {
-	m_state.initialize(k_state_uninitialized);
+	m_state.initialize(enum_index(e_state::k_uninitialized));
 	m_sample_library.initialize("./");
 }
 
 void c_executor::initialize(const s_executor_settings &settings) {
-	wl_assert(m_state.get_unsafe() == k_state_uninitialized);
+	wl_assert(m_state.get_unsafe() == enum_index(e_state::k_uninitialized));
 
 	initialize_internal(settings);
 
-	IF_ASSERTS_ENABLED(int32 old_state = ) m_state.exchange(k_state_initialized);
-	wl_assert(old_state == k_state_uninitialized);
+	IF_ASSERTS_ENABLED(int32 old_state = ) m_state.exchange(enum_index(e_state::k_initialized));
+	wl_assert(old_state == enum_index(e_state::k_uninitialized));
 }
 
 void c_executor::shutdown() {
 	// If we are only initialized, we can shutdown immediately
-	int32 old_state = m_state.compare_exchange(k_state_initialized, k_state_uninitialized);
-	if (old_state == k_state_uninitialized) {
+	int32 old_state = m_state.compare_exchange(
+		enum_index(e_state::k_initialized),
+		enum_index(e_state::k_uninitialized));
+	if (old_state == enum_index(e_state::k_uninitialized)) {
 		// Nothing to do
 		return;
-	} else if (old_state != k_state_initialized) {
+	} else if (old_state != enum_index(e_state::k_initialized)) {
 		// If we're not initialized, then we must be running. We must wait for the stream to flush before shutting down.
-		wl_assert(old_state == k_state_running);
+		wl_assert(old_state == enum_index(e_state::k_running));
 
-		IF_ASSERTS_ENABLED(int32 old_state_verify = ) m_state.exchange(k_state_terminating);
-		wl_assert(old_state_verify == k_state_running);
+		IF_ASSERTS_ENABLED(int32 old_state_verify = ) m_state.exchange(enum_index(e_state::k_terminating));
+		wl_assert(old_state_verify == enum_index(e_state::k_running));
 
 		// Now wait until we get a notification from the stream
 		m_shutdown_signal.wait();
-		wl_assert(m_state.get_unsafe() == k_state_uninitialized);
+		wl_assert(m_state.get_unsafe() == enum_index(e_state::k_uninitialized));
 	}
 
 	shutdown_internal();
@@ -47,12 +49,14 @@ void c_executor::shutdown() {
 
 void c_executor::execute(const s_executor_chunk_context &chunk_context) {
 	// Try flipping from initialized to running. Nothing will happen if we're not in the initialized state.
-	m_state.compare_exchange(k_state_initialized, k_state_running);
+	m_state.compare_exchange(enum_index(e_state::k_initialized), enum_index(e_state::k_running));
 
 	// Try flipping from terminating to uninitialized
-	int32 old_state = m_state.compare_exchange(k_state_terminating, k_state_uninitialized);
+	int32 old_state = m_state.compare_exchange(
+		enum_index(e_state::k_terminating),
+		enum_index(e_state::k_uninitialized));
 
-	if (old_state == k_state_running) {
+	if (old_state == enum_index(e_state::k_running)) {
 		execute_internal(chunk_context);
 	} else {
 		// Zero buffer if disabled
@@ -62,7 +66,7 @@ void c_executor::execute(const s_executor_chunk_context &chunk_context) {
 			chunk_context.sample_format,
 			chunk_context.output_buffer);
 
-		if (old_state == k_state_terminating) {
+		if (old_state == enum_index(e_state::k_terminating)) {
 			// We successfully terminated, so signal the main thread
 			m_shutdown_signal.notify();
 		}
@@ -74,7 +78,7 @@ void c_executor::initialize_internal(const s_executor_settings &settings) {
 
 	wl_assert(settings.runtime_instrument->get_voice_task_graph() || settings.runtime_instrument->get_fx_task_graph());
 	m_active_task_graph = nullptr;
-	m_active_instrument_stage = k_instrument_stage_invalid;
+	m_active_instrument_stage = e_instrument_stage::k_invalid;
 
 	initialize_events();
 	initialize_thread_pool();
@@ -114,8 +118,7 @@ void c_executor::initialize_thread_pool() {
 	s_thread_pool_settings thread_pool_settings;
 	thread_pool_settings.thread_count = m_settings.thread_count;
 	thread_pool_settings.max_tasks = 1;
-	for (size_t stage = 0; stage < k_instrument_stage_count; stage++) {
-		e_instrument_stage instrument_stage = static_cast<e_instrument_stage>(stage);
+	for (e_instrument_stage instrument_stage : iterate_enum<e_instrument_stage>()) {
 		if (m_settings.runtime_instrument->get_task_graph(instrument_stage)) {
 			thread_pool_settings.max_tasks = std::max(
 				thread_pool_settings.max_tasks,
@@ -135,7 +138,7 @@ void c_executor::initialize_task_memory() {
 
 	// The memory query function changes the active task graph, so reset it here to avoid bugs
 	m_active_task_graph = nullptr;
-	m_active_instrument_stage = k_instrument_stage_invalid;
+	m_active_instrument_stage = e_instrument_stage::k_invalid;
 }
 
 void c_executor::initialize_tasks() {
@@ -143,17 +146,16 @@ void c_executor::initialize_tasks() {
 
 	uint32 max_voices = m_settings.runtime_instrument->get_instrument_globals().max_voices;
 
-	for (size_t instrument_stage = 0; instrument_stage < k_instrument_stage_count; instrument_stage++) {
-		const c_task_graph *task_graph = m_settings.runtime_instrument->get_task_graph(
-			static_cast<e_instrument_stage>(instrument_stage));
+	for (e_instrument_stage instrument_stage : iterate_enum<e_instrument_stage>()) {
+		const c_task_graph *task_graph = m_settings.runtime_instrument->get_task_graph(instrument_stage);
 		if (!task_graph) {
 			continue;
 		}
 
 		m_active_task_graph = task_graph;
-		m_active_instrument_stage = static_cast<e_instrument_stage>(instrument_stage);
+		m_active_instrument_stage = instrument_stage;
 
-		uint32 max_voices_for_this_graph = (instrument_stage == k_instrument_stage_voice) ? max_voices : 1;
+		uint32 max_voices_for_this_graph = (instrument_stage == e_instrument_stage::k_voice) ? max_voices : 1;
 
 		for (uint32 task = 0; task < task_graph->get_task_count(); task++) {
 			const s_task_function &task_function =
@@ -183,7 +185,7 @@ void c_executor::initialize_tasks() {
 	}
 
 	m_active_task_graph = nullptr;
-	m_active_instrument_stage = k_instrument_stage_invalid;
+	m_active_instrument_stage = e_instrument_stage::k_invalid;
 
 	m_sample_library.update_loaded_samples();
 }
@@ -204,9 +206,8 @@ void c_executor::initialize_task_contexts() {
 	m_task_contexts.free();
 	uint32 max_task_count = 0;
 
-	for (size_t instrument_stage = 0; instrument_stage < k_instrument_stage_count; instrument_stage++) {
-		const c_task_graph *task_graph = m_settings.runtime_instrument->get_task_graph(
-			static_cast<e_instrument_stage>(instrument_stage));
+	for (e_instrument_stage instrument_stage : iterate_enum<e_instrument_stage>()) {
+		const c_task_graph *task_graph = m_settings.runtime_instrument->get_task_graph(instrument_stage);
 
 		if (task_graph) {
 			if (task_graph) {
@@ -303,7 +304,7 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 		m_controller_event_manager.get_note_events(), chunk_context.sample_rate, chunk_context.frames);
 
 	m_active_task_graph = m_settings.runtime_instrument->get_voice_task_graph();
-	m_active_instrument_stage = k_instrument_stage_voice;
+	m_active_instrument_stage = e_instrument_stage::k_voice;
 
 	if (m_active_task_graph) {
 		if (m_settings.profiling_enabled) {
@@ -328,7 +329,7 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 	}
 
 	m_active_task_graph = m_settings.runtime_instrument->get_fx_task_graph();
-	m_active_instrument_stage = k_instrument_stage_fx;
+	m_active_instrument_stage = e_instrument_stage::k_fx;
 
 	if (m_active_task_graph) {
 		if (m_voice_allocator.get_fx_voice().active) {
@@ -342,7 +343,7 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 	}
 
 	m_active_task_graph = nullptr;
-	m_active_instrument_stage = k_instrument_stage_invalid;
+	m_active_instrument_stage = e_instrument_stage::k_invalid;
 
 	m_buffer_manager.mix_channel_buffers_to_output_buffer(chunk_context.sample_format, chunk_context.output_buffer);
 
@@ -361,7 +362,7 @@ void c_executor::process_voice(const s_executor_chunk_context &chunk_context, ui
 	}
 
 	wl_assert(m_active_task_graph);
-	wl_assert(m_active_instrument_stage == k_instrument_stage_voice);
+	wl_assert(m_active_instrument_stage == e_instrument_stage::k_voice);
 	process_voice_or_fx(chunk_context, voice_index);
 
 	if (m_settings.profiling_enabled) {
@@ -375,7 +376,7 @@ void c_executor::process_fx(const s_executor_chunk_context &chunk_context) {
 	}
 
 	wl_assert(m_active_task_graph);
-	wl_assert(m_active_instrument_stage == k_instrument_stage_fx);
+	wl_assert(m_active_instrument_stage == e_instrument_stage::k_fx);
 	process_voice_or_fx(chunk_context, 0);
 
 	if (m_settings.profiling_enabled) {
@@ -384,13 +385,13 @@ void c_executor::process_fx(const s_executor_chunk_context &chunk_context) {
 }
 
 void c_executor::process_voice_or_fx(const s_executor_chunk_context &chunk_context, uint32 voice_index) {
-	const c_voice_allocator::s_voice &voice = (m_active_instrument_stage == k_instrument_stage_voice) ?
+	const c_voice_allocator::s_voice &voice = (m_active_instrument_stage == e_instrument_stage::k_voice) ?
 		m_voice_allocator.get_voice(voice_index) :
 		m_voice_allocator.get_fx_voice();
 	wl_assert(voice.active);
 
 	// Voice index should be 0 if we're performing FX proessing
-	wl_assert(m_active_instrument_stage == k_instrument_stage_voice || voice_index == 0);
+	wl_assert(m_active_instrument_stage == e_instrument_stage::k_voice || voice_index == 0);
 
 	if (voice.activated_this_chunk) {
 		for (uint32 task = 0; task < m_active_task_graph->get_task_count(); task++) {
@@ -451,7 +452,7 @@ void c_executor::process_voice_or_fx(const s_executor_chunk_context &chunk_conte
 		m_active_instrument_stage, voice.chunk_offset_samples);
 
 	if (!remain_active) {
-		if (m_active_instrument_stage == k_instrument_stage_voice) {
+		if (m_active_instrument_stage == e_instrument_stage::k_voice) {
 			m_voice_allocator.disable_voice(voice_index);
 		} else {
 			m_voice_allocator.disable_fx();
@@ -571,17 +572,17 @@ size_t c_executor::setup_task_arguments(
 
 		c_task_qualified_data_type type = argument_data[arg].data.type;
 		if (type.get_data_type().is_array()) {
-			wl_assert(type.get_qualifier() == k_task_qualifier_in);
+			wl_assert(type.get_qualifier() == e_task_qualifier::k_in);
 			switch (type.get_data_type().get_primitive_type()) {
-			case k_task_primitive_type_real:
+			case e_task_primitive_type::k_real:
 				argument.data.value.real_array_in = argument_data[arg].get_real_array_in();
 				break;
 
-			case k_task_primitive_type_bool:
+			case e_task_primitive_type::k_bool:
 				argument.data.value.bool_array_in = argument_data[arg].get_bool_array_in();
 				break;
 
-			case k_task_primitive_type_string:
+			case e_task_primitive_type::k_string:
 				argument.data.value.string_array_in = argument_data[arg].get_string_array_in();
 				break;
 
@@ -589,17 +590,17 @@ size_t c_executor::setup_task_arguments(
 				wl_unreachable();
 			}
 		} else if (argument.data.is_constant) {
-			wl_assert(type.get_qualifier() == k_task_qualifier_in);
+			wl_assert(type.get_qualifier() == e_task_qualifier::k_in);
 			switch (type.get_data_type().get_primitive_type()) {
-			case k_task_primitive_type_real:
+			case e_task_primitive_type::k_real:
 				argument.data.value.real_constant_in = argument_data[arg].get_real_constant_in();
 				break;
 
-			case k_task_primitive_type_bool:
+			case e_task_primitive_type::k_bool:
 				argument.data.value.bool_constant_in = argument_data[arg].get_bool_constant_in();
 				break;
 
-			case k_task_primitive_type_string:
+			case e_task_primitive_type::k_string:
 				argument.data.value.string_constant_in = argument_data[arg].get_string_constant_in();
 				break;
 
@@ -625,11 +626,11 @@ void c_executor::allocate_output_buffers(uint32 task_index) {
 
 		if (!argument.data.type.get_data_type().is_array() && !argument.data.is_constant) {
 			e_task_qualifier qualifier = argument.data.type.get_qualifier();
-			if (qualifier == k_task_qualifier_out) {
+			if (qualifier == e_task_qualifier::k_out) {
 				// Allocate output buffers
 				m_buffer_manager.allocate_buffer(m_active_instrument_stage, argument.data.value.buffer_handle);
 			} else {
-				wl_assert(qualifier == k_task_qualifier_in || qualifier == k_task_qualifier_inout);
+				wl_assert(qualifier == e_task_qualifier::k_in || qualifier == e_task_qualifier::k_inout);
 				// Any input buffers should already be allocated (this includes inout buffers)
 				wl_assert(m_buffer_manager.is_buffer_allocated(argument.data.value.buffer_handle));
 			}
@@ -651,7 +652,7 @@ void c_executor::decrement_buffer_usages(uint32 task_index) {
 
 		if (argument.get_type().get_data_type().is_array()) {
 			switch (argument.get_type().get_data_type().get_primitive_type()) {
-			case k_task_primitive_type_real:
+			case e_task_primitive_type::k_real:
 			{
 				c_real_array real_array = argument.get_real_array_in();
 				for (size_t index = 0; index < real_array.get_count(); index++) {
@@ -663,7 +664,7 @@ void c_executor::decrement_buffer_usages(uint32 task_index) {
 				break;
 			}
 
-			case k_task_primitive_type_bool:
+			case e_task_primitive_type::k_bool:
 			{
 				c_bool_array bool_array = argument.get_bool_array_in();
 				for (size_t index = 0; index < bool_array.get_count(); index++) {
@@ -675,7 +676,7 @@ void c_executor::decrement_buffer_usages(uint32 task_index) {
 				break;
 			}
 
-			case k_task_primitive_type_string:
+			case e_task_primitive_type::k_string:
 				wl_unreachable(); // Non-constant string arrays not supported
 				break;
 
@@ -704,26 +705,26 @@ void c_executor::handle_event(size_t event_size, const void *event_data) {
 		event_string.truncate_to_length(event_string.get_max_length() - 1);
 		event_string.append_verify("\n");
 
-		e_console_color color = k_console_color_white;
+		e_console_color color = e_console_color::k_white;
 		switch (event_level) {
-		case k_event_level_verbose:
-			color = k_console_color_gray;
+		case e_event_level::k_verbose:
+			color = e_console_color::k_gray;
 			break;
 
-		case k_event_level_message:
-			color = k_console_color_white;
+		case e_event_level::k_message:
+			color = e_console_color::k_white;
 			break;
 
-		case k_event_level_warning:
-			color = k_console_color_yellow;
+		case e_event_level::k_warning:
+			color = e_console_color::k_yellow;
 			break;
 
-		case k_event_level_error:
-			color = k_console_color_red;
+		case e_event_level::k_error:
+			color = e_console_color::k_red;
 			break;
 
-		case k_event_level_critical:
-			color = k_console_color_pink;
+		case e_event_level::k_critical:
+			color = e_console_color::k_pink;
 			break;
 
 		default:

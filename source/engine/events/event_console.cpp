@@ -9,7 +9,7 @@ c_event_console::~c_event_console() {
 }
 
 bool c_event_console::start() {
-	m_last_color = k_console_color_count;
+	m_last_color = e_console_color::k_count;
 	return start_platform();
 }
 
@@ -22,19 +22,19 @@ bool c_event_console::is_running() const {
 }
 
 void c_event_console::print_to_console(const char *text, e_console_color color) {
-	wl_assert(VALID_INDEX(color, k_console_color_count));
+	wl_assert(valid_enum_index(color));
 
 	if (color != m_last_color) {
-		uint8 command = k_console_command_set_text_color;
+		uint8 command = enum_index(e_console_command::k_set_text_color);
 		write_platform(sizeof(command), &command);
 
-		uint8 color_byte = static_cast<uint8>(color);
+		uint8 color_byte = enum_index(color);
 		write_platform(sizeof(color_byte), &color_byte);
 		m_last_color = color;
 	}
 
 	{
-		uint8 command = k_console_command_print;
+		uint8 command = enum_index(e_console_command::k_print);
 		write_platform(sizeof(command), &command);
 
 		uint32 length = cast_integer_verify<uint32>(strlen(text));
@@ -44,11 +44,11 @@ void c_event_console::print_to_console(const char *text, e_console_color color) 
 }
 
 void c_event_console::clear() {
-	uint8 command = k_console_command_clear;
+	uint8 command = enum_index(e_console_command::k_clear);
 	write_platform(sizeof(command), &command);
 }
 
 void c_event_console::exit_command() {
-	uint8 command = k_console_command_exit;
+	uint8 command = enum_index(e_console_command::k_exit);
 	write_platform(sizeof(command), &command);
 }

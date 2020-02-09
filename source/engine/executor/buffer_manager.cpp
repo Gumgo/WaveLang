@@ -96,7 +96,7 @@ void c_buffer_manager::initialize(
 		// Reserve buffers for channel mixing; all final output channels are real values
 		// Note: again, this isn't quite a perfect optimization for memory usage, but it's good enough
 		uint32 channel_mix_buffer_pool_index = get_or_add_buffer_pool(
-			c_task_data_type(k_task_primitive_type_real), channel_mix_buffer_usage_info);
+			c_task_data_type(e_task_primitive_type::k_real), channel_mix_buffer_usage_info);
 		m_real_buffer_pool_index = channel_mix_buffer_pool_index;
 		channel_mix_buffer_usage_info[channel_mix_buffer_pool_index].max_concurrency += output_channels;
 
@@ -164,7 +164,7 @@ void c_buffer_manager::initialize_buffers_for_graph(e_instrument_stage instrumen
 
 	// Assign voice accumulation outputs to FX inputs
 	// If any input is completely unused, it should be deallocated immediately
-	wl_assert(inputs.get_count() == 0 || instrument_stage == k_instrument_stage_fx);
+	wl_assert(inputs.get_count() == 0 || instrument_stage == e_instrument_stage::k_fx);
 	for (size_t index = 0; index < inputs.get_count(); index++) {
 		wl_assert(!inputs[index].is_constant());
 		h_buffer buffer_handle = inputs[index].data.value.buffer_handle;
@@ -204,7 +204,7 @@ void c_buffer_manager::accumulate_voice_output(uint32 voice_sample_offset) {
 		add_output_buffers_to_voice_accumulation_buffers(voice_sample_offset);
 	}
 
-	assert_all_output_buffers_free(k_instrument_stage_voice);
+	assert_all_output_buffers_free(e_instrument_stage::k_voice);
 	m_voices_processed++;
 }
 
@@ -213,7 +213,7 @@ void c_buffer_manager::store_fx_output() {
 	swap_and_deduplicate_output_buffers(
 		m_runtime_instrument->get_fx_task_graph()->get_outputs(), m_fx_output_pool_indices, m_fx_output_buffers, 0);
 
-	assert_all_output_buffers_free(k_instrument_stage_fx);
+	assert_all_output_buffers_free(e_instrument_stage::k_fx);
 	m_fx_processed = true;
 }
 
@@ -228,7 +228,7 @@ bool c_buffer_manager::process_remain_active_output(e_instrument_stage instrumen
 		remain_active = task_graph->get_remain_active_output().get_bool_constant_in();
 	} else {
 		wl_assert(task_graph->get_remain_active_output().get_type() ==
-			c_task_qualified_data_type(k_task_primitive_type_bool, k_task_qualifier_in));
+			c_task_qualified_data_type(e_task_primitive_type::k_bool, e_task_qualifier::k_in));
 		h_buffer remain_active_buffer_handle = task_graph->get_remain_active_output().get_bool_buffer_in();
 		h_allocated_buffer remain_active_allocated_buffer_handle =
 			m_buffer_contexts.get_array()[remain_active_buffer_handle.get_data()].handle;
@@ -271,7 +271,8 @@ void c_buffer_manager::mix_channel_buffers_to_output_buffer(
 void c_buffer_manager::allocate_buffer(e_instrument_stage instrument_stage, h_buffer buffer_handle) {
 	wl_assert(!is_buffer_allocated(buffer_handle));
 	s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer_handle.get_data()];
-	buffer_context.handle = m_buffer_allocator.allocate_buffer(buffer_context.pool_indices[instrument_stage]);
+	buffer_context.handle = m_buffer_allocator.allocate_buffer(
+		buffer_context.pool_indices[enum_index(instrument_stage)]);
 }
 
 void c_buffer_manager::decrement_buffer_usage(h_buffer buffer_handle) {
@@ -358,15 +359,15 @@ void c_buffer_manager::initialize_buffer_allocator(
 		wl_assert(!info.type.is_array());
 		wl_assert(info.type.get_primitive_type_traits().is_dynamic);
 		switch (info.type.get_primitive_type()) {
-		case k_task_primitive_type_real:
-			desc.type = k_buffer_type_real;
+		case e_task_primitive_type::k_real:
+			desc.type = e_buffer_type::k_real;
 			break;
 
-		case k_task_primitive_type_bool:
-			desc.type = k_buffer_type_bool;
+		case e_task_primitive_type::k_bool:
+			desc.type = e_buffer_type::k_bool;
 			break;
 
-		case k_task_primitive_type_string:
+		case e_task_primitive_type::k_string:
 			wl_unreachable();
 			break;
 
@@ -402,8 +403,8 @@ void c_buffer_manager::initialize_buffer_contexts(
 	for (size_t index = 0; index < m_buffer_contexts.get_array().get_count(); index++) {
 		s_buffer_context &buffer_context = m_buffer_contexts.get_array()[index];
 		buffer_context.usages_remaining.initialize(0);
-		for (size_t instrument_stage = 0; instrument_stage < k_instrument_stage_count; instrument_stage++) {
-			m_buffer_contexts.get_array()[index].pool_indices[instrument_stage] = static_cast<uint32>(-1);
+		for (e_instrument_stage instrument_stage : iterate_enum<e_instrument_stage>()) {
+			m_buffer_contexts.get_array()[index].pool_indices[enum_index(instrument_stage)] = static_cast<uint32>(-1);
 		}
 		buffer_context.handle = h_allocated_buffer::invalid();
 		buffer_context.shifted_samples = false;
@@ -412,9 +413,8 @@ void c_buffer_manager::initialize_buffer_contexts(
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
 	// Iterate through each buffer in each task and assign it a pool
-	for (size_t instrument_stage = 0; instrument_stage < k_instrument_stage_count; instrument_stage++) {
-		const c_task_graph *task_graph = m_runtime_instrument->get_task_graph(
-			static_cast<e_instrument_stage>(instrument_stage));
+	for (e_instrument_stage instrument_stage : iterate_enum<e_instrument_stage>()) {
+		const c_task_graph *task_graph = m_runtime_instrument->get_task_graph(instrument_stage);
 		if (!task_graph) {
 			continue;
 		}
@@ -429,7 +429,8 @@ void c_buffer_manager::initialize_buffer_contexts(
 			wl_assert(VALID_INDEX(pool_index, buffer_usage_info.size()));
 
 			h_buffer buffer_handle = input_data.data.value.buffer_handle;
-			m_buffer_contexts.get_array()[buffer_handle.get_data()].pool_indices[instrument_stage] = pool_index;
+			m_buffer_contexts.get_array()[buffer_handle.get_data()].pool_indices[enum_index(instrument_stage)] =
+				pool_index;
 		}
 
 		for (uint32 task_index = 0; task_index < task_graph->get_task_count(); task_index++) {
@@ -443,15 +444,15 @@ void c_buffer_manager::initialize_buffer_contexts(
 				wl_assert(VALID_INDEX(pool_index, buffer_usage_info.size()));
 
 				h_buffer buffer_handle = it.get_buffer_handle();
-				m_buffer_contexts.get_array()[buffer_handle.get_data()].pool_indices[instrument_stage] = pool_index;
+				m_buffer_contexts.get_array()[buffer_handle.get_data()].pool_indices[enum_index(instrument_stage)] =
+					pool_index;
 			}
 		}
 	}
 
 #if IS_TRUE(ASSERTS_ENABLED)
-	for (size_t instrument_stage = 0; instrument_stage < k_instrument_stage_count; instrument_stage++) {
-		const c_task_graph *task_graph = m_runtime_instrument->get_task_graph(
-			static_cast<e_instrument_stage>(instrument_stage));
+	for (e_instrument_stage instrument_stage : iterate_enum<e_instrument_stage>()) {
+		const c_task_graph *task_graph = m_runtime_instrument->get_task_graph(instrument_stage);
 		if (!task_graph) {
 			continue;
 		}
@@ -459,7 +460,7 @@ void c_buffer_manager::initialize_buffer_contexts(
 		// Make sure all buffers got pool assignments
 		for (uint32 index = 0; index < task_graph->get_buffer_count(); index++) {
 			wl_assert(VALID_INDEX(
-				m_buffer_contexts.get_array()[index].pool_indices[instrument_stage],
+				m_buffer_contexts.get_array()[index].pool_indices[enum_index(instrument_stage)],
 				buffer_usage_info.size()));
 		}
 	}
@@ -536,8 +537,8 @@ void c_buffer_manager::swap_and_deduplicate_output_buffers(
 
 	for (uint32 output = 0; output < outputs.get_count(); output++) {
 		wl_assert(!destination[output].is_valid());
-		wl_assert(
-			outputs[output].get_type() == c_task_qualified_data_type(k_task_primitive_type_real, k_task_qualifier_in));
+		wl_assert(outputs[output].get_type() ==
+			c_task_qualified_data_type(e_task_primitive_type::k_real, e_task_qualifier::k_in));
 		if (outputs[output].is_constant()) {
 			h_allocated_buffer buffer_handle = m_buffer_allocator.allocate_buffer(buffer_pool_indices[output]);
 			destination[output] = buffer_handle;
@@ -607,8 +608,8 @@ void c_buffer_manager::add_output_buffers_to_voice_accumulation_buffers(uint32 v
 	for (uint32 output = 0; output < outputs.get_count(); output++) {
 		h_allocated_buffer accumulation_buffer_handle = m_voice_accumulation_buffers[output];
 		wl_assert(accumulation_buffer_handle.is_valid());
-		wl_assert(
-			outputs[output].get_type() == c_task_qualified_data_type(k_task_primitive_type_real, k_task_qualifier_in));
+		wl_assert(outputs[output].get_type() ==
+			c_task_qualified_data_type(e_task_primitive_type::k_real, e_task_qualifier::k_in));
 		if (outputs[output].is_constant()) {
 			if (voice_sample_offset == 0) {
 				s_buffer_operation_addition::inout_in(

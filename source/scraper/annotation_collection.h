@@ -60,12 +60,12 @@ public:
 		c_scraper_diagnostic &diag);
 
 private:
-	enum e_annotation_type {
-		k_annotation_type_existence,
-		k_annotation_type_string,
-		k_annotation_type_uint32,
+	enum class e_annotation_type {
+		k_existence,
+		k_string,
+		k_uint32,
 
-		k_annotation_type_count
+		k_count
 	};
 
 	struct s_annotation_specification {

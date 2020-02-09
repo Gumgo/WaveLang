@@ -40,7 +40,7 @@ struct s_profiler_report {
 	s_profiler_record voice_time;
 	s_profiler_record fx_time;
 
-	s_static_array<std::vector<s_task>, k_instrument_stage_count> tasks;
+	s_static_array<std::vector<s_task>, enum_count<e_instrument_stage>()> tasks;
 };
 
 bool output_profiler_report(const char *filename, const s_profiler_report &report);
@@ -77,24 +77,24 @@ public:
 	void end_task(e_instrument_stage instrument_stage, uint32 worker_thread, uint32 task_index);
 
 private:
-	enum e_execution_query_point {
-		k_execution_query_point_begin_voices,
-		k_execution_query_point_end_voices,
-		k_execution_query_point_begin_voice,
-		k_execution_query_point_end_voice,
-		k_execution_query_point_begin_fx,
-		k_execution_query_point_end_fx,
-		k_execution_query_point_end_execution,
+	enum class e_execution_query_point {
+		k_begin_voices,
+		k_end_voices,
+		k_begin_voice,
+		k_end_voice,
+		k_begin_fx,
+		k_end_fx,
+		k_end_execution,
 
-		k_execution_query_point_count
+		k_count
 	};
 
-	enum e_task_query_point {
-		k_task_query_point_begin_function,
-		k_task_query_point_end_function,
-		k_task_query_point_end_task,
+	enum class e_task_query_point {
+		k_begin_function,
+		k_end_function,
+		k_end_task,
 
-		k_task_query_point_count
+		k_count
 	};
 
 	struct ALIGNAS_LOCK_FREE s_execution {
@@ -103,7 +103,7 @@ private:
 		s_profiler_record overhead_time;
 		s_profiler_record voice_time;
 		s_profiler_record fx_time;
-		s_static_array<int64, k_execution_query_point_count> query_points;
+		s_static_array<int64, enum_count<e_execution_query_point>()> query_points;
 	};
 
 	struct ALIGNAS_LOCK_FREE s_thread_context {
@@ -116,7 +116,7 @@ private:
 		s_profiler_record function_time;
 		s_profiler_record overhead_time;
 		bool did_run;
-		s_static_array<int64, k_task_query_point_count> query_points;
+		s_static_array<int64, enum_count<e_task_query_point>()> query_points;
 	};
 
 	void commit();
@@ -127,6 +127,6 @@ private:
 
 	s_execution m_execution;
 	c_lock_free_aligned_allocator<s_thread_context> m_thread_contexts;
-	s_static_array<c_lock_free_aligned_allocator<s_task>, k_instrument_stage_count> m_tasks;
+	s_static_array<c_lock_free_aligned_allocator<s_task>, enum_count<e_instrument_stage>()> m_tasks;
 };
 

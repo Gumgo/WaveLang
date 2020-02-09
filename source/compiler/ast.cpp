@@ -23,7 +23,7 @@ s_compiler_source_location c_ast_node::get_source_location() const {
 }
 
 c_ast_node_scope::c_ast_node_scope()
-	: c_ast_node(k_ast_node_type_scope) {}
+	: c_ast_node(e_ast_node_type::k_scope) {}
 
 c_ast_node_scope::~c_ast_node_scope() {
 	for (size_t index = 0; index < m_children.size(); index++) {
@@ -69,10 +69,10 @@ const c_ast_node *c_ast_node_scope::get_child(size_t index) const {
 }
 
 c_ast_node_module_declaration::c_ast_node_module_declaration()
-	: c_ast_node(k_ast_node_type_module_declaration) {
+	: c_ast_node(e_ast_node_type::k_module_declaration) {
 	m_is_native = false;
 	m_native_module_index = static_cast<uint32>(-1);
-	m_return_type = c_ast_data_type(k_ast_primitive_type_void);
+	m_return_type = c_ast_data_type(e_ast_primitive_type::k_void);
 	m_scope = nullptr;
 }
 
@@ -187,9 +187,9 @@ const c_ast_node_scope *c_ast_node_module_declaration::get_scope() const {
 }
 
 c_ast_node_named_value_declaration::c_ast_node_named_value_declaration()
-	: c_ast_node(k_ast_node_type_named_value_declaration) {
-	m_qualifier = k_ast_qualifier_none;
-	m_data_type = c_ast_data_type(k_ast_primitive_type_real);
+	: c_ast_node(e_ast_node_type::k_named_value_declaration) {
+	m_qualifier = e_ast_qualifier::k_none;
+	m_data_type = c_ast_data_type(e_ast_primitive_type::k_real);
 }
 
 c_ast_node_named_value_declaration::~c_ast_node_named_value_declaration() {}
@@ -215,7 +215,7 @@ const std::string &c_ast_node_named_value_declaration::get_name() const {
 }
 
 void c_ast_node_named_value_declaration::set_qualifier(e_ast_qualifier qualifier) {
-	wl_assert(VALID_INDEX(qualifier, k_ast_qualifier_count));
+	wl_assert(valid_enum_index(qualifier));
 	m_qualifier = qualifier;
 }
 
@@ -233,7 +233,7 @@ c_ast_data_type c_ast_node_named_value_declaration::get_data_type() const {
 }
 
 c_ast_node_named_value_assignment::c_ast_node_named_value_assignment()
-	: c_ast_node(k_ast_node_type_named_value_assignment) {
+	: c_ast_node(e_ast_node_type::k_named_value_assignment) {
 	m_is_valid_named_value = true;
 	m_expression = nullptr;
 	m_array_index_expression = nullptr;
@@ -317,7 +317,7 @@ const c_ast_node_expression *c_ast_node_named_value_assignment::get_expression()
 }
 
 c_ast_node_return_statement::c_ast_node_return_statement()
-	: c_ast_node(k_ast_node_type_return_statement) {
+	: c_ast_node(e_ast_node_type::k_return_statement) {
 	m_expression = nullptr;
 }
 
@@ -358,7 +358,7 @@ const c_ast_node_expression *c_ast_node_return_statement::get_expression() const
 }
 
 c_ast_node_repeat_loop::c_ast_node_repeat_loop()
-	: c_ast_node(k_ast_node_type_repeat_loop) {
+	: c_ast_node(e_ast_node_type::k_repeat_loop) {
 	m_scope = nullptr;
 	m_expression = nullptr;
 }
@@ -414,7 +414,7 @@ const c_ast_node_scope *c_ast_node_repeat_loop::get_scope() const {
 }
 
 c_ast_node_expression::c_ast_node_expression()
-	: c_ast_node(k_ast_node_type_expression) {
+	: c_ast_node(e_ast_node_type::k_expression) {
 	m_expression_value = nullptr;
 }
 
@@ -455,8 +455,8 @@ const c_ast_node *c_ast_node_expression::get_expression_value() const {
 }
 
 c_ast_node_constant::c_ast_node_constant()
-	: c_ast_node(k_ast_node_type_constant) {
-	m_data_type = c_ast_data_type(k_ast_primitive_type_void); // Use void to indicate unassigned/invalid
+	: c_ast_node(e_ast_node_type::k_constant) {
+	m_data_type = c_ast_data_type(e_ast_primitive_type::k_void); // Use void to indicate unassigned/invalid
 	m_real_value = 0.0f;
 }
 
@@ -495,43 +495,43 @@ c_ast_data_type c_ast_node_constant::get_data_type() const {
 }
 
 void c_ast_node_constant::set_real_value(real32 value) {
-	wl_assert(m_data_type.get_primitive_type() == k_ast_primitive_type_void);
-	m_data_type = c_ast_data_type(k_ast_primitive_type_real);
+	wl_assert(m_data_type.get_primitive_type() == e_ast_primitive_type::k_void);
+	m_data_type = c_ast_data_type(e_ast_primitive_type::k_real);
 	m_real_value = value;
 	m_string_value.clear();
 }
 
 real32 c_ast_node_constant::get_real_value() const {
-	wl_assert(m_data_type.get_primitive_type() == k_ast_primitive_type_real);
+	wl_assert(m_data_type.get_primitive_type() == e_ast_primitive_type::k_real);
 	return m_real_value;
 }
 
 void c_ast_node_constant::set_bool_value(bool value) {
-	wl_assert(m_data_type.get_primitive_type() == k_ast_primitive_type_void);
-	m_data_type = c_ast_data_type(k_ast_primitive_type_bool);
+	wl_assert(m_data_type.get_primitive_type() == e_ast_primitive_type::k_void);
+	m_data_type = c_ast_data_type(e_ast_primitive_type::k_bool);
 	m_bool_value = value;
 	m_string_value.clear();
 }
 
 bool c_ast_node_constant::get_bool_value() const {
-	wl_assert(m_data_type.get_primitive_type() == k_ast_primitive_type_bool);
+	wl_assert(m_data_type.get_primitive_type() == e_ast_primitive_type::k_bool);
 	return m_bool_value;
 }
 
 void c_ast_node_constant::set_string_value(const std::string &value) {
-	wl_assert(m_data_type.get_primitive_type() == k_ast_primitive_type_void);
-	m_data_type = c_ast_data_type(k_ast_primitive_type_string);
+	wl_assert(m_data_type.get_primitive_type() == e_ast_primitive_type::k_void);
+	m_data_type = c_ast_data_type(e_ast_primitive_type::k_string);
 	m_real_value = 0.0f;
 	m_string_value = value;
 }
 
 const std::string &c_ast_node_constant::get_string_value() const {
-	wl_assert(m_data_type.get_primitive_type() == k_ast_primitive_type_string);
+	wl_assert(m_data_type.get_primitive_type() == e_ast_primitive_type::k_string);
 	return m_string_value;
 }
 
 void c_ast_node_constant::set_array(c_ast_data_type element_data_type) {
-	wl_assert(m_data_type.get_primitive_type() == k_ast_primitive_type_void);
+	wl_assert(m_data_type.get_primitive_type() == e_ast_primitive_type::k_void);
 	wl_assert(element_data_type.get_primitive_type_traits().is_data);
 	wl_assert(!element_data_type.is_array());
 	m_data_type = element_data_type.get_array_type();
@@ -558,7 +558,7 @@ const c_ast_node_expression *c_ast_node_constant::get_array_value(size_t index) 
 }
 
 c_ast_node_named_value::c_ast_node_named_value()
-	: c_ast_node(k_ast_node_type_named_value) {}
+	: c_ast_node(e_ast_node_type::k_named_value) {}
 
 c_ast_node_named_value::~c_ast_node_named_value() {}
 
@@ -583,7 +583,7 @@ const std::string &c_ast_node_named_value::get_name() const {
 }
 
 c_ast_node_module_call::c_ast_node_module_call()
-	: c_ast_node(k_ast_node_type_module_call) {
+	: c_ast_node(e_ast_node_type::k_module_call) {
 	m_is_invoked_using_operator = false;
 }
 

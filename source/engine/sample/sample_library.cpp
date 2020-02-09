@@ -29,7 +29,7 @@ void c_sample_library::clear_requested_samples() {
 
 uint32 c_sample_library::request_sample(const s_file_sample_parameters &parameters) {
 	wl_assert(parameters.filename);
-	wl_assert(VALID_INDEX(parameters.loop_mode, k_sample_loop_mode_count));
+	wl_assert(valid_enum_index(parameters.loop_mode));
 
 	// MEGA HACK: currently, scriptable wavetables don't really work because the compiler is too slow to deal with large
 	// arrays. To work around this for now, hardcode a few predefined wavetables here.
@@ -74,7 +74,7 @@ uint32 c_sample_library::request_sample(const s_file_sample_parameters &paramete
 	// END MEGA HACK
 
 	s_requested_sample requested_sample;
-	requested_sample.sample_type = k_sample_type_file;
+	requested_sample.sample_type = e_sample_type::k_file;
 	if (is_path_relative(parameters.filename)) {
 		requested_sample.file_path = m_root_path + parameters.filename;
 	} else {
@@ -86,7 +86,7 @@ uint32 c_sample_library::request_sample(const s_file_sample_parameters &paramete
 	requested_sample.sample_count = 0;
 
 	requested_sample.phase_shift_enabled = parameters.phase_shift_enabled;
-	if (parameters.loop_mode == k_sample_loop_mode_none) {
+	if (parameters.loop_mode == e_sample_loop_mode::k_none) {
 		// Phase doesn't exist without looping
 		requested_sample.phase_shift_enabled = false;
 	}
@@ -97,9 +97,9 @@ uint32 c_sample_library::request_sample(const s_file_sample_parameters &paramete
 
 uint32 c_sample_library::request_sample(const s_wavetable_sample_parameters &parameters) {
 	s_requested_sample requested_sample;
-	requested_sample.sample_type = k_sample_type_wavetable;
+	requested_sample.sample_type = e_sample_type::k_wavetable;
 
-	requested_sample.loop_mode = k_sample_loop_mode_loop;
+	requested_sample.loop_mode = e_sample_loop_mode::k_loop;
 	requested_sample.timestamp = 0;
 
 	for (size_t index = 0; index < parameters.harmonic_weights.get_count(); index++) {
@@ -125,7 +125,7 @@ void c_sample_library::update_loaded_samples() {
 	for (size_t index = 0; index < m_requested_samples.size(); index++) {
 		s_requested_sample &request = m_requested_samples[index];
 
-		if (request.sample_type == k_sample_type_file) {
+		if (request.sample_type == e_sample_type::k_file) {
 			uint64 new_timestamp = 0;
 			bool obtained_timestamp = get_file_last_modified_timestamp(request.file_path.c_str(), new_timestamp);
 
@@ -142,7 +142,7 @@ void c_sample_library::update_loaded_samples() {
 				request.sample =
 					c_sample::load_file(request.file_path.c_str(), request.loop_mode, request.phase_shift_enabled);
 			}
-		} else if (request.sample_type == k_sample_type_wavetable) {
+		} else if (request.sample_type == e_sample_type::k_wavetable) {
 			if (!request.sample) {
 				c_wrapped_array<const real32> harmonic_weights(
 					&request.harmonic_weights.front(), request.harmonic_weights.size());
@@ -167,12 +167,12 @@ bool c_sample_library::are_requested_samples_equal(
 		return false;
 	}
 
-	if (requested_sample_a.sample_type == k_sample_type_file) {
+	if (requested_sample_a.sample_type == e_sample_type::k_file) {
 		return are_file_paths_equivalent(requested_sample_a.file_path.c_str(), requested_sample_b.file_path.c_str()) &&
 			requested_sample_a.loop_mode == requested_sample_b.loop_mode &&
 			requested_sample_a.timestamp == requested_sample_b.timestamp &&
 			requested_sample_a.phase_shift_enabled == requested_sample_b.phase_shift_enabled;
-	} else if (requested_sample_a.sample_type == k_sample_type_wavetable) {
+	} else if (requested_sample_a.sample_type == e_sample_type::k_wavetable) {
 		if (requested_sample_a.harmonic_weights.size() != requested_sample_b.harmonic_weights.size()) {
 			return false;
 		}

@@ -2,33 +2,33 @@
 
 #include "common/common.h"
 
-enum e_console_command {
-	k_console_command_print,
-	k_console_command_set_text_color,
-	k_console_command_clear,
-	k_console_command_exit,
+enum class e_console_command {
+	k_print,
+	k_set_text_color,
+	k_clear,
+	k_exit,
 
-	k_console_command_count
+	k_count
 };
 
-enum e_console_color {
-	k_console_color_black,
-	k_console_color_dark_blue,
-	k_console_color_dark_green,
-	k_console_color_dark_aqua,
-	k_console_color_dark_red,
-	k_console_color_dark_pink,
-	k_console_color_dark_yellow,
-	k_console_color_dark_white,
-	k_console_color_gray,
-	k_console_color_blue,
-	k_console_color_green,
-	k_console_color_aqua,
-	k_console_color_red,
-	k_console_color_pink,
-	k_console_color_yellow,
-	k_console_color_white,
+enum class e_console_color {
+	k_black,
+	k_dark_blue,
+	k_dark_green,
+	k_dark_aqua,
+	k_dark_red,
+	k_dark_pink,
+	k_dark_yellow,
+	k_dark_white,
+	k_gray,
+	k_blue,
+	k_green,
+	k_aqua,
+	k_red,
+	k_pink,
+	k_yellow,
+	k_white,
 
-	k_console_color_count
+	k_count
 };
 

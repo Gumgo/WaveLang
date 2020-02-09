@@ -9,19 +9,20 @@ static const s_ast_primitive_type_traits k_ast_primitive_type_traits[] = {
 	{	"string",	true,		false,		true	}
 };
 
-static_assert(NUMBEROF(k_ast_primitive_type_traits) == k_ast_primitive_type_count, "Primitive type traits mismatch");
+static_assert(NUMBEROF(k_ast_primitive_type_traits) == enum_count<e_ast_primitive_type>(),
+	"Primitive type traits mismatch");
 
 c_ast_data_type::c_ast_data_type() {
-	m_primitive_type = k_ast_primitive_type_void;
+	m_primitive_type = e_ast_primitive_type::k_void;
 	m_flags = 0;
 }
 
 c_ast_data_type::c_ast_data_type(e_ast_primitive_type primitive_type, bool is_array) {
-	wl_assert(VALID_INDEX(primitive_type, k_ast_primitive_type_count));
+	wl_assert(valid_enum_index(primitive_type));
 	m_primitive_type = primitive_type;
 	m_flags = 0;
 
-	set_bit<k_flag_is_array>(m_flags, is_array);
+	set_bit(m_flags, e_flag::k_is_array, is_array);
 }
 
 e_ast_primitive_type c_ast_data_type::get_primitive_type() const {
@@ -33,7 +34,7 @@ const s_ast_primitive_type_traits &c_ast_data_type::get_primitive_type_traits() 
 }
 
 bool c_ast_data_type::is_array() const {
-	return test_bit<k_flag_is_array>(m_flags);
+	return test_bit(m_flags, e_flag::k_is_array);
 }
 
 c_ast_data_type c_ast_data_type::get_element_type() const {
@@ -66,6 +67,6 @@ bool c_ast_data_type::operator!=(const c_ast_data_type &other) const {
 }
 
 const s_ast_primitive_type_traits &get_ast_primitive_type_traits(e_ast_primitive_type primitive_type) {
-	wl_assert(VALID_INDEX(primitive_type, k_ast_primitive_type_count));
-	return k_ast_primitive_type_traits[primitive_type];
+	wl_assert(valid_enum_index(primitive_type));
+	return k_ast_primitive_type_traits[enum_index(primitive_type)];
 }

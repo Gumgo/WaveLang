@@ -17,7 +17,7 @@ s_controller_driver_result c_controller_driver_interface::initialize() {
 
 	// Initialize all sub-controllers
 	result = m_controller_driver_midi.initialize(submit_controller_event_wrapper, this);
-	if (result.result != k_controller_driver_result_success) {
+	if (result.result != e_controller_driver_result::k_success) {
 		return result;
 	}
 
@@ -58,7 +58,7 @@ s_controller_driver_result c_controller_driver_interface::start_stream(const s_c
 		m_controller_event_queue_free_list_memory.get_array());
 
 	s_controller_driver_result result = m_controller_driver_midi.start_stream(settings);
-	if (result.result != k_controller_driver_result_success) {
+	if (result.result != e_controller_driver_result::k_success) {
 		m_controller_event_queue_element_memory.free();
 		m_controller_event_queue_queue_memory.free();
 		m_controller_event_queue_free_list_memory.free();

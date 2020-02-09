@@ -4,13 +4,13 @@
 static_assert(CACHE_LINE_SIZE >= SIMD_ALIGNMENT, "Cache line too small for SSE");
 
 static const size_t k_bits_per_buffer_element[] = {
-	32,	// k_buffer_type_real
-	1	// k_buffer_type_bool
+	32,	// e_buffer_type::k_real
+	1	// e_buffer_type::k_bool
 };
-static_assert(NUMBEROF(k_bits_per_buffer_element) == k_buffer_type_count, "Buffer type bits mismatch");
+static_assert(NUMBEROF(k_bits_per_buffer_element) == enum_count<e_buffer_type>(), "Buffer type bits mismatch");
 
 static size_t calculate_aligned_padded_buffer_size(e_buffer_type type, size_t element_count) {
-	size_t buffer_size_bits = k_bits_per_buffer_element[type] * element_count;
+	size_t buffer_size_bits = k_bits_per_buffer_element[enum_index(type)] * element_count;
 	size_t buffer_size_bytes = (buffer_size_bits + 7) / 8;
 	// Accounts for both SSE alignment and cache alignment
 	return align_size(buffer_size_bytes, CACHE_LINE_SIZE);

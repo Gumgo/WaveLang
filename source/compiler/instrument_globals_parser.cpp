@@ -81,7 +81,7 @@ void c_instrument_globals_parser::register_preprocessor_commands(
 }
 
 static bool get_unsigned_integer(const s_token &token, uint32 &out_value) {
-	if (token.token_type != k_token_type_constant_real) {
+	if (token.token_type != e_token_type::k_constant_real) {
 		return false;
 	}
 
@@ -105,7 +105,7 @@ static bool get_unsigned_nonzero_integer(const s_token &token, uint32 &out_value
 }
 
 static bool get_bool(const s_token &token, bool &out_value) {
-	if (token.token_type != k_token_type_constant_bool) {
+	if (token.token_type != e_token_type::k_constant_bool) {
 		return false;
 	}
 
@@ -123,21 +123,21 @@ static s_compiler_result preprocessor_command_max_voices(
 	result.clear();
 
 	if (globals_context->max_voices_command_executed) {
-		result.result = k_compiler_result_invalid_globals;
+		result.result = e_compiler_result::k_invalid_globals;
 		result.source_location = arguments.get_command().source_location;
 		result.message = "max_voices specified multiple times";
 		return result;
 	}
 
 	if (arguments.get_argument_count() != 1) {
-		result.result = k_compiler_result_invalid_globals;
+		result.result = e_compiler_result::k_invalid_globals;
 		result.source_location = arguments.get_command().source_location;
 		result.message = "Incorrect number of max_voices values specified";
 		return result;
 	}
 
 	if (!get_unsigned_nonzero_integer(arguments.get_argument(0), globals_context->max_voices)) {
-		result.result = k_compiler_result_invalid_globals;
+		result.result = e_compiler_result::k_invalid_globals;
 		result.source_location = arguments.get_argument(0).source_location;
 		result.message = "Invalid max_voices value '" + arguments.get_argument(0).token_string.to_std_string() + "'";
 		return result;
@@ -156,14 +156,14 @@ static s_compiler_result preprocessor_command_sample_rate(
 	result.clear();
 
 	if (globals_context->sample_rate_command_executed) {
-		result.result = k_compiler_result_invalid_globals;
+		result.result = e_compiler_result::k_invalid_globals;
 		result.source_location = arguments.get_command().source_location;
 		result.message = "sample_rate specified multiple times";
 		return result;
 	}
 
 	if (arguments.get_argument_count() == 0) {
-		result.result = k_compiler_result_invalid_globals;
+		result.result = e_compiler_result::k_invalid_globals;
 		result.source_location = arguments.get_command().source_location;
 		result.message = "No sample_rate values specified";
 		return result;
@@ -172,7 +172,7 @@ static s_compiler_result preprocessor_command_sample_rate(
 	for (size_t index = 0; index < arguments.get_argument_count(); index++) {
 		uint32 sample_rate;
 		if (!get_unsigned_nonzero_integer(arguments.get_argument(index), sample_rate)) {
-			result.result = k_compiler_result_invalid_globals;
+			result.result = e_compiler_result::k_invalid_globals;
 			result.source_location = arguments.get_argument(index).source_location;
 			result.message = "Invalid sample_rate value '" +
 				arguments.get_argument(index).token_string.to_std_string() + "'";
@@ -181,7 +181,7 @@ static s_compiler_result preprocessor_command_sample_rate(
 
 		for (size_t existing_index = 0; existing_index < globals_context->sample_rates.size(); existing_index++) {
 			if (sample_rate == globals_context->sample_rates[existing_index]) {
-				result.result = k_compiler_result_invalid_globals;
+				result.result = e_compiler_result::k_invalid_globals;
 				result.source_location = arguments.get_argument(index).source_location;
 				result.message = "Duplicate sample_rate value '" + std::to_string(sample_rate) + "' specified";
 				return result;
@@ -204,21 +204,21 @@ static s_compiler_result preprocessor_command_chunk_size(
 	result.clear();
 
 	if (globals_context->chunk_size_command_executed) {
-		result.result = k_compiler_result_invalid_globals;
+		result.result = e_compiler_result::k_invalid_globals;
 		result.source_location = arguments.get_command().source_location;
 		result.message = "chunk_size specified multiple times";
 		return result;
 	}
 
 	if (arguments.get_argument_count() != 1) {
-		result.result = k_compiler_result_invalid_globals;
+		result.result = e_compiler_result::k_invalid_globals;
 		result.source_location = arguments.get_command().source_location;
 		result.message = "Incorrect number of chunk_size values specified";
 		return result;
 	}
 
 	if (!get_unsigned_nonzero_integer(arguments.get_argument(0), globals_context->chunk_size)) {
-		result.result = k_compiler_result_invalid_globals;
+		result.result = e_compiler_result::k_invalid_globals;
 		result.source_location = arguments.get_argument(0).source_location;
 		result.message = "Invalid chunk_size value '" + arguments.get_argument(0).token_string.to_std_string() + "'";
 		return result;
@@ -237,21 +237,21 @@ static s_compiler_result preprocessor_command_activate_fx_immediately(
 	result.clear();
 
 	if (globals_context->activate_fx_immediately_command_executed) {
-		result.result = k_compiler_result_invalid_globals;
+		result.result = e_compiler_result::k_invalid_globals;
 		result.source_location = arguments.get_command().source_location;
 		result.message = "activate_fx_immediately specified multiple times";
 		return result;
 	}
 
 	if (arguments.get_argument_count() != 1) {
-		result.result = k_compiler_result_invalid_globals;
+		result.result = e_compiler_result::k_invalid_globals;
 		result.source_location = arguments.get_command().source_location;
 		result.message = "Incorrect number of activate_fx_immediately values specified";
 		return result;
 	}
 
 	if (!get_bool(arguments.get_argument(0), globals_context->activate_fx_immediately)) {
-		result.result = k_compiler_result_invalid_globals;
+		result.result = e_compiler_result::k_invalid_globals;
 		result.source_location = arguments.get_argument(0).source_location;
 		result.message = "Invalid activate_fx_immediately value '" +
 			arguments.get_argument(0).token_string.to_std_string() + "'";

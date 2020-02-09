@@ -7,11 +7,11 @@
 
 class c_ast_validator_visitor : public c_ast_node_const_visitor {
 public:
-	enum e_pass {
-		k_pass_register_global_identifiers,
-		k_pass_validate_syntax,
+	enum class e_pass {
+		k_register_global_identifiers,
+		k_validate_syntax,
 
-		k_pass_count
+		k_count
 	};
 
 private:
@@ -199,7 +199,7 @@ private:
 			m_scope_stack.front().identifiers.insert(std::make_pair(name, identifier));
 		} else {
 			s_compiler_result error;
-			error.result = k_compiler_result_duplicate_identifier;
+			error.result = e_compiler_result::k_duplicate_identifier;
 			error.source_location = node->get_source_location();
 			error.message = "Identifier '" + name + "' is already in use";
 			m_errors->push_back(error);
@@ -247,14 +247,14 @@ private:
 
 		if (!match) {
 			s_identifier identifier;
-			identifier.data_type = c_ast_data_type(k_ast_primitive_type_module);
+			identifier.data_type = c_ast_data_type(e_ast_primitive_type::k_module);
 			identifier.ast_node = node;
 			identifier.overload_count = 1;
 			m_scope_stack.front().identifiers.insert(std::make_pair(name, identifier));
 			added = true;
-		} else if (match->data_type != c_ast_data_type(k_ast_primitive_type_module)) {
+		} else if (match->data_type != c_ast_data_type(e_ast_primitive_type::k_module)) {
 			s_compiler_result error;
-			error.result = k_compiler_result_duplicate_identifier;
+			error.result = e_compiler_result::k_duplicate_identifier;
 			error.source_location = node->get_source_location();
 			error.message = "Identifier '" + name + "' is already in use";
 			m_errors->push_back(error);
@@ -271,7 +271,7 @@ private:
 					std::string overload_name = name + '$' + std::to_string(overload);
 					const s_identifier *overload_identifier = get_identifier(overload_name);
 					wl_assert(overload_identifier);
-					wl_assert(overload_identifier->data_type == c_ast_data_type(k_ast_primitive_type_module));
+					wl_assert(overload_identifier->data_type == c_ast_data_type(e_ast_primitive_type::k_module));
 
 					conflict = do_module_arguments_conflict_for_overload(
 						node, static_cast<const c_ast_node_module_declaration *>(overload_identifier->ast_node));
@@ -280,7 +280,7 @@ private:
 
 			if (conflict) {
 				s_compiler_result error;
-				error.result = k_compiler_result_duplicate_identifier;
+				error.result = e_compiler_result::k_duplicate_identifier;
 				error.source_location = node->get_source_location();
 				error.message = "Overloaded module '" + name + "' conflicts with existing definition";
 				m_errors->push_back(error);
@@ -288,14 +288,14 @@ private:
 				if (match->overload_count == 1) {
 					// Store the existing module in the overloaded way
 					s_identifier identifier;
-					identifier.data_type = c_ast_data_type(k_ast_primitive_type_module);
+					identifier.data_type = c_ast_data_type(e_ast_primitive_type::k_module);
 					identifier.ast_node = match->ast_node;
 					identifier.overload_count = 1;
 					m_scope_stack.front().identifiers.insert(std::make_pair(name + "$0", identifier));
 				}
 
 				s_identifier identifier;
-				identifier.data_type = c_ast_data_type(k_ast_primitive_type_module);
+				identifier.data_type = c_ast_data_type(e_ast_primitive_type::k_module);
 				identifier.ast_node = node;
 				identifier.overload_count = 1;
 				std::string overload_name = name + '$' + std::to_string(match->overload_count);
@@ -313,7 +313,7 @@ private:
 		const s_identifier *identifier,
 		const std::vector<s_expression_result> &argument_types) {
 		wl_assert(identifier);
-		wl_assert(identifier->data_type == c_ast_data_type(k_ast_primitive_type_module));
+		wl_assert(identifier->data_type == c_ast_data_type(e_ast_primitive_type::k_module));
 		for (uint32 overload = 0; overload < identifier->overload_count; overload++) {
 			const s_identifier *overload_identifier;
 			if (identifier->overload_count == 1) {
@@ -383,7 +383,7 @@ private:
 		// The second condition is so we only emit one error for this
 		if (scope.return_statement >= 0 && m_current_statement == scope.return_statement + 1) {
 			s_compiler_result error;
-			error.result = k_compiler_result_statements_after_return;
+			error.result = e_compiler_result::k_statements_after_return;
 			error.source_location = node->get_source_location();
 			error.message = "Module '" + scope.module_for_scope->get_name() +
 				"' contains statements after the return statement";
@@ -394,7 +394,7 @@ private:
 	void push_scope() {
 		if (m_scope_depth == 0 && !m_scope_stack.empty()) {
 			// On the second pass, the global scope already exists
-			wl_assert(m_pass == k_pass_validate_syntax);
+			wl_assert(m_pass == e_pass::k_validate_syntax);
 		} else {
 			m_scope_stack.push_front(s_scope());
 		}
@@ -403,7 +403,7 @@ private:
 
 	void undeclared_identifier_error(s_compiler_source_location source_location, const std::string &name) {
 		s_compiler_result error;
-		error.result = k_compiler_result_undeclared_identifier;
+		error.result = e_compiler_result::k_undeclared_identifier;
 		error.source_location = source_location;
 		error.message = "Identifier '" + name + "' has not been declared";
 		m_errors->push_back(error);
@@ -414,7 +414,7 @@ private:
 		const std::string &name,
 		c_ast_data_type type) {
 		s_compiler_result error;
-		error.result = k_compiler_result_type_mismatch;
+		error.result = e_compiler_result::k_type_mismatch;
 		error.source_location = source_location;
 		error.message = "Identifier '" + name + "' of type '" + type.get_string() + "' is not assignable";
 		m_errors->push_back(error);
@@ -425,7 +425,7 @@ private:
 		const std::string &name,
 		c_ast_data_type type) {
 		s_compiler_result error;
-		error.result = k_compiler_result_type_mismatch;
+		error.result = e_compiler_result::k_type_mismatch;
 		error.source_location = source_location;
 		error.message = "Identifier '" + name + "' of type '" + type.get_string() + "' is not callable";
 		m_errors->push_back(error);
@@ -436,7 +436,7 @@ private:
 		c_ast_data_type expected,
 		c_ast_data_type actual) {
 		s_compiler_result error;
-		error.result = k_compiler_result_type_mismatch;
+		error.result = e_compiler_result::k_type_mismatch;
 		error.source_location = source_location;
 		error.message = "Type mismatch: expected '" + expected.get_string() + "', got '" + actual.get_string() + "'";
 		m_errors->push_back(error);
@@ -444,7 +444,7 @@ private:
 
 	void dereference_non_array_error(s_compiler_source_location source_location, c_ast_data_type non_array_type) {
 		s_compiler_result error;
-		error.result = k_compiler_result_type_mismatch;
+		error.result = e_compiler_result::k_type_mismatch;
 		error.source_location = source_location;
 		error.message = "Cannot dereference non-array type '" + non_array_type.get_string() + "'";
 		m_errors->push_back(error);
@@ -452,7 +452,7 @@ private:
 
 	void unassigned_named_value_error(s_compiler_source_location source_location, const std::string &name) {
 		s_compiler_result error;
-		error.result = k_compiler_result_unassigned_named_value_used;
+		error.result = e_compiler_result::k_unassigned_named_value_used;
 		error.source_location = source_location;
 		error.message = "Unassigned named value '" + name + "' used";
 		m_errors->push_back(error);
@@ -463,7 +463,7 @@ public:
 		wl_assert(error_accumulator);
 
 		m_compiler_context = nullptr;
-		m_pass = k_pass_count;
+		m_pass = e_pass::k_count;
 		m_errors = error_accumulator;
 		m_module_for_next_scope = nullptr;
 		m_current_statement = 0;
@@ -475,7 +475,7 @@ public:
 	}
 
 	void set_pass(e_pass pass) {
-		wl_assert(pass < k_pass_count);
+		wl_assert(valid_enum_index(pass));
 		m_pass = pass;
 	}
 
@@ -497,7 +497,7 @@ public:
 			if (index < m_module_calls.size()) {
 				if (!visit_module(index)) {
 					s_compiler_result error;
-					error.result = k_compiler_result_cyclic_module_call;
+					error.result = e_compiler_result::k_cyclic_module_call;
 					error.source_location.clear();
 					error.message = "Cyclic module call(s) detected";
 					m_errors->push_back(error);
@@ -522,7 +522,7 @@ public:
 		s_scope &scope = m_scope_stack.front();
 
 		if (m_module_for_next_scope) {
-			wl_assert(m_pass == k_pass_validate_syntax);
+			wl_assert(m_pass == e_pass::k_validate_syntax);
 			scope.module_for_scope = m_module_for_next_scope;
 			scope.is_module_outer_scope = true;
 			m_module_for_next_scope = nullptr;
@@ -545,10 +545,10 @@ public:
 			wl_assert(scope.module_for_scope);
 
 			// Make sure a return statement was found if necessary
-			if (scope.module_for_scope->get_return_type() != c_ast_data_type(k_ast_primitive_type_void) &&
+			if (scope.module_for_scope->get_return_type() != c_ast_data_type(e_ast_primitive_type::k_void) &&
 				scope.return_statement < 0) {
 				s_compiler_result error;
-				error.result = k_compiler_result_missing_return_statement;
+				error.result = e_compiler_result::k_missing_return_statement;
 				error.source_location = scope.module_for_scope->get_source_location();
 				error.message = "Module '" + scope.module_for_scope->get_name() + "' is missing return statement";
 				m_errors->push_back(error);
@@ -558,7 +558,7 @@ public:
 			for (size_t index = 0; index < scope.module_for_scope->get_argument_count(); index++) {
 				const c_ast_node_named_value_declaration *argument = scope.module_for_scope->get_argument(index);
 
-				if (argument->get_qualifier() == k_ast_qualifier_out) {
+				if (argument->get_qualifier() == e_ast_qualifier::k_out) {
 					// Look up the context
 					s_named_value *match = get_named_value(argument);
 					// Context must already exist for this argument
@@ -566,7 +566,7 @@ public:
 
 					if (match->last_statement_assigned < 0) {
 						s_compiler_result error;
-						error.result = k_compiler_result_unassigned_output;
+						error.result = e_compiler_result::k_unassigned_output;
 						error.source_location = argument->get_source_location();
 						error.message = "Assignment for output argument '" + argument->get_name() + "' is missing";
 						m_errors->push_back(error);
@@ -585,7 +585,7 @@ public:
 	}
 
 	virtual bool begin_visit(const c_ast_node_module_declaration *node) {
-		if (m_pass == k_pass_register_global_identifiers) {
+		if (m_pass == e_pass::k_register_global_identifiers) {
 			// Add the module's name to the list of identifiers seen so far
 			wl_assert(m_scope_stack.size() == 1);
 			add_module_identifier_to_scope(node->get_name(), node);
@@ -600,7 +600,7 @@ public:
 				if ((is_voice_entry_point && m_voice_entry_point_found) ||
 					(is_fx_entry_point && m_fx_entry_point_found)) {
 					s_compiler_result error;
-					error.result = k_compiler_result_invalid_entry_point;
+					error.result = e_compiler_result::k_invalid_entry_point;
 					error.source_location = node->get_source_location();
 					error.message = std::string(is_voice_entry_point ? "Voice" : "FX") +
 						" entry point '" + node->get_name() + "' must not be overloaded";
@@ -614,9 +614,9 @@ public:
 					}
 
 					// Should have bool return value and only out arguments
-					if (node->get_return_type() != c_ast_data_type(k_ast_primitive_type_bool)) {
+					if (node->get_return_type() != c_ast_data_type(e_ast_primitive_type::k_bool)) {
 						s_compiler_result error;
-						error.result = k_compiler_result_invalid_entry_point;
+						error.result = e_compiler_result::k_invalid_entry_point;
 						error.source_location = node->get_source_location();
 						error.message = "Entry point '" + node->get_name() + "' must return a bool";
 						m_errors->push_back(error);
@@ -627,21 +627,21 @@ public:
 					bool all_real = true;
 					for (size_t arg = 0; all_out && arg < node->get_argument_count(); arg++) {
 						e_ast_qualifier qualifier = node->get_argument(arg)->get_qualifier();
-						m_voice_output_count += is_voice_entry_point && (qualifier == k_ast_qualifier_out);
-						m_fx_input_count += is_fx_entry_point && (qualifier == k_ast_qualifier_in);
+						m_voice_output_count += is_voice_entry_point && (qualifier == e_ast_qualifier::k_out);
+						m_fx_input_count += is_fx_entry_point && (qualifier == e_ast_qualifier::k_in);
 
-						if (qualifier != k_ast_qualifier_out) {
+						if (qualifier != e_ast_qualifier::k_out) {
 							all_out = false;
 						}
 
-						if (node->get_argument(arg)->get_data_type() != c_ast_data_type(k_ast_primitive_type_real)) {
+						if (node->get_argument(arg)->get_data_type() != c_ast_data_type(e_ast_primitive_type::k_real)) {
 							all_real = false;
 						}
 					}
 
 					if (is_voice_entry_point && !all_out) {
 						s_compiler_result error;
-						error.result = k_compiler_result_invalid_entry_point;
+						error.result = e_compiler_result::k_invalid_entry_point;
 						error.source_location = node->get_source_location();
 						error.message = "Voice entry point '" + node->get_name() + "' must only take out arguments";
 						m_errors->push_back(error);
@@ -649,7 +649,7 @@ public:
 
 					if (!all_real) {
 						s_compiler_result error;
-						error.result = k_compiler_result_invalid_entry_point;
+						error.result = e_compiler_result::k_invalid_entry_point;
 						error.source_location = node->get_source_location();
 						error.message = std::string(is_voice_entry_point ? "Voice" : "FX") +
 							" entry point '" + node->get_name() + "' must only take real arguments";
@@ -660,7 +660,7 @@ public:
 					if (m_voice_entry_point_found && m_fx_entry_point_found) {
 						if (m_voice_output_count != m_fx_input_count) {
 							s_compiler_result error;
-							error.result = k_compiler_result_invalid_entry_point;
+							error.result = e_compiler_result::k_invalid_entry_point;
 							error.source_location.clear();
 							error.message = "Voice entry point '" + std::string(k_voice_entry_point_name) +
 								"' output count does not match FX entry point '" + std::string(k_fx_entry_point_name) +
@@ -674,14 +674,14 @@ public:
 			// Don't enter the scope in this pass
 			return false;
 		} else if (!node->get_is_native()) {
-			wl_assert(m_pass == k_pass_validate_syntax);
+			wl_assert(m_pass == e_pass::k_validate_syntax);
 
 			// Prepare for processing in scope visitor
 			wl_assert(!m_module_for_next_scope);
 			m_module_for_next_scope = node;
 			return true;
 		} else {
-			wl_assert(m_pass == k_pass_validate_syntax);
+			wl_assert(m_pass == e_pass::k_validate_syntax);
 			// Don't visit native modules
 			return false;
 		}
@@ -697,12 +697,12 @@ public:
 		// Add the identifier to the scope
 		if (add_identifier_to_scope(node->get_name(), node, node->get_data_type())) {
 			s_named_value named_value;
-			if (node->get_qualifier() == k_ast_qualifier_none || node->get_qualifier() == k_ast_qualifier_out) {
+			if (node->get_qualifier() == e_ast_qualifier::k_none || node->get_qualifier() == e_ast_qualifier::k_out) {
 				// Locals and outputs start out being unassigned
 				named_value.last_statement_assigned = -1;
 			} else {
 				// Module inputs are already assigned at the beginning of the module
-				wl_assert(node->get_qualifier() == k_ast_qualifier_in);
+				wl_assert(node->get_qualifier() == e_ast_qualifier::k_in);
 				named_value.last_statement_assigned = m_current_statement;
 			}
 
@@ -746,7 +746,7 @@ public:
 
 		if (!node->get_is_valid_named_value()) {
 			s_compiler_result error;
-			error.result = k_compiler_result_invalid_lhs_named_value_assignment;
+			error.result = e_compiler_result::k_invalid_lhs_named_value_assignment;
 			error.source_location = node->get_source_location();
 			error.message = "Invalid LHS expression for assignment";
 			m_errors->push_back(error);
@@ -757,7 +757,7 @@ public:
 			const s_identifier *identifier = get_identifier(node->get_named_value());
 			if (!identifier) {
 				undeclared_identifier_error(node->get_source_location(), node->get_named_value());
-			} else if (identifier->ast_node->get_type() != k_ast_node_type_named_value_declaration) {
+			} else if (identifier->ast_node->get_type() != e_ast_node_type::k_named_value_declaration) {
 				unassignable_type_error(node->get_source_location(), node->get_named_value(), identifier->data_type);
 			} else if (node->get_array_index_expression() && !identifier->data_type.is_array()) {
 				// We're trying to dereference a non-array type
@@ -773,11 +773,11 @@ public:
 					// The result is a named value which hasn't been assigned yet
 					unassigned_named_value_error(node->get_source_location(), result.identifier_name);
 				} else if (node->get_array_index_expression() &&
-					array_index_result.type != c_ast_data_type(k_ast_primitive_type_real)) {
+					array_index_result.type != c_ast_data_type(e_ast_primitive_type::k_real)) {
 					// The array index should be a real
 					type_mismatch_error(
 						node->get_array_index_expression()->get_source_location(),
-						c_ast_data_type(k_ast_primitive_type_real),
+						c_ast_data_type(e_ast_primitive_type::k_real),
 						array_index_result.type);
 				} else {
 					// Look up the context
@@ -792,7 +792,7 @@ public:
 						// Make sure we're not assigning to a value we used as an output parameter; this is ambiguous
 						// However, it's okay if we used the named value on this same statement, e.g. x := x + 1;
 						s_compiler_result error;
-						error.result = k_compiler_result_ambiguous_named_value_assignment;
+						error.result = e_compiler_result::k_ambiguous_named_value_assignment;
 						error.source_location = node->get_source_location();
 						error.message = "Ambiguous assignment for named value '" + node->get_named_value() + "'";
 						m_errors->push_back(error);
@@ -813,11 +813,11 @@ public:
 		detect_statements_after_return(scope, node);
 
 		// Validate that the loop expression type is correct - a named value assignment node immediately preceded this
-		if (m_last_assigned_expression_result.type != c_ast_data_type(k_ast_primitive_type_real)) {
+		if (m_last_assigned_expression_result.type != c_ast_data_type(e_ast_primitive_type::k_real)) {
 			type_mismatch_error(
 				node->get_source_location(),
 				m_last_assigned_expression_result.type,
-				c_ast_data_type(k_ast_primitive_type_real));
+				c_ast_data_type(e_ast_primitive_type::k_real));
 		} else if (!m_last_assigned_expression_result.has_value) {
 			unassigned_named_value_error(
 				node->get_source_location(),
@@ -840,7 +840,7 @@ public:
 
 		if (!scope.is_module_outer_scope) {
 			s_compiler_result error;
-			error.result = k_compiler_result_statements_after_return;
+			error.result = e_compiler_result::k_statements_after_return;
 			error.source_location = node->get_source_location();
 			error.message = "Return statement in module '" + scope.module_for_scope->get_name() +
 				"' must be in outermost scope";
@@ -849,15 +849,15 @@ public:
 
 		if (scope.return_statement >= 0) {
 			s_compiler_result error;
-			error.result = k_compiler_result_duplicate_return_statement;
+			error.result = e_compiler_result::k_duplicate_return_statement;
 			error.source_location = node->get_source_location();
 			error.message = "Module '" + scope.module_for_scope->get_name() + "' has multiple return statements";
 			m_errors->push_back(error);
 		}
 
-		if (scope.module_for_scope->get_return_type() == c_ast_data_type(k_ast_primitive_type_void)) {
+		if (scope.module_for_scope->get_return_type() == c_ast_data_type(e_ast_primitive_type::k_void)) {
 			s_compiler_result error;
-			error.result = k_compiler_result_extraneous_return_statement;
+			error.result = e_compiler_result::k_extraneous_return_statement;
 			error.source_location = node->get_source_location();
 			error.message = "Module '" + scope.module_for_scope->get_name() + "' has extraneous return statement";
 			m_errors->push_back(error);
@@ -945,7 +945,7 @@ public:
 
 	virtual void end_visit(const c_ast_node_named_value *node) {
 		s_expression_result result;
-		result.type = c_ast_data_type(k_ast_primitive_type_void);
+		result.type = c_ast_data_type(e_ast_primitive_type::k_void);
 		result.identifier_name = node->get_name();
 		result.has_value = true;
 
@@ -956,7 +956,7 @@ public:
 		if (!identifier) {
 			result.identifier_name = "$invalid";
 			undeclared_identifier_error(node->get_source_location(), node->get_name());
-		} else if (identifier->ast_node->get_type() != k_ast_node_type_named_value_declaration) {
+		} else if (identifier->ast_node->get_type() != e_ast_node_type::k_named_value_declaration) {
 			unassignable_type_error(node->get_source_location(), node->get_name(), identifier->data_type);
 		} else {
 			// Look up the context
@@ -979,7 +979,7 @@ public:
 	virtual void end_visit(const c_ast_node_module_call *node) {
 		// If there is an error, this is the default result we will push
 		s_expression_result result;
-		result.type = c_ast_data_type(k_ast_primitive_type_void);
+		result.type = c_ast_data_type(e_ast_primitive_type::k_void);
 
 		// The result always has a value (even if it's void)
 		result.has_value = true;
@@ -999,7 +999,7 @@ public:
 		const s_identifier *identifier = get_identifier(node->get_name());
 		if (!identifier) {
 			undeclared_identifier_error(node->get_source_location(), node->get_name());
-		} else if (identifier->ast_node->get_type() != k_ast_node_type_module_declaration) {
+		} else if (identifier->ast_node->get_type() != e_ast_node_type::k_module_declaration) {
 			uncallable_type_error(node->get_source_location(), node->get_name(), identifier->data_type);
 		} else {
 			const c_ast_node_module_declaration *module_declaration =
@@ -1011,7 +1011,7 @@ public:
 			if (!matching_overload_module_declaration && identifier->overload_count > 1) {
 				// For overloaded modules, spit out a single catch-all error if we don't find a match
 				s_compiler_result error;
-				error.result = k_compiler_result_missing_import;
+				error.result = e_compiler_result::k_missing_import;
 				error.source_location = node->get_source_location();
 				error.message = "No overloads for module '" + node->get_name() + "' match the arguments provided";
 				m_errors->push_back(error);
@@ -1038,7 +1038,7 @@ public:
 
 				if (!module_is_imported) {
 					s_compiler_result error;
-					error.result = k_compiler_result_missing_import;
+					error.result = e_compiler_result::k_missing_import;
 					error.source_location = node->get_source_location();
 					error.message = "Identifier '" + node->get_name() + "' has not been imported";
 					m_errors->push_back(error);
@@ -1053,7 +1053,7 @@ public:
 					} else {
 						if (node->get_argument_count() != module_declaration->get_argument_count()) {
 							s_compiler_result error;
-							error.result = k_compiler_result_incorrect_argument_count;
+							error.result = e_compiler_result::k_incorrect_argument_count;
 							error.source_location = node->get_source_location();
 							error.message =
 								"Incorrect argument count for module call '" + module_declaration->get_name() +
@@ -1084,16 +1084,16 @@ public:
 
 						// If this argument has an out qualifier, it must take a direct named value
 						// We currently don't support outputting to an array element directly
-						if (argument->get_qualifier() == k_ast_qualifier_out &&
+						if (argument->get_qualifier() == e_ast_qualifier::k_out &&
 							argument_result.identifier_name.empty()) {
 							s_compiler_result error;
-							error.result = k_compiler_result_named_value_expected;
+							error.result = e_compiler_result::k_named_value_expected;
 							error.source_location = node->get_argument(arg)->get_source_location();
 							error.message = "Expected named value for out-qualified argument";
 							m_errors->push_back(error);
 						}
 
-						if (argument->get_qualifier() == k_ast_qualifier_in &&
+						if (argument->get_qualifier() == e_ast_qualifier::k_in &&
 							!argument_result.has_value) {
 							unassigned_named_value_error(
 								node->get_argument(arg)->get_source_location(),
@@ -1106,15 +1106,15 @@ public:
 							s_named_value *named_value = get_named_value(identifier->ast_node);
 							wl_assert(named_value);
 
-							if (argument->get_qualifier() == k_ast_qualifier_in) {
+							if (argument->get_qualifier() == e_ast_qualifier::k_in) {
 								named_value->last_statement_used = m_current_statement;
 							} else {
-								wl_assert(argument->get_qualifier() == k_ast_qualifier_out);
+								wl_assert(argument->get_qualifier() == e_ast_qualifier::k_out);
 
 								if (named_value->last_statement_assigned == m_current_statement) {
 									// We should not assign the same named value from two different outputs
 									s_compiler_result error;
-									error.result = k_compiler_result_ambiguous_named_value_assignment;
+									error.result = e_compiler_result::k_ambiguous_named_value_assignment;
 									error.source_location = node->get_source_location();
 									error.message = "Ambiguous assignment for named value '" +
 										result.identifier_name + "'";
@@ -1129,7 +1129,7 @@ public:
 								// Make sure we're not assigning to a value we used as an output parameter; this is
 								// ambiguous
 								s_compiler_result error;
-								error.result = k_compiler_result_ambiguous_named_value_assignment;
+								error.result = e_compiler_result::k_ambiguous_named_value_assignment;
 								error.source_location = node->get_source_location();
 								error.message = "Used and assigned named value '" + result.identifier_name +
 									"' in the same statement";
@@ -1156,17 +1156,17 @@ s_compiler_result c_ast_validator::validate(
 
 	c_ast_validator_visitor visitor(&out_errors);
 	visitor.set_compiler_context(compiler_context);
-	visitor.set_pass(c_ast_validator_visitor::k_pass_register_global_identifiers);
+	visitor.set_pass(c_ast_validator_visitor::e_pass::k_register_global_identifiers);
 	ast->iterate(&visitor);
 
-	visitor.set_pass(c_ast_validator_visitor::k_pass_validate_syntax);
+	visitor.set_pass(c_ast_validator_visitor::e_pass::k_validate_syntax);
 	ast->iterate(&visitor);
 
 	// Validate that an entry point was found
 	if (!visitor.was_voice_entry_point_found() &&
 		!visitor.was_fx_entry_point_found()) {
 		s_compiler_result error;
-		error.result = k_compiler_result_no_entry_point;
+		error.result = e_compiler_result::k_no_entry_point;
 		error.source_location.clear();
 		error.message = "No voice entry point '" + std::string(k_voice_entry_point_name) +
 			"' or FX entry point '" + std::string(k_fx_entry_point_name) + "' found";
@@ -1175,7 +1175,7 @@ s_compiler_result c_ast_validator::validate(
 
 	if (!out_errors.empty()) {
 		// Don't associate the error with a particular file, those errors are collected through out_errors
-		result.result = k_compiler_result_syntax_error;
+		result.result = e_compiler_result::k_syntax_error;
 		result.message = "Syntax error(s) detected";
 	}
 

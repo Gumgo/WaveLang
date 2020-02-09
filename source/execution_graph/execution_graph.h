@@ -12,33 +12,33 @@
 
 // $TODO rename the folder "instrument" - will require a decent amount of refactoring, including jamfiles
 
-enum e_execution_graph_node_type {
+enum class e_execution_graph_node_type {
 	// An invalid node, or a node which has been removed
-	k_execution_graph_node_type_invalid,
+	k_invalid,
 
 	// Represents a constant; can only be used as inputs
-	k_execution_graph_node_type_constant,
+	k_constant,
 
-	// Has 1 input per in argument pointing to a k_execution_graph_node_type_indexed_input node
-	// Has 1 output per out argument pointing to a k_execution_graph_node_type_indexed_output node
-	k_execution_graph_node_type_native_module_call,
+	// Has 1 input per in argument pointing to a e_execution_graph_node_type::k_indexed_input node
+	// Has 1 output per out argument pointing to a e_execution_graph_node_type::k_indexed_output node
+	k_native_module_call,
 
-	// An input to a native module
-	k_execution_graph_node_type_indexed_input,
+	// An input with an index, used for native module arguments and array indices
+	k_indexed_input,
 
-	// An output to a native module
-	k_execution_graph_node_type_indexed_output,
+	// An output with an index, used for native module arguments
+	k_indexed_output,
 
 	// Has exactly 1 output and no inputs
-	k_execution_graph_node_type_input,
+	k_input,
 
 	// Has exactly 1 input and no outputs
-	k_execution_graph_node_type_output,
+	k_output,
 
 	// Used to temporarily reference other nodes to ensure that they don't get removed when building the graph
-	k_execution_graph_node_type_temporary_reference,
+	k_temporary_reference,
 
-	k_execution_graph_node_type_count
+	k_count
 };
 
 class c_execution_graph {

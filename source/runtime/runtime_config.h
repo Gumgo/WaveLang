@@ -11,12 +11,12 @@ class c_controller_driver_interface;
 struct s_audio_device_info;
 struct s_controller_device_info;
 
-enum e_runtime_config_result {
-	k_runtime_config_result_success,
-	k_runtime_config_result_does_not_exist,
-	k_runtime_config_result_error,
+enum class e_runtime_config_result {
+	k_success,
+	k_does_not_exist,
+	k_error,
 
-	k_runtime_config_result_count
+	k_count
 };
 
 class c_runtime_config {

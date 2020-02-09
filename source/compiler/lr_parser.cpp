@@ -260,13 +260,13 @@ bool c_lr_item_set::operator==(const c_lr_item_set &other) const {
 
 c_lr_action::c_lr_action() {
 	m_state_or_production_index = 0;
-	m_action_type = k_lr_action_type_invalid;
+	m_action_type = static_cast<uint32>(e_lr_action_type::k_invalid);
 }
 
 c_lr_action::c_lr_action(e_lr_action_type action_type, uint32 index) {
-	wl_assert(VALID_INDEX(action_type, k_lr_action_type_count));
-	if (action_type == k_lr_action_type_invalid ||
-		action_type == k_lr_action_type_accept) {
+	wl_assert(valid_enum_index(action_type));
+	if (action_type == e_lr_action_type::k_invalid ||
+		action_type == e_lr_action_type::k_accept) {
 		// These actions don't have an index
 		wl_assert(index == 0);
 	}
@@ -283,12 +283,12 @@ e_lr_action_type c_lr_action::get_action_type() const {
 }
 
 uint32 c_lr_action::get_shift_state_index() const {
-	wl_assert(get_action_type() == k_lr_action_type_shift);
+	wl_assert(get_action_type() == e_lr_action_type::k_shift);
 	return m_state_or_production_index;
 }
 
 uint32 c_lr_action::get_reduce_production_index() const {
-	wl_assert(get_action_type() == k_lr_action_type_reduce);
+	wl_assert(get_action_type() == e_lr_action_type::k_reduce);
 	return m_state_or_production_index;
 }
 
@@ -347,27 +347,27 @@ e_lr_conflict c_lr_action_goto_table::set_action(uint32 state_index, uint16 term
 	size_t index = state_index * m_terminal_count + terminal_index;
 
 	c_lr_action current_action = m_action_table[index];
-	if (current_action.get_action_type() != k_lr_action_type_invalid &&
-		action.get_action_type() != k_lr_action_type_invalid &&
+	if (current_action.get_action_type() != e_lr_action_type::k_invalid &&
+		action.get_action_type() != e_lr_action_type::k_invalid &&
 		current_action != action) {
 		// We should never get into a state where an accept action conflicts
-		wl_assert(current_action.get_action_type() != k_lr_action_type_accept &&
-			action.get_action_type() != k_lr_action_type_accept);
+		wl_assert(current_action.get_action_type() != e_lr_action_type::k_accept &&
+			action.get_action_type() != e_lr_action_type::k_accept);
 
 		if (current_action.get_action_type() != action.get_action_type()) {
 			// One is shift and the other is reduce
-			return k_lr_conflict_shift_reduce;
+			return e_lr_conflict::k_shift_reduce;
 		} else {
 			// We can't have shift-shift conflict
-			wl_assert(current_action.get_action_type() == k_lr_action_type_reduce &&
-				action.get_action_type() == k_lr_action_type_reduce);
+			wl_assert(current_action.get_action_type() == e_lr_action_type::k_reduce &&
+				action.get_action_type() == e_lr_action_type::k_reduce);
 
-			return k_lr_conflict_reduce_reduce;
+			return e_lr_conflict::k_reduce_reduce;
 		}
 	}
 
 	m_action_table[index] = action;
-	return k_lr_conflict_none;
+	return e_lr_conflict::k_none;
 }
 
 void c_lr_action_goto_table::set_goto(uint32 state_index, uint16 nonterminal_index, uint32 goto_index) {
@@ -391,22 +391,22 @@ void c_lr_action_goto_table::output_action_goto_tables() const {
 		uint32 action_index = 0;
 
 		switch (action_type) {
-		case k_lr_action_type_invalid:
-			action_type_string = "k_lr_action_type_invalid";
+		case e_lr_action_type::k_invalid:
+			action_type_string = "e_lr_action_type::k_invalid";
 			break;
 
-		case k_lr_action_type_shift:
-			action_type_string = "k_lr_action_type_shift";
+		case e_lr_action_type::k_shift:
+			action_type_string = "e_lr_action_type::k_shift";
 			action_index = action.get_shift_state_index();
 			break;
 
-		case k_lr_action_type_reduce:
-			action_type_string = "k_lr_action_type_reduce";
+		case e_lr_action_type::k_reduce:
+			action_type_string = "e_lr_action_type::k_reduce";
 			action_index = action.get_reduce_production_index();
 			break;
 
-		case k_lr_action_type_accept:
-			action_type_string = "k_lr_action_type_accept";
+		case e_lr_action_type::k_accept:
+			action_type_string = "e_lr_action_type::k_accept";
 			break;
 
 		default:
@@ -598,11 +598,11 @@ c_lr_parse_tree c_lr_parser::parse_token_stream(
 		s_stack_element stack_top = state_stack.top();
 		c_lr_action action = m_action_goto_table.get_action(stack_top.state, current_token);
 
-		if (action.get_action_type() == k_lr_action_type_invalid) {
+		if (action.get_action_type() == e_lr_action_type::k_invalid) {
 			// Error. $TODO Implement error-recovery so we can detect multiple errors, but for now just return early
 			out_error_tokens.push_back(current_token_index);
 			done = true;
-		} else if (action.get_action_type() == k_lr_action_type_shift) {
+		} else if (action.get_action_type() == e_lr_action_type::k_shift) {
 			// Push the new state, read next token
 			s_stack_element stack_element;
 			stack_element.state = action.get_shift_state_index();
@@ -613,7 +613,7 @@ c_lr_parse_tree c_lr_parser::parse_token_stream(
 			if (!get_next_token(context, current_token)) {
 				current_token = m_end_of_input_terminal_index;
 			}
-		} else if (action.get_action_type() == k_lr_action_type_reduce) {
+		} else if (action.get_action_type() == e_lr_action_type::k_reduce) {
 			uint32 production_index = action.get_reduce_production_index();
 			const s_lr_production &production = m_production_set.get_production(production_index);
 
@@ -631,7 +631,7 @@ c_lr_parse_tree c_lr_parser::parse_token_stream(
 			stack_element.state = m_action_goto_table.get_goto(stack_top.state, production.lhs.get_index());
 			stack_element.node_index = parent_node_index;
 			state_stack.push(stack_element);
-		} else if (action.get_action_type() == k_lr_action_type_accept) {
+		} else if (action.get_action_type() == e_lr_action_type::k_accept) {
 			result_tree.set_root_node_index(stack_top.node_index);
 			done = true;
 		} else {
@@ -922,13 +922,13 @@ void c_lr_parser::compute_item_sets() {
 							c_lr_symbol symbol_after_pointer = item_production.rhs[item.pointer_index];
 
 							if (symbol_after_pointer == symbol) {
-								c_lr_action action(k_lr_action_type_shift, match_index);
+								c_lr_action action(e_lr_action_type::k_shift, match_index);
 
 								e_lr_conflict conflict =
 									m_action_goto_table.set_action(item_set_index, symbol.get_index(), action);
 
 								// $TODO Better error handling
-								wl_assert(conflict == k_lr_conflict_none);
+								wl_assert(conflict == e_lr_conflict::k_none);
 							}
 						}
 					}
@@ -957,19 +957,19 @@ void c_lr_parser::compute_item_sets() {
 					wl_assert(item.lookahead == c_lr_symbol(true, m_end_of_input_terminal_index));
 
 					e_lr_conflict conflict = m_action_goto_table.set_action(
-						item_set_index, m_end_of_input_terminal_index, c_lr_action(k_lr_action_type_accept));
+						item_set_index, m_end_of_input_terminal_index, c_lr_action(e_lr_action_type::k_accept));
 
 					// $TODO Better error handling
-					wl_assert(conflict == k_lr_conflict_none);
+					wl_assert(conflict == e_lr_conflict::k_none);
 				} else {
 					// This is a reduce action
 					e_lr_conflict conflict = m_action_goto_table.set_action(
 						item_set_index,
 						item.lookahead.get_index(),
-						c_lr_action(k_lr_action_type_reduce, static_cast<uint32>(item.production_index)));
+						c_lr_action(e_lr_action_type::k_reduce, static_cast<uint32>(item.production_index)));
 
 					// $TODO Better error handling
-					wl_assert(conflict == k_lr_conflict_none);
+					wl_assert(conflict == e_lr_conflict::k_none);
 				}
 			}
 		}
@@ -998,8 +998,8 @@ c_lr_item_set c_lr_parser::compute_closure(const c_lr_item_set &item_set) const 
 			if (!pointer_symbol.is_terminal()) {
 				// Find each production with an LHS of this nonterminal
 				for (size_t production_index = 0;
-					 production_index < m_production_set.get_production_count();
-					 production_index++) {
+					production_index < m_production_set.get_production_count();
+					production_index++) {
 					// Skip if this production's LHS doesn't match
 					const s_lr_production &production = m_production_set.get_production(production_index);
 					if (production.lhs != pointer_symbol) {
@@ -1026,8 +1026,8 @@ c_lr_item_set c_lr_parser::compute_closure(const c_lr_item_set &item_set) const 
 
 					// For each symbol in the first set of the remaining symbols followed by the lookahead...
 					for (size_t first_index = 0;
-						 first_index < first_after_pointer_nonterminal.get_symbol_count();
-						 first_index++) {
+						first_index < first_after_pointer_nonterminal.get_symbol_count();
+						first_index++) {
 						// Construct an item consisting of the production with the pointer before the first symbol and
 						// the lookahead symbol from the first set
 						s_lr_item new_item;

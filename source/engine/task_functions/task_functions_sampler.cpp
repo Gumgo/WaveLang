@@ -191,11 +191,11 @@ struct s_sampler_algorithm {
 
 		if (k_loop) {
 			// Bidi loops are preprocessed so at this point they act as normal loops
-			wl_assert(sample->get_loop_mode() == k_sample_loop_mode_loop ||
-				sample->get_loop_mode() == k_sample_loop_mode_bidi_loop);
+			wl_assert(sample->get_loop_mode() == e_sample_loop_mode::k_loop ||
+				sample->get_loop_mode() == e_sample_loop_mode::k_bidi_loop);
 			wl_assert(!context->reached_end);
 		} else {
-			wl_assert(sample->get_loop_mode() == k_sample_loop_mode_none);
+			wl_assert(sample->get_loop_mode() == e_sample_loop_mode::k_none);
 		}
 
 		bool is_wavetable = sample->is_wavetable();
@@ -1118,7 +1118,7 @@ namespace sampler_task_functions {
 		static_cast<s_buffer_operation_sampler *>(context.task_memory)->initialize_file(
 			context.event_interface,
 			context.sample_requester,
-			name, k_sample_loop_mode_none, false, channel);
+			name, e_sample_loop_mode::k_none, false, channel);
 	}
 
 	void sampler_voice_initializer(const s_task_function_context &context) {
@@ -1162,7 +1162,7 @@ namespace sampler_task_functions {
 		bool bidi,
 		c_real_const_buffer_or_constant phase) {
 		bool phase_shift_enabled = !phase.is_constant() || (clamp(phase.get_constant(), 0.0f, 1.0f) != 0.0f);
-		e_sample_loop_mode loop_mode = bidi ? k_sample_loop_mode_bidi_loop : k_sample_loop_mode_loop;
+		e_sample_loop_mode loop_mode = bidi ? e_sample_loop_mode::k_bidi_loop : e_sample_loop_mode::k_loop;
 		static_cast<s_buffer_operation_sampler *>(context.task_memory)->initialize_file(
 			context.event_interface,
 			context.sample_requester,
@@ -1208,7 +1208,7 @@ namespace sampler_task_functions {
 		const char *name,
 		real32 channel,
 		bool bidi) {
-		e_sample_loop_mode loop_mode = bidi ? k_sample_loop_mode_bidi_loop : k_sample_loop_mode_loop;
+		e_sample_loop_mode loop_mode = bidi ? e_sample_loop_mode::k_bidi_loop : e_sample_loop_mode::k_loop;
 		static_cast<s_buffer_operation_sampler *>(context.task_memory)->initialize_file(
 			context.event_interface,
 			context.sample_requester,

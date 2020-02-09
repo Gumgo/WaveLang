@@ -64,28 +64,28 @@ struct s_native_module_uid {
 };
 
 // Fixed list of operators which are to be associated with native modules
-enum e_native_operator {
-	k_native_operator_invalid = -1,
+enum class e_native_operator {
+	k_invalid = -1,
 
-	k_native_operator_noop, // Special case "no-op" operator
-	k_native_operator_negation,
-	k_native_operator_addition,
-	k_native_operator_subtraction,
-	k_native_operator_multiplication,
-	k_native_operator_division,
-	k_native_operator_modulo,
-	k_native_operator_not,
-	k_native_operator_equal,
-	k_native_operator_not_equal,
-	k_native_operator_less,
-	k_native_operator_greater,
-	k_native_operator_less_equal,
-	k_native_operator_greater_equal,
-	k_native_operator_and,
-	k_native_operator_or,
-	k_native_operator_array_dereference,
+	k_noop, // Special case "no-op" operator
+	k_negation,
+	k_addition,
+	k_subtraction,
+	k_multiplication,
+	k_division,
+	k_modulo,
+	k_not,
+	k_equal,
+	k_not_equal,
+	k_less,
+	k_greater,
+	k_less_equal,
+	k_greater_equal,
+	k_and,
+	k_or,
+	k_array_dereference,
 
-	k_native_operator_count
+	k_count
 };
 
 // Returns the native module name associated with the native operator. These are special pre-defined names which take
@@ -93,27 +93,27 @@ enum e_native_operator {
 // used for module identification and in output.
 const char *get_native_operator_native_module_name(e_native_operator native_operator);
 
-enum e_native_module_qualifier {
-	k_native_module_qualifier_in,
-	k_native_module_qualifier_out,
+enum class e_native_module_qualifier {
+	k_in,
+	k_out,
 
 	// Same as input argument, except the value must resolve to a compile-time constant
-	k_native_module_qualifier_constant,
+	k_constant,
 
-	k_native_module_qualifier_count
+	k_count
 };
 
 // Many cases accept both "in" and "constant", so use this utility function for those
 inline bool native_module_qualifier_is_input(e_native_module_qualifier qualifier) {
-	return (qualifier == k_native_module_qualifier_in) || (qualifier == k_native_module_qualifier_constant);
+	return (qualifier == e_native_module_qualifier::k_in) || (qualifier == e_native_module_qualifier::k_constant);
 }
 
-enum e_native_module_primitive_type {
-	k_native_module_primitive_type_real,
-	k_native_module_primitive_type_bool,
-	k_native_module_primitive_type_string,
+enum class e_native_module_primitive_type {
+	k_real,
+	k_bool,
+	k_string,
 
-	k_native_module_primitive_type_count
+	k_count
 };
 
 struct s_native_module_primitive_type_traits {
@@ -141,10 +141,10 @@ public:
 	bool read(uint32 data);
 
 private:
-	enum e_flag {
-		k_flag_is_array,
+	enum class e_flag {
+		k_is_array,
 
-		k_flag_count
+		k_count
 	};
 
 	e_native_module_primitive_type m_primitive_type;
@@ -196,73 +196,73 @@ struct s_native_module_compile_time_argument {
 
 	real32 get_real_in() const {
 		wl_assert(native_module_qualifier_is_input(type.get_qualifier()));
-		wl_assert(type.get_data_type() == c_native_module_data_type(k_native_module_primitive_type_real));
+		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_real));
 		return real_value;
 	}
 
 	real32 &get_real_out() {
-		wl_assert(type.get_qualifier() == k_native_module_qualifier_out);
-		wl_assert(type.get_data_type() == c_native_module_data_type(k_native_module_primitive_type_real));
+		wl_assert(type.get_qualifier() == e_native_module_qualifier::k_out);
+		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_real));
 		return real_value;
 	}
 
 	bool get_bool_in() const {
 		wl_assert(native_module_qualifier_is_input(type.get_qualifier()));
-		wl_assert(type.get_data_type() == c_native_module_data_type(k_native_module_primitive_type_bool));
+		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_bool));
 		return bool_value;
 	}
 
 	bool &get_bool_out() {
-		wl_assert(type.get_qualifier() == k_native_module_qualifier_out);
-		wl_assert(type.get_data_type() == c_native_module_data_type(k_native_module_primitive_type_bool));
+		wl_assert(type.get_qualifier() == e_native_module_qualifier::k_out);
+		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_bool));
 		return bool_value;
 	}
 
 	const c_native_module_string &get_string_in() const {
 		wl_assert(native_module_qualifier_is_input(type.get_qualifier()));
-		wl_assert(type.get_data_type() == c_native_module_data_type(k_native_module_primitive_type_string));
+		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_string));
 		return string_value;
 	}
 
 	c_native_module_string &get_string_out() {
-		wl_assert(type.get_qualifier() == k_native_module_qualifier_out);
-		wl_assert(type.get_data_type() == c_native_module_data_type(k_native_module_primitive_type_string));
+		wl_assert(type.get_qualifier() == e_native_module_qualifier::k_out);
+		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_string));
 		return string_value;
 	}
 
 	const c_native_module_real_array &get_real_array_in() const {
 		wl_assert(native_module_qualifier_is_input(type.get_qualifier()));
-		wl_assert(type.get_data_type() == c_native_module_data_type(k_native_module_primitive_type_real, true));
+		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_real, true));
 		return *static_cast<const c_native_module_real_array *>(&array_value);
 	}
 
 	c_native_module_real_array &get_real_array_out() {
-		wl_assert(type.get_qualifier() == k_native_module_qualifier_out);
-		wl_assert(type.get_data_type() == c_native_module_data_type(k_native_module_primitive_type_real, true));
+		wl_assert(type.get_qualifier() == e_native_module_qualifier::k_out);
+		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_real, true));
 		return *static_cast<c_native_module_real_array *>(&array_value);
 	}
 
 	const c_native_module_bool_array &get_bool_array_in() const {
 		wl_assert(native_module_qualifier_is_input(type.get_qualifier()));
-		wl_assert(type.get_data_type() == c_native_module_data_type(k_native_module_primitive_type_bool, true));
+		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_bool, true));
 		return *static_cast<const c_native_module_bool_array *>(&array_value);
 	}
 
 	c_native_module_bool_array &get_bool_array_out() {
-		wl_assert(type.get_qualifier() == k_native_module_qualifier_out);
-		wl_assert(type.get_data_type() == c_native_module_data_type(k_native_module_primitive_type_bool, true));
+		wl_assert(type.get_qualifier() == e_native_module_qualifier::k_out);
+		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_bool, true));
 		return *static_cast<c_native_module_bool_array *>(&array_value);
 	}
 
 	const c_native_module_string_array &get_string_array_in() const {
 		wl_assert(native_module_qualifier_is_input(type.get_qualifier()));
-		wl_assert(type.get_data_type() == c_native_module_data_type(k_native_module_primitive_type_string, true));
+		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_string, true));
 		return *static_cast<const c_native_module_string_array *>(&array_value);
 	}
 
 	c_native_module_string_array &get_string_array_out() {
-		wl_assert(type.get_qualifier() == k_native_module_qualifier_out);
-		wl_assert(type.get_data_type() == c_native_module_data_type(k_native_module_primitive_type_string, true));
+		wl_assert(type.get_qualifier() == e_native_module_qualifier::k_out);
+		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_string, true));
 		return *static_cast<c_native_module_string_array *>(&array_value);
 	}
 };
@@ -313,19 +313,19 @@ size_t get_native_module_output_index_for_argument_index(
 // An optimization rule consists of two "patterns", a source and target. Each pattern represents a graph of native
 // module operations. If the source pattern is identified in the graph, it is replaced with the target pattern.
 
-enum e_native_module_optimization_symbol_type {
-	k_native_module_optimization_symbol_type_invalid,
+enum class e_native_module_optimization_symbol_type {
+	k_invalid,
 
-	k_native_module_optimization_symbol_type_native_module,
-	k_native_module_optimization_symbol_type_native_module_end,
-	k_native_module_optimization_symbol_type_array_dereference,
-	k_native_module_optimization_symbol_type_variable,
-	k_native_module_optimization_symbol_type_constant,
-	k_native_module_optimization_symbol_type_real_value,
-	k_native_module_optimization_symbol_type_bool_value,
-	//k_native_module_optimization_symbol_type_string_value, // Probably never needed, since strings are always constant
+	k_native_module,
+	k_native_module_end,
+	k_array_dereference,
+	k_variable,
+	k_constant,
+	k_real_value,
+	k_bool_value,
+	//k_string_value, // Probably never needed, since strings are always constant
 
-	k_native_module_optimization_symbol_type_count
+	k_count
 };
 
 static const size_t k_max_native_module_optimization_pattern_length = 16;
@@ -349,13 +349,13 @@ struct s_native_module_optimization_symbol {
 	}
 
 	bool is_valid() const {
-		return type != k_native_module_optimization_symbol_type_invalid;
+		return type != e_native_module_optimization_symbol_type::k_invalid;
 	}
 
 	static s_native_module_optimization_symbol build_native_module(s_native_module_uid native_module_uid) {
 		s_native_module_optimization_symbol result;
 		ZERO_STRUCT(&result);
-		result.type = k_native_module_optimization_symbol_type_native_module;
+		result.type = e_native_module_optimization_symbol_type::k_native_module;
 		result.data.native_module_uid = native_module_uid;
 		return result;
 	}
@@ -363,14 +363,14 @@ struct s_native_module_optimization_symbol {
 	static s_native_module_optimization_symbol build_array_dereference() {
 		s_native_module_optimization_symbol result;
 		ZERO_STRUCT(&result);
-		result.type = k_native_module_optimization_symbol_type_array_dereference;
+		result.type = e_native_module_optimization_symbol_type::k_array_dereference;
 		return result;
 	}
 
 	static s_native_module_optimization_symbol build_native_module_end() {
 		s_native_module_optimization_symbol result;
 		ZERO_STRUCT(&result);
-		result.type = k_native_module_optimization_symbol_type_native_module_end;
+		result.type = e_native_module_optimization_symbol_type::k_native_module_end;
 		return result;
 	}
 
@@ -378,7 +378,7 @@ struct s_native_module_optimization_symbol {
 		wl_assert(VALID_INDEX(index, k_max_matched_symbols));
 		s_native_module_optimization_symbol result;
 		ZERO_STRUCT(&result);
-		result.type = k_native_module_optimization_symbol_type_variable;
+		result.type = e_native_module_optimization_symbol_type::k_variable;
 		result.data.index = index;
 		return result;
 	}
@@ -387,7 +387,7 @@ struct s_native_module_optimization_symbol {
 		wl_assert(VALID_INDEX(index, k_max_matched_symbols));
 		s_native_module_optimization_symbol result;
 		ZERO_STRUCT(&result);
-		result.type = k_native_module_optimization_symbol_type_constant;
+		result.type = e_native_module_optimization_symbol_type::k_constant;
 		result.data.index = index;
 		return result;
 	}
@@ -395,7 +395,7 @@ struct s_native_module_optimization_symbol {
 	static s_native_module_optimization_symbol build_real_value(real32 real_value) {
 		s_native_module_optimization_symbol result;
 		ZERO_STRUCT(&result);
-		result.type = k_native_module_optimization_symbol_type_real_value;
+		result.type = e_native_module_optimization_symbol_type::k_real_value;
 		result.data.real_value = real_value;
 		return result;
 	}
@@ -403,7 +403,7 @@ struct s_native_module_optimization_symbol {
 	static s_native_module_optimization_symbol build_bool_value(bool bool_value) {
 		s_native_module_optimization_symbol result;
 		ZERO_STRUCT(&result);
-		result.type = k_native_module_optimization_symbol_type_bool_value;
+		result.type = e_native_module_optimization_symbol_type::k_bool_value;
 		result.data.bool_value = bool_value;
 		return result;
 	}

@@ -6,82 +6,82 @@
 
 #include <vector>
 
-enum e_token_type {
+enum class e_token_type : uint16 {
 	// Invalid token to indicate errors
-	k_token_type_invalid,
+	k_invalid,
 
 	// Keywords
-	k_token_type_first_keyword,
+	k_first_keyword,
 
-	k_token_type_keyword_const = k_token_type_first_keyword,
-	k_token_type_keyword_in,
-	k_token_type_keyword_out,
-	k_token_type_keyword_module,
-	k_token_type_keyword_void,
-	k_token_type_keyword_real,
-	k_token_type_keyword_bool,
-	k_token_type_keyword_string,
-	k_token_type_keyword_return,
-	k_token_type_keyword_repeat,
+	k_keyword_const = k_first_keyword,
+	k_keyword_in,
+	k_keyword_out,
+	k_keyword_module,
+	k_keyword_void,
+	k_keyword_real,
+	k_keyword_bool,
+	k_keyword_string,
+	k_keyword_return,
+	k_keyword_repeat,
 
-	k_token_type_last_keyword = k_token_type_keyword_repeat,
+	k_last_keyword = k_keyword_repeat,
 
 	// Identifiers start with [a-zA-Z_] followed by 0 or more [a-zA-Z0-9_]
-	k_token_type_identifier,
+	k_identifier,
 
 	// Constants
-	k_token_type_constant_real,
-	k_token_type_constant_bool,
-	k_token_type_constant_string,
+	k_constant_real,
+	k_constant_bool,
+	k_constant_string,
 
 	// Paired symbols
-	k_token_type_first_single_character_operator,
+	k_first_single_character_operator,
 
 	// Parentheses
-	k_token_type_left_parenthesis = k_token_type_first_single_character_operator,
-	k_token_type_right_parenthesis,
+	k_left_parenthesis = k_first_single_character_operator,
+	k_right_parenthesis,
 
 	// Braces
-	k_token_type_left_brace,
-	k_token_type_right_brace,
+	k_left_brace,
+	k_right_brace,
 
 	// Brackets
-	k_token_type_left_bracket,
-	k_token_type_right_bracket,
+	k_left_bracket,
+	k_right_bracket,
 
 	// Comma
-	k_token_type_comma,
-	k_token_type_semicolon,
+	k_comma,
+	k_semicolon,
 
-	k_token_type_last_single_character_operator = k_token_type_semicolon,
-
-	// Operators
-
-	k_token_type_first_operator,
+	k_last_single_character_operator = k_semicolon,
 
 	// Operators
-	k_token_type_operator_assignment = k_token_type_first_operator,
-	k_token_type_operator_addition,
-	k_token_type_operator_subtraction,
-	k_token_type_operator_multiplication,
-	k_token_type_operator_division,
-	k_token_type_operator_modulo,
-	k_token_type_operator_not,
-	k_token_type_operator_equal,
-	k_token_type_operator_not_equal,
-	k_token_type_operator_greater,
-	k_token_type_operator_less,
-	k_token_type_operator_greater_equal,
-	k_token_type_operator_less_equal,
-	k_token_type_operator_and,
-	k_token_type_operator_or,
 
-	k_token_type_last_operator = k_token_type_operator_or,
+	k_first_operator,
+
+	// Operators
+	k_operator_assignment = k_first_operator,
+	k_operator_addition,
+	k_operator_subtraction,
+	k_operator_multiplication,
+	k_operator_division,
+	k_operator_modulo,
+	k_operator_not,
+	k_operator_equal,
+	k_operator_not_equal,
+	k_operator_greater,
+	k_operator_less,
+	k_operator_greater_equal,
+	k_operator_less_equal,
+	k_operator_and,
+	k_operator_or,
+
+	k_last_operator = k_operator_or,
 
 	// Comment tokens - should never be a result of the lexer
-	k_token_type_comment,
+	k_comment,
 
-	k_token_type_count
+	k_count
 };
 
 extern const char *k_token_type_constant_bool_false_string;

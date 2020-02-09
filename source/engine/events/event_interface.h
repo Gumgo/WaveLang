@@ -7,15 +7,15 @@ class c_async_event_handler;
 const size_t k_max_event_string_length = 256;
 typedef c_static_string<k_max_event_string_length> c_event_string;
 
-enum e_event_level {
-	k_event_level_invalid = -1,
-	k_event_level_verbose,
-	k_event_level_message,
-	k_event_level_warning,
-	k_event_level_error,
-	k_event_level_critical,
+enum class e_event_level {
+	k_invalid = -1,
+	k_verbose,
+	k_message,
+	k_warning,
+	k_error,
+	k_critical,
 
-	k_event_level_count
+	k_count
 };
 
 class c_event_data_stack {
@@ -74,7 +74,7 @@ struct s_event_data_type_definition {
 class c_event {
 public:
 	c_event(e_event_level event_level) {
-		wl_assert(VALID_INDEX(event_level, k_event_level_count));
+		wl_assert(valid_enum_index(event_level));
 		IF_ASSERTS_ENABLED(bool success = ) m_event_data_stack.try_append(static_cast<uint8>(event_level));
 		wl_assert(success);
 	}
@@ -126,9 +126,9 @@ private:
 
 // Macros for convenience. Example usage:
 // EVENT_ERROR << "There was an error"
-#define EVENT_VERBOSE	c_event(k_event_level_verbose)
-#define EVENT_MESSAGE	c_event(k_event_level_message)
-#define EVENT_WARNING	c_event(k_event_level_warning)
-#define EVENT_ERROR		c_event(k_event_level_error)
-#define EVENT_CRITICAL	c_event(k_event_level_critical)
+#define EVENT_VERBOSE	c_event(e_event_level::k_verbose)
+#define EVENT_MESSAGE	c_event(e_event_level::k_message)
+#define EVENT_WARNING	c_event(e_event_level::k_warning)
+#define EVENT_ERROR		c_event(e_event_level::k_error)
+#define EVENT_CRITICAL	c_event(e_event_level::k_critical)
 

@@ -78,13 +78,13 @@ private:
 	//     <sync>               |
 	//       |                  v
 	//  terminating <------- running
-	enum e_state {
-		k_state_uninitialized,
-		k_state_initialized,
-		k_state_running,
-		k_state_terminating,
+	enum class e_state {
+		k_uninitialized,
+		k_initialized,
+		k_running,
+		k_terminating,
 
-		k_state_count
+		k_count
 	};
 
 	struct ALIGNAS_LOCK_FREE s_task_context {

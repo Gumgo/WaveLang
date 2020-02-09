@@ -14,7 +14,7 @@ public:
 
 	bool is_running() const;
 
-	void print_to_console(const char *text, e_console_color color = k_console_color_white);
+	void print_to_console(const char *text, e_console_color color = e_console_color::k_white);
 	void clear();
 
 private:

@@ -9,7 +9,7 @@
 
 static PaSampleFormat get_pa_sample_format(e_sample_format sample_format) {
 	switch (sample_format) {
-	case k_sample_format_float32:
+	case e_sample_format::k_float32:
 		return paFloat32;
 
 	default:
@@ -67,14 +67,14 @@ s_audio_driver_result c_audio_driver_interface::initialize() {
 	PaError error = Pa_Initialize();
 	if (error != paNoError) {
 		m_initialized = true;
-		result.result = k_audio_driver_result_initialization_failed;
+		result.result = e_audio_driver_result::k_initialization_failed;
 		result.message = Pa_GetErrorText(error);
 		return result;
 	}
 
 	int32 device_count = Pa_GetDeviceCount();
 	if (device_count < 0) {
-		result.result = k_audio_driver_result_failed_to_query_devices;
+		result.result = e_audio_driver_result::k_failed_to_query_devices;
 		result.message = Pa_GetErrorText(device_count);
 		Pa_Terminate();
 		return result;
@@ -149,7 +149,7 @@ s_audio_driver_result c_audio_driver_interface::start_stream(const s_audio_drive
 	result.clear();
 
 	if (!are_settings_supported(settings)) {
-		result.result = k_audio_driver_result_settings_not_supported;
+		result.result = e_audio_driver_result::k_settings_not_supported;
 		result.message = "Settings not supported";
 		return result;
 	}
@@ -169,7 +169,7 @@ s_audio_driver_result c_audio_driver_interface::start_stream(const s_audio_drive
 		this);
 	if (error != paNoError) {
 		wl_assert(!m_stream);
-		result.result = k_audio_driver_result_failed_to_open_stream;
+		result.result = e_audio_driver_result::k_failed_to_open_stream;
 		result.message = Pa_GetErrorText(error);
 		return result;
 	}
@@ -180,7 +180,7 @@ s_audio_driver_result c_audio_driver_interface::start_stream(const s_audio_drive
 
 	error = Pa_StartStream(m_stream);
 	if (error != paNoError) {
-		result.result = k_audio_driver_result_failed_to_start_stream;
+		result.result = e_audio_driver_result::k_failed_to_start_stream;
 		result.message = Pa_GetErrorText(error);
 
 		// Clean up the stream

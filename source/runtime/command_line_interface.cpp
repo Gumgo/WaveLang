@@ -103,7 +103,7 @@ int c_command_line_interface::main_function() {
 
 	{
 		s_audio_driver_result driver_result = m_runtime_context.audio_driver_interface.initialize();
-		if (driver_result.result != k_audio_driver_result_success) {
+		if (driver_result.result != e_audio_driver_result::k_success) {
 			std::cout << driver_result.message << "\n";
 			return 1;
 		}
@@ -111,7 +111,7 @@ int c_command_line_interface::main_function() {
 
 	{
 		s_controller_driver_result driver_result = m_runtime_context.controller_driver_interface.initialize();
-		if (driver_result.result != k_controller_driver_result_success) {
+		if (driver_result.result != e_controller_driver_result::k_success) {
 			std::cout << driver_result.message << "\n";
 			return 1;
 		}
@@ -125,13 +125,13 @@ int c_command_line_interface::main_function() {
 			&m_runtime_context.controller_driver_interface,
 			k_runtime_config_filename);
 
-		if (runtime_config_result == k_runtime_config_result_does_not_exist) {
+		if (runtime_config_result == e_runtime_config_result::k_does_not_exist) {
 			std::cout << "Creating default runtime config file\n";
 			c_runtime_config::write_default_settings(k_runtime_config_filename);
-		} else if (runtime_config_result == k_runtime_config_result_error) {
+		} else if (runtime_config_result == e_runtime_config_result::k_error) {
 			std::cout << "Runtime config was found but had errors\n";
 		} else {
-			wl_assert(runtime_config_result == k_runtime_config_result_success);
+			wl_assert(runtime_config_result == e_runtime_config_result::k_success);
 		}
 
 		initialize_event_data_types();
@@ -150,7 +150,7 @@ int c_command_line_interface::main_function() {
 		s_thread_definition controller_command_thread_definition;
 		ZERO_STRUCT(&controller_command_thread_definition);
 		controller_command_thread_definition.thread_name = "controller command thread";
-		controller_command_thread_definition.thread_priority = k_thread_priority_normal;
+		controller_command_thread_definition.thread_priority = e_thread_priority::k_normal;
 		controller_command_thread_definition.processor = -1;
 		controller_command_thread_definition.thread_entry_point = controller_command_thread_entry_point;
 		*controller_command_thread_definition.parameter_block.get_memory_typed<c_command_line_interface *>() = this;
@@ -322,7 +322,7 @@ void c_command_line_interface::initialize_from_runtime_config() {
 		settings.stream_callback_user_data = &m_runtime_context;
 
 		s_audio_driver_result result = m_runtime_context.audio_driver_interface.start_stream(settings);
-		if (result.result != k_audio_driver_result_success) {
+		if (result.result != e_audio_driver_result::k_success) {
 			std::cout << "Failed to start audio stream: " << result.message << "\n";
 		}
 	}
@@ -346,7 +346,7 @@ void c_command_line_interface::initialize_from_runtime_config() {
 		settings.event_hook_context = this;
 
 		s_controller_driver_result result = m_runtime_context.controller_driver_interface.start_stream(settings);
-		if (result.result != k_controller_driver_result_success) {
+		if (result.result != e_controller_driver_result::k_success) {
 			std::cout << "Failed to start controller stream: " << result.message << "\n";
 		}
 	}
@@ -366,8 +366,9 @@ void c_command_line_interface::process_command_load_synth(const s_command &comma
 
 		// First argument is the path to load
 		e_instrument_result load_result = instrument.load(command.arguments[0].c_str());
-		if (load_result != k_instrument_result_success) {
-			std::cout << "Failed to load '" << command.arguments[0] << "' (result code " << load_result << ")\n";
+		if (load_result != e_instrument_result::k_success) {
+			std::cout << "Failed to load '" << command.arguments[0] <<
+				"' (result code " << enum_index(load_result) << ")\n";
 			return;
 		}
 
@@ -381,15 +382,15 @@ void c_command_line_interface::process_command_load_synth(const s_command &comma
 			e_instrument_variant_for_requirements_result instrument_variant_result =
 				instrument.get_instrument_variant_for_requirements(requirements, instrument_variant_index);
 
-			if (instrument_variant_result == k_instrument_variant_for_requirements_result_no_match) {
+			if (instrument_variant_result == e_instrument_variant_for_requirements_result::k_no_match) {
 				std::cout << "Failed to find instrument variant matching the runtime requirements\n";
 				return;
-			} else if (instrument_variant_index == k_instrument_variant_for_requirements_result_ambiguous_matches) {
+			} else if (instrument_variant_result == e_instrument_variant_for_requirements_result::k_ambiguous_matches) {
 				std::cout << "Found multiple instrument variants matching the runtime requirements - "
 					"refine stream parameters or instrument globals\n";
 				return;
 			} else {
-				wl_assert(instrument_variant_result == k_instrument_variant_for_requirements_result_success);
+				wl_assert(instrument_variant_result == e_instrument_variant_for_requirements_result::k_success);
 			}
 		}
 
@@ -443,7 +444,7 @@ bool c_command_line_interface::controller_hook(const s_controller_event &control
 #if IS_TRUE(TARGET_RASPBERRY_PI)
 	// Hack: use events on MIDI parameter 15 to load a different synths!
 	static const uint32 k_synth_parameter = 15;
-	if (controller_event.event_type == k_controller_event_type_parameter_change) {
+	if (controller_event.event_type == e_controller_event_type::k_parameter_change) {
 		const s_controller_event_data_parameter_change *parameter_change_controller_event =
 			controller_event.get_data<s_controller_event_data_parameter_change>();
 		if (parameter_change_controller_event->parameter_id == k_synth_parameter) {

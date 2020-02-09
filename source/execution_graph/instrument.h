@@ -15,12 +15,12 @@ struct s_instrument_variant_requirements {
 	uint32 sample_rate;
 };
 
-enum e_instrument_variant_for_requirements_result {
-	k_instrument_variant_for_requirements_result_success,
-	k_instrument_variant_for_requirements_result_no_match,
-	k_instrument_variant_for_requirements_result_ambiguous_matches,
+enum class e_instrument_variant_for_requirements_result {
+	k_success,
+	k_no_match,
+	k_ambiguous_matches,
 
-	k_instrument_variant_for_requirements_result_count
+	k_count
 };
 
 // An instrument variant consists of an instance of instrument globals and either a voice execution graph, an FX

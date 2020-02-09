@@ -30,7 +30,7 @@ e_instrument_result c_instrument_variant::save(std::ofstream &out) const {
 	writer.write(m_voice_execution_graph != nullptr);
 	if (m_voice_execution_graph) {
 		e_instrument_result graph_result = m_voice_execution_graph->save(out);
-		if (graph_result != k_instrument_result_success) {
+		if (graph_result != e_instrument_result::k_success) {
 			return graph_result;
 		}
 	}
@@ -38,16 +38,16 @@ e_instrument_result c_instrument_variant::save(std::ofstream &out) const {
 	writer.write(m_fx_execution_graph != nullptr);
 	if (m_fx_execution_graph) {
 		e_instrument_result graph_result = m_fx_execution_graph->save(out);
-		if (graph_result != k_instrument_result_success) {
+		if (graph_result != e_instrument_result::k_success) {
 			return graph_result;
 		}
 	}
 
 	if (out.fail()) {
-		return k_instrument_result_failed_to_write;
+		return e_instrument_result::k_failed_to_write;
 	}
 
-	return k_instrument_result_success;
+	return e_instrument_result::k_success;
 }
 
 e_instrument_result c_instrument_variant::load(std::ifstream &in) {
@@ -58,37 +58,37 @@ e_instrument_result c_instrument_variant::load(std::ifstream &in) {
 		!reader.read(m_instrument_globals.sample_rate) ||
 		!reader.read(m_instrument_globals.chunk_size) ||
 		!reader.read(m_instrument_globals.activate_fx_immediately)) {
-		return in.eof() ? k_instrument_result_invalid_globals : k_instrument_result_failed_to_read;
+		return in.eof() ? e_instrument_result::k_invalid_globals : e_instrument_result::k_failed_to_read;
 	}
 
 	// Read each graph
 	bool has_voice_graph;
 	if (!reader.read(has_voice_graph)) {
-		return in.eof() ? k_instrument_result_invalid_graph : k_instrument_result_failed_to_read;
+		return in.eof() ? e_instrument_result::k_invalid_graph : e_instrument_result::k_failed_to_read;
 	}
 
 	if (has_voice_graph) {
 		m_voice_execution_graph = new c_execution_graph();
 		e_instrument_result graph_result = m_voice_execution_graph->load(in);
-		if (graph_result != k_instrument_result_success) {
+		if (graph_result != e_instrument_result::k_success) {
 			return graph_result;
 		}
 	}
 
 	bool has_fx_graph;
 	if (!reader.read(has_fx_graph)) {
-		return in.eof() ? k_instrument_result_invalid_graph : k_instrument_result_failed_to_read;
+		return in.eof() ? e_instrument_result::k_invalid_graph : e_instrument_result::k_failed_to_read;
 	}
 
 	if (has_fx_graph) {
 		m_fx_execution_graph = new c_execution_graph();
 		e_instrument_result graph_result = m_fx_execution_graph->load(in);
-		if (graph_result != k_instrument_result_success) {
+		if (graph_result != e_instrument_result::k_success) {
 			return graph_result;
 		}
 	}
 
-	return k_instrument_result_success;
+	return e_instrument_result::k_success;
 }
 
 bool c_instrument_variant::validate() const {
@@ -104,9 +104,9 @@ bool c_instrument_variant::validate() const {
 	if (m_voice_execution_graph && m_fx_execution_graph) {
 		uint32 voice_graph_output_count = 0;
 		for (c_node_reference node_reference = m_voice_execution_graph->nodes_begin();
-			 node_reference.is_valid();
-			 node_reference = m_voice_execution_graph->nodes_next(node_reference)) {
-			if (m_voice_execution_graph->get_node_type(node_reference) == k_execution_graph_node_type_output) {
+			node_reference.is_valid();
+			node_reference = m_voice_execution_graph->nodes_next(node_reference)) {
+			if (m_voice_execution_graph->get_node_type(node_reference) == e_execution_graph_node_type::k_output) {
 				uint32 output_index = m_voice_execution_graph->get_output_node_output_index(node_reference);
 				if (output_index != c_execution_graph::k_remain_active_output_index) {
 					voice_graph_output_count++;
@@ -116,9 +116,9 @@ bool c_instrument_variant::validate() const {
 
 		uint32 fx_graph_input_count = 0;
 		for (c_node_reference node_reference = m_fx_execution_graph->nodes_begin();
-			 node_reference.is_valid();
-			 node_reference = m_fx_execution_graph->nodes_next(node_reference)) {
-			if (m_fx_execution_graph->get_node_type(node_reference) == k_execution_graph_node_type_input) {
+			node_reference.is_valid();
+			node_reference = m_fx_execution_graph->nodes_next(node_reference)) {
+			if (m_fx_execution_graph->get_node_type(node_reference) == e_execution_graph_node_type::k_input) {
 				fx_graph_input_count++;
 			}
 		}
@@ -186,7 +186,7 @@ e_instrument_result c_instrument::save(const char *fname) const {
 
 	std::ofstream out(fname, std::ios::binary);
 	if (!out.is_open()) {
-		return k_instrument_result_failed_to_write;
+		return e_instrument_result::k_failed_to_write;
 	}
 
 	c_binary_file_writer writer(out);
@@ -206,16 +206,16 @@ e_instrument_result c_instrument::save(const char *fname) const {
 
 	for (uint32 index = 0; index < m_instrument_variants.size(); index++) {
 		e_instrument_result instrument_variant_result = m_instrument_variants[index]->save(out);
-		if (instrument_variant_result != k_instrument_result_success) {
+		if (instrument_variant_result != e_instrument_result::k_success) {
 			return instrument_variant_result;
 		}
 	}
 
 	if (out.fail()) {
-		return k_instrument_result_failed_to_write;
+		return e_instrument_result::k_failed_to_write;
 	}
 
-	return k_instrument_result_success;
+	return e_instrument_result::k_success;
 }
 
 e_instrument_result c_instrument::load(const char *fname) {
@@ -223,7 +223,7 @@ e_instrument_result c_instrument::load(const char *fname) {
 
 	std::ifstream in(fname, std::ios::binary);
 	if (!in.is_open()) {
-		return k_instrument_result_failed_to_read;
+		return e_instrument_result::k_failed_to_read;
 	}
 
 	c_binary_file_reader reader(in);
@@ -232,42 +232,42 @@ e_instrument_result c_instrument::load(const char *fname) {
 	s_static_array<char, NUMBEROF(k_format_identifier)> format_identifier_buffer;
 	for (size_t ch = 0; ch < NUMBEROF(k_format_identifier); ch++) {
 		if (!reader.read(format_identifier_buffer[ch])) {
-			return in.eof() ? k_instrument_result_invalid_header : k_instrument_result_failed_to_read;
+			return in.eof() ? e_instrument_result::k_invalid_header : e_instrument_result::k_failed_to_read;
 		}
 	}
 
 	uint32 format_version;
 	if (!reader.read(format_version)) {
-		return in.eof() ? k_instrument_result_invalid_header : k_instrument_result_failed_to_read;
+		return in.eof() ? e_instrument_result::k_invalid_header : e_instrument_result::k_failed_to_read;
 	}
 
 	if (memcmp(k_format_identifier, &format_identifier_buffer, sizeof(k_format_identifier)) != 0) {
-		return k_instrument_result_invalid_header;
+		return e_instrument_result::k_invalid_header;
 	}
 
 	if (format_version != k_instrument_format_version) {
-		return k_instrument_result_version_mismatch;
+		return e_instrument_result::k_version_mismatch;
 	}
 
 	uint32 instrument_variant_count;
 	if (!reader.read(instrument_variant_count)) {
-		return k_instrument_result_invalid_header;
+		return e_instrument_result::k_invalid_header;
 	}
 
 	for (uint32 index = 0; index < instrument_variant_count; index++) {
 		c_instrument_variant *variant = new c_instrument_variant();
 		m_instrument_variants.push_back(variant);
 		e_instrument_result instrument_variant_result = variant->load(in);
-		if (instrument_variant_result != k_instrument_result_success) {
+		if (instrument_variant_result != e_instrument_result::k_success) {
 			return instrument_variant_result;
 		}
 	}
 
 	if (!validate()) {
-		return k_instrument_result_validation_failure;
+		return e_instrument_result::k_validation_failure;
 	}
 
-	return k_instrument_result_success;
+	return e_instrument_result::k_success;
 }
 
 bool c_instrument::validate() const {
@@ -326,10 +326,10 @@ e_instrument_variant_for_requirements_result c_instrument::get_instrument_varian
 
 	out_instrument_variant_index = instrument_variant_index;
 	if (best_match_score == -1) {
-		return k_instrument_variant_for_requirements_result_no_match;
+		return e_instrument_variant_for_requirements_result::k_no_match;
 	} else if (matches_for_this_score > 1) {
-		return k_instrument_variant_for_requirements_result_ambiguous_matches;
+		return e_instrument_variant_for_requirements_result::k_ambiguous_matches;
 	} else {
-		return k_instrument_variant_for_requirements_result_success;
+		return e_instrument_variant_for_requirements_result::k_success;
 	}
 }

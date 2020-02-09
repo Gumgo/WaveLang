@@ -15,41 +15,41 @@ static const char *k_bool_strings[] = { "false", "true" };
 static_assert(NUMBEROF(k_bool_strings) == 2, "Invalid bool strings");
 
 static const char *k_native_module_primitive_type_enum_strings[] = {
-	"k_native_module_primitive_type_real",
-	"k_native_module_primitive_type_bool",
-	"k_native_module_primitive_type_string"
+	"e_native_module_primitive_type::k_real",
+	"e_native_module_primitive_type::k_bool",
+	"e_native_module_primitive_type::k_string"
 };
-static_assert(NUMBEROF(k_native_module_primitive_type_enum_strings) == k_native_module_primitive_type_count,
+static_assert(NUMBEROF(k_native_module_primitive_type_enum_strings) == enum_count<e_native_module_primitive_type>(),
 	"Invalid native module primitive type enum strings");
 
 static const char *k_native_module_qualifier_enum_strings[] = {
-	"k_native_module_qualifier_in",
-	"k_native_module_qualifier_out",
-	"k_native_module_qualifier_constant"
+	"e_native_module_qualifier::k_in",
+	"e_native_module_qualifier::k_out",
+	"e_native_module_qualifier::k_constant"
 };
-static_assert(NUMBEROF(k_native_module_qualifier_enum_strings) == k_native_module_qualifier_count,
+static_assert(NUMBEROF(k_native_module_qualifier_enum_strings) == enum_count<e_native_module_qualifier>(),
 	"Invalid native module qualifier enum strings");
 
 static const char *k_native_operator_enum_strings[] = {
-	"k_native_operator_noop",
-	"k_native_operator_negation",
-	"k_native_operator_addition",
-	"k_native_operator_subtraction",
-	"k_native_operator_multiplication",
-	"k_native_operator_division",
-	"k_native_operator_modulo",
-	"k_native_operator_not",
-	"k_native_operator_equal",
-	"k_native_operator_not_equal",
-	"k_native_operator_less",
-	"k_native_operator_greater",
-	"k_native_operator_less_equal",
-	"k_native_operator_greater_equal",
-	"k_native_operator_and",
-	"k_native_operator_or",
-	"k_native_operator_array_dereference"
+	"e_native_operator::k_noop",
+	"e_native_operator::k_negation",
+	"e_native_operator::k_addition",
+	"e_native_operator::k_subtraction",
+	"e_native_operator::k_multiplication",
+	"e_native_operator::k_division",
+	"e_native_operator::k_modulo",
+	"e_native_operator::k_not",
+	"e_native_operator::k_equal",
+	"e_native_operator::k_not_equal",
+	"e_native_operator::k_less",
+	"e_native_operator::k_greater",
+	"e_native_operator::k_less_equal",
+	"e_native_operator::k_greater_equal",
+	"e_native_operator::k_and",
+	"e_native_operator::k_or",
+	"e_native_operator::k_array_dereference"
 };
-static_assert(NUMBEROF(k_native_operator_enum_strings) == k_native_operator_count,
+static_assert(NUMBEROF(k_native_operator_enum_strings) == enum_count<e_native_operator>(),
 	"Invalid native operator enum strings");
 
 static const char *k_native_module_primitive_type_argument_strings[] = {
@@ -57,7 +57,7 @@ static const char *k_native_module_primitive_type_argument_strings[] = {
 	"bool",
 	"string"
 };
-static_assert(NUMBEROF(k_native_module_primitive_type_argument_strings) == k_native_module_primitive_type_count,
+static_assert(NUMBEROF(k_native_module_primitive_type_argument_strings) == enum_count<e_native_module_primitive_type>(),
 	"Invalid native module primitive type argument strings");
 
 static const char *k_native_module_qualifier_argument_strings[] = {
@@ -65,7 +65,7 @@ static const char *k_native_module_qualifier_argument_strings[] = {
 	"out",
 	"in"
 };
-static_assert(NUMBEROF(k_native_module_qualifier_argument_strings) == k_native_module_qualifier_count,
+static_assert(NUMBEROF(k_native_module_qualifier_argument_strings) == enum_count<e_native_module_qualifier>(),
 	"Invalid native module qualifier strings");
 
 class c_optimization_rule_builder {
@@ -75,18 +75,18 @@ public:
 	std::string get_string_from_tokens() const;
 
 private:
-	enum e_token_type {
-		k_token_type_unknown,
-		k_token_type_identifier,
-		k_token_type_real_constant,
-		k_token_type_bool_constant,
-		k_token_type_const,
-		k_token_type_left_parenthesis,
-		k_token_type_right_parenthesis,
-		k_token_type_left_bracket,
-		k_token_type_right_bracket,
-		k_token_type_comma,
-		k_token_type_source_to_target
+	enum class e_token_type {
+		k_unknown,
+		k_identifier,
+		k_real_constant,
+		k_bool_constant,
+		k_const,
+		k_left_parenthesis,
+		k_right_parenthesis,
+		k_left_bracket,
+		k_right_bracket,
+		k_comma,
+		k_source_to_target
 	};
 
 	struct s_identifier {
@@ -120,8 +120,8 @@ bool generate_native_module_registration(
 
 	// Generate native module call wrappers
 	for (size_t native_module_index = 0;
-		 native_module_index < result->get_native_module_count();
-		 native_module_index++) {
+		native_module_index < result->get_native_module_count();
+		native_module_index++) {
 		const s_native_module_declaration &native_module = result->get_native_module(native_module_index);
 		const s_library_declaration &library = result->get_library(native_module.library_index);
 
@@ -140,10 +140,12 @@ bool generate_native_module_registration(
 
 		for (size_t arg = 0; arg < native_module.arguments.size(); arg++) {
 			c_native_module_qualified_data_type type = native_module.arguments[arg].type;
+			e_native_module_primitive_type primitive_type = type.get_data_type().get_primitive_type();
+			e_native_module_qualifier qualifier = type.get_qualifier();
 			out << TAB2_STR << "(*context.arguments)[" << arg << "].get_" <<
-				k_native_module_primitive_type_argument_strings[type.get_data_type().get_primitive_type()] <<
+				k_native_module_primitive_type_argument_strings[enum_index(primitive_type)] <<
 				(type.get_data_type().is_array() ? "_array_" : "_") <<
-				k_native_module_qualifier_argument_strings[type.get_qualifier()] << "()";
+				k_native_module_qualifier_argument_strings[enum_index(qualifier)] << "()";
 
 			if (arg + 1 == native_module.arguments.size()) {
 				out << ");" NEWLINE_STR;
@@ -173,8 +175,8 @@ bool generate_native_module_registration(
 
 	// Generate each native module
 	for (size_t native_module_index = 0;
-		 native_module_index < result->get_native_module_count();
-		 native_module_index++) {
+		native_module_index < result->get_native_module_count();
+		native_module_index++) {
 		const s_native_module_declaration &native_module = result->get_native_module(native_module_index);
 		const s_library_declaration &library = result->get_library(native_module.library_index);
 
@@ -186,7 +188,7 @@ bool generate_native_module_registration(
 			if (native_module_qualifier_is_input(native_module.arguments[arg].type.get_qualifier())) {
 				in_argument_count++;
 			} else {
-				wl_assert(native_module.arguments[arg].type.get_qualifier() == k_native_module_qualifier_out);
+				wl_assert(native_module.arguments[arg].type.get_qualifier() == e_native_module_qualifier::k_out);
 				out_argument_count++;
 
 				if (native_module.arguments[arg].is_return_value) {
@@ -206,20 +208,20 @@ bool generate_native_module_registration(
 			out << native_module.name;
 		} else {
 			// The native module name is actually the operator name
-			e_native_operator native_operator = k_native_operator_invalid;
-			for (uint32 index = 0; index < k_native_operator_count; index++) {
-				if (native_module.native_operator == k_native_operator_enum_strings[index]) {
-					native_operator = static_cast<e_native_operator>(index);
+			e_native_operator found_native_operator = e_native_operator::k_invalid;
+			for (e_native_operator native_operator : iterate_enum<e_native_operator>()) {
+				if (native_module.native_operator == k_native_operator_enum_strings[enum_index(native_operator)]) {
+					found_native_operator = native_operator;
 				}
 			}
 
-			if (native_operator == k_native_operator_invalid) {
+			if (found_native_operator == e_native_operator::k_invalid) {
 				std::cerr << "Invalid native operator '" << native_module.native_operator <<
 					"' for native module '" << native_module.identifier << "'\n";
 				return false;
 			}
 
-			out << get_native_operator_native_module_name(native_operator);
+			out << get_native_operator_native_module_name(found_native_operator);
 		}
 		out << "\");" NEWLINE_STR;
 
@@ -235,13 +237,15 @@ bool generate_native_module_registration(
 
 		for (size_t arg = 0; arg < native_module.arguments.size(); arg++) {
 			const s_native_module_argument_declaration &argument = native_module.arguments[arg];
+			e_native_module_primitive_type primitive_type = argument.type.get_data_type().get_primitive_type();
+			e_native_module_qualifier qualifier = argument.type.get_qualifier();
 			out << TAB2_STR "{" NEWLINE_STR;
 			out << TAB3_STR "s_native_module_argument &arg = native_module.arguments[" << arg << "];" NEWLINE_STR;
 			out << TAB3_STR "arg.name.set_verify(\"" << native_module.arguments[arg].name << "\");" NEWLINE_STR;
 			out << TAB3_STR "arg.type = c_native_module_qualified_data_type(c_native_module_data_type(" <<
-				k_native_module_primitive_type_enum_strings[argument.type.get_data_type().get_primitive_type()] <<
+				k_native_module_primitive_type_enum_strings[enum_index(primitive_type)] <<
 				", " << k_bool_strings[argument.type.get_data_type().is_array()] << "), " <<
-				k_native_module_qualifier_enum_strings[argument.type.get_qualifier()] << ");" NEWLINE_STR;
+				k_native_module_qualifier_enum_strings[enum_index(qualifier)] << ");" NEWLINE_STR;
 			out << TAB2_STR "}" NEWLINE_STR;
 		}
 
@@ -256,8 +260,8 @@ bool generate_native_module_registration(
 
 	// Generate each optimization rule
 	for (size_t optimization_rule_index = 0;
-		 optimization_rule_index < result->get_optimization_rule_count();
-		 optimization_rule_index++) {
+		optimization_rule_index < result->get_optimization_rule_count();
+		optimization_rule_index++) {
 		const s_optimization_rule_declaration &optimization_rule =
 			result->get_optimization_rule(optimization_rule_index);
 
@@ -318,15 +322,15 @@ bool c_optimization_rule_builder::build(std::ofstream &out) {
 		e_token_type token_type = get_token_type(m_rule.tokens[index]);
 		e_token_type next_token_type = get_token_type(m_rule.tokens[index + 1]);
 
-		if (is_constant && token_type != k_token_type_identifier) {
+		if (is_constant && token_type != e_token_type::k_identifier) {
 			// Only identifiers can have the const qualifier
 			return false;
 		}
 
-		if (token_type == k_token_type_const) {
+		if (token_type == e_token_type::k_const) {
 			next_identifier_is_constant = true;
-		} else if (token_type == k_token_type_identifier) {
-			if (next_token_type == k_token_type_left_parenthesis) {
+		} else if (token_type == e_token_type::k_identifier) {
+			if (next_token_type == e_token_type::k_left_parenthesis) {
 				// Native module call
 				if (is_constant) {
 					return false;
@@ -344,7 +348,7 @@ bool c_optimization_rule_builder::build(std::ofstream &out) {
 
 				// Skip the left paren
 				index++;
-			} else if (next_token_type == k_token_type_left_bracket) {
+			} else if (next_token_type == e_token_type::k_left_bracket) {
 				// Array dereference
 				if (is_constant) {
 					return false;
@@ -377,29 +381,29 @@ bool c_optimization_rule_builder::build(std::ofstream &out) {
 				m_symbol_index++;
 				can_skip_comma = true;
 			}
-		} else if (token_type == k_token_type_real_constant) {
+		} else if (token_type == e_token_type::k_real_constant) {
 			// Real constant
 			write_symbol_prefix(out);
 			out << "build_real_value(" << m_rule.tokens[index] << ");" NEWLINE_STR;
 			m_symbol_index++;
 			can_skip_comma = true;
-		} else if (token_type == k_token_type_bool_constant) {
+		} else if (token_type == e_token_type::k_bool_constant) {
 			// Bool constant
 			write_symbol_prefix(out);
 			out << "build_bool_value(" << m_rule.tokens[index] << ");" NEWLINE_STR;
 			m_symbol_index++;
 			can_skip_comma = true;
-		} else if (token_type == k_token_type_right_parenthesis) {
+		} else if (token_type == e_token_type::k_right_parenthesis) {
 			// End of native module call
 			write_symbol_prefix(out);
 			out << "build_native_module_end();" NEWLINE_STR;
 			m_symbol_index++;
 			can_skip_comma = true;
-		} else if (token_type == k_token_type_right_bracket) {
+		} else if (token_type == e_token_type::k_right_bracket) {
 			// Nothing to do here: array dereference doesn't have an explicit "end" because it always takes exactly two
 			// parameters, the variable and the index.
 			can_skip_comma = true;
-		} else if (token_type == k_token_type_source_to_target) {
+		} else if (token_type == e_token_type::k_source_to_target) {
 			if (!building_source) {
 				// We already switched to the target
 				return false;
@@ -412,7 +416,7 @@ bool c_optimization_rule_builder::build(std::ofstream &out) {
 			return false;
 		}
 
-		if (can_skip_comma && next_token_type == k_token_type_comma) {
+		if (can_skip_comma && next_token_type == e_token_type::k_comma) {
 			// Skip the comma. This can potentially lead to trailing commas, but it's not a big deal.
 			index++;
 		}
@@ -444,7 +448,7 @@ std::string c_optimization_rule_builder::get_string_from_tokens() const {
 
 c_optimization_rule_builder::e_token_type c_optimization_rule_builder::get_token_type(const std::string &token) {
 	if (token.empty()) {
-		return k_token_type_unknown;
+		return e_token_type::k_unknown;
 	}
 
 	char first_char = token[0];
@@ -452,29 +456,29 @@ c_optimization_rule_builder::e_token_type c_optimization_rule_builder::get_token
 		(first_char >= 'a' && first_char <= 'z') ||
 		(first_char == '_')) {
 		if (token == "false" || token == "true") {
-			return k_token_type_bool_constant;
+			return e_token_type::k_bool_constant;
 		} else if (token == "const") {
-			return k_token_type_const;
+			return e_token_type::k_const;
 		} else {
-			return k_token_type_identifier;
+			return e_token_type::k_identifier;
 		}
 	} else if (token == "->") {
-		return k_token_type_source_to_target;
+		return e_token_type::k_source_to_target;
 	} else if ((first_char >= '0' && first_char <= '9') ||
 		(first_char == '-')) {
-		return k_token_type_real_constant;
+		return e_token_type::k_real_constant;
 	} else if (token == "(") {
-		return k_token_type_left_parenthesis;
+		return e_token_type::k_left_parenthesis;
 	} else if (token == ")") {
-		return k_token_type_right_parenthesis;
+		return e_token_type::k_right_parenthesis;
 	} else if (token == "[") {
-		return k_token_type_left_bracket;
+		return e_token_type::k_left_bracket;
 	} else if (token == "]") {
-		return k_token_type_right_bracket;
+		return e_token_type::k_right_bracket;
 	} else if (token == ",") {
-		return k_token_type_comma;
+		return e_token_type::k_comma;
 	} else {
-		return k_token_type_unknown;
+		return e_token_type::k_unknown;
 	}
 }
 

@@ -10,8 +10,8 @@ void c_task_memory_manager::initialize(
 	const c_runtime_instrument *runtime_instrument,
 	f_task_memory_query_callback task_memory_query_callback,
 	void *task_memory_query_callback_context) {
-	m_task_memory_pointers[k_instrument_stage_voice].clear();
-	m_task_memory_pointers[k_instrument_stage_fx].clear();
+	m_task_memory_pointers[enum_index(e_instrument_stage::k_voice)].clear();
+	m_task_memory_pointers[enum_index(e_instrument_stage::k_fx)].clear();
 
 	const c_task_graph *voice_task_graph = runtime_instrument->get_voice_task_graph();
 	const c_task_graph *fx_task_graph = runtime_instrument->get_fx_task_graph();
@@ -22,13 +22,13 @@ void c_task_memory_manager::initialize(
 	if (voice_task_graph) {
 		m_voice_graph_task_count = voice_task_graph->get_task_count();
 		total_voice_task_memory_pointers = m_voice_graph_task_count * max_voices;
-		m_task_memory_pointers[k_instrument_stage_voice].reserve(total_voice_task_memory_pointers);
+		m_task_memory_pointers[enum_index(e_instrument_stage::k_voice)].reserve(total_voice_task_memory_pointers);
 	}
 
 	size_t total_fx_task_memory_pointers = 0;
 	if (fx_task_graph) {
 		total_fx_task_memory_pointers = fx_task_graph->get_task_count();
-		m_task_memory_pointers[k_instrument_stage_fx].reserve(total_fx_task_memory_pointers);
+		m_task_memory_pointers[enum_index(e_instrument_stage::k_fx)].reserve(total_fx_task_memory_pointers);
 	}
 
 	size_t required_voice_task_memory_per_voice = 0;
@@ -37,7 +37,7 @@ void c_task_memory_manager::initialize(
 			voice_task_graph,
 			task_memory_query_callback,
 			task_memory_query_callback_context,
-			m_task_memory_pointers[k_instrument_stage_voice]);
+			m_task_memory_pointers[enum_index(e_instrument_stage::k_voice)]);
 	}
 
 	size_t required_fx_task_memory = 0;
@@ -46,7 +46,7 @@ void c_task_memory_manager::initialize(
 			fx_task_graph,
 			task_memory_query_callback,
 			task_memory_query_callback_context,
-			m_task_memory_pointers[k_instrument_stage_fx]);
+			m_task_memory_pointers[enum_index(e_instrument_stage::k_fx)]);
 	}
 
 	wl_assert(is_size_aligned(required_voice_task_memory_per_voice, k_lock_free_alignment));
@@ -67,12 +67,12 @@ void c_task_memory_manager::initialize(
 
 		resolve_task_memory_pointers(
 			voice_task_memory_base,
-			m_task_memory_pointers[k_instrument_stage_voice],
+			m_task_memory_pointers[enum_index(e_instrument_stage::k_voice)],
 			max_voices,
 			required_voice_task_memory_per_voice);
 		resolve_task_memory_pointers(
 			fx_task_memory_base,
-			m_task_memory_pointers[k_instrument_stage_fx],
+			m_task_memory_pointers[enum_index(e_instrument_stage::k_fx)],
 			1,
 			required_fx_task_memory);
 
@@ -82,22 +82,27 @@ void c_task_memory_manager::initialize(
 #if IS_TRUE(ASSERTS_ENABLED)
 		// All pointers should be invalid
 
-		for (size_t index = 0; index < m_task_memory_pointers[k_instrument_stage_voice].size(); index++) {
-			wl_assert(m_task_memory_pointers[k_instrument_stage_voice][index] ==
+		size_t voice_memory_pointers_count = m_task_memory_pointers[enum_index(e_instrument_stage::k_voice)].size();
+		for (size_t index = 0; index < voice_memory_pointers_count; index++) {
+			wl_assert(m_task_memory_pointers[enum_index(e_instrument_stage::k_voice)][index] ==
 				reinterpret_cast<void *>(k_invalid_memory_pointer));
 		}
 
-		for (size_t index = 0; index < m_task_memory_pointers[k_instrument_stage_fx].size(); index++) {
-			wl_assert(m_task_memory_pointers[k_instrument_stage_fx][index] ==
+		size_t fx_memory_pointers_count = m_task_memory_pointers[enum_index(e_instrument_stage::k_fx)].size();
+		for (size_t index = 0; index < fx_memory_pointers_count; index++) {
+			wl_assert(m_task_memory_pointers[enum_index(e_instrument_stage::k_fx)][index] ==
 				reinterpret_cast<void *>(k_invalid_memory_pointer));
 		}
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
 		// All point to null
-		m_task_memory_pointers[k_instrument_stage_voice].clear();
-		m_task_memory_pointers[k_instrument_stage_voice].resize(total_voice_task_memory_pointers, nullptr);
-		m_task_memory_pointers[k_instrument_stage_voice].clear();
-		m_task_memory_pointers[k_instrument_stage_voice].resize(total_fx_task_memory_pointers, nullptr);
+		m_task_memory_pointers[enum_index(e_instrument_stage::k_voice)].clear();
+		m_task_memory_pointers[enum_index(e_instrument_stage::k_voice)].resize(
+			total_voice_task_memory_pointers, nullptr);
+
+		m_task_memory_pointers[enum_index(e_instrument_stage::k_fx)].clear();
+		m_task_memory_pointers[enum_index(e_instrument_stage::k_fx)].resize(
+			total_fx_task_memory_pointers, nullptr);
 	}
 }
 

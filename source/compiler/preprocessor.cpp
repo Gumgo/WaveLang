@@ -112,27 +112,27 @@ s_compiler_result c_preprocessor::preprocess(
 					s_token token = c_lexer::read_next_token(line_remaining);
 
 					if (!preprocessor_command_found &&
-						((token.token_type >= k_token_type_first_keyword &&
-						  token.token_type <= k_token_type_last_keyword) ||
-						 token.token_type == k_token_type_identifier)) {
+						((token.token_type >= e_token_type::k_first_keyword &&
+						  token.token_type <= e_token_type::k_last_keyword) ||
+						 token.token_type == e_token_type::k_identifier)) {
 						// Detect any identifier, keywords shouldn't matter in this context
 						preprocessor_command_token = token;
 						preprocessor_command_found = true;
 					} else if (preprocessor_command_found &&
-						(token.token_type == k_token_type_constant_real ||
-						 token.token_type == k_token_type_constant_bool ||
-						 token.token_type == k_token_type_constant_string)) {
+						(token.token_type == e_token_type::k_constant_real ||
+						 token.token_type == e_token_type::k_constant_bool ||
+						 token.token_type == e_token_type::k_constant_string)) {
 						// Only these token types are allowed in preprocessor commands
 						token.source_location.source_file_index = source_file_index;
 						token.source_location.line = line_number;
 						token.source_location.pos = pos;
 						arguments.add_argument(token);
-					} else if (token.token_type == k_token_type_comment) {
+					} else if (token.token_type == e_token_type::k_comment) {
 						// Ignore the rest of the line because it is a comment
 						eol = true;
 					} else {
 						// Report the error using the string returned
-						result.result = k_compiler_result_preprocessor_error;
+						result.result = e_compiler_result::k_preprocessor_error;
 						result.source_location.source_file_index = source_file_index;
 						result.source_location.line = line_number;
 						result.source_location.pos = pos;
@@ -141,7 +141,7 @@ s_compiler_result c_preprocessor::preprocess(
 					}
 
 					line_remaining = line_remaining.advance(token.token_string.get_length());
-					if (token.token_type == k_token_type_constant_string) {
+					if (token.token_type == e_token_type::k_constant_string) {
 						// We need to also skip the quotes because they're not included in the string
 						line_remaining = line_remaining.advance(2);
 					}
@@ -152,7 +152,7 @@ s_compiler_result c_preprocessor::preprocess(
 
 			wl_assert(preprocessor_command_found == !preprocessor_command_token.token_string.is_empty());
 			if (!preprocessor_command_found) {
-				result.result = k_compiler_result_preprocessor_error;
+				result.result = e_compiler_result::k_preprocessor_error;
 				result.source_location.source_file_index = source_file_index;
 				result.source_location.line = line_number;
 				result.source_location.pos = pos;
@@ -169,7 +169,7 @@ s_compiler_result c_preprocessor::preprocess(
 
 				if (preprocessor_command_token.token_string == executor.command_name) {
 					s_compiler_result execution_result = executor.command_executor(executor.context, arguments, output);
-					if (execution_result.result != k_compiler_result_success) {
+					if (execution_result.result != e_compiler_result::k_success) {
 						return execution_result;
 					}
 
@@ -179,7 +179,7 @@ s_compiler_result c_preprocessor::preprocess(
 
 			if (command_index == g_preprocessor_command_executor_count) {
 				// We failed to find a matching command
-				result.result = k_compiler_result_preprocessor_error;
+				result.result = e_compiler_result::k_preprocessor_error;
 				result.source_location = preprocessor_command_token.source_location;
 				result.message = "Preprocessor command '" +
 					preprocessor_command_token.token_string.to_std_string() + "' not found";
@@ -219,8 +219,8 @@ static s_compiler_result preprocessor_command_import(
 	result.clear();
 
 	if (arguments.get_argument_count() != 1 ||
-		arguments.get_argument(0).token_type != k_token_type_constant_string) {
-		result.result = k_compiler_result_preprocessor_error;
+		arguments.get_argument(0).token_type != e_token_type::k_constant_string) {
+		result.result = e_compiler_result::k_preprocessor_error;
 		result.source_location = arguments.get_command().source_location;
 		result.message = "Invalid import command";
 		return result;

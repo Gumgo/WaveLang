@@ -8,15 +8,15 @@ c_diagnostic::c_diagnostic(f_diagnostic_callback diagnostic_callback, void *diag
 
 void c_diagnostic::info(const char *message) {
 	wl_assert(message);
-	m_diagnostic_callback(m_diagnostic_callback_context, k_diagnostic_level_info, message);
+	m_diagnostic_callback(m_diagnostic_callback_context, e_diagnostic_level::k_info, message);
 }
 
 void c_diagnostic::warning(const char *message) {
 	wl_assert(message);
-	m_diagnostic_callback(m_diagnostic_callback_context, k_diagnostic_level_warning, message);
+	m_diagnostic_callback(m_diagnostic_callback_context, e_diagnostic_level::k_warning, message);
 }
 
 void c_diagnostic::error(const char *message) {
 	wl_assert(message);
-	m_diagnostic_callback(m_diagnostic_callback_context, k_diagnostic_level_error, message);
+	m_diagnostic_callback(m_diagnostic_callback_context, e_diagnostic_level::k_error, message);
 }

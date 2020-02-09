@@ -9,56 +9,58 @@
 #include <stdexcept>
 
 static const e_ast_primitive_type k_native_module_primitive_type_to_ast_primitive_type_mapping[] = {
-	k_ast_primitive_type_real,	// k_native_module_primitive_type_real
-	k_ast_primitive_type_bool,	// k_native_module_primitive_type_bool
-	k_ast_primitive_type_string	// k_native_module_primitive_type_string
+	e_ast_primitive_type::k_real,	// e_native_module_primitive_type::k_real
+	e_ast_primitive_type::k_bool,	// e_native_module_primitive_type::k_bool
+	e_ast_primitive_type::k_string	// e_native_module_primitive_type::k_string
 };
-static_assert(NUMBEROF(k_native_module_primitive_type_to_ast_primitive_type_mapping) ==
-	k_native_module_primitive_type_count,
+static_assert(
+	NUMBEROF(k_native_module_primitive_type_to_ast_primitive_type_mapping) ==
+	enum_count<e_native_module_primitive_type>(),
 	"Native module argument primitive type to ast primitive type mismatch");
 
 static const e_ast_qualifier k_native_module_qualifier_to_ast_qualifier_mapping[] = {
-	k_ast_qualifier_in,		// k_native_module_qualifier_in
-	k_ast_qualifier_out,	// k_native_module_qualifier_out
-	k_ast_qualifier_in		// k_native_module_qualifier_constant
+	e_ast_qualifier::k_in,	// e_native_module_qualifier::k_in
+	e_ast_qualifier::k_out,	// e_native_module_qualifier::k_out
+	e_ast_qualifier::k_in	// e_native_module_qualifier::k_constant
 };
-static_assert(NUMBEROF(k_native_module_qualifier_to_ast_qualifier_mapping) ==
-	k_native_module_qualifier_count, "Native module qualifier to ast qualifier mismatch");
+static_assert(
+	NUMBEROF(k_native_module_qualifier_to_ast_qualifier_mapping) == enum_count<e_native_module_qualifier>(),
+	"Native module qualifier to ast qualifier mismatch");
 
 static c_ast_data_type get_ast_data_type(c_native_module_data_type type) {
 	return c_ast_data_type(
-		k_native_module_primitive_type_to_ast_primitive_type_mapping[type.get_primitive_type()],
+		k_native_module_primitive_type_to_ast_primitive_type_mapping[enum_index(type.get_primitive_type())],
 		type.is_array());
 }
 
 static e_ast_qualifier get_ast_qualifier(e_native_module_qualifier qualifier) {
-	wl_assert(VALID_INDEX(qualifier, k_native_module_qualifier_count));
-	return k_native_module_qualifier_to_ast_qualifier_mapping[qualifier];
+	wl_assert(valid_enum_index(qualifier));
+	return k_native_module_qualifier_to_ast_qualifier_mapping[enum_index(qualifier)];
 }
 
 static bool node_is_type(const c_lr_parse_tree_node &node, e_token_type terminal_type) {
-	return node.get_symbol().is_terminal() && node.get_symbol().get_index() == terminal_type;
+	return node.get_symbol().is_terminal() && node.get_symbol().get_index() == enum_index(terminal_type);
 }
 
 static bool node_is_type(const c_lr_parse_tree_node &node, e_parser_nonterminal nonterminal_type) {
-	return !node.get_symbol().is_terminal() && node.get_symbol().get_index() == nonterminal_type;
+	return !node.get_symbol().is_terminal() && node.get_symbol().get_index() == enum_index(nonterminal_type);
 }
 
 static c_ast_data_type get_data_type_from_node(const c_lr_parse_tree &parse_tree, const c_lr_parse_tree_node &node) {
 	const c_lr_parse_tree_node *type_node = &node;
 
-	if (node_is_type(*type_node, k_parser_nonterminal_type_or_void) ||
-		node_is_type(*type_node, k_parser_nonterminal_type)) {
+	if (node_is_type(*type_node, e_parser_nonterminal::k_type_or_void) ||
+		node_is_type(*type_node, e_parser_nonterminal::k_type)) {
 		type_node = &parse_tree.get_node(type_node->get_child_index());
 	}
 
 	bool is_array = false;
-	if (node_is_type(*type_node, k_token_type_keyword_void)) {
+	if (node_is_type(*type_node, e_token_type::k_keyword_void)) {
 		// Don't step down another level
-	} else if (node_is_type(*type_node, k_parser_nonterminal_basic_type)) {
+	} else if (node_is_type(*type_node, e_parser_nonterminal::k_basic_type)) {
 		is_array = false;
 		type_node = &parse_tree.get_node(type_node->get_child_index());
-	} else if (node_is_type(*type_node, k_parser_nonterminal_array_type)) {
+	} else if (node_is_type(*type_node, e_parser_nonterminal::k_array_type)) {
 		is_array = true;
 		type_node = &parse_tree.get_node(type_node->get_child_index());
 	} else {
@@ -70,22 +72,22 @@ static c_ast_data_type get_data_type_from_node(const c_lr_parse_tree &parse_tree
 		const c_lr_parse_tree_node &left_bracket_node = parse_tree.get_node(type_node->get_sibling_index());
 		const c_lr_parse_tree_node &right_bracket_node = parse_tree.get_node(left_bracket_node.get_sibling_index());
 
-		wl_assert(node_is_type(left_bracket_node, k_token_type_left_bracket));
-		wl_assert(node_is_type(right_bracket_node, k_token_type_right_bracket));
+		wl_assert(node_is_type(left_bracket_node, e_token_type::k_left_bracket));
+		wl_assert(node_is_type(right_bracket_node, e_token_type::k_right_bracket));
 	}
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
 	c_ast_data_type result;
 
-	if (node_is_type(*type_node, k_token_type_keyword_void)) {
+	if (node_is_type(*type_node, e_token_type::k_keyword_void)) {
 		wl_assert(!is_array);
-		result = c_ast_data_type(k_ast_primitive_type_void);
-	} else if (node_is_type(*type_node, k_token_type_keyword_real)) {
-		result = c_ast_data_type(k_ast_primitive_type_real, is_array);
-	} else if (node_is_type(*type_node, k_token_type_keyword_bool)) {
-		result = c_ast_data_type(k_ast_primitive_type_bool, is_array);
-	} else if (node_is_type(*type_node, k_token_type_keyword_string)) {
-		result = c_ast_data_type(k_ast_primitive_type_string, is_array);
+		result = c_ast_data_type(e_ast_primitive_type::k_void);
+	} else if (node_is_type(*type_node, e_token_type::k_keyword_real)) {
+		result = c_ast_data_type(e_ast_primitive_type::k_real, is_array);
+	} else if (node_is_type(*type_node, e_token_type::k_keyword_bool)) {
+		result = c_ast_data_type(e_ast_primitive_type::k_bool, is_array);
+	} else if (node_is_type(*type_node, e_token_type::k_keyword_string)) {
+		result = c_ast_data_type(e_ast_primitive_type::k_string, is_array);
 	} else {
 		wl_unreachable();
 	}
@@ -94,12 +96,12 @@ static c_ast_data_type get_data_type_from_node(const c_lr_parse_tree &parse_tree
 }
 
 static e_ast_qualifier get_qualifier_from_node(const c_lr_parse_tree_node &node) {
-	if (node_is_type(node, k_token_type_keyword_in)) {
-		return k_ast_qualifier_in;
-	} else if (node_is_type(node, k_token_type_keyword_out)) {
-		return k_ast_qualifier_out;
+	if (node_is_type(node, e_token_type::k_keyword_in)) {
+		return e_ast_qualifier::k_in;
+	} else if (node_is_type(node, e_token_type::k_keyword_out)) {
+		return e_ast_qualifier::k_out;
 	} else {
-		return k_ast_qualifier_count;
+		return e_ast_qualifier::k_count;
 		wl_unreachable();
 	}
 }
@@ -273,7 +275,7 @@ static void build_native_module_declarations(c_ast_node_scope *global_scope) {
 		module_declaration->set_is_native(true);
 		module_declaration->set_native_module_index(index);
 
-		if (c_native_module_registry::get_native_module_operator(native_module.uid) == k_native_operator_invalid) {
+		if (c_native_module_registry::get_native_module_operator(native_module.uid) == e_native_operator::k_invalid) {
 			// Set the name to "library.module_name"
 			std::string name = library.name.get_string();
 			name.push_back('.');
@@ -284,14 +286,14 @@ static void build_native_module_declarations(c_ast_node_scope *global_scope) {
 			module_declaration->set_name(native_module.name.get_string());
 		}
 
-		module_declaration->set_return_type(c_ast_data_type(k_ast_primitive_type_void));
+		module_declaration->set_return_type(c_ast_data_type(e_ast_primitive_type::k_void));
 
 		bool return_argument_found = false;
 		for (size_t arg = 0; arg < native_module.argument_count; arg++) {
 			s_native_module_argument argument = native_module.arguments[arg];
 			if (arg == native_module.return_argument_index) {
 				wl_assert(!return_argument_found);
-				wl_assert(argument.type.get_qualifier() == k_native_module_qualifier_out);
+				wl_assert(argument.type.get_qualifier() == e_native_module_qualifier::k_out);
 				// The first out argument is routed through the return value, so don't add a declaration for it
 				module_declaration->set_return_type(get_ast_data_type(argument.type.get_data_type()));
 				return_argument_found = true;
@@ -313,20 +315,20 @@ static void add_parse_tree_to_global_scope(
 	const s_lexer_source_file_output &tokens,
 	c_ast_node_scope *global_scope) {
 	const c_lr_parse_tree_node &root_node = parse_tree.get_node(parse_tree.get_root_node_index());
-	wl_assert(node_is_type(root_node, k_parser_nonterminal_start));
+	wl_assert(node_is_type(root_node, e_parser_nonterminal::k_start));
 
 	const c_lr_parse_tree_node &global_scope_node = parse_tree.get_node(root_node.get_child_index());
-	wl_assert(node_is_type(global_scope_node, k_parser_nonterminal_global_scope));
+	wl_assert(node_is_type(global_scope_node, e_parser_nonterminal::k_global_scope));
 
 	// Iterate through the list of global scope items
 	std::vector<size_t> item_indices = build_left_recursive_list(
 		parse_tree,
 		global_scope_node.get_child_index(),
-		k_parser_nonterminal_global_scope_item_list);
+		e_parser_nonterminal::k_global_scope_item_list);
 
 	for (size_t index = 0; index < item_indices.size(); index++) {
 		const c_lr_parse_tree_node &global_scope_item_node = parse_tree.get_node(item_indices[index]);
-		wl_assert(node_is_type(global_scope_item_node, k_parser_nonterminal_global_scope_item));
+		wl_assert(node_is_type(global_scope_item_node, e_parser_nonterminal::k_global_scope_item));
 		c_ast_node *item = build_global_scope_item(parse_tree, tokens, global_scope_item_node);
 		global_scope->add_child(item);
 	}
@@ -343,8 +345,8 @@ static c_ast_node *build_global_scope_item(
 	const c_lr_parse_tree_node &item_type_node = parse_tree.get_node(global_scope_item_node.get_child_index());
 
 	wl_assert(!item_type_node.get_symbol().is_terminal());
-	switch (item_type_node.get_symbol().get_index()) {
-	case k_parser_nonterminal_module_declaration:
+	switch (static_cast<e_parser_nonterminal>(item_type_node.get_symbol().get_index())) {
+	case e_parser_nonterminal::k_module_declaration:
 		return build_module_declaration(parse_tree, tokens, item_type_node);
 
 	default:
@@ -358,34 +360,34 @@ static c_ast_node_module_declaration *build_module_declaration(
 	const c_lr_parse_tree &parse_tree,
 	const s_lexer_source_file_output &tokens,
 	const c_lr_parse_tree_node &module_declaration_node) {
-	wl_assert(node_is_type(module_declaration_node, k_parser_nonterminal_module_declaration));
+	wl_assert(node_is_type(module_declaration_node, e_parser_nonterminal::k_module_declaration));
 
 	c_lr_parse_tree_iterator it(parse_tree, module_declaration_node.get_child_index());
 
 	const c_lr_parse_tree_node &module_keyword_node = it.get_node();
-	wl_assert(node_is_type(module_keyword_node, k_token_type_keyword_module));
+	wl_assert(node_is_type(module_keyword_node, e_token_type::k_keyword_module));
 	it.follow_sibling();
 
 	const c_lr_parse_tree_node &module_return_type_node = it.get_node();
-	wl_assert(node_is_type(module_return_type_node, k_parser_nonterminal_type_or_void));
+	wl_assert(node_is_type(module_return_type_node, e_parser_nonterminal::k_type_or_void));
 	it.follow_sibling();
 
 	const c_lr_parse_tree_node &module_name_node = it.get_node();
-	wl_assert(node_is_type(module_name_node, k_token_type_identifier));
+	wl_assert(node_is_type(module_name_node, e_token_type::k_identifier));
 	it.follow_sibling();
 
-	wl_assert(node_is_type(it.get_node(), k_token_type_left_parenthesis));
+	wl_assert(node_is_type(it.get_node(), e_token_type::k_left_parenthesis));
 	it.follow_sibling();
 
 	const c_lr_parse_tree_node &module_declaration_arguments_node = it.get_node();
-	wl_assert(node_is_type(module_declaration_arguments_node, k_parser_nonterminal_module_declaration_arguments));
+	wl_assert(node_is_type(module_declaration_arguments_node, e_parser_nonterminal::k_module_declaration_arguments));
 	it.follow_sibling();
 
-	wl_assert(node_is_type(it.get_node(), k_token_type_right_parenthesis));
+	wl_assert(node_is_type(it.get_node(), e_token_type::k_right_parenthesis));
 	it.follow_sibling();
 
 	const c_lr_parse_tree_node &scope_node = it.get_node();
-	wl_assert(node_is_type(scope_node, k_parser_nonterminal_scope));
+	wl_assert(node_is_type(scope_node, e_parser_nonterminal::k_scope));
 	wl_assert(!it.has_sibling());
 
 	c_ast_node_module_declaration *module_declaration = new c_ast_node_module_declaration();
@@ -408,22 +410,22 @@ static c_ast_node_module_declaration *build_module_declaration(
 		std::vector<size_t> argument_indices = build_left_recursive_list(
 			parse_tree,
 			module_declaration_argument_list_node.get_child_index(),
-			k_parser_nonterminal_module_declaration_argument_list);
+			e_parser_nonterminal::k_module_declaration_argument_list);
 
 		// Skip the commas
 		for (size_t index = 0; index < argument_indices.size(); index++) {
 			if (index == 0) {
 				wl_assert(node_is_type(
 					parse_tree.get_node(argument_indices[index]),
-					k_parser_nonterminal_module_declaration_argument));
+					e_parser_nonterminal::k_module_declaration_argument));
 			} else {
 				wl_assert(node_is_type(
 					parse_tree.get_node(argument_indices[index]),
-					k_token_type_comma));
+					e_token_type::k_comma));
 				argument_indices[index] = parse_tree.get_node(argument_indices[index]).get_sibling_index();
 				wl_assert(node_is_type(
 					parse_tree.get_node(argument_indices[index]),
-					k_parser_nonterminal_module_declaration_argument));
+					e_parser_nonterminal::k_module_declaration_argument));
 			}
 		}
 
@@ -433,21 +435,21 @@ static c_ast_node_module_declaration *build_module_declaration(
 			initial_scope_children.push_back(argument_declaration);
 
 			c_lr_parse_tree_iterator arg_it(parse_tree, argument_indices[argument_index]);
-			wl_assert(node_is_type(arg_it.get_node(), k_parser_nonterminal_module_declaration_argument));
+			wl_assert(node_is_type(arg_it.get_node(), e_parser_nonterminal::k_module_declaration_argument));
 			arg_it.follow_child();
 
 			const c_lr_parse_tree_node &argument_qualifier_node = arg_it.get_node();
 			wl_assert(node_is_type(
 				argument_qualifier_node,
-				k_parser_nonterminal_module_declaration_argument_qualifier));
+				e_parser_nonterminal::k_module_declaration_argument_qualifier));
 			arg_it.follow_sibling();
 
 			const c_lr_parse_tree_node &argument_type_node = arg_it.get_node();
-			wl_assert(node_is_type(argument_type_node, k_parser_nonterminal_type));
+			wl_assert(node_is_type(argument_type_node, e_parser_nonterminal::k_type));
 			arg_it.follow_sibling();
 
 			const c_lr_parse_tree_node &argument_name_node = arg_it.get_node();
-			wl_assert(node_is_type(argument_name_node, k_token_type_identifier));
+			wl_assert(node_is_type(argument_name_node, e_token_type::k_identifier));
 			wl_assert(!arg_it.has_sibling());
 
 			wl_assert(argument_qualifier_node.has_child());
@@ -481,18 +483,18 @@ static c_ast_node_scope *build_scope(
 	const s_lexer_source_file_output &tokens,
 	const c_lr_parse_tree_node &scope_node,
 	const std::vector<c_ast_node *> &initial_children) {
-	wl_assert(node_is_type(scope_node, k_parser_nonterminal_scope));
+	wl_assert(node_is_type(scope_node, e_parser_nonterminal::k_scope));
 
 	c_lr_parse_tree_iterator it(parse_tree, scope_node.get_child_index());
 
-	wl_assert(node_is_type(it.get_node(), k_token_type_left_brace));
+	wl_assert(node_is_type(it.get_node(), e_token_type::k_left_brace));
 	it.follow_sibling();
 
 	const c_lr_parse_tree_node &scope_item_list_node = it.get_node();
-	wl_assert(node_is_type(it.get_node(), k_parser_nonterminal_scope_item_list));
+	wl_assert(node_is_type(it.get_node(), e_parser_nonterminal::k_scope_item_list));
 	it.follow_sibling();
 
-	wl_assert(node_is_type(it.get_node(), k_token_type_right_brace));
+	wl_assert(node_is_type(it.get_node(), e_token_type::k_right_brace));
 	wl_assert(!it.has_sibling());
 
 	// Add the initial items first
@@ -503,11 +505,11 @@ static c_ast_node_scope *build_scope(
 
 	// Iterate through the items in the module body and add each one to the module's scope
 	std::vector<size_t> item_indices = build_left_recursive_list(
-		parse_tree, scope_item_list_node.get_child_index(), k_parser_nonterminal_scope_item_list);
+		parse_tree, scope_item_list_node.get_child_index(), e_parser_nonterminal::k_scope_item_list);
 
 	for (size_t index = 0; index < item_indices.size(); index++) {
 		const c_lr_parse_tree_node &scope_item_node = parse_tree.get_node(item_indices[index]);
-		wl_assert(node_is_type(scope_item_node, k_parser_nonterminal_scope_item));
+		wl_assert(node_is_type(scope_item_node, e_parser_nonterminal::k_scope_item));
 		std::vector<c_ast_node *> items = build_scope_items(parse_tree, tokens, scope_item_node);
 		for (size_t item_index = 0; item_index < items.size(); item_index++) {
 			scope->add_child(items[item_index]);
@@ -530,20 +532,20 @@ static std::vector<c_ast_node *> build_scope_items(
 	const c_lr_parse_tree_node &item_type_node = parse_tree.get_node(scope_item_node.get_child_index());
 
 	wl_assert(!item_type_node.get_symbol().is_terminal());
-	switch (item_type_node.get_symbol().get_index()) {
-	case k_parser_nonterminal_scope:
+	switch (static_cast<e_parser_nonterminal>(item_type_node.get_symbol().get_index())) {
+	case e_parser_nonterminal::k_scope:
 		result.push_back(build_scope(parse_tree, tokens, item_type_node, std::vector<c_ast_node *>()));
 		break;
 
-	case k_parser_nonterminal_named_value_declaration:
+	case e_parser_nonterminal::k_named_value_declaration:
 		result = build_named_value_declaration_and_optional_assignment(parse_tree, tokens, item_type_node);
 		break;
 
-	case k_parser_nonterminal_named_value_assignment:
+	case e_parser_nonterminal::k_named_value_assignment:
 		result.push_back(build_named_value_assignment(parse_tree, tokens, item_type_node));
 		break;
 
-	case k_parser_nonterminal_expression:
+	case e_parser_nonterminal::k_expression:
 	{
 		// In this case, we wrap the expression in a named value assignment, but don't fill in the named value being
 		// assigned to. This is because we assume that the assignments are from output parameters in a module call.
@@ -557,11 +559,11 @@ static std::vector<c_ast_node *> build_scope_items(
 		break;
 	}
 
-	case k_parser_nonterminal_module_return_statement:
+	case e_parser_nonterminal::k_module_return_statement:
 		result.push_back(build_return_statement(parse_tree, tokens, item_type_node));
 		break;
 
-	case k_parser_nonterminal_repeat_loop:
+	case e_parser_nonterminal::k_repeat_loop:
 		result = build_repeat_loop(parse_tree, tokens, item_type_node);
 		break;
 
@@ -577,18 +579,18 @@ static std::vector<c_ast_node *> build_named_value_declaration_and_optional_assi
 	const c_lr_parse_tree &parse_tree,
 	const s_lexer_source_file_output &tokens,
 	const c_lr_parse_tree_node &named_value_declaration_node) {
-	wl_assert(node_is_type(named_value_declaration_node, k_parser_nonterminal_named_value_declaration));
+	wl_assert(node_is_type(named_value_declaration_node, e_parser_nonterminal::k_named_value_declaration));
 
 	c_lr_parse_tree_iterator it(parse_tree, named_value_declaration_node.get_child_index());
 
 	// type, identifier, and assignment node
 
 	const c_lr_parse_tree_node &named_value_type_node = it.get_node();
-	wl_assert(node_is_type(named_value_type_node, k_parser_nonterminal_type));
+	wl_assert(node_is_type(named_value_type_node, e_parser_nonterminal::k_type));
 	it.follow_sibling();
 
 	const c_lr_parse_tree_node &name_node = it.get_node();
-	wl_assert(node_is_type(name_node, k_token_type_identifier));
+	wl_assert(node_is_type(name_node, e_token_type::k_identifier));
 
 	c_ast_data_type data_type = get_data_type_from_node(parse_tree, named_value_type_node);
 
@@ -606,15 +608,15 @@ static std::vector<c_ast_node *> build_named_value_declaration_and_optional_assi
 	if (it.has_sibling()) {
 		it.follow_sibling();
 		const c_lr_parse_tree_node &expression_assignment_node = it.get_node();
-		wl_assert(node_is_type(expression_assignment_node, k_parser_nonterminal_expression_assignment));
+		wl_assert(node_is_type(expression_assignment_node, e_parser_nonterminal::k_expression_assignment));
 		wl_assert(!it.has_sibling());
 		it.follow_child();
 
-		wl_assert(node_is_type(it.get_node(), k_token_type_operator_assignment));
+		wl_assert(node_is_type(it.get_node(), e_token_type::k_operator_assignment));
 		it.follow_sibling();
 
 		const c_lr_parse_tree_node &expression_node = it.get_node();
-		wl_assert(node_is_type(expression_node, k_parser_nonterminal_expression));
+		wl_assert(node_is_type(expression_node, e_parser_nonterminal::k_expression));
 		wl_assert(!it.has_sibling());
 
 		c_ast_node_expression *expression = build_expression(parse_tree, tokens, expression_node);
@@ -633,27 +635,27 @@ static c_ast_node_named_value_assignment *build_named_value_assignment(
 	const c_lr_parse_tree &parse_tree,
 	const s_lexer_source_file_output &tokens,
 	const c_lr_parse_tree_node &named_value_assignment_node) {
-	wl_assert(node_is_type(named_value_assignment_node, k_parser_nonterminal_named_value_assignment));
+	wl_assert(node_is_type(named_value_assignment_node, e_parser_nonterminal::k_named_value_assignment));
 
 	c_lr_parse_tree_iterator it(parse_tree, named_value_assignment_node.get_child_index());
 
 	const c_lr_parse_tree_node &named_value_expression_node = it.get_node();
-	wl_assert(node_is_type(named_value_expression_node, k_parser_nonterminal_expression));
+	wl_assert(node_is_type(named_value_expression_node, e_parser_nonterminal::k_expression));
 	it.follow_sibling();
 
 	c_ast_node_named_value_assignment *result = new c_ast_node_named_value_assignment();
 	result->set_source_location(
 		tokens.tokens[get_first_token_index(parse_tree, named_value_expression_node)].source_location);
 
-	wl_assert(node_is_type(it.get_node(), k_parser_nonterminal_expression_assignment));
+	wl_assert(node_is_type(it.get_node(), e_parser_nonterminal::k_expression_assignment));
 	wl_assert(!it.has_sibling());
 	it.follow_child();
 
-	wl_assert(node_is_type(it.get_node(), k_token_type_operator_assignment));
+	wl_assert(node_is_type(it.get_node(), e_token_type::k_operator_assignment));
 	it.follow_sibling();
 
 	const c_lr_parse_tree_node &expression_node = it.get_node();
-	wl_assert(node_is_type(expression_node, k_parser_nonterminal_expression));
+	wl_assert(node_is_type(expression_node, e_parser_nonterminal::k_expression));
 	wl_assert(!it.has_sibling());
 
 	std::string named_value;
@@ -682,16 +684,16 @@ static bool extract_named_value_assignment_lhs_expression(
 	std::string &out_named_value,
 	c_ast_node_expression *&out_array_index_expression) {
 	// Manually parse the LHS expression, looking for a specific pattern. Gross!
-	wl_assert(node_is_type(named_value_lhs_expression_node, k_parser_nonterminal_expression));
+	wl_assert(node_is_type(named_value_lhs_expression_node, e_parser_nonterminal::k_expression));
 
 	c_lr_parse_tree_iterator it(parse_tree, named_value_lhs_expression_node.get_child_index());
-	wl_assert(node_is_type(it.get_node(), k_parser_nonterminal_expr_1));
+	wl_assert(node_is_type(it.get_node(), e_parser_nonterminal::k_expr_1));
 
 	// Iterate down to expr_8
 	static const e_parser_nonterminal k_expression_chain[] = {
-		k_parser_nonterminal_expr_2, k_parser_nonterminal_expr_3, k_parser_nonterminal_expr_4,
-		k_parser_nonterminal_expr_5, k_parser_nonterminal_expr_6, k_parser_nonterminal_expr_7,
-		k_parser_nonterminal_expr_8
+		e_parser_nonterminal::k_expr_2, e_parser_nonterminal::k_expr_3, e_parser_nonterminal::k_expr_4,
+		e_parser_nonterminal::k_expr_5, e_parser_nonterminal::k_expr_6, e_parser_nonterminal::k_expr_7,
+		e_parser_nonterminal::k_expr_8
 	};
 
 	for (size_t iter = 0; iter < NUMBEROF(k_expression_chain); iter++) {
@@ -703,33 +705,33 @@ static bool extract_named_value_assignment_lhs_expression(
 		}
 	}
 
-	wl_assert(node_is_type(it.get_node(), k_parser_nonterminal_expr_8));
+	wl_assert(node_is_type(it.get_node(), e_parser_nonterminal::k_expr_8));
 	wl_assert(it.has_child());
 	it.follow_child();
 
 	const c_lr_parse_tree_node *array_index_expression_node = nullptr;
 
 	// Check for array dereference
-	if (node_is_type(it.get_node(), k_parser_nonterminal_expr_8)) {
+	if (node_is_type(it.get_node(), e_parser_nonterminal::k_expr_8)) {
 		c_lr_parse_tree_iterator deref_it(parse_tree, it.get_node_index());
 		it.follow_child();
 		deref_it.follow_sibling();
-		wl_assert(node_is_type(deref_it.get_node(), k_parser_nonterminal_array_dereference));
+		wl_assert(node_is_type(deref_it.get_node(), e_parser_nonterminal::k_array_dereference));
 		deref_it.follow_child();
 
-		wl_assert(node_is_type(deref_it.get_node(), k_token_type_left_bracket));
+		wl_assert(node_is_type(deref_it.get_node(), e_token_type::k_left_bracket));
 		deref_it.follow_sibling();
 
 		array_index_expression_node = &deref_it.get_node();
-		wl_assert(node_is_type(*array_index_expression_node, k_parser_nonterminal_expression));
+		wl_assert(node_is_type(*array_index_expression_node, e_parser_nonterminal::k_expression));
 		deref_it.follow_sibling();
 
-		wl_assert(node_is_type(deref_it.get_node(), k_token_type_right_bracket));
+		wl_assert(node_is_type(deref_it.get_node(), e_token_type::k_right_bracket));
 		wl_assert(!deref_it.has_sibling());
 	}
 
 	// We should be at expr_9 now, unless there's a double array dereference, which is invalid
-	if (!node_is_type(it.get_node(), k_parser_nonterminal_expr_9)) {
+	if (!node_is_type(it.get_node(), e_parser_nonterminal::k_expr_9)) {
 		return false;
 	}
 
@@ -737,7 +739,7 @@ static bool extract_named_value_assignment_lhs_expression(
 	wl_assert(it.has_child());
 	it.follow_child();
 
-	if (!node_is_type(it.get_node(), k_token_type_identifier)) {
+	if (!node_is_type(it.get_node(), e_token_type::k_identifier)) {
 		return false;
 	}
 
@@ -756,16 +758,16 @@ static c_ast_node_return_statement *build_return_statement(
 	const c_lr_parse_tree &parse_tree,
 	const s_lexer_source_file_output &tokens,
 	const c_lr_parse_tree_node &return_statement_node) {
-	wl_assert(node_is_type(return_statement_node, k_parser_nonterminal_module_return_statement));
+	wl_assert(node_is_type(return_statement_node, e_parser_nonterminal::k_module_return_statement));
 
 	c_lr_parse_tree_iterator it(parse_tree, return_statement_node.get_child_index());
 
 	const c_lr_parse_tree_node &return_node = it.get_node();
-	wl_assert(node_is_type(return_node, k_token_type_keyword_return));
+	wl_assert(node_is_type(return_node, e_token_type::k_keyword_return));
 	it.follow_sibling();
 
 	const c_lr_parse_tree_node &expression_node = it.get_node();
-	wl_assert(node_is_type(expression_node, k_parser_nonterminal_expression));
+	wl_assert(node_is_type(expression_node, e_parser_nonterminal::k_expression));
 	wl_assert(!it.has_sibling());
 
 	c_ast_node_return_statement *result = new c_ast_node_return_statement();
@@ -781,26 +783,26 @@ static std::vector<c_ast_node *> build_repeat_loop(
 	const c_lr_parse_tree &parse_tree,
 	const s_lexer_source_file_output &tokens,
 	const c_lr_parse_tree_node &return_statement_node) {
-	wl_assert(node_is_type(return_statement_node, k_parser_nonterminal_repeat_loop));
+	wl_assert(node_is_type(return_statement_node, e_parser_nonterminal::k_repeat_loop));
 
 	c_lr_parse_tree_iterator it(parse_tree, return_statement_node.get_child_index());
 
 	const c_lr_parse_tree_node &repeat_node = it.get_node();
-	wl_assert(node_is_type(repeat_node, k_token_type_keyword_repeat));
+	wl_assert(node_is_type(repeat_node, e_token_type::k_keyword_repeat));
 	it.follow_sibling();
 
-	wl_assert(node_is_type(it.get_node(), k_token_type_left_parenthesis));
+	wl_assert(node_is_type(it.get_node(), e_token_type::k_left_parenthesis));
 	it.follow_sibling();
 
 	const c_lr_parse_tree_node &expression_node = it.get_node();
-	wl_assert(node_is_type(expression_node, k_parser_nonterminal_expression));
+	wl_assert(node_is_type(expression_node, e_parser_nonterminal::k_expression));
 	it.follow_sibling();
 
-	wl_assert(node_is_type(it.get_node(), k_token_type_right_parenthesis));
+	wl_assert(node_is_type(it.get_node(), e_token_type::k_right_parenthesis));
 	it.follow_sibling();
 
 	const c_lr_parse_tree_node &scope_node = it.get_node();
-	wl_assert(node_is_type(scope_node, k_parser_nonterminal_scope));
+	wl_assert(node_is_type(scope_node, e_parser_nonterminal::k_scope));
 	wl_assert(!it.has_sibling());
 
 	std::vector<c_ast_node *> result;
@@ -838,12 +840,12 @@ static c_ast_node_expression *build_expression(
 	bool expression_type_found = false;
 	const c_lr_parse_tree_node *current_node = &expression_node;
 	while (!expression_type_found) {
-		if (node_is_type(*current_node, k_parser_nonterminal_expression)) {
+		if (node_is_type(*current_node, e_parser_nonterminal::k_expression)) {
 			// expression:
 
 			// Always turns into expr_1
 			current_node = &parse_tree.get_node(current_node->get_child_index());
-		} else if (node_is_type(*current_node, k_parser_nonterminal_expr_1)) {
+		} else if (node_is_type(*current_node, e_parser_nonterminal::k_expr_1)) {
 			// expr_1: ||
 
 			const c_lr_parse_tree_node &child_node = parse_tree.get_node(current_node->get_child_index());
@@ -854,7 +856,7 @@ static c_ast_node_expression *build_expression(
 				result->set_expression_value(build_binary_operator_call(parse_tree, tokens, child_node));
 				expression_type_found = true;
 			}
-		} else if (node_is_type(*current_node, k_parser_nonterminal_expr_2)) {
+		} else if (node_is_type(*current_node, e_parser_nonterminal::k_expr_2)) {
 			// expr_2: &&
 
 			const c_lr_parse_tree_node &child_node = parse_tree.get_node(current_node->get_child_index());
@@ -865,7 +867,7 @@ static c_ast_node_expression *build_expression(
 				result->set_expression_value(build_binary_operator_call(parse_tree, tokens, child_node));
 				expression_type_found = true;
 			}
-		} else if (node_is_type(*current_node, k_parser_nonterminal_expr_3)) {
+		} else if (node_is_type(*current_node, e_parser_nonterminal::k_expr_3)) {
 			// expr_3: == !=
 
 			const c_lr_parse_tree_node &child_node = parse_tree.get_node(current_node->get_child_index());
@@ -876,7 +878,7 @@ static c_ast_node_expression *build_expression(
 				result->set_expression_value(build_binary_operator_call(parse_tree, tokens, child_node));
 				expression_type_found = true;
 			}
-		} else if (node_is_type(*current_node, k_parser_nonterminal_expr_4)) {
+		} else if (node_is_type(*current_node, e_parser_nonterminal::k_expr_4)) {
 			// expr_4: > < >= <=
 
 			const c_lr_parse_tree_node &child_node = parse_tree.get_node(current_node->get_child_index());
@@ -887,7 +889,7 @@ static c_ast_node_expression *build_expression(
 				result->set_expression_value(build_binary_operator_call(parse_tree, tokens, child_node));
 				expression_type_found = true;
 			}
-		} else if (node_is_type(*current_node, k_parser_nonterminal_expr_5)) {
+		} else if (node_is_type(*current_node, e_parser_nonterminal::k_expr_5)) {
 			// expr_5: + -
 
 			const c_lr_parse_tree_node &child_node = parse_tree.get_node(current_node->get_child_index());
@@ -898,7 +900,7 @@ static c_ast_node_expression *build_expression(
 				result->set_expression_value(build_binary_operator_call(parse_tree, tokens, child_node));
 				expression_type_found = true;
 			}
-		} else if (node_is_type(*current_node, k_parser_nonterminal_expr_6)) {
+		} else if (node_is_type(*current_node, e_parser_nonterminal::k_expr_6)) {
 			// expr_6: * / %
 
 			const c_lr_parse_tree_node &child_node = parse_tree.get_node(current_node->get_child_index());
@@ -909,7 +911,7 @@ static c_ast_node_expression *build_expression(
 				result->set_expression_value(build_binary_operator_call(parse_tree, tokens, child_node));
 				expression_type_found = true;
 			}
-		} else if (node_is_type(*current_node, k_parser_nonterminal_expr_7)) {
+		} else if (node_is_type(*current_node, e_parser_nonterminal::k_expr_7)) {
 			// expr_7: unary + -
 
 			const c_lr_parse_tree_node &child_node = parse_tree.get_node(current_node->get_child_index());
@@ -920,7 +922,7 @@ static c_ast_node_expression *build_expression(
 				result->set_expression_value(build_unary_operator_call(parse_tree, tokens, child_node));
 				expression_type_found = true;
 			}
-		} else if (node_is_type(*current_node, k_parser_nonterminal_expr_8)) {
+		} else if (node_is_type(*current_node, e_parser_nonterminal::k_expr_8)) {
 			// expr_8: array dereference
 
 			const c_lr_parse_tree_node &child_node = parse_tree.get_node(current_node->get_child_index());
@@ -931,30 +933,30 @@ static c_ast_node_expression *build_expression(
 				result->set_expression_value(build_dereference_call(parse_tree, tokens, child_node));
 				expression_type_found = true;
 			}
-		} else if (node_is_type(*current_node, k_parser_nonterminal_expr_9)) {
+		} else if (node_is_type(*current_node, e_parser_nonterminal::k_expr_9)) {
 			// expr_9: parens, identifier, module_call, constant
 
 			const c_lr_parse_tree_node &child_node = parse_tree.get_node(current_node->get_child_index());
-			if (node_is_type(child_node, k_token_type_left_parenthesis)) {
+			if (node_is_type(child_node, e_token_type::k_left_parenthesis)) {
 				// We found an expression in parenthesis whose ordering was already resolved by the parser, forward it
 				// back to the top level (expression)
 				current_node = &parse_tree.get_node(child_node.get_sibling_index());
 				wl_assert(node_is_type(
 					parse_tree.get_node(current_node->get_sibling_index()),
-					k_token_type_right_parenthesis));
-			} else if (node_is_type(child_node, k_token_type_identifier)) {
+					e_token_type::k_right_parenthesis));
+			} else if (node_is_type(child_node, e_token_type::k_identifier)) {
 				// Named value
 				c_ast_node_named_value *named_value = new c_ast_node_named_value();
 				named_value->set_source_location(tokens.tokens[child_node.get_token_index()].source_location);
 				named_value->set_name(tokens.tokens[child_node.get_token_index()].token_string.to_std_string());
 				result->set_expression_value(named_value);
 				expression_type_found = true;
-			} else if (node_is_type(child_node, k_parser_nonterminal_module_call)) {
+			} else if (node_is_type(child_node, e_parser_nonterminal::k_module_call)) {
 				// Module call
 				result->set_expression_value(build_module_call(
 					parse_tree, tokens, parse_tree.get_node(child_node.get_child_index())));
 				expression_type_found = true;
-			} else if (node_is_type(child_node, k_token_type_constant_real)) {
+			} else if (node_is_type(child_node, e_token_type::k_constant_real)) {
 				try {
 					// This is a real
 					std::string string_value = tokens.tokens[child_node.get_token_index()].token_string.to_std_string();
@@ -968,19 +970,20 @@ static c_ast_node_expression *build_expression(
 				} catch (const std::out_of_range &) {
 					wl_vhalt("We should have already caught this in the lexer");
 				}
-			} else if (node_is_type(child_node, k_token_type_constant_bool)) {
+			} else if (node_is_type(child_node, e_token_type::k_constant_bool)) {
 				// This is a bool
 				std::string string_value = tokens.tokens[child_node.get_token_index()].token_string.to_std_string();
 				c_ast_node_constant *constant_node = new c_ast_node_constant();
 				constant_node->set_source_location(tokens.tokens[child_node.get_token_index()].source_location);
-				wl_vassert(string_value == k_token_type_constant_bool_false_string ||
+				wl_vassert(
+					string_value == k_token_type_constant_bool_false_string ||
 					string_value == k_token_type_constant_bool_true_string,
 					"We should have already caught this in the lexer");
 				bool bool_value = (string_value == k_token_type_constant_bool_true_string);
 				constant_node->set_bool_value(bool_value);
 				result->set_expression_value(constant_node);
 				expression_type_found = true;
-			} else if (node_is_type(child_node, k_token_type_constant_string)) {
+			} else if (node_is_type(child_node, e_token_type::k_constant_string)) {
 				// This is a string
 				c_compiler_string unescaped_string = tokens.tokens[child_node.get_token_index()].token_string;
 				// We should always successfully escape the string because the lexer will have failed if any of the
@@ -992,7 +995,7 @@ static c_ast_node_expression *build_expression(
 				constant_node->set_string_value(escaped_string);
 				result->set_expression_value(constant_node);
 				expression_type_found = true;
-			} else if (node_is_type(child_node, k_parser_nonterminal_constant_array)) {
+			} else if (node_is_type(child_node, e_parser_nonterminal::k_constant_array)) {
 				// Constant array
 				result->set_expression_value(build_constant_array(
 					parse_tree, tokens, parse_tree.get_node(child_node.get_child_index())));
@@ -1023,70 +1026,70 @@ static c_ast_node_module_call *build_binary_operator_call(
 
 	// Choose the built-in name of the operator module
 	wl_assert(node_1.get_symbol().is_terminal());
-	switch (node_1.get_symbol().get_index()) {
-	case k_token_type_operator_addition:
+	switch (static_cast<e_token_type>(node_1.get_symbol().get_index())) {
+	case e_token_type::k_operator_addition:
 		operator_module_name =
-			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_addition);
+			c_native_module_registry::get_native_module_for_native_operator(e_native_operator::k_addition);
 		break;
 
-	case k_token_type_operator_subtraction:
+	case e_token_type::k_operator_subtraction:
 		operator_module_name =
-			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_subtraction);
+			c_native_module_registry::get_native_module_for_native_operator(e_native_operator::k_subtraction);
 		break;
 
-	case k_token_type_operator_multiplication:
+	case e_token_type::k_operator_multiplication:
 		operator_module_name =
-			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_multiplication);
+			c_native_module_registry::get_native_module_for_native_operator(e_native_operator::k_multiplication);
 		break;
 
-	case k_token_type_operator_division:
+	case e_token_type::k_operator_division:
 		operator_module_name =
-			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_division);
+			c_native_module_registry::get_native_module_for_native_operator(e_native_operator::k_division);
 		break;
 
-	case k_token_type_operator_modulo:
+	case e_token_type::k_operator_modulo:
 		operator_module_name =
-			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_modulo);
+			c_native_module_registry::get_native_module_for_native_operator(e_native_operator::k_modulo);
 		break;
 
-	case k_token_type_operator_equal:
+	case e_token_type::k_operator_equal:
 		operator_module_name =
-			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_equal);
+			c_native_module_registry::get_native_module_for_native_operator(e_native_operator::k_equal);
 		break;
 
-	case k_token_type_operator_not_equal:
+	case e_token_type::k_operator_not_equal:
 		operator_module_name =
-			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_not_equal);
+			c_native_module_registry::get_native_module_for_native_operator(e_native_operator::k_not_equal);
 		break;
 
-	case k_token_type_operator_greater:
+	case e_token_type::k_operator_greater:
 		operator_module_name =
-			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_greater);
+			c_native_module_registry::get_native_module_for_native_operator(e_native_operator::k_greater);
 		break;
 
-	case k_token_type_operator_less:
+	case e_token_type::k_operator_less:
 		operator_module_name =
-			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_less);
+			c_native_module_registry::get_native_module_for_native_operator(e_native_operator::k_less);
 		break;
 
-	case k_token_type_operator_greater_equal:
+	case e_token_type::k_operator_greater_equal:
 		operator_module_name =
-			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_greater_equal);
+			c_native_module_registry::get_native_module_for_native_operator(e_native_operator::k_greater_equal);
 		break;
 
-	case k_token_type_operator_less_equal:
+	case e_token_type::k_operator_less_equal:
 		operator_module_name =
-			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_less_equal);
+			c_native_module_registry::get_native_module_for_native_operator(e_native_operator::k_less_equal);
 		break;
 
-	case k_token_type_operator_and:
+	case e_token_type::k_operator_and:
 		operator_module_name =
-			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_and);
+			c_native_module_registry::get_native_module_for_native_operator(e_native_operator::k_and);
 		break;
 
-	case k_token_type_operator_or:
+	case e_token_type::k_operator_or:
 		operator_module_name =
-			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_or);
+			c_native_module_registry::get_native_module_for_native_operator(e_native_operator::k_or);
 		break;
 
 	default:
@@ -1117,21 +1120,21 @@ static c_ast_node_module_call *build_unary_operator_call(
 
 	// Choose the built-in name of the operator module
 	wl_assert(node_0.get_symbol().is_terminal());
-	switch (node_0.get_symbol().get_index()) {
-	case k_token_type_operator_addition:
+	switch (static_cast<e_token_type>(node_0.get_symbol().get_index())) {
+	case e_token_type::k_operator_addition:
 		// +x just returns x, and will be optimized away
 		operator_module_name =
-			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_noop);
+			c_native_module_registry::get_native_module_for_native_operator(e_native_operator::k_noop);
 		break;
 
-	case k_token_type_operator_subtraction:
+	case e_token_type::k_operator_subtraction:
 		operator_module_name =
-			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_negation);
+			c_native_module_registry::get_native_module_for_native_operator(e_native_operator::k_negation);
 		break;
 
-	case k_token_type_operator_not:
+	case e_token_type::k_operator_not:
 		operator_module_name =
-			c_native_module_registry::get_native_module_for_native_operator(k_native_operator_not);
+			c_native_module_registry::get_native_module_for_native_operator(e_native_operator::k_not);
 		break;
 
 	default:
@@ -1155,25 +1158,25 @@ static c_ast_node_module_call *build_dereference_call(
 	const c_lr_parse_tree_node &node_0) {
 	// There should be four nodes of the form "expr [ expr ]"
 	c_lr_parse_tree_iterator it(parse_tree, node_0.get_sibling_index());
-	wl_assert(node_is_type(it.get_node(), k_parser_nonterminal_array_dereference));
+	wl_assert(node_is_type(it.get_node(), e_parser_nonterminal::k_array_dereference));
 	wl_assert(!it.has_sibling());
 	it.follow_child();
 
 	const c_lr_parse_tree_node &left_bracket_node = it.get_node();
-	wl_assert(node_is_type(left_bracket_node, k_token_type_left_bracket));
+	wl_assert(node_is_type(left_bracket_node, e_token_type::k_left_bracket));
 	it.follow_sibling();
 
 	const c_lr_parse_tree_node &array_index_expression_node = it.get_node();
 	it.follow_sibling();
 
-	wl_assert(node_is_type(it.get_node(), k_token_type_right_bracket));
+	wl_assert(node_is_type(it.get_node(), e_token_type::k_right_bracket));
 	wl_assert(!it.has_sibling());
 
 	c_ast_node_expression *array_arg = build_expression(parse_tree, tokens, node_0);
 	c_ast_node_expression *index_arg = build_expression(parse_tree, tokens, array_index_expression_node);
 
 	const char *operator_module_name =
-		c_native_module_registry::get_native_module_for_native_operator(k_native_operator_array_dereference);
+		c_native_module_registry::get_native_module_for_native_operator(e_native_operator::k_array_dereference);
 
 	c_ast_node_module_call *module_call = new c_ast_node_module_call();
 	module_call->set_source_location(tokens.tokens[left_bracket_node.get_token_index()].source_location);
@@ -1193,33 +1196,35 @@ static c_ast_node_module_call *build_module_call(
 	const c_lr_parse_tree_node &node_1 = parse_tree.get_node(node_0.get_sibling_index());
 	const c_lr_parse_tree_node &node_2 = parse_tree.get_node(node_1.get_sibling_index());
 
-	wl_assert(node_is_type(node_0, k_token_type_identifier));
-	wl_assert(node_is_type(node_1, k_token_type_left_parenthesis));
+	wl_assert(node_is_type(node_0, e_token_type::k_identifier));
+	wl_assert(node_is_type(node_1, e_token_type::k_left_parenthesis));
 
 	c_ast_node_module_call *module_call = new c_ast_node_module_call();
 	module_call->set_source_location(tokens.tokens[node_0.get_token_index()].source_location);
 	module_call->set_name(tokens.tokens[node_0.get_token_index()].token_string.to_std_string());
 
-	if (node_is_type(node_2, k_token_type_right_parenthesis)) {
+	if (node_is_type(node_2, e_token_type::k_right_parenthesis)) {
 		// No arguments
 	} else {
-		wl_assert(node_is_type(node_2, k_parser_nonterminal_module_call_argument_list));
+		wl_assert(node_is_type(node_2, e_parser_nonterminal::k_module_call_argument_list));
 		wl_assert(node_is_type(
 			parse_tree.get_node(node_2.get_sibling_index()),
-			k_token_type_right_parenthesis));
+			e_token_type::k_right_parenthesis));
 
 		// The argument list node is either an expression, or a list, comma, and expression
 		std::vector<size_t> argument_indices = build_left_recursive_list(
-			parse_tree, node_2.get_child_index(), k_parser_nonterminal_module_call_argument_list);
+			parse_tree, node_2.get_child_index(), e_parser_nonterminal::k_module_call_argument_list);
 
 		// Skip the commas
 		for (size_t index = 0; index < argument_indices.size(); index++) {
 			if (index == 0) {
-				wl_assert(node_is_type(parse_tree.get_node(argument_indices[index]), k_parser_nonterminal_expression));
+				wl_assert(
+					node_is_type(parse_tree.get_node(argument_indices[index]), e_parser_nonterminal::k_expression));
 			} else {
-				wl_assert(node_is_type(parse_tree.get_node(argument_indices[index]), k_token_type_comma));
+				wl_assert(node_is_type(parse_tree.get_node(argument_indices[index]), e_token_type::k_comma));
 				argument_indices[index] = parse_tree.get_node(argument_indices[index]).get_sibling_index();
-				wl_assert(node_is_type(parse_tree.get_node(argument_indices[index]), k_parser_nonterminal_expression));
+				wl_assert(
+					node_is_type(parse_tree.get_node(argument_indices[index]), e_parser_nonterminal::k_expression));
 			}
 		}
 
@@ -1251,32 +1256,32 @@ static c_ast_node_constant *build_constant_array(
 	wl_assert(data_type.is_array());
 	constant_array->set_array(data_type.get_element_type());
 
-	wl_assert(node_is_type(it.get_node(), k_token_type_left_parenthesis));
+	wl_assert(node_is_type(it.get_node(), e_token_type::k_left_parenthesis));
 	it.follow_sibling();
 
-	if (node_is_type(it.get_node(), k_token_type_right_parenthesis)) {
+	if (node_is_type(it.get_node(), e_token_type::k_right_parenthesis)) {
 		wl_assert(!it.has_sibling());
 		// No values
 	} else {
 		const c_lr_parse_tree_node &constant_array_list_node = it.get_node();
-		wl_assert(node_is_type(constant_array_list_node, k_parser_nonterminal_constant_array_list));
+		wl_assert(node_is_type(constant_array_list_node, e_parser_nonterminal::k_constant_array_list));
 		it.follow_sibling();
 
-		wl_assert(node_is_type(it.get_node(), k_token_type_right_parenthesis));
+		wl_assert(node_is_type(it.get_node(), e_token_type::k_right_parenthesis));
 		wl_assert(!it.has_sibling());
 
 		// The value list node is either an expression, or a list, comma, and expression
 		std::vector<size_t> value_indices = build_left_recursive_list(
-			parse_tree, constant_array_list_node.get_child_index(), k_parser_nonterminal_constant_array_list);
+			parse_tree, constant_array_list_node.get_child_index(), e_parser_nonterminal::k_constant_array_list);
 
 		// Skip the commas
 		for (size_t index = 0; index < value_indices.size(); index++) {
 			if (index == 0) {
-				wl_assert(node_is_type(parse_tree.get_node(value_indices[index]), k_parser_nonterminal_expression));
+				wl_assert(node_is_type(parse_tree.get_node(value_indices[index]), e_parser_nonterminal::k_expression));
 			} else {
-				wl_assert(node_is_type(parse_tree.get_node(value_indices[index]), k_token_type_comma));
+				wl_assert(node_is_type(parse_tree.get_node(value_indices[index]), e_token_type::k_comma));
 				value_indices[index] = parse_tree.get_node(value_indices[index]).get_sibling_index();
-				wl_assert(node_is_type(parse_tree.get_node(value_indices[index]), k_parser_nonterminal_expression));
+				wl_assert(node_is_type(parse_tree.get_node(value_indices[index]), e_parser_nonterminal::k_expression));
 			}
 		}
 

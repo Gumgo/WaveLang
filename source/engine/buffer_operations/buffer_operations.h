@@ -22,7 +22,7 @@ typedef c_bool_const_buffer_or_constant c_bool_buffer_or_constant_in;
 class c_iterable_buffer_real_in {
 public:
 	typedef c_const_real_buffer_iterator t_iterator;
-	static const e_task_qualifier k_task_qualifier = k_task_qualifier_in;
+	static const e_task_qualifier k_task_qualifier = e_task_qualifier::k_in;
 
 	c_iterable_buffer_real_in(c_real_const_buffer_or_constant buffer) : m_buffer(buffer) {}
 	bool is_constant() const { return m_buffer.is_constant(); }
@@ -40,7 +40,7 @@ private:
 class c_iterable_buffer_real_out {
 public:
 	typedef c_real_buffer_iterator t_iterator;
-	static const e_task_qualifier k_task_qualifier = k_task_qualifier_out;
+	static const e_task_qualifier k_task_qualifier = e_task_qualifier::k_out;
 
 	c_iterable_buffer_real_out(c_buffer *buffer) : m_buffer(buffer) {}
 	c_buffer *get_buffer() const { return m_buffer; }
@@ -57,7 +57,7 @@ private:
 class c_iterable_buffer_real_inout {
 public:
 	typedef c_real_buffer_iterator t_iterator;
-	static const e_task_qualifier k_task_qualifier = k_task_qualifier_inout;
+	static const e_task_qualifier k_task_qualifier = e_task_qualifier::k_inout;
 
 	c_iterable_buffer_real_inout(c_buffer *buffer) : m_buffer(buffer) {}
 	bool is_constant() const { return m_buffer->is_constant(); }
@@ -80,7 +80,7 @@ private:
 class c_iterable_buffer_bool_4_in {
 public:
 	typedef c_const_bool_buffer_iterator_4 t_iterator;
-	static const e_task_qualifier k_task_qualifier = k_task_qualifier_in;
+	static const e_task_qualifier k_task_qualifier = e_task_qualifier::k_in;
 
 	c_iterable_buffer_bool_4_in(c_bool_const_buffer_or_constant buffer) : m_buffer(buffer) {}
 	bool is_constant() const { return m_buffer.is_constant(); }
@@ -98,7 +98,7 @@ private:
 class c_iterable_buffer_bool_4_out {
 public:
 	typedef c_bool_buffer_iterator_4 t_iterator;
-	static const e_task_qualifier k_task_qualifier = k_task_qualifier_out;
+	static const e_task_qualifier k_task_qualifier = e_task_qualifier::k_out;
 
 	c_iterable_buffer_bool_4_out(c_buffer *buffer) : m_buffer(buffer) {}
 	c_buffer *get_buffer() const { return m_buffer; }
@@ -115,7 +115,7 @@ private:
 class c_iterable_buffer_bool_4_inout {
 public:
 	typedef c_bool_buffer_iterator_4 t_iterator;
-	static const e_task_qualifier k_task_qualifier = k_task_qualifier_inout;
+	static const e_task_qualifier k_task_qualifier = e_task_qualifier::k_inout;
 
 	c_iterable_buffer_bool_4_inout(c_buffer *buffer) : m_buffer(buffer) {}
 	bool is_constant() const { return m_buffer->is_constant(); }
@@ -138,7 +138,7 @@ private:
 class c_iterable_buffer_bool_128_in {
 public:
 	typedef c_const_bool_buffer_iterator_128 t_iterator;
-	static const e_task_qualifier k_task_qualifier = k_task_qualifier_in;
+	static const e_task_qualifier k_task_qualifier = e_task_qualifier::k_in;
 
 	c_iterable_buffer_bool_128_in(c_bool_const_buffer_or_constant buffer) : m_buffer(buffer) {}
 	bool is_constant() const { return m_buffer.is_constant(); }
@@ -156,7 +156,7 @@ private:
 class c_iterable_buffer_bool_128_out {
 public:
 	typedef c_bool_buffer_iterator_128 t_iterator;
-	static const e_task_qualifier k_task_qualifier = k_task_qualifier_out;
+	static const e_task_qualifier k_task_qualifier = e_task_qualifier::k_out;
 
 	c_iterable_buffer_bool_128_out(c_buffer *buffer) : m_buffer(buffer) {}
 	c_buffer *get_buffer() const { return m_buffer; }
@@ -173,7 +173,7 @@ private:
 class c_iterable_buffer_bool_128_inout {
 public:
 	typedef c_bool_buffer_iterator_128 t_iterator;
-	static const e_task_qualifier k_task_qualifier = k_task_qualifier_inout;
+	static const e_task_qualifier k_task_qualifier = e_task_qualifier::k_inout;
 
 	c_iterable_buffer_bool_128_inout(c_buffer *buffer) : m_buffer(buffer) {}
 	bool is_constant() const { return m_buffer->is_constant(); }
@@ -204,7 +204,7 @@ void buffer_operator_out(
 	const t_operation &op,
 	size_t buffer_size,
 	t_iterable_buffer_a iterable_buffer_a) {
-	static_assert(t_iterable_buffer_a::k_task_qualifier == k_task_qualifier_in, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_a::k_task_qualifier == e_task_qualifier::k_in, "Incorrect qualifier");
 
 	typedef typename t_iterable_buffer_a::t_iterator t_iterator_a;
 	typedef typename t_iterator_a::t_value t_value_a;
@@ -219,8 +219,8 @@ void buffer_operator_in_out(
 	size_t buffer_size,
 	t_iterable_buffer_a iterable_buffer_a,
 	t_iterable_buffer_b iterable_buffer_b) {
-	static_assert(t_iterable_buffer_a::k_task_qualifier == k_task_qualifier_in, "Incorrect qualifier");
-	static_assert(t_iterable_buffer_b::k_task_qualifier == k_task_qualifier_out, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_a::k_task_qualifier == e_task_qualifier::k_in, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_b::k_task_qualifier == e_task_qualifier::k_out, "Incorrect qualifier");
 
 	typedef typename t_iterable_buffer_a::t_iterator t_iterator_a;
 	typedef typename t_iterator_a::t_value t_value_a;
@@ -250,7 +250,7 @@ void buffer_operator_inout(
 	const t_operation &op,
 	size_t buffer_size,
 	t_iterable_buffer_a iterable_buffer_a) {
-	static_assert(t_iterable_buffer_a::k_task_qualifier == k_task_qualifier_inout, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_a::k_task_qualifier == e_task_qualifier::k_inout, "Incorrect qualifier");
 
 	typedef typename t_iterable_buffer_a::t_iterator t_iterator_a;
 	typedef typename t_iterator_a::t_value t_value_a;
@@ -280,9 +280,9 @@ void buffer_operator_in_in_out(
 	t_iterable_buffer_a iterable_buffer_a,
 	t_iterable_buffer_b iterable_buffer_b,
 	t_iterable_buffer_c iterable_buffer_c) {
-	static_assert(t_iterable_buffer_a::k_task_qualifier == k_task_qualifier_in, "Incorrect qualifier");
-	static_assert(t_iterable_buffer_b::k_task_qualifier == k_task_qualifier_in, "Incorrect qualifier");
-	static_assert(t_iterable_buffer_c::k_task_qualifier == k_task_qualifier_out, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_a::k_task_qualifier == e_task_qualifier::k_in, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_b::k_task_qualifier == e_task_qualifier::k_in, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_c::k_task_qualifier == e_task_qualifier::k_out, "Incorrect qualifier");
 
 	typedef typename t_iterable_buffer_a::t_iterator t_iterator_a;
 	typedef typename t_iterator_a::t_value t_value_a;
@@ -352,8 +352,8 @@ void buffer_operator_inout_in(
 	size_t buffer_size,
 	t_iterable_buffer_a iterable_buffer_a,
 	t_iterable_buffer_b iterable_buffer_b) {
-	static_assert(t_iterable_buffer_a::k_task_qualifier == k_task_qualifier_inout, "Incorrect qualifier");
-	static_assert(t_iterable_buffer_b::k_task_qualifier == k_task_qualifier_in, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_a::k_task_qualifier == e_task_qualifier::k_inout, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_b::k_task_qualifier == e_task_qualifier::k_in, "Incorrect qualifier");
 
 	typedef typename t_iterable_buffer_a::t_iterator t_iterator_a;
 	typedef typename t_iterator_a::t_value t_value_a;
@@ -414,8 +414,8 @@ void buffer_operator_in_inout(
 	size_t buffer_size,
 	t_iterable_buffer_a iterable_buffer_a,
 	t_iterable_buffer_b iterable_buffer_b) {
-	static_assert(t_iterable_buffer_a::k_task_qualifier == k_task_qualifier_in, "Incorrect qualifier");
-	static_assert(t_iterable_buffer_b::k_task_qualifier == k_task_qualifier_inout, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_a::k_task_qualifier == e_task_qualifier::k_in, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_b::k_task_qualifier == e_task_qualifier::k_inout, "Incorrect qualifier");
 
 	typedef typename t_iterable_buffer_a::t_iterator t_iterator_a;
 	typedef typename t_iterator_a::t_value t_value_a;
@@ -481,9 +481,9 @@ void buffer_operator_in_out_out(
 	t_iterable_buffer_a iterable_buffer_a,
 	t_iterable_buffer_b iterable_buffer_b,
 	t_iterable_buffer_c iterable_buffer_c) {
-	static_assert(t_iterable_buffer_a::k_task_qualifier == k_task_qualifier_in, "Incorrect qualifier");
-	static_assert(t_iterable_buffer_b::k_task_qualifier == k_task_qualifier_out, "Incorrect qualifier");
-	static_assert(t_iterable_buffer_c::k_task_qualifier == k_task_qualifier_out, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_a::k_task_qualifier == e_task_qualifier::k_in, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_b::k_task_qualifier == e_task_qualifier::k_out, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_c::k_task_qualifier == e_task_qualifier::k_out, "Incorrect qualifier");
 
 	typedef typename t_iterable_buffer_a::t_iterator t_iterator_a;
 	typedef typename t_iterator_a::t_value t_value_a;
@@ -526,8 +526,8 @@ void buffer_operator_inout_out(
 	size_t buffer_size,
 	t_iterable_buffer_a iterable_buffer_a,
 	t_iterable_buffer_b iterable_buffer_b) {
-	static_assert(t_iterable_buffer_a::k_task_qualifier == k_task_qualifier_inout, "Incorrect qualifier");
-	static_assert(t_iterable_buffer_b::k_task_qualifier == k_task_qualifier_out, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_a::k_task_qualifier == e_task_qualifier::k_inout, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_b::k_task_qualifier == e_task_qualifier::k_out, "Incorrect qualifier");
 
 	typedef typename t_iterable_buffer_a::t_iterator t_iterator_a;
 	typedef typename t_iterator_a::t_value t_value_a;
@@ -565,8 +565,8 @@ void buffer_operator_out_inout(
 	size_t buffer_size,
 	t_iterable_buffer_a iterable_buffer_a,
 	t_iterable_buffer_b iterable_buffer_b) {
-	static_assert(t_iterable_buffer_a::k_task_qualifier == k_task_qualifier_out, "Incorrect qualifier");
-	static_assert(t_iterable_buffer_b::k_task_qualifier == k_task_qualifier_inout, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_a::k_task_qualifier == e_task_qualifier::k_out, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_b::k_task_qualifier == e_task_qualifier::k_inout, "Incorrect qualifier");
 
 	typedef typename t_iterable_buffer_a::t_iterator t_iterator_a;
 	typedef typename t_iterator_a::t_value t_value_a;
@@ -607,10 +607,10 @@ void buffer_operator_in_in_in_out(
 	t_iterable_buffer_b iterable_buffer_b,
 	t_iterable_buffer_c iterable_buffer_c,
 	t_iterable_buffer_d iterable_buffer_d) {
-	static_assert(t_iterable_buffer_a::k_task_qualifier == k_task_qualifier_in, "Incorrect qualifier");
-	static_assert(t_iterable_buffer_b::k_task_qualifier == k_task_qualifier_in, "Incorrect qualifier");
-	static_assert(t_iterable_buffer_c::k_task_qualifier == k_task_qualifier_in, "Incorrect qualifier");
-	static_assert(t_iterable_buffer_d::k_task_qualifier == k_task_qualifier_out, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_a::k_task_qualifier == e_task_qualifier::k_in, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_b::k_task_qualifier == e_task_qualifier::k_in, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_c::k_task_qualifier == e_task_qualifier::k_in, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_d::k_task_qualifier == e_task_qualifier::k_out, "Incorrect qualifier");
 
 	typedef typename t_iterable_buffer_a::t_iterator t_iterator_a;
 	typedef typename t_iterator_a::t_value t_value_a;
@@ -765,9 +765,9 @@ void buffer_operator_inout_in_in(
 	t_iterable_buffer_a iterable_buffer_a,
 	t_iterable_buffer_b iterable_buffer_b,
 	t_iterable_buffer_c iterable_buffer_c) {
-	static_assert(t_iterable_buffer_a::k_task_qualifier == k_task_qualifier_inout, "Incorrect qualifier");
-	static_assert(t_iterable_buffer_b::k_task_qualifier == k_task_qualifier_in, "Incorrect qualifier");
-	static_assert(t_iterable_buffer_c::k_task_qualifier == k_task_qualifier_in, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_a::k_task_qualifier == e_task_qualifier::k_inout, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_b::k_task_qualifier == e_task_qualifier::k_in, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_c::k_task_qualifier == e_task_qualifier::k_in, "Incorrect qualifier");
 
 	typedef typename t_iterable_buffer_a::t_iterator t_iterator_a;
 	typedef typename t_iterator_a::t_value t_value_a;
@@ -913,9 +913,9 @@ void buffer_operator_in_inout_in(
 	t_iterable_buffer_a iterable_buffer_a,
 	t_iterable_buffer_b iterable_buffer_b,
 	t_iterable_buffer_c iterable_buffer_c) {
-	static_assert(t_iterable_buffer_a::k_task_qualifier == k_task_qualifier_in, "Incorrect qualifier");
-	static_assert(t_iterable_buffer_b::k_task_qualifier == k_task_qualifier_inout, "Incorrect qualifier");
-	static_assert(t_iterable_buffer_c::k_task_qualifier == k_task_qualifier_in, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_a::k_task_qualifier == e_task_qualifier::k_in, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_b::k_task_qualifier == e_task_qualifier::k_inout, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_c::k_task_qualifier == e_task_qualifier::k_in, "Incorrect qualifier");
 
 	typedef typename t_iterable_buffer_a::t_iterator t_iterator_a;
 	typedef typename t_iterator_a::t_value t_value_a;
@@ -1060,9 +1060,9 @@ void buffer_operator_in_in_inout(
 	t_iterable_buffer_a iterable_buffer_a,
 	t_iterable_buffer_b iterable_buffer_b,
 	t_iterable_buffer_c iterable_buffer_c) {
-	static_assert(t_iterable_buffer_a::k_task_qualifier == k_task_qualifier_in, "Incorrect qualifier");
-	static_assert(t_iterable_buffer_b::k_task_qualifier == k_task_qualifier_in, "Incorrect qualifier");
-	static_assert(t_iterable_buffer_c::k_task_qualifier == k_task_qualifier_inout, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_a::k_task_qualifier == e_task_qualifier::k_in, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_b::k_task_qualifier == e_task_qualifier::k_in, "Incorrect qualifier");
+	static_assert(t_iterable_buffer_c::k_task_qualifier == e_task_qualifier::k_inout, "Incorrect qualifier");
 
 	typedef typename t_iterable_buffer_a::t_iterator t_iterator_a;
 	typedef typename t_iterator_a::t_value t_value_a;

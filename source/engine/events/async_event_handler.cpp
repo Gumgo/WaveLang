@@ -80,7 +80,7 @@ void c_async_event_handler::begin_event_handling() {
 	s_thread_definition thread_definition;
 	thread_definition.thread_name = "event_handler";
 	thread_definition.stack_size = 0;
-	thread_definition.thread_priority = k_thread_priority_normal;
+	thread_definition.thread_priority = e_thread_priority::k_normal;
 	thread_definition.processor = -1;
 	thread_definition.thread_entry_point = event_handling_thread_function_entry_point;
 	ZERO_STRUCT(&thread_definition.parameter_block);

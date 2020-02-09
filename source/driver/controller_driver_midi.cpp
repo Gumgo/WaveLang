@@ -98,7 +98,7 @@ s_controller_driver_result c_controller_driver_midi::start_stream(const s_contro
 		}
 		m_additional_midi_in.clear();
 
-		result.result = k_controller_driver_result_failed_to_open_stream;
+		result.result = e_controller_driver_result::k_failed_to_open_stream;
 		result.message = error.getMessage();
 		return result;
 	}
@@ -166,7 +166,7 @@ void c_controller_driver_midi::message_callback(real64 time_stamp, c_wrapped_arr
 		}
 
 		s_controller_event controller_event;
-		controller_event.event_type = k_controller_event_type_note_off;
+		controller_event.event_type = e_controller_event_type::k_note_off;
 		s_controller_event_data_note_off *event_data = controller_event.get_data<s_controller_event_data_note_off>();
 		event_data->note_id = message[1];
 		event_data->velocity = static_cast<real32>(message[2]) * (1.0f / 127.0f);
@@ -182,7 +182,7 @@ void c_controller_driver_midi::message_callback(real64 time_stamp, c_wrapped_arr
 		}
 
 		s_controller_event controller_event;
-		controller_event.event_type = k_controller_event_type_note_on;
+		controller_event.event_type = e_controller_event_type::k_note_on;
 		s_controller_event_data_note_on *event_data = controller_event.get_data<s_controller_event_data_note_on>();
 		event_data->note_id = message[1];
 		event_data->velocity = static_cast<real32>(message[2]) * (1.0f / 127.0f);
@@ -204,7 +204,7 @@ void c_controller_driver_midi::message_callback(real64 time_stamp, c_wrapped_arr
 		}
 
 		s_controller_event controller_event;
-		controller_event.event_type = k_controller_event_type_parameter_change;
+		controller_event.event_type = e_controller_event_type::k_parameter_change;
 		s_controller_event_data_parameter_change *event_data =
 			controller_event.get_data<s_controller_event_data_parameter_change>();
 		event_data->parameter_id = message[1];

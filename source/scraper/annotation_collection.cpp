@@ -76,18 +76,18 @@ clang::SourceLocation c_annotation_iterator::get_source_location() const {
 }
 
 void c_annotation_specifications::add_existence(const char *annotation, const char *name, bool *storage) {
-	add_specification_internal(k_annotation_type_existence, annotation, name, false, storage);
+	add_specification_internal(e_annotation_type::k_existence, annotation, name, false, storage);
 	*storage = false;
 }
 
 void c_annotation_specifications::add_string(
 	const char *prefix, const char *name, bool required, std::string *storage) {
-	add_specification_internal(k_annotation_type_string, prefix, name, required, storage);
+	add_specification_internal(e_annotation_type::k_string, prefix, name, required, storage);
 	storage->clear();
 }
 void c_annotation_specifications::add_uint32(
 	const char *prefix, const char *name, bool required, uint32 *storage) {
-	add_specification_internal(k_annotation_type_uint32, prefix, name, required, storage);
+	add_specification_internal(e_annotation_type::k_uint32, prefix, name, required, storage);
 	*storage = 0;
 }
 
@@ -120,13 +120,13 @@ bool c_annotation_specifications::execute(
 
 			const char *annotation_value = it.get_annotation() + spec.annotation_or_prefix.length();
 
-			if (spec.type == k_annotation_type_existence) {
+			if (spec.type == e_annotation_type::k_existence) {
 				*spec.bool_storage = true;
 				spec.found = true;
-			} else if (spec.type == k_annotation_type_string) {
+			} else if (spec.type == e_annotation_type::k_string) {
 				*spec.string_storage = annotation_value;
 				spec.found = true;
-			} else if (spec.type == k_annotation_type_uint32) {
+			} else if (spec.type == e_annotation_type::k_uint32) {
 				bool lookup_result = lookup_uint32(
 					annotation_value,
 					it.get_source_location(),
@@ -166,7 +166,7 @@ void c_annotation_specifications::add_specification_internal(
 	const char *name,
 	bool required,
 	void *storage) {
-	wl_assert(VALID_INDEX(type, k_annotation_type_count));
+	wl_assert(valid_enum_index(type));
 	wl_assert(annotation_or_prefix);
 	wl_assert(name);
 	wl_assert(storage);

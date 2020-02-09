@@ -82,8 +82,8 @@ bool c_execution_graph_constant_evaluator::evaluate_constant(c_node_reference no
 
 	while (!m_invalid_constant && !m_pending_nodes.empty()) {
 		c_node_reference next_node_reference = m_pending_nodes.top();
-		wl_assert(m_execution_graph->get_node_type(next_node_reference) == k_execution_graph_node_type_constant ||
-			m_execution_graph->get_node_type(next_node_reference) == k_execution_graph_node_type_indexed_output);
+		wl_assert(m_execution_graph->get_node_type(next_node_reference) == e_execution_graph_node_type::k_constant ||
+			m_execution_graph->get_node_type(next_node_reference) == e_execution_graph_node_type::k_indexed_output);
 
 		// Try to look up the result of this node's evaluation
 		auto it = m_results.find(next_node_reference);
@@ -123,7 +123,7 @@ void c_execution_graph_constant_evaluator::remove_cached_result(c_node_reference
 void c_execution_graph_constant_evaluator::try_evaluate_node(c_node_reference node_reference) {
 	// Attempt to evaluate this node
 	e_execution_graph_node_type node_type = m_execution_graph->get_node_type(node_reference);
-	if (node_type == k_execution_graph_node_type_constant) {
+	if (node_type == e_execution_graph_node_type::k_constant) {
 		// Easy - the node is simply a constant value already
 		s_result result;
 		result.type = m_execution_graph->get_constant_node_data_type(node_reference);
@@ -132,15 +132,15 @@ void c_execution_graph_constant_evaluator::try_evaluate_node(c_node_reference no
 			build_array_value(m_execution_graph, node_reference, result.array_value);
 		} else {
 			switch (result.type.get_primitive_type()) {
-			case k_native_module_primitive_type_real:
+			case e_native_module_primitive_type::k_real:
 				result.real_value = m_execution_graph->get_constant_node_real_value(node_reference);
 				break;
 
-			case k_native_module_primitive_type_bool:
+			case e_native_module_primitive_type::k_bool:
 				result.bool_value = m_execution_graph->get_constant_node_bool_value(node_reference);
 				break;
 
-			case k_native_module_primitive_type_string:
+			case e_native_module_primitive_type::k_string:
 				result.string_value.get_string() = m_execution_graph->get_constant_node_string_value(node_reference);
 				break;
 
@@ -150,12 +150,12 @@ void c_execution_graph_constant_evaluator::try_evaluate_node(c_node_reference no
 		}
 
 		m_results.insert(std::make_pair(node_reference, result));
-	} else if (node_type == k_execution_graph_node_type_indexed_output) {
+	} else if (node_type == e_execution_graph_node_type::k_indexed_output) {
 		// This is the output to a native module call
 		c_node_reference native_module_node_reference =
 			m_execution_graph->get_node_incoming_edge_reference(node_reference, 0);
 		wl_assert(m_execution_graph->get_node_type(native_module_node_reference) ==
-			k_execution_graph_node_type_native_module_call);
+			e_execution_graph_node_type::k_native_module_call);
 
 		// First check if it can even be evaluated at compile-time
 		uint32 native_module_index =
@@ -233,15 +233,15 @@ bool c_execution_graph_constant_evaluator::build_module_call_arguments(
 					compile_time_argument.array_value = input_result.array_value;
 				} else {
 					switch (input_result.type.get_primitive_type()) {
-					case k_native_module_primitive_type_real:
+					case e_native_module_primitive_type::k_real:
 						compile_time_argument.real_value = input_result.real_value;
 						break;
 
-					case k_native_module_primitive_type_bool:
+					case e_native_module_primitive_type::k_bool:
 						compile_time_argument.bool_value = input_result.bool_value;
 						break;
 
-					case k_native_module_primitive_type_string:
+					case e_native_module_primitive_type::k_string:
 						compile_time_argument.string_value = input_result.string_value;
 						break;
 
@@ -253,7 +253,7 @@ bool c_execution_graph_constant_evaluator::build_module_call_arguments(
 
 			next_input++;
 		} else {
-			wl_assert(argument.type.get_qualifier() == k_native_module_qualifier_out);
+			wl_assert(argument.type.get_qualifier() == e_native_module_qualifier::k_out);
 			compile_time_argument.real_value = 0.0f;
 			next_output++;
 		}
@@ -273,7 +273,7 @@ void c_execution_graph_constant_evaluator::store_native_module_call_results(
 
 	for (size_t arg = 0; arg < native_module.argument_count; arg++) {
 		s_native_module_argument argument = native_module.arguments[arg];
-		if (argument.type.get_qualifier() == k_native_module_qualifier_out) {
+		if (argument.type.get_qualifier() == e_native_module_qualifier::k_out) {
 			const s_native_module_compile_time_argument &compile_time_argument = arg_list[arg];
 
 			// Store the output result
@@ -284,15 +284,15 @@ void c_execution_graph_constant_evaluator::store_native_module_call_results(
 				evaluation_result.array_value = compile_time_argument.array_value;
 			} else {
 				switch (argument.type.get_data_type().get_primitive_type()) {
-				case k_native_module_primitive_type_real:
+				case e_native_module_primitive_type::k_real:
 					evaluation_result.real_value = compile_time_argument.real_value;
 					break;
 
-				case k_native_module_primitive_type_bool:
+				case e_native_module_primitive_type::k_bool:
 					evaluation_result.bool_value = compile_time_argument.bool_value;
 					break;
 
-				case k_native_module_primitive_type_string:
+				case e_native_module_primitive_type::k_string:
 					evaluation_result.string_value = compile_time_argument.string_value;
 					break;
 				default:
@@ -325,7 +325,7 @@ void c_execution_graph_trimmer::initialize(
 void c_execution_graph_trimmer::try_trim_node(c_node_reference node_reference) {
 	{
 		e_execution_graph_node_type node_type = m_execution_graph->get_node_type(node_reference);
-		if (node_type == k_execution_graph_node_type_indexed_output) {
+		if (node_type == e_execution_graph_node_type::k_indexed_output) {
 			// Jump to the source node
 			node_reference = m_execution_graph->get_node_incoming_edge_reference(node_reference, 0);
 		}
@@ -340,33 +340,33 @@ void c_execution_graph_trimmer::try_trim_node(c_node_reference node_reference) {
 		// Check if this node has any outputs
 		bool has_any_outputs = false;
 		switch (m_execution_graph->get_node_type(node_reference)) {
-		case k_execution_graph_node_type_constant:
+		case e_execution_graph_node_type::k_constant:
 			has_any_outputs = m_execution_graph->get_node_outgoing_edge_count(node_reference) > 0;
 			break;
 
-		case k_execution_graph_node_type_native_module_call:
+		case e_execution_graph_node_type::k_native_module_call:
 			for (size_t edge_index = 0;
-				 !has_any_outputs && edge_index < m_execution_graph->get_node_outgoing_edge_count(node_reference);
-				 edge_index++) {
+				!has_any_outputs && edge_index < m_execution_graph->get_node_outgoing_edge_count(node_reference);
+				edge_index++) {
 				c_node_reference out_node_reference =
 					m_execution_graph->get_node_outgoing_edge_reference(node_reference, edge_index);
 				has_any_outputs |= m_execution_graph->get_node_outgoing_edge_count(out_node_reference) > 0;
 			}
 			break;
 
-		case k_execution_graph_node_type_indexed_input:
-		case k_execution_graph_node_type_indexed_output:
+		case e_execution_graph_node_type::k_indexed_input:
+		case e_execution_graph_node_type::k_indexed_output:
 			// Should not encounter these node types
 			wl_unreachable();
 			break;
 
-		case k_execution_graph_node_type_input:
+		case e_execution_graph_node_type::k_input:
 			// Never remove these nodes, even if they're unused
 			has_any_outputs = true;
 			break;
 
-		case k_execution_graph_node_type_output:
-		case k_execution_graph_node_type_temporary_reference:
+		case e_execution_graph_node_type::k_output:
+		case e_execution_graph_node_type::k_temporary_reference:
 			// Should not encounter these node types
 			wl_unreachable();
 			break;
@@ -378,11 +378,11 @@ void c_execution_graph_trimmer::try_trim_node(c_node_reference node_reference) {
 		if (!has_any_outputs) {
 			// Remove this node and recursively check its inputs
 			switch (m_execution_graph->get_node_type(node_reference)) {
-			case k_execution_graph_node_type_constant:
+			case e_execution_graph_node_type::k_constant:
 				if (m_execution_graph->get_constant_node_data_type(node_reference).is_array()) {
 					for (size_t edge_index = 0;
-						 edge_index < m_execution_graph->get_node_incoming_edge_count(node_reference);
-						 edge_index++) {
+						edge_index < m_execution_graph->get_node_incoming_edge_count(node_reference);
+						edge_index++) {
 						c_node_reference in_node_reference =
 							m_execution_graph->get_node_incoming_edge_reference(node_reference, edge_index);
 						c_node_reference source_node_reference =
@@ -392,15 +392,15 @@ void c_execution_graph_trimmer::try_trim_node(c_node_reference node_reference) {
 				}
 				break;
 
-			case k_execution_graph_node_type_native_module_call:
+			case e_execution_graph_node_type::k_native_module_call:
 				for (size_t edge_index = 0;
-					 edge_index < m_execution_graph->get_node_incoming_edge_count(node_reference);
-					 edge_index++) {
+					edge_index < m_execution_graph->get_node_incoming_edge_count(node_reference);
+					edge_index++) {
 					c_node_reference in_node_reference =
 						m_execution_graph->get_node_incoming_edge_reference(node_reference, edge_index);
 					for (size_t in_edge_index = 0;
-						 in_edge_index < m_execution_graph->get_node_incoming_edge_count(in_node_reference);
-						 in_edge_index++) {
+						in_edge_index < m_execution_graph->get_node_incoming_edge_count(in_node_reference);
+						in_edge_index++) {
 						c_node_reference source_node_reference =
 							m_execution_graph->get_node_incoming_edge_reference(in_node_reference, in_edge_index);
 						add_pending_node(source_node_reference);
@@ -408,17 +408,17 @@ void c_execution_graph_trimmer::try_trim_node(c_node_reference node_reference) {
 				}
 				break;
 
-			case k_execution_graph_node_type_indexed_input:
-			case k_execution_graph_node_type_indexed_output:
+			case e_execution_graph_node_type::k_indexed_input:
+			case e_execution_graph_node_type::k_indexed_output:
 				// Should not encounter these node types
 				wl_unreachable();
 				break;
 
-			case k_execution_graph_node_type_input:
+			case e_execution_graph_node_type::k_input:
 				break;
 
-			case k_execution_graph_node_type_output:
-			case k_execution_graph_node_type_temporary_reference:
+			case e_execution_graph_node_type::k_output:
+			case e_execution_graph_node_type::k_temporary_reference:
 				// Should not encounter these node types
 				wl_unreachable();
 				break;
@@ -435,7 +435,7 @@ void c_execution_graph_trimmer::try_trim_node(c_node_reference node_reference) {
 }
 
 void c_execution_graph_trimmer::add_pending_node(c_node_reference node_reference) {
-	if (m_execution_graph->get_node_type(node_reference) == k_execution_graph_node_type_indexed_output) {
+	if (m_execution_graph->get_node_type(node_reference) == e_execution_graph_node_type::k_indexed_output) {
 		// Jump to the source node
 		node_reference = m_execution_graph->get_node_incoming_edge_reference(node_reference, 0);
 	}
@@ -461,8 +461,8 @@ s_compiler_result c_execution_graph_optimizer::optimize_graph(
 		optimization_performed = false;
 
 		for (c_node_reference node_reference = execution_graph->nodes_begin();
-			 node_reference.is_valid();
-			 node_reference = execution_graph->nodes_next(node_reference)) {
+			node_reference.is_valid();
+			node_reference = execution_graph->nodes_next(node_reference)) {
 			optimization_performed |= optimize_node(execution_graph, instrument_globals, node_reference, &out_errors);
 		}
 
@@ -476,7 +476,7 @@ s_compiler_result c_execution_graph_optimizer::optimize_graph(
 
 	validate_optimized_constants(execution_graph, out_errors);
 	if (!out_errors.empty()) {
-		result.result = k_compiler_result_graph_error;
+		result.result = e_compiler_result::k_graph_error;
 		result.message = "Graph error(s) detected";
 	}
 
@@ -487,7 +487,7 @@ static void build_array_value(
 	const c_execution_graph *execution_graph,
 	c_node_reference array_node_reference,
 	c_native_module_array &out_array_value) {
-	wl_assert(execution_graph->get_node_type(array_node_reference) == k_execution_graph_node_type_constant);
+	wl_assert(execution_graph->get_node_type(array_node_reference) == e_execution_graph_node_type::k_constant);
 	wl_assert(execution_graph->get_constant_node_data_type(array_node_reference).is_array());
 	wl_assert(out_array_value.get_array().empty());
 
@@ -536,9 +536,9 @@ static void native_module_diagnostic_callback(
 		static_cast<s_native_module_diagnostic_callback_context *>(context);
 	wl_assert(native_module_diagnostic_callback_context);
 
-	if (diagnostic_level == k_diagnostic_level_error) {
+	if (diagnostic_level == e_diagnostic_level::k_error) {
 		s_compiler_result error;
-		error.result = k_compiler_result_native_module_compile_time_call;
+		error.result = e_compiler_result::k_native_module_compile_time_call;
 		error.source_location.clear();
 		error.message = "Native module '" +
 			std::string(native_module_diagnostic_callback_context->native_module->name.get_string()) + "' call: " +
@@ -582,35 +582,35 @@ static bool optimize_node(
 	bool optimized = false;
 
 	switch (execution_graph->get_node_type(node_reference)) {
-	case k_execution_graph_node_type_invalid:
+	case e_execution_graph_node_type::k_invalid:
 		// This node was removed, skip it
 		break;
 
-	case k_execution_graph_node_type_constant:
+	case e_execution_graph_node_type::k_constant:
 		// We can't directly optimize constant nodes
 		break;
 
-	case k_execution_graph_node_type_native_module_call:
+	case e_execution_graph_node_type::k_native_module_call:
 		optimized = optimize_native_module_call(execution_graph, instrument_globals, node_reference, errors);
 		break;
 
-	case k_execution_graph_node_type_indexed_input:
+	case e_execution_graph_node_type::k_indexed_input:
 		// Indexed inputs can't be optimized
 		break;
 
-	case k_execution_graph_node_type_indexed_output:
+	case e_execution_graph_node_type::k_indexed_output:
 		// Indexed outputs can't be optimized
 		break;
 
-	case k_execution_graph_node_type_input:
+	case e_execution_graph_node_type::k_input:
 		// Inputs can't be optimized
 		break;
 
-	case k_execution_graph_node_type_output:
+	case e_execution_graph_node_type::k_output:
 		// Outputs can't be optimized
 		break;
 
-	case k_execution_graph_node_type_temporary_reference:
+	case e_execution_graph_node_type::k_temporary_reference:
 		// These should have all been removed
 		wl_unreachable();
 		break;
@@ -627,7 +627,7 @@ static bool optimize_native_module_call(
 	const s_instrument_globals *instrument_globals,
 	c_node_reference node_reference,
 	std::vector<s_compiler_result> *errors) {
-	wl_assert(execution_graph->get_node_type(node_reference) == k_execution_graph_node_type_native_module_call);
+	wl_assert(execution_graph->get_node_type(node_reference) == e_execution_graph_node_type::k_native_module_call);
 	const s_native_module &native_module = c_native_module_registry::get_native_module(
 		execution_graph->get_native_module_call_native_module_index(node_reference));
 
@@ -640,7 +640,7 @@ static bool optimize_native_module_call(
 				execution_graph->get_node_incoming_edge_reference(node_reference, edge);
 			c_node_reference input_type_node_reference =
 				execution_graph->get_node_incoming_edge_reference(input_node_reference, 0);
-			if (execution_graph->get_node_type(input_type_node_reference) != k_execution_graph_node_type_constant) {
+			if (execution_graph->get_node_type(input_type_node_reference) != e_execution_graph_node_type::k_constant) {
 				all_constant_inputs = false;
 			}
 		}
@@ -670,17 +670,17 @@ static bool optimize_native_module_call(
 						build_array_value(execution_graph, constant_node_reference, compile_time_argument.array_value);
 					} else {
 						switch (type.get_primitive_type()) {
-						case k_native_module_primitive_type_real:
+						case e_native_module_primitive_type::k_real:
 							compile_time_argument.real_value =
 								execution_graph->get_constant_node_real_value(constant_node_reference);
 							break;
 
-						case k_native_module_primitive_type_bool:
+						case e_native_module_primitive_type::k_bool:
 							compile_time_argument.bool_value =
 								execution_graph->get_constant_node_bool_value(constant_node_reference);
 							break;
 
-						case k_native_module_primitive_type_string:
+						case e_native_module_primitive_type::k_string:
 							compile_time_argument.string_value.get_string() =
 								execution_graph->get_constant_node_string_value(constant_node_reference);
 							break;
@@ -692,7 +692,7 @@ static bool optimize_native_module_call(
 
 					next_input++;
 				} else {
-					wl_assert(argument.type.get_qualifier() == k_native_module_qualifier_out);
+					wl_assert(argument.type.get_qualifier() == e_native_module_qualifier::k_out);
 					compile_time_argument.real_value = 0.0f;
 					next_output++;
 				}
@@ -716,7 +716,7 @@ static bool optimize_native_module_call(
 			next_output = 0;
 			for (size_t arg = 0; arg < native_module.argument_count; arg++) {
 				s_native_module_argument argument = native_module.arguments[arg];
-				if (argument.type.get_qualifier() == k_native_module_qualifier_out) {
+				if (argument.type.get_qualifier() == e_native_module_qualifier::k_out) {
 					const s_native_module_compile_time_argument &compile_time_argument = arg_list[arg];
 
 					// Create a constant node for this output
@@ -729,17 +729,17 @@ static bool optimize_native_module_call(
 						argument_array = &compile_time_argument.array_value;
 					} else {
 						switch (argument.type.get_data_type().get_primitive_type()) {
-						case k_native_module_primitive_type_real:
+						case e_native_module_primitive_type::k_real:
 							constant_node_reference =
 								execution_graph->add_constant_node(compile_time_argument.real_value);
 							break;
 
-						case k_native_module_primitive_type_bool:
+						case e_native_module_primitive_type::k_bool:
 							constant_node_reference =
 								execution_graph->add_constant_node(compile_time_argument.bool_value);
 							break;
 
-						case k_native_module_primitive_type_string:
+						case e_native_module_primitive_type::k_string:
 							constant_node_reference =
 								execution_graph->add_constant_node(compile_time_argument.string_value.get_string());
 							break;
@@ -824,7 +824,7 @@ private:
 		c_node_reference new_node_reference = m_execution_graph->get_node_incoming_edge_reference(
 			input_node_reference, 0);
 
-		if (m_execution_graph->get_node_type(new_node_reference) == k_execution_graph_node_type_indexed_output) {
+		if (m_execution_graph->get_node_type(new_node_reference) == e_execution_graph_node_type::k_indexed_output) {
 			// We need to advance an additional node for the case (module <- input <- output <- module)
 			output_node_reference = new_node_reference;
 			new_node_reference = m_execution_graph->get_node_incoming_edge_reference(new_node_reference, 0);
@@ -836,10 +836,10 @@ private:
 
 	void store_match(const s_native_module_optimization_symbol &symbol, c_node_reference node_reference) {
 		wl_assert(node_reference.is_valid());
-		if (symbol.type == k_native_module_optimization_symbol_type_variable) {
+		if (symbol.type == e_native_module_optimization_symbol_type::k_variable) {
 			wl_assert(!m_matched_variable_node_references[symbol.data.index].is_valid());
 			m_matched_variable_node_references[symbol.data.index] = node_reference;
-		} else if (symbol.type == k_native_module_optimization_symbol_type_constant) {
+		} else if (symbol.type == e_native_module_optimization_symbol_type::k_constant) {
 			wl_assert(!m_matched_constant_node_references[symbol.data.index].is_valid());
 			m_matched_constant_node_references[symbol.data.index] = node_reference;
 		} else {
@@ -848,10 +848,10 @@ private:
 	}
 
 	c_node_reference load_match(const s_native_module_optimization_symbol &symbol) const {
-		if (symbol.type == k_native_module_optimization_symbol_type_variable) {
+		if (symbol.type == e_native_module_optimization_symbol_type::k_variable) {
 			wl_assert(m_matched_variable_node_references[symbol.data.index].is_valid());
 			return m_matched_variable_node_references[symbol.data.index];
-		} else if (symbol.type == k_native_module_optimization_symbol_type_constant) {
+		} else if (symbol.type == e_native_module_optimization_symbol_type::k_constant) {
 			wl_assert(m_matched_constant_node_references[symbol.data.index].is_valid());
 			return m_matched_constant_node_references[symbol.data.index];
 		} else {
@@ -865,7 +865,8 @@ private:
 		c_node_reference node_reference = current_state.current_node_reference;
 
 		// It's a match if the current node is a native module of the same index
-		return (m_execution_graph->get_node_type(node_reference) == k_execution_graph_node_type_native_module_call) &&
+		return
+			(m_execution_graph->get_node_type(node_reference) == e_execution_graph_node_type::k_native_module_call) &&
 			(m_execution_graph->get_native_module_call_native_module_index(node_reference) == native_module_index);
 	}
 
@@ -873,9 +874,9 @@ private:
 		const s_native_module_optimization_symbol &symbol,
 		c_node_reference node_reference,
 		c_node_reference node_output_reference) {
-		if (symbol.type == k_native_module_optimization_symbol_type_variable) {
+		if (symbol.type == e_native_module_optimization_symbol_type::k_variable) {
 			// Match anything except for constants
-			if (m_execution_graph->get_node_type(node_reference) == k_execution_graph_node_type_constant) {
+			if (m_execution_graph->get_node_type(node_reference) == e_execution_graph_node_type::k_constant) {
 				return false;
 			}
 
@@ -885,9 +886,9 @@ private:
 				node_output_reference.is_valid() ? node_output_reference : node_reference;
 			store_match(symbol, matched_node_reference);
 			return true;
-		} else if (symbol.type == k_native_module_optimization_symbol_type_constant) {
+		} else if (symbol.type == e_native_module_optimization_symbol_type::k_constant) {
 			// Match only constants
-			if (m_execution_graph->get_node_type(node_reference) != k_execution_graph_node_type_constant) {
+			if (m_execution_graph->get_node_type(node_reference) != e_execution_graph_node_type::k_constant) {
 				return false;
 			}
 
@@ -895,14 +896,14 @@ private:
 			return true;
 		} else {
 			// Match only constants with the given value
-			if (m_execution_graph->get_node_type(node_reference) != k_execution_graph_node_type_constant) {
+			if (m_execution_graph->get_node_type(node_reference) != e_execution_graph_node_type::k_constant) {
 				return false;
 			}
 
 			// get_constant_node_<type>_value will assert that there's no type mismatch
-			if (symbol.type == k_native_module_optimization_symbol_type_real_value) {
+			if (symbol.type == e_native_module_optimization_symbol_type::k_real_value) {
 				return (symbol.data.real_value == m_execution_graph->get_constant_node_real_value(node_reference));
-			} else if (symbol.type == k_native_module_optimization_symbol_type_bool_value) {
+			} else if (symbol.type == e_native_module_optimization_symbol_type::k_bool_value) {
 				return (symbol.data.bool_value == m_execution_graph->get_constant_node_bool_value(node_reference));
 			} else {
 				wl_unreachable();
@@ -919,7 +920,7 @@ private:
 
 			const s_native_module_optimization_symbol &symbol = m_rule->source.symbols[sym];
 			switch (symbol.type) {
-			case k_native_module_optimization_symbol_type_native_module:
+			case e_native_module_optimization_symbol_type::k_native_module:
 			{
 				wl_assert(symbol.data.native_module_uid != s_native_module_uid::k_invalid);
 				uint32 native_module_index =
@@ -953,7 +954,7 @@ private:
 				break;
 			}
 
-			case k_native_module_optimization_symbol_type_native_module_end:
+			case e_native_module_optimization_symbol_type::k_native_module_end:
 			{
 				wl_assert(!m_match_state_stack.empty());
 				// We expect that if we were able to match and enter a module, we should also match when leaving
@@ -964,14 +965,14 @@ private:
 				break;
 			}
 
-			case k_native_module_optimization_symbol_type_array_dereference:
+			case e_native_module_optimization_symbol_type::k_array_dereference:
 				wl_vhalt("Array dereference not allowed in source pattern");
 				break;
 
-			case k_native_module_optimization_symbol_type_variable:
-			case k_native_module_optimization_symbol_type_constant:
-			case k_native_module_optimization_symbol_type_real_value:
-			case k_native_module_optimization_symbol_type_bool_value:
+			case e_native_module_optimization_symbol_type::k_variable:
+			case e_native_module_optimization_symbol_type::k_constant:
+			case e_native_module_optimization_symbol_type::k_real_value:
+			case e_native_module_optimization_symbol_type::k_bool_value:
 			{
 				// Try to advance to the next input
 				wl_assert(!m_match_state_stack.empty());
@@ -1003,15 +1004,15 @@ private:
 		const s_native_module_optimization_symbol &index_symbol) {
 		// Validate the array and index symbols
 		wl_assert(array_symbol.is_valid());
-		wl_assert(array_symbol.type == k_native_module_optimization_symbol_type_constant);
+		wl_assert(array_symbol.type == e_native_module_optimization_symbol_type::k_constant);
 		c_node_reference array_node_reference = load_match(array_symbol);
 		wl_assert(m_execution_graph->get_constant_node_data_type(array_node_reference).is_array());
 
 		wl_assert(index_symbol.is_valid());
-		wl_assert(index_symbol.type == k_native_module_optimization_symbol_type_constant);
+		wl_assert(index_symbol.type == e_native_module_optimization_symbol_type::k_constant);
 		c_node_reference index_node_reference = load_match(index_symbol);
 		wl_assert(m_execution_graph->get_constant_node_data_type(index_node_reference) ==
-			c_native_module_data_type(k_native_module_primitive_type_real));
+			c_native_module_data_type(e_native_module_primitive_type::k_real));
 
 		// Obtain the array index
 		uint32 array_index = 0;
@@ -1025,15 +1026,15 @@ private:
 		c_node_reference dereferenced_node_reference = c_node_reference();
 		if (!valid_array_index) {
 			switch (m_execution_graph->get_constant_node_data_type(array_node_reference).get_primitive_type()) {
-			case k_native_module_primitive_type_real:
+			case e_native_module_primitive_type::k_real:
 				dereferenced_node_reference = m_execution_graph->add_constant_node(0.0f);
 				break;
 
-			case k_native_module_primitive_type_bool:
+			case e_native_module_primitive_type::k_bool:
 				dereferenced_node_reference = m_execution_graph->add_constant_node(false);
 				break;
 
-			case k_native_module_primitive_type_string:
+			case e_native_module_primitive_type::k_string:
 				dereferenced_node_reference = m_execution_graph->add_constant_node("");
 				break;
 
@@ -1051,13 +1052,13 @@ private:
 	}
 
 	c_node_reference handle_target_value_symbol_match(const s_native_module_optimization_symbol &symbol) {
-		if (symbol.type == k_native_module_optimization_symbol_type_variable ||
-			symbol.type == k_native_module_optimization_symbol_type_constant) {
+		if (symbol.type == e_native_module_optimization_symbol_type::k_variable ||
+			symbol.type == e_native_module_optimization_symbol_type::k_constant) {
 			return load_match(symbol);
-		} else if (symbol.type == k_native_module_optimization_symbol_type_real_value) {
+		} else if (symbol.type == e_native_module_optimization_symbol_type::k_real_value) {
 			// Create a constant node with this value
 			return m_execution_graph->add_constant_node(symbol.data.real_value);
-		} else if (symbol.type == k_native_module_optimization_symbol_type_bool_value) {
+		} else if (symbol.type == e_native_module_optimization_symbol_type::k_bool_value) {
 			// Create a constant node with this value
 			return m_execution_graph->add_constant_node(symbol.data.bool_value);
 		} else {
@@ -1077,7 +1078,7 @@ private:
 
 			const s_native_module_optimization_symbol &symbol = m_rule->target.symbols[sym];
 			switch (symbol.type) {
-			case k_native_module_optimization_symbol_type_native_module:
+			case e_native_module_optimization_symbol_type::k_native_module:
 			{
 				uint32 native_module_index =
 					c_native_module_registry::get_native_module_index(symbol.data.native_module_uid);
@@ -1109,7 +1110,7 @@ private:
 				break;
 			}
 
-			case k_native_module_optimization_symbol_type_native_module_end:
+			case e_native_module_optimization_symbol_type::k_native_module_end:
 			{
 				wl_assert(!m_match_state_stack.empty());
 				// We expect that if we were able to match and enter a module, we should also match when leaving
@@ -1120,14 +1121,14 @@ private:
 				break;
 			}
 
-			case k_native_module_optimization_symbol_type_array_dereference:
-			case k_native_module_optimization_symbol_type_variable:
-			case k_native_module_optimization_symbol_type_constant:
-			case k_native_module_optimization_symbol_type_real_value:
-			case k_native_module_optimization_symbol_type_bool_value:
+			case e_native_module_optimization_symbol_type::k_array_dereference:
+			case e_native_module_optimization_symbol_type::k_variable:
+			case e_native_module_optimization_symbol_type::k_constant:
+			case e_native_module_optimization_symbol_type::k_real_value:
+			case e_native_module_optimization_symbol_type::k_bool_value:
 			{
 				c_node_reference matched_node_reference;
-				if (symbol.type == k_native_module_optimization_symbol_type_array_dereference) {
+				if (symbol.type == e_native_module_optimization_symbol_type::k_array_dereference) {
 					// Read the next two symbols - must be constant array and constant index
 					wl_assert(sym + 2 <= NUMBEROF(m_rule->target.symbols));
 					sym++;
@@ -1177,7 +1178,7 @@ private:
 			m_execution_graph->get_node_outgoing_edge_reference(m_source_root_node_reference, 0);
 
 		switch (m_execution_graph->get_node_type(target_root_node_reference)) {
-		case k_execution_graph_node_type_native_module_call:
+		case e_execution_graph_node_type::k_native_module_call:
 		{
 			wl_assert(m_execution_graph->get_node_outgoing_edge_count(target_root_node_reference) == 1);
 			c_node_reference new_output_node =
@@ -1186,12 +1187,12 @@ private:
 			break;
 		}
 
-		case k_execution_graph_node_type_constant:
-		case k_execution_graph_node_type_indexed_output:
+		case e_execution_graph_node_type::k_constant:
+		case e_execution_graph_node_type::k_indexed_output:
 			transfer_outputs(m_execution_graph, target_root_node_reference, old_output_node);
 			break;
 
-		case k_execution_graph_node_type_temporary_reference:
+		case e_execution_graph_node_type::k_temporary_reference:
 			// These should have all been removed
 			wl_unreachable();
 			break;
@@ -1243,7 +1244,7 @@ void remove_useless_nodes(c_execution_graph *execution_graph) {
 		node_reference.is_valid();
 		node_reference = execution_graph->nodes_next(node_reference)) {
 		e_execution_graph_node_type type = execution_graph->get_node_type(node_reference);
-		if (type == k_execution_graph_node_type_output) {
+		if (type == e_execution_graph_node_type::k_output) {
 			node_stack.push(node_reference);
 			nodes_visited.insert(node_reference);
 		}
@@ -1264,8 +1265,8 @@ void remove_useless_nodes(c_execution_graph *execution_graph) {
 
 	// Remove all unvisited nodes
 	for (c_node_reference node_reference = execution_graph->nodes_begin();
-		 node_reference.is_valid();
-		 node_reference = execution_graph->nodes_next(node_reference)) {
+		node_reference.is_valid();
+		node_reference = execution_graph->nodes_next(node_reference)) {
 		if (nodes_visited.find(node_reference) == nodes_visited.end()) {
 			// A few exceptions:
 			// - Don't directly remove inputs/outputs, since they automatically get removed along with their nodes
@@ -1273,10 +1274,10 @@ void remove_useless_nodes(c_execution_graph *execution_graph) {
 			// - Don't remove unused inputs or we would get unexpected graph incompatibility errors if an input is
 			//   unused because input node count defines the number of inputs
 			e_execution_graph_node_type type = execution_graph->get_node_type(node_reference);
-			if (type != k_execution_graph_node_type_invalid &&
-				type != k_execution_graph_node_type_indexed_input &&
-				type != k_execution_graph_node_type_indexed_output &&
-				type != k_execution_graph_node_type_input) {
+			if (type != e_execution_graph_node_type::k_invalid &&
+				type != e_execution_graph_node_type::k_indexed_input &&
+				type != e_execution_graph_node_type::k_indexed_output &&
+				type != e_execution_graph_node_type::k_input) {
 				execution_graph->remove_node(node_reference);
 			}
 		}
@@ -1302,16 +1303,16 @@ static void deduplicate_nodes(c_execution_graph *execution_graph) {
 
 	// Combine all equivalent constant nodes. Currently n^2, we could easily do better if it's worth the speedup.
 	for (c_node_reference node_a_reference = execution_graph->nodes_begin();
-		 node_a_reference.is_valid();
-		 node_a_reference = execution_graph->nodes_next(node_a_reference)) {
-		if (execution_graph->get_node_type(node_a_reference) != k_execution_graph_node_type_constant) {
+		node_a_reference.is_valid();
+		node_a_reference = execution_graph->nodes_next(node_a_reference)) {
+		if (execution_graph->get_node_type(node_a_reference) != e_execution_graph_node_type::k_constant) {
 			continue;
 		}
 
 		for (c_node_reference node_b_reference = execution_graph->nodes_next(node_a_reference);
-			 node_b_reference.is_valid();
-			 node_b_reference = execution_graph->nodes_next(node_b_reference)) {
-			if (execution_graph->get_node_type(node_b_reference) != k_execution_graph_node_type_constant) {
+			node_b_reference.is_valid();
+			node_b_reference = execution_graph->nodes_next(node_b_reference)) {
+			if (execution_graph->get_node_type(node_b_reference) != e_execution_graph_node_type::k_constant) {
 				continue;
 			}
 
@@ -1327,17 +1328,17 @@ static void deduplicate_nodes(c_execution_graph *execution_graph) {
 				// Arrays are deduplicated later
 			} else {
 				switch (type.get_primitive_type()) {
-				case k_native_module_primitive_type_real:
+				case e_native_module_primitive_type::k_real:
 					equal = (execution_graph->get_constant_node_real_value(node_a_reference) ==
 						execution_graph->get_constant_node_real_value(node_b_reference));
 					break;
 
-				case k_native_module_primitive_type_bool:
+				case e_native_module_primitive_type::k_bool:
 					equal = (execution_graph->get_constant_node_bool_value(node_a_reference) ==
 						execution_graph->get_constant_node_bool_value(node_b_reference));
 					break;
 
-				case k_native_module_primitive_type_string:
+				case e_native_module_primitive_type::k_string:
 					equal = (strcmp(execution_graph->get_constant_node_string_value(node_a_reference),
 						execution_graph->get_constant_node_string_value(node_b_reference)) == 0);
 					break;
@@ -1372,9 +1373,9 @@ static void deduplicate_nodes(c_execution_graph *execution_graph) {
 		// nodes which use indexed inputs.)
 		// Currently n^2 but we could do better easily.
 		for (c_node_reference node_a_reference = execution_graph->nodes_begin();
-			 node_a_reference.is_valid();
-			 node_a_reference = execution_graph->nodes_next(node_a_reference)) {
-			if (execution_graph->get_node_type(node_a_reference) == k_execution_graph_node_type_invalid) {
+			node_a_reference.is_valid();
+			node_a_reference = execution_graph->nodes_next(node_a_reference)) {
+			if (execution_graph->get_node_type(node_a_reference) == e_execution_graph_node_type::k_invalid) {
 				continue;
 			}
 
@@ -1383,21 +1384,21 @@ static void deduplicate_nodes(c_execution_graph *execution_graph) {
 			}
 
 			for (c_node_reference node_b_reference = execution_graph->nodes_next(node_a_reference);
-				 node_b_reference.is_valid();
-				 node_b_reference = execution_graph->nodes_next(node_b_reference)) {
+				node_b_reference.is_valid();
+				node_b_reference = execution_graph->nodes_next(node_b_reference)) {
 				if (execution_graph->get_node_type(node_a_reference) !=
 					execution_graph->get_node_type(node_b_reference)) {
 					continue;
 				}
 
 				e_execution_graph_node_type node_type = execution_graph->get_node_type(node_a_reference);
-				if (node_type == k_execution_graph_node_type_native_module_call) {
+				if (node_type == e_execution_graph_node_type::k_native_module_call) {
 					// If native module indices don't match, skip
 					if (execution_graph->get_native_module_call_native_module_index(node_a_reference) !=
 						execution_graph->get_native_module_call_native_module_index(node_b_reference)) {
 						continue;
 					}
-				} else if (node_type == k_execution_graph_node_type_constant) {
+				} else if (node_type == e_execution_graph_node_type::k_constant) {
 					wl_assert(execution_graph->get_constant_node_data_type(node_a_reference).is_array());
 
 					// If array types don't match, skip
@@ -1423,8 +1424,8 @@ static void deduplicate_nodes(c_execution_graph *execution_graph) {
 
 				uint32 identical_inputs = true;
 				for (size_t edge = 0;
-					 identical_inputs && edge < execution_graph->get_node_incoming_edge_count(node_a_reference);
-					 edge++) {
+					identical_inputs && edge < execution_graph->get_node_incoming_edge_count(node_a_reference);
+					edge++) {
 					// Skip past the "input" nodes directly to the source
 					c_node_reference source_node_a = execution_graph->get_node_incoming_edge_reference(
 						execution_graph->get_node_incoming_edge_reference(node_a_reference, edge), 0);
@@ -1438,8 +1439,8 @@ static void deduplicate_nodes(c_execution_graph *execution_graph) {
 					if (execution_graph->does_node_use_indexed_outputs(node_a_reference)) {
 						// Remap each indexed output
 						for (size_t edge = 0;
-							 edge < execution_graph->get_node_outgoing_edge_count(node_a_reference);
-							 edge++) {
+							edge < execution_graph->get_node_outgoing_edge_count(node_a_reference);
+							edge++) {
 							c_node_reference output_node_a =
 								execution_graph->get_node_outgoing_edge_reference(node_a_reference, edge);
 							c_node_reference output_node_b =
@@ -1477,9 +1478,9 @@ static void validate_optimized_constants(
 	const c_execution_graph *execution_graph,
 	std::vector<s_compiler_result> &out_errors) {
 	for (c_node_reference node_reference = execution_graph->nodes_begin();
-		 node_reference.is_valid();
-		 node_reference = execution_graph->nodes_next(node_reference)) {
-		if (execution_graph->get_node_type(node_reference) != k_execution_graph_node_type_native_module_call) {
+		node_reference.is_valid();
+		node_reference = execution_graph->nodes_next(node_reference)) {
+		if (execution_graph->get_node_type(node_reference) != e_execution_graph_node_type::k_native_module_call) {
 			continue;
 		}
 
@@ -1491,18 +1492,19 @@ static void validate_optimized_constants(
 		size_t input = 0;
 		for (size_t arg = 0; arg < native_module.argument_count; arg++) {
 			e_native_module_qualifier qualifier = native_module.arguments[arg].type.get_qualifier();
-			if (qualifier == k_native_module_qualifier_in) {
+			if (qualifier == e_native_module_qualifier::k_in) {
 				input++;
-			} else if (qualifier == k_native_module_qualifier_constant) {
+			} else if (qualifier == e_native_module_qualifier::k_constant) {
 				// Validate that this input is constant
 				c_node_reference input_node_reference =
 					execution_graph->get_node_incoming_edge_reference(node_reference, input);
 				c_node_reference constant_node_reference =
 					execution_graph->get_node_incoming_edge_reference(input_node_reference, 0);
 
-				if (execution_graph->get_node_type(constant_node_reference) != k_execution_graph_node_type_constant) {
+				if (execution_graph->get_node_type(constant_node_reference) !=
+					e_execution_graph_node_type::k_constant) {
 					s_compiler_result error;
-					error.result = k_compiler_result_constant_expected;
+					error.result = e_compiler_result::k_constant_expected;
 					error.source_location.clear();
 					error.message = "Input argument to native module call '" +
 						std::string(native_module.name.get_string()) + "' does not resolve to a constant";
