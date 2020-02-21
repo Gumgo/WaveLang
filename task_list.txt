@@ -101,3 +101,6 @@
 
 - Expand the timing library ($TIMING)
 	- Add edge triggers
+
+- Add JSON library ($JSON)
+	- Functions to read values of various types, e.g. json.read_real_array("file.json", "path/to/value")
