@@ -7,6 +7,7 @@
 #include "engine/voice_interface/voice_interface.h"
 
 #include <algorithm>
+#include <cmath>
 
 struct s_buffer_operation_controller_get_note_id {
 	static void out(int32 note_id, c_real_buffer_out out);

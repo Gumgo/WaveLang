@@ -1,0 +1,53 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="ast_builder.h" />
+    <ClInclude Include="ast_data_type.h" />
+    <ClInclude Include="ast_validator.h" />
+    <ClInclude Include="compiler.h" />
+    <ClInclude Include="compiler_utility.h" />
+    <ClInclude Include="execution_graph_builder.h" />
+    <ClInclude Include="execution_graph_optimizer.h" />
+    <ClInclude Include="instrument_globals_parser.h" />
+    <ClInclude Include="lexer.h" />
+    <ClInclude Include="lr_parser.h" />
+    <ClInclude Include="parser.h" />
+    <ClInclude Include="preprocessor.h" />
+    <ClInclude Include="ast.h" />
+    <ClInclude Include="getopt\getopt.h">
+      <Filter>getopt</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ast_data_type.cpp" />
+    <ClCompile Include="ast_validator.cpp" />
+    <ClCompile Include="compiler.cpp" />
+    <ClCompile Include="compiler_main.cpp" />
+    <ClCompile Include="compiler_utility.cpp" />
+    <ClCompile Include="execution_graph_builder.cpp" />
+    <ClCompile Include="execution_graph_optimizer.cpp" />
+    <ClCompile Include="instrument_globals_parser.cpp" />
+    <ClCompile Include="lexer.cpp" />
+    <ClCompile Include="lr_parser.cpp" />
+    <ClCompile Include="parser.cpp" />
+    <ClCompile Include="preprocessor.cpp" />
+    <ClCompile Include="ast.cpp" />
+    <ClCompile Include="ast_builder.cpp" />
+    <ClCompile Include="getopt\getopt.c">
+      <Filter>getopt</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="compiler_utility.inl" />
+    <None Include="lr_parse_tables.inl" />
+    <None Include="SConscript" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="parser_rules.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="getopt">
+      <UniqueIdentifier>{ac4eb251-0933-4901-a463-84302e3f7dd8}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

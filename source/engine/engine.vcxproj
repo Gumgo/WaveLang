@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="debug|x64">
+      <Configuration>debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="development|x64">
+      <Configuration>development</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="release|x64">
+      <Configuration>release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <ProjectGuid>{1DF80208-7675-4E3D-85BB-21F3107107F6}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='debug|x64'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='development|x64'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='release|x64'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='development|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='debug|x64'">
+    <NMakeOutput>
+    </NMakeOutput>
+    <NMakePreprocessorDefinitions>_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <NMakeBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeBuildCommandLine>
+    <NMakeReBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName) &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeReBuildCommandLine>
+    <NMakeCleanCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)</NMakeCleanCommandLine>
+    <IntDir>$(SolutionDir)..\build\win32\$(Configuration)\msvc</IntDir>
+    <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='development|x64'">
+    <NMakeOutput />
+    <NMakePreprocessorDefinitions>_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <NMakeBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeBuildCommandLine>
+    <NMakeReBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName) &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeReBuildCommandLine>
+    <NMakeCleanCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)</NMakeCleanCommandLine>
+    <IntDir>$(SolutionDir)..\build\win32\$(Configuration)\msvc</IntDir>
+    <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='release|x64'">
+    <NMakeOutput>
+    </NMakeOutput>
+    <NMakePreprocessorDefinitions>NDEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <NMakeBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeBuildCommandLine>
+    <NMakeReBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName) &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeReBuildCommandLine>
+    <NMakeCleanCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)</NMakeCleanCommandLine>
+    <IntDir>$(SolutionDir)..\build\win32\$(Configuration)\msvc</IntDir>
+    <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <ItemGroup>
+    <ClInclude Include="array_dereference_interface\array_dereference_interface.h" />
+    <ClInclude Include="buffer.h" />
+    <ClInclude Include="buffer_handle.h" />
+    <ClInclude Include="buffer_operations\buffer_iterators.h" />
+    <ClInclude Include="buffer_operations\buffer_operations.h" />
+    <ClInclude Include="buffer_operations\buffer_operations_internal.h" />
+    <ClInclude Include="controller_interface\controller_interface.h" />
+    <ClInclude Include="events\async_event_handler.h" />
+    <ClInclude Include="events\event_console.h" />
+    <ClInclude Include="events\event_data_types.h" />
+    <ClInclude Include="events\event_interface.h" />
+    <ClInclude Include="executor\buffer_allocator.h" />
+    <ClInclude Include="executor\buffer_manager.h" />
+    <ClInclude Include="executor\channel_mixer.h" />
+    <ClInclude Include="executor\controller_event_manager.h" />
+    <ClInclude Include="executor\executor.h" />
+    <ClInclude Include="executor\task_memory_manager.h" />
+    <ClInclude Include="executor\voice_allocator.h" />
+    <ClInclude Include="math\math.h" />
+    <ClInclude Include="math\math_constants.h" />
+    <ClInclude Include="math\math_int32x4.h" />
+    <ClInclude Include="math\math_real32x4.h" />
+    <ClInclude Include="math\math_tests.h" />
+    <ClInclude Include="math\neon_mathfun.h" />
+    <ClInclude Include="math\simd.h" />
+    <ClInclude Include="math\sse_mathfun.h" />
+    <ClInclude Include="predecessor_resolver.h" />
+    <ClInclude Include="profiler\profiler.h" />
+    <ClInclude Include="runtime_instrument.h" />
+    <ClInclude Include="sample\sample.h" />
+    <ClInclude Include="sample\sample_library.h" />
+    <ClInclude Include="task_function.h" />
+    <ClInclude Include="task_functions\sampler\fast_log2.h" />
+    <ClInclude Include="task_functions\sampler\fetch_sample.h" />
+    <ClInclude Include="task_functions\sampler\sampler_context.h" />
+    <ClInclude Include="task_functions\sampler\sinc_window.h" />
+    <ClInclude Include="task_functions\task_functions_array.h" />
+    <ClInclude Include="task_functions\task_functions_controller.h" />
+    <ClInclude Include="task_functions\task_functions_core.h" />
+    <ClInclude Include="task_functions\task_functions_delay.h" />
+    <ClInclude Include="task_functions\task_functions_filter.h" />
+    <ClInclude Include="task_functions\task_functions_math.h" />
+    <ClInclude Include="task_functions\task_functions_sampler.h" />
+    <ClInclude Include="task_functions\task_functions_stream.h" />
+    <ClInclude Include="task_functions\task_functions_time.h" />
+    <ClInclude Include="task_functions\task_function_registration.h" />
+    <ClInclude Include="task_function_registry.h" />
+    <ClInclude Include="task_graph.h" />
+    <ClInclude Include="thread_pool.h" />
+    <ClInclude Include="voice_interface\voice_interface.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="array_dereference_interface\array_dereference_interface.cpp" />
+    <ClCompile Include="controller_interface\controller_interface.cpp" />
+    <ClCompile Include="events\async_event_handler.cpp" />
+    <ClCompile Include="events\event_console.cpp" />
+    <ClCompile Include="events\event_console_linux.cpp" />
+    <ClCompile Include="events\event_console_windows.cpp" />
+    <ClCompile Include="events\event_data_types.cpp" />
+    <ClCompile Include="events\event_interface.cpp" />
+    <ClCompile Include="executor\buffer_allocator.cpp" />
+    <ClCompile Include="executor\buffer_manager.cpp" />
+    <ClCompile Include="executor\channel_mixer.cpp" />
+    <ClCompile Include="executor\controller_event_manager.cpp" />
+    <ClCompile Include="executor\executor.cpp" />
+    <ClCompile Include="executor\task_memory_manager.cpp" />
+    <ClCompile Include="executor\voice_allocator.cpp" />
+    <ClCompile Include="math\math_tests.cpp" />
+    <ClCompile Include="predecessor_resolver.cpp" />
+    <ClCompile Include="profiler\profiler.cpp" />
+    <ClCompile Include="runtime_instrument.cpp" />
+    <ClCompile Include="sample\sample.cpp" />
+    <ClCompile Include="sample\sample_library.cpp" />
+    <ClCompile Include="task_function.cpp" />
+    <ClCompile Include="task_functions\sampler\fast_log2.cpp" />
+    <ClCompile Include="task_functions\sampler\fetch_sample.cpp" />
+    <ClCompile Include="task_functions\sampler\sampler_context.cpp" />
+    <ClCompile Include="task_functions\sampler\sinc_window.cpp" />
+    <ClCompile Include="task_functions\task_functions_array.cpp" />
+    <ClCompile Include="task_functions\task_functions_controller.cpp" />
+    <ClCompile Include="task_functions\task_functions_core.cpp" />
+    <ClCompile Include="task_functions\task_functions_delay.cpp" />
+    <ClCompile Include="task_functions\task_functions_filter.cpp" />
+    <ClCompile Include="task_functions\task_functions_math.cpp" />
+    <ClCompile Include="task_functions\task_functions_sampler.cpp" />
+    <ClCompile Include="task_functions\task_functions_stream.cpp" />
+    <ClCompile Include="task_functions\task_functions_time.cpp" />
+    <ClCompile Include="task_functions\task_function_registration.cpp" />
+    <ClCompile Include="task_function_registry.cpp" />
+    <ClCompile Include="task_graph.cpp" />
+    <ClCompile Include="thread_pool.cpp" />
+    <ClCompile Include="voice_interface\voice_interface.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="math\math_int32x4_neon.inl" />
+    <None Include="math\math_int32x4_sse.inl" />
+    <None Include="math\math_real32x4_neon.inl" />
+    <None Include="math\math_real32x4_sse.inl" />
+    <None Include="SConscript" />
+    <None Include="task_functions\sampler\sinc_window_coefficients.inl" />
+    <None Include="task_functions\task_functions_core_bool.inl" />
+    <None Include="task_functions\task_functions_core_real.inl" />
+    <None Include="task_functions\task_functions_core_select.inl" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

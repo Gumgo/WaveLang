@@ -36,7 +36,6 @@ static const size_t k_simd_block_size = SIMD_BLOCK_SIZE;
 using t_simd_real32 = __m128;
 using t_simd_int32 = __m128i;
 
-#pragma once
 #define USE_SSE2
 #pragma warning(disable:4305)
 #pragma warning(disable:4838)
@@ -49,7 +48,6 @@ using t_simd_int32 = __m128i;
 using t_simd_real32 = float32x4_t;
 using t_simd_int32 = int32x4_t;
 
-#pragma once
 #if IS_TRUE(COMPILER_MSVC)
 #pragma warning(disable:4305)
 #pragma warning(disable:4838)

@@ -1,0 +1,30 @@
+# Console - An error console for the runtime, which is another process because we cannot spawn multiple command line
+# windows in the same process
+
+import os
+
+import utils
+
+Import("*")
+
+env = env.Clone()
+
+env.Append(CPPPATH = ["#source"])
+
+sources = utils.enumerate_files(env, ".", utils.SOURCE_EXTENSIONS)
+static_libraries = ["common"]
+env.Append(LIBS = static_libraries, LIBPATH = ["../bin"])
+
+objects = []
+for source in sources:
+	obj = env.StaticObject(source)
+	objects += obj
+
+console_program = env.Program("console", objects)
+
+console_installed = env.Install("../bin", console_program)
+env.Alias("console", console_installed)
+
+# Install to app directory
+console_app = env.Install("#app", console_installed)
+env.Alias("console_app", console_app)

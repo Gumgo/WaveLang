@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="debug|x64">
+      <Configuration>debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="development|x64">
+      <Configuration>development</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="release|x64">
+      <Configuration>release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="asserts.h" />
+    <ClInclude Include="cast_integer_verify.h" />
+    <ClInclude Include="common.h" />
+    <ClInclude Include="macros.h" />
+    <ClInclude Include="platform.h" />
+    <ClInclude Include="platform_macros.h" />
+    <ClInclude Include="scraper_attributes.h" />
+    <ClInclude Include="static_array.h" />
+    <ClInclude Include="string.h" />
+    <ClInclude Include="threading\atomics.h" />
+    <ClInclude Include="threading\condition_variable.h" />
+    <ClInclude Include="threading\lock_free.h" />
+    <ClInclude Include="threading\lock_free_pool.h" />
+    <ClInclude Include="threading\lock_free_queue.h" />
+    <ClInclude Include="threading\mutex.h" />
+    <ClInclude Include="threading\semaphore.h" />
+    <ClInclude Include="threading\thread.h" />
+    <ClInclude Include="types.h" />
+    <ClInclude Include="utility\aligned_allocator.h" />
+    <ClInclude Include="utility\endian.h" />
+    <ClInclude Include="utility\file_utility.h" />
+    <ClInclude Include="utility\graphviz_generator.h" />
+    <ClInclude Include="utility\handle.h" />
+    <ClInclude Include="utility\hash_table.h" />
+    <ClInclude Include="utility\linked_array.h" />
+    <ClInclude Include="utility\merge_sort.h" />
+    <ClInclude Include="utility\pod.h" />
+    <ClInclude Include="utility\radix_sort.h" />
+    <ClInclude Include="utility\sha1\SHA1.h" />
+    <ClInclude Include="utility\stopwatch.h" />
+    <ClInclude Include="utility\string_table.h" />
+    <ClInclude Include="wrapped_array.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="SConscript" />
+    <None Include="threading\lock_free_queue.inl" />
+    <None Include="utility\hash_table.inl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="asserts.cpp" />
+    <ClCompile Include="threading\condition_variable.cpp" />
+    <ClCompile Include="threading\lock_free.cpp" />
+    <ClCompile Include="threading\lock_free_pool.cpp" />
+    <ClCompile Include="threading\mutex.cpp" />
+    <ClCompile Include="threading\semaphore.cpp" />
+    <ClCompile Include="threading\thread_fallback.cpp" />
+    <ClCompile Include="threading\thread_windows.cpp" />
+    <ClCompile Include="utility\file_utility.cpp" />
+    <ClCompile Include="utility\graphviz_generator.cpp" />
+    <ClCompile Include="utility\linked_array.cpp" />
+    <ClCompile Include="utility\sha1\SHA1.cpp" />
+    <ClCompile Include="utility\stopwatch.cpp" />
+    <ClCompile Include="utility\string_table.cpp" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <ProjectGuid>{13CB314D-844A-42D4-BA73-0D8F4841C96F}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='debug|x64'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='development|x64'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='release|x64'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='development|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='debug|x64'">
+    <NMakeOutput>
+    </NMakeOutput>
+    <NMakePreprocessorDefinitions>_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <NMakeBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeBuildCommandLine>
+    <NMakeReBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName) &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeReBuildCommandLine>
+    <NMakeCleanCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)</NMakeCleanCommandLine>
+    <IntDir>$(SolutionDir)..\build\win32\$(Configuration)\msvc</IntDir>
+    <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='development|x64'">
+    <NMakeOutput />
+    <NMakePreprocessorDefinitions>_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <NMakeBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeBuildCommandLine>
+    <NMakeReBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName) &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeReBuildCommandLine>
+    <NMakeCleanCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)</NMakeCleanCommandLine>
+    <IntDir>$(SolutionDir)..\build\win32\$(Configuration)\msvc</IntDir>
+    <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='release|x64'">
+    <NMakeOutput>
+    </NMakeOutput>
+    <NMakePreprocessorDefinitions>NDEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <NMakeBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeBuildCommandLine>
+    <NMakeReBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName) &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeReBuildCommandLine>
+    <NMakeCleanCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)</NMakeCleanCommandLine>
+    <IntDir>$(SolutionDir)..\build\win32\$(Configuration)\msvc</IntDir>
+    <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

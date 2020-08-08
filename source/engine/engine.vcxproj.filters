@@ -1,0 +1,311 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="buffer.h" />
+    <ClInclude Include="buffer_handle.h" />
+    <ClInclude Include="predecessor_resolver.h" />
+    <ClInclude Include="runtime_instrument.h" />
+    <ClInclude Include="task_function.h" />
+    <ClInclude Include="task_function_registry.h" />
+    <ClInclude Include="task_graph.h" />
+    <ClInclude Include="thread_pool.h" />
+    <ClInclude Include="array_dereference_interface\array_dereference_interface.h">
+      <Filter>array_dereference_interface</Filter>
+    </ClInclude>
+    <ClInclude Include="buffer_operations\buffer_operations.h">
+      <Filter>buffer_operations</Filter>
+    </ClInclude>
+    <ClInclude Include="buffer_operations\buffer_operations_internal.h">
+      <Filter>buffer_operations</Filter>
+    </ClInclude>
+    <ClInclude Include="buffer_operations\buffer_iterators.h">
+      <Filter>buffer_operations</Filter>
+    </ClInclude>
+    <ClInclude Include="controller_interface\controller_interface.h">
+      <Filter>controller_interface</Filter>
+    </ClInclude>
+    <ClInclude Include="events\event_data_types.h">
+      <Filter>events</Filter>
+    </ClInclude>
+    <ClInclude Include="events\event_interface.h">
+      <Filter>events</Filter>
+    </ClInclude>
+    <ClInclude Include="events\async_event_handler.h">
+      <Filter>events</Filter>
+    </ClInclude>
+    <ClInclude Include="events\event_console.h">
+      <Filter>events</Filter>
+    </ClInclude>
+    <ClInclude Include="executor\controller_event_manager.h">
+      <Filter>executor</Filter>
+    </ClInclude>
+    <ClInclude Include="executor\executor.h">
+      <Filter>executor</Filter>
+    </ClInclude>
+    <ClInclude Include="executor\task_memory_manager.h">
+      <Filter>executor</Filter>
+    </ClInclude>
+    <ClInclude Include="executor\voice_allocator.h">
+      <Filter>executor</Filter>
+    </ClInclude>
+    <ClInclude Include="executor\buffer_allocator.h">
+      <Filter>executor</Filter>
+    </ClInclude>
+    <ClInclude Include="executor\buffer_manager.h">
+      <Filter>executor</Filter>
+    </ClInclude>
+    <ClInclude Include="executor\channel_mixer.h">
+      <Filter>executor</Filter>
+    </ClInclude>
+    <ClInclude Include="math\math_real32x4.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\math_tests.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\neon_mathfun.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\simd.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\sse_mathfun.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\math.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\math_constants.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\math_int32x4.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="profiler\profiler.h">
+      <Filter>profiler</Filter>
+    </ClInclude>
+    <ClInclude Include="sample\sample.h">
+      <Filter>sample</Filter>
+    </ClInclude>
+    <ClInclude Include="sample\sample_library.h">
+      <Filter>sample</Filter>
+    </ClInclude>
+    <ClInclude Include="task_functions\task_functions_controller.h">
+      <Filter>task_functions</Filter>
+    </ClInclude>
+    <ClInclude Include="task_functions\task_functions_core.h">
+      <Filter>task_functions</Filter>
+    </ClInclude>
+    <ClInclude Include="task_functions\task_functions_delay.h">
+      <Filter>task_functions</Filter>
+    </ClInclude>
+    <ClInclude Include="task_functions\task_functions_filter.h">
+      <Filter>task_functions</Filter>
+    </ClInclude>
+    <ClInclude Include="task_functions\task_functions_math.h">
+      <Filter>task_functions</Filter>
+    </ClInclude>
+    <ClInclude Include="task_functions\task_functions_sampler.h">
+      <Filter>task_functions</Filter>
+    </ClInclude>
+    <ClInclude Include="task_functions\task_functions_stream.h">
+      <Filter>task_functions</Filter>
+    </ClInclude>
+    <ClInclude Include="task_functions\task_functions_time.h">
+      <Filter>task_functions</Filter>
+    </ClInclude>
+    <ClInclude Include="task_functions\task_function_registration.h">
+      <Filter>task_functions</Filter>
+    </ClInclude>
+    <ClInclude Include="task_functions\task_functions_array.h">
+      <Filter>task_functions</Filter>
+    </ClInclude>
+    <ClInclude Include="task_functions\sampler\sinc_window.h">
+      <Filter>task_functions\sampler</Filter>
+    </ClInclude>
+    <ClInclude Include="task_functions\sampler\fast_log2.h">
+      <Filter>task_functions\sampler</Filter>
+    </ClInclude>
+    <ClInclude Include="task_functions\sampler\fetch_sample.h">
+      <Filter>task_functions\sampler</Filter>
+    </ClInclude>
+    <ClInclude Include="task_functions\sampler\sampler_context.h">
+      <Filter>task_functions\sampler</Filter>
+    </ClInclude>
+    <ClInclude Include="voice_interface\voice_interface.h">
+      <Filter>voice_interface</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="predecessor_resolver.cpp" />
+    <ClCompile Include="runtime_instrument.cpp" />
+    <ClCompile Include="task_function.cpp" />
+    <ClCompile Include="task_function_registry.cpp" />
+    <ClCompile Include="task_graph.cpp" />
+    <ClCompile Include="thread_pool.cpp" />
+    <ClCompile Include="array_dereference_interface\array_dereference_interface.cpp">
+      <Filter>array_dereference_interface</Filter>
+    </ClCompile>
+    <ClCompile Include="controller_interface\controller_interface.cpp">
+      <Filter>controller_interface</Filter>
+    </ClCompile>
+    <ClCompile Include="events\event_data_types.cpp">
+      <Filter>events</Filter>
+    </ClCompile>
+    <ClCompile Include="events\event_interface.cpp">
+      <Filter>events</Filter>
+    </ClCompile>
+    <ClCompile Include="events\async_event_handler.cpp">
+      <Filter>events</Filter>
+    </ClCompile>
+    <ClCompile Include="events\event_console.cpp">
+      <Filter>events</Filter>
+    </ClCompile>
+    <ClCompile Include="events\event_console_linux.cpp">
+      <Filter>events</Filter>
+    </ClCompile>
+    <ClCompile Include="events\event_console_windows.cpp">
+      <Filter>events</Filter>
+    </ClCompile>
+    <ClCompile Include="executor\controller_event_manager.cpp">
+      <Filter>executor</Filter>
+    </ClCompile>
+    <ClCompile Include="executor\executor.cpp">
+      <Filter>executor</Filter>
+    </ClCompile>
+    <ClCompile Include="executor\task_memory_manager.cpp">
+      <Filter>executor</Filter>
+    </ClCompile>
+    <ClCompile Include="executor\voice_allocator.cpp">
+      <Filter>executor</Filter>
+    </ClCompile>
+    <ClCompile Include="executor\buffer_allocator.cpp">
+      <Filter>executor</Filter>
+    </ClCompile>
+    <ClCompile Include="executor\buffer_manager.cpp">
+      <Filter>executor</Filter>
+    </ClCompile>
+    <ClCompile Include="executor\channel_mixer.cpp">
+      <Filter>executor</Filter>
+    </ClCompile>
+    <ClCompile Include="math\math_tests.cpp">
+      <Filter>math</Filter>
+    </ClCompile>
+    <ClCompile Include="profiler\profiler.cpp">
+      <Filter>profiler</Filter>
+    </ClCompile>
+    <ClCompile Include="sample\sample_library.cpp">
+      <Filter>sample</Filter>
+    </ClCompile>
+    <ClCompile Include="sample\sample.cpp">
+      <Filter>sample</Filter>
+    </ClCompile>
+    <ClCompile Include="task_functions\task_functions_controller.cpp">
+      <Filter>task_functions</Filter>
+    </ClCompile>
+    <ClCompile Include="task_functions\task_functions_core.cpp">
+      <Filter>task_functions</Filter>
+    </ClCompile>
+    <ClCompile Include="task_functions\task_functions_delay.cpp">
+      <Filter>task_functions</Filter>
+    </ClCompile>
+    <ClCompile Include="task_functions\task_functions_filter.cpp">
+      <Filter>task_functions</Filter>
+    </ClCompile>
+    <ClCompile Include="task_functions\task_functions_math.cpp">
+      <Filter>task_functions</Filter>
+    </ClCompile>
+    <ClCompile Include="task_functions\task_functions_sampler.cpp">
+      <Filter>task_functions</Filter>
+    </ClCompile>
+    <ClCompile Include="task_functions\task_functions_stream.cpp">
+      <Filter>task_functions</Filter>
+    </ClCompile>
+    <ClCompile Include="task_functions\task_functions_time.cpp">
+      <Filter>task_functions</Filter>
+    </ClCompile>
+    <ClCompile Include="task_functions\task_function_registration.cpp">
+      <Filter>task_functions</Filter>
+    </ClCompile>
+    <ClCompile Include="task_functions\task_functions_array.cpp">
+      <Filter>task_functions</Filter>
+    </ClCompile>
+    <ClCompile Include="task_functions\sampler\sinc_window.cpp">
+      <Filter>task_functions\sampler</Filter>
+    </ClCompile>
+    <ClCompile Include="task_functions\sampler\fast_log2.cpp">
+      <Filter>task_functions\sampler</Filter>
+    </ClCompile>
+    <ClCompile Include="task_functions\sampler\fetch_sample.cpp">
+      <Filter>task_functions\sampler</Filter>
+    </ClCompile>
+    <ClCompile Include="task_functions\sampler\sampler_context.cpp">
+      <Filter>task_functions\sampler</Filter>
+    </ClCompile>
+    <ClCompile Include="voice_interface\voice_interface.cpp">
+      <Filter>voice_interface</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="SConscript" />
+    <None Include="math\math_int32x4_neon.inl">
+      <Filter>math</Filter>
+    </None>
+    <None Include="math\math_int32x4_sse.inl">
+      <Filter>math</Filter>
+    </None>
+    <None Include="math\math_real32x4_neon.inl">
+      <Filter>math</Filter>
+    </None>
+    <None Include="math\math_real32x4_sse.inl">
+      <Filter>math</Filter>
+    </None>
+    <None Include="task_functions\task_functions_core_bool.inl">
+      <Filter>task_functions</Filter>
+    </None>
+    <None Include="task_functions\task_functions_core_real.inl">
+      <Filter>task_functions</Filter>
+    </None>
+    <None Include="task_functions\task_functions_core_select.inl">
+      <Filter>task_functions</Filter>
+    </None>
+    <None Include="task_functions\sampler\sinc_window_coefficients.inl">
+      <Filter>task_functions\sampler</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="array_dereference_interface">
+      <UniqueIdentifier>{9ad6c18e-b260-44bf-baf4-4dfb25c88ce2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="buffer_operations">
+      <UniqueIdentifier>{0db8d4ce-c31b-4c67-b9d5-d1f45ae9884a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="controller_interface">
+      <UniqueIdentifier>{7f07a0be-c6e6-429a-b682-7dd2a3731b79}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="events">
+      <UniqueIdentifier>{b447da63-d2d8-4976-b03a-ad390d301342}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="executor">
+      <UniqueIdentifier>{302adeca-ebd4-4b38-8cdd-6b263e729b45}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="math">
+      <UniqueIdentifier>{2fc6f5f6-e42e-4234-9737-233502e1bae2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="profiler">
+      <UniqueIdentifier>{ba6fcd02-1b4e-4739-bde5-c3e0a7f69c86}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sample">
+      <UniqueIdentifier>{b914e832-3749-4264-868d-caf47141075f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="task_functions">
+      <UniqueIdentifier>{813452dd-428e-42ca-a44c-99e25f201a05}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="voice_interface">
+      <UniqueIdentifier>{a7a8c7da-5ae9-4dd7-973e-3881164fb993}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="task_functions\sampler">
+      <UniqueIdentifier>{707d09c7-5d7e-49fe-9ad2-e0efe33a1c36}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

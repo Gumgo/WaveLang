@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
 		// Read the command line options
 		int32 getopt_result;
 		extern int optind;
-		while ((getopt_result = getopt(argc, argv, "dgG")) != -1) {
+		while ((getopt_result = getopt(argc, argv, const_cast<char *>("dgG"))) != -1) {
 			switch (getopt_result) {
 			case 'd':
 				output_documentation = true;

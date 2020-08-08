@@ -10,6 +10,7 @@
 #include "engine/task_graph.h"
 #include "engine/executor/buffer_allocator.h"
 
+#include <atomic>
 #include <vector>
 
 class c_buffer;
@@ -36,7 +37,7 @@ public:
 
 private:
 	struct ALIGNAS_LOCK_FREE s_buffer_context {
-		c_atomic_int32 usages_remaining;
+		std::atomic<int32> usages_remaining;
 		s_static_array<uint32, enum_count<e_instrument_stage>()> pool_indices;
 		h_allocated_buffer handle;
 		bool shifted_samples;

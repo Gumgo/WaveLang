@@ -11,12 +11,12 @@
 #include <algorithm>
 
 c_executor::c_executor() {
-	m_state.initialize(enum_index(e_state::k_uninitialized));
+	m_state = enum_index(e_state::k_uninitialized);
 	m_sample_library.initialize("./");
 }
 
 void c_executor::initialize(const s_executor_settings &settings) {
-	wl_assert(m_state.get_unsafe() == enum_index(e_state::k_uninitialized));
+	wl_assert(m_state == enum_index(e_state::k_uninitialized));
 
 	initialize_internal(settings);
 
@@ -26,9 +26,12 @@ void c_executor::initialize(const s_executor_settings &settings) {
 
 void c_executor::shutdown() {
 	// If we are only initialized, we can shutdown immediately
-	int32 old_state = m_state.compare_exchange(
-		enum_index(e_state::k_initialized),
-		enum_index(e_state::k_uninitialized));
+	int32 expected = enum_index(e_state::k_initialized);
+	int32 old_state = expected;
+	if (!m_state.compare_exchange_strong(expected, enum_index(e_state::k_uninitialized))) {
+		old_state = expected;
+	}
+
 	if (old_state == enum_index(e_state::k_uninitialized)) {
 		// Nothing to do
 		return;
@@ -41,7 +44,7 @@ void c_executor::shutdown() {
 
 		// Now wait until we get a notification from the stream
 		m_shutdown_signal.wait();
-		wl_assert(m_state.get_unsafe() == enum_index(e_state::k_uninitialized));
+		wl_assert(m_state == enum_index(e_state::k_uninitialized));
 	}
 
 	shutdown_internal();
@@ -49,12 +52,15 @@ void c_executor::shutdown() {
 
 void c_executor::execute(const s_executor_chunk_context &chunk_context) {
 	// Try flipping from initialized to running. Nothing will happen if we're not in the initialized state.
-	m_state.compare_exchange(enum_index(e_state::k_initialized), enum_index(e_state::k_running));
+	int32 expected = enum_index(e_state::k_initialized);
+	m_state.compare_exchange_strong(expected, enum_index(e_state::k_running));
 
 	// Try flipping from terminating to uninitialized
-	int32 old_state = m_state.compare_exchange(
-		enum_index(e_state::k_terminating),
-		enum_index(e_state::k_uninitialized));
+	expected = enum_index(e_state::k_terminating);
+	int32 old_state = expected;
+	if (!m_state.compare_exchange_strong(expected, enum_index(e_state::k_uninitialized))) {
+		old_state = expected;
+	}
 
 	if (old_state == enum_index(e_state::k_running)) {
 		execute_internal(chunk_context);
@@ -421,13 +427,13 @@ void c_executor::process_voice_or_fx(const s_executor_chunk_context &chunk_conte
 
 	// Setup each initial task predecessor count
 	for (uint32 task = 0; task < m_active_task_graph->get_task_count(); task++) {
-		m_task_contexts.get_array()[task].predecessors_remaining.initialize(
-			cast_integer_verify<int32>(m_active_task_graph->get_task_predecessor_count(task)));
+		m_task_contexts.get_array()[task].predecessors_remaining =
+			cast_integer_verify<int32>(m_active_task_graph->get_task_predecessor_count(task));
 	}
 
 	m_buffer_manager.initialize_buffers_for_graph(m_active_instrument_stage);
 
-	m_tasks_remaining.initialize(cast_integer_verify<int32>(m_active_task_graph->get_task_count()));
+	m_tasks_remaining = cast_integer_verify<int32>(m_active_task_graph->get_task_count());
 
 	wl_assert(chunk_context.frames > voice.chunk_offset_samples);
 	uint32 frame_count = chunk_context.frames - voice.chunk_offset_samples;
@@ -461,7 +467,7 @@ void c_executor::process_voice_or_fx(const s_executor_chunk_context &chunk_conte
 }
 
 void c_executor::add_task(uint32 voice_index, uint32 task_index, uint32 sample_rate, uint32 frames) {
-	wl_assert(m_task_contexts.get_array()[task_index].predecessors_remaining.get() == 0);
+	wl_assert(m_task_contexts.get_array()[task_index].predecessors_remaining == 0);
 
 	s_thread_pool_task task;
 	task.task_entry_point = process_task_wrapper;
@@ -538,14 +544,14 @@ void c_executor::process_task(uint32 thread_index, const s_task_parameters *para
 		uint32 successor_index = successors[successor];
 
 		int32 prev_predecessors_remaining =
-			m_task_contexts.get_array()[successor_index].predecessors_remaining.decrement();
+			m_task_contexts.get_array()[successor_index].predecessors_remaining--;
 		wl_assert(prev_predecessors_remaining > 0);
 		if (prev_predecessors_remaining == 1) {
 			add_task(params->voice_index, successor_index, params->sample_rate, params->frames);
 		}
 	}
 
-	int32 prev_tasks_remaining = m_tasks_remaining.decrement();
+	int32 prev_tasks_remaining = m_tasks_remaining--;
 	wl_assert(prev_tasks_remaining > 0);
 
 	if (m_settings.profiling_enabled) {

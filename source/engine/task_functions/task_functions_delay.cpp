@@ -5,6 +5,7 @@
 #include "engine/task_functions/task_functions_delay.h"
 
 #include <algorithm>
+#include <cmath>
 
 struct s_buffer_operation_delay {
 	static size_t query_memory(uint32 sample_rate, real32 delay);

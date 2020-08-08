@@ -4,6 +4,8 @@
 #include "engine/events/event_interface.h"
 #include "engine/task_functions/task_functions_time.h"
 
+#include <cmath>
+
 struct s_buffer_operation_time_period {
 	static size_t query_memory();
 	static void initialize(

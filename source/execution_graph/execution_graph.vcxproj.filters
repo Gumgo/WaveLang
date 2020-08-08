@@ -1,0 +1,98 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="execution_graph.cpp" />
+    <ClCompile Include="instrument.cpp" />
+    <ClCompile Include="native_module.cpp" />
+    <ClCompile Include="native_module_compile_time_types.cpp" />
+    <ClCompile Include="native_module_registry.cpp" />
+    <ClCompile Include="diagnostic\diagnostic.cpp">
+      <Filter>diagnostic</Filter>
+    </ClCompile>
+    <ClCompile Include="native_modules\native_modules_core.cpp">
+      <Filter>native_modules</Filter>
+    </ClCompile>
+    <ClCompile Include="native_modules\native_modules_delay.cpp">
+      <Filter>native_modules</Filter>
+    </ClCompile>
+    <ClCompile Include="native_modules\native_modules_filter.cpp">
+      <Filter>native_modules</Filter>
+    </ClCompile>
+    <ClCompile Include="native_modules\native_modules_math.cpp">
+      <Filter>native_modules</Filter>
+    </ClCompile>
+    <ClCompile Include="native_modules\native_modules_sampler.cpp">
+      <Filter>native_modules</Filter>
+    </ClCompile>
+    <ClCompile Include="native_modules\native_modules_stream.cpp">
+      <Filter>native_modules</Filter>
+    </ClCompile>
+    <ClCompile Include="native_modules\native_modules_time.cpp">
+      <Filter>native_modules</Filter>
+    </ClCompile>
+    <ClCompile Include="native_modules\native_module_registration.cpp">
+      <Filter>native_modules</Filter>
+    </ClCompile>
+    <ClCompile Include="native_modules\native_modules_array.cpp">
+      <Filter>native_modules</Filter>
+    </ClCompile>
+    <ClCompile Include="native_modules\native_modules_controller.cpp">
+      <Filter>native_modules</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="execution_graph.h" />
+    <ClInclude Include="instrument.h" />
+    <ClInclude Include="instrument_constants.h" />
+    <ClInclude Include="instrument_globals.h" />
+    <ClInclude Include="instrument_stage.h" />
+    <ClInclude Include="native_module.h" />
+    <ClInclude Include="native_module_compile_time_types.h" />
+    <ClInclude Include="native_module_registry.h" />
+    <ClInclude Include="node_reference.h" />
+    <ClInclude Include="diagnostic\diagnostic.h">
+      <Filter>diagnostic</Filter>
+    </ClInclude>
+    <ClInclude Include="native_modules\native_modules_core.h">
+      <Filter>native_modules</Filter>
+    </ClInclude>
+    <ClInclude Include="native_modules\native_modules_delay.h">
+      <Filter>native_modules</Filter>
+    </ClInclude>
+    <ClInclude Include="native_modules\native_modules_filter.h">
+      <Filter>native_modules</Filter>
+    </ClInclude>
+    <ClInclude Include="native_modules\native_modules_math.h">
+      <Filter>native_modules</Filter>
+    </ClInclude>
+    <ClInclude Include="native_modules\native_modules_sampler.h">
+      <Filter>native_modules</Filter>
+    </ClInclude>
+    <ClInclude Include="native_modules\native_modules_stream.h">
+      <Filter>native_modules</Filter>
+    </ClInclude>
+    <ClInclude Include="native_modules\native_modules_time.h">
+      <Filter>native_modules</Filter>
+    </ClInclude>
+    <ClInclude Include="native_modules\native_module_registration.h">
+      <Filter>native_modules</Filter>
+    </ClInclude>
+    <ClInclude Include="native_modules\native_modules_array.h">
+      <Filter>native_modules</Filter>
+    </ClInclude>
+    <ClInclude Include="native_modules\native_modules_controller.h">
+      <Filter>native_modules</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="SConscript" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="diagnostic">
+      <UniqueIdentifier>{8fa7314e-6ab3-49a3-a901-6762a6677008}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="native_modules">
+      <UniqueIdentifier>{a5ad8846-c8fd-4c02-8068-ebb2bf50137c}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

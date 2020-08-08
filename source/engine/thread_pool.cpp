@@ -26,7 +26,7 @@ void c_thread_pool::start(const s_thread_pool_settings &settings) {
 		m_pending_tasks_queue_memory.get_array(),
 		m_pending_tasks_free_list_memory.get_array());
 
-	m_check_paused.initialize(settings.start_paused);
+	m_check_paused = settings.start_paused;
 	m_paused = settings.start_paused;
 
 	// Setup the threads
@@ -64,7 +64,7 @@ uint32 c_thread_pool::stop() {
 		m_pending_tasks.push(terminate_task);
 	}
 
-	if (m_check_paused.get_unsafe()) {
+	if (m_check_paused) {
 		resume();
 	}
 
@@ -95,8 +95,8 @@ uint32 c_thread_pool::stop() {
 void c_thread_pool::pause() {
 	wl_assert(m_running);
 
-	IF_ASSERTS_ENABLED(int32 prev_value = ) m_check_paused.increment();
-	wl_assert(prev_value == 0);
+	IF_ASSERTS_ENABLED(bool prev_value = ) m_check_paused.exchange(true);
+	wl_assert(!prev_value);
 
 	{
 		// Atomically set pause to true. We don't really need the lock here but we use it anyway for symmetry.
@@ -108,8 +108,8 @@ void c_thread_pool::pause() {
 void c_thread_pool::resume() {
 	wl_assert(m_running);
 
-	IF_ASSERTS_ENABLED(int32 prev_value = ) m_check_paused.decrement();
-	wl_assert(prev_value == 1);
+	IF_ASSERTS_ENABLED(bool prev_value = ) m_check_paused.exchange(false);
+	wl_assert(prev_value);
 
 	{
 		// Atomically set pause to false. We need to lock because we don't want to set paused to false and notify
@@ -143,7 +143,7 @@ void c_thread_pool::worker_thread_entry_point(const s_thread_parameter_block *pa
 	// Keep looping until we find a termination task
 	while (true) {
 		// Check if we should pause
-		while (context.this_ptr->m_check_paused.get()) {
+		while (context.this_ptr->m_check_paused) {
 			// Check if we're paused in a thread-safe manner
 			c_scoped_lock lock(context.this_ptr->m_pause_mutex);
 			if (context.this_ptr->m_paused) {

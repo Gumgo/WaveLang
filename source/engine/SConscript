@@ -1,0 +1,21 @@
+# Engine - provides an API to run compiled instruments
+
+import utils
+
+Import("*")
+
+env = env.Clone()
+
+env.Append(CPPPATH = ["#source"])
+
+sources = utils.enumerate_files(env, ".", utils.SOURCE_EXTENSIONS)
+
+objects = []
+for source in sources:
+	obj = env.StaticObject(source)
+	objects += obj
+
+engine_library = env.StaticLibrary("engine", objects)
+
+engine_installed = env.Install("../bin", engine_library)
+env.Alias("engine", engine_installed)

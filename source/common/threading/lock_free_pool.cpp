@@ -15,17 +15,17 @@ c_lock_free_pool::c_lock_free_pool()
 	s_lock_free_handle_data head;
 	head.handle = k_lock_free_invalid_handle;
 	head.tag = 0;
-	m_free_list_head.handle.initialize(head.data);
+	m_free_list_head.handle = head.data;
 }
 
 c_lock_free_pool::c_lock_free_pool(c_lock_free_pool &&other)
 	: m_free_list(nullptr, 0) {
-	m_free_list_head.handle.initialize(other.m_free_list_head.handle.get_unsafe());
+	m_free_list_head.handle = other.m_free_list_head.handle.load();
 
 	s_lock_free_handle_data head;
 	head.handle = k_lock_free_invalid_handle;
 	head.tag = 0;
-	other.m_free_list_head.handle.initialize(head.data);
+	other.m_free_list_head.handle = head.data;
 
 	std::swap(m_free_list, other.m_free_list);
 }
@@ -35,7 +35,7 @@ void c_lock_free_pool::initialize(c_lock_free_handle_array free_list_memory) {
 		s_lock_free_handle_data head;
 		head.handle = k_lock_free_invalid_handle;
 		head.tag = 0;
-		m_free_list_head.handle.initialize(head.data);
+		m_free_list_head.handle = head.data;
 		m_free_list = c_lock_free_handle_array(nullptr, 0);
 		return;
 	}
@@ -50,19 +50,19 @@ void c_lock_free_pool::initialize(c_lock_free_handle_array free_list_memory) {
 		s_lock_free_handle_data node;
 		node.handle = index + 1;
 		node.tag = 0;
-		m_free_list[index].handle.initialize(node.data);
+		m_free_list[index].handle = node.data;
 	}
 
 	s_lock_free_handle_data last_node;
 	last_node.handle = k_lock_free_invalid_handle;
 	last_node.tag = 0;
-	m_free_list[m_free_list.get_count() - 1].handle.initialize(last_node.data);
+	m_free_list[m_free_list.get_count() - 1].handle = last_node.data;
 
 	// Head points to node 0
 	s_lock_free_handle_data head;
 	head.handle = 0;
 	head.tag = 0;
-	m_free_list_head.handle.initialize(head.data);
+	m_free_list_head.handle = head.data;
 }
 
 uint32 c_lock_free_pool::allocate() {

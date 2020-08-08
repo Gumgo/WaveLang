@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="runtime_config.cpp" />
+    <ClCompile Include="runtime_context.cpp" />
+    <ClCompile Include="command_line_interface.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="runtime_config.h" />
+    <ClInclude Include="runtime_context.h" />
+    <ClInclude Include="rapidxml_ext.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="SConscript" />
+  </ItemGroup>
+</Project>

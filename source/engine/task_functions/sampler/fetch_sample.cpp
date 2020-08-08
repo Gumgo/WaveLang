@@ -1,5 +1,7 @@
 #include "engine/task_functions/sampler/fetch_sample.h"
 
+#include <cmath>
+
 #define INTERPOLATION_MODE_LINEAR 0
 #define INTERPOLATION_MODE_WINDOWED_SINC 0
 #define BLEND_MODE_MIN 0

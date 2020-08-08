@@ -54,7 +54,7 @@ public:
 	}
 
 	bool is_valid() const {
-		return m_index < m_index_count
+		return m_index < m_index_count;
 	}
 
 	void next() {

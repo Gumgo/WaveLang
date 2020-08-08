@@ -1,3 +1,4 @@
+#include "common/threading/atomics.h"
 #include "common/threading/lock_free.h"
 
 void lock_free_list_push(c_lock_free_handle_array &node_storage, s_lock_free_handle &list_head, uint32 handle) {
@@ -21,7 +22,7 @@ void lock_free_list_push(c_lock_free_handle_array &node_storage, s_lock_free_han
 			next.tag = next_tag;
 			// Store the updated handle. At this point, this node is still owned by us, so we don't need to sync, and if
 			// this value becomes invalid, it is okay to loop and set it again.
-			next_handle_pointer->handle.initialize(next.data);
+			next_handle_pointer->handle = next.data;
 
 			// Assign the new head handle and increment the tag to solve the ABA problem
 			head.handle = new_head_handle;
@@ -38,14 +39,14 @@ void lock_free_list_push(c_lock_free_handle_array &node_storage, s_lock_free_han
 
 	// Obtain the next handle - since the node was previously owned by this thread, we don't have to sync its handle
 	update_head.next_handle_pointer = &node_storage[handle];
-	next.data = update_head.next_handle_pointer->handle.get_unsafe();
+	next.data = update_head.next_handle_pointer->handle;
 	update_head.next_tag = next.tag + 1;
 
 	// Point the new head at this node
 	update_head.new_head_handle = handle;
 
 	// Perform the update atomically
-	list_head.handle.execute_atomic(update_head);
+	execute_atomic(list_head.handle, update_head);
 }
 
 uint32 lock_free_list_pop(c_lock_free_handle_array &node_storage, s_lock_free_handle &list_head) {
@@ -71,7 +72,7 @@ uint32 lock_free_list_pop(c_lock_free_handle_array &node_storage, s_lock_free_ha
 			// Point the head at the next node's next
 			const s_lock_free_handle &next_handle = (*node_storage)[head.handle];
 			s_lock_free_handle_data next;
-			next.data = next_handle.handle.get_unsafe();
+			next.data = next_handle.handle;
 			head.handle = next.handle;
 			// Increment tag to avoid ABA problem
 			head.tag++;
@@ -88,7 +89,7 @@ uint32 lock_free_list_pop(c_lock_free_handle_array &node_storage, s_lock_free_ha
 	update_head.out_old_head_handle = &old_head_handle;
 
 	// Perform the update atomically
-	list_head.handle.execute_atomic(update_head);
+	execute_atomic(list_head.handle, update_head);
 
 	return old_head_handle;
 }
@@ -98,11 +99,11 @@ uint32 lock_free_list_count_unsafe(const c_lock_free_handle_array &node_storage,
 	uint32 count = 0;
 
 	s_lock_free_handle_data next;
-	next.data = list_head.handle.get_unsafe();
+	next.data = list_head.handle;
 
 	while (next.handle != k_lock_free_invalid_handle) {
 		count++;
-		next.data = node_storage[next.handle].handle.get_unsafe();
+		next.data = node_storage[next.handle].handle;
 	}
 
 	return count;

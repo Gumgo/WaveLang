@@ -1,6 +1,7 @@
 #include "compiler/lexer.h"
 #include "compiler/preprocessor.h"
 
+#include <stdexcept>
 #include <unordered_map>
 
 static const char *k_lexer_token_table[] = {

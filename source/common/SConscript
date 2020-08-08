@@ -1,0 +1,21 @@
+# Common - provides a set of common utilities to all projects
+
+import utils
+
+Import("*")
+
+env = env.Clone()
+
+env.Append(CPPPATH = ["#source"])
+
+sources = utils.enumerate_files(env, ".", utils.SOURCE_EXTENSIONS)
+
+objects = []
+for source in sources:
+	obj = env.StaticObject(source)
+	objects += obj
+
+common_library = env.StaticLibrary("common", objects)
+
+common_installed = env.Install("../bin", common_library)
+env.Alias("common", common_installed)

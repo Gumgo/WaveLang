@@ -1,0 +1,21 @@
+# Instrument - an object which represents a compiled WaveLang instrument
+
+import utils
+
+Import("*")
+
+env = env.Clone()
+
+env.Append(CPPPATH = ["#source"])
+
+sources = utils.enumerate_files(env, ".", utils.SOURCE_EXTENSIONS)
+
+objects = []
+for source in sources:
+	obj = env.StaticObject(source)
+	objects += obj
+
+execution_graph_library = env.StaticLibrary("execution_graph", objects)
+
+execution_graph_installed = env.Install("../bin", execution_graph_library)
+env.Alias("execution_graph", execution_graph_installed)

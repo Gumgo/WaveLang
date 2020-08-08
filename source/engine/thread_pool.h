@@ -6,6 +6,7 @@
 #include "common/threading/mutex.h"
 #include "common/threading/thread.h"
 
+#include <atomic>
 #include <vector>
 
 struct s_thread_pool_settings {
@@ -72,7 +73,7 @@ private:
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
 	// Used to allow threads to pause in a blocking way when we don't want to hog CPU
-	c_atomic_int32 m_check_paused;						// Lock-free guard against unnecessarily acquiring the mutex
+	std::atomic<bool> m_check_paused;					// Lock-free guard against unnecessarily acquiring the mutex
 	bool m_paused;										// Whether threads should be paused
 	c_mutex m_pause_mutex;								// Mutex to protect the paused bool
 	c_condition_variable m_pause_condition_variable;	// Used with the pause mutex

@@ -1,12 +1,13 @@
 #pragma once
 
 #include "common/common.h"
-#include "common/threading/atomics.h"
 #include "common/threading/condition_variable.h"
 #include "common/threading/mutex.h"
 #include "common/threading/thread.h"
 #include "common/utility/aligned_allocator.h"
 #include "common/utility/stopwatch.h"
+
+#include <atomic>
 
 using f_event_handler = void (*)(void *context, size_t event_size, const void *event_data);
 
@@ -75,7 +76,7 @@ private:
 	bool m_flush_required;
 
 	// Combined read position (for event handling) and write position (for event queueing)
-	c_atomic_int64 m_read_write_position;
+	std::atomic<int64> m_read_write_position;
 
 	// Used to track timing on the event handling thread
 	c_stopwatch m_stopwatch;

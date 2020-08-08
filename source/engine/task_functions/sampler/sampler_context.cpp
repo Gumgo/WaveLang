@@ -3,6 +3,8 @@
 #include "engine/sample/sample_library.h"
 #include "engine/task_functions/sampler/sampler_context.h"
 
+#include <cmath>
+
 size_t s_sampler_context::query_memory() {
 	return sizeof(s_sampler_context);
 }

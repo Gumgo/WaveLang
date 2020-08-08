@@ -1,0 +1,69 @@
+# Runtime - a stand-alone synth engine
+
+import os
+import os.path
+
+import build_config
+import utils
+
+Import("*")
+
+env = env.Clone()
+
+if str(platform) == "win32":
+	portaudio_lib_dir_variable_name = {
+		build_config.Configuration.DEBUG: "PORTAUDIO_LIB_DIR_DEBUG",
+		build_config.Configuration.DEVELOPMENT: "PORTAUDIO_LIB_DIR_DEBUG",
+		build_config.Configuration.RELEASE: "PORTAUDIO_LIB_DIR_RELEASE"
+	}[configuration]
+
+	portaudio_lib_dir = os.environ[portaudio_lib_dir_variable_name]
+	portaudio_lib_name = "portaudio_x64"
+	portaudio_shared_lib_name = "portaudio_x64.dll"
+
+	rtmidi_lib_dir_variable_name = {
+		build_config.Configuration.DEBUG: "RTMIDI_LIB_DIR_DEBUG",
+		build_config.Configuration.DEVELOPMENT: "RTMIDI_LIB_DIR_DEBUG",
+		build_config.Configuration.RELEASE: "RTMIDI_LIB_DIR_RELEASE"
+	}[configuration]
+
+	rtmidi_lib_dir = os.environ[rtmidi_lib_dir_variable_name]
+	rtmidi_lib_name = "rtmidi"
+	rtmidi_shared_lib_name = "rtmidi.dll"
+
+	rapidxml_include_dir = os.environ["RAPIDXML_INCLUDE_DIR"]
+else:
+	raise SCons.Errors.BuildError("Unsupported platform '{}'".format(platform))
+
+if str(platform) == "win32":
+	env.Append(LIBS = ["shlwapi.lib"])
+
+env.Append(CPPPATH = ["#source", rapidxml_include_dir])
+
+sources = utils.enumerate_files(env, ".", utils.SOURCE_EXTENSIONS)
+static_libraries = ["common", "driver", "engine", "execution_graph"]
+env.Append(
+	LIBS = static_libraries + [portaudio_lib_name, rtmidi_lib_name],
+	LIBPATH = ["../bin", portaudio_lib_dir, rtmidi_lib_dir])
+
+objects = []
+for source in sources:
+	obj = env.StaticObject(source)
+	objects += obj
+
+runtime_program = env.Program("runtime", objects)
+
+# The runtime requires the console for message display purposes
+env.Depends(runtime_program, ["console"])
+
+runtime_installed = env.Install("../bin", runtime_program)
+env.Alias("runtime", runtime_installed)
+
+# Install to app directory
+portaudio_shared_lib_app = env.Install("#app", os.path.join(portaudio_lib_dir, portaudio_shared_lib_name))
+rtmidi_shared_lib_app = env.Install("#app", os.path.join(rtmidi_lib_dir, rtmidi_shared_lib_name))
+runtime_app = env.Install("#app", runtime_installed)
+env.Depends(runtime_app, ["console_app"])
+env.Depends(runtime_app, portaudio_shared_lib_app)
+env.Depends(runtime_app, rtmidi_shared_lib_app)
+env.Alias("runtime_app", runtime_app)

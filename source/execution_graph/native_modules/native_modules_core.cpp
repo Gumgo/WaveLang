@@ -1,5 +1,6 @@
 #include "execution_graph/native_modules/native_modules_core.h"
 
+#include <cmath>
 #include <algorithm>
 
 namespace core_native_modules {

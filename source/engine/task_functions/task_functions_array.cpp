@@ -5,6 +5,8 @@
 #include "engine/task_function_registry.h"
 #include "engine/task_functions/task_functions_array.h"
 
+#include <cmath>
+
 static uint32 get_index_or_invalid(uint32 array_count, real32 real_index) {
 	// If the value is NaN or infinity, all bits in the exponent are 1. To avoid two function calls, we can just use a
 	// quick bitwise test.

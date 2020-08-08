@@ -35,8 +35,8 @@ public:
 		m_result = result;
 	}
 
-	clang::FrontendAction *create() {
-		return new c_scraper_frontend_action(m_result);
+	std::unique_ptr<clang::FrontendAction> create() {
+		return std::unique_ptr<clang::FrontendAction>(new c_scraper_frontend_action(m_result));
 	}
 
 private:

@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="debug|x64">
+      <Configuration>debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="development|x64">
+      <Configuration>development</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="release|x64">
+      <Configuration>release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <ProjectGuid>{2C9EB94A-3946-43A9-90E2-C0F61F4BDEBE}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='debug|x64'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='development|x64'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='release|x64'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='development|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='debug|x64'">
+    <NMakeOutput>
+    </NMakeOutput>
+    <NMakePreprocessorDefinitions>_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <NMakeBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeBuildCommandLine>
+    <NMakeReBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName) &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeReBuildCommandLine>
+    <NMakeCleanCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)</NMakeCleanCommandLine>
+    <IntDir>$(SolutionDir)..\build\win32\$(Configuration)\msvc</IntDir>
+    <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='development|x64'">
+    <NMakeOutput />
+    <NMakePreprocessorDefinitions>_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <NMakeBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeBuildCommandLine>
+    <NMakeReBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName) &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeReBuildCommandLine>
+    <NMakeCleanCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)</NMakeCleanCommandLine>
+    <IntDir>$(SolutionDir)..\build\win32\$(Configuration)\msvc</IntDir>
+    <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='release|x64'">
+    <NMakeOutput>
+    </NMakeOutput>
+    <NMakePreprocessorDefinitions>NDEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <NMakeBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeBuildCommandLine>
+    <NMakeReBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName) &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeReBuildCommandLine>
+    <NMakeCleanCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)</NMakeCleanCommandLine>
+    <IntDir>$(SolutionDir)..\build\win32\$(Configuration)\msvc</IntDir>
+    <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <ItemGroup>
+    <ClCompile Include="audio_driver_interface.cpp" />
+    <ClCompile Include="controller_driver_interface.cpp" />
+    <ClCompile Include="controller_driver_midi.cpp" />
+    <ClCompile Include="sample_format.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="audio_driver_interface.h" />
+    <ClInclude Include="controller.h" />
+    <ClInclude Include="controller_driver.h" />
+    <ClInclude Include="controller_driver_interface.h" />
+    <ClInclude Include="controller_driver_midi.h" />
+    <ClInclude Include="sample_format.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="SConscript" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

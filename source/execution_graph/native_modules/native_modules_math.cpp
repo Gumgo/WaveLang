@@ -1,6 +1,8 @@
 #include "execution_graph/native_module_registry.h"
 #include "execution_graph/native_modules/native_modules_math.h"
 
+#include <cmath>
+
 namespace math_native_modules {
 
 	void abs(real32 a, real32 &result) {

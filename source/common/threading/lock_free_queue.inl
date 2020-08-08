@@ -23,13 +23,13 @@ void c_lock_free_queue<t_element>::initialize(
 	s_lock_free_handle_data front_and_back;
 	front_and_back.tag = 0;
 	front_and_back.handle = m_free_list.allocate();
-	m_front.handle.initialize(front_and_back.data);
-	m_back.handle.initialize(front_and_back.data);
+	m_front.handle = front_and_back.data;
+	m_back.handle = front_and_back.data;
 
 	s_lock_free_handle_data front_next;
 	front_next.tag = 0;
 	front_next.handle = k_lock_free_invalid_handle;
-	m_queue[0].handle.initialize(front_next.data);
+	m_queue[0].handle = front_next.data;
 }
 
 template<typename t_element>
@@ -47,7 +47,7 @@ bool c_lock_free_queue<t_element>::push(const t_element &element) {
 	s_lock_free_handle_data next;
 	next.tag = 0;
 	next.handle = k_lock_free_invalid_handle;
-	m_queue[handle].handle.initialize(next.data);
+	m_queue[handle].handle = next.data;
 
 	do {
 		s_lock_free_handle_data old_back;
@@ -57,9 +57,9 @@ bool c_lock_free_queue<t_element>::push(const t_element &element) {
 		// Read the back handle and the next handle, then read the back handle again
 		// If the back handle changed the second time, it means we should retry because something got pushed back
 		// Since we always guarantee the existence of one node, old_back.handle will never be null
-		old_back.data = m_back.handle.get();
-		old_back_next.data = m_queue[old_back.handle].handle.get();
-		old_back_verify.data = m_back.handle.get();
+		old_back.data = m_back.handle;
+		old_back_next.data = m_queue[old_back.handle].handle;
+		old_back_verify.data = m_back.handle;
 
 		if (old_back.data == old_back_verify.data) {
 			if (old_back_next.handle == k_lock_free_invalid_handle) {
@@ -69,14 +69,16 @@ bool c_lock_free_queue<t_element>::push(const t_element &element) {
 				new_back_next.handle = handle;
 
 				s_aligned_lock_free_handle &next_handle = m_queue[old_back.handle];
-				if (next_handle.handle.compare_exchange(old_back_next.data, new_back_next.data) == old_back_next.data) {
+				int64 expected = old_back_next.data;
+				if (next_handle.handle.compare_exchange_strong(expected, new_back_next.data)) {
 					// Exchange successful, try to point back handle to this node
 					// It's okay if this fails, because it means back is pointing to a node that was enqueued after this
 					// node was enqueued
 					s_lock_free_handle_data new_back;
 					new_back.tag = old_back.tag + 1;
 					new_back.handle = handle;
-					m_back.handle.compare_exchange(old_back.data, new_back.data);
+					expected = old_back.data;
+					m_back.handle.compare_exchange_strong(expected, new_back.data);
 					return true;
 				}
 			} else {
@@ -86,7 +88,8 @@ bool c_lock_free_queue<t_element>::push(const t_element &element) {
 				s_lock_free_handle_data new_back;
 				new_back.tag = old_back.tag + 1;
 				new_back.handle = old_back_next.handle;
-				m_back.handle.compare_exchange(old_back.data, new_back.data);
+				int64 expected = old_back.data;
+				m_back.handle.compare_exchange_strong(expected, new_back.data);
 			}
 		} else {
 			// Otherwise, try again
@@ -103,10 +106,10 @@ bool c_lock_free_queue<t_element>::pop(t_element &out_element) {
 		s_lock_free_handle_data front_verify;
 
 		// Read the front, back, and front next handles, and then the front handle again to check for consistency
-		front.data = m_front.handle.get();
-		back.data = m_back.handle.get();
-		front_next.data = m_queue[front.handle].handle.get();
-		front_verify.data = m_front.handle.get();
+		front.data = m_front.handle;
+		back.data = m_back.handle;
+		front_next.data = m_queue[front.handle].handle;
+		front_verify.data = m_front.handle;
 
 		if (front.data == front_verify.data) {
 			// Check if queue is empty or back is falling behind
@@ -121,7 +124,7 @@ bool c_lock_free_queue<t_element>::pop(t_element &out_element) {
 					s_lock_free_handle_data new_back;
 					new_back.tag = back.tag + 1;
 					new_back.handle = front_next.handle;
-					m_back.handle.compare_exchange(back.data, new_back.data);
+					m_back.handle.compare_exchange_strong(back.data, new_back.data);
 				}
 			} else {
 				// Copy the value into our output; do this BEFORE we compare_exchange
@@ -134,7 +137,8 @@ bool c_lock_free_queue<t_element>::pop(t_element &out_element) {
 				s_lock_free_handle_data new_front;
 				new_front.tag = front.tag + 1;
 				new_front.handle = front_next.handle;
-				if (m_front.handle.compare_exchange(front.data, new_front.data) == front.data) {
+				int64 expected = front.data;
+				if (m_front.handle.compare_exchange_strong(expected, new_front.data)) {
 					m_free_list.free(front.handle);
 					return true;
 				}
@@ -152,10 +156,10 @@ bool c_lock_free_queue<t_element>::pop() {
 		s_lock_free_handle_data front_verify;
 
 		// Read the front, back, and front next handles, and then the front handle again to check for consistency
-		front.data = m_front.handle.get();
-		back.data = m_back.handle.get();
-		front_next.data = m_queue[front.handle].handle.get();
-		front_verify.data = m_front.handle.get();
+		front.data = m_front.handle;
+		back.data = m_back.handle;
+		front_next.data = m_queue[front.handle].handle;
+		front_verify.data = m_front.handle;
 
 		if (front.data == front_verify.data) {
 			// Check if queue is empty or back is falling behind
@@ -170,14 +174,16 @@ bool c_lock_free_queue<t_element>::pop() {
 					s_lock_free_handle_data new_back;
 					new_back.tag = back.tag + 1;
 					new_back.handle = front_next.handle;
-					m_back.handle.compare_exchange(back.data, new_back.data);
+					int64 expected = back.data;
+					m_back.handle.compare_exchange_strong(expected, new_back.data);
 				}
 			} else {
 				// Try to move front to next
 				s_lock_free_handle_data new_front;
 				new_front.tag = front.tag + 1;
 				new_front.handle = front_next.handle;
-				if (m_front.handle.compare_exchange(front.data, new_front.data) == front.data) {
+				int64 expected = front.data;
+				if (m_front.handle.compare_exchange_strong(expected, new_front.data)) {
 					m_free_list.free(front.handle);
 					return true;
 				}
@@ -195,10 +201,10 @@ bool c_lock_free_queue<t_element>::peek(t_element &out_element) {
 		s_lock_free_handle_data front_verify;
 
 		// Read the front, back, and front next handles, and then the front handle again to check for consistency
-		front.data = m_front.handle.get();
-		back.data = m_back.handle.get();
-		front_next.data = m_queue[front.handle].handle.get();
-		front_verify.data = m_front.handle.get();
+		front.data = m_front.handle;
+		back.data = m_back.handle;
+		front_next.data = m_queue[front.handle].handle;
+		front_verify.data = m_front.handle;
 
 		if (front.data == front_verify.data) {
 			// Check if queue is empty or back is falling behind
@@ -213,14 +219,15 @@ bool c_lock_free_queue<t_element>::peek(t_element &out_element) {
 					s_lock_free_handle_data new_back;
 					new_back.tag = back.tag + 1;
 					new_back.handle = front_next.handle;
-					m_back.handle.compare_exchange(back.data, new_back.data);
+					int64 expected = back.data;
+					m_back.handle.compare_exchange_strong(expected, new_back.data);
 				}
 			} else {
 				// Copy the value into our output; we may have to copy multiple times
 				memcpy(&out_element, &m_elements[front_next.handle], sizeof(t_element));
 
 				// If the front handle did not change, then our memcpy was safe
-				if (m_front.handle.get() == front.data) {
+				if (m_front.handle == front.data) {
 					return true;
 				}
 			}

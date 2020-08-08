@@ -1,7 +1,6 @@
 #pragma once
 
 #include "common/common.h"
-#include "common/threading/atomics.h"
 #include "common/threading/lock_free.h"
 #include "common/threading/semaphore.h"
 
@@ -21,6 +20,8 @@
 #include "engine/voice_interface/voice_interface.h"
 
 #include "execution_graph/instrument_stage.h"
+
+#include <atomic>
 
 class c_buffer;
 class c_runtime_instrument;
@@ -88,7 +89,7 @@ private:
 	};
 
 	struct ALIGNAS_LOCK_FREE s_task_context {
-		c_atomic_int32 predecessors_remaining;
+		std::atomic<int32> predecessors_remaining;
 	};
 
 	struct s_task_parameters {
@@ -140,7 +141,7 @@ private:
 	void handle_event(size_t event_size, const void *event_data);
 
 	// Used to enable/disable the executor in a thread-safe manner
-	c_atomic_int32 m_state;
+	std::atomic<int32> m_state;
 	c_semaphore m_shutdown_signal;
 
 	// The active task graph (voice or FX)
@@ -172,7 +173,7 @@ private:
 	c_lock_free_aligned_allocator<s_task_context> m_task_contexts;
 
 	// Total number of tasks remaining for the currently processing voice
-	ALIGNAS_LOCK_FREE c_atomic_int32 m_tasks_remaining;
+	ALIGNAS_LOCK_FREE std::atomic<int32> m_tasks_remaining;
 
 	// Signaled when all tasks are complete
 	c_semaphore m_all_tasks_complete_signal;

@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="audio_driver_interface.cpp" />
+    <ClCompile Include="controller_driver_interface.cpp" />
+    <ClCompile Include="controller_driver_midi.cpp" />
+    <ClCompile Include="sample_format.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="audio_driver_interface.h" />
+    <ClInclude Include="controller.h" />
+    <ClInclude Include="controller_driver.h" />
+    <ClInclude Include="controller_driver_interface.h" />
+    <ClInclude Include="controller_driver_midi.h" />
+    <ClInclude Include="sample_format.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="SConscript" />
+  </ItemGroup>
+</Project>

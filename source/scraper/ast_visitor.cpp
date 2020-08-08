@@ -134,7 +134,7 @@ bool c_ast_visitor::VisitNamespaceDecl(clang::NamespaceDecl *decl) {
 			return true;
 		}
 
-		std::string namespace_name = decl->getName();
+		std::string namespace_name = decl->getName().str();
 
 		s_library_declaration library;
 
@@ -252,7 +252,7 @@ void c_ast_visitor::visit_native_module_declaration(clang::FunctionDecl *decl) {
 
 	s_native_module_declaration native_module;
 	native_module.library_index = m_current_library_index;
-	std::string function_name = decl->getName();
+	std::string function_name = decl->getName().str();
 	native_module.first_argument_is_context = false;
 	native_module.compile_time_call = function_name;
 	native_module.compile_time_function_call = get_function_call(decl);
@@ -293,9 +293,12 @@ void c_ast_visitor::visit_native_module_declaration(clang::FunctionDecl *decl) {
 		if (it == decl->param_begin()) {
 			clang::QualType type = param_decl->getType();
 			const clang::Type *canonical_type = type.getCanonicalType().getTypePtr();
-			std::string type_string = clang::QualType::getAsString(canonical_type, type.getQualifiers());
+			std::string type_string = clang::QualType::getAsString(
+				canonical_type,
+				type.getQualifiers(),
+				m_printing_policy);
 
-			if (type_string == "const struct s_native_module_context &") {
+			if (type_string == "const s_native_module_context &") {
 				native_module.first_argument_is_context = true;
 				continue;
 			}
@@ -304,13 +307,13 @@ void c_ast_visitor::visit_native_module_declaration(clang::FunctionDecl *decl) {
 		c_annotation_collection param_annotations(param_decl->attrs());
 
 		s_native_module_argument_declaration argument_declaration;
-		argument_declaration.name = param_decl->getName();
+		argument_declaration.name = param_decl->getName().str();
 		argument_declaration.type = get_native_module_qualified_data_type(param_decl->getType());
 		argument_declaration.is_return_value = false;
 
 		if (!argument_declaration.type.is_valid()) {
-			m_diag.error(param_decl, "Unsupported type for parameter '%0' of native module '%1'") <<
-				argument_declaration.name << function_name;
+			m_diag.error(param_decl, "Unsupported type %0 for parameter '%1' of native module '%2'") <<
+				param_decl->getType() << argument_declaration.name << function_name;
 			continue;
 		}
 
@@ -353,7 +356,7 @@ void c_ast_visitor::visit_native_module_declaration(clang::FunctionDecl *decl) {
 
 void c_ast_visitor::visit_task_memory_query_declaration(clang::FunctionDecl *decl) {
 	s_task_memory_query_declaration task_memory_query;
-	std::string function_name = decl->getName();
+	std::string function_name = decl->getName().str();
 	task_memory_query.name = function_name;
 	task_memory_query.function_call = get_function_call(decl);
 
@@ -369,7 +372,7 @@ void c_ast_visitor::visit_task_memory_query_declaration(clang::FunctionDecl *dec
 
 void c_ast_visitor::visit_task_initializer_declaration(clang::FunctionDecl *decl) {
 	s_task_initializer_declaration task_initializer;
-	std::string function_name = decl->getName();
+	std::string function_name = decl->getName().str();
 	task_initializer.name = function_name;
 	task_initializer.function_call = get_function_call(decl);
 
@@ -384,7 +387,7 @@ void c_ast_visitor::visit_task_initializer_declaration(clang::FunctionDecl *decl
 
 void c_ast_visitor::visit_task_voice_initializer_declaration(clang::FunctionDecl *decl) {
 	s_task_voice_initializer_declaration task_voice_initializer;
-	std::string function_name = decl->getName();
+	std::string function_name = decl->getName().str();
 	task_voice_initializer.name = function_name;
 	task_voice_initializer.function_call = get_function_call(decl);
 
@@ -403,7 +406,7 @@ void c_ast_visitor::visit_task_function_declaration(clang::FunctionDecl *decl) {
 
 	s_task_function_declaration task_function;
 	task_function.library_index = m_current_library_index;
-	std::string function_name = decl->getName();
+	std::string function_name = decl->getName().str();
 	task_function.function = function_name;
 	task_function.function_call = get_function_call(decl);
 
@@ -445,16 +448,16 @@ void c_ast_visitor::build_native_module_type_table() {
 	for (e_native_module_primitive_type primitive_type : iterate_enum<e_native_module_primitive_type>()) {
 		static const char *k_cpp_primitive_type_names[] = {
 			"float",
-			"_Bool",
-			"class c_native_module_string"
+			"bool",
+			"c_native_module_string"
 		};
 		static_assert(NUMBEROF(k_cpp_primitive_type_names) == enum_count<e_native_module_primitive_type>(),
 			"Primitive type name mismatch");
 
 		static const char *k_cpp_primitive_type_array_names[] = {
-			"class c_native_module_real_array",
-			"class c_native_module_bool_array",
-			"class c_native_module_string_array"
+			"c_native_module_real_array",
+			"c_native_module_bool_array",
+			"c_native_module_string_array"
 		};
 		static_assert(NUMBEROF(k_cpp_primitive_type_array_names) == enum_count<e_native_module_primitive_type>(),
 			"Primitive type array name mismatch");
@@ -497,7 +500,10 @@ void c_ast_visitor::build_native_module_type_table() {
 
 c_native_module_qualified_data_type c_ast_visitor::get_native_module_qualified_data_type(clang::QualType type) const {
 	const clang::Type *canonical_type = type.getCanonicalType().getTypePtr();
-	std::string type_string = clang::QualType::getAsString(canonical_type, type.getQualifiers());
+	std::string type_string = clang::QualType::getAsString(
+		canonical_type,
+		type.getQualifiers(),
+		m_printing_policy);
 
 	auto it = m_native_module_type_table.find(type_string);
 	if (it == m_native_module_type_table.end()) {
@@ -519,14 +525,14 @@ void c_ast_visitor::build_task_type_table() {
 		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_real), e_task_qualifier::k_in);
 	type.is_constant = false;
 	type.is_possibly_constant = true;
-	m_task_type_table.insert(std::make_pair( // "class c_real_const_buffer_or_constant"
-		"class c_buffer_or_constant_base<const class c_buffer, float, struct s_constant_accessor_real>", type));
+	m_task_type_table.insert(std::make_pair( // "c_real_const_buffer_or_constant"
+		"c_buffer_or_constant_base<const c_buffer, float, s_constant_accessor_real>", type));
 
 	type.data_type =
 		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_real), e_task_qualifier::k_out);
 	type.is_constant = false;
 	type.is_possibly_constant = false;
-	m_task_type_table.insert(std::make_pair("class c_real_buffer *", type));
+	m_task_type_table.insert(std::make_pair("c_real_buffer *", type));
 
 	type.data_type =
 		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_real), e_task_qualifier::k_in);
@@ -538,34 +544,34 @@ void c_ast_visitor::build_task_type_table() {
 		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_real, true), e_task_qualifier::k_in);
 	type.is_constant = true; // The array itself is always constant
 	type.is_possibly_constant = true;
-	m_task_type_table.insert(std::make_pair( // "class c_real_array"
-		"class c_wrapped_array<const struct s_real_array_element>", type));
+	m_task_type_table.insert(std::make_pair( // "c_real_array"
+		"c_wrapped_array<const s_real_array_element>", type));
 
 	type.data_type =
 		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_bool), e_task_qualifier::k_in);
 	type.is_constant = false;
 	type.is_possibly_constant = true;
-	m_task_type_table.insert(std::make_pair( // "class c_bool_const_buffer_or_constant"
-		"class c_buffer_or_constant_base<const class c_buffer, _Bool, struct s_constant_accessor_bool>", type));
+	m_task_type_table.insert(std::make_pair( // "c_bool_const_buffer_or_constant"
+		"c_buffer_or_constant_base<const c_buffer, bool, s_constant_accessor_bool>", type));
 
 	type.data_type =
 		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_bool), e_task_qualifier::k_out);
 	type.is_constant = false;
 	type.is_possibly_constant = false;
-	m_task_type_table.insert(std::make_pair("class c_bool_buffer *", type));
+	m_task_type_table.insert(std::make_pair("c_bool_buffer *", type));
 
 	type.data_type =
 		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_bool), e_task_qualifier::k_in);
 	type.is_constant = true;
 	type.is_possibly_constant = true;
-	m_task_type_table.insert(std::make_pair("_Bool", type));
+	m_task_type_table.insert(std::make_pair("bool", type));
 
 	type.data_type =
 		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_bool, true), e_task_qualifier::k_in);
 	type.is_constant = true; // The array itself is always constant
 	type.is_possibly_constant = true;
-	m_task_type_table.insert(std::make_pair( // "class c_bool_array"
-		"class c_wrapped_array<const struct s_bool_array_element>", type));
+	m_task_type_table.insert(std::make_pair( // "c_bool_array"
+		"c_wrapped_array<const s_bool_array_element>", type));
 
 	type.data_type =
 		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_string), e_task_qualifier::k_in);
@@ -577,13 +583,16 @@ void c_ast_visitor::build_task_type_table() {
 		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_string, true), e_task_qualifier::k_in);
 	type.is_constant = true; // The array itself is always constant
 	type.is_possibly_constant = true;
-	m_task_type_table.insert(std::make_pair( // "class c_string_array",
-		"class c_wrapped_array<const struct s_string_array_element>", type));
+	m_task_type_table.insert(std::make_pair( // "c_string_array",
+		"c_wrapped_array<s_string_array_element>", type));
 }
 
 c_ast_visitor::s_task_argument_type c_ast_visitor::get_task_qualified_data_type(clang::QualType type) const {
 	const clang::Type *canonical_type = type.getCanonicalType().getTypePtr();
-	std::string type_string = clang::QualType::getAsString(canonical_type, type.getQualifiers());
+	std::string type_string = clang::QualType::getAsString(
+		canonical_type,
+		type.getQualifiers(),
+		m_printing_policy);
 
 	auto it = m_task_type_table.find(type_string);
 	if (it == m_task_type_table.end()) {
@@ -663,7 +672,7 @@ std::vector<s_task_function_argument_declaration> c_ast_visitor::parse_task_argu
 	bool allow_only_possible_constants) {
 	std::vector<s_task_function_argument_declaration> result;
 
-	std::string function_name = decl->getName();
+	std::string function_name = decl->getName().str();
 
 	if (decl->param_empty()) {
 		m_diag.error(decl, "%0 '%1' must take task function context as its first parameter") <<
@@ -676,9 +685,12 @@ std::vector<s_task_function_argument_declaration> c_ast_visitor::parse_task_argu
 		if (it == decl->param_begin()) {
 			clang::QualType type = param_decl->getType();
 			const clang::Type *canonical_type = type.getCanonicalType().getTypePtr();
-			std::string type_string = clang::QualType::getAsString(canonical_type, type.getQualifiers());
+			std::string type_string = clang::QualType::getAsString(
+				canonical_type,
+				type.getQualifiers(),
+				m_printing_policy);
 
-			if (type_string != "const struct s_task_function_context &") {
+			if (type_string != "const s_task_function_context &") {
 				m_diag.error(decl, "%0 '%1' must take task function context as its first parameter") <<
 					function_type_cap << function_name;
 			}
@@ -689,7 +701,7 @@ std::vector<s_task_function_argument_declaration> c_ast_visitor::parse_task_argu
 		c_annotation_collection param_annotations(param_decl->attrs());
 
 		s_task_function_argument_declaration argument_declaration;
-		argument_declaration.name = param_decl->getName();
+		argument_declaration.name = param_decl->getName().str();
 
 		s_task_argument_type type = get_task_qualified_data_type(param_decl->getType());
 		argument_declaration.type = type.data_type;
@@ -697,8 +709,8 @@ std::vector<s_task_function_argument_declaration> c_ast_visitor::parse_task_argu
 		argument_declaration.is_possibly_constant = type.is_possibly_constant;
 
 		if (!argument_declaration.type.is_valid()) {
-			m_diag.error(param_decl, "Unsupported type for parameter '%0' of %1 '%2'") <<
-				argument_declaration.name << function_type << function_name;
+			m_diag.error(param_decl, "Unsupported type %0 for parameter '%1' of %2 '%3'") <<
+				param_decl->getType() << argument_declaration.name << function_type << function_name;
 			continue;
 		}
 
@@ -753,6 +765,7 @@ std::vector<s_task_function_argument_declaration> c_ast_visitor::parse_task_argu
 
 std::string c_ast_visitor::get_function_call(const clang::FunctionDecl *decl) const {
 	std::string result;
-	decl->printQualifiedName(llvm::raw_string_ostream(result), m_printing_policy);
+	llvm::raw_string_ostream stream(result);
+	decl->printQualifiedName(stream, m_printing_policy);
 	return result;
 }

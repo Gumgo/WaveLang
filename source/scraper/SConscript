@@ -1,0 +1,106 @@
+# Scraper - Scrapes the code for script module and task declarations and generates registration code
+
+import os
+
+import build_config
+import utils
+
+Import("*")
+
+env = env.Clone()
+
+if str(platform) == "win32":
+	llvm_config_dir = os.environ.get("LLVM_CONFIG_DIR", "C:\\Program Files (x86)\\LLVM\\bin")
+	llvm_config_binary = "\"{}\\llvm-config.exe\"".format(llvm_config_dir).strip()
+	llvm_include_dir = os.popen("{} --includedir".format(llvm_config_binary)).read().strip()
+	llvm_lib_dir = os.popen("{} --libdir".format(llvm_config_binary)).read().strip()
+	if configuration is build_config.Configuration.DEBUG or configuration is build_config.Configuration.DEVELOPMENT:
+		llvm_lib_dir = os.environ.get("LLVM_LIB_DIR_DEBUG", llvm_lib_dir)
+	else:
+		assert configuration is build_config.Configuration.RELEASE
+		llvm_lib_dir = os.environ.get("LLVM_LIB_DIR_RELEASE", llvm_lib_dir)
+	print("LLVM library directory is '{}'".format(llvm_lib_dir))
+	# Do these work with MSVC?
+	#llvm_cpp_flags = os.popen("{} --cppflags".format(llvm_config_binary)).read().strip().split(" ")
+	#llvm_cxx_flags = os.popen("{} --cxxflags".format(llvm_config_binary)).read().strip().split(" ")
+	llvm_lib_names = os.popen("{} --libnames".format(llvm_config_binary)).read().strip().split(" ")
+else:
+	raise SCons.Errors.BuildError("Unsupported platform '{}'".format(platform))
+
+if compiler == "cl":
+	# We get linker errors without this
+	llvm_lib_names.append("Version.lib")
+
+	# Suppress a warning caused by clang in MathExtras.h
+	env.Append(CCFLAGS = ["/wd4146"])
+
+# Add clang libs as well - can we query these?
+llvm_lib_names += [
+	"clangFrontend",
+	"clangSerialization",
+	"clangDriver",
+	"clangTooling",
+	"clangParse",
+	"clangSema",
+	"clangStaticAnalyzerFrontend",
+	"clangStaticAnalyzerCheckers",
+	"clangStaticAnalyzerCore",
+	"clangAnalysis",
+	"clangRewriteFrontend",
+	"clangRewrite",
+	"clangEdit",
+	"clangAST",
+	"clangLex",
+	"clangBasic"
+]
+
+env.Append(CPPPATH = ["#source", llvm_include_dir])
+
+sources = utils.enumerate_files(env, ".", utils.SOURCE_EXTENSIONS)
+
+# $HACK: the scraper relies on these two files. Several somewhat better options are:
+# (1) Make the header files inlined so we don't have to include additional sources (still a bit hackish)
+# (2) Split these files off into their own separate libraries (seems like overkill)
+# (3) Implement simple mirror versions of the necessary enums/classes in scraper (bad due to code duplication)
+sources += [
+	"#source/engine/task_function.cpp",
+	"#source/execution_graph/native_module.cpp"
+]
+
+static_libraries = ["common"]
+env.Append(LIBS = static_libraries + llvm_lib_names, LIBPATH = ["../bin", llvm_lib_dir])
+
+objects = []
+for source in sources:
+	obj = env.StaticObject(source)
+	objects += obj
+
+scraper_program = env.Program("scraper", objects)
+
+scraper_installed = env.Install("../bin", scraper_program)
+env.Alias("scraper", scraper_installed)
+
+# Run the scraper
+# $TODO since SCons can output multiple targets, we should split up registration_generated.inl into two files, instead
+# of using the current hack
+scraper_input = "#source/registration_inputs.h"
+scraper_output = "#source/generated/registration_generated.inl"
+native_module_registration_function_name = "register_native_modules_generated"
+task_function_registration_function_name = "register_task_functions_generated"
+scraper_flags = [
+	"-xc++",
+	"-std=c++20",
+	"-DSCRAPER_ENABLED",
+	"\"-I{}\"".format(env.Dir("#source").abspath)
+]
+
+scraper_command = "${{SOURCES[0]}} -n {} -t {} -o $TARGET ${{SOURCES[1]}} -- {}".format(
+	native_module_registration_function_name,
+	task_function_registration_function_name,
+	" ".join(scraper_flags))
+
+scraper_output_targets = env.Command([scraper_output], [scraper_program, scraper_input], scraper_command)
+env.Alias("scraped_registration", scraper_output_targets)
+
+# Note that including registration_generated.inl creates a dependency on scraped_registration - no explicit dependency
+# is necessary.

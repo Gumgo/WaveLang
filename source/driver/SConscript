@@ -1,0 +1,30 @@
+# Driver - provides the audio and controller interfaces used by the standalone runtime
+
+import os
+
+import build_config
+import utils
+
+Import("*")
+
+env = env.Clone()
+
+if str(platform) == "win32":
+	portaudio_include_dir = os.environ["PORTAUDIO_INCLUDE_DIR"]
+	rtmidi_include_dir = os.environ["RTMIDI_INCLUDE_DIR"]
+else:
+	raise SCons.Errors.BuildError("Unsupported platform '{}'".format(platform))
+
+env.Append(CPPPATH = ["#source", portaudio_include_dir, rtmidi_include_dir])
+
+sources = utils.enumerate_files(env, ".", utils.SOURCE_EXTENSIONS)
+
+objects = []
+for source in sources:
+	obj = env.StaticObject(source)
+	objects += obj
+
+driver_library = env.StaticLibrary("driver", objects)
+
+driver_installed = env.Install("../bin", driver_library)
+env.Alias("driver", driver_installed)

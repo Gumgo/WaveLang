@@ -147,10 +147,10 @@ void c_buffer_manager::initialize_buffers_for_graph(e_instrument_stage instrumen
 	for (h_buffer buffer_handle : task_graph->iterate_buffers()) {
 		s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer_handle.get_data()];
 		buffer_context.handle = h_allocated_buffer::invalid();
-		buffer_context.usages_remaining.initialize(task_graph->get_buffer_usages(buffer_handle));
+		buffer_context.usages_remaining = task_graph->get_buffer_usages(buffer_handle);
 
 #if IS_TRUE(ASSERTS_ENABLED)
-		if (buffer_context.usages_remaining.get_unsafe() == 0) {
+		if (buffer_context.usages_remaining == 0) {
 			// If we have a completely unused buffer, it must be an input, since inputs aren't optimized away
 			bool is_input = false;
 			for (size_t index = 0; !is_input && index < inputs.get_count(); index++) {
@@ -183,7 +183,7 @@ void c_buffer_manager::initialize_buffers_for_graph(e_instrument_stage instrumen
 			std::swap(buffer_context.handle, m_voice_accumulation_buffers[index]);
 		}
 
-		if (buffer_context.usages_remaining.get_unsafe() == 0) {
+		if (buffer_context.usages_remaining == 0) {
 			m_buffer_allocator.free_buffer(buffer_context.handle);
 			buffer_context.handle = h_allocated_buffer::invalid();
 		}
@@ -278,7 +278,7 @@ void c_buffer_manager::allocate_buffer(e_instrument_stage instrument_stage, h_bu
 void c_buffer_manager::decrement_buffer_usage(h_buffer buffer_handle) {
 	// Free the buffer if usage reaches 0
 	s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer_handle.get_data()];
-	int32 prev_usage = buffer_context.usages_remaining.decrement();
+	int32 prev_usage = buffer_context.usages_remaining--;
 	wl_assert(prev_usage > 0);
 	if (prev_usage == 1) {
 		m_buffer_allocator.free_buffer(buffer_context.handle);
@@ -402,7 +402,7 @@ void c_buffer_manager::initialize_buffer_contexts(
 #if IS_TRUE(ASSERTS_ENABLED)
 	for (size_t index = 0; index < m_buffer_contexts.get_array().get_count(); index++) {
 		s_buffer_context &buffer_context = m_buffer_contexts.get_array()[index];
-		buffer_context.usages_remaining.initialize(0);
+		buffer_context.usages_remaining = 0;
 		for (e_instrument_stage instrument_stage : iterate_enum<e_instrument_stage>()) {
 			m_buffer_contexts.get_array()[index].pool_indices[enum_index(instrument_stage)] = static_cast<uint32>(-1);
 		}
@@ -581,7 +581,7 @@ void c_buffer_manager::swap_and_deduplicate_output_buffers(
 			}
 
 			// Decrement usage count, but don't deallocate, because we're swapping it into the accumulation buffer slot.
-			int32 prev_usage = buffer_context.usages_remaining.decrement();
+			int32 prev_usage = buffer_context.usages_remaining--;
 			wl_assert(prev_usage > 0);
 			if (prev_usage == 1) {
 				buffer_context.handle = h_allocated_buffer::invalid();
@@ -738,7 +738,7 @@ void c_buffer_manager::assert_all_output_buffers_free(e_instrument_stage instrum
 	for (uint32 buffer = 0; buffer < buffer_count; buffer++) {
 		const s_buffer_context &buffer_context = m_buffer_contexts.get_array()[buffer];
 		wl_assert(!buffer_context.handle.is_valid());
-		wl_assert(buffer_context.usages_remaining.get_unsafe() == 0);
+		wl_assert(buffer_context.usages_remaining == 0);
 	}
 }
 

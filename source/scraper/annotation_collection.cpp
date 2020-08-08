@@ -1,6 +1,7 @@
 #include "scraper/annotation_collection.h"
 
 #pragma warning(push, 0) // Disable warnings for LLVM
+#pragma warning(disable : 4244)
 #include <clang/Lex/LiteralSupport.h>
 #include <clang/Lex/Preprocessor.h>
 #include <clang/Sema/Lookup.h>
@@ -219,7 +220,10 @@ bool c_annotation_specifications::lookup_uint32(
 		clang::NumericLiteralParser parser(
 			llvm::StringRef(name_or_value),
 			name_source_location,
-			compiler_instance->getPreprocessor());
+			compiler_instance->getSourceManager(),
+			compiler_instance->getLangOpts(),
+			compiler_instance->getTarget(),
+			compiler_instance->getDiagnostics());
 
 		if (parser.hadError || !parser.isIntegerLiteral() || parser.GetIntegerValue(unbounded_integer)) {
 			return false;
@@ -235,11 +239,14 @@ bool c_annotation_specifications::lookup_uint32(
 
 		clang::VarDecl *variable_decl = llvm::dyn_cast<clang::VarDecl>(lookup_result);
 
+		clang::Expr::EvalResult evaluate_as_int_result;
 		if (!variable_decl ||
 			!variable_decl->hasInit() ||
-			!variable_decl->getInit()->EvaluateAsInt(unbounded_integer, *ast_context)) {
+			!variable_decl->getInit()->EvaluateAsInt(evaluate_as_int_result, *ast_context)) {
 			return false;
 		}
+
+		unbounded_integer = evaluate_as_int_result.Val.getInt();
 	}
 
 	if (unbounded_integer.isNegative() || unbounded_integer.ugt(std::numeric_limits<uint32>::max())) {

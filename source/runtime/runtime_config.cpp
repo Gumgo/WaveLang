@@ -1,10 +1,8 @@
 #include "driver/audio_driver_interface.h"
 #include "driver/controller_driver_interface.h"
 
+#include "runtime/rapidxml_ext.h"
 #include "runtime/runtime_config.h"
-
-#include <rapidxml.hpp>
-#include <rapidxml_print.hpp>
 
 #include <algorithm>
 #include <fstream>

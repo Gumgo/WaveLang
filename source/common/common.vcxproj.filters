@@ -1,0 +1,141 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="asserts.h" />
+    <ClInclude Include="cast_integer_verify.h" />
+    <ClInclude Include="common.h" />
+    <ClInclude Include="macros.h" />
+    <ClInclude Include="platform.h" />
+    <ClInclude Include="platform_macros.h" />
+    <ClInclude Include="scraper_attributes.h" />
+    <ClInclude Include="static_array.h" />
+    <ClInclude Include="string.h" />
+    <ClInclude Include="types.h" />
+    <ClInclude Include="wrapped_array.h" />
+    <ClInclude Include="utility\sha1\SHA1.h">
+      <Filter>utility\sha1</Filter>
+    </ClInclude>
+    <ClInclude Include="utility\aligned_allocator.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="utility\endian.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="utility\file_utility.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="utility\graphviz_generator.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="utility\handle.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="utility\hash_table.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="utility\linked_array.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="utility\merge_sort.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="utility\pod.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="utility\radix_sort.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="utility\stopwatch.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="utility\string_table.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="threading\lock_free.h">
+      <Filter>threading</Filter>
+    </ClInclude>
+    <ClInclude Include="threading\lock_free_pool.h">
+      <Filter>threading</Filter>
+    </ClInclude>
+    <ClInclude Include="threading\lock_free_queue.h">
+      <Filter>threading</Filter>
+    </ClInclude>
+    <ClInclude Include="threading\mutex.h">
+      <Filter>threading</Filter>
+    </ClInclude>
+    <ClInclude Include="threading\semaphore.h">
+      <Filter>threading</Filter>
+    </ClInclude>
+    <ClInclude Include="threading\thread.h">
+      <Filter>threading</Filter>
+    </ClInclude>
+    <ClInclude Include="threading\atomics.h">
+      <Filter>threading</Filter>
+    </ClInclude>
+    <ClInclude Include="threading\condition_variable.h">
+      <Filter>threading</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="SConscript" />
+    <None Include="utility\hash_table.inl">
+      <Filter>utility</Filter>
+    </None>
+    <None Include="threading\lock_free_queue.inl">
+      <Filter>threading</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="asserts.cpp" />
+    <ClCompile Include="utility\sha1\SHA1.cpp">
+      <Filter>utility\sha1</Filter>
+    </ClCompile>
+    <ClCompile Include="utility\file_utility.cpp">
+      <Filter>utility</Filter>
+    </ClCompile>
+    <ClCompile Include="utility\graphviz_generator.cpp">
+      <Filter>utility</Filter>
+    </ClCompile>
+    <ClCompile Include="utility\linked_array.cpp">
+      <Filter>utility</Filter>
+    </ClCompile>
+    <ClCompile Include="utility\stopwatch.cpp">
+      <Filter>utility</Filter>
+    </ClCompile>
+    <ClCompile Include="utility\string_table.cpp">
+      <Filter>utility</Filter>
+    </ClCompile>
+    <ClCompile Include="threading\lock_free.cpp">
+      <Filter>threading</Filter>
+    </ClCompile>
+    <ClCompile Include="threading\lock_free_pool.cpp">
+      <Filter>threading</Filter>
+    </ClCompile>
+    <ClCompile Include="threading\mutex.cpp">
+      <Filter>threading</Filter>
+    </ClCompile>
+    <ClCompile Include="threading\semaphore.cpp">
+      <Filter>threading</Filter>
+    </ClCompile>
+    <ClCompile Include="threading\thread_fallback.cpp">
+      <Filter>threading</Filter>
+    </ClCompile>
+    <ClCompile Include="threading\thread_windows.cpp">
+      <Filter>threading</Filter>
+    </ClCompile>
+    <ClCompile Include="threading\condition_variable.cpp">
+      <Filter>threading</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="threading">
+      <UniqueIdentifier>{2d864e2f-7424-4fc4-a8b9-65958452506f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="utility">
+      <UniqueIdentifier>{a04629f8-3519-45ac-94fb-cccaa3b6e00c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="utility\sha1">
+      <UniqueIdentifier>{f7631248-c990-4cef-9b8f-fed13485d422}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -1,3 +1,5 @@
+#include "common/threading/atomics.h"
+
 #include "engine/events/async_event_handler.h"
 
 #include <algorithm>
@@ -7,7 +9,7 @@ static const int64 k_flush_time_padding_ms = 50;
 
 struct s_read_write_position {
 	union {
-		int64 data;			// Interface with c_atomic_int64
+		int64 data;			// Interface with std::atomic<int64>
 		struct {
 			uint32 read;	// Current read position, always ahead of write
 			uint32 write;	// Current write position
@@ -71,7 +73,7 @@ void c_async_event_handler::begin_event_handling() {
 	wl_assert(!m_event_handling_thread.is_running());
 
 	m_flush_required = false;
-	m_read_write_position.initialize(0);
+	m_read_write_position = 0;
 	m_stopwatch.initialize();
 	m_stopwatch.reset();
 	m_last_flush_time_ms = 0;
@@ -132,8 +134,9 @@ void c_async_event_handler::submit_event(size_t event_size, const void *event_da
 		// wait-free) since there is no single atomic instruction that does it. As long as we can atomically get space
 		// in the buffer, we don't care whether the read pointer looped around in between our read and update
 		// operations. Therefore, the ABA problem is not relevant here.
+		int64 expected;
 		do {
-			old_position.data = m_read_write_position.get();
+			old_position.data = m_read_write_position;
 
 			// Read position doesn't change, only write
 			new_position.read = old_position.read;
@@ -149,7 +152,8 @@ void c_async_event_handler::submit_event(size_t event_size, const void *event_da
 			}
 
 			// Keep trying until we're able to perform an iteration where m_read_write_position hasn't changed
-		} while (m_read_write_position.compare_exchange(old_position.data, new_position.data) != old_position.data);
+			expected = old_position.data;
+		} while (!m_read_write_position.compare_exchange_strong(expected, new_position.data));
 
 		// We should always be aligned
 		wl_assert(is_size_aligned(old_position.write, k_buffer_alignment));
@@ -168,7 +172,7 @@ void c_async_event_handler::submit_event(size_t event_size, const void *event_da
 			memcpy(buffer.get_pointer() + old_position.write + sizeof(uint32), event_data, event_size);
 
 			// Ensure that the event data is fully written before the size is published
-			write_barrier();
+			std::atomic_thread_fence(std::memory_order_release);
 
 			// Write the packet size, not the full size. The event handling thread will perform its own alignment.
 			wl_assert(old_position.write + sizeof(uint32) <= m_settings.buffer_size);
@@ -177,7 +181,7 @@ void c_async_event_handler::submit_event(size_t event_size, const void *event_da
 				cast_integer_verify<uint32>(event_size);
 
 			// Publish the size, which publishes the entire event
-			write_barrier();
+			std::atomic_thread_fence(std::memory_order_release);
 
 			// If this write will cause us to pass the halfway mark in the buffer, we should queue a flush anyway.
 			// However, we don't need to block on this flush.
@@ -200,7 +204,7 @@ void c_async_event_handler::submit_event(size_t event_size, const void *event_da
 void c_async_event_handler::flush() {
 	// Obtain the initial read position
 	s_read_write_position current_position;
-	current_position.data = m_read_write_position.get();
+	current_position.data = m_read_write_position;
 
 	c_wrapped_array<uint8> buffer = m_buffer.get_array();
 
@@ -233,7 +237,7 @@ void c_async_event_handler::flush() {
 
 			// Make sure the memset is published before updating the read pointer (though this should be unnecessary,
 			// since the read pointer update is atomic)
-			write_barrier();
+			std::atomic_thread_fence(std::memory_order_release);
 
 			struct s_read_advancer {
 				uint32 new_position;
@@ -250,7 +254,7 @@ void c_async_event_handler::flush() {
 				(current_position.read + read_advance) % static_cast<uint32>(m_settings.buffer_size);
 
 			// Update read position atomically
-			current_position.data = m_read_write_position.execute_atomic(read_advancer);
+			current_position.data = execute_atomic(m_read_write_position, read_advancer);
 			current_position.read = read_advancer.new_position;
 		}
 	} while (!done);
