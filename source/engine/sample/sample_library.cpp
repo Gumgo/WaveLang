@@ -225,20 +225,26 @@ uint32 c_sample_library::request_sample(const s_requested_sample &requested_samp
 	return result;
 }
 
-c_sample_library_accessor::c_sample_library_accessor(const c_sample_library &sample_library)
-	: m_sample_library(sample_library) {}
-
-const c_sample *c_sample_library_accessor::get_sample(uint32 handle) const {
-	return m_sample_library.get_sample(handle);
+void c_sample_library_accessor::initialize(const c_sample_library *sample_library) {
+	wl_assert(!m_sample_library);
+	wl_assert(sample_library);
+	m_sample_library = sample_library;
 }
 
-c_sample_library_requester::c_sample_library_requester(c_sample_library &sample_library)
-	: m_sample_library(sample_library) {}
+const c_sample *c_sample_library_accessor::get_sample(uint32 handle) const {
+	return m_sample_library->get_sample(handle);
+}
+
+void c_sample_library_requester::initialize(c_sample_library *sample_library) {
+	wl_assert(!m_sample_library);
+	wl_assert(sample_library);
+	m_sample_library = sample_library;
+}
 
 uint32 c_sample_library_requester::request_sample(const s_file_sample_parameters &parameters) {
-	return m_sample_library.request_sample(parameters);
+	return m_sample_library->request_sample(parameters);
 }
 
 uint32 c_sample_library_requester::request_sample(const s_wavetable_sample_parameters &parameters) {
-	return m_sample_library.request_sample(parameters);
+	return m_sample_library->request_sample(parameters);
 }

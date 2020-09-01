@@ -67,6 +67,11 @@ inline real32x4 real32x4::sum_elements() const {
 	return vcombine_f32(total_sum, total_sum);
 }
 
+inline real32 real32x4::first_element() const {
+	wl_vhalt("Not implemented"); // $TODO
+	return 0.0f;
+}
+
 inline real32x4 operator+(const real32x4 &v) {
 	return v;
 }

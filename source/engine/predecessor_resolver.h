@@ -32,6 +32,6 @@ public:
 private:
 	uint32 m_node_count;
 	size_t m_row_size;
-	std::vector<uint32> m_data;
+	std::vector<uint32> m_data; // $TODO this can just be std::vector<bool>, since that type is specialized
 };
 

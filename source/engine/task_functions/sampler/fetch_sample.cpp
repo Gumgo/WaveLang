@@ -21,14 +21,14 @@
 
 // Returns the two wavetable levels to blend between for a given speed-adjusted sample rate, as well as the blend ratio.
 // If the two returned wavetable levels are the same, no blending is required.
-static void choose_wavetable_levels(
+static void choose_wavetable_level(
 	real32 stream_sample_rate,
 	real32 sample_rate_0,
-	const real32x4 &speed,
+	real32 speed,
 	uint32 wavetable_count,
-	int32x4 &out_wavetable_index_a,
-	int32x4 &out_wavetable_index_b,
-	real32x4 &out_wavetable_blend_ratio);
+	uint32 &out_wavetable_index_a,
+	uint32 &out_wavetable_index_b,
+	real32 &out_wavetable_blend_ratio);
 
 real32 fetch_sample(const c_sample *sample, uint32 channel, real64 sample_index) {
 	wl_assert(!sample->is_wavetable());
@@ -155,23 +155,18 @@ real32 fetch_sample(const c_sample *sample, uint32 channel, real64 sample_index)
 #endif // INTERPOLATION_MODE
 }
 
-void fetch_wavetable_samples(
+real32 fetch_wavetable_sample(
 	const c_sample *sample,
 	uint32 channel,
 	real32 stream_sample_rate,
 	real32 sample_rate_0,
-	const real32x4 &speed,
-	size_t count,
-	const s_static_array<real64, k_simd_block_elements> &samples,
-	real32 *out_ptr) {
-	wl_assert(count > 0 && count <= k_simd_block_elements);
-
-	// Compute the wavetabble indices and blend factors for these 4 samples (if we incremented less than 4 times, some
-	// are unused)
-	int32x4 wavetable_index_a;
-	int32x4 wavetable_index_b;
-	real32x4 wavetable_blend_ratio;
-	choose_wavetable_levels(
+	real32 speed,
+	real64 sample_index) {
+	// Compute the wavetable index and blend factor for the sample
+	uint32 wavetable_index_a;
+	uint32 wavetable_index_b;
+	real32 wavetable_blend_ratio;
+	choose_wavetable_level(
 		stream_sample_rate,
 		sample_rate_0,
 		speed,
@@ -180,69 +175,50 @@ void fetch_wavetable_samples(
 		wavetable_index_b,
 		wavetable_blend_ratio);
 
-	ALIGNAS_SIMD s_static_array<int32, k_simd_block_elements> wavetable_index_a_array;
-	ALIGNAS_SIMD s_static_array<int32, k_simd_block_elements> wavetable_index_b_array;
-	wavetable_index_a.store(wavetable_index_a_array.get_elements());
-	wavetable_index_b.store(wavetable_index_b_array.get_elements());
-
-#if IS_TRUE(BLEND_MODE_LINEAR)
-	ALIGNAS_SIMD s_static_array<real32, k_simd_block_elements> samples_a_array;
-	ALIGNAS_SIMD s_static_array<real32, k_simd_block_elements> samples_b_array;
-#endif // IS_TRUE(BLEND_MODE_LINEAR)
-
-	for (size_t i = 0; i < count; i++) {
-		const c_sample *sample_a = sample->get_wavetable_entry(wavetable_index_a_array[i]);
+	const c_sample *sample_a = sample->get_wavetable_entry(wavetable_index_a);
 
 #if IS_TRUE(BLEND_MODE_MIN)
 
-		real64 sample_index = samples[i] * sample_a->get_base_sample_rate_ratio();
-		out_ptr[i] = fetch_sample(sample_a, channel, sample_index);
+	real64 sample_a_index = sample_index * sample_a->get_base_sample_rate_ratio();
+	return fetch_sample(sample_a, channel, sample_a_index);
 
 #elif IS_TRUE(BLEND_MODE_LINEAR)
 
-		if (wavetable_index_a_array[i] == wavetable_index_b_array[i]) {
-			real64 sample_index = samples[i] * sample_a->get_base_sample_rate_ratio();
-			samples_a_array[i] = samples_b_array[i] = fetch_sample(sample_a, channel, sample_index);
-		} else {
-			const c_sample *sample_b = sample->get_wavetable_entry(wavetable_index_b_array[i]);
+	if (wavetable_index_a == wavetable_index_b) {
+		real64 sample_ab_index = sample_index * sample_a->get_base_sample_rate_ratio();
+		return fetch_sample(sample_a, channel, sample_ab_index);
+	} else {
+		const c_sample *sample_b = sample->get_wavetable_entry(wavetable_index_b);
 
-			real64 sample_a_index = samples[i] * sample_a->get_base_sample_rate_ratio();
-			real64 sample_b_index = samples[i] * sample_b->get_base_sample_rate_ratio();
-			samples_a_array[i] = fetch_sample(sample_a, channel, sample_a_index);
-			samples_b_array[i] = fetch_sample(sample_b, channel, sample_b_index);
-		}
+		real64 sample_a_index = sample_index * sample_a->get_base_sample_rate_ratio();
+		real64 sample_b_index = sample_index * sample_b->get_base_sample_rate_ratio();
+		real32 fetched_sample_a = fetch_sample(sample_a, channel, sample_a_index);
+		real32 fetched_sample_b = fetch_sample(sample_b, channel, sample_b_index);
+
+		// Interpolate the samples
+		return fetched_sample_a + (fetched_sample_b - fetched_sample_a) * wavetable_blend_ratio;
+	}
 
 #else // BLEND_MODE
 #error Unknown blend mode
 #endif // BLEND_MODE
-	}
-
-#if IS_TRUE(BLEND_MODE_LINEAR)
-	// Interpolate and write to the array. If increment_count < 4, we will be writing some extra (garbage
-	// values) to the array, but that's okay - it's either greater than buffer size, or the remainder if the
-	// buffer will be filled with 0 because we've reached the end of the loop.
-	real32x4 samples_a(samples_a_array.get_elements());
-	real32x4 samples_b(samples_b_array.get_elements());
-	real32x4 samples_interpolated = samples_a + (samples_b - samples_a) * wavetable_blend_ratio;
-	samples_interpolated.store(out_ptr);
-#endif // IS_TRUE(BLEND_MODE_LINEAR)
 }
 
-static void choose_wavetable_levels(
+static void choose_wavetable_level(
 	real32 stream_sample_rate,
 	real32 sample_rate_0,
-	const real32x4 &speed,
+	real32 speed,
 	uint32 wavetable_count,
-	int32x4 &out_wavetable_index_a,
-	int32x4 &out_wavetable_index_b,
-	real32x4 &out_wavetable_blend_ratio) {
+	uint32 &out_wavetable_index_a,
+	uint32 &out_wavetable_index_b,
+	real32 &out_wavetable_blend_ratio) {
 	// We wish to find a wavetable entry index to sample from which avoids exceeding the nyquist frequency. We can't
 	// just return a single level though, or pitch-bending would cause "pops" when we switched between levels. Instead,
 	// we pick two mip levels, a and b, such that level a is the lowest level which has no frequencies exceeding the
 	// stream's nyquist frequency, and b is the level above that, and blend between them.
 
 	// For wavetable selection, if speed is 0 this will cause issues
-	real32x4 clamped_speed = max(speed, real32x4(0.125f));
+	real32 clamped_speed = std::max(speed, 0.125f);
 
 	// Our wavetable levels are set up such that for a wavetable with a base sampling rate of sample_rate_0, level i
 	// contains frequencies up to, and not exceeding, sample_rate_0/2 - i. Therefore, for a stream sampling rate of
@@ -252,22 +228,22 @@ static void choose_wavetable_levels(
 	//   -i <= stream_sample_rate / (2 * speed) - sample_rate_0/2
 	//   i >= sample_rate_0/2 - stream_sample_rate / (2 * speed)
 	//   i >= (sample_rate_0 - stream_sample_rate/speed) * 0.5
-	real32x4 wavetable_index = (real32x4(sample_rate_0) - real32x4(stream_sample_rate) / clamped_speed) * 0.5f;
+	real32 wavetable_index = (sample_rate_0 - stream_sample_rate / clamped_speed) * 0.5f;
 
 	// If we blend between floor(wavetable_index) and ceil(wavetable_index), then we will still get aliasing because
 	// floor(wavetable_index) has one harmonic above our nyquist limit. Therefore, to be safe, we bias up by one index.
-	real32x4 wavetable_index_floor = floor(wavetable_index);
+	real32 wavetable_index_floor = floor(wavetable_index);
 	out_wavetable_blend_ratio = wavetable_index - wavetable_index_floor;
 	int32 max_wavetable_index = cast_integer_verify<int32>(wavetable_count - 1);
 
-	int32x4 index_a = static_cast<int32x4>(wavetable_index_floor) + int32x4(1);
-	out_wavetable_index_a = min(max(index_a, int32x4(0)), int32x4(max_wavetable_index));
+	int32 index_a = static_cast<int32>(wavetable_index_floor) + 1;
+	out_wavetable_index_a = static_cast<uint32>(clamp(index_a, 0, max_wavetable_index));
 
 #if IS_TRUE(BLEND_MODE_MIN)
 	out_wavetable_index_b = out_wavetable_index_a;
 #elif IS_TRUE(BLEND_MODE_LINEAR)
-	int32x4 index_b = index_a + int32x4(1);
-	out_wavetable_index_b = min(max(index_b, int32x4(0)), int32x4(max_wavetable_index));
+	int32 index_b = index_a + 1;
+	out_wavetable_index_b = static_cast<uint32>(clamp(index_b, 0, max_wavetable_index));
 #else // BLEND_MODE
 #error Unknown blend mode
 #endif // BLEND_MODE

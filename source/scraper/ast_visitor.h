@@ -9,6 +9,5 @@
 
 class c_scraper_result;
 
-clang::ASTConsumer *create_ast_visitor(
-	clang::CompilerInstance &compiler_instance, c_scraper_result *scraper_result);
+clang::ASTConsumer *create_ast_visitor(clang::CompilerInstance &compiler_instance, c_scraper_result *scraper_result);
 

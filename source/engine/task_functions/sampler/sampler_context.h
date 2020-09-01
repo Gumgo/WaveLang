@@ -2,15 +2,14 @@
 
 #include "common/common.h"
 
-#include "engine/buffer_operations/buffer_operations.h"
 #include "engine/math/math.h"
 #include "engine/sample/sample.h"
+#include "engine/task_function.h"
 
 class c_event_interface;
 class c_sample_library_requester;
 
 struct s_sampler_context {
-	static size_t query_memory();
 	void initialize_file(
 		c_event_interface *event_interface,
 		c_sample_library_requester *sample_requester,
@@ -21,7 +20,7 @@ struct s_sampler_context {
 	void initialize_wavetable(
 		c_event_interface *event_interface,
 		c_sample_library_requester *sample_requester,
-		c_real_array harmonic_weights,
+		c_real_constant_array harmonic_weights,
 		real32 sample_count_real,
 		bool phase_shift_enabled);
 	void voice_initialize();
@@ -31,30 +30,18 @@ struct s_sampler_context {
 	// Fills the output buffer with 0s if the sample failed to load or if the channel is invalid
 	bool handle_failed_sample(
 		const c_sample *sample,
-		c_real_buffer_out out,
+		c_real_buffer *result,
 		c_event_interface *event_interface,
 		const char *sample_name);
 
 	// Fills the output buffer with 0s if the end has been reached
-	bool handle_reached_end(c_real_buffer_out out);
+	bool handle_reached_end(c_real_buffer *result);
 
-	// increment_time/increment_time_looping:
-	// Increments the sample's current time up to 4 times based on the speed provided and returns the number of times
-	// incremented, which can be less than 4 if the sample ends or if the end of the buffer is reached. The time before
-	// each increment is stored in out_time. Handles looping/wrapping.
+	// Returns the next sample index and increments using the advance value provided. Handles end detection.
+	real64 increment_time(real64 length_samples, real32 advance);
 
-	size_t increment_time(
-		real64 length_samples,
-		const real32x4 &advance,
-		size_t &inout_buffer_samples_remaining,
-		s_static_array<real64, k_simd_block_elements> &out_samples);
-
-	size_t increment_time_looping(
-		real64 loop_start_sample,
-		real64 loop_end_sample,
-		const real32x4 &advance,
-		size_t &inout_buffer_samples_remaining,
-		s_static_array<real64, k_simd_block_elements> &out_samples);
+	// Returns the next sample index and increments using the advance value provided. Handles looping.
+	real64 increment_time_looping(real64 loop_start_sample, real64 loop_end_sample, real32 advance);
 
 	// Store the sample index in real64 for improved precision so we can accurately handle both short and long samples
 	uint32 sample_handle;
@@ -63,31 +50,3 @@ struct s_sampler_context {
 	bool reached_end;
 	bool sample_failure_reported;
 };
-
-template<bool k_loop>
-size_t sampler_context_increment_time(
-	s_sampler_context &context,
-	real64 loop_start_sample,
-	real64 loop_end_sample,
-	const real32x4 &advance,
-	size_t &inout_buffer_samples_remaining,
-	s_static_array<real64, k_simd_block_elements> &out_samples);
-
-template<>
-size_t sampler_context_increment_time<false>(
-	s_sampler_context &context,
-	real64 loop_start_sample,
-	real64 loop_end_sample,
-	const real32x4 &advance,
-	size_t &inout_buffer_samples_remaining,
-	s_static_array<real64, k_simd_block_elements> &out_samples);
-
-template<>
-size_t sampler_context_increment_time<true>(
-	s_sampler_context &context,
-	real64 loop_start_sample,
-	real64 loop_end_sample,
-	const real32x4 &advance,
-	size_t &inout_buffer_samples_remaining,
-	s_static_array<real64, k_simd_block_elements> &out_samples);
-

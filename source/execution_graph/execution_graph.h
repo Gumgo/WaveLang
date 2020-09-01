@@ -10,7 +10,7 @@
 #include <fstream>
 #include <vector>
 
-// $TODO rename the folder "instrument" - will require a decent amount of refactoring, including jamfiles
+// $TODO rename the folder "instrument" - will require a decent amount of refactoring, including SCons files
 
 enum class e_execution_graph_node_type {
 	// An invalid node, or a node which has been removed

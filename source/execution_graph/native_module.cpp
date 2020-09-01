@@ -49,11 +49,6 @@ struct s_native_module_data_type_format {
 	};
 };
 
-c_native_module_data_type::c_native_module_data_type() {
-	m_primitive_type = e_native_module_primitive_type::k_real;
-	m_flags = 0;
-}
-
 c_native_module_data_type::c_native_module_data_type(e_native_module_primitive_type primitive_type, bool is_array) {
 	wl_assert(valid_enum_index(primitive_type));
 	m_primitive_type = primitive_type;
@@ -63,15 +58,11 @@ c_native_module_data_type::c_native_module_data_type(e_native_module_primitive_t
 }
 
 c_native_module_data_type c_native_module_data_type::invalid() {
-	// Set all to 0xffffffff
-	c_native_module_data_type result;
-	result.m_primitive_type = static_cast<e_native_module_primitive_type>(-1);
-	result.m_flags = static_cast<uint32>(-1);
-	return result;
+	return c_native_module_data_type();
 }
 
 bool c_native_module_data_type::is_valid() const {
-	return (m_primitive_type != static_cast<e_native_module_primitive_type>(-1));
+	return m_primitive_type != e_native_module_primitive_type::k_invalid;
 }
 
 e_native_module_primitive_type c_native_module_data_type::get_primitive_type() const {
@@ -109,20 +100,15 @@ bool c_native_module_data_type::operator!=(const c_native_module_data_type &othe
 	return (m_primitive_type != other.m_primitive_type) || (m_flags != other.m_flags);
 }
 
-c_native_module_qualified_data_type::c_native_module_qualified_data_type() {
-	m_qualifier = e_native_module_qualifier::k_in;
-}
-
 c_native_module_qualified_data_type::c_native_module_qualified_data_type(
 	c_native_module_data_type data_type, e_native_module_qualifier qualifier)
 	: m_data_type(data_type)
 	, m_qualifier(qualifier) {
-	wl_assert(!data_type.is_valid() || valid_enum_index(qualifier));
+	wl_assert(data_type.is_valid() == valid_enum_index(qualifier));
 }
 
 c_native_module_qualified_data_type c_native_module_qualified_data_type::invalid() {
-	return c_native_module_qualified_data_type(
-		c_native_module_data_type::invalid(), e_native_module_qualifier::k_count);
+	return c_native_module_qualified_data_type();
 }
 
 bool c_native_module_qualified_data_type::is_valid() const {

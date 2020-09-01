@@ -9,6 +9,7 @@ public:
 
 	c_lock_free_pool();
 	c_lock_free_pool(c_lock_free_pool &&other);
+	UNCOPYABLE(c_lock_free_pool);
 
 	// Initializes the pool. The user must provide and manage the backing memory for the free-list, whose capacity is
 	// determines the pool size.

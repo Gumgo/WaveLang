@@ -69,19 +69,23 @@ uint32 c_lock_free_pool::allocate() {
 	uint32 handle = lock_free_list_pop(m_free_list, m_free_list_head);
 
 #if IS_TRUE(ALLOCATION_VERIFICATION_ENABLED)
-	// This thread now owns this node, so we can safely set the bit without atomics
-	uint8 *handle_ptr = reinterpret_cast<uint8 *>(&m_free_list[handle]);
-	// Offset by the non-aligned size - there is some extra space behind the handle which we can use
-	uint8 *verification_ptr = handle_ptr + sizeof(s_lock_free_handle);
-	// Verify that this node was previously free, and mark it as used
-	wl_vassert(*verification_ptr == 0, "Attempted to allocate an already-allocated node");
-	*verification_ptr = 1;
+	if (handle != k_lock_free_invalid_handle) {
+		// This thread now owns this node, so we can safely set the bit without atomics
+		uint8 *handle_ptr = reinterpret_cast<uint8 *>(&m_free_list[handle]);
+		// Offset by the non-aligned size - there is some extra space behind the handle which we can use
+		uint8 *verification_ptr = handle_ptr + sizeof(s_lock_free_handle);
+		// Verify that this node was previously free, and mark it as used
+		wl_vassert(*verification_ptr == 0, "Attempted to allocate an already-allocated node");
+		*verification_ptr = 1;
+	}
 #endif // IS_TRUE(ALLOCATION_VERIFICATION_ENABLED)
 
 	return handle;
 }
 
 void c_lock_free_pool::free(uint32 handle) {
+	wl_assert(handle != k_lock_free_invalid_handle);
+
 #if IS_TRUE(ALLOCATION_VERIFICATION_ENABLED)
 	// This thread still owns this node, so we can safely set the bit without atomics
 	uint8 *handle_ptr = reinterpret_cast<uint8 *>(&m_free_list[handle]);

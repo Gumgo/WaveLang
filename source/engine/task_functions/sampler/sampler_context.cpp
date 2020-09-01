@@ -5,10 +5,6 @@
 
 #include <cmath>
 
-size_t s_sampler_context::query_memory() {
-	return sizeof(s_sampler_context);
-}
-
 void s_sampler_context::initialize_file(
 	c_event_interface *event_interface,
 	c_sample_library_requester *sample_requester,
@@ -36,25 +32,13 @@ void s_sampler_context::initialize_file(
 void s_sampler_context::initialize_wavetable(
 	c_event_interface *event_interface,
 	c_sample_library_requester *sample_requester,
-	c_real_array harmonic_weights,
+	c_real_constant_array harmonic_weights,
 	real32 sample_count_real,
 	bool phase_shift_enabled) {
 	bool valid = true;
 
 	if (harmonic_weights.get_count() == 0) {
 		valid = false;
-	}
-
-	// $TODO I don't love this allocation, but it's in the initializer so I guess it's alright...
-	std::vector<real32> harmonic_weights_copy(harmonic_weights.get_count());
-	for (size_t index = 0; index < harmonic_weights.get_count(); index++) {
-		if (!harmonic_weights[index].is_constant) {
-			event_interface->submit(EVENT_ERROR << "Wavetable sample harmonic weights must be constants");
-			valid = false;
-			break;
-		}
-
-		harmonic_weights_copy[index] = harmonic_weights[index].constant_value;
 	}
 
 	if (sample_count_real < 0.0f ||
@@ -80,8 +64,7 @@ void s_sampler_context::initialize_wavetable(
 
 	if (valid) {
 		s_wavetable_sample_parameters parameters;
-		parameters.harmonic_weights = c_wrapped_array<const real32>(
-			&harmonic_weights_copy.front(), harmonic_weights_copy.size());
+		parameters.harmonic_weights = harmonic_weights;
 		parameters.sample_count = sample_count;
 		parameters.phase_shift_enabled = phase_shift_enabled;
 		sample_handle = sample_requester->request_sample(parameters);
@@ -101,7 +84,7 @@ void s_sampler_context::voice_initialize() {
 
 bool s_sampler_context::handle_failed_sample(
 	const c_sample *sample,
-	c_real_buffer_out out,
+	c_real_buffer *result,
 	c_event_interface *event_interface,
 	const char *sample_name) {
 	bool failed = false;
@@ -125,111 +108,44 @@ bool s_sampler_context::handle_failed_sample(
 	}
 
 	if (failed) {
-		*out->get_data<real32>() = 0.0f;
-		out->set_constant(true);
+		result->assign_constant(0.0f);
 	}
 
 	return failed;
 }
 
-bool s_sampler_context::handle_reached_end(c_real_buffer_out out) {
+bool s_sampler_context::handle_reached_end(c_real_buffer *result) {
 	if (reached_end) {
-		*out->get_data<real32>() = 0.0f;
-		out->set_constant(true);
+		result->assign_constant(0.0f);
 	}
 
 	return reached_end;
 }
 
-size_t s_sampler_context::increment_time(
-	real64 length_samples,
-	const real32x4 &advance,
-	size_t &inout_buffer_samples_remaining,
-	s_static_array<real64, k_simd_block_elements> &out_samples) {
-	// We haven't vectorized this, so extract the reals
-	ALIGNAS_SIMD s_static_array<real32, k_simd_block_elements> advance_array;
-	advance.store(advance_array.get_elements());
-
+real64 s_sampler_context::increment_time(real64 length_samples, real32 advance) {
 	wl_assert(!reached_end);
-	ZERO_STRUCT(&out_samples);
-
-	// We will return the actual number of times incremented so we don't over-sample
-	size_t increment_count = 0;
-	for (uint32 i = 0; i < k_simd_block_elements && inout_buffer_samples_remaining > 0; i++) {
-		increment_count++;
-		inout_buffer_samples_remaining--;
-		out_samples[i] = sample_index;
-
-		// Increment the time - might be able to use SSE HADDs for this, but getting increment_count and reached_end
-		// would probably be tricky
-		sample_index += advance_array[i];
-		if (sample_index >= length_samples) {
-			reached_end = true;
-			break;
-		}
+	real64 result = sample_index;
+	sample_index += advance;
+	if (sample_index >= length_samples) {
+		reached_end = true;
 	}
 
-	// We should only ever increment less than 4 times if we reach the end of the buffer or the end of the sample
-	if (increment_count < k_simd_block_elements) {
-		wl_assert(reached_end || inout_buffer_samples_remaining == 0);
-	}
-
-	return increment_count;
+	return result;
 }
 
-size_t s_sampler_context::increment_time_looping(
-	real64 loop_start_sample,
-	real64 loop_end_sample,
-	const real32x4 &advance,
-	size_t &inout_buffer_samples_remaining,
-	s_static_array<real64, k_simd_block_elements> &out_samples) {
-	// We haven't vectorized this, so extract the reals
-	ALIGNAS_SIMD s_static_array<real32, k_simd_block_elements> advance_array;
-	advance.store(advance_array.get_elements());
-
+real64 s_sampler_context::increment_time_looping(real64 loop_start_sample, real64 loop_end_sample, real32 advance) {
 	wl_assert(!reached_end);
-	ZERO_STRUCT(&out_samples);
-
-	// We will return the actual number of times incremented so we don't over-sample
-	size_t increment_count = 0;
-	for (uint32 i = 0; i < k_simd_block_elements && inout_buffer_samples_remaining > 0; i++) {
-		increment_count++;
-		inout_buffer_samples_remaining--;
-		out_samples[i] = sample_index;
-
-		// Increment the time - might be able to use SSE HADDs for this, but getting increment_count and reached_end
-		// would probably be tricky
-		sample_index += advance_array[i];
-		if (sample_index >= loop_end_sample) {
-			// Return to the loop start point
-			real64 wrap_offset = std::remainder(sample_index - loop_start_sample, loop_end_sample - loop_start_sample);
-			if (wrap_offset < 0.0) {
-				wrap_offset += (loop_end_sample - loop_start_sample);
-			}
-			sample_index = loop_start_sample + wrap_offset;
-			wl_assert(sample_index >= 0.0);
+	real64 result = sample_index;
+	sample_index += advance;
+	if (sample_index >= loop_end_sample) {
+		// Return to the loop start point
+		real64 wrap_offset = std::remainder(sample_index - loop_start_sample, loop_end_sample - loop_start_sample);
+		if (wrap_offset < 0.0) {
+			wrap_offset += (loop_end_sample - loop_start_sample);
 		}
+		sample_index = loop_start_sample + wrap_offset;
+		wl_assert(sample_index >= 0.0);
 	}
 
-	// We should only ever increment less than 4 times if we reach the end of the buffer
-	if (increment_count < k_simd_block_elements) {
-		wl_assert(inout_buffer_samples_remaining == 0);
-	}
-
-	return increment_count;
-}
-
-template<>
-size_t sampler_context_increment_time<false>(s_sampler_context &context,
-	real64 loop_start_sample, real64 loop_end_sample, const real32x4 &advance, size_t &inout_buffer_samples_remaining,
-	s_static_array<real64, k_simd_block_elements> &out_samples) {
-	return context.increment_time(loop_end_sample, advance, inout_buffer_samples_remaining, out_samples);
-}
-
-template<>
-size_t sampler_context_increment_time<true>(s_sampler_context &context,
-	real64 loop_start_sample, real64 loop_end_sample, const real32x4 &advance, size_t &inout_buffer_samples_remaining,
-	s_static_array<real64, k_simd_block_elements> &out_samples) {
-	return context.increment_time_looping(
-		loop_start_sample, loop_end_sample, advance, inout_buffer_samples_remaining, out_samples);
+	return result;
 }

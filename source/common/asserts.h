@@ -25,11 +25,11 @@
 	}													\
 )
 
-#define wl_halt() handle_assert("halt")
+#define wl_halt() wl_assert("halt")
 
-#define wl_vhalt(message) handle_assert(message, __FILE__, __LINE__)
+#define wl_vhalt(message) wl_vassert(false, message)
 
-#define wl_unreachable() handle_assert("unreachable", __FILE__, __LINE__)
+#define wl_unreachable() wl_vhalt("unreachable")
 
 void handle_assert(const char *message, const char *file, int32 line);
 

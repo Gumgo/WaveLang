@@ -49,6 +49,16 @@ inline int32x4::operator real32x4() const {
 	return _mm_cvtepi32_ps(m_value);
 }
 
+inline int32x4 int32x4::sum_elements() const {
+	int32x4 x = _mm_hadd_epi32(m_value, m_value);
+	x = _mm_hadd_epi32(x, x);
+	return x;
+}
+
+inline int32 int32x4::first_element() const {
+	return _mm_cvtsi128_si32(m_value);
+}
+
 inline int32x4 operator+(const int32x4 &v) {
 	return v;
 }

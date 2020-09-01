@@ -84,20 +84,24 @@ private:
 // Additional sub-interfaces
 class c_sample_library_accessor {
 public:
-	c_sample_library_accessor(const c_sample_library &sample_library);
+	c_sample_library_accessor() = default;
+	void initialize(const c_sample_library *m_sample_library);
+
 	const c_sample *get_sample(uint32 handle) const;
 
 private:
-	const c_sample_library &m_sample_library;
+	const c_sample_library *m_sample_library = nullptr;
 };
 
 class c_sample_library_requester {
 public:
-	c_sample_library_requester(c_sample_library &sample_library);
+	c_sample_library_requester() = default;
+	void initialize(c_sample_library *m_sample_library);
+
 	uint32 request_sample(const s_file_sample_parameters &parameters);
 	uint32 request_sample(const s_wavetable_sample_parameters &parameters);
 
 private:
-	c_sample_library &m_sample_library;
+	c_sample_library *m_sample_library = nullptr;
 };
 

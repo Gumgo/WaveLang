@@ -69,6 +69,9 @@
     <ClCompile Include="utility\stopwatch.cpp" />
     <ClCompile Include="utility\string_table.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\natvis\project.natvis" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <ProjectGuid>{13CB314D-844A-42D4-BA73-0D8F4841C96F}</ProjectGuid>

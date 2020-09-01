@@ -118,6 +118,9 @@
   <ItemGroup>
     <Text Include="parser_rules.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\natvis\project.natvis" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

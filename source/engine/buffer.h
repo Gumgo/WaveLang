@@ -3,124 +3,184 @@
 #include "common/common.h"
 #include "common/threading/lock_free.h"
 
-#define BOOL_BUFFER_INT32_COUNT(element_count) (((element_count) + 31) / 32)
+#include "engine/math/math.h"
+#include "engine/task_data_type.h"
 
-enum class e_buffer_type {
-	k_real,
-	k_bool,
+enum class e_buffer_data_state {
+	k_dynamic,					// The buffer contains dynamic data
+	k_constant,					// The buffer contains a single value at the beginning
+	k_compile_time_constant,	// The buffer contains a compile-time constant which cannot change
 
 	k_count
 };
 
-class ALIGNAS_LOCK_FREE c_buffer {
+class c_buffer {
 public:
 	UNCOPYABLE(c_buffer);
 
-	bool is_constant() const {
-		return m_constant;
-	}
-
-	void set_constant(bool constant) {
-		m_constant = constant;
-	}
-
-	template<typename t_data = void> t_data *get_data() {
-		return reinterpret_cast<t_data *>(m_data);
-	}
-
-	template<typename t_data = void> const t_data *get_data() const {
-		return reinterpret_cast<const t_data *>(m_data);
-	}
-
-private:
-	c_buffer() {}
-
-	friend class c_buffer_allocator;
-
-	void *m_data;			// Pointer to the data
-	bool m_constant;		// Whether this buffer consists of a single value across all elements
-	uint32 m_pool_index;	// Which pool this buffer was allocated from
-};
-
-// Can be either:
-// - Constant (single value)
-// - Constant buffer (ignore all but first value)
-// - Non-constant buffer
-template<typename t_buffer, typename t_constant, typename t_constant_accessor>
-class c_buffer_or_constant_base {
-public:
-	c_buffer_or_constant_base(t_buffer *buffer) {
-		m_is_constant = false;
-		m_buffer = buffer;
-	}
-
-	c_buffer_or_constant_base(t_constant constant) {
-		m_is_constant = true;
-		m_constant = constant;
-	}
-
-	// True if this is either a constant or a constant buffer
-	bool is_constant() const {
-		return m_is_constant ||
-			m_buffer->is_constant();
-	}
-
-	bool is_buffer() const {
-		return !m_is_constant;
-	}
-
-	bool is_constant_buffer() const {
-		return !m_is_constant &&
-			m_buffer->is_constant();
-	}
-
-	t_buffer *get_buffer() const {
-		wl_assert(!m_is_constant);
-		return m_buffer;
-	}
-
-	t_constant get_constant() const {
-		if (m_is_constant) {
-			return m_constant;
+	c_buffer(c_buffer &&other)
+		: m_data_type(other.m_data_type)
+		, m_data_state(other.m_data_state) {
+		if (m_data_state == e_buffer_data_state::k_compile_time_constant) {
+			m_pointer = m_compile_time_constant;
+			memcpy(m_compile_time_constant, other.m_compile_time_constant, sizeof(m_compile_time_constant));
 		} else {
-			wl_assert(m_buffer->is_constant());
-			return t_constant_accessor()(m_buffer);
+			m_pointer = other.m_pointer;
 		}
 	}
 
-private:
-	bool m_is_constant;
+	c_buffer &operator=(c_buffer &&other) {
+		m_data_type = other.m_data_type;
+		m_data_state = other.m_data_state;
+		if (m_data_state == e_buffer_data_state::k_compile_time_constant) {
+			m_pointer = m_compile_time_constant;
+			memcpy(m_compile_time_constant, other.m_compile_time_constant, sizeof(m_compile_time_constant));
+		} else {
+			m_pointer = other.m_pointer;
+		}
 
-	union {
-		t_buffer *m_buffer;
-		t_constant m_constant;
-	};
+		return *this;
+	}
+
+	static c_buffer construct(c_task_data_type data_type) {
+		wl_assert(data_type.is_valid());
+		wl_assert(!data_type.is_array());
+		wl_assert(data_type.get_primitive_type_traits().is_dynamic);
+		c_buffer buffer(data_type);
+		return buffer;
+	}
+
+	template<typename t_element, e_task_primitive_type k_task_primitive_type, typename t_constant_accessor>
+	static c_buffer construct_compile_time_constant_internal(c_task_data_type data_type, t_element constant) {
+		wl_assert(data_type.get_primitive_type() == k_task_primitive_type);
+		c_buffer buffer = construct(data_type);
+		buffer.m_data_state = e_buffer_data_state::k_compile_time_constant;
+		buffer.m_pointer = buffer.m_compile_time_constant;
+		t_constant_accessor::set(buffer.m_pointer, constant);
+		return buffer;
+	}
+
+	c_task_data_type get_data_type() const {
+		return m_data_type;
+	}
+
+	void *get_data_untyped() {
+		return m_pointer;
+	}
+
+	const void *get_data_untyped() const {
+		return m_pointer;
+	}
+
+	bool is_constant() const {
+		return m_data_state != e_buffer_data_state::k_dynamic;
+	}
+
+	bool is_compile_time_constant() const {
+		return m_data_state == e_buffer_data_state::k_compile_time_constant;
+	}
+
+	void set_memory(void *data) {
+		wl_assert(m_data_state != e_buffer_data_state::k_compile_time_constant);
+		m_data_state = e_buffer_data_state::k_dynamic;
+		m_pointer = data;
+	}
+
+	// Be careful with calling set_is_constant(true). A constant buffer must contain an entire SIMD block worth of
+	// constant data, so it is invalid to call set_is_constant(true) after only assigning a single value. Prefer calling
+	// extend_constant(), which ensures that the first element is copied across the entire SIMD block.
+	void set_is_constant(bool constant) {
+		wl_assert(m_data_state != e_buffer_data_state::k_compile_time_constant);
+		m_data_state = constant ? e_buffer_data_state::k_constant : e_buffer_data_state::k_dynamic;
+	}
+
+	template<typename t_buffer> t_buffer &get_as() {
+		wl_assert(m_data_type.get_primitive_type() == t_buffer::k_primitive_type);
+		return static_cast<t_buffer &>(*this);
+	}
+
+	template<typename t_buffer> const t_buffer &get_as() const {
+		wl_assert(m_data_type.get_primitive_type() == t_buffer::k_primitive_type);
+		return static_cast<const t_buffer &>(*this);
+	}
+
+protected:
+	c_buffer(c_task_data_type data_type)
+		: m_data_type(data_type) {}
+
+	c_task_data_type m_data_type = c_task_data_type::invalid();
+	e_buffer_data_state m_data_state = e_buffer_data_state::k_dynamic;
+
+	// Pointer to the data. If this is a compile-time constant, this points to m_compile_time_constant.
+	void *m_pointer = nullptr;
+	ALIGNAS_SIMD uint8 m_compile_time_constant[k_simd_block_size];
+};
+
+// Typed buffers act as interfaces only. c_buffer can be safely cast to and from these types.
+
+template<typename t_element, typename t_data, e_task_primitive_type k_task_primitive_type, typename t_constant_accessor>
+class c_typed_buffer : public c_buffer {
+public:
+	static constexpr e_task_primitive_type k_primitive_type = k_task_primitive_type;
+
+	c_typed_buffer() = delete;
+
+	static c_buffer construct_compile_time_constant(c_task_data_type data_type, t_element constant) {
+		return construct_compile_time_constant_internal<t_element, k_primitive_type, t_constant_accessor>(
+			data_type,
+			constant);
+	}
+
+	t_data *get_data() {
+		return static_cast<t_data *>(m_pointer);
+	}
+
+	const t_data *get_data() const {
+		return static_cast<const t_data *>(m_pointer);
+	}
+
+	t_element get_constant() const {
+		wl_assert(m_data_state != e_buffer_data_state::k_dynamic);
+		return t_constant_accessor::get(m_pointer);
+	}
+
+	// Assigns the value provided to the first SIMD block and sets the buffer state to constant
+	void assign_constant(t_element constant) {
+		wl_assert(m_data_state != e_buffer_data_state::k_compile_time_constant);
+		m_data_state = e_buffer_data_state::k_constant;
+		t_constant_accessor::set(m_pointer, constant);
+	}
+
+	// Copies the first element into the first SIMD block and sets the buffer state to constant
+	void extend_constant() {
+		assign_constant(t_constant_accessor::get(m_pointer));
+	}
 };
 
 struct s_constant_accessor_real {
-	real32 operator()(const c_buffer *buffer) const {
-		return *buffer->get_data<real32>();
+	static real32 get(const void *data) {
+		return *static_cast<const real32 *>(data); // Grab the 0th element
+	}
+
+	static void set(void *data, real32 value) {
+		real32x4(value).store(static_cast<real32 *>(data));
 	}
 };
 
 struct s_constant_accessor_bool {
-	bool operator()(const c_buffer *buffer) const {
-		return ((*buffer->get_data<uint32>()) & 1) != 0;
+	static bool get(const void *data) {
+		return (*static_cast<const int32 *>(data) & 1) != 0; // Grab the 0th bit of the 0th element
+	}
+
+	static void set(void *data, bool value) {
+		// Duplicate the value across all 128 bits
+		int32x4(-static_cast<int32>(value)).store(static_cast<int32 *>(data));
 	}
 };
 
-// Buffer types: these are exactly the same as c_buffer and only exist for type identification/validation, i.e. the
-// pointers (and even objects themselves) can be directly cast between each other with no problems
-class c_real_buffer : public c_buffer {};
-class c_bool_buffer : public c_buffer {};
+class c_real_buffer : public c_typed_buffer<real32, real32, e_task_primitive_type::k_real, s_constant_accessor_real> {};
+class c_bool_buffer : public c_typed_buffer<bool, int32, e_task_primitive_type::k_bool, s_constant_accessor_bool> {};
 
-static_assert(sizeof(c_real_buffer) == sizeof(c_buffer), "Buffer size mismatch");
-static_assert(sizeof(c_bool_buffer) == sizeof(c_buffer), "Buffer size mismatch");
-
-// Buffer-or-constant types
-using c_real_buffer_or_constant = c_buffer_or_constant_base<c_buffer, real32, s_constant_accessor_real>;
-using c_real_const_buffer_or_constant = c_buffer_or_constant_base<const c_buffer, real32, s_constant_accessor_real>;
-
-using c_bool_buffer_or_constant = c_buffer_or_constant_base<c_buffer, bool, s_constant_accessor_bool>;
-using c_bool_const_buffer_or_constant = c_buffer_or_constant_base<const c_buffer, bool, s_constant_accessor_bool>;
-
+constexpr size_t bool_buffer_int32_count(size_t element_count) {
+	return (element_count + 31) / 32;
+}

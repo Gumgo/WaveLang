@@ -1,3 +1,5 @@
+#define _SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING // Silence LLVM C++17 warning
+
 #include "common/scraper_attributes.h"
 
 #include "scraper/annotation_collection.h"
@@ -35,8 +37,6 @@ public:
 private:
 	struct s_task_argument_type {
 		c_task_qualified_data_type data_type;
-		bool is_constant;
-		bool is_possibly_constant;
 	};
 
 	void visit_native_module_declaration(clang::FunctionDecl *decl);
@@ -49,6 +49,11 @@ private:
 	c_native_module_qualified_data_type get_native_module_qualified_data_type(clang::QualType type) const;
 
 	void build_task_type_table();
+	void add_task_type(
+		const char *type_name,
+		e_task_primitive_type primitive_type,
+		bool is_array,
+		e_task_qualifier qualifier);
 	s_task_argument_type get_task_qualified_data_type(clang::QualType type) const;
 
 	bool parse_optimization_rule(const char *rule, std::vector<std::string> &out_tokens) const;
@@ -56,8 +61,7 @@ private:
 	std::vector<s_task_function_argument_declaration> parse_task_arguments(
 		clang::FunctionDecl *decl,
 		const char *function_type,
-		const char *function_type_cap,
-		bool allow_only_possible_constants);
+		const char *function_type_cap);
 
 	std::string get_function_call(const clang::FunctionDecl *decl) const;
 
@@ -83,8 +87,7 @@ private:
 	std::map<std::string, s_task_argument_type> m_task_type_table;
 };
 
-clang::ASTConsumer *create_ast_visitor(
-	clang::CompilerInstance &compiler_instance, c_scraper_result *result) {
+clang::ASTConsumer *create_ast_visitor(clang::CompilerInstance &compiler_instance, c_scraper_result *result) {
 	return new c_ast_visitor(compiler_instance, result);
 }
 
@@ -365,7 +368,7 @@ void c_ast_visitor::visit_task_memory_query_declaration(clang::FunctionDecl *dec
 			function_name;
 	}
 
-	task_memory_query.arguments = parse_task_arguments(decl, "task memory query", "Task memory query", true);
+	task_memory_query.arguments = parse_task_arguments(decl, "task memory query", "Task memory query");
 
 	m_result->add_task_memory_query(task_memory_query);
 }
@@ -380,7 +383,7 @@ void c_ast_visitor::visit_task_initializer_declaration(clang::FunctionDecl *decl
 		m_diag.error(decl, "Task initializer '%0' declaration return type must be void") << function_name;
 	}
 
-	task_initializer.arguments = parse_task_arguments(decl, "task initializer", "Task initializer", true);
+	task_initializer.arguments = parse_task_arguments(decl, "task initializer", "Task initializer");
 
 	m_result->add_task_initializer(task_initializer);
 }
@@ -396,7 +399,7 @@ void c_ast_visitor::visit_task_voice_initializer_declaration(clang::FunctionDecl
 	}
 
 	task_voice_initializer.arguments =
-		parse_task_arguments(decl, "task voice initializer", "Task voice initializer", true);
+		parse_task_arguments(decl, "task voice initializer", "Task voice initializer");
 
 	m_result->add_task_voice_initializer(task_voice_initializer);
 }
@@ -434,7 +437,7 @@ void c_ast_visitor::visit_task_function_declaration(clang::FunctionDecl *decl) {
 		return;
 	}
 
-	task_function.arguments = parse_task_arguments(decl, "task function", "Task function", false);
+	task_function.arguments = parse_task_arguments(decl, "task function", "Task function");
 
 	m_result->add_task_function(task_function);
 }
@@ -521,70 +524,40 @@ void c_ast_visitor::build_task_type_table() {
 
 	s_task_argument_type type;
 
-	type.data_type =
-		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_real), e_task_qualifier::k_in);
-	type.is_constant = false;
-	type.is_possibly_constant = true;
-	m_task_type_table.insert(std::make_pair( // "c_real_const_buffer_or_constant"
-		"c_buffer_or_constant_base<const c_buffer, float, s_constant_accessor_real>", type));
+	add_task_type(
+		"const c_real_buffer *", e_task_primitive_type::k_real, false, e_task_qualifier::k_in);
+	add_task_type(
+		"c_real_buffer *", e_task_primitive_type::k_real, false, e_task_qualifier::k_out);
+	add_task_type(
+		"float", e_task_primitive_type::k_real, false, e_task_qualifier::k_constant);
+	add_task_type(
+		"c_wrapped_array<const c_real_buffer *const>", e_task_primitive_type::k_real, true, e_task_qualifier::k_in);
+	add_task_type(
+		"c_wrapped_array<const float>", e_task_primitive_type::k_real, true, e_task_qualifier::k_constant);
+	add_task_type(
+		"const c_bool_buffer *", e_task_primitive_type::k_bool, false, e_task_qualifier::k_in);
+	add_task_type(
+		"c_bool_buffer *", e_task_primitive_type::k_bool, false, e_task_qualifier::k_out);
+	add_task_type(
+		"bool", e_task_primitive_type::k_bool, false, e_task_qualifier::k_constant);
+	add_task_type(
+		"c_wrapped_array<const c_bool_buffer *const>", e_task_primitive_type::k_bool, true, e_task_qualifier::k_in);
+	add_task_type(
+		"c_wrapped_array<const bool>", e_task_primitive_type::k_bool, true, e_task_qualifier::k_constant);
+	add_task_type(
+		"const char *", e_task_primitive_type::k_string, false, e_task_qualifier::k_constant);
+	add_task_type(
+		"c_wrapped_array<const char *const>", e_task_primitive_type::k_string, true, e_task_qualifier::k_constant);
+}
 
-	type.data_type =
-		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_real), e_task_qualifier::k_out);
-	type.is_constant = false;
-	type.is_possibly_constant = false;
-	m_task_type_table.insert(std::make_pair("c_real_buffer *", type));
-
-	type.data_type =
-		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_real), e_task_qualifier::k_in);
-	type.is_constant = true;
-	type.is_possibly_constant = true;
-	m_task_type_table.insert(std::make_pair("float", type));
-
-	type.data_type =
-		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_real, true), e_task_qualifier::k_in);
-	type.is_constant = true; // The array itself is always constant
-	type.is_possibly_constant = true;
-	m_task_type_table.insert(std::make_pair( // "c_real_array"
-		"c_wrapped_array<const s_real_array_element>", type));
-
-	type.data_type =
-		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_bool), e_task_qualifier::k_in);
-	type.is_constant = false;
-	type.is_possibly_constant = true;
-	m_task_type_table.insert(std::make_pair( // "c_bool_const_buffer_or_constant"
-		"c_buffer_or_constant_base<const c_buffer, bool, s_constant_accessor_bool>", type));
-
-	type.data_type =
-		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_bool), e_task_qualifier::k_out);
-	type.is_constant = false;
-	type.is_possibly_constant = false;
-	m_task_type_table.insert(std::make_pair("c_bool_buffer *", type));
-
-	type.data_type =
-		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_bool), e_task_qualifier::k_in);
-	type.is_constant = true;
-	type.is_possibly_constant = true;
-	m_task_type_table.insert(std::make_pair("bool", type));
-
-	type.data_type =
-		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_bool, true), e_task_qualifier::k_in);
-	type.is_constant = true; // The array itself is always constant
-	type.is_possibly_constant = true;
-	m_task_type_table.insert(std::make_pair( // "c_bool_array"
-		"c_wrapped_array<const s_bool_array_element>", type));
-
-	type.data_type =
-		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_string), e_task_qualifier::k_in);
-	type.is_constant = true;
-	type.is_possibly_constant = true;
-	m_task_type_table.insert(std::make_pair("const char *", type));
-
-	type.data_type =
-		c_task_qualified_data_type(c_task_data_type(e_task_primitive_type::k_string, true), e_task_qualifier::k_in);
-	type.is_constant = true; // The array itself is always constant
-	type.is_possibly_constant = true;
-	m_task_type_table.insert(std::make_pair( // "c_string_array",
-		"c_wrapped_array<s_string_array_element>", type));
+void c_ast_visitor::add_task_type(
+	const char *type_name,
+	e_task_primitive_type primitive_type,
+	bool is_array,
+	e_task_qualifier qualifier) {
+	s_task_argument_type type;
+	type.data_type = c_task_qualified_data_type(c_task_data_type(primitive_type, is_array), qualifier);
+	m_task_type_table.insert(std::make_pair(type_name, type));
 }
 
 c_ast_visitor::s_task_argument_type c_ast_visitor::get_task_qualified_data_type(clang::QualType type) const {
@@ -598,7 +571,6 @@ c_ast_visitor::s_task_argument_type c_ast_visitor::get_task_qualified_data_type(
 	if (it == m_task_type_table.end()) {
 		s_task_argument_type result;
 		result.data_type = c_task_qualified_data_type::invalid();
-		result.is_constant = false;
 		return result;
 	} else {
 		return it->second;
@@ -668,8 +640,7 @@ bool c_ast_visitor::parse_optimization_rule(const char *rule, std::vector<std::s
 std::vector<s_task_function_argument_declaration> c_ast_visitor::parse_task_arguments(
 	clang::FunctionDecl *decl,
 	const char *function_type,
-	const char *function_type_cap,
-	bool allow_only_possible_constants) {
+	const char *function_type_cap) {
 	std::vector<s_task_function_argument_declaration> result;
 
 	std::string function_name = decl->getName().str();
@@ -705,8 +676,6 @@ std::vector<s_task_function_argument_declaration> c_ast_visitor::parse_task_argu
 
 		s_task_argument_type type = get_task_qualified_data_type(param_decl->getType());
 		argument_declaration.type = type.data_type;
-		argument_declaration.is_constant = type.is_constant;
-		argument_declaration.is_possibly_constant = type.is_possibly_constant;
 
 		if (!argument_declaration.type.is_valid()) {
 			m_diag.error(param_decl, "Unsupported type %0 for parameter '%1' of %2 '%3'") <<
@@ -714,46 +683,13 @@ std::vector<s_task_function_argument_declaration> c_ast_visitor::parse_task_argu
 			continue;
 		}
 
-		if (allow_only_possible_constants && !argument_declaration.is_possibly_constant) {
-			m_diag.error(param_decl, "Parameter '%0' of %1 '%2' cannot ever be constant") <<
-				argument_declaration.name << function_type << function_name;
-			continue;
-		}
+		const char *source_argument = param_annotations.contains_annotation_with_prefix(WL_SOURCE_PREFIX);
+		argument_declaration.is_unshared = param_annotations.contains_annotation(WL_UNSHARED);
 
-		const char *in_argument = param_annotations.contains_annotation_with_prefix(WL_IN_SOURCE_PREFIX);
-		const char *out_argument = param_annotations.contains_annotation_with_prefix(WL_OUT_SOURCE_PREFIX);
-
-		// Make sure the parameter markup matches the type
-		bool param_error = false;
-		if (in_argument && out_argument) {
-			if (argument_declaration.type.get_qualifier() == e_task_qualifier::k_out) {
-				// Convert out to inout
-				argument_declaration.type = c_task_qualified_data_type(
-					argument_declaration.type.get_data_type(),
-					e_task_qualifier::k_inout);
-				argument_declaration.in_source = in_argument + strlen(WL_IN_SOURCE_PREFIX);
-				argument_declaration.out_source = out_argument + strlen(WL_OUT_SOURCE_PREFIX);
-			} else {
-				param_error = true;
-			}
-		} else if (in_argument) {
-			if (argument_declaration.type.get_qualifier() != e_task_qualifier::k_in) {
-				param_error = true;
-			} else {
-				argument_declaration.in_source = in_argument + strlen(WL_IN_SOURCE_PREFIX);
-			}
-		} else if (out_argument) {
-			if (argument_declaration.type.get_qualifier() != e_task_qualifier::k_out) {
-				param_error = true;
-			} else {
-				argument_declaration.out_source = out_argument + strlen(WL_OUT_SOURCE_PREFIX);
-			}
+		if (source_argument) {
+			argument_declaration.source = source_argument + strlen(WL_SOURCE_PREFIX);
 		} else {
-			param_error = true;
-		}
-
-		if (param_error) {
-			m_diag.error(param_decl, "Invalid qualifier(s) on parameter '%0' of %1 '%2'") <<
+			m_diag.error(param_decl, "No source provided on parameter '%0' of %1 '%2'") <<
 				argument_declaration.name << function_type << function_name;
 		}
 

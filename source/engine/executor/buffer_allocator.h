@@ -3,14 +3,18 @@
 #include "common/common.h"
 #include "common/threading/lock_free.h"
 #include "common/threading/lock_free_pool.h"
-#include "common/utility/handle.h"
 
 #include "engine/buffer.h"
+#include "engine/math/simd.h"
 
 #include <vector>
 
-struct s_allocated_buffer_handle_identifier {};
-using h_allocated_buffer = c_handle<s_allocated_buffer_handle_identifier, uint32, k_lock_free_invalid_handle>;
+enum class e_buffer_type {
+	k_real,
+	k_bool,
+
+	k_count
+};
 
 struct s_buffer_pool_description {
 	e_buffer_type type;	// Type of buffer
@@ -31,14 +35,11 @@ public:
 	uint32 get_buffer_pool_count() const;
 	const s_buffer_pool_description &get_buffer_pool_description(uint32 pool_index) const;
 
-	h_allocated_buffer allocate_buffer(uint32 pool_index);
-	void free_buffer(h_allocated_buffer buffer_handle);
-
-	inline c_buffer *get_buffer(h_allocated_buffer buffer_handle);
-	inline const c_buffer *get_buffer(h_allocated_buffer buffer_handle) const;
+	void *allocate_buffer_memory(uint32 pool_index);
+	void free_buffer_memory(void *buffer_memory);
 
 #if IS_TRUE(ASSERTS_ENABLED)
-	void assert_all_buffers_free() const;
+	void assert_no_allocations() const;
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
 private:
@@ -54,6 +55,14 @@ private:
 		c_lock_free_pool buffer_pool;
 	};
 
+	// This structure appears directly before each buffer memory allocation
+	struct ALIGNAS_SIMD s_buffer_memory_header {
+		uint32 pool_index;
+		uint32 pool_buffer_index;
+	};
+
+	static size_t calculate_aligned_padded_buffer_size(e_buffer_type type, size_t element_count);
+
 	// List of buffer pools
 	std::vector<s_buffer_pool> m_buffer_pools;
 
@@ -63,15 +72,6 @@ private:
 	// The buffer backing memory
 	c_lock_free_aligned_allocator<uint8> m_buffer_memory;
 
-	// The buffers themselves
-	c_lock_free_aligned_allocator<c_buffer> m_buffers;
+	// The pointers associated with each buffer handle
+	c_lock_free_aligned_allocator<s_buffer_memory_header *> m_buffer_memory_pointers;
 };
-
-inline c_buffer *c_buffer_allocator::get_buffer(h_allocated_buffer buffer_handle) {
-	return &m_buffers.get_array()[buffer_handle.get_data()];
-}
-
-inline const c_buffer *c_buffer_allocator::get_buffer(h_allocated_buffer buffer_handle) const {
-	return &m_buffers.get_array()[buffer_handle.get_data()];
-}
-

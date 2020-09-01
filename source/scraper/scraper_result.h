@@ -2,7 +2,7 @@
 
 #include "common/common.h"
 
-#include "engine/task_function.h"
+#include "engine/task_data_type.h"
 
 #include "execution_graph/native_module.h"
 
@@ -41,10 +41,8 @@ struct s_optimization_rule_declaration {
 struct s_task_function_argument_declaration {
 	std::string name;
 	c_task_qualified_data_type type;
-	bool is_constant;
-	bool is_possibly_constant;
-	std::string in_source;
-	std::string out_source;
+	std::string source;
+	bool is_unshared;
 };
 
 struct s_task_memory_query_declaration {

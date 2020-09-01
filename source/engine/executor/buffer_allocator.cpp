@@ -1,5 +1,4 @@
 #include "engine/executor/buffer_allocator.h"
-#include "engine/math/simd.h"
 
 static_assert(CACHE_LINE_SIZE >= SIMD_ALIGNMENT, "Cache line too small for SSE");
 
@@ -8,13 +7,6 @@ static const size_t k_bits_per_buffer_element[] = {
 	1	// e_buffer_type::k_bool
 };
 static_assert(NUMBEROF(k_bits_per_buffer_element) == enum_count<e_buffer_type>(), "Buffer type bits mismatch");
-
-static size_t calculate_aligned_padded_buffer_size(e_buffer_type type, size_t element_count) {
-	size_t buffer_size_bits = k_bits_per_buffer_element[enum_index(type)] * element_count;
-	size_t buffer_size_bytes = (buffer_size_bits + 7) / 8;
-	// Accounts for both SSE alignment and cache alignment
-	return align_size(buffer_size_bytes, CACHE_LINE_SIZE);
-}
 
 c_buffer_allocator::c_buffer_allocator() {
 }
@@ -44,8 +36,8 @@ void c_buffer_allocator::initialize(const s_buffer_allocator_settings &settings)
 	m_buffer_memory.free();
 	m_buffer_memory.allocate(total_buffer_bytes);
 
-	m_buffers.free();
-	m_buffers.allocate(total_buffer_count);
+	m_buffer_memory_pointers.free();
+	m_buffer_memory_pointers.allocate(total_buffer_count);
 
 	// Initialize each buffer
 	size_t buffer_memory_offset = 0;
@@ -60,13 +52,14 @@ void c_buffer_allocator::initialize(const s_buffer_allocator_settings &settings)
 			calculate_aligned_padded_buffer_size(pool.description.type, pool.description.size);
 
 		for (uint32 pool_buffer_index = 0; pool_buffer_index < pool.description.count; pool_buffer_index++) {
-			uint32 buffer_index = pool.first_buffer_handle + pool_buffer_index;
-			c_buffer &buffer = m_buffers.get_array()[buffer_index];
+			// Setup the header
+			s_buffer_memory_header *header =
+				reinterpret_cast<s_buffer_memory_header *>(&buffer_memory_array[buffer_memory_offset]);
+			header->pool_index = pool_index;
+			header->pool_buffer_index = pool_buffer_index;
 
-			// We don't initialize buffers so it cannot be assumed to be constant
-			buffer.m_constant = false;
-			buffer.m_data = &buffer_memory_array[buffer_memory_offset];
-			buffer.m_pool_index = pool_index;
+			uint32 buffer_index = pool.first_buffer_handle + pool_buffer_index;
+			m_buffer_memory_pointers.get_array()[buffer_index] = header;
 
 			buffer_memory_offset += aligned_padded_buffer_size;
 			wl_assert(buffer_memory_offset <= buffer_memory_array.get_count());
@@ -82,29 +75,41 @@ const s_buffer_pool_description &c_buffer_allocator::get_buffer_pool_description
 	return m_buffer_pools[pool_index].description;
 }
 
-h_allocated_buffer c_buffer_allocator::allocate_buffer(uint32 pool_index) {
+void *c_buffer_allocator::allocate_buffer_memory(uint32 pool_index) {
 	s_buffer_pool &pool = m_buffer_pools[pool_index];
 	uint32 buffer_handle = pool.buffer_pool.allocate();
 	wl_vassert(buffer_handle != k_lock_free_invalid_handle, "Out of buffers");
-	return h_allocated_buffer::construct(pool.first_buffer_handle + buffer_handle);
+	s_buffer_memory_header *header = m_buffer_memory_pointers.get_array()[pool.first_buffer_handle + buffer_handle];
+	return header + 1; // Buffer memory is directly after the header
 }
 
-void c_buffer_allocator::free_buffer(h_allocated_buffer buffer_handle) {
-	wl_assert(buffer_handle.is_valid());
-	uint32 pool_index = m_buffers.get_array()[buffer_handle.get_data()].m_pool_index;
-	s_buffer_pool &pool = m_buffer_pools[pool_index];
+void c_buffer_allocator::free_buffer_memory(void *buffer_memory) {
+	wl_assert(buffer_memory >= m_buffer_memory.get_array().begin()
+		&& buffer_memory < m_buffer_memory.get_array().end());
+	s_buffer_memory_header *header = reinterpret_cast<s_buffer_memory_header *>(buffer_memory) - 1;
+	s_buffer_pool &pool = m_buffer_pools[header->pool_index];
 
 	// Make sure the buffer handle is in the pool's handle range
-	wl_assert(buffer_handle.get_data() >= pool.first_buffer_handle &&
-		buffer_handle.get_data() < pool.first_buffer_handle + pool.description.count);
-	pool.buffer_pool.free(buffer_handle.get_data() - pool.first_buffer_handle);
+	wl_assert(header->pool_buffer_index < pool.description.count);
+	pool.buffer_pool.free(header->pool_buffer_index);
 }
 
 #if IS_TRUE(ASSERTS_ENABLED)
-void c_buffer_allocator::assert_all_buffers_free() const {
+void c_buffer_allocator::assert_no_allocations() const {
 	for (uint32 pool_index = 0; pool_index < m_buffer_pools.size(); pool_index++) {
 		const s_buffer_pool &pool = m_buffer_pools[pool_index];
 		wl_assert(pool.buffer_pool.calculate_used_count_unsafe() == 0);
 	}
 }
 #endif // IS_TRUE(ASSERTS_ENABLED)
+
+size_t c_buffer_allocator::calculate_aligned_padded_buffer_size(e_buffer_type type, size_t element_count) {
+	size_t header_size_bytes = sizeof(s_buffer_memory_header);
+	wl_assert(is_size_aligned(header_size_bytes, SIMD_ALIGNMENT));
+
+	size_t buffer_size_bits = k_bits_per_buffer_element[enum_index(type)] * element_count;
+	size_t buffer_size_bytes = align_size((buffer_size_bits + 7) / 8, SIMD_ALIGNMENT);
+
+	// Accounts for both SSE alignment and cache alignment
+	return align_size(header_size_bytes + buffer_size_bytes, CACHE_LINE_SIZE);
+}

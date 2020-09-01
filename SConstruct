@@ -46,7 +46,9 @@ if compiler == "cl":
 		"/FC",					# Display full path of source files in compiler messages
 		"/EHsc",				# Standard C++ stack unwinding, and assume extern "C" functions don't throw exceptions
 		"/nologo",				# Suppress startup compiler banner
-		"/diagnostics:column"	# Identify the column on which errors/warnings were found
+		"/diagnostics:column",	# Identify the column on which errors/warnings were found
+		"/std:c++latest",		# Use the latest C++ standard available
+		"/FS"					# Allows synchonous PDB writes for multiprocess builds
 	]
 
 	link_flags += [

@@ -26,6 +26,8 @@ public:
 
 	inline operator t_simd_int32() const;
 	inline operator real32x4() const;
+	inline int32x4 sum_elements() const;
+	inline int32 first_element() const;
 
 	// Replacement for >>> operator
 	inline int32x4 shift_right_unsigned(int32 rhs) const;

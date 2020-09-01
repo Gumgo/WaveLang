@@ -27,6 +27,7 @@ public:
 	inline operator t_simd_real32() const;
 	inline operator int32x4() const;
 	inline real32x4 sum_elements() const;
+	inline real32 first_element() const;
 
 private:
 	t_simd_real32 m_value;

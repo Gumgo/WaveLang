@@ -104,3 +104,11 @@
 
 - Add JSON library ($JSON)
 	- Functions to read values of various types, e.g. json.read_real_array("file.json", "path/to/value")
+
+- Fix include order ($INCLUDE)
+	- Write a script to do this
+	- Each category should be sorted alphabetically (folders names don't come first)
+	- Order:
+		- Local (extra linebreak between categories)
+		- Third party
+		- Standard library

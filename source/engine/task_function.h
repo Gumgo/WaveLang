@@ -3,11 +3,10 @@
 #include "common/common.h"
 
 #include "engine/buffer.h"
-#include "engine/buffer_handle.h"
+#include "engine/task_data_type.h"
 
 #include "execution_graph/native_module.h"
 
-class c_array_dereference_interface;
 class c_controller_interface;
 class c_event_interface;
 class c_sample_library_accessor;
@@ -55,101 +54,17 @@ struct s_task_function_uid {
 	static const s_task_function_uid k_invalid;
 };
 
-enum class e_task_qualifier {
-	k_in,
-	k_out,
-	k_inout,
+// Array types
+using c_buffer_array = c_wrapped_array<c_buffer *const>;
+using c_real_buffer_array_in = c_wrapped_array<const c_real_buffer *const>;
+using c_bool_buffer_array_in = c_wrapped_array<const c_bool_buffer *const>;
+using c_real_buffer_array_out = c_wrapped_array<c_real_buffer *const>;
+using c_bool_buffer_array_out = c_wrapped_array<c_bool_buffer *const>;
 
-	k_count
-};
-
-enum class e_task_primitive_type {
-	k_real,
-	k_bool,
-	k_string,
-
-	k_count
-};
-
-struct s_task_primitive_type_traits {
-	bool is_dynamic;	// Whether this is a runtime-dynamic type
-};
-
-class c_task_data_type {
-public:
-	c_task_data_type();
-	c_task_data_type(e_task_primitive_type primitive_type, bool is_array = false);
-	static c_task_data_type invalid();
-
-	bool is_valid() const;
-
-	e_task_primitive_type get_primitive_type() const;
-	const s_task_primitive_type_traits &get_primitive_type_traits() const;
-	bool is_array() const;
-	c_task_data_type get_element_type() const;
-	c_task_data_type get_array_type() const;
-
-	bool operator==(const c_task_data_type &other) const;
-	bool operator!=(const c_task_data_type &other) const;
-
-private:
-	enum class e_flag {
-		k_is_array,
-
-		k_count
-	};
-
-	e_task_primitive_type m_primitive_type;
-	uint32 m_flags;
-};
-
-class c_task_qualified_data_type {
-public:
-	c_task_qualified_data_type();
-	c_task_qualified_data_type(c_task_data_type data_type, e_task_qualifier qualifier);
-	static c_task_qualified_data_type invalid();
-
-	bool is_valid() const;
-	c_task_data_type get_data_type() const;
-	e_task_qualifier get_qualifier() const;
-
-	bool operator==(const c_task_qualified_data_type &other) const;
-	bool operator!=(const c_task_qualified_data_type &other) const;
-
-	bool is_legal() const;
-
-private:
-	c_task_data_type m_data_type;
-	e_task_qualifier m_qualifier;
-};
-
-const s_task_primitive_type_traits &get_task_primitive_type_traits(e_task_primitive_type primitive_type);
-
-struct s_real_array_element {
-	bool is_constant;
-
-	union {
-		real32 constant_value;
-		h_buffer buffer_handle_value;
-	};
-};
-
-struct s_bool_array_element {
-	bool is_constant;
-
-	union {
-		bool constant_value;
-		h_buffer buffer_handle_value;
-	};
-};
-
-struct s_string_array_element {
-	const char *constant_value;
-};
-
-using c_real_array = c_wrapped_array<const s_real_array_element>;
-using c_bool_array = c_wrapped_array<const s_bool_array_element>;
-using c_string_array = c_wrapped_array<const s_string_array_element>;
+// Compile-time constant array types
+using c_real_constant_array = c_wrapped_array<const real32>;
+using c_bool_constant_array = c_wrapped_array<const bool>;
+using c_string_constant_array = c_wrapped_array<const char *const>;
 
 struct s_task_function_argument {
 	// Do not access these directly
@@ -157,143 +72,113 @@ struct s_task_function_argument {
 #if IS_TRUE(ASSERTS_ENABLED)
 		c_task_qualified_data_type type;
 #endif // IS_TRUE(ASSERTS_ENABLED)
-		bool is_constant;
 
 		union u_value {
 			u_value() {} // Allows for c_wrapped_array
 
-			c_buffer *buffer; // Shared accessor for any buffer, no accessor function for this
+			c_buffer *buffer; // Note: this is cast to the appropriate type
+			c_buffer_array buffer_array; // Note: this is cast to the appropriate type
 
-			const c_real_buffer *real_buffer_in;
-			c_real_buffer *real_buffer_out;
-			c_real_buffer *real_buffer_inout;
-			real32 real_constant_in;
-			c_real_array real_array_in;
+			real32 real_constant;
+			c_real_constant_array real_constant_array;
 
-			const c_bool_buffer *bool_buffer_in;
-			c_bool_buffer *bool_buffer_out;
-			c_bool_buffer *bool_buffer_inout;
-			bool bool_constant_in;
-			c_bool_array bool_array_in;
+			bool bool_constant;
+			c_bool_constant_array bool_constant_array;
 
-			const char *string_constant_in;
-			c_string_array string_array_in;
+			const char *string_constant;
+			c_string_constant_array string_constant_array;
 		} value;
 	} data;
 
-	// For arrays, the array itself is always constant so if this is true, it means all elements are constants
-	bool is_constant() const {
-		return data.is_constant;
-	}
-
 	const c_real_buffer *get_real_buffer_in() const {
-		wl_assert(data.type.get_data_type() == c_task_data_type(e_task_primitive_type::k_real));
-		wl_assert(data.type.get_qualifier() == e_task_qualifier::k_in);
-		wl_assert(!is_constant());
-		return data.value.real_buffer_in;
+		wl_assert(validate(e_task_primitive_type::k_real, false, e_task_qualifier::k_in));
+		return static_cast<const c_real_buffer *>(data.value.buffer);
 	}
 
 	c_real_buffer *get_real_buffer_out() const {
-		wl_assert(data.type.get_data_type() == c_task_data_type(e_task_primitive_type::k_real));
-		wl_assert(data.type.get_qualifier() == e_task_qualifier::k_out);
-		wl_assert(!is_constant());
-		return data.value.real_buffer_out;
-	}
-
-	c_real_buffer *get_real_buffer_inout() const {
-		wl_assert(data.type.get_data_type() == c_task_data_type(e_task_primitive_type::k_real));
-		wl_assert(data.type.get_qualifier() == e_task_qualifier::k_inout);
-		wl_assert(!is_constant());
-		return data.value.real_buffer_inout;
+		wl_assert(validate(e_task_primitive_type::k_real, false, e_task_qualifier::k_out));
+		return static_cast<c_real_buffer *>(data.value.buffer);
 	}
 
 	real32 get_real_constant_in() const {
-		wl_assert(data.type.get_data_type() == c_task_data_type(e_task_primitive_type::k_real));
-		wl_assert(data.type.get_qualifier() == e_task_qualifier::k_in);
-		wl_assert(is_constant());
-		return data.value.real_constant_in;
+		wl_assert(validate(e_task_primitive_type::k_real, false, e_task_qualifier::k_constant));
+		return data.value.real_constant;
 	}
 
-	c_real_const_buffer_or_constant get_real_buffer_or_constant_in() const {
-		wl_assert(data.type.get_data_type() == c_task_data_type(e_task_primitive_type::k_real));
-		wl_assert(data.type.get_qualifier() == e_task_qualifier::k_in);
-
-		if (data.is_constant) {
-			return c_real_const_buffer_or_constant(data.value.real_constant_in);
-		} else {
-			return c_real_const_buffer_or_constant(data.value.real_buffer_in);
-		}
+	c_real_buffer_array_in get_real_buffer_array_in() const {
+		wl_assert(validate(e_task_primitive_type::k_real, true, e_task_qualifier::k_in));
+		return c_real_buffer_array_in(
+			reinterpret_cast<const c_real_buffer *const *>(data.value.buffer_array.get_pointer()),
+			data.value.buffer_array.get_count());
 	}
 
-	c_real_array get_real_array_in() const {
-		wl_assert(data.type.get_data_type() == c_task_data_type(e_task_primitive_type::k_real, true));
-		wl_assert(data.type.get_qualifier() == e_task_qualifier::k_in);
-		return data.value.real_array_in;
+	c_real_buffer_array_out get_real_buffer_array_out() const {
+		wl_assert(validate(e_task_primitive_type::k_real, true, e_task_qualifier::k_out));
+		return c_real_buffer_array_out(
+			reinterpret_cast<c_real_buffer *const *>(data.value.buffer_array.get_pointer()),
+			data.value.buffer_array.get_count());
+	}
+
+	c_real_constant_array get_real_constant_array_in() const {
+		wl_assert(validate(e_task_primitive_type::k_real, true, e_task_qualifier::k_constant));
+		return data.value.real_constant_array;
 	}
 
 	const c_bool_buffer *get_bool_buffer_in() const {
-		wl_assert(data.type.get_data_type() == c_task_data_type(e_task_primitive_type::k_bool));
-		wl_assert(data.type.get_qualifier() == e_task_qualifier::k_in);
-		wl_assert(!is_constant());
-		return data.value.bool_buffer_in;
+		wl_assert(validate(e_task_primitive_type::k_bool, false, e_task_qualifier::k_in));
+		return static_cast<const c_bool_buffer *>(data.value.buffer);
 	}
 
 	c_bool_buffer *get_bool_buffer_out() const {
-		wl_assert(data.type.get_data_type() == c_task_data_type(e_task_primitive_type::k_bool));
-		wl_assert(data.type.get_qualifier() == e_task_qualifier::k_out);
-		wl_assert(!is_constant());
-		return data.value.bool_buffer_out;
-	}
-
-	c_bool_buffer *get_bool_buffer_inout() const {
-		wl_assert(data.type.get_data_type() == c_task_data_type(e_task_primitive_type::k_bool));
-		wl_assert(data.type.get_qualifier() == e_task_qualifier::k_inout);
-		wl_assert(!is_constant());
-		return data.value.bool_buffer_inout;
+		wl_assert(validate(e_task_primitive_type::k_bool, false, e_task_qualifier::k_out));
+		return static_cast<c_bool_buffer *>(data.value.buffer);
 	}
 
 	bool get_bool_constant_in() const {
-		wl_assert(data.type.get_data_type() == c_task_data_type(e_task_primitive_type::k_bool));
-		wl_assert(data.type.get_qualifier() == e_task_qualifier::k_in);
-		wl_assert(is_constant());
-		return data.value.bool_constant_in;
+		wl_assert(validate(e_task_primitive_type::k_bool, false, e_task_qualifier::k_constant));
+		return data.value.bool_constant;
 	}
 
-	c_bool_const_buffer_or_constant get_bool_buffer_or_constant_in() const {
-		wl_assert(data.type.get_data_type() == c_task_data_type(e_task_primitive_type::k_bool));
-		wl_assert(data.type.get_qualifier() == e_task_qualifier::k_in);
-
-		if (data.is_constant) {
-			return c_bool_const_buffer_or_constant(data.value.bool_constant_in);
-		} else {
-			return c_bool_const_buffer_or_constant(data.value.bool_buffer_in);
-		}
+	c_bool_buffer_array_in get_bool_buffer_array_in() const {
+		wl_assert(validate(e_task_primitive_type::k_bool, true, e_task_qualifier::k_in));
+		return c_bool_buffer_array_in(
+			reinterpret_cast<const c_bool_buffer *const *>(data.value.buffer_array.get_pointer()),
+			data.value.buffer_array.get_count());
 	}
 
-	c_bool_array get_bool_array_in() const {
-		wl_assert(data.type.get_data_type() == c_task_data_type(e_task_primitive_type::k_bool, true));
-		wl_assert(data.type.get_qualifier() == e_task_qualifier::k_in);
-		return data.value.bool_array_in;
+	c_bool_buffer_array_out get_bool_buffer_array_out() const {
+		wl_assert(validate(e_task_primitive_type::k_bool, true, e_task_qualifier::k_out));
+		return c_bool_buffer_array_out(
+			reinterpret_cast<c_bool_buffer *const *>(data.value.buffer_array.get_pointer()),
+			data.value.buffer_array.get_count());
+	}
+
+	c_bool_constant_array get_bool_constant_array_in() const {
+		wl_assert(validate(e_task_primitive_type::k_bool, true, e_task_qualifier::k_constant));
+		return data.value.bool_constant_array;
 	}
 
 	const char *get_string_constant_in() const {
-		wl_assert(data.type.get_data_type() == c_task_data_type(e_task_primitive_type::k_string));
-		wl_assert(data.type.get_qualifier() == e_task_qualifier::k_in);
-		wl_assert(is_constant());
-		return data.value.string_constant_in;
+		wl_assert(validate(e_task_primitive_type::k_string, false, e_task_qualifier::k_constant));
+		return data.value.string_constant;
 	}
 
-	c_string_array get_string_array_in() const {
-		wl_assert(data.type.get_data_type() == c_task_data_type(e_task_primitive_type::k_string, true));
-		wl_assert(data.type.get_qualifier() == e_task_qualifier::k_in);
-		return data.value.string_array_in;
+	c_string_constant_array get_string_constant_array_in() const {
+		wl_assert(validate(e_task_primitive_type::k_string, true, e_task_qualifier::k_constant));
+		return data.value.string_constant_array;
 	}
+
+#if ASSERTS_ENABLED
+	bool validate(e_task_primitive_type primitive_type, bool is_array, e_task_qualifier qualifier) const {
+		return data.type.get_data_type() == c_task_data_type(primitive_type, is_array)
+			&& data.type.get_qualifier() == qualifier;
+	}
+#endif // ASSERTS_ENABLED
 };
 
 using c_task_function_arguments = c_wrapped_array<const s_task_function_argument>;
 
 struct s_task_function_context {
-	c_array_dereference_interface *array_dereference_interface;
 	c_event_interface *event_interface;
 	c_sample_library_accessor *sample_accessor;
 	c_sample_library_requester *sample_requester;
@@ -351,63 +236,13 @@ struct s_task_function {
 
 	// Type of each argument
 	s_static_array<c_task_qualified_data_type, k_max_task_function_arguments> argument_types;
-};
 
-// Task function mappings
+	// Whether each argument is unshared
+	s_static_array<bool, k_max_task_function_arguments> arguments_unshared;
 
-// Native modules must be convered into tasks. A single native module can potentially be converted into a number of
-// different tasks depending on its inputs. Once a task is selected, the inputs and outputs of the native module must be
-// mapped to the inputs/outputs of the task.
-
-// The following describe the possible types of input arguments for a native module
-enum class e_task_function_mapping_native_module_input_type {
-	// The input is a variable
-	k_variable,
-
-	// The input is a variable which is not used as any other input
-	k_branchless_variable,
-
-	// This argument is an output, not an input
-	k_none,
-
-	k_count
-};
-
-// A single native module can map to many different tasks. For memory optimization (and performance) we have the
-// "branchless" distinction because if an input is only used once, we can directly modify that buffer in-place and reuse
-// it as the output.
-
-struct s_task_function_native_module_argument_mapping {
-	// The argument type that must be matched for the native module in order for this mapping to be used
-	e_task_function_mapping_native_module_input_type input_type;
-
-	// The task function argument index being mapped to
-	uint32 task_function_argument_index;
-};
-
-struct s_task_function_mapping {
-	// Task function to map to
-	s_task_function_uid task_function_uid;
+	// Unique identifier of the native module that this task maps to
+	s_native_module_uid native_module_uid;
 
 	// Mapping for each native module argument
-	s_static_array<s_task_function_native_module_argument_mapping, k_max_native_module_arguments>
-		native_module_argument_mapping;
+	s_static_array<uint32, k_max_native_module_arguments> task_function_argument_indices;
 };
-
-// Task mapping notation examples (NM = native module):
-// native_module(in 0, in 1, out 2) => task(out 0, in 1, in 2)
-// mapping = { 1, 2, 0 }
-//   NM arg 0 is an input and maps to task argument 1, which is an input
-//   NM arg 1 is an input and maps to task argument 2, which is an input
-//   NM arg 2 is an output and maps to task argument 0, which is an output
-// native_module(in 0, in 1, out 2) => task(inout 0, in 1)
-// mapping = { 0, 1, 0 }
-//   NM arg 0 is an input and maps to task argument 0, which is an inout
-//   NM arg 1 is an input and maps to task argument 1, which is an input
-//   NM arg 2 is an output and maps to task argument 0, which is an inout
-// Notice that in the last example, the inout task argument is hooked up to both an input and an output from the NM
-
-// A list of task function mappings. The first valid mapping encountered is used, so mappings using the branchless
-// optimization should come first.
-using c_task_function_mapping_list = c_wrapped_array<const s_task_function_mapping>;
-

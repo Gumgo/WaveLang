@@ -63,7 +63,7 @@ sources = utils.enumerate_files(env, ".", utils.SOURCE_EXTENSIONS)
 # (2) Split these files off into their own separate libraries (seems like overkill)
 # (3) Implement simple mirror versions of the necessary enums/classes in scraper (bad due to code duplication)
 sources += [
-	"#source/engine/task_function.cpp",
+	"#source/engine/task_data_type.cpp",
 	"#source/execution_graph/native_module.cpp"
 ]
 

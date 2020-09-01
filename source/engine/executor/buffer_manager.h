@@ -5,15 +5,12 @@
 
 #include "driver/sample_format.h"
 
-#include "engine/buffer_handle.h"
 #include "engine/runtime_instrument.h"
 #include "engine/task_graph.h"
 #include "engine/executor/buffer_allocator.h"
 
 #include <atomic>
 #include <vector>
-
-class c_buffer;
 
 class c_buffer_manager {
 public:
@@ -27,21 +24,37 @@ public:
 	void mix_voice_accumulation_buffers_to_channel_buffers();
 	void mix_fx_output_to_channel_buffers();
 	void mix_channel_buffers_to_output_buffer(
-		e_sample_format sample_format, c_wrapped_array<uint8> output_buffer);
+		e_sample_format sample_format,
+		c_wrapped_array<uint8> output_buffer);
 
-	void allocate_buffer(e_instrument_stage instrument_stage, h_buffer buffer_handle);
-	void decrement_buffer_usage(h_buffer buffer_handle);
-	bool is_buffer_allocated(h_buffer buffer_handle) const;
-	c_buffer *get_buffer(h_buffer buffer_handle);
-	const c_buffer *get_buffer(h_buffer buffer_handle) const;
+	void allocate_output_buffers(e_instrument_stage instrument_stage, uint32 task_index);
+	void decrement_buffer_usages(e_instrument_stage instrument_stage, uint32 task_index);
 
 private:
-	struct ALIGNAS_LOCK_FREE s_buffer_context {
-		std::atomic<int32> usages_remaining;
-		s_static_array<uint32, enum_count<e_instrument_stage>()> pool_indices;
-		h_allocated_buffer handle;
-		bool shifted_samples;
-		bool swapped_into_voice_accumulation_buffer;
+	// Context for a buffer used by a task. These are indexed by total buffer count for the task graph, which includes
+	// both constant and dynamic buffers, but only dynamic buffers are used, so the c_buffer instance on the constant
+	// entries will be unallocated.
+	struct ALIGNAS_LOCK_FREE s_task_buffer_context {
+		s_task_buffer_context() = default;
+		UNCOPYABLE(s_task_buffer_context);
+
+		s_task_buffer_context(s_task_buffer_context &&other)
+			: pool_index(other.pool_index)
+			, initial_usages(other.initial_usages)
+			, usages_remaining(other.usages_remaining.load())
+			, buffer(other.buffer) {}
+
+		s_task_buffer_context &operator=(s_task_buffer_context &&other) {
+			pool_index = other.pool_index;
+			initial_usages = other.initial_usages;
+			usages_remaining = other.usages_remaining.load();
+			buffer = other.buffer;
+		}
+
+		uint32 pool_index;
+		int32 initial_usages;
+		std::atomic<uint32> usages_remaining;
+		c_buffer *buffer;
 	};
 
 	uint32 get_buffer_pool(
@@ -55,29 +68,22 @@ private:
 	std::vector<c_task_graph::s_buffer_usage_info> combine_buffer_usage_info(
 		c_wrapped_array<const std::vector<c_task_graph::s_buffer_usage_info> *const> buffer_usage_info_array) const;
 
+	void decrement_buffer_usages(e_instrument_stage instrument_stage, const std::vector<size_t> &buffer_indices);
+
 	void initialize_buffer_allocator(
 		size_t max_buffer_size,
 		const std::vector<c_task_graph::s_buffer_usage_info> &buffer_usage_info);
-	void initialize_buffer_contexts(
+	void initialize_task_buffer_contexts(
 		const std::vector<c_task_graph::s_buffer_usage_info> &buffer_usage_info);
 
-	void shift_voice_output_buffers(uint32 voice_sample_offset);
-	void swap_and_deduplicate_output_buffers(
-		c_task_graph_data_array outputs,
-		const std::vector<uint32> &buffer_pool_indices,
-		std::vector<h_allocated_buffer> &destination,
-		uint32 voice_sample_offset);
-	void swap_output_buffers_with_voice_accumulation_buffers(uint32 voice_sample_offset);
-	void add_output_buffers_to_voice_accumulation_buffers(uint32 voice_sample_offset);
-	void mix_to_channel_buffers(std::vector<h_allocated_buffer> &source_buffers);
-	bool scan_remain_active_buffer(const c_buffer *remain_active_buffer, uint32 voice_sample_offset) const;
+	void mix_to_channel_buffers(std::vector<c_buffer> &source_buffers);
 	void free_channel_buffers();
 
 #if IS_TRUE(ASSERTS_ENABLED)
-	void assert_all_output_buffers_free(e_instrument_stage instrument_stage) const;
+	void assert_all_task_buffers_free(e_instrument_stage instrument_stage) const;
 	void assert_all_buffers_free() const;
 #else // IS_TRUE(ASSERTS_ENABLED)
-	void assert_all_output_buffers_free(e_instrument_stage instrument_stage) const {}
+	void assert_all_task_buffers_free(e_instrument_stage instrument_stage) const {}
 	void assert_all_buffers_free() const {}
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
@@ -85,6 +91,21 @@ private:
 
 	// Allocator for buffers used during processing
 	c_buffer_allocator m_buffer_allocator;
+
+	// Contexts for task buffers for each stage
+	s_static_array<std::vector<s_task_buffer_context>, enum_count<e_instrument_stage>()> m_task_buffer_contexts;
+
+	// List of all dynamic buffers indices for each stage
+	s_static_array<std::vector<size_t>, enum_count<e_instrument_stage>()> m_dynamic_buffers;
+
+	// Cached lists of dynamic input buffers for each task for each stage
+	s_static_array<std::vector<std::vector<size_t>>, enum_count<e_instrument_stage>()> m_task_buffers_to_decrement;
+
+	// Cached lists of dynamic output buffers for each task for each stage (de-duplicated)
+	s_static_array<std::vector<std::vector<size_t>>, enum_count<e_instrument_stage>()> m_task_buffers_to_allocate;
+
+	// Cached list of dynamic output buffers for each stage
+	s_static_array<std::vector<size_t>, enum_count<e_instrument_stage>()> m_output_buffers_to_decrement;
 
 	// Pool index of real buffers
 	uint32 m_real_buffer_pool_index;
@@ -95,17 +116,17 @@ private:
 	// Pool indices for each FX output
 	std::vector<uint32> m_fx_output_pool_indices;
 
-	// Context for each buffer for the currently processing voice
-	c_lock_free_aligned_allocator<s_buffer_context> m_buffer_contexts;
+	// Buffers used to shift voice samples
+	std::vector<c_buffer> m_voice_shift_buffers;
 
 	// Buffers to accumulate the final multi-voice result into
-	std::vector<h_allocated_buffer> m_voice_accumulation_buffers;
+	std::vector<c_buffer> m_voice_accumulation_buffers;
 
 	// Buffers to store the FX processing result in
-	std::vector<h_allocated_buffer> m_fx_output_buffers;
+	std::vector<c_buffer> m_fx_output_buffers;
 
 	// Buffers to mix to output channels
-	std::vector<h_allocated_buffer> m_channel_mix_buffers;
+	std::vector<c_buffer> m_channel_mix_buffers;
 
 	// Size of the current chunk
 	uint32 m_chunk_size;

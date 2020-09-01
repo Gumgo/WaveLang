@@ -1,3 +1,5 @@
+#define _SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING // Silence LLVM C++17 warning
+
 #include "common/common.h"
 
 #include "scraper/ast_visitor.h"

@@ -13,4 +13,7 @@
   <ItemGroup>
     <None Include="SConscript" />
   </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\natvis\project.natvis" />
+  </ItemGroup>
 </Project>

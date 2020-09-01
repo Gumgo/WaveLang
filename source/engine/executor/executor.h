@@ -8,6 +8,7 @@
 
 #include "engine/task_function.h"
 #include "engine/thread_pool.h"
+#include "engine/controller_interface/controller_interface.h"
 #include "engine/events/async_event_handler.h"
 #include "engine/events/event_console.h"
 #include "engine/events/event_interface.h"
@@ -23,11 +24,8 @@
 
 #include <atomic>
 
-class c_buffer;
 class c_runtime_instrument;
 class c_task_graph;
-struct s_instrument_globals;
-struct s_task_function;
 
 using f_process_controller_events = size_t (*)(
 	void *context, c_wrapped_array<s_timestamped_controller_event> controller_events,
@@ -88,6 +86,11 @@ private:
 		k_count
 	};
 
+	struct alignas(CACHE_LINE_SIZE) s_thread_context {
+		// Each thread has a pre-initialized context to avoid setting it up for each task
+		s_task_function_context task_function_context;
+	};
+
 	struct ALIGNAS_LOCK_FREE s_task_context {
 		std::atomic<int32> predecessors_remaining;
 	};
@@ -125,17 +128,6 @@ private:
 
 	static void process_task_wrapper(uint32 thread_index, const s_thread_parameter_block *params);
 	void process_task(uint32 thread_index, const s_task_parameters *params);
-	size_t setup_task_arguments(
-		uint32 task_index,
-		bool include_dynamic_arguments,
-		s_static_array<s_task_function_argument, k_max_task_function_arguments> &out_arguments);
-
-	void allocate_output_buffers(uint32 task_index);
-	void decrement_buffer_usages(uint32 task_index);
-
-	// Used for array dereference
-	friend class c_array_dereference_interface;
-	const c_buffer *get_buffer(h_buffer buffer_handle) const;
 
 	static void handle_event_wrapper(void *context, size_t event_size, const void *event_data);
 	void handle_event(size_t event_size, const void *event_data);
@@ -154,6 +146,11 @@ private:
 	// Pool of worker threads
 	c_thread_pool m_thread_pool;
 
+	// Context for each thread
+	c_aligned_allocator<s_thread_context, CACHE_LINE_SIZE> m_thread_contexts;
+
+	alignas(CACHE_LINE_SIZE) s_task_function_context m_voice_initializer_task_function_context;
+
 	// Manages lifetime of various buffers used during processing
 	c_buffer_manager m_buffer_manager;
 
@@ -169,6 +166,9 @@ private:
 	// Processes controller events and generates buffers for parameters
 	c_controller_event_manager m_controller_event_manager;
 
+	// Interface to access controller events
+	c_controller_interface m_controller_interface;
+
 	// Context for each task for the currently processing voice
 	c_lock_free_aligned_allocator<s_task_context> m_task_contexts;
 
@@ -180,6 +180,9 @@ private:
 
 	// Sample library
 	c_sample_library m_sample_library;
+
+	// Interface to access the sample library
+	c_sample_library_accessor m_sample_library_accessor;
 
 	// Sends events from the stream threads to the event handling thread
 	c_async_event_handler m_async_event_handler;

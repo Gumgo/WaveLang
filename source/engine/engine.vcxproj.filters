@@ -2,25 +2,12 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClInclude Include="buffer.h" />
-    <ClInclude Include="buffer_handle.h" />
     <ClInclude Include="predecessor_resolver.h" />
     <ClInclude Include="runtime_instrument.h" />
     <ClInclude Include="task_function.h" />
     <ClInclude Include="task_function_registry.h" />
     <ClInclude Include="task_graph.h" />
     <ClInclude Include="thread_pool.h" />
-    <ClInclude Include="array_dereference_interface\array_dereference_interface.h">
-      <Filter>array_dereference_interface</Filter>
-    </ClInclude>
-    <ClInclude Include="buffer_operations\buffer_operations.h">
-      <Filter>buffer_operations</Filter>
-    </ClInclude>
-    <ClInclude Include="buffer_operations\buffer_operations_internal.h">
-      <Filter>buffer_operations</Filter>
-    </ClInclude>
-    <ClInclude Include="buffer_operations\buffer_iterators.h">
-      <Filter>buffer_operations</Filter>
-    </ClInclude>
     <ClInclude Include="controller_interface\controller_interface.h">
       <Filter>controller_interface</Filter>
     </ClInclude>
@@ -135,6 +122,16 @@
     <ClInclude Include="voice_interface\voice_interface.h">
       <Filter>voice_interface</Filter>
     </ClInclude>
+    <ClInclude Include="task_data_type.h" />
+    <ClInclude Include="buffer_operations\buffer_iterator.h">
+      <Filter>buffer_operations</Filter>
+    </ClInclude>
+    <ClInclude Include="buffer_operations\buffer_iterator_internal.h">
+      <Filter>buffer_operations</Filter>
+    </ClInclude>
+    <ClInclude Include="buffer_operations\buffer_iterator_types.h">
+      <Filter>buffer_operations</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="predecessor_resolver.cpp" />
@@ -143,9 +140,6 @@
     <ClCompile Include="task_function_registry.cpp" />
     <ClCompile Include="task_graph.cpp" />
     <ClCompile Include="thread_pool.cpp" />
-    <ClCompile Include="array_dereference_interface\array_dereference_interface.cpp">
-      <Filter>array_dereference_interface</Filter>
-    </ClCompile>
     <ClCompile Include="controller_interface\controller_interface.cpp">
       <Filter>controller_interface</Filter>
     </ClCompile>
@@ -245,6 +239,7 @@
     <ClCompile Include="voice_interface\voice_interface.cpp">
       <Filter>voice_interface</Filter>
     </ClCompile>
+    <ClCompile Include="task_data_type.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="SConscript" />
@@ -260,23 +255,11 @@
     <None Include="math\math_real32x4_sse.inl">
       <Filter>math</Filter>
     </None>
-    <None Include="task_functions\task_functions_core_bool.inl">
-      <Filter>task_functions</Filter>
-    </None>
-    <None Include="task_functions\task_functions_core_real.inl">
-      <Filter>task_functions</Filter>
-    </None>
-    <None Include="task_functions\task_functions_core_select.inl">
-      <Filter>task_functions</Filter>
-    </None>
     <None Include="task_functions\sampler\sinc_window_coefficients.inl">
       <Filter>task_functions\sampler</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="array_dereference_interface">
-      <UniqueIdentifier>{9ad6c18e-b260-44bf-baf4-4dfb25c88ce2}</UniqueIdentifier>
-    </Filter>
     <Filter Include="buffer_operations">
       <UniqueIdentifier>{0db8d4ce-c31b-4c67-b9d5-d1f45ae9884a}</UniqueIdentifier>
     </Filter>
@@ -307,5 +290,8 @@
     <Filter Include="task_functions\sampler">
       <UniqueIdentifier>{707d09c7-5d7e-49fe-9ad2-e0efe33a1c36}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\natvis\project.natvis" />
   </ItemGroup>
 </Project>

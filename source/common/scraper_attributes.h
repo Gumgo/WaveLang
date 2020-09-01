@@ -25,8 +25,7 @@
 #define WL_OPTIMIZATION_RULE_PREFIX "wl_optimization_rule:"
 #define WL_TASK_FUNCTION_DECLARATION "wl_task_function_declaration."
 #define WL_SOURCE_PREFIX "wl_source:"
-#define WL_IN_SOURCE_PREFIX "wl_in_source:"
-#define WL_OUT_SOURCE_PREFIX "wl_out_source:"
+#define WL_UNSHARED "wl_unshared."
 #define WL_TASK_MEMORY_QUERY "wl_task_memory_query."
 #define WL_TASK_MEMORY_QUERY_FUNCTION_PREFIX "wl_task_memory_query_function:"
 #define WL_TASK_INITIALIZER "wl_task_initializer."
@@ -100,7 +99,7 @@
 // Defines a task function
 #define wl_task_function_declaration SCRAPER_ATTRIBUTE(WL_TASK_FUNCTION_DECLARATION)
 
-// Associates a task function with a native module source
+// Associates a task function or task function argument with a native module or native module argument source
 #define wl_source(source) SCRAPER_ATTRIBUTE(WL_SOURCE_PREFIX source)
 
 // Helper macro which covers task function declaration, ID, name, and native module source
@@ -110,14 +109,8 @@
 	wl_name(name)							\
 	wl_source(source)
 
-// An input parameter taking its source from native module parameter "source"
-#define wl_in_source(source) SCRAPER_ATTRIBUTE(WL_IN_SOURCE_PREFIX source)
-
-// An output parameter taking its source from native module parameter "source"
-#define wl_out_source(source) SCRAPER_ATTRIBUTE(WL_OUT_SOURCE_PREFIX source)
-
-// An inout parameter taking its in and out sources from native module parameters "in_source" and "out_source"
-#define wl_inout_source(in_source, out_source) wl_in_source(in_source) wl_out_source(out_source)
+// Indicates that the underlying buffer for a task function argument cannot be shared with another argument
+#define wl_unshared SCRAPER_ATTRIBUTE(WL_UNSHARED)
 
 // Declares a task memory query function
 #define wl_task_memory_query SCRAPER_ATTRIBUTE(WL_TASK_MEMORY_QUERY)

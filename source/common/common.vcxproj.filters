@@ -138,4 +138,7 @@
       <UniqueIdentifier>{f7631248-c990-4cef-9b8f-fed13485d422}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\natvis\project.natvis" />
+  </ItemGroup>
 </Project>

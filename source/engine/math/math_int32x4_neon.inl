@@ -61,6 +61,17 @@ inline int32x4::operator real32x4() const {
 	return vcvtq_f32_s32(m_value);
 }
 
+inline real32x4 real32x4::sum_elements() const {
+	int32x2_t low_high_sum = vpadd_s32(vget_low_s32(m_value), vget_high_s32(m_value));
+	int32x2_t total_sum = vpadd_s32(low_high_sum, low_high_sum);
+	return vcombine_s32(total_sum, total_sum);
+}
+
+inline int32 int32x4::first_element() const {
+	wl_vhalt("Not implemented"); // $TODO
+	return 0;
+}
+
 inline int32x4 operator+(const int32x4 &v) {
 	return v;
 }

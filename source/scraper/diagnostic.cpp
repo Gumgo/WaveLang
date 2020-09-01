@@ -1,3 +1,5 @@
+#define _SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING // Silence LLVM C++17 warning
+
 #include "scraper/diagnostic.h"
 
 c_scraper_diagnostic::c_scraper_diagnostic(clang::CompilerInstance &compiler_instance)

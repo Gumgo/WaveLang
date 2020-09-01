@@ -9,4 +9,7 @@
   <ItemGroup>
     <ClInclude Include="console_commands.h" />
   </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\natvis\project.natvis" />
+  </ItemGroup>
 </Project>

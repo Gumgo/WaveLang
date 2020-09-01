@@ -119,6 +119,12 @@ bool test_bit(t_storage storage, t_bit bit) {
 	class_name(const class_name &) = delete;			\
 	class_name &operator=(const class_name &) = delete
 
+// Add this to a class's declaration to disable copy constructor and assignment operator but allow default move behavior
+#define UNCOPYABLE_MOVABLE(class_name)				\
+	UNCOPYABLE(class_name);							\
+	class_name(class_name &&) = default;			\
+	class_name &operator=(class_name &&) = default
+
 template<typename t_to, typename t_from>
 t_to reinterpret_bits(t_from from) {
 	static_assert(sizeof(t_to) == sizeof(t_from), "Can't reinterpret_bits for types of different sizes");

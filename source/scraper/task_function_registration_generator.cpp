@@ -28,19 +28,10 @@ static_assert(NUMBEROF(k_task_primitive_type_enum_strings) == enum_count<e_task_
 static const char *k_task_qualifier_enum_strings[] = {
 	"e_task_qualifier::k_in",
 	"e_task_qualifier::k_out",
-	"e_task_qualifier::k_inout"
+	"e_task_qualifier::k_constant"
 };
 static_assert(NUMBEROF(k_task_qualifier_enum_strings) == enum_count<e_task_qualifier>(),
 	"Invalid task qualifier enum strings");
-
-static const char *k_task_function_mapping_native_module_input_type_enum_strings[] = {
-	"e_task_function_mapping_native_module_input_type::k_variable",
-	"e_task_function_mapping_native_module_input_type::k_branchless_variable",
-	"e_task_function_mapping_native_module_input_type::k_none"
-};
-static_assert(NUMBEROF(k_task_function_mapping_native_module_input_type_enum_strings) ==
-	enum_count<e_task_function_mapping_native_module_input_type>(),
-	"Invalid task function mapping native module input type enum strings");
 
 static const char *k_task_primitive_type_getter_names[] = {
 	"real",
@@ -51,23 +42,22 @@ static_assert(NUMBEROF(k_task_primitive_type_getter_names) == enum_count<e_task_
 	"Primitive type getter names mismatch");
 
 static const char *k_task_qualifier_getter_names[] = {
-	"_buffer_or_constant_in",
-	"_buffer_out",
-	"_buffer_inout"
+	"_in",
+	"_out",
+	"_in" // k_constant still uses "in" for the getter
 };
 static_assert(NUMBEROF(k_task_qualifier_getter_names) == enum_count<e_task_qualifier>(),
 	"Qualifier getter names mismatch");
 
 struct s_task_argument_mapping {
-	std::string in_source;
-	std::string out_source;
-	size_t in_source_index;
-	size_t out_source_index;
+	std::string source;
+	size_t source_index;
 	c_task_qualified_data_type type;
-	bool is_constant;
+	bool is_unshared;
 };
 
 struct s_task_mapping {
+	size_t native_module_index;
 	std::vector<s_task_argument_mapping> task_arguments;
 	std::vector<size_t> task_memory_query_argument_indices;
 	std::vector<size_t> task_initializer_argument_indices;
@@ -75,32 +65,24 @@ struct s_task_mapping {
 	std::vector<size_t> task_function_argument_indices;
 };
 
-struct s_native_module_to_task_function_mapping {
-	size_t native_module_index;
-	std::vector<size_t> sorted_task_function_indices;
-};
-
 static bool generate_task_function_mapping(
 	const c_scraper_result *result, size_t task_function_index, s_task_mapping &mapping);
 static bool map_native_module_arguments_to_task_arguments(
 	const s_native_module_declaration &native_module,
 	const std::vector<s_task_function_argument_declaration> &task_arguments,
-	bool all_usages_must_be_possibly_constant,
 	const char *function_type,
 	const char *function_name,
+	bool affects_unshared,
 	s_task_mapping &task_mapping,
 	std::vector<size_t> &task_argument_indices);
 static size_t find_native_module_argument(const s_native_module_declaration &native_module, const char *argument_name);
 static bool is_task_argument_compatible_with_native_module_argument(
 	const s_task_function_argument_declaration &task_argument,
 	const s_native_module_argument_declaration &native_module_argument,
-	const char *task_function_name, const char *native_module_name);
+	const char *task_function_name,
+	const char *native_module_name);
 static void write_task_arguments(
 	std::ofstream &out, const s_task_mapping &mapping, const std::vector<size_t> argument_indices);
-static bool generate_native_module_to_task_function_mappings(
-	const c_scraper_result *result,
-	const std::vector<s_task_mapping> &task_mappings,
-	std::vector<s_native_module_to_task_function_mapping> &mappings);
 
 bool generate_task_function_registration(
 	const c_scraper_result *result, const char *registration_function_name, std::ofstream &out) {
@@ -120,13 +102,6 @@ bool generate_task_function_registration(
 		if (failed) {
 			return false;
 		}
-	}
-
-	std::vector<s_native_module_to_task_function_mapping> native_module_to_task_function_mappings;
-
-	if (!generate_native_module_to_task_function_mappings(
-		result, task_mappings, native_module_to_task_function_mappings)) {
-		return false;
 	}
 
 	out << "#ifdef TASK_FUNCTION_REGISTRATION_ENABLED" NEWLINE_STR NEWLINE_STR;
@@ -212,6 +187,8 @@ bool generate_task_function_registration(
 		const s_task_function_declaration &task_function = result->get_task_function(index);
 		const s_task_mapping &task_mapping = task_mappings[index];
 		const s_library_declaration &library = result->get_library(task_function.library_index);
+		const s_native_module_declaration &native_module = result->get_native_module(task_mapping.native_module_index);
+		wl_assert(task_function.library_index == native_module.library_index);
 
 		out << TAB_STR "{" NEWLINE_STR;
 		out << TAB2_STR "s_task_function task_function;" NEWLINE_STR;
@@ -250,91 +227,35 @@ bool generate_task_function_registration(
 				k_task_primitive_type_enum_strings[enum_index(primitive_type)] <<
 				", " << k_bool_strings[argument_mapping.type.get_data_type().is_array()] << "), " <<
 				k_task_qualifier_enum_strings[enum_index(qualifier)] << ");" NEWLINE_STR;
+			out << TAB2_STR "task_function.arguments_unshared[" << arg <<
+				"] = " << (argument_mapping.is_unshared ? "true" : "false") << ";" NEWLINE_STR;
+		}
+
+		out << TAB2_STR "task_function.native_module_uid = s_native_module_uid::build(" <<
+			id_to_string(library.id) << ", " << id_to_string(native_module.id) << ");" NEWLINE_STR;
+
+		std::vector<size_t> native_module_task_function_argument_indices(
+			native_module.arguments.size(),
+			k_invalid_task_argument_index);
+
+		for (size_t task_arg = 0; task_arg < task_mapping.task_arguments.size(); task_arg++) {
+			size_t source_index = task_mapping.task_arguments[task_arg].source_index;
+			wl_assert(source_index != k_invalid_argument_index);
+			wl_assert(native_module_task_function_argument_indices[source_index] == k_invalid_task_argument_index);
+			native_module_task_function_argument_indices[source_index] = task_arg;
+		}
+
+		for (size_t arg = 0; arg < native_module_task_function_argument_indices.size(); arg++) {
+			out << TAB2_STR "task_function.task_function_argument_indices[" << arg << "] = ";
+			if (native_module_task_function_argument_indices[arg] == k_invalid_task_argument_index) {
+				out << "k_invalid_task_argument_index";
+			} else {
+				out << native_module_task_function_argument_indices[arg];
+			}
+			out << ";" NEWLINE_STR;
 		}
 
 		out << TAB2_STR "result &= c_task_function_registry::register_task_function(task_function);" NEWLINE_STR;
-		out << TAB_STR "}" NEWLINE_STR;
-	}
-
-	// Generate native module to task function mappings
-	for (size_t index = 0; index < native_module_to_task_function_mappings.size(); index++) {
-		const s_native_module_to_task_function_mapping &mapping = native_module_to_task_function_mappings[index];
-		const s_native_module_declaration &native_module = result->get_native_module(mapping.native_module_index);
-		const s_library_declaration &library = result->get_library(native_module.library_index);
-
-		out << TAB_STR "{" NEWLINE_STR;
-		out << TAB2_STR "s_task_function_mapping mappings[" <<
-			mapping.sorted_task_function_indices.size() << "];" NEWLINE_STR;
-		out << TAB2_STR "ZERO_STRUCT(mappings);" NEWLINE_STR;
-
-		for (size_t mapping_index = 0; mapping_index < mapping.sorted_task_function_indices.size(); mapping_index++) {
-			size_t task_function_index = mapping.sorted_task_function_indices[mapping_index];
-			const s_task_function_declaration &task_function = result->get_task_function(task_function_index);
-			const s_task_mapping &task_mapping = task_mappings[task_function_index];
-			wl_assert(task_function.library_index == native_module.library_index);
-
-			std::vector<e_task_function_mapping_native_module_input_type> native_module_input_types;
-			std::vector<size_t> native_module_task_function_argument_indices;
-
-			// Initialize the native module input types to their default values corresponding to each native module
-			// argument type. We will overwrite them with the branchless version when inout buffers are encountered.
-			for (size_t arg = 0; arg < native_module.arguments.size(); arg++) {
-				native_module_task_function_argument_indices.push_back(k_invalid_task_argument_index);
-				if (native_module_qualifier_is_input(native_module.arguments[arg].type.get_qualifier())) {
-					native_module_input_types.push_back(e_task_function_mapping_native_module_input_type::k_variable);
-				} else {
-					native_module_input_types.push_back(e_task_function_mapping_native_module_input_type::k_none);
-				}
-			}
-
-			// Upgrade variables to branchless variables when we find inout buffers
-			for (size_t task_arg = 0; task_arg < task_mapping.task_arguments.size(); task_arg++) {
-				size_t in_source_index = task_mapping.task_arguments[task_arg].in_source_index;
-				size_t out_source_index = task_mapping.task_arguments[task_arg].out_source_index;
-
-				if (in_source_index != k_invalid_argument_index) {
-					wl_assert(native_module_task_function_argument_indices[in_source_index] ==
-						k_invalid_task_argument_index);
-					native_module_task_function_argument_indices[in_source_index] = task_arg;
-				}
-
-				if (out_source_index != k_invalid_argument_index) {
-					wl_assert(native_module_task_function_argument_indices[out_source_index] ==
-						k_invalid_task_argument_index);
-					native_module_task_function_argument_indices[out_source_index] = task_arg;
-				}
-
-				if (task_mapping.task_arguments[task_arg].type.get_qualifier() == e_task_qualifier::k_inout) {
-					wl_assert(in_source_index != k_invalid_argument_index);
-					wl_assert(native_module_input_types[in_source_index] ==
-						e_task_function_mapping_native_module_input_type::k_variable);
-					native_module_input_types[in_source_index] =
-						e_task_function_mapping_native_module_input_type::k_branchless_variable;
-				}
-			}
-
-			out << TAB2_STR "{" NEWLINE_STR;
-			out << TAB3_STR "s_task_function_mapping &mapping = mappings[" << mapping_index << "];" NEWLINE_STR;
-			out << TAB3_STR "mapping.task_function_uid = s_task_function_uid::build(" <<
-				id_to_string(library.id) << ", " << id_to_string(task_function.id) << ");" NEWLINE_STR;
-
-			for (size_t arg = 0; arg < native_module_input_types.size(); arg++) {
-				e_task_function_mapping_native_module_input_type input_type = native_module_input_types[arg];
-				out << TAB3_STR "mapping.native_module_argument_mapping[" << arg << "].input_type = " <<
-					k_task_function_mapping_native_module_input_type_enum_strings[enum_index(input_type)] <<
-					";" NEWLINE_STR;
-				out << TAB3_STR "mapping.native_module_argument_mapping[" << arg <<
-					"].task_function_argument_index = " <<  native_module_task_function_argument_indices[arg] <<
-					";" NEWLINE_STR;
-			}
-
-			out << TAB2_STR "}" NEWLINE_STR;
-		}
-
-		out << TAB2_STR "c_task_function_registry::register_task_function_mapping_list(s_native_module_uid::build(" <<
-			id_to_string(library.id) << ", " << id_to_string(native_module.id) <<
-			"), c_task_function_mapping_list::construct(mappings));" NEWLINE_STR;
-
 		out << TAB_STR "}" NEWLINE_STR;
 	}
 
@@ -362,6 +283,7 @@ static bool generate_task_function_mapping(
 		if (task_function.library_index == native_module_to_check.library_index &&
 			task_function.native_module_source == native_module_to_check.identifier) {
 			native_module = &native_module_to_check;
+			mapping.native_module_index = index;
 			break;
 		}
 	}
@@ -425,9 +347,9 @@ static bool generate_task_function_mapping(
 	if (!map_native_module_arguments_to_task_arguments(
 		*native_module,
 		task_function.arguments,
-		false,
 		"task function",
 		task_function.name.c_str(),
+		true,
 		mapping,
 		mapping.task_function_argument_indices)) {
 		return false;
@@ -437,9 +359,9 @@ static bool generate_task_function_mapping(
 		!map_native_module_arguments_to_task_arguments(
 			*native_module,
 			task_memory_query->arguments,
-			false,
 			"task memory query",
 			task_memory_query->name.c_str(),
+			false,
 			mapping,
 			mapping.task_memory_query_argument_indices)) {
 		return false;
@@ -449,9 +371,9 @@ static bool generate_task_function_mapping(
 		!map_native_module_arguments_to_task_arguments(
 			*native_module,
 			task_initializer->arguments,
-			false,
 			"task initializer",
 			task_initializer->name.c_str(),
+			false,
 			mapping,
 			mapping.task_initializer_argument_indices)) {
 		return false;
@@ -461,9 +383,9 @@ static bool generate_task_function_mapping(
 		!map_native_module_arguments_to_task_arguments(
 			*native_module,
 			task_voice_initializer->arguments,
-			false,
 			"task voice initializer",
 			task_voice_initializer->name.c_str(),
+			false,
 			mapping,
 			mapping.task_voice_initializer_argument_indices)) {
 		return false;
@@ -475,9 +397,9 @@ static bool generate_task_function_mapping(
 static bool map_native_module_arguments_to_task_arguments(
 	const s_native_module_declaration &native_module,
 	const std::vector<s_task_function_argument_declaration> &task_arguments,
-	bool all_usages_must_be_possibly_constant,
 	const char *function_type,
 	const char *function_name,
+	bool affects_unshared,
 	s_task_mapping &task_mapping,
 	std::vector<size_t> &task_argument_indices) {
 	wl_assert(task_argument_indices.empty());
@@ -485,31 +407,21 @@ static bool map_native_module_arguments_to_task_arguments(
 	// Track which native module arguments have been referenced by this task function's arguments
 	std::vector<bool> native_module_argument_usage(native_module.arguments.size(), false);
 
-	// Iterate over each task function argument and find its matching native module arguments, which can be up to 2 for
-	// inout task arguments. Validate that the task argument is compatible with the native module argument(s) and mark
-	// each one as used.
+	// Iterate over each task function argument and find its matching native module argument. Validate that the task
+	// argument is compatible with the native module argument(s) and mark each one as used.
 	for (size_t function_argument_index = 0;
 		function_argument_index < task_arguments.size();
 		function_argument_index++) {
 		const s_task_function_argument_declaration &argument = task_arguments[function_argument_index];
-
-		if (all_usages_must_be_possibly_constant && !argument.is_possibly_constant) {
-			std::cerr << "All arguments to " << function_type << " '" << function_name <<
-				"' must be possible constant inputs\n";
-			return false;
-		}
 
 		size_t task_argument_index = k_invalid_task_argument_index;
 
 		// Determine if we've already added this task argument
 		for (size_t index = 0; index < task_mapping.task_arguments.size(); index++) {
 			const s_task_argument_mapping &argument_mapping = task_mapping.task_arguments[index];
-			wl_assert(!argument_mapping.in_source.empty() || !argument_mapping.out_source.empty());
+			wl_assert(!argument_mapping.source.empty());
 
-			bool source_input_matches = (argument.in_source == argument_mapping.in_source);
-			bool source_output_matches = (argument.out_source == argument_mapping.out_source);
-
-			if (source_input_matches && source_output_matches) {
+			if (argument.source == argument_mapping.source) {
 				if (argument.type != argument_mapping.type) {
 					std::cerr << "Argument '" << argument.name << "' of " << function_type << " '" << function_name <<
 						"' doesn't match existing task argument\n";
@@ -519,90 +431,50 @@ static bool map_native_module_arguments_to_task_arguments(
 				task_argument_index = index;
 				break;
 			} else {
-				// If only one of the source input and output matches, it means we're using a native module argument in
-				// two different ways - e.g. we're using an argument as both an input and an inout, which is not
-				// allowed.                                           
-				if (source_input_matches && !argument_mapping.in_source.empty()) {
-					std::cerr << "Native module '" << native_module.identifier << "' argument '" <<
-						argument_mapping.in_source << "' cannot be referenced by multiple " << function_type <<
-						" arguments in '" << function_name << "'\n";
-					return false;
-				} else if (source_output_matches && !argument_mapping.out_source.empty()) {
-					std::cerr << "Native module '" << native_module.identifier << "' argument '" <<
-						argument_mapping.out_source << "' cannot be referenced by multiple " << function_type <<
-						" arguments in '" << function_name << "'\n";
-					return false;
-				} else {
-					// This is not a match, keep searching
-				}
+				// This is not a match, keep searching
 			}
 		}
 
 		// If we don't find a match, add a new task argument
 		if (task_argument_index == k_invalid_task_argument_index) {
 			s_task_argument_mapping argument_mapping;
-			argument_mapping.in_source = argument.in_source;
-			if (!argument.in_source.empty()) {
-				argument_mapping.in_source_index =
-					find_native_module_argument(native_module, argument.in_source.c_str());
-				wl_assert(argument_mapping.in_source_index != k_invalid_argument_index);
+			argument_mapping.source = argument.source;
+			if (!argument.source.empty()) {
+				argument_mapping.source_index = find_native_module_argument(native_module, argument.source.c_str());
+				wl_assert(argument_mapping.source_index != k_invalid_argument_index);
 
 				if (!is_task_argument_compatible_with_native_module_argument(
 					argument,
-					native_module.arguments[argument_mapping.in_source_index],
+					native_module.arguments[argument_mapping.source_index],
 					function_name,
 					native_module.identifier.c_str())) {
 					return false;
 				}
 			} else {
-				argument_mapping.in_source_index = k_invalid_argument_index;
-			}
-
-			argument_mapping.out_source = argument.out_source;
-			if (!argument.out_source.empty()) {
-				argument_mapping.out_source_index =
-					find_native_module_argument(native_module, argument.out_source.c_str());
-				wl_assert(argument_mapping.out_source_index != k_invalid_argument_index);
-
-				if (!is_task_argument_compatible_with_native_module_argument(
-					argument,
-					native_module.arguments[argument_mapping.out_source_index],
-					function_name,
-					native_module.identifier.c_str())) {
-					return false;
-				}
-			} else {
-				argument_mapping.out_source_index = k_invalid_argument_index;
+				argument_mapping.source_index = k_invalid_argument_index;
 			}
 
 			argument_mapping.type = argument.type;
-			argument_mapping.is_constant = argument.is_constant;
+			argument_mapping.is_unshared = false;
 
 			task_argument_index = task_mapping.task_arguments.size();
 			task_mapping.task_arguments.push_back(argument_mapping);
 		}
 
-		// Make sure the source native module arguments haven't already been referenced by this function
-		const s_task_argument_mapping &argument_mapping =
-			task_mapping.task_arguments[task_argument_index];
-
-		if (!argument_mapping.in_source.empty()) {
-			if (native_module_argument_usage[argument_mapping.in_source_index]) {
-				std::cerr << "Native module '" << native_module.identifier << "' argument '" <<
-					argument_mapping.in_source << "' cannot be referenced by multiple " <<
-					function_type << " arguments in '" << function_name << "'\n";
-			} else {
-				native_module_argument_usage[argument_mapping.in_source_index] = true;
-			}
+		s_task_argument_mapping &argument_mapping = task_mapping.task_arguments[task_argument_index];
+		if (affects_unshared) {
+			// Only task functions affect is_unshared, other related functions (e.g. initializers) don't
+			argument_mapping.is_unshared = argument.is_unshared;
 		}
 
-		if (!argument_mapping.out_source.empty()) {
-			if (native_module_argument_usage[argument_mapping.out_source_index]) {
+		// Make sure the source native module arguments haven't already been referenced by this function
+		if (!argument_mapping.source.empty()) {
+			if (native_module_argument_usage[argument_mapping.source_index]) {
 				std::cerr << "Native module '" << native_module.identifier << "' argument '" <<
-					argument_mapping.out_source << "' cannot be referenced by multiple " <<
+					argument_mapping.source << "' cannot be referenced by multiple " <<
 					function_type << " arguments in '" << function_name << "'\n";
 			} else {
-				native_module_argument_usage[argument_mapping.out_source_index] = true;
+				native_module_argument_usage[argument_mapping.source_index] = true;
 			}
 		}
 
@@ -627,10 +499,11 @@ static size_t find_native_module_argument(const s_native_module_declaration &nat
 static bool is_task_argument_compatible_with_native_module_argument(
 	const s_task_function_argument_declaration &task_argument,
 	const s_native_module_argument_declaration &native_module_argument,
-	const char *task_function_name, const char *native_module_name) {
+	const char *task_function_name,
+	const char *native_module_name) {
 	static const e_task_primitive_type k_task_primitive_types_from_native_module_primitive_types[] = {
-		e_task_primitive_type::k_real,		// e_native_module_primitive_type::k_real
-		e_task_primitive_type::k_bool,		// e_native_module_primitive_type::k_bool
+		e_task_primitive_type::k_real,	// e_native_module_primitive_type::k_real
+		e_task_primitive_type::k_bool,	// e_native_module_primitive_type::k_bool
 		e_task_primitive_type::k_string	// e_native_module_primitive_type::k_string
 	};
 	static_assert(NUMBEROF(k_task_primitive_types_from_native_module_primitive_types) ==
@@ -652,10 +525,22 @@ static bool is_task_argument_compatible_with_native_module_argument(
 	// Check whether qualifiers are compatible
 	e_native_module_qualifier native_module_qualifier = native_module_argument.type.get_qualifier();
 	e_task_qualifier task_qualifier = task_argument.type.get_qualifier();
-	if ((task_argument.is_constant && native_module_qualifier != e_native_module_qualifier::k_constant) ||
-		(task_qualifier == e_task_qualifier::k_in && !native_module_qualifier_is_input(native_module_qualifier)) ||
-		(task_qualifier == e_task_qualifier::k_out && native_module_qualifier != e_native_module_qualifier::k_out)) {
-		// Note: inout task qualifier is compatible with either in or out native module qualifier
+	bool compatible = false;
+	switch (native_module_qualifier) {
+	case e_native_module_qualifier::k_in:
+		compatible = (task_qualifier == e_task_qualifier::k_in);
+		break;
+
+	case e_native_module_qualifier::k_out:
+		compatible = (task_qualifier == e_task_qualifier::k_out);
+		break;
+
+	case e_native_module_qualifier::k_constant:
+		compatible = (task_qualifier == e_task_qualifier::k_in) || (task_qualifier == e_task_qualifier::k_constant);
+		break;
+	}
+
+	if (!compatible) {
 		std::cerr << "Native module '" << native_module_name << "' argument '" << native_module_argument.name <<
 			"' qualifier is incompatible with task '" << task_function_name << "' argument '" << task_argument.name <<
 			"' qualifier\n";
@@ -678,105 +563,18 @@ static void write_task_arguments(
 		out << TAB2_STR "context.arguments[" << task_argument_index << "].get_" <<
 			k_task_primitive_type_getter_names[enum_index(primitive_type)];
 
-		if (argument_mapping.type.get_data_type().is_array()) {
-			out << "_array_in";
+		if (argument_mapping.type.get_qualifier() == e_task_qualifier::k_constant) {
+			out << "_constant";
 		} else {
-			if (argument_mapping.is_constant) {
-				out << "_constant_in";
-			} else {
-				out << k_task_qualifier_getter_names[enum_index(argument_mapping.type.get_qualifier())];
-			}
+			out << "_buffer";
 		}
+
+		if (argument_mapping.type.get_data_type().is_array()) {
+			out << "_array";
+		}
+
+		out << k_task_qualifier_getter_names[enum_index(argument_mapping.type.get_qualifier())];
 
 		out << "()" << ((arg + 1 == argument_indices.size()) ? ");" : ",") << NEWLINE_STR;
 	}
-}
-
-static bool generate_native_module_to_task_function_mappings(
-	const c_scraper_result *result,
-	const std::vector<s_task_mapping> &task_mappings,
-	std::vector<s_native_module_to_task_function_mapping> &mappings) {
-	wl_assert(result);
-	wl_assert(mappings.empty());
-
-	for (size_t index = 0; index < result->get_native_module_count(); index++) {
-		const s_native_module_declaration &native_module = result->get_native_module(index);
-		s_native_module_to_task_function_mapping mapping;
-		mapping.native_module_index = index;
-
-		for (size_t task_function = 0; task_function < result->get_task_function_count(); task_function++) {
-			if (result->get_task_function(task_function).library_index == native_module.library_index &&
-				result->get_task_function(task_function).native_module_source == native_module.identifier) {
-				mapping.sorted_task_function_indices.push_back(task_function);
-			}
-		}
-
-		if (mapping.sorted_task_function_indices.empty()) {
-			// This native module has no associated task functions
-			continue;
-		}
-
-		// Sort the mappings so that we prioritize inout buffers
-		struct s_native_module_to_task_function_mapping_comparator {
-			const std::vector<s_task_mapping> *task_mappings;
-
-			bool operator()(size_t task_function_a, size_t task_function_b) const {
-				const s_task_mapping &mapping_a = (*task_mappings)[task_function_a];
-				const s_task_mapping &mapping_b = (*task_mappings)[task_function_b];
-
-				// More inout buffers always goes first
-				size_t inout_count_a = 0;
-				size_t inout_count_b = 0;
-
-				for (size_t index = 0; index < mapping_a.task_arguments.size(); index++) {
-					if (mapping_a.task_arguments[index].type.get_qualifier() == e_task_qualifier::k_inout) {
-						inout_count_a++;
-					}
-				}
-
-				for (size_t index = 0; index < mapping_b.task_arguments.size(); index++) {
-					if (mapping_b.task_arguments[index].type.get_qualifier() == e_task_qualifier::k_inout) {
-						inout_count_b++;
-					}
-				}
-
-				if (inout_count_a != inout_count_b) {
-					return inout_count_a > inout_count_b;
-				}
-
-				// Fewer arguments wins
-				if (mapping_a.task_arguments.size() != mapping_b.task_arguments.size()) {
-					return mapping_a.task_arguments.size() < mapping_b.task_arguments.size();
-				}
-
-				// First inout argument wins
-				for (size_t index = 0; index < mapping_a.task_arguments.size(); index++) {
-					e_task_qualifier qualifier_a = mapping_a.task_arguments[index].type.get_qualifier();
-					e_task_qualifier qualifier_b = mapping_b.task_arguments[index].type.get_qualifier();
-					if (qualifier_a != qualifier_b) {
-						if (qualifier_a == e_task_qualifier::k_inout) {
-							return true;
-						} else if (qualifier_b == e_task_qualifier::k_inout) {
-							return false;
-						}
-					}
-				}
-
-				return false;
-			}
-		};
-
-		s_native_module_to_task_function_mapping_comparator comparator;
-		comparator.task_mappings = &task_mappings;
-
-		std::sort(
-			mapping.sorted_task_function_indices.begin(),
-			mapping.sorted_task_function_indices.end(),
-			comparator);
-
-		mappings.push_back(mapping);
-	}
-
-	// No failure cases (currently)
-	return true;
 }

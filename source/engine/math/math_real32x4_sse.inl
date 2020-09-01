@@ -55,6 +55,10 @@ inline real32x4 real32x4::sum_elements() const {
 	return x;
 }
 
+inline real32 real32x4::first_element() const {
+	return _mm_cvtss_f32(m_value);
+}
+
 inline real32x4 operator+(const real32x4 &v) {
 	return v;
 }

@@ -704,11 +704,6 @@ void c_sample::initialize_data_with_padding(
 				} else {
 					// Extend the loop by both loop padding and edge padding
 					uint32 loop_extend = k_max_sample_padding * 2;
-					if (m_phase_shift_enabled) {
-						// Double the loop so we can phase-shift without overrunning bounds
-						loop_extend += loop_mod;
-					}
-
 					for (uint32 index = 0; index < loop_extend; index++) {
 						sample_data_array[dst_offset] = sample_data_array[dst_offset - loop_mod];
 						dst_offset++;
@@ -718,6 +713,15 @@ void c_sample::initialize_data_with_padding(
 					m_loop_start += k_max_sample_padding;
 					m_loop_end += k_max_sample_padding;
 				}
+
+				if (m_phase_shift_enabled) {
+					// Double the loop so we can phase-shift without overrunning bounds
+					for (uint32 index = 0; index < loop_mod; index++) {
+						sample_data_array[dst_offset] = sample_data_array[dst_offset - loop_mod];
+						dst_offset++;
+					}
+				}
+
 				break;
 			}
 

@@ -50,4 +50,7 @@
       <UniqueIdentifier>{ac4eb251-0933-4901-a463-84302e3f7dd8}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\natvis\project.natvis" />
+  </ItemGroup>
 </Project>

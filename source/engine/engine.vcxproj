@@ -80,12 +80,10 @@
     <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemGroup>
-    <ClInclude Include="array_dereference_interface\array_dereference_interface.h" />
     <ClInclude Include="buffer.h" />
-    <ClInclude Include="buffer_handle.h" />
-    <ClInclude Include="buffer_operations\buffer_iterators.h" />
-    <ClInclude Include="buffer_operations\buffer_operations.h" />
-    <ClInclude Include="buffer_operations\buffer_operations_internal.h" />
+    <ClInclude Include="buffer_operations\buffer_iterator.h" />
+    <ClInclude Include="buffer_operations\buffer_iterator_internal.h" />
+    <ClInclude Include="buffer_operations\buffer_iterator_types.h" />
     <ClInclude Include="controller_interface\controller_interface.h" />
     <ClInclude Include="events\async_event_handler.h" />
     <ClInclude Include="events\event_console.h" />
@@ -111,6 +109,7 @@
     <ClInclude Include="runtime_instrument.h" />
     <ClInclude Include="sample\sample.h" />
     <ClInclude Include="sample\sample_library.h" />
+    <ClInclude Include="task_data_type.h" />
     <ClInclude Include="task_function.h" />
     <ClInclude Include="task_functions\sampler\fast_log2.h" />
     <ClInclude Include="task_functions\sampler\fetch_sample.h" />
@@ -132,7 +131,6 @@
     <ClInclude Include="voice_interface\voice_interface.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="array_dereference_interface\array_dereference_interface.cpp" />
     <ClCompile Include="controller_interface\controller_interface.cpp" />
     <ClCompile Include="events\async_event_handler.cpp" />
     <ClCompile Include="events\event_console.cpp" />
@@ -153,6 +151,7 @@
     <ClCompile Include="runtime_instrument.cpp" />
     <ClCompile Include="sample\sample.cpp" />
     <ClCompile Include="sample\sample_library.cpp" />
+    <ClCompile Include="task_data_type.cpp" />
     <ClCompile Include="task_function.cpp" />
     <ClCompile Include="task_functions\sampler\fast_log2.cpp" />
     <ClCompile Include="task_functions\sampler\fetch_sample.cpp" />
@@ -180,9 +179,9 @@
     <None Include="math\math_real32x4_sse.inl" />
     <None Include="SConscript" />
     <None Include="task_functions\sampler\sinc_window_coefficients.inl" />
-    <None Include="task_functions\task_functions_core_bool.inl" />
-    <None Include="task_functions\task_functions_core_real.inl" />
-    <None Include="task_functions\task_functions_core_select.inl" />
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\natvis\project.natvis" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

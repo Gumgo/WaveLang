@@ -83,6 +83,7 @@ enum class e_native_operator {
 	k_greater_equal,
 	k_and,
 	k_or,
+	// $TODO add k_xor
 	k_array_dereference,
 
 	k_count
@@ -94,6 +95,8 @@ enum class e_native_operator {
 const char *get_native_operator_native_module_name(e_native_operator native_operator);
 
 enum class e_native_module_qualifier {
+	k_invalid = -1,
+
 	k_in,
 	k_out,
 
@@ -109,6 +112,8 @@ inline bool native_module_qualifier_is_input(e_native_module_qualifier qualifier
 }
 
 enum class e_native_module_primitive_type {
+	k_invalid = -1,
+
 	k_real,
 	k_bool,
 	k_string,
@@ -122,7 +127,7 @@ struct s_native_module_primitive_type_traits {
 
 class c_native_module_data_type {
 public:
-	c_native_module_data_type();
+	c_native_module_data_type() = default;
 	c_native_module_data_type(e_native_module_primitive_type primitive_type, bool is_array = false);
 	static c_native_module_data_type invalid();
 
@@ -147,13 +152,13 @@ private:
 		k_count
 	};
 
-	e_native_module_primitive_type m_primitive_type;
-	uint32 m_flags;
+	e_native_module_primitive_type m_primitive_type = e_native_module_primitive_type::k_invalid;
+	uint32 m_flags = 0;
 };
 
 class c_native_module_qualified_data_type {
 public:
-	c_native_module_qualified_data_type();
+	c_native_module_qualified_data_type() = default;
 	c_native_module_qualified_data_type(c_native_module_data_type data_type, e_native_module_qualifier qualifier);
 	static c_native_module_qualified_data_type invalid();
 
@@ -166,8 +171,8 @@ public:
 	bool operator!=(const c_native_module_qualified_data_type &other) const;
 
 private:
-	c_native_module_data_type m_data_type;
-	e_native_module_qualifier m_qualifier;
+	c_native_module_data_type m_data_type = c_native_module_data_type();
+	e_native_module_qualifier m_qualifier = e_native_module_qualifier::k_invalid;
 };
 
 const s_native_module_primitive_type_traits &get_native_module_primitive_type_traits(

@@ -1,3 +1,5 @@
+#define _SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING // Silence LLVM C++17 warning
+
 #include "scraper/annotation_collection.h"
 
 #pragma warning(push, 0) // Disable warnings for LLVM

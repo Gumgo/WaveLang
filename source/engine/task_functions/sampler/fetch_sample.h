@@ -12,18 +12,14 @@
 // Calculates the interpolated sample at the given time. The input sample should not be a mipmap.
 real32 fetch_sample(const c_sample *sample, uint32 channel, real64 sample_index);
 
-// Calculates the given number of wavetable samples (max 4) and stores them at the given location. Note: if less than 4
-// samples are requested, the remaining ones up to 4 will be filled with garbage data; it is expected that these will
-// later be overwritten, or are past the end of the buffer but exist for padding.
-void fetch_wavetable_samples(
+// Calculates the interpolated bandlimited sample at the given time using the wavetable
+real32 fetch_wavetable_sample(
 	const c_sample *sample,
 	uint32 channel,
 	real32 stream_sample_rate,
 	real32 sample_rate_0,
-	const real32x4 &speed,
-	size_t count,
-	const s_static_array<real64, k_simd_block_elements> &samples,
-	real32 *out_ptr);
+	real32 speed,
+	real64 sample_index);
 
 /*
 Windowed sinc sampling chart

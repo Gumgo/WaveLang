@@ -17,14 +17,9 @@ public:
 
 	static bool register_task_function(const s_task_function &task_function);
 
-	static bool register_task_function_mapping_list(
-		s_native_module_uid native_module_uid,
-		c_task_function_mapping_list task_function_mapping_list);
-
 	static uint32 get_task_function_count();
 	static uint32 get_task_function_index(s_task_function_uid task_function_uid);
 	static const s_task_function &get_task_function(uint32 index);
 
-	static c_task_function_mapping_list get_task_function_mapping_list(uint32 native_module_index);
+	static s_task_function_uid get_task_function_mapping(uint32 native_module_index);
 };
-
