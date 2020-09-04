@@ -47,9 +47,6 @@
     <ClInclude Include="math\math_real32x4.h">
       <Filter>math</Filter>
     </ClInclude>
-    <ClInclude Include="math\math_tests.h">
-      <Filter>math</Filter>
-    </ClInclude>
     <ClInclude Include="math\neon_mathfun.h">
       <Filter>math</Filter>
     </ClInclude>
@@ -181,9 +178,6 @@
     </ClCompile>
     <ClCompile Include="executor\channel_mixer.cpp">
       <Filter>executor</Filter>
-    </ClCompile>
-    <ClCompile Include="math\math_tests.cpp">
-      <Filter>math</Filter>
     </ClCompile>
     <ClCompile Include="profiler\profiler.cpp">
       <Filter>profiler</Filter>

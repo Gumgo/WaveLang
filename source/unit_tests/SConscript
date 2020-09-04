@@ -1,0 +1,51 @@
+# Unit tests - a set of unit tests for all components
+
+import os
+
+import build_config
+import utils
+
+Import("*")
+
+env = env.Clone()
+
+if str(platform) == "win32":
+	googletest_include_dir = os.environ["GOOGLETEST_INCLUDE_DIR"]
+
+	googletest_lib_dir_variable_name = {
+		build_config.Configuration.DEBUG: "GOOGLETEST_LIB_DIR_DEBUG",
+		build_config.Configuration.DEVELOPMENT: "GOOGLETEST_LIB_DIR_DEBUG",
+		build_config.Configuration.RELEASE: "GOOGLETEST_LIB_DIR_RELEASE"
+	}[configuration]
+
+	googletest_lib_dir = os.environ[googletest_lib_dir_variable_name]
+
+	googletest_lib_name = {
+		build_config.Configuration.DEBUG: "gtestd.lib",
+		build_config.Configuration.DEVELOPMENT: "gtestd.lib",
+		build_config.Configuration.RELEASE: "gtest.lib"
+	}[configuration]
+else:
+	raise SCons.Errors.BuildError("Unsupported platform '{}'".format(platform))
+
+env.Append(CPPPATH = ["#source", googletest_include_dir])
+
+sources = utils.enumerate_files(env, ".", utils.SOURCE_EXTENSIONS)
+static_libraries = ["common", "engine", "execution_graph"]
+env.Append(
+	LIBS = static_libraries + [googletest_lib_name],
+	LIBPATH = ["../bin", googletest_lib_dir])
+
+objects = []
+for source in sources:
+	obj = env.StaticObject(source)
+	objects += obj
+
+unit_tests_program = env.Program("unit_tests", objects)
+
+unit_tests_installed = env.Install("../bin", unit_tests_program)
+env.Alias("unit_tests", unit_tests_installed)
+
+# Install to app directory
+unit_tests_app = env.Install("#app", unit_tests_installed)
+env.Alias("unit_tests_app", unit_tests_app)

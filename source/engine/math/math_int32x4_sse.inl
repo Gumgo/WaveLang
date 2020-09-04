@@ -79,6 +79,10 @@ inline int32x4 operator-(const int32x4 &lhs, const int32x4 &rhs) {
 	return _mm_sub_epi32(lhs, rhs);
 }
 
+inline int32x4 operator*(const int32x4 &lhs, const int32x4 &rhs) {
+	return _mm_mullo_epi32(lhs, rhs);
+}
+
 inline int32x4 operator&(const int32x4 &lhs, const int32x4 &rhs) {
 	return _mm_and_si128(lhs, rhs);
 }
@@ -188,6 +192,22 @@ template<> inline real32x4 reinterpret_bits(const int32x4 &v) {
 
 inline int32 mask_from_msb(const int32x4 &v) {
 	return _mm_movemask_ps(reinterpret_bits<real32x4>(v));
+}
+
+inline bool all_true(const int32x4 &v) {
+	return mask_from_msb(v) == 0xf;
+}
+
+inline bool all_false(const int32x4 &v) {
+	return mask_from_msb(v) == 0x0;
+}
+
+inline bool any_true(const int32x4 &v) {
+	return mask_from_msb(v) != 0x0;
+}
+
+inline bool any_false(const int32x4 &v) {
+	return mask_from_msb(v) != 0xf;
 }
 
 inline int32x4 single_element(const int32x4 &v, int32 pos) {

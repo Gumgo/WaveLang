@@ -92,6 +92,10 @@ inline int32x4 operator-(const int32x4 &lhs, const int32x4 &rhs) {
 	return vsubq_s32(lhs, rhs);
 }
 
+inline int32x4 operator-(const int32x4 &lhs, const int32x4 &rhs) {
+	return vmulq_s32(lhs, rhs);
+}
+
 inline int32x4 operator&(const int32x4 &lhs, const int32x4 &rhs) {
 	return vandq_s32(lhs, rhs);
 }
@@ -206,6 +210,26 @@ inline int32 mask_from_msb(const int32x4 &v) {
 	int32x2_t low_high_sum = vpadd_s32(vget_low_s32(msb_shifted), vget_high_s32(msb_shifted));
 	int32x2_t total_sum = vpadd_s32(low_high_sum, low_high_sum);
 	return vget_lane_s32(total_sum, 0);
+}
+
+inline bool all_true(const int32x4 &v) {
+	int32x2_t low_high = vand_s32(vget_low_s32(v), vget_high_s32(v));
+	return (vget_lane_s32(low_high, 0) & vget_lane_s32(low_high, 1)) != 0;
+}
+
+inline bool all_false(const int32x4 &v) {
+	int32x2_t low_high = vor_s32(vget_low_s32(v), vget_high_s32(v));
+	return (vget_lane_s32(low_high, 0) | vget_lane_s32(low_high, 1)) == 0;
+}
+
+inline bool any_true(const int32x4 &v) {
+	int32x2_t low_high = vor_s32(vget_low_s32(v), vget_high_s32(v));
+	return (vget_lane_s32(low_high, 0) | vget_lane_s32(low_high, 1)) != 0;
+}
+
+inline bool any_false(const int32x4 &v) {
+	int32x2_t low_high = vand_s32(vget_low_s32(v), vget_high_s32(v));
+	return (vget_lane_s32(low_high, 0) & vget_lane_s32(low_high, 1)) == 0;
 }
 
 inline int32x4 single_element(const int32x4 &v, int32 pos) {

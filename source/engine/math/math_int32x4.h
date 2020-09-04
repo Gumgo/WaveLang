@@ -45,6 +45,7 @@ inline int32x4 operator~(const int32x4 &v);
 // Binary operators
 inline int32x4 operator+(const int32x4 &lhs, const int32x4 &rhs);
 inline int32x4 operator-(const int32x4 &lhs, const int32x4 &rhs);
+inline int32x4 operator*(const int32x4 &lhs, const int32x4 &rhs);
 inline int32x4 operator&(const int32x4 &lhs, const int32x4 &rhs);
 inline int32x4 operator|(const int32x4 &lhs, const int32x4 &rhs);
 inline int32x4 operator^(const int32x4 &lhs, const int32x4 &rhs);
@@ -75,8 +76,12 @@ inline int32x4 max_unsigned(const int32x4 &a, const int32x4 &b);
 // Casting
 template<> inline real32x4 reinterpret_bits(const int32x4 &v);
 
-// Masking
+// Masking and bool testing
 inline int32 mask_from_msb(const int32x4 &v);
+inline bool all_true(const int32x4 &v);
+inline bool all_false(const int32x4 &v);
+inline bool any_true(const int32x4 &v);
+inline bool any_false(const int32x4 &v);
 
 // Shuffle
 inline int32x4 single_element(const int32x4 &v, int32 pos);

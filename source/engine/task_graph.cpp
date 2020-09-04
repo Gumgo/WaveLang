@@ -452,13 +452,6 @@ bool c_task_graph::setup_task(
 		&m_task_function_arguments[old_task_function_arguments_size],
 		task_function.argument_count);
 
-#if IS_TRUE(ASSERTS_ENABLED)
-	for (s_task_function_argument &argument : task_function_arguments) {
-		// Fill with invalid so we can assert that we don't set a value twice
-		argument.data.type = c_task_qualified_data_type::invalid();
-	}
-#endif // IS_TRUE(ASSERTS_ENABLED)
-
 	// Map each input and output to its defined location in the task
 	size_t input_output_count =
 		execution_graph.get_node_incoming_edge_count(node_reference) +

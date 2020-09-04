@@ -88,6 +88,7 @@ if compiler == "cl":
 			"/INCREMENTAL"
 		]
 
+	# $TODO perhaps switch to static CRT (/MT, /MTd) in the future
 	if debug:
 		cc_flags += [
 			"/MDd"	# Use debug multithread DLL-specific version of the runtime library
@@ -118,7 +119,8 @@ projects = [
 	"engine",
 	"execution_graph",
 	"runtime",
-	"scraper"
+	"scraper",
+	"unit_tests"
 ]
 
 for project in projects:

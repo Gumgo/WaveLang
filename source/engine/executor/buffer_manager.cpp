@@ -324,10 +324,7 @@ bool c_buffer_manager::process_remain_active_output(e_instrument_stage instrumen
 		uint32 chunk_size = m_chunk_size;
 		iterate_buffers<128, true>(m_chunk_size, static_cast<const c_bool_buffer *>(remain_active_buffer),
 			[&remain_active](size_t i, const int32x4 &value) {
-				int32x4 all_zero_test = (value == int32x4(0));
-				int32 all_zero_msb = mask_from_msb(all_zero_test);
-
-				if (all_zero_msb != 15) {
+				if (any_false(value == int32x4(0))) {
 					// At least one bit was true
 					remain_active = true;
 				}
@@ -346,10 +343,7 @@ bool c_buffer_manager::process_remain_active_output(e_instrument_stage instrumen
 				// We now have zeros in the positions of all bits past the end of the buffer
 				// Mask the value being tested so we don't get false positives
 				int32x4 padded_value = value & overflow_mask;
-				int32x4 all_zero_test = (padded_value == int32x4(0));
-				int32 all_zero_msb = mask_from_msb(all_zero_test);
-
-				if (all_zero_msb != 15) {
+				if (any_false(padded_value == int32x4(0))) {
 					// At least one bit was true, so stop scanning
 					remain_active = true;
 				}

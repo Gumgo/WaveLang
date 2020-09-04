@@ -60,19 +60,31 @@ namespace buffer_iterator_internal {
 			bool all_constant,
 			t_iterators &&iterators) {
 		static_assert(std::tuple_size_v<std::remove_reference_t<t_iterators>> > 0, "No iterators provided");
+
+		// Determine whether we'll have trailing unaligned samples at the end
+		constexpr bool k_has_last_iteration_function = !std::is_same_v<t_last_iteration_function, std::nullptr_t>;
+
 		if (k_cico && all_constant) {
 			// If we support the constant-in, constant-out case and all our input buffers are constant, just iterate
 			// once and mark all output buffers as constant.
 			auto iterator_arguments = get_iterands(iterators);
 			auto arguments = std::tuple_cat(std::make_tuple<size_t>(0), std::move(iterator_arguments));
-			std_apply(std::forward<t_function>(function), std::move(arguments));
+			if constexpr (k_has_last_iteration_function) {
+				// Handle the case where we should call our last iteration function because the total iteration count is
+				// less than the stride
+				if (count < k_stride) {
+					std_apply(std::forward<t_last_iteration_function>(last_iteration_function), std::move(arguments));
+				} else {
+					std_apply(std::forward<t_function>(function), std::move(arguments));
+				}
+			} else {
+				std_apply(std::forward<t_function>(function), std::move(arguments));
+			}
 			tuple_for_each(iterators, [](auto &&iter) { iter.advance(); });
 			tuple_for_each(iterators, [](auto &&iter) { iter.iteration_finished(); });
 			tuple_for_each(std::forward<t_iterators>(iterators), [](auto &&iter) { iter.set_is_constant(true); });
 			return true;
 		} else {
-			// Determine whether we'll have trailing unaligned samples at the end
-			constexpr bool k_has_last_iteration_function = !std::is_same_v<t_last_iteration_function, std::nullptr_t>;
 			size_t iteration_limit;
 			if constexpr (k_has_last_iteration_function) {
 				// Run the last iteration function on the final iteration
@@ -147,7 +159,7 @@ namespace buffer_iterator_internal {
 				std::forward<t_function>(function),
 				std::forward<t_last_iteration_function>(last_iteration_function),
 				count,
-				false,
+				all_constant,
 				std::move(appended_iterators),
 				std::forward<t_remaining_buffers>(remaining_buffers)...);
 		} else {
@@ -240,10 +252,19 @@ namespace buffer_iterator_internal {
 		constexpr bool k_has_last_iteration_function = k_args_count >= 2 && !std::get<k_args_count - 2>(k_args_are_buffers);
 		constexpr size_t k_function_count = k_has_last_iteration_function ? 2 : 1;
 
-		return move_buffers_to_end_2<k_stride, k_cico>(
-			count,
-			std::index_sequence<sizeof...(args) - k_function_count>(),
-			std::make_index_sequence<sizeof...(args) - k_function_count>(),
-			std::forward_as_tuple(std::forward<t_args>(args)...));
+		if constexpr (k_function_count == 1) {
+			return move_buffers_to_end_2<k_stride, k_cico>(
+				count,
+				std::index_sequence<k_args_count - 1>(),
+				std::make_index_sequence<k_args_count - 1>(),
+				std::forward_as_tuple(std::forward<t_args>(args)...));
+		} else {
+			static_assert(k_function_count == 2, "Unexpected number of functions provided");
+			return move_buffers_to_end_2<k_stride, k_cico>(
+				count,
+				std::index_sequence<k_args_count - 2, k_args_count - 1>(),
+				std::make_index_sequence<k_args_count - 2>(),
+				std::forward_as_tuple(std::forward<t_args>(args)...));
+		}
 	}
 }

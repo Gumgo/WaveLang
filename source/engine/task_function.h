@@ -69,9 +69,7 @@ using c_string_constant_array = c_wrapped_array<const char *const>;
 struct s_task_function_argument {
 	// Do not access these directly
 	struct {
-#if IS_TRUE(ASSERTS_ENABLED)
 		c_task_qualified_data_type type;
-#endif // IS_TRUE(ASSERTS_ENABLED)
 
 		union u_value {
 			u_value() {} // Allows for c_wrapped_array
@@ -189,7 +187,7 @@ struct s_task_function_context {
 	uint32 buffer_size;
 	void *task_memory;
 
-	// $TODO more things like timing
+	// $TODO add more fields for things like timing info
 
 	c_task_function_arguments arguments;
 };

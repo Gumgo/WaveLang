@@ -19,6 +19,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "runtime", "runtime\runtime.
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "scraper", "scraper\scraper.vcxproj", "{225659CE-77E1-4AC1-9E36-178B87DA7F1E}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "unit_tests", "unit_tests\unit_tests.vcxproj", "{32DD3AAC-2291-4FC3-9615-E59DADA3DC61}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		debug|x64 = debug|x64
@@ -74,6 +76,12 @@ Global
 		{225659CE-77E1-4AC1-9E36-178B87DA7F1E}.development|x64.Build.0 = development|x64
 		{225659CE-77E1-4AC1-9E36-178B87DA7F1E}.release|x64.ActiveCfg = release|x64
 		{225659CE-77E1-4AC1-9E36-178B87DA7F1E}.release|x64.Build.0 = release|x64
+		{32DD3AAC-2291-4FC3-9615-E59DADA3DC61}.debug|x64.ActiveCfg = debug|x64
+		{32DD3AAC-2291-4FC3-9615-E59DADA3DC61}.debug|x64.Build.0 = debug|x64
+		{32DD3AAC-2291-4FC3-9615-E59DADA3DC61}.development|x64.ActiveCfg = development|x64
+		{32DD3AAC-2291-4FC3-9615-E59DADA3DC61}.development|x64.Build.0 = development|x64
+		{32DD3AAC-2291-4FC3-9615-E59DADA3DC61}.release|x64.ActiveCfg = release|x64
+		{32DD3AAC-2291-4FC3-9615-E59DADA3DC61}.release|x64.Build.0 = release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

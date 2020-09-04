@@ -5,7 +5,6 @@
 #include "common/types.h"
 
 // Wrapped arrays can safely be ZERO_STRUCT'd
-// $TODO consider switching to s_wrapped_array and making them POD
 
 template<typename t_element>
 class c_wrapped_array {
@@ -19,6 +18,7 @@ public:
 		, m_count(count) {
 	}
 
+	// $TODO if we use SFINAE more often, consider adding a FUNCTION_CONDITION(condition) macro
 	template<
 		typename t_mutable_element,
 		bool k_cond = std::is_const_v<t_element> && std::is_same_v<t_mutable_element, std::remove_const_t<t_element>>,

@@ -100,7 +100,6 @@
     <ClInclude Include="math\math_constants.h" />
     <ClInclude Include="math\math_int32x4.h" />
     <ClInclude Include="math\math_real32x4.h" />
-    <ClInclude Include="math\math_tests.h" />
     <ClInclude Include="math\neon_mathfun.h" />
     <ClInclude Include="math\simd.h" />
     <ClInclude Include="math\sse_mathfun.h" />
@@ -145,7 +144,6 @@
     <ClCompile Include="executor\executor.cpp" />
     <ClCompile Include="executor\task_memory_manager.cpp" />
     <ClCompile Include="executor\voice_allocator.cpp" />
-    <ClCompile Include="math\math_tests.cpp" />
     <ClCompile Include="predecessor_resolver.cpp" />
     <ClCompile Include="profiler\profiler.cpp" />
     <ClCompile Include="runtime_instrument.cpp" />

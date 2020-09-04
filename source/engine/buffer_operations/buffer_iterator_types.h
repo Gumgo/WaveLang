@@ -158,9 +158,8 @@ namespace buffer_iterator_internal {
 		}
 
 		void advance() {
-			m_bit = (m_bit & 31) + 1;
+			m_bit = (m_bit + 1) & 31;
 			m_pointer += (m_bit == 0);
-			m_bit = m_bit & 31;
 		}
 
 	private:
@@ -241,9 +240,8 @@ namespace buffer_iterator_internal {
 		}
 
 		void advance() {
-			m_bit = (m_bit & 31) + 4;
+			m_bit = (m_bit + 4) & 31;
 			m_pointer += (m_bit == 0);
-			m_bit = m_bit & 31;
 		}
 
 	private:

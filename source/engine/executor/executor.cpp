@@ -148,14 +148,12 @@ void c_executor::initialize_thread_pool() {
 		task_function_context.voice_interface = &m_voice_interface;
 		task_function_context.controller_interface = &m_controller_interface;
 		task_function_context.sample_rate = m_settings.sample_rate;
-		// $TODO fill in timing info, etc.
 	}
 
 	ZERO_STRUCT(&m_voice_initializer_task_function_context);
 	m_voice_initializer_task_function_context.event_interface = &m_event_interface;
 	m_voice_initializer_task_function_context.sample_accessor = &m_sample_library_accessor;
 	m_voice_initializer_task_function_context.sample_rate = m_settings.sample_rate;
-	// $TODO fill in timing info, etc.
 
 	m_thread_pool.start(thread_pool_settings);
 }
@@ -202,7 +200,6 @@ void c_executor::initialize_tasks() {
 				task_function_context.sample_requester = &sample_library_requester;
 				task_function_context.sample_rate = m_settings.sample_rate;
 				task_function_context.arguments = task_graph->get_task_arguments(task);
-				// $TODO fill in timing info, etc.
 
 				for (uint32 voice = 0; voice < max_voices_for_this_graph; voice++) {
 					task_function_context.task_memory =
@@ -302,7 +299,6 @@ size_t c_executor::task_memory_query(const c_task_graph *task_graph, uint32 task
 		task_function_context.event_interface = &m_event_interface;
 		task_function_context.sample_rate = m_settings.sample_rate;
 		task_function_context.arguments = task_graph->get_task_arguments(task_index);
-		// $TODO fill in timing info, etc.
 
 		required_memory_for_task = task_function.memory_query(task_function_context);
 	}
@@ -429,7 +425,6 @@ void c_executor::process_voice_or_fx(const s_executor_chunk_context &chunk_conte
 				m_voice_initializer_task_function_context.task_memory =
 					m_task_memory_manager.get_task_memory(m_active_instrument_stage, task, voice_index);
 				m_voice_initializer_task_function_context.arguments = m_active_task_graph->get_task_arguments(task);
-				// $TODO fill in timing info, etc.
 
 				task_function.voice_initializer(m_voice_initializer_task_function_context);
 			}
@@ -518,7 +513,6 @@ void c_executor::process_task(uint32 thread_index, const s_task_parameters *para
 		task_function_context.task_memory =
 			m_task_memory_manager.get_task_memory(m_active_instrument_stage, params->task_index, params->voice_index);
 		task_function_context.arguments = m_active_task_graph->get_task_arguments(params->task_index);
-		// $TODO fill in timing info, etc.
 
 		// Call the task function
 		wl_assert(task_function.function);
