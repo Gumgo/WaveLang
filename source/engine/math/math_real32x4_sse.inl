@@ -26,9 +26,17 @@ inline void real32x4::load(const real32 *ptr) {
 	m_value = _mm_load_ps(ptr);
 }
 
+inline void real32x4::load_unaligned(const real32 *ptr) {
+	m_value = _mm_loadu_ps(ptr);
+}
+
 inline void real32x4::store(real32 *ptr) const {
 	wl_assert(is_pointer_aligned(ptr, k_simd_alignment));
 	_mm_store_ps(ptr, m_value);
+}
+
+inline void real32x4::store_unaligned(real32 *ptr) const {
+	_mm_storeu_ps(ptr, m_value);
 }
 
 inline real32x4 &real32x4::real32x4::operator=(const t_simd_real32 &v) {

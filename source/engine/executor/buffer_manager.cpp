@@ -151,6 +151,25 @@ void c_buffer_manager::initialize(
 	m_fx_processed = false;
 }
 
+void c_buffer_manager::shutdown() {
+	m_buffer_allocator.shutdown();
+
+	for (e_instrument_stage instrument_stage : iterate_enum<e_instrument_stage>()) {
+		m_task_buffer_contexts[enum_index(instrument_stage)].clear();
+		m_dynamic_buffers[enum_index(instrument_stage)].clear();
+		m_task_buffers_to_decrement[enum_index(instrument_stage)].clear();
+		m_task_buffers_to_allocate[enum_index(instrument_stage)].clear();
+		m_output_buffers_to_decrement[enum_index(instrument_stage)].clear();
+	}
+
+	m_voice_output_pool_indices.clear();
+	m_fx_output_pool_indices.clear();
+	m_voice_shift_buffers.clear();
+	m_voice_accumulation_buffers.clear();
+	m_fx_output_buffers.clear();
+	m_channel_mix_buffers.clear();
+}
+
 void c_buffer_manager::begin_chunk(uint32 chunk_size) {
 	wl_assert(chunk_size <= m_buffer_allocator.get_buffer_pool_description(m_real_buffer_pool_index).size);
 	m_chunk_size = chunk_size;

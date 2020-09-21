@@ -43,7 +43,7 @@ struct s_executor_settings {
 	f_process_controller_events process_controller_events;
 	void *process_controller_events_context;
 
-	bool event_console_enabled;
+	bool event_console_enabled; // $TODO move this into the runtime - executor should be passed an event callback
 	bool profiling_enabled;
 	real32 profiling_threshold;
 };

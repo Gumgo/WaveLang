@@ -106,6 +106,14 @@ void c_task_memory_manager::initialize(
 	}
 }
 
+void c_task_memory_manager::shutdown() {
+	m_task_memory_allocator.free();
+
+	for (e_instrument_stage instrument_stage : iterate_enum<e_instrument_stage>()) {
+		m_task_memory_pointers[enum_index(instrument_stage)].clear();
+	}
+}
+
 size_t c_task_memory_manager::calculate_required_memory_for_task_graph(
 	const c_task_graph *task_graph,
 	f_task_memory_query_callback task_memory_query_callback,

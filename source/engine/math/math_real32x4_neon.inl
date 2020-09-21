@@ -33,6 +33,10 @@ inline void real32x4::load(const real32 *ptr) {
 #endif // IS_TRUE(COMPILER_MSVC)
 }
 
+inline void real32x4::load_unaligned(const real32 *ptr) {
+	m_value = vld1q_f32(ptr);
+}
+
 inline void real32x4::store(real32 *ptr) const {
 	wl_assert(is_pointer_aligned(ptr, k_simd_alignment));
 	real32 *aligned_ptr = ASSUME_ALIGNED(ptr, k_simd_alignment);
@@ -41,6 +45,10 @@ inline void real32x4::store(real32 *ptr) const {
 #else // IS_TRUE(COMPILER_MSVC)
 	vst1q_f32(aligned_ptr, m_value);
 #endif // IS_TRUE(COMPILER_MSVC)
+}
+
+inline void real32x4::store_unaligned(real32 *ptr) {
+	vst1q_f32(ptr, m_value);
 }
 
 inline real32x4 &real32x4::real32x4::operator=(const t_simd_real32 &v) {

@@ -104,12 +104,6 @@
     <ClInclude Include="task_functions\task_functions_array.h">
       <Filter>task_functions</Filter>
     </ClInclude>
-    <ClInclude Include="task_functions\sampler\sinc_window.h">
-      <Filter>task_functions\sampler</Filter>
-    </ClInclude>
-    <ClInclude Include="task_functions\sampler\fast_log2.h">
-      <Filter>task_functions\sampler</Filter>
-    </ClInclude>
     <ClInclude Include="task_functions\sampler\fetch_sample.h">
       <Filter>task_functions\sampler</Filter>
     </ClInclude>
@@ -128,6 +122,15 @@
     </ClInclude>
     <ClInclude Include="buffer_operations\buffer_iterator_types.h">
       <Filter>buffer_operations</Filter>
+    </ClInclude>
+    <ClInclude Include="sample\sample_loader.h">
+      <Filter>sample</Filter>
+    </ClInclude>
+    <ClInclude Include="resampler\resampler.h">
+      <Filter>resampler</Filter>
+    </ClInclude>
+    <ClInclude Include="math\utilities.h">
+      <Filter>math</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -218,12 +221,6 @@
     <ClCompile Include="task_functions\task_functions_array.cpp">
       <Filter>task_functions</Filter>
     </ClCompile>
-    <ClCompile Include="task_functions\sampler\sinc_window.cpp">
-      <Filter>task_functions\sampler</Filter>
-    </ClCompile>
-    <ClCompile Include="task_functions\sampler\fast_log2.cpp">
-      <Filter>task_functions\sampler</Filter>
-    </ClCompile>
     <ClCompile Include="task_functions\sampler\fetch_sample.cpp">
       <Filter>task_functions\sampler</Filter>
     </ClCompile>
@@ -234,6 +231,12 @@
       <Filter>voice_interface</Filter>
     </ClCompile>
     <ClCompile Include="task_data_type.cpp" />
+    <ClCompile Include="sample\sample_loader.cpp">
+      <Filter>sample</Filter>
+    </ClCompile>
+    <ClCompile Include="resampler\resampler.cpp">
+      <Filter>resampler</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="SConscript" />
@@ -249,8 +252,8 @@
     <None Include="math\math_real32x4_sse.inl">
       <Filter>math</Filter>
     </None>
-    <None Include="task_functions\sampler\sinc_window_coefficients.inl">
-      <Filter>task_functions\sampler</Filter>
+    <None Include="resampler\resampler_filters.inl">
+      <Filter>resampler</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -283,6 +286,9 @@
     </Filter>
     <Filter Include="task_functions\sampler">
       <UniqueIdentifier>{707d09c7-5d7e-49fe-9ad2-e0efe33a1c36}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="resampler">
+      <UniqueIdentifier>{326bbfc2-b597-4265-a4d3-4709fd4c958d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

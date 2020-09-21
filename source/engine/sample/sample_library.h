@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common/common.h"
+#include "common/utility/handle.h"
 
 #include "engine/sample/sample.h"
 
@@ -16,14 +17,14 @@ struct s_file_sample_parameters {
 
 struct s_wavetable_sample_parameters {
 	c_wrapped_array<const real32> harmonic_weights;
-	uint32 sample_count;
 	bool phase_shift_enabled;
 };
 
+struct s_sample_handle_identifier {};
+using h_sample = c_handle<s_sample_handle_identifier, uint32>;
+
 class c_sample_library {
 public:
-	static const uint32 k_invalid_handle = static_cast<uint32>(-1);
-
 	c_sample_library();
 	~c_sample_library();
 
@@ -33,16 +34,16 @@ public:
 	void clear_requested_samples();
 
 	// Requests the sample with the given filename to be loaded and returns its handle
-	uint32 request_sample(const s_file_sample_parameters &parameters);
+	h_sample request_sample(const s_file_sample_parameters &parameters);
 
 	// Requests the wavesample sample to be generated with the given parameters and returns its handle
-	uint32 request_sample(const s_wavetable_sample_parameters &parameters);
+	h_sample request_sample(const s_wavetable_sample_parameters &parameters);
 
 	// Loads requested samples and unloads any loaded samples that have not been requested
 	void update_loaded_samples();
 
 	// Returns the sample with the given handle, or null if it failed to load
-	const c_sample *get_sample(uint32 handle) const;
+	const c_sample *get_sample(h_sample handle, uint32 channel_index) const;
 
 private:
 	enum class e_sample_type {
@@ -63,18 +64,17 @@ private:
 
 		// Wavetable parameters:
 		std::vector<real32> harmonic_weights;
-		uint32 sample_count;
 
 		// Phase shift enabled
 		bool phase_shift_enabled;
 
-		// The sample, or null if it failed to load/generate
-		c_sample *sample;
+		// A sample for each channel, or an empty list on load/generate failure
+		std::vector<c_sample *> channel_samples;
 	};
 
 	static bool are_requested_samples_equal(
 		const s_requested_sample &requested_sample_a, const s_requested_sample &requested_sample_b);
-	uint32 request_sample(const s_requested_sample &requested_sample);
+	h_sample request_sample(const s_requested_sample &requested_sample);
 
 	std::string m_root_path;
 	std::vector<s_requested_sample> m_requested_samples;
@@ -87,7 +87,7 @@ public:
 	c_sample_library_accessor() = default;
 	void initialize(const c_sample_library *m_sample_library);
 
-	const c_sample *get_sample(uint32 handle) const;
+	const c_sample *get_sample(h_sample handle, uint32 channel_index) const;
 
 private:
 	const c_sample_library *m_sample_library = nullptr;
@@ -98,8 +98,8 @@ public:
 	c_sample_library_requester() = default;
 	void initialize(c_sample_library *m_sample_library);
 
-	uint32 request_sample(const s_file_sample_parameters &parameters);
-	uint32 request_sample(const s_wavetable_sample_parameters &parameters);
+	h_sample request_sample(const s_file_sample_parameters &parameters);
+	h_sample request_sample(const s_wavetable_sample_parameters &parameters);
 
 private:
 	c_sample_library *m_sample_library = nullptr;

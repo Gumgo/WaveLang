@@ -13,6 +13,12 @@ void c_controller_event_manager::initialize(size_t max_controller_events, size_t
 	m_parameter_state_table.initialize(bucket_count, max_parameter_count);
 }
 
+void c_controller_event_manager::shutdown() {
+	m_controller_events.clear();
+	m_sort_scratch_buffer.clear();
+	m_parameter_state_table.terminate();
+}
+
 c_wrapped_array<s_timestamped_controller_event> c_controller_event_manager::get_writable_controller_events() {
 	return c_wrapped_array<s_timestamped_controller_event>(&m_controller_events.front(), m_controller_events.size());
 }

@@ -15,6 +15,7 @@
 class c_buffer_manager {
 public:
 	void initialize(const c_runtime_instrument *runtime_instrument, uint32 max_buffer_size, uint32 output_channels);
+	void shutdown();
 
 	void begin_chunk(uint32 chunk_size);
 	void initialize_buffers_for_graph(e_instrument_stage instrument_stage);

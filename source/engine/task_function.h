@@ -209,6 +209,7 @@ using f_task_function = void (*)(const s_task_function_context &context);
 
 static const size_t k_max_task_function_name_length = 64;
 static const size_t k_max_task_function_arguments = 10;
+static const uint32 k_invalid_task_argument_index = static_cast<uint32>(-1);
 
 struct s_task_function {
 	// Unique identifier for this task function

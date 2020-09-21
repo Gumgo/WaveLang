@@ -23,22 +23,21 @@ static void run_sampler(
 	const c_real_buffer *speed,
 	c_real_buffer *result) {
 	s_sampler_context *sampler_context = static_cast<s_sampler_context *>(context.task_memory);
-	const c_sample *sample = context.sample_accessor->get_sample(sampler_context->sample_handle);
-	if (sampler_context->handle_failed_sample(sample, result, context.event_interface, name) ||
-		sampler_context->handle_reached_end(result)) {
+	const c_sample *sample =
+		sampler_context->get_sample_or_fail_gracefully(context.sample_accessor, result, context.event_interface, name);
+	if (!sample || sampler_context->handle_reached_end(result)) {
 		return;
 	}
 
-	wl_assert(sample->get_loop_mode() == e_sample_loop_mode::k_none);
+	wl_assert(!sample->is_looping());
 	wl_assert(!sample->is_wavetable());
 
 	real64 length_samples, loop_start_sample, loop_end_sample;
 	get_sample_time_data(sample, length_samples, loop_start_sample, loop_end_sample);
-	real64 phase_to_sample_offset_multiplier = loop_end_sample - loop_start_sample;
 
 	real32 stream_sample_rate = static_cast<real32>(context.sample_rate);
-	real32 sample_rate_0 = static_cast<real32>(sample->get_sample_rate());
-	real32 advance_multiplier = sample_rate_0 / stream_sample_rate;
+	real32 base_sample_rate = static_cast<real32>(sample->get_sample_rate());
+	real32 advance_multiplier = base_sample_rate / stream_sample_rate;
 
 	bool is_result_constant = speed->is_constant() && speed->get_constant() == 0.0f;
 	size_t samples_written = 0;
@@ -46,9 +45,10 @@ static void run_sampler(
 	// Could SIMD-optimize, but the buffer advance logic is a bit tricky
 	iterate_buffers<1, false>(context.buffer_size, speed, result,
 		[&](size_t i, real32 speed_value, real32 &result_value) {
+			speed_value = sanitize_inf_nan(speed_value);
 			real32 advance = speed_value * advance_multiplier;
 			real64 sample_index = sampler_context->increment_time(loop_end_sample, advance);
-			result_value = fetch_sample(sample, sampler_context->channel, sample_index);
+			result_value = fetch_sample(sample, sample_index);
 
 			samples_written++;
 			return !is_result_constant && !sampler_context->reached_end;
@@ -80,15 +80,13 @@ static void run_sampler_loop(
 	const c_real_buffer *phase,
 	c_real_buffer *result) {
 	s_sampler_context *sampler_context = static_cast<s_sampler_context *>(context.task_memory);
-	const c_sample *sample = context.sample_accessor->get_sample(sampler_context->sample_handle);
-	if (sampler_context->handle_failed_sample(sample, result, context.event_interface, name) ||
-		sampler_context->handle_reached_end(result)) {
+	const c_sample *sample =
+		sampler_context->get_sample_or_fail_gracefully(context.sample_accessor, result, context.event_interface, name);
+	if (!sample || sampler_context->handle_reached_end(result)) {
 		return;
 	}
 
-	// Bidi loops are preprocessed so at this point they act as normal loops
-	wl_assert(sample->get_loop_mode() == e_sample_loop_mode::k_loop
-		|| sample->get_loop_mode() == e_sample_loop_mode::k_bidi_loop);
+	wl_assert(sample->is_looping());
 	wl_assert(!sampler_context->reached_end);
 	wl_assert(k_is_wavetable == sample->is_wavetable());
 
@@ -97,8 +95,8 @@ static void run_sampler_loop(
 	real64 phase_to_sample_offset_multiplier = loop_end_sample - loop_start_sample;
 
 	real32 stream_sample_rate = static_cast<real32>(context.sample_rate);
-	real32 sample_rate_0 = static_cast<real32>(sample->get_sample_rate());
-	real32 advance_multiplier = sample_rate_0 / stream_sample_rate;
+	real32 base_sample_rate = static_cast<real32>(sample->get_sample_rate());
+	real32 advance_multiplier = base_sample_rate / stream_sample_rate;
 
 	bool is_result_constant = speed->is_constant() && speed->get_constant() == 0.0f && phase->is_constant();
 
@@ -108,6 +106,8 @@ static void run_sampler_loop(
 	// Could SIMD-optimize, but the buffer advance logic is a bit tricky
 	iterate_buffers<1, false>(context.buffer_size, speed, phase, result,
 		[&](size_t i, real32 speed_value, real32 phase_value, real32 &result_value) {
+			speed_value = sanitize_inf_nan(speed_value);
+			phase_value = sanitize_inf_nan(phase_value);
 			real32 advance = speed_value * advance_multiplier;
 			real64 sample_index = sampler_context->increment_time_looping(loop_start_sample, loop_end_sample, advance);
 
@@ -118,13 +118,12 @@ static void run_sampler_loop(
 			if constexpr (k_is_wavetable) {
 				result_value = fetch_wavetable_sample(
 					sample,
-					sampler_context->channel,
 					stream_sample_rate,
-					sample_rate_0,
+					base_sample_rate,
 					speed_value,
 					sample_index);
 			} else {
-				result_value = fetch_sample(sample, sampler_context->channel, sample_index);
+				result_value = fetch_sample(sample, sample_index);
 			}
 
 			samples_written++;
@@ -145,10 +144,9 @@ static void get_sample_time_data(
 	real64 &out_length_samples,
 	real64 &out_loop_start_sample,
 	real64 &out_loop_end_sample) {
-	uint32 first_sampling_frame = sample->get_first_sampling_frame();
-	out_length_samples = static_cast<real64>(sample->get_sampling_frame_count());
-	out_loop_start_sample = static_cast<real64>(sample->get_loop_start() - first_sampling_frame);
-	out_loop_end_sample = static_cast<real64>(sample->get_loop_end() - first_sampling_frame);
+	out_length_samples = static_cast<real64>(sample->get_entry(0)->samples.get_count());
+	out_loop_start_sample = static_cast<real64>(sample->get_loop_start());
+	out_loop_end_sample = static_cast<real64>(sample->get_loop_end());
 }
 
 namespace sampler_task_functions {
@@ -164,7 +162,10 @@ namespace sampler_task_functions {
 		static_cast<s_sampler_context *>(context.task_memory)->initialize_file(
 			context.event_interface,
 			context.sample_requester,
-			name, e_sample_loop_mode::k_none, false, channel);
+			name,
+			e_sample_loop_mode::k_none,
+			false,
+			channel);
 	}
 
 	void sampler_voice_initializer(const s_task_function_context &context) {
@@ -203,8 +204,10 @@ namespace sampler_task_functions {
 		const c_real_buffer *phase,
 		c_real_buffer *result) {
 		s_sampler_context *sampler_context = static_cast<s_sampler_context *>(context.task_memory);
-		const c_sample *sample = context.sample_accessor->get_sample(sampler_context->sample_handle);
-		if (sample->is_wavetable()) {
+		const c_sample *sample = context.sample_accessor->get_sample(
+			sampler_context->sample_handle,
+			sampler_context->channel);
+		if (sample && sample->is_wavetable()) {
 			// $TODO remove this branch, it only exists due to the __native_sin, etc. named wavetable hacks.
 			run_sampler_loop<true>(context, name, speed, phase, result);
 		} else {
@@ -215,14 +218,12 @@ namespace sampler_task_functions {
 	void sampler_wavetable_initializer(
 		const s_task_function_context &context,
 		c_real_constant_array harmonic_weights,
-		real32 sample_count,
 		const c_real_buffer *phase) {
 		bool phase_shift_enabled = !phase->is_constant() || (clamp(phase->get_constant(), 0.0f, 1.0f) != 0.0f);
 		static_cast<s_sampler_context *>(context.task_memory)->initialize_wavetable(
 			context.event_interface,
 			context.sample_requester,
 			harmonic_weights,
-			sample_count,
 			phase_shift_enabled);
 	}
 

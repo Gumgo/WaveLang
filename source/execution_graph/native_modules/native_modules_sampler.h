@@ -31,7 +31,6 @@ namespace sampler_native_modules wl_library(k_sampler_library_id, "sampler", 0) 
 	wl_runtime_only
 	void sampler_wavetable(
 		wl_in_const const c_native_module_real_array &harmonic_weights,
-		wl_in_const real32 sample_count,
 		wl_in real32 frequency,
 		wl_in real32 phase,
 		wl_out_return real32 &result);

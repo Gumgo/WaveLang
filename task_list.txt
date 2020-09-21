@@ -50,10 +50,6 @@
 		- Constants also get delayed if they are e.g. being added to a variable with latency (I think)
 	- The instrument reports a total latency equal to the latency of the outputs
 
-- Fix sampler
-	- Remove branching from fetch_sample by using multiple sinc tables to remove the sample shift operations
-	- Improve polyphase filtering implementation
-
 - Switch to Flex/Lemon for lexer/parser
 
 - Plugin system ($PLUGIN)
@@ -97,6 +93,30 @@
 - Add JSON library ($JSON)
 	- Functions to read values of various types, e.g. json.read_real_array("file.json", "path/to/value")
 
+- Random functions ($RANDOM)
+	- Function random(static_seed, dynamic_seed) generates a stream of random values from 0-1
+	- Function voice_random(static_seed, dynamic_seed) generates a single random value constant for the current voice
+	- static_seed must be a compile-time constant
+	- dynamic_seed can be dynamic and is only evaluated on the first sample of a new voice
+	- Idea for random number generation:
+		- Pre-generate a large buffer of a prime length filled with uniform random values in the range [0, 1)
+			- Use standard library RNG for this since it's just once at initialization
+		- Pick N offsets and strides (N=2 or 3 is probably good, details below for generation below)
+			- Each offset is in the range [0, buffer_length)
+			- Each stride is in the range [1, buffer_length)
+		- To sample noise:
+			- Each sample, grab the N values at indices offset_i and add them together, then mod by 1 to keep the value in the range [0, 1)
+				- Since each individual value is uniform, the final result is as well
+			- Increment each offset by the corresponding stride, wrapping when the end is reached
+		- Choosing the initial offsets/strides:
+			- Construct an array of values from 0 to buffer_length-1 and scramble the order
+				- Use standard library RNG for this since it's just once at initialization
+			- Scramble the bits in the seed 2N different ways (what's the best way to do this? are some randomly chosen xor seeds good enough?)
+			- For each offset: mod the scrambled bits by buffer_length and pick from the array
+			- For each stride: mod the scrambled bits by buffer_length-1, add 1 if the chosen index is >= the index of 0 in the array (we should never have a stride of 0)
+	- Add functions to shape random values for various distributions, e.g. normal distribution
+		- Have an optional cap value (e.g. abs(normal(x, 10)) will be capped at 10)
+
 - Fix include order ($INCLUDE)
 	- Write a script to do this
 	- Each category should be sorted alphabetically (folders names don't come first)
@@ -104,3 +124,12 @@
 		- Local (extra linebreak between categories)
 		- Third party
 		- Standard library
+
+- Code style updates
+	- Change most usages of const to constexpr
+	- Change multiline ? : so that ? and : occur at the beginning of the newline, same with && and ||
+	- Change out arguments from "out_x" to "x_out"
+	- Make k_pi and related constants a template
+	- Add improved memory copy and zeroing functions (zero_type(), zero_array(), copy_array())
+	- Change some macros to constexpr functions
+	- SFINAE helper macros

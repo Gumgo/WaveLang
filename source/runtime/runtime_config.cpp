@@ -39,7 +39,10 @@ static const bool k_default_executor_profiling_enabled = false;
 static const real32 k_default_executor_profiling_threshold = 0.0f;
 
 static bool try_to_get_value_from_child_node(
-	const rapidxml::xml_node<> *parent_node, const char *child_node_name, uint32 default_value, uint32 &out_value) {
+	const rapidxml::xml_node<> *parent_node,
+	const char *child_node_name,
+	uint32 default_value,
+	uint32 &out_value) {
 	const rapidxml::xml_node<> *node = parent_node->first_node(child_node_name);
 	if (node) {
 		const char *value = node->value();
@@ -577,7 +580,7 @@ void c_runtime_config::set_default_controller(const s_controller_device_info *co
 void c_runtime_config::set_default_executor() {
 	m_settings.executor_thread_count = k_default_executor_thread_count;
 	m_settings.executor_max_controller_parameters = k_default_executor_max_controller_parameters;
-	m_settings.executor_console_enabled = k_default_controller_enabled;
+	m_settings.executor_console_enabled = k_default_executor_console_enabled;
 	m_settings.executor_profiling_enabled = k_default_executor_profiling_enabled;
 	m_settings.executor_profiling_threshold = k_default_executor_profiling_threshold;
 }

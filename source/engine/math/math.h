@@ -2,6 +2,7 @@
 
 #include "engine/math/math_constants.h"
 #include "engine/math/simd.h"
+#include "engine/math/utilities.h"
 
 // Math type declaration includes
 #include "engine/math/math_int32x4.h"

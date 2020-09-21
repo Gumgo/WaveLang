@@ -30,7 +30,7 @@ module real integrate_distorted_line_from_zero(in real a, in real b, in real c, 
 
 module real sampler_sin(in real frequency) {
 	//real[] frequency_weights := real[](1);
-	//return sampler.sampler_wavetable(frequency_weights, 2048, frequency, 0);
+	//return sampler.sampler_wavetable(frequency_weights, frequency, 0);
 	return sampler.sampler_loop("__native_sin", 0, false, frequency, 0);
 }
 
@@ -42,7 +42,7 @@ module real sampler_sawtooth_phase(in real frequency, in real phase) {
 	//	frequency_weights := frequency_weights + real[](weight);
 	//	k := k + 1;
 	//}
-	//return sampler.sampler_wavetable(frequency_weights, 2048, frequency, phase);
+	//return sampler.sampler_wavetable(frequency_weights, frequency, phase);
 	return sampler.sampler_loop("__native_sawtooth", 0, false, frequency, phase);
 }
 
@@ -80,7 +80,7 @@ module real sampler_sawtooth_distorted_phase(in real frequency, in real distorti
 		frequency_weights := frequency_weights + real[](weight);
 		k := k + 1;
 	}
-	return sampler.sampler_wavetable(frequency_weights, 2048, frequency, phase);
+	return sampler.sampler_wavetable(frequency_weights, frequency, phase);
 }
 
 module real sampler_sawtooth_distorted(in real frequency, in real distortion) {
@@ -97,7 +97,7 @@ module real sampler_triangle(in real frequency) {
 	//	frequency_weights := frequency_weights + real[](weight);
 	//	k := k + 1;
 	//}
-	//return sampler.sampler_wavetable(frequency_weights, 2048, frequency, 0);
+	//return sampler.sampler_wavetable(frequency_weights, frequency, 0);
 	return sampler.sampler_loop("__native_triangle", 0, false, frequency, 0);
 }
 

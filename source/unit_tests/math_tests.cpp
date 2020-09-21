@@ -130,3 +130,11 @@ TEST(Math, Int32x4) {
 	EXPECT_TRUE(all_true(min(int32x4(1), int32x4(2)) == int32x4(1)));
 	EXPECT_TRUE(all_true(max(int32x4(1), int32x4(2)) == int32x4(2)));
 }
+
+TEST(Math, SanitizeInfNan) {
+	EXPECT_EQ(sanitize_inf_nan(1.0f), 1.0f);
+	EXPECT_EQ(sanitize_inf_nan(-1.0f), -1.0f);
+	EXPECT_EQ(sanitize_inf_nan(std::numeric_limits<real32>::infinity()), 0.0f);
+	EXPECT_EQ(sanitize_inf_nan(-std::numeric_limits<real32>::infinity()), 0.0f);
+	EXPECT_EQ(sanitize_inf_nan(std::numeric_limits<real32>::quiet_NaN()), 0.0f);
+}

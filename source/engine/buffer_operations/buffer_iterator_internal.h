@@ -150,11 +150,11 @@ namespace buffer_iterator_internal {
 		if constexpr (std::is_convertible_v<t_buffer, c_buffer *>) {
 			// Output buffers - might be constant if it's shared with an input buffer, but never compile-time constant
 			wl_assert(!buffer->is_compile_time_constant());
-			c_buffer_iterator<k_stride, e_buffer_iterator_type::k_output, t_buffer_decayed> iterator(
-				std::forward<t_buffer>(buffer));
+			using t_iterator = c_buffer_iterator<k_stride, e_buffer_iterator_type::k_output, t_buffer_decayed>;
+			t_iterator iterator(std::forward<t_buffer>(buffer));
 			auto appended_iterators = std::tuple_cat(
 				std::forward<t_iterators>(iterators),
-				std::make_tuple(std::move(iterator)));
+				std::tuple<t_iterator &&>(std::move(iterator)));
 			return iterate_buffers_internal<k_stride, k_cico>(
 				std::forward<t_function>(function),
 				std::forward<t_last_iteration_function>(last_iteration_function),
@@ -166,11 +166,11 @@ namespace buffer_iterator_internal {
 			// Input buffers
 			if (buffer->is_constant()) {
 				// This buffer contains a constant value
-				c_buffer_iterator<k_stride, e_buffer_iterator_type::k_constant, t_buffer_decayed> iterator(
-					std::forward<t_buffer>(buffer));
+				using t_iterator = c_buffer_iterator<k_stride, e_buffer_iterator_type::k_constant, t_buffer_decayed>;
+				t_iterator iterator(std::forward<t_buffer>(buffer));
 				auto appended_iterators = std::tuple_cat(
 					std::forward<t_iterators>(iterators),
-					std::make_tuple(std::move(iterator)));
+					std::tuple<t_iterator &&>(std::move(iterator)));
 				return iterate_buffers_internal<k_stride, k_cico>(
 					std::forward<t_function>(function),
 					std::forward<t_last_iteration_function>(last_iteration_function),
@@ -180,11 +180,11 @@ namespace buffer_iterator_internal {
 					std::forward<t_remaining_buffers>(remaining_buffers)...);
 			} else {
 				// This buffer contains non-constant data
-				c_buffer_iterator<k_stride, e_buffer_iterator_type::k_input, t_buffer_decayed> iterator(
-					std::forward<t_buffer>(buffer));
+				using t_iterator = c_buffer_iterator<k_stride, e_buffer_iterator_type::k_input, t_buffer_decayed>;
+				t_iterator iterator(std::forward<t_buffer>(buffer));
 				auto appended_iterators = std::tuple_cat(
 					std::forward<t_iterators>(iterators),
-					std::make_tuple(std::move(iterator)));
+					std::tuple<t_iterator &&>(std::move(iterator)));
 				return iterate_buffers_internal<k_stride, k_cico>(
 					std::forward<t_function>(function),
 					std::forward<t_last_iteration_function>(last_iteration_function),

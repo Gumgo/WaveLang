@@ -185,6 +185,11 @@ static void validate_task_function_mapping(const s_native_module &native_module,
 	for (size_t arg = 0; arg < native_module.argument_count; arg++) {
 		// Make sure we're mapping to a valid task argument index
 		uint32 mapping_index = task_function.task_function_argument_indices[arg];
+		if (mapping_index == k_invalid_task_argument_index) {
+			// This native module argument wasn't used by the task function.
+			continue;
+		}
+
 		wl_assert(VALID_INDEX(mapping_index, task_function.argument_count));
 		wl_assert(!task_argument_mappings[mapping_index]);
 		task_argument_mappings[mapping_index] = true;

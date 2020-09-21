@@ -265,6 +265,12 @@ void c_executor::shutdown_internal() {
 	wl_assert(unexecuted_tasks == 0);
 
 	m_thread_contexts.free();
+	m_task_contexts.free();
+	m_controller_event_manager.shutdown();
+	m_voice_allocator.shutdown();
+	// $TODO: shutdown_tasks();
+	m_task_memory_manager.shutdown();
+	m_buffer_manager.shutdown();
 
 	if (m_settings.event_console_enabled) {
 		m_async_event_handler.end_event_handling();

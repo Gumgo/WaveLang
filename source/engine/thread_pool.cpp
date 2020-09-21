@@ -17,10 +17,11 @@ void c_thread_pool::start(const s_thread_pool_settings &settings) {
 	wl_assert(m_threads.size() == 0);
 	wl_assert(settings.max_tasks > 0);
 
-	// Set up the task queue
-	m_pending_tasks_element_memory.allocate(settings.max_tasks + 1);
-	m_pending_tasks_queue_memory.allocate(settings.max_tasks + 1);
-	m_pending_tasks_free_list_memory.allocate(settings.max_tasks + 1);
+	// Set up the task queue - we require N tasks for thread termination plus an extra element for lock free lists
+	size_t element_count = settings.max_tasks + settings.thread_count + 1;
+	m_pending_tasks_element_memory.allocate(element_count);
+	m_pending_tasks_queue_memory.allocate(element_count);
+	m_pending_tasks_free_list_memory.allocate(element_count);
 	m_pending_tasks.initialize(
 		m_pending_tasks_element_memory.get_array(),
 		m_pending_tasks_queue_memory.get_array(),
@@ -61,7 +62,8 @@ uint32 c_thread_pool::stop() {
 	s_task terminate_task;
 	ZERO_STRUCT(&terminate_task);
 	for (size_t thread = 0; thread < m_threads.size(); thread++) {
-		m_pending_tasks.push(terminate_task);
+		IF_ASSERTS_ENABLED(bool push_result = ) m_pending_tasks.push(terminate_task);
+		wl_assert(push_result);
 	}
 
 	if (m_check_paused) {

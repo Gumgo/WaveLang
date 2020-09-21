@@ -15,45 +15,54 @@ enum class e_sample_loop_mode {
 	k_count
 };
 
-static const uint32 k_max_sample_padding = 4;
+struct s_sample_interpolation_coefficients {
+	// Coefficients for a cubic polynomial to be evaluated for x in range [0, 1]. This polynomial models the curve
+	// between samples i and i+1. It is constructed from a properly upsampled version of the signal. The coefficients
+	// are stored in the order [a, b, c, d] for the polynomial a + bx + cx^2 + dx^3.
+	ALIGNAS_SIMD s_static_array<real32, 4> coefficients; // $TODO $SIMD change this to alignas(real32x4::k_elements)
+};
+
+struct s_sample_data {
+	// Ratio of this entry's sample rate to the base sample rate. This stores the ratio with perfect accuracy because
+	// the ratio is always a power of two.
+	real32 base_sample_rate_ratio;
+
+	// Rather than storing raw samples, we store coefficients for interpolating between the ith and i+1th samples
+	c_wrapped_array<const s_sample_interpolation_coefficients> samples;
+};
 
 // Contains a predefined buffer of audio sample data. This data has an associated sample rate which is independent of
 // the output sample rate. A sample can optionally consist of a wavetable of sub-samples for improved resampling
-// quality. See the initialize function for details of wavetable requirements.
+// quality.
 class c_sample {
 public:
-	static c_sample *load_file(
+	static bool load_file(
 		const char *filename,
 		e_sample_loop_mode loop_mode,
-		bool phase_shift_enabled);
+		bool phase_shift_enabled,
+		std::vector<c_sample *> &out_channel_samples);
 
 	static c_sample *generate_wavetable(
 		c_wrapped_array<const real32> harmonic_weights,
-		uint32 sample_count,
 		bool phase_shift_enabled);
 
-	c_sample();
+	c_sample() = default;
+	UNCOPYABLE_MOVABLE(c_sample);
 
 	bool is_wavetable() const;
 
 	// If this sample is a wavetable, the following functions return information about the first entry sub-sample
 
 	uint32 get_sample_rate() const;
-	real64 get_base_sample_rate_ratio() const;
-	uint32 get_channel_count() const;
 
-	uint32 get_first_sampling_frame() const;
-	uint32 get_sampling_frame_count() const;
-	uint32 get_total_frame_count() const;
-
-	e_sample_loop_mode get_loop_mode() const;
+	bool is_looping() const;
 	uint32 get_loop_start() const;
 	uint32 get_loop_end() const;
-	c_wrapped_array<const real32> get_channel_sample_data(uint32 channel) const;
 	bool is_phase_shift_enabled() const;
 
-	uint32 get_wavetable_entry_count() const;
-	const c_sample *get_wavetable_entry(uint32 index) const;
+	// Used to query the wavetable; non-wavetable samples have an entry count of 1
+	uint32 get_entry_count() const;
+	const s_sample_data *get_entry(uint32 index) const;
 
 private:
 	enum class e_type {
@@ -64,57 +73,16 @@ private:
 		k_count
 	};
 
-	static bool load_wave(
-		std::ifstream &file, e_sample_loop_mode loop_mode, bool phase_shift_enabled, c_sample *out_sample);
+	e_type m_type = e_type::k_none;		// What type of sample this is
 
-	// Initializes the sample to contain audio data.
-	// sample_data should contain channel_count sets of frame_count samples, non-interleaved
-	void initialize(
-		uint32 sample_rate,
-		uint32 channel_count,
-		uint32 frame_count,
-		e_sample_loop_mode loop_mode,
-		uint32 loop_start,
-		uint32 loop_end,
-		bool phase_shift_enabled,
-		c_wrapped_array<const real32> sample_data);
+	uint32 m_sample_rate = 0;			// Samples per second
+	uint32 m_total_frame_count = 0;		// The total number of frames
 
-	// Initializes the sample using the already filled in wavetable array of sub samples, verifying the following:
-	// For any two adjacent wavetable entries n and n+1:
-	// - level n must have either the same or twice the sample rate as level n+1
-	// - both levels must have the same channel count
-	// - level n must have twice the sampling frame count as level n+1
-	// - the loop point sample indices in level n must be exactly twice the loop point indices in level n+1
-	// These conditions are easiest to achieve when the frame count is a power of 2 and the sample's loop points occur
-	// at the very beginning and end. This instance of c_sample takes ownership of the provided sub-samples.
-	void initialize_wavetable();
+	bool m_looping = false;				// Whether this sample loops
+	uint32 m_loop_start = 0;			// Start loop point, in samples
+	uint32 m_loop_end = 0;				// End loop point, in samples
+	bool m_phase_shift_enabled = false;	// Whether phase shifting is allowed (implemented by doubling the loop)
 
-	// Loop mode and points should already be set when calling this
-	// If destination is null, the sample's allocator will be used
-	void initialize_data_with_padding(
-		uint32 channel_count,
-		uint32 frame_count,
-		c_wrapped_array<const real32> sample_data,
-		c_wrapped_array<real32> *destination,
-		bool initialize_metadata_only);
-
-	e_type m_type;						// What type of sample this is
-
-	uint32 m_sample_rate;				// Samples per second
-	real64 m_base_sample_rate_ratio;	// Ratio of this entry's sample rate to the base sample rate
-	uint32 m_channel_count;				// Number of channels
-
-	uint32 m_first_sampling_frame;		// The first frame not including beginning padding
-	uint32 m_sampling_frame_count;		// The number of frames for sampling
-	uint32 m_total_frame_count;			// The total number of frames including beginning and ending padding
-
-	e_sample_loop_mode m_loop_mode;		// How this sample should loop
-	uint32 m_loop_start;				// Start loop point, in samples
-	uint32 m_loop_end;					// End loop point, in samples
-	bool m_phase_shift_enabled;			// Whether phase shifting is allowed (implemented by doubling the loop)
-
-	c_aligned_allocator<real32, k_simd_alignment> m_sample_data_allocator;
-	c_wrapped_array<const real32> m_sample_data;
-	std::vector<c_sample> m_wavetable;
+	std::vector<s_sample_interpolation_coefficients> m_samples;
+	std::vector<s_sample_data> m_entries;
 };
-

@@ -67,6 +67,13 @@ void c_buffer_allocator::initialize(const s_buffer_allocator_settings &settings)
 	}
 }
 
+void c_buffer_allocator::shutdown() {
+	m_buffer_pools.clear();
+	m_buffer_pool_free_list_memory.free();
+	m_buffer_memory.free();
+	m_buffer_memory_pointers.free();
+}
+
 uint32 c_buffer_allocator::get_buffer_pool_count() const {
 	return cast_integer_verify<uint32>(m_buffer_pools.size());
 }

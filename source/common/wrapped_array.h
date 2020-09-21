@@ -9,11 +9,11 @@
 template<typename t_element>
 class c_wrapped_array {
 public:
-	c_wrapped_array() = default;
-	c_wrapped_array(const c_wrapped_array &) = default;
+	constexpr c_wrapped_array() = default;
+	constexpr c_wrapped_array(const c_wrapped_array &) = default;
 	c_wrapped_array &operator=(const c_wrapped_array &) = default;
 
-	c_wrapped_array(t_element *pointer, size_t count)
+	constexpr c_wrapped_array(t_element *pointer, size_t count)
 		: m_pointer(pointer)
 		, m_count(count) {
 	}
@@ -39,7 +39,7 @@ public:
 	}
 
 	template<size_t k_count>
-	static c_wrapped_array<t_element> construct(t_element(&arr)[k_count]) {
+	static constexpr c_wrapped_array<t_element> construct(t_element(&arr)[k_count]) {
 		return c_wrapped_array<t_element>(arr, k_count);
 	}
 

@@ -12,11 +12,13 @@ class c_hash_table {
 public:
 	c_hash_table();
 	~c_hash_table();
+	// $TODO add move constructor
 
 	void initialize(size_t bucket_count, size_t element_count);
 	void terminate();
 
 	// Returns pointer to the value if successful, null pointer otherwise
+	// $TODO add versions taking rvalue references
 	t_value *insert(const t_key &key); // Uses default constructor for value
 	t_value *insert(const t_key &key, const t_value &value);
 

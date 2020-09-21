@@ -17,6 +17,7 @@ public:
 		const c_runtime_instrument *runtime_instrument,
 		f_task_memory_query_callback task_memory_query_callback,
 		void *task_memory_query_callback_context);
+	void shutdown();
 
 	inline void *get_task_memory(e_instrument_stage instrument_stage, uint32 task_index, uint32 voice_index) const {
 		wl_assert(instrument_stage == e_instrument_stage::k_voice || voice_index == 0);

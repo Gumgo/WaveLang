@@ -103,17 +103,18 @@
     <ClInclude Include="math\neon_mathfun.h" />
     <ClInclude Include="math\simd.h" />
     <ClInclude Include="math\sse_mathfun.h" />
+    <ClInclude Include="math\utilities.h" />
     <ClInclude Include="predecessor_resolver.h" />
     <ClInclude Include="profiler\profiler.h" />
+    <ClInclude Include="resampler\resampler.h" />
     <ClInclude Include="runtime_instrument.h" />
     <ClInclude Include="sample\sample.h" />
     <ClInclude Include="sample\sample_library.h" />
+    <ClInclude Include="sample\sample_loader.h" />
     <ClInclude Include="task_data_type.h" />
     <ClInclude Include="task_function.h" />
-    <ClInclude Include="task_functions\sampler\fast_log2.h" />
     <ClInclude Include="task_functions\sampler\fetch_sample.h" />
     <ClInclude Include="task_functions\sampler\sampler_context.h" />
-    <ClInclude Include="task_functions\sampler\sinc_window.h" />
     <ClInclude Include="task_functions\task_functions_array.h" />
     <ClInclude Include="task_functions\task_functions_controller.h" />
     <ClInclude Include="task_functions\task_functions_core.h" />
@@ -146,15 +147,15 @@
     <ClCompile Include="executor\voice_allocator.cpp" />
     <ClCompile Include="predecessor_resolver.cpp" />
     <ClCompile Include="profiler\profiler.cpp" />
+    <ClCompile Include="resampler\resampler.cpp" />
     <ClCompile Include="runtime_instrument.cpp" />
     <ClCompile Include="sample\sample.cpp" />
     <ClCompile Include="sample\sample_library.cpp" />
+    <ClCompile Include="sample\sample_loader.cpp" />
     <ClCompile Include="task_data_type.cpp" />
     <ClCompile Include="task_function.cpp" />
-    <ClCompile Include="task_functions\sampler\fast_log2.cpp" />
     <ClCompile Include="task_functions\sampler\fetch_sample.cpp" />
     <ClCompile Include="task_functions\sampler\sampler_context.cpp" />
-    <ClCompile Include="task_functions\sampler\sinc_window.cpp" />
     <ClCompile Include="task_functions\task_functions_array.cpp" />
     <ClCompile Include="task_functions\task_functions_controller.cpp" />
     <ClCompile Include="task_functions\task_functions_core.cpp" />
@@ -175,8 +176,8 @@
     <None Include="math\math_int32x4_sse.inl" />
     <None Include="math\math_real32x4_neon.inl" />
     <None Include="math\math_real32x4_sse.inl" />
+    <None Include="resampler\resampler_filters.inl" />
     <None Include="SConscript" />
-    <None Include="task_functions\sampler\sinc_window_coefficients.inl" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="..\natvis\project.natvis" />

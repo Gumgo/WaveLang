@@ -21,15 +21,14 @@ struct s_sampler_context {
 		c_event_interface *event_interface,
 		c_sample_library_requester *sample_requester,
 		c_real_constant_array harmonic_weights,
-		real32 sample_count_real,
 		bool phase_shift_enabled);
 	void voice_initialize();
 
 	// Common utility functions used in all versions of the sampler:
 
 	// Fills the output buffer with 0s if the sample failed to load or if the channel is invalid
-	bool handle_failed_sample(
-		const c_sample *sample,
+	const c_sample *get_sample_or_fail_gracefully(
+		const c_sample_library_accessor *sample_accessor,
 		c_real_buffer *result,
 		c_event_interface *event_interface,
 		const char *sample_name);
@@ -44,7 +43,7 @@ struct s_sampler_context {
 	real64 increment_time_looping(real64 loop_start_sample, real64 loop_end_sample, real32 advance);
 
 	// Store the sample index in real64 for improved precision so we can accurately handle both short and long samples
-	uint32 sample_handle;
+	h_sample sample_handle;
 	uint32 channel;
 	real64 sample_index;
 	bool reached_end;

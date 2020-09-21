@@ -54,7 +54,6 @@ namespace sampler_task_functions wl_library(k_sampler_library_id, "sampler", 0) 
 	void sampler_wavetable_initializer(
 		const s_task_function_context &context,
 		wl_source("harmonic_weights") c_real_constant_array harmonic_weights,
-		wl_source("sample_count") real32 sample_count,
 		wl_source("phase") const c_real_buffer *phase); // We can use this if it's a constant
 
 	wl_task_function(0x7429e1e3, "sampler_wavetable", "sampler_wavetable")
@@ -68,4 +67,3 @@ namespace sampler_task_functions wl_library(k_sampler_library_id, "sampler", 0) 
 		wl_source("result") c_real_buffer *result);
 
 }
-

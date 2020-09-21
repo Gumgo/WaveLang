@@ -18,7 +18,9 @@ public:
 	inline real32x4(const real32x4 &v);
 
 	inline void load(const real32 *ptr);
+	inline void load_unaligned(const real32 *ptr);
 	inline void store(real32 *ptr) const;
+	inline void store_unaligned(real32 *ptr) const;
 
 	inline real32x4 &operator=(const t_simd_real32 &v);
 	inline real32x4 &operator=(const real32x4 &v);

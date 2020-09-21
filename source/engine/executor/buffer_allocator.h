@@ -32,6 +32,8 @@ public:
 	c_buffer_allocator();
 
 	void initialize(const s_buffer_allocator_settings &settings);
+	void shutdown();
+
 	uint32 get_buffer_pool_count() const;
 	const s_buffer_pool_description &get_buffer_pool_description(uint32 pool_index) const;
 

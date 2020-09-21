@@ -19,9 +19,9 @@ void s_sampler_context::initialize_file(
 	parameters.loop_mode = loop_mode;
 	parameters.phase_shift_enabled = phase_shift_enabled;
 	sample_handle = sample_requester->request_sample(parameters);
-	if (channel_real < 0.0f ||
-		std::floor(channel_real) != channel_real) {
-		sample_handle = c_sample_library::k_invalid_handle;
+	if (channel_real < 0.0f
+		|| std::floor(channel_real) != channel_real) {
+		sample_handle = h_sample::invalid();
 		event_interface->submit(EVENT_ERROR << "Invalid sample channel '" << channel_real << "'");
 	}
 	channel = static_cast<uint32>(channel_real);
@@ -33,7 +33,6 @@ void s_sampler_context::initialize_wavetable(
 	c_event_interface *event_interface,
 	c_sample_library_requester *sample_requester,
 	c_real_constant_array harmonic_weights,
-	real32 sample_count_real,
 	bool phase_shift_enabled) {
 	bool valid = true;
 
@@ -41,35 +40,13 @@ void s_sampler_context::initialize_wavetable(
 		valid = false;
 	}
 
-	if (sample_count_real < 0.0f ||
-		std::floor(sample_count_real) != sample_count_real) {
-		event_interface->submit(
-			EVENT_ERROR << "Invalid wavetable sample count '" << sample_count_real << "'");
-		valid = false;
-	}
-
-	uint32 sample_count = static_cast<uint32>(sample_count_real);
-	{
-		uint32 sample_count_pow2_check = 1;
-		while (sample_count_pow2_check < sample_count) {
-			sample_count_pow2_check *= 2;
-		}
-
-		if (sample_count != sample_count_pow2_check) {
-			event_interface->submit(
-				EVENT_ERROR << "Wavetable sample count must be a power of 2");
-			valid = false;
-		}
-	}
-
 	if (valid) {
 		s_wavetable_sample_parameters parameters;
 		parameters.harmonic_weights = harmonic_weights;
-		parameters.sample_count = sample_count;
 		parameters.phase_shift_enabled = phase_shift_enabled;
 		sample_handle = sample_requester->request_sample(parameters);
 	} else {
-		sample_handle = c_sample_library::k_invalid_handle;
+		sample_handle = h_sample::invalid();
 	}
 
 	channel = 0;
@@ -82,36 +59,35 @@ void s_sampler_context::voice_initialize() {
 	reached_end = false;
 }
 
-bool s_sampler_context::handle_failed_sample(
-	const c_sample *sample,
+const c_sample *s_sampler_context::get_sample_or_fail_gracefully(
+	const c_sample_library_accessor *sample_accessor,
 	c_real_buffer *result,
 	c_event_interface *event_interface,
 	const char *sample_name) {
 	bool failed = false;
 
-	// If the sample failed, fill with 0
+	const c_sample *sample = sample_accessor->get_sample(sample_handle, channel);
+
+	// If the sample failed, fill the buffer with 0
 	if (!sample) {
-		failed = true;
-
 		if (!sample_failure_reported) {
 			sample_failure_reported = true;
-			event_interface->submit(EVENT_ERROR << "Failed to load sample '" << c_dstr(sample_name) << "'");
-		}
-	} if (sample->get_channel_count() < channel) {
-		failed = true;
 
-		if (!sample_failure_reported) {
-			sample_failure_reported = true;
-			event_interface->submit(
-				EVENT_ERROR << "Invalid sample channel '" << channel << "' for sample '" << c_dstr(sample_name) << "'");
+			// Determine whether the same failed to load or an invalid channel was specified
+			if (!sample_accessor->get_sample(sample_handle, 0)) {
+				event_interface->submit(EVENT_ERROR << "Failed to load sample '" << c_dstr(sample_name) << "'");
+			} else {
+				event_interface->submit(
+					EVENT_ERROR << "Invalid sample channel '" << channel <<
+					"' for sample '" << c_dstr(sample_name) << "'");
+			}
 		}
-	}
 
-	if (failed) {
 		result->assign_constant(0.0f);
 	}
 
-	return failed;
+
+	return sample;
 }
 
 bool s_sampler_context::handle_reached_end(c_real_buffer *result) {

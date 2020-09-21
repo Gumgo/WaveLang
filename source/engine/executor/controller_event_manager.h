@@ -10,6 +10,7 @@
 class c_controller_event_manager {
 public:
 	void initialize(size_t max_controller_events, size_t max_parameter_count);
+	void shutdown();
 
 	c_wrapped_array<s_timestamped_controller_event> get_writable_controller_events();
 	void process_controller_events(size_t controller_event_count);
@@ -53,4 +54,3 @@ private:
 	// Hash table mapping parameter ID to parameter state
 	c_hash_table<uint32, s_parameter_state, s_parameter_id_hash> m_parameter_state_table;
 };
-
