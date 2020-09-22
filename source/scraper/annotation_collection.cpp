@@ -242,9 +242,9 @@ bool c_annotation_specifications::lookup_uint32(
 		clang::VarDecl *variable_decl = llvm::dyn_cast<clang::VarDecl>(lookup_result);
 
 		clang::Expr::EvalResult evaluate_as_int_result;
-		if (!variable_decl ||
-			!variable_decl->hasInit() ||
-			!variable_decl->getInit()->EvaluateAsInt(evaluate_as_int_result, *ast_context)) {
+		if (!variable_decl
+			|| !variable_decl->hasInit()
+			|| !variable_decl->getInit()->EvaluateAsInt(evaluate_as_int_result, *ast_context)) {
 			return false;
 		}
 

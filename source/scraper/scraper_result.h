@@ -78,7 +78,7 @@ struct s_task_function_declaration {
 
 inline std::string id_to_string(uint32 id) {
 	char buffer[11]; // "0x########\0"
-	snprintf(buffer, NUMBEROF(buffer), "0x%08x", id);
+	snprintf(buffer, array_count(buffer), "0x%08x", id);
 	return buffer;
 }
 

@@ -46,6 +46,6 @@ namespace math_native_modules wl_library(k_math_library_id, "math", 0) {
 	void cos(wl_in real32 a, wl_out_return real32 &result);
 
 	wl_native_module(0xb319d4a8, "sincos")
-	void sincos(wl_in real32 a, wl_out real32 &out_sin, wl_out real32 &out_cos);
+	void sincos(wl_in real32 a, wl_out real32 &sin_out, wl_out real32 &cos_out);
 }
 

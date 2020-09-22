@@ -3,7 +3,7 @@
 #include <algorithm>
 
 // Pad by 100ms to pick up late events
-static const real64 k_controller_event_buffer_padding_sec = 0.1;
+static constexpr real64 k_controller_event_buffer_padding_sec = 0.1;
 
 c_controller_driver_interface::c_controller_driver_interface() {
 }

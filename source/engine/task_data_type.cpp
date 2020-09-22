@@ -1,13 +1,13 @@
 #include "engine/task_data_type.h"
 
-static const s_task_primitive_type_traits k_task_primitive_type_traits[] = {
+static constexpr s_task_primitive_type_traits k_task_primitive_type_traits[] = {
 	//	is_dynamic
 	{ true },	// real
 	{ true },	// bool
 	{ false }	// string
 };
 
-static_assert(NUMBEROF(k_task_primitive_type_traits) == enum_count<e_task_primitive_type>(),
+static_assert(array_count(k_task_primitive_type_traits) == enum_count<e_task_primitive_type>(),
 	"Primitive type traits mismatch");
 
 c_task_data_type::c_task_data_type(e_task_primitive_type primitive_type, bool is_array) {
@@ -54,13 +54,13 @@ c_task_data_type c_task_data_type::get_array_type() const {
 }
 
 bool c_task_data_type::operator==(const c_task_data_type &other) const {
-	return (m_primitive_type == other.m_primitive_type) &&
-		(m_flags == other.m_flags);
+	return (m_primitive_type == other.m_primitive_type)
+		&& (m_flags == other.m_flags);
 }
 
 bool c_task_data_type::operator!=(const c_task_data_type &other) const {
-	return (m_primitive_type != other.m_primitive_type) ||
-		(m_flags != other.m_flags);
+	return (m_primitive_type != other.m_primitive_type)
+		|| (m_flags != other.m_flags);
 }
 
 c_task_qualified_data_type::c_task_qualified_data_type(c_task_data_type data_type, e_task_qualifier qualifier)

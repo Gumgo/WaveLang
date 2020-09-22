@@ -26,13 +26,13 @@ public:
 	bool push(const t_element &element);
 
 	// Pop from queue, returns false if queue is empty
-	bool pop(t_element &out_element);
+	bool pop(t_element &element_out);
 
 	// Pop from queue, returns false if queue is empty (does not copy the element)
 	bool pop();
 
 	// Peek at the top element, returns false if queue is empty
-	bool peek(t_element &out_element);
+	bool peek(t_element &element_out);
 
 private:
 	c_element_array m_elements;

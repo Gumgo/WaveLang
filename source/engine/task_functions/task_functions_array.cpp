@@ -52,7 +52,7 @@ namespace array_task_functions {
 				if (element->is_constant()) {
 					result->assign_constant(element->get_constant());
 				} else {
-					memcpy(result->get_data(), element->get_data(), context.buffer_size * sizeof(real32));
+					copy_type(result->get_data(), element->get_data(), context.buffer_size);
 					result->set_is_constant(false);
 				}
 			}
@@ -111,10 +111,10 @@ namespace array_task_functions {
 				if (element->is_constant()) {
 					result->assign_constant(element->get_constant());
 				} else {
-					memcpy(
+					copy_type(
 						result->get_data(),
 						element->get_data(),
-						bool_buffer_int32_count(context.buffer_size) * sizeof(int32));
+						bool_buffer_int32_count(context.buffer_size));
 					result->set_is_constant(false);
 				}
 			}

@@ -56,7 +56,7 @@ uint32 c_controller_driver_midi::get_default_device_index() const {
 
 s_controller_device_info c_controller_driver_midi::get_device_info(uint32 device_index) const {
 	wl_assert(m_initialized);
-	wl_assert(VALID_INDEX(device_index, get_device_count()));
+	wl_assert(valid_index(device_index, get_device_count()));
 
 	s_controller_device_info result;
 	result.name = m_port_names[device_index].c_str();

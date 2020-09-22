@@ -13,10 +13,10 @@ static const char *k_event_level_strings[] = {
 	"CRITICAL: "
 };
 
-static_assert(NUMBEROF(k_event_level_strings) == enum_count<e_event_level>(), "Event level strings mismatch");
+static_assert(array_count(k_event_level_strings) == enum_count<e_event_level>(), "Event level strings mismatch");
 
 uint8 register_event_data_type_internal(f_build_event_string build_event_string) {
-	wl_assert(g_next_event_data_type_id < NUMBEROF(g_event_string_builders));
+	wl_assert(g_next_event_data_type_id < array_count(g_event_string_builders));
 	wl_assert(!g_event_string_builders[g_next_event_data_type_id]);
 	g_event_string_builders[g_next_event_data_type_id] = build_event_string;
 
@@ -37,9 +37,9 @@ void c_event_interface::submit(const c_event &e) {
 }
 
 e_event_level c_event_interface::build_event_string(
-	size_t event_size, const void *event_data, c_event_string &out_event_string) {
+	size_t event_size, const void *event_data, c_event_string &event_string_out) {
 	e_event_level event_level = e_event_level::k_invalid;
-	out_event_string.clear();
+	event_string_out.clear();
 
 	size_t offset = 0;
 	const uint8 *event_bytes = static_cast<const uint8 *>(event_data);
@@ -48,18 +48,18 @@ e_event_level c_event_interface::build_event_string(
 	if (offset + sizeof(uint8) <= event_size) {
 		event_level = static_cast<e_event_level>(*event_bytes);
 		wl_assert(valid_enum_index(event_level));
-		out_event_string.append_truncate(k_event_level_strings[enum_index(event_level)]);
+		event_string_out.append_truncate(k_event_level_strings[enum_index(event_level)]);
 		offset += sizeof(uint8);
 	}
 
 	// Loop through each piece of event data and append to the string
 	while (offset < event_size) {
 		uint8 event_data_type_id = event_bytes[offset];
-		wl_assert(VALID_INDEX(event_data_type_id, NUMBEROF(g_event_string_builders)));
+		wl_assert(valid_index(event_data_type_id, array_count(g_event_string_builders)));
 		wl_assert(g_event_string_builders[event_data_type_id]);
 		offset++;
 
-		size_t advance = g_event_string_builders[event_data_type_id](out_event_string, event_bytes + offset);
+		size_t advance = g_event_string_builders[event_data_type_id](event_string_out, event_bytes + offset);
 		offset += advance;
 		wl_assert(offset <= event_size);
 	}

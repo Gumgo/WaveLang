@@ -42,7 +42,7 @@ void c_lock_free_pool::initialize(c_lock_free_handle_array free_list_memory) {
 
 #if IS_TRUE(ALLOCATION_VERIFICATION_ENABLED)
 	// If we are verifying allocations, clear all the "used" bits to 0 initially.
-	memset(free_list_memory.get_pointer(), 0, sizeof(s_aligned_lock_free_handle) * free_list_memory.get_count());
+	zero_type(free_list_memory.get_pointer(), free_list_memory.get_count());
 #endif // IS_TRUE(ALLOCATION_VERIFICATION_ENABLED)
 
 	m_free_list = free_list_memory;

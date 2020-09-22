@@ -126,10 +126,4 @@
 		- Standard library
 
 - Code style updates
-	- Change most usages of const to constexpr
-	- Change multiline ? : so that ? and : occur at the beginning of the newline, same with && and ||
-	- Change out arguments from "out_x" to "x_out"
-	- Make k_pi and related constants a template
-	- Add improved memory copy and zeroing functions (zero_type(), zero_array(), copy_array())
-	- Change some macros to constexpr functions
 	- SFINAE helper macros

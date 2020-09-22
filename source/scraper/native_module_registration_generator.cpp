@@ -12,14 +12,14 @@
 #define NEWLINE_STR "\n"
 
 static const char *k_bool_strings[] = { "false", "true" };
-static_assert(NUMBEROF(k_bool_strings) == 2, "Invalid bool strings");
+static_assert(array_count(k_bool_strings) == 2, "Invalid bool strings");
 
 static const char *k_native_module_primitive_type_enum_strings[] = {
 	"e_native_module_primitive_type::k_real",
 	"e_native_module_primitive_type::k_bool",
 	"e_native_module_primitive_type::k_string"
 };
-static_assert(NUMBEROF(k_native_module_primitive_type_enum_strings) == enum_count<e_native_module_primitive_type>(),
+static_assert(array_count(k_native_module_primitive_type_enum_strings) == enum_count<e_native_module_primitive_type>(),
 	"Invalid native module primitive type enum strings");
 
 static const char *k_native_module_qualifier_enum_strings[] = {
@@ -27,7 +27,7 @@ static const char *k_native_module_qualifier_enum_strings[] = {
 	"e_native_module_qualifier::k_out",
 	"e_native_module_qualifier::k_constant"
 };
-static_assert(NUMBEROF(k_native_module_qualifier_enum_strings) == enum_count<e_native_module_qualifier>(),
+static_assert(array_count(k_native_module_qualifier_enum_strings) == enum_count<e_native_module_qualifier>(),
 	"Invalid native module qualifier enum strings");
 
 static const char *k_native_operator_enum_strings[] = {
@@ -49,7 +49,7 @@ static const char *k_native_operator_enum_strings[] = {
 	"e_native_operator::k_or",
 	"e_native_operator::k_array_dereference"
 };
-static_assert(NUMBEROF(k_native_operator_enum_strings) == enum_count<e_native_operator>(),
+static_assert(array_count(k_native_operator_enum_strings) == enum_count<e_native_operator>(),
 	"Invalid native operator enum strings");
 
 static const char *k_native_module_primitive_type_argument_strings[] = {
@@ -57,7 +57,8 @@ static const char *k_native_module_primitive_type_argument_strings[] = {
 	"bool",
 	"string"
 };
-static_assert(NUMBEROF(k_native_module_primitive_type_argument_strings) == enum_count<e_native_module_primitive_type>(),
+static_assert(
+	array_count(k_native_module_primitive_type_argument_strings) == enum_count<e_native_module_primitive_type>(),
 	"Invalid native module primitive type argument strings");
 
 static const char *k_native_module_qualifier_argument_strings[] = {
@@ -65,7 +66,7 @@ static const char *k_native_module_qualifier_argument_strings[] = {
 	"out",
 	"in"
 };
-static_assert(NUMBEROF(k_native_module_qualifier_argument_strings) == enum_count<e_native_module_qualifier>(),
+static_assert(array_count(k_native_module_qualifier_argument_strings) == enum_count<e_native_module_qualifier>(),
 	"Invalid native module qualifier strings");
 
 class c_optimization_rule_builder {
@@ -165,7 +166,7 @@ bool generate_native_module_registration(
 		const s_library_declaration &library = result->get_library(library_index);
 		out << TAB_STR "{" NEWLINE_STR;
 		out << TAB2_STR "s_native_module_library library;" NEWLINE_STR;
-		out << TAB2_STR "ZERO_STRUCT(&library);" NEWLINE_STR;
+		out << TAB2_STR "zero_type(&library);" NEWLINE_STR;
 		out << TAB2_STR "library.id = " << id_to_string(library.id) << ";" NEWLINE_STR;
 		out << TAB2_STR "library.name.set_verify(\"" << library.name << "\");" NEWLINE_STR;
 		out << TAB2_STR "library.version = " << library.version << ";" NEWLINE_STR;
@@ -199,7 +200,7 @@ bool generate_native_module_registration(
 
 		out << TAB_STR "{" NEWLINE_STR;
 		out << TAB2_STR "s_native_module native_module;" NEWLINE_STR;
-		out << TAB2_STR "ZERO_STRUCT(&native_module);" NEWLINE_STR;
+		out << TAB2_STR "zero_type(&native_module);" NEWLINE_STR;
 		out << TAB2_STR "native_module.uid = s_native_module_uid::build(" <<
 			id_to_string(library.id) << ", " << id_to_string(native_module.id) << ");" NEWLINE_STR;
 
@@ -307,7 +308,7 @@ bool c_optimization_rule_builder::build(std::ofstream &out) {
 
 	// Build the rule
 	out << TAB2_STR "s_native_module_optimization_rule rule;" NEWLINE_STR;
-	out << TAB2_STR "ZERO_STRUCT(&rule);" NEWLINE_STR;
+	out << TAB2_STR "zero_type(&rule);" NEWLINE_STR;
 
 	bool building_source = true;
 	m_symbol_index = 0;
@@ -452,9 +453,9 @@ c_optimization_rule_builder::e_token_type c_optimization_rule_builder::get_token
 	}
 
 	char first_char = token[0];
-	if ((first_char >= 'A' && first_char <= 'Z') ||
-		(first_char >= 'a' && first_char <= 'z') ||
-		(first_char == '_')) {
+	if ((first_char >= 'A' && first_char <= 'Z')
+		|| (first_char >= 'a' && first_char <= 'z')
+		|| (first_char == '_')) {
 		if (token == "false" || token == "true") {
 			return e_token_type::k_bool_constant;
 		} else if (token == "const") {
@@ -464,8 +465,8 @@ c_optimization_rule_builder::e_token_type c_optimization_rule_builder::get_token
 		}
 	} else if (token == "->") {
 		return e_token_type::k_source_to_target;
-	} else if ((first_char >= '0' && first_char <= '9') ||
-		(first_char == '-')) {
+	} else if ((first_char >= '0' && first_char <= '9')
+		|| (first_char == '-')) {
 		return e_token_type::k_real_constant;
 	} else if (token == "(") {
 		return e_token_type::k_left_parenthesis;
@@ -512,8 +513,8 @@ std::string c_optimization_rule_builder::get_native_module_uid_string(
 
 	for (size_t index = 0; index < m_scraper_result->get_native_module_count(); index++) {
 		const s_native_module_declaration &native_module = m_scraper_result->get_native_module(index);
-		if (native_module.library_index == library_index &&
-			identifier_to_match == native_module.identifier) {
+		if (native_module.library_index == library_index
+			&& identifier_to_match == native_module.identifier) {
 			return "s_native_module_uid::build(" +
 				std::to_string(library->id) + ", " +
 				std::to_string(native_module.id) + ")";

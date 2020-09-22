@@ -42,7 +42,7 @@ bool c_lock_free_queue<t_element>::push(const t_element &element) {
 	}
 
 	// Store the element
-	memcpy(&m_elements[handle], &element, sizeof(t_element));
+	copy_type(&m_elements[handle], &element);
 
 	s_lock_free_handle_data next;
 	next.tag = 0;
@@ -98,7 +98,7 @@ bool c_lock_free_queue<t_element>::push(const t_element &element) {
 }
 
 template<typename t_element>
-bool c_lock_free_queue<t_element>::pop(t_element &out_element) {
+bool c_lock_free_queue<t_element>::pop(t_element &element_out) {
 	do {
 		s_lock_free_handle_data front;
 		s_lock_free_handle_data back;
@@ -131,7 +131,7 @@ bool c_lock_free_queue<t_element>::pop(t_element &out_element) {
 				// The reason is, we don't actually free this node, we free the node pointed to by front
 				// Therefore, another pop operation could come and free this one before we get a chance to copy
 				// If the compare_exchange fails, we may have to copy multiple times
-				memcpy(&out_element, &m_elements[front_next.handle], sizeof(t_element));
+				copy_type(&element_out, &m_elements[front_next.handle]);
 
 				// Try to move front to next
 				s_lock_free_handle_data new_front;
@@ -193,7 +193,7 @@ bool c_lock_free_queue<t_element>::pop() {
 }
 
 template<typename t_element>
-bool c_lock_free_queue<t_element>::peek(t_element &out_element) {
+bool c_lock_free_queue<t_element>::peek(t_element &element_out) {
 	do {
 		s_lock_free_handle_data front;
 		s_lock_free_handle_data back;
@@ -224,7 +224,7 @@ bool c_lock_free_queue<t_element>::peek(t_element &out_element) {
 				}
 			} else {
 				// Copy the value into our output; we may have to copy multiple times
-				memcpy(&out_element, &m_elements[front_next.handle], sizeof(t_element));
+				copy_type(&element_out, &m_elements[front_next.handle]);
 
 				// If the front handle did not change, then our memcpy was safe
 				if (m_front.handle == front.data) {

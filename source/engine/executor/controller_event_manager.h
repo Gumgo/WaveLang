@@ -16,7 +16,8 @@ public:
 	void process_controller_events(size_t controller_event_count);
 	c_wrapped_array<const s_timestamped_controller_event> get_note_events() const;
 	c_wrapped_array<const s_timestamped_controller_event> get_parameter_change_events(
-		uint32 parameter_id, real32 &out_previous_value) const;
+		uint32 parameter_id,
+		real32 &previous_value_out) const;
 
 private:
 	struct s_parameter_state {

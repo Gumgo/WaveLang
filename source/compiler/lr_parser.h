@@ -143,7 +143,7 @@ private:
 };
 
 struct s_lr_item_set_transition {
-	static const size_t k_invalid_transition = static_cast<size_t>(-1);
+	static constexpr size_t k_invalid_transition = static_cast<size_t>(-1);
 
 	// One item set per symbol
 	std::vector<size_t> item_set_indices;
@@ -185,7 +185,7 @@ enum class e_lr_conflict {
 
 class c_lr_action_goto_table {
 public:
-	static const uint32 k_invalid_state_index = static_cast<uint32>(-1);
+	static constexpr uint32 k_invalid_state_index = static_cast<uint32>(-1);
 
 	c_lr_action_goto_table();
 
@@ -240,7 +240,7 @@ private:
 
 class c_lr_parse_tree {
 public:
-	static const size_t k_invalid_index = static_cast<size_t>(-1);
+	static constexpr size_t k_invalid_index = static_cast<size_t>(-1);
 
 	c_lr_parse_tree();
 
@@ -275,7 +275,7 @@ private:
 	size_t m_current_node_index;
 };
 
-using f_lr_parser_get_next_token = bool (*)(void *context, uint16 &out_token);
+using f_lr_parser_get_next_token = bool (*)(void *context, uint16 &token_out);
 
 class c_lr_parser {
 public:
@@ -291,7 +291,7 @@ public:
 	c_lr_parse_tree parse_token_stream(
 		f_lr_parser_get_next_token get_next_token,
 		void *context,
-		std::vector<size_t> &out_error_tokens) const;
+		std::vector<size_t> &error_tokens_out) const;
 
 private:
 	c_lr_production_set m_production_set;

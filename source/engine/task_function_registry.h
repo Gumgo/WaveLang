@@ -4,7 +4,7 @@
 
 #include "engine/task_function.h"
 
-static const uint32 k_invalid_task_function_index = static_cast<uint32>(-1);
+static constexpr uint32 k_invalid_task_function_index = static_cast<uint32>(-1);
 
 // The registry of all task functions
 class c_task_function_registry {

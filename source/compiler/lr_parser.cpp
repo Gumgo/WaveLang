@@ -3,8 +3,6 @@
 #include <limits>
 #include <stack>
 
-const uint32 c_lr_action_goto_table::k_invalid_state_index;
-
 #if IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
 #include <fstream>
 #endif // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
@@ -36,9 +34,9 @@ uint16 c_lr_symbol::get_index() const {
 }
 
 bool c_lr_symbol::operator==(const c_lr_symbol &other) const {
-	return m_index == other.m_index &&
-		m_is_nonterminal == other.m_is_nonterminal &&
-		m_is_nonepsilon == other.m_is_nonepsilon;
+	return m_index == other.m_index
+		&& m_is_nonterminal == other.m_is_nonterminal
+		&& m_is_nonepsilon == other.m_is_nonepsilon;
 }
 
 bool c_lr_symbol::operator!=(const c_lr_symbol &other) const {
@@ -168,10 +166,9 @@ size_t c_lr_production_set::get_first_nonterminal_index() const {
 
 #if IS_TRUE(ASSERTS_ENABLED)
 void c_lr_production_set::validate_symbol(const c_lr_symbol &symbol, bool can_be_epsilon) const {
-	wl_assert(
-		(can_be_epsilon && symbol.is_epsilon()) ||
-		(symbol.is_terminal() && symbol.get_index() < m_terminal_count) ||
-		(!symbol.is_terminal() && symbol.get_index() < m_nonterminal_count));
+	wl_assert((can_be_epsilon && symbol.is_epsilon())
+		|| (symbol.is_terminal() && symbol.get_index() < m_terminal_count)
+		|| (!symbol.is_terminal() && symbol.get_index() < m_nonterminal_count));
 }
 
 void c_lr_production_set::validate_production(const s_lr_production &production) const {
@@ -179,7 +176,7 @@ void c_lr_production_set::validate_production(const s_lr_production &production)
 
 	// If we find one epsilon, the rest must be epsilon
 	bool epsilon_found = false;
-	for (uint32 index = 0; index < NUMBEROF(production.rhs); index++) {
+	for (uint32 index = 0; index < production.rhs.get_count(); index++) {
 		validate_symbol(production.rhs[index], true);
 
 		if (epsilon_found) {
@@ -194,9 +191,9 @@ void c_lr_production_set::validate_production(const s_lr_production &production)
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
 bool s_lr_item::operator==(const s_lr_item &other) const {
-	return production_index == other.production_index &&
-		pointer_index == other.pointer_index &&
-		lookahead == other.lookahead;
+	return production_index == other.production_index
+		&& pointer_index == other.pointer_index
+		&& lookahead == other.lookahead;
 }
 
 bool s_lr_item::operator!=(const s_lr_item &other) const {
@@ -265,8 +262,8 @@ c_lr_action::c_lr_action() {
 
 c_lr_action::c_lr_action(e_lr_action_type action_type, uint32 index) {
 	wl_assert(valid_enum_index(action_type));
-	if (action_type == e_lr_action_type::k_invalid ||
-		action_type == e_lr_action_type::k_accept) {
+	if (action_type == e_lr_action_type::k_invalid
+		|| action_type == e_lr_action_type::k_accept) {
 		// These actions don't have an index
 		wl_assert(index == 0);
 	}
@@ -293,8 +290,8 @@ uint32 c_lr_action::get_reduce_production_index() const {
 }
 
 bool c_lr_action::operator==(const c_lr_action &other) const {
-	return m_state_or_production_index == other.m_state_or_production_index &&
-		m_action_type == other.m_action_type;
+	return m_state_or_production_index == other.m_state_or_production_index
+		&& m_action_type == other.m_action_type;
 }
 
 bool c_lr_action::operator!=(const c_lr_action &other) const {
@@ -316,15 +313,15 @@ uint32 c_lr_action_goto_table::get_state_count() const {
 
 
 c_lr_action c_lr_action_goto_table::get_action(uint32 state_index, uint16 terminal_index) const {
-	wl_assert(VALID_INDEX(state_index, get_state_count()));
-	wl_assert(VALID_INDEX(terminal_index, m_terminal_count));
+	wl_assert(valid_index(state_index, get_state_count()));
+	wl_assert(valid_index(terminal_index, m_terminal_count));
 	size_t index = state_index * m_terminal_count + terminal_index;
 	return m_action_table[index];
 }
 
 uint32 c_lr_action_goto_table::get_goto(uint32 state_index, uint16 nonterminal_index) const {
-	wl_assert(VALID_INDEX(state_index, get_state_count()));
-	wl_assert(VALID_INDEX(nonterminal_index, m_nonterminal_count));
+	wl_assert(valid_index(state_index, get_state_count()));
+	wl_assert(valid_index(nonterminal_index, m_nonterminal_count));
 	size_t index = state_index * m_nonterminal_count + nonterminal_index;
 	return m_goto_table[index];
 }
@@ -342,25 +339,25 @@ void c_lr_action_goto_table::add_state() {
 }
 
 e_lr_conflict c_lr_action_goto_table::set_action(uint32 state_index, uint16 terminal_index, c_lr_action action) {
-	wl_assert(VALID_INDEX(state_index, get_state_count()));
-	wl_assert(VALID_INDEX(terminal_index, m_terminal_count));
+	wl_assert(valid_index(state_index, get_state_count()));
+	wl_assert(valid_index(terminal_index, m_terminal_count));
 	size_t index = state_index * m_terminal_count + terminal_index;
 
 	c_lr_action current_action = m_action_table[index];
-	if (current_action.get_action_type() != e_lr_action_type::k_invalid &&
-		action.get_action_type() != e_lr_action_type::k_invalid &&
-		current_action != action) {
+	if (current_action.get_action_type() != e_lr_action_type::k_invalid
+		&& action.get_action_type() != e_lr_action_type::k_invalid
+		&& current_action != action) {
 		// We should never get into a state where an accept action conflicts
-		wl_assert(current_action.get_action_type() != e_lr_action_type::k_accept &&
-			action.get_action_type() != e_lr_action_type::k_accept);
+		wl_assert(current_action.get_action_type() != e_lr_action_type::k_accept
+			&& action.get_action_type() != e_lr_action_type::k_accept);
 
 		if (current_action.get_action_type() != action.get_action_type()) {
 			// One is shift and the other is reduce
 			return e_lr_conflict::k_shift_reduce;
 		} else {
 			// We can't have shift-shift conflict
-			wl_assert(current_action.get_action_type() == e_lr_action_type::k_reduce &&
-				action.get_action_type() == e_lr_action_type::k_reduce);
+			wl_assert(current_action.get_action_type() == e_lr_action_type::k_reduce
+				&& action.get_action_type() == e_lr_action_type::k_reduce);
 
 			return e_lr_conflict::k_reduce_reduce;
 		}
@@ -371,8 +368,8 @@ e_lr_conflict c_lr_action_goto_table::set_action(uint32 state_index, uint16 term
 }
 
 void c_lr_action_goto_table::set_goto(uint32 state_index, uint16 nonterminal_index, uint32 goto_index) {
-	wl_assert(VALID_INDEX(state_index, get_state_count()));
-	wl_assert(VALID_INDEX(nonterminal_index, m_nonterminal_count));
+	wl_assert(valid_index(state_index, get_state_count()));
+	wl_assert(valid_index(nonterminal_index, m_nonterminal_count));
 	size_t index = state_index * m_nonterminal_count + nonterminal_index;
 	m_goto_table[index] = goto_index;
 }
@@ -475,7 +472,7 @@ c_lr_parse_tree::c_lr_parse_tree() {
 }
 
 void c_lr_parse_tree::set_root_node_index(size_t index) {
-	wl_assert(VALID_INDEX(index, m_nodes.size()));
+	wl_assert(valid_index(index, m_nodes.size()));
 	m_root_node_index = index;
 }
 
@@ -569,7 +566,7 @@ void c_lr_parser::initialize(
 c_lr_parse_tree c_lr_parser::parse_token_stream(
 	f_lr_parser_get_next_token get_next_token,
 	void *context,
-	std::vector<size_t> &out_error_tokens) const {
+	std::vector<size_t> &error_tokens_out) const {
 	c_lr_parse_tree result_tree;
 
 	struct s_stack_element {
@@ -593,14 +590,14 @@ c_lr_parse_tree c_lr_parser::parse_token_stream(
 
 	bool done = false;
 	while (!done) {
-		wl_assert(VALID_INDEX(current_token, m_production_set.get_terminal_count()));
+		wl_assert(valid_index(current_token, m_production_set.get_terminal_count()));
 
 		s_stack_element stack_top = state_stack.top();
 		c_lr_action action = m_action_goto_table.get_action(stack_top.state, current_token);
 
 		if (action.get_action_type() == e_lr_action_type::k_invalid) {
 			// Error. $TODO Implement error-recovery so we can detect multiple errors, but for now just return early
-			out_error_tokens.push_back(current_token_index);
+			error_tokens_out.push_back(current_token_index);
 			done = true;
 		} else if (action.get_action_type() == e_lr_action_type::k_shift) {
 			// Push the new state, read next token
@@ -886,8 +883,9 @@ void c_lr_parser::compute_item_sets() {
 		for (int32 is_terminal_index = 0; is_terminal_index < 2; is_terminal_index++) {
 			bool is_terminal = (is_terminal_index == 0);
 
-			uint16 symbol_count = is_terminal ?
-				m_production_set.get_terminal_count() : m_production_set.get_nonterminal_count();
+			uint16 symbol_count = is_terminal
+				? m_production_set.get_terminal_count()
+				: m_production_set.get_nonterminal_count();
 
 			for (uint16 index = 0; index < symbol_count; index++) {
 				c_lr_symbol symbol(is_terminal, index);

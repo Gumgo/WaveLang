@@ -77,6 +77,6 @@ public:
 		const s_compiler_context &context,
 		const s_lexer_output &input,
 		s_parser_output &output,
-		std::vector<s_compiler_result> &out_errors);
+		std::vector<s_compiler_result> &errors_out);
 };
 

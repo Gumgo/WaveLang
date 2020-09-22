@@ -47,7 +47,7 @@ public:
 
 	// Special output index representing whether processing should remain active - once a voice drops to 0 volume it can
 	// be disabled for improved performance
-	static const uint32 k_remain_active_output_index = static_cast<uint32>(-1);
+	static constexpr uint32 k_remain_active_output_index = static_cast<uint32>(-1);
 
 	c_execution_graph();
 
@@ -161,7 +161,7 @@ private:
 	bool validate_edge(c_node_reference from_reference, c_node_reference to_reference) const;
 	bool validate_constants() const;
 	bool validate_string_table() const;
-	bool get_type_from_node(c_node_reference node_reference, c_native_module_data_type &out_type) const;
+	bool get_type_from_node(c_node_reference node_reference, c_native_module_data_type &type_out) const;
 
 	bool visit_node_for_cycle_detection(
 		c_node_reference node_reference,

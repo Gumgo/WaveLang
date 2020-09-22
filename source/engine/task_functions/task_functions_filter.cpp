@@ -15,7 +15,7 @@ namespace filter_task_functions {
 	}
 
 	void biquad_voice_initializer(const s_task_function_context &context) {
-		ZERO_STRUCT(static_cast<s_biquad_context *>(context.task_memory));
+		zero_type(static_cast<s_biquad_context *>(context.task_memory));
 	}
 
 	void biquad(

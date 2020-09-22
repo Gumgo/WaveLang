@@ -19,7 +19,7 @@ void mix_output_buffers_to_channel_buffers(
 				channel_buffer.assign_constant(output_buffer.get_constant());
 			} else {
 				channel_buffer.set_is_constant(false);
-				memcpy(channel_buffer.get_data(), output_buffer.get_data(), frames * sizeof(real32));
+				copy_type(channel_buffer.get_data(), output_buffer.get_data(), frames);
 			}
 		}
 	} else if (output_buffer_count == 1) {
@@ -31,7 +31,7 @@ void mix_output_buffers_to_channel_buffers(
 				channel_buffer.assign_constant(output_buffer.get_constant());
 			} else {
 				channel_buffer.set_is_constant(false);
-				memcpy(channel_buffer.get_data(), output_buffer.get_data(), frames * sizeof(real32));
+				copy_type(channel_buffer.get_data(), output_buffer.get_data(), frames);
 			}
 		}
 	} else if (channel_buffer_count == 1) {
@@ -102,7 +102,7 @@ void zero_output_buffers(
 	case e_sample_format::k_float32:
 	{
 		wl_assert(output_buffers.get_count() == (frames * output_buffer_count * sizeof(real32)));
-		memset(output_buffers.get_pointer(), 0, output_buffers.get_count());
+		zero_type(output_buffers.get_pointer(), output_buffers.get_count());
 		break;
 	}
 

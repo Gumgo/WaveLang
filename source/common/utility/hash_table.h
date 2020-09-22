@@ -28,7 +28,7 @@ public:
 	const t_value *find(const t_key &key) const;
 
 private:
-	static const size_t k_invalid_element_index = static_cast<size_t>(-1);
+	static constexpr size_t k_invalid_element_index = static_cast<size_t>(-1);
 
 	using s_pod_key = s_pod<t_key>;
 	using s_pod_value = s_pod<t_value>;

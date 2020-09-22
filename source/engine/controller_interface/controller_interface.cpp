@@ -9,6 +9,6 @@ void c_controller_interface::initialize(const c_controller_event_manager *contro
 
 c_wrapped_array<const s_timestamped_controller_event> c_controller_interface::get_parameter_change_events(
 	uint32 parameter_id,
-	real32 &out_previous_value) const {
-	return m_controller_event_manager->get_parameter_change_events(parameter_id, out_previous_value);
+	real32 &previous_value_out) const {
+	return m_controller_event_manager->get_parameter_change_events(parameter_id, previous_value_out);
 }

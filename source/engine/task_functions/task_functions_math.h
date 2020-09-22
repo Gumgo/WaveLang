@@ -88,7 +88,7 @@ namespace math_task_functions wl_library(k_math_library_id, "math", 0) {
 	void sincos(
 		const s_task_function_context &context,
 		wl_source("a") const c_real_buffer *a,
-		wl_source("out_sin") c_real_buffer *out_sin,
-		wl_source("out_cos") c_real_buffer *out_cos);
+		wl_source("sin_out") c_real_buffer *sin_out,
+		wl_source("cos_out") c_real_buffer *cos_out);
 
 }

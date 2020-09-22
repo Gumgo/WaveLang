@@ -21,8 +21,8 @@ inline bool c_compiler_string::is_empty() const {
 }
 
 inline bool c_compiler_string::operator==(const c_compiler_string &other) const {
-	return (m_length == other.m_length) &&
-		(memcmp(m_str, other.m_str, m_length) == 0);
+	return (m_length == other.m_length)
+		&& (memcmp(m_str, other.m_str, m_length) == 0);
 }
 
 inline bool c_compiler_string::operator==(const char *other) const {
@@ -33,8 +33,8 @@ inline bool c_compiler_string::operator==(const char *other) const {
 }
 
 inline bool c_compiler_string::operator!=(const c_compiler_string &other) const {
-	return (m_length != other.m_length) ||
-		(memcmp(m_str, other.m_str, m_length) != 0);
+	return (m_length != other.m_length)
+		|| (memcmp(m_str, other.m_str, m_length) != 0);
 }
 
 inline bool c_compiler_string::operator!=(const char *other) const {

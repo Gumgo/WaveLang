@@ -140,11 +140,11 @@ namespace math_task_functions {
 	void sincos(
 		const s_task_function_context &context,
 		const c_real_buffer *a,
-		c_real_buffer *out_sin,
-		c_real_buffer *out_cos) {
-		iterate_buffers<4, true>(context.buffer_size, a, out_sin, out_cos,
-			[](size_t i, const real32x4 &a, real32x4 &out_sin, real32x4 &out_cos) {
-				sincos(a, out_sin, out_cos);
+		c_real_buffer *sin_out,
+		c_real_buffer *cos_out) {
+		iterate_buffers<4, true>(context.buffer_size, a, sin_out, cos_out,
+			[](size_t i, const real32x4 &a, real32x4 &sin_out, real32x4 &cos_out) {
+				sincos(a, sin_out, cos_out);
 			});
 	}
 

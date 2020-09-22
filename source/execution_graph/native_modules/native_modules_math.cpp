@@ -53,9 +53,9 @@ namespace math_native_modules {
 		result = std::cos(a);
 	}
 
-	void sincos(real32 a, real32 &out_sin, real32 &out_cos) {
-		out_sin = std::sin(a);
-		out_cos = std::cos(a);
+	void sincos(real32 a, real32 &sin_out, real32 &cos_out) {
+		sin_out = std::sin(a);
+		cos_out = std::cos(a);
 	}
 
 }

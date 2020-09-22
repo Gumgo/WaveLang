@@ -4,10 +4,10 @@
 #include "execution_graph/instrument.h"
 #include "execution_graph/instrument_globals.h"
 
-static const char k_format_identifier[] = { 'w', 'a', 'v', 'e', 'l', 'a', 'n', 'g' };
+static constexpr char k_format_identifier[] = { 'w', 'a', 'v', 'e', 'l', 'a', 'n', 'g' };
 
 c_instrument_variant::c_instrument_variant() {
-	ZERO_STRUCT(&m_instrument_globals);
+	zero_type(&m_instrument_globals);
 	m_voice_execution_graph = nullptr;
 	m_fx_execution_graph = nullptr;
 }
@@ -54,10 +54,10 @@ e_instrument_result c_instrument_variant::load(std::ifstream &in) {
 	c_binary_file_reader reader(in);
 
 	// Read the globals
-	if (!reader.read(m_instrument_globals.max_voices) ||
-		!reader.read(m_instrument_globals.sample_rate) ||
-		!reader.read(m_instrument_globals.chunk_size) ||
-		!reader.read(m_instrument_globals.activate_fx_immediately)) {
+	if (!reader.read(m_instrument_globals.max_voices)
+		|| !reader.read(m_instrument_globals.sample_rate)
+		|| !reader.read(m_instrument_globals.chunk_size)
+		|| !reader.read(m_instrument_globals.activate_fx_immediately)) {
 		return in.eof() ? e_instrument_result::k_invalid_globals : e_instrument_result::k_failed_to_read;
 	}
 
@@ -96,8 +96,8 @@ bool c_instrument_variant::validate() const {
 		return false;
 	}
 
-	if ((m_voice_execution_graph && !m_voice_execution_graph->validate()) ||
-		(m_fx_execution_graph && !m_fx_execution_graph->validate())) {
+	if ((m_voice_execution_graph && !m_voice_execution_graph->validate())
+		|| (m_fx_execution_graph && !m_fx_execution_graph->validate())) {
 		return false;
 	}
 
@@ -192,7 +192,7 @@ e_instrument_result c_instrument::save(const char *fname) const {
 	c_binary_file_writer writer(out);
 
 	// Write identifier at the beginning
-	for (size_t ch = 0; ch < NUMBEROF(k_format_identifier); ch++) {
+	for (size_t ch = 0; ch < array_count(k_format_identifier); ch++) {
 		writer.write(k_format_identifier[ch]);
 	}
 
@@ -229,8 +229,8 @@ e_instrument_result c_instrument::load(const char *fname) {
 	c_binary_file_reader reader(in);
 
 	// Read the identifiers at the beginning of the file
-	s_static_array<char, NUMBEROF(k_format_identifier)> format_identifier_buffer;
-	for (size_t ch = 0; ch < NUMBEROF(k_format_identifier); ch++) {
+	s_static_array<char, array_count(k_format_identifier)> format_identifier_buffer;
+	for (size_t ch = 0; ch < array_count(k_format_identifier); ch++) {
 		if (!reader.read(format_identifier_buffer[ch])) {
 			return in.eof() ? e_instrument_result::k_invalid_header : e_instrument_result::k_failed_to_read;
 		}
@@ -293,7 +293,8 @@ const c_instrument_variant *c_instrument::get_instrument_variant(uint32 index) c
 }
 
 e_instrument_variant_for_requirements_result c_instrument::get_instrument_variant_for_requirements(
-	const s_instrument_variant_requirements &requirements, uint32 &out_instrument_variant_index) const {
+	const s_instrument_variant_requirements &requirements,
+	uint32 &instrument_variant_index_out) const {
 	int32 best_match_score = -1;
 	size_t matches_for_this_score = 0;
 	uint32 instrument_variant_index = 0;
@@ -324,7 +325,7 @@ e_instrument_variant_for_requirements_result c_instrument::get_instrument_varian
 		}
 	}
 
-	out_instrument_variant_index = instrument_variant_index;
+	instrument_variant_index_out = instrument_variant_index;
 	if (best_match_score == -1) {
 		return e_instrument_variant_for_requirements_result::k_no_match;
 	} else if (matches_for_this_score > 1) {

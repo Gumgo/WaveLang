@@ -6,7 +6,7 @@
 
 bool are_file_paths_equivalent(const char *path_a, const char *path_b);
 bool is_path_relative(const char *path);
-bool get_file_last_modified_timestamp(const char *path, uint64 &out_timestamp);
+bool get_file_last_modified_timestamp(const char *path, uint64 &timestamp_out);
 void create_directory(const char *path);
 
 class c_binary_file_reader {
@@ -16,7 +16,7 @@ public:
 	}
 
 	// Performs endian byte swapping
-	template<typename t_value> bool read(t_value &out_value) {
+	template<typename t_value> bool read(t_value &value_out) {
 		t_value raw_value;
 		m_file.read(reinterpret_cast<char *>(&raw_value), sizeof(raw_value));
 
@@ -24,11 +24,11 @@ public:
 			return false;
 		}
 
-		out_value = big_to_native_endian(raw_value);
+		value_out = big_to_native_endian(raw_value);
 		return true;
 	}
 
-	bool read(bool &out_value) {
+	bool read(bool &value_out) {
 		uint8 raw_value;
 		m_file.read(reinterpret_cast<char *>(&raw_value), sizeof(raw_value));
 
@@ -36,7 +36,7 @@ public:
 			return false;
 		}
 
-		out_value = (raw_value != 0);
+		value_out = (raw_value != 0);
 		return true;
 	}
 

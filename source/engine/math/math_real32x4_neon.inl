@@ -224,42 +224,10 @@ inline real32x4 cos(const real32x4 &v) {
 	return cos_ps(v);
 }
 
-inline void sincos(const real32x4 &v, real32x4 &out_sin, real32x4 &out_cos) {
-	sincos_ps(v, reinterpret_cast<t_simd_real32 *>(&out_sin), reinterpret_cast<t_simd_real32 *>(&out_cos));
+inline void sincos(const real32x4 &v, real32x4 &sin_out, real32x4 &cos_out) {
+	sincos_ps(v, reinterpret_cast<t_simd_real32 *>(&sin_out), reinterpret_cast<t_simd_real32 *>(&cos_out));
 }
 
 template<> inline int32x4 reinterpret_bits(const real32x4 &v) {
 	return vreinterpretq_s32_f32(v);
-}
-
-inline real32x4 single_element(const real32x4 &v, int32 pos) {
-	wl_assert(VALID_INDEX(pos, 4));
-	switch (pos) {
-	case 0:
-		return vdupq_lane_f32(vget_low_f32(v), 0);
-
-	case 1:
-		return vdupq_lane_f32(vget_low_f32(v), 1);
-
-	case 2:
-		return vdupq_lane_f32(vget_high_f32(v), 0);
-
-	case 3:
-		return vdupq_lane_f32(vget_high_f32(v), 1);
-
-	default:
-		wl_unreachable();
-		return real32x4(0.0f);
-	}
-}
-
-template<int32 k_shift_amount>
-real32x4 extract(const real32x4 &a, const real32x4 &b) {
-	static_assert(VALID_INDEX(k_shift_amount, k_simd_block_elements), "Must be in range [0,4]");
-	return vextq_f32(a, b, k_shift_amount);
-}
-
-template<>
-inline real32x4 extract<4>(const real32x4 &a, const real32x4 &b) {
-	return b;
 }

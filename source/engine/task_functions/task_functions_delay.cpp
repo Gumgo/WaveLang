@@ -140,7 +140,7 @@ namespace delay_task_functions {
 
 		// Zero out the delay buffer
 		real32 *delay_buffer = get_delay_buffer(delay_context);
-		memset(delay_buffer, 0, sizeof(real32) * delay_context->delay_samples);
+		zero_type(delay_buffer, delay_context->delay_samples);
 	}
 
 	void delay_voice_initializer(const s_task_function_context &context) {
@@ -151,7 +151,7 @@ namespace delay_task_functions {
 
 		// Zero out the delay buffer
 		real32 *delay_buffer = get_delay_buffer(delay_context);
-		memset(delay_buffer, 0, sizeof(real32) * delay_context->delay_samples);
+		zero_type(delay_buffer, delay_context->delay_samples);
 	}
 
 	void delay(const s_task_function_context &context, const c_real_buffer *signal, c_real_buffer *result) {
@@ -163,7 +163,7 @@ namespace delay_task_functions {
 			if (signal->is_constant()) {
 				result->assign_constant(signal->get_constant());
 			} else {
-				memcpy(result->get_data(), signal->get_data(), context.buffer_size * sizeof(real32));
+				copy_type(result->get_data(), signal->get_data(), context.buffer_size);
 				result->set_is_constant(false);
 			}
 			return;
@@ -223,10 +223,10 @@ namespace delay_task_functions {
 					*out_pointer = signal_value;
 				}
 			} else {
-				memcpy(
+				copy_type(
 					result->get_data() + delay_context->delay_samples,
 					signal->get_data(),
-					(context.buffer_size - delay_context->delay_samples) * sizeof(real32));
+					(context.buffer_size - delay_context->delay_samples));
 			}
 		}
 
@@ -272,7 +272,7 @@ namespace delay_task_functions {
 				bool write_value = write->get_constant();
 
 				if (write_value) {
-					memcpy(result->get_data(), value->get_data(), context.buffer_size * sizeof(real32));
+					copy_type(result->get_data(), value->get_data(), context.buffer_size);
 					memory_value = value->get_data()[context.buffer_size - 1];
 					result->set_is_constant(false);
 				} else {
@@ -335,10 +335,10 @@ namespace delay_task_functions {
 				bool write_value = write->get_constant();
 
 				if (write_value) {
-					memcpy(
+					copy_type(
 						result->get_data(),
 						value->get_data(),
-						bool_buffer_int32_count(context.buffer_size) * sizeof(real32));
+						bool_buffer_int32_count(context.buffer_size));
 					size_t last_index = context.buffer_size - 1;
 					memory_value = test_bit(value->get_data()[last_index / 32], last_index % 32);
 					result->set_is_constant(false);

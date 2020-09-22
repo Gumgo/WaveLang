@@ -11,7 +11,7 @@ enum class e_controller_event_type {
 };
 
 struct s_controller_event {
-	static const size_t k_max_controller_event_data_size = 12;
+	static constexpr size_t k_max_controller_event_data_size = 12;
 	static_assert(k_max_controller_event_data_size % sizeof(uint32) == 0,
 		"Max event data size not a multiple of 4");
 

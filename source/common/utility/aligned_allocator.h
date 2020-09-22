@@ -7,19 +7,19 @@
 template<typename t_element, size_t k_alignment>
 class c_aligned_allocator {
 public:
-	// Allocates memory aligned to k_alignment. out_aligned_pointer is the resulting aligned pointer, but
-	// out_base_pointer is the pointer which should be later passed into free_aligned_memory.
-	static bool allocate_aligned_memory(size_t size, void **out_base_pointer, void **out_aligned_pointer) {
-		wl_assert(out_base_pointer);
-		wl_assert(out_aligned_pointer);
+	// Allocates memory aligned to k_alignment. aligned_pointer_out is the resulting aligned pointer, but
+	// base_pointer_out is the pointer which should be later passed into free_aligned_memory.
+	static bool allocate_aligned_memory(size_t size, void **base_pointer_out, void **aligned_pointer_out) {
+		wl_assert(base_pointer_out);
+		wl_assert(aligned_pointer_out);
 
 		size_t aligned_size = size + k_alignment - 1;
-		*out_base_pointer = std::malloc(aligned_size);
-		if (!(*out_base_pointer)) {
+		*base_pointer_out = std::malloc(aligned_size);
+		if (!(*base_pointer_out)) {
 			return false;
 		}
 
-		*out_aligned_pointer = align_pointer(*out_base_pointer, k_alignment);
+		*aligned_pointer_out = align_pointer(*base_pointer_out, k_alignment);
 		return true;
 	}
 

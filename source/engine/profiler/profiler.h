@@ -56,7 +56,7 @@ public:
 
 	void start();
 	void stop();
-	void get_report(s_profiler_report &out_report) const;
+	void get_report(s_profiler_report &report_out) const;
 
 	void begin_execution();
 	void begin_voices();

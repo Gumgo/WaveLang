@@ -2,11 +2,11 @@
 
 static_assert(CACHE_LINE_SIZE >= SIMD_ALIGNMENT, "Cache line too small for SSE");
 
-static const size_t k_bits_per_buffer_element[] = {
+static constexpr size_t k_bits_per_buffer_element[] = {
 	32,	// e_buffer_type::k_real
 	1	// e_buffer_type::k_bool
 };
-static_assert(NUMBEROF(k_bits_per_buffer_element) == enum_count<e_buffer_type>(), "Buffer type bits mismatch");
+static_assert(array_count(k_bits_per_buffer_element) == enum_count<e_buffer_type>(), "Buffer type bits mismatch");
 
 c_buffer_allocator::c_buffer_allocator() {
 }

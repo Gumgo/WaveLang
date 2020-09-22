@@ -142,7 +142,7 @@ void c_executor::initialize_thread_pool() {
 	for (size_t thread_index = 0; thread_index < thread_context_count; thread_index++) {
 		s_task_function_context &task_function_context =
 			m_thread_contexts.get_array()[thread_index].task_function_context;
-		ZERO_STRUCT(&task_function_context);
+		zero_type(&task_function_context);
 		task_function_context.event_interface = &m_event_interface;
 		task_function_context.sample_accessor = &m_sample_library_accessor;
 		task_function_context.voice_interface = &m_voice_interface;
@@ -150,7 +150,7 @@ void c_executor::initialize_thread_pool() {
 		task_function_context.sample_rate = m_settings.sample_rate;
 	}
 
-	ZERO_STRUCT(&m_voice_initializer_task_function_context);
+	zero_type(&m_voice_initializer_task_function_context);
 	m_voice_initializer_task_function_context.event_interface = &m_event_interface;
 	m_voice_initializer_task_function_context.sample_accessor = &m_sample_library_accessor;
 	m_voice_initializer_task_function_context.sample_rate = m_settings.sample_rate;
@@ -195,7 +195,7 @@ void c_executor::initialize_tasks() {
 				sample_library_requester.initialize(&m_sample_library);
 
 				s_task_function_context task_function_context;
-				ZERO_STRUCT(&task_function_context);
+				zero_type(&task_function_context);
 				task_function_context.event_interface = &m_event_interface;
 				task_function_context.sample_requester = &sample_library_requester;
 				task_function_context.sample_rate = m_settings.sample_rate;
@@ -249,12 +249,12 @@ void c_executor::initialize_profiler() {
 	if (m_settings.profiling_enabled) {
 		s_profiler_settings profiler_settings;
 		profiler_settings.worker_thread_count = std::max(1u, m_settings.thread_count);
-		profiler_settings.voice_task_count = m_settings.runtime_instrument->get_voice_task_graph() ?
-			m_settings.runtime_instrument->get_voice_task_graph()->get_task_count() :
-			0;
-		profiler_settings.fx_task_count = m_settings.runtime_instrument->get_fx_task_graph() ?
-			m_settings.runtime_instrument->get_fx_task_graph()->get_task_count() :
-			0;
+		profiler_settings.voice_task_count = m_settings.runtime_instrument->get_voice_task_graph()
+			? m_settings.runtime_instrument->get_voice_task_graph()->get_task_count()
+			: 0;
+		profiler_settings.fx_task_count = m_settings.runtime_instrument->get_fx_task_graph()
+			? m_settings.runtime_instrument->get_fx_task_graph()->get_task_count()
+			: 0;
 		m_profiler.initialize(profiler_settings);
 		m_profiler.start();
 	}
@@ -301,7 +301,7 @@ size_t c_executor::task_memory_query(const c_task_graph *task_graph, uint32 task
 		// We don't (currently) support dynamic task memory usage.
 
 		s_task_function_context task_function_context;
-		ZERO_STRUCT(&task_function_context);
+		zero_type(&task_function_context);
 		task_function_context.event_interface = &m_event_interface;
 		task_function_context.sample_rate = m_settings.sample_rate;
 		task_function_context.arguments = task_graph->get_task_arguments(task_index);
@@ -414,9 +414,9 @@ void c_executor::process_fx(const s_executor_chunk_context &chunk_context) {
 }
 
 void c_executor::process_voice_or_fx(const s_executor_chunk_context &chunk_context, uint32 voice_index) {
-	const c_voice_allocator::s_voice &voice = (m_active_instrument_stage == e_instrument_stage::k_voice) ?
-		m_voice_allocator.get_voice(voice_index) :
-		m_voice_allocator.get_fx_voice();
+	const c_voice_allocator::s_voice &voice = (m_active_instrument_stage == e_instrument_stage::k_voice)
+		? m_voice_allocator.get_voice(voice_index)
+		: m_voice_allocator.get_fx_voice();
 	wl_assert(voice.active);
 
 	// Voice index should be 0 if we're performing FX proessing

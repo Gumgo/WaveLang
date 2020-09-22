@@ -45,12 +45,12 @@ static s_task_function_registry_data g_task_function_registry_data;
 #if IS_TRUE(ASSERTS_ENABLED)
 static void validate_task_function_mapping(const s_native_module &native_module, const s_task_function &task_function);
 
-static const e_task_primitive_type k_native_module_primitive_type_to_task_primitive_type_mapping[] = {
+static constexpr e_task_primitive_type k_native_module_primitive_type_to_task_primitive_type_mapping[] = {
 	e_task_primitive_type::k_real,	// e_native_module_primitive_type::k_real
 	e_task_primitive_type::k_bool,	// e_native_module_primitive_type::k_bool
 	e_task_primitive_type::k_string	// e_native_module_primitive_type::k_string
 };
-static_assert(NUMBEROF(k_native_module_primitive_type_to_task_primitive_type_mapping) ==
+static_assert(array_count(k_native_module_primitive_type_to_task_primitive_type_mapping) ==
 	enum_count<e_native_module_primitive_type>(),
 	"Native module primitive type to task primitive type mismatch");
 
@@ -142,7 +142,7 @@ bool c_task_function_registry::register_task_function(const s_task_function &tas
 
 	// Append the native module
 	g_task_function_registry_data.task_functions.push_back(s_task_function());
-	memcpy(&g_task_function_registry_data.task_functions.back(), &task_function, sizeof(task_function));
+	copy_type(&g_task_function_registry_data.task_functions.back(), &task_function);
 
 	g_task_function_registry_data.task_function_uids_to_indices.insert(
 		std::make_pair(task_function.uid, index));
@@ -166,12 +166,12 @@ uint32 c_task_function_registry::get_task_function_index(s_task_function_uid tas
 }
 
 const s_task_function &c_task_function_registry::get_task_function(uint32 index) {
-	wl_assert(VALID_INDEX(index, get_task_function_count()));
+	wl_assert(valid_index(index, get_task_function_count()));
 	return g_task_function_registry_data.task_functions[index];
 }
 
 s_task_function_uid c_task_function_registry::get_task_function_mapping(uint32 native_module_index) {
-	wl_assert(VALID_INDEX(native_module_index, c_native_module_registry::get_native_module_count()));
+	wl_assert(valid_index(native_module_index, c_native_module_registry::get_native_module_count()));
 	return g_task_function_registry_data.task_function_mappings[native_module_index];
 }
 
@@ -179,7 +179,7 @@ s_task_function_uid c_task_function_registry::get_task_function_mapping(uint32 n
 static void validate_task_function_mapping(const s_native_module &native_module, const s_task_function &task_function) {
 	// Keep track of whether each task argument has been mapped to
 	s_static_array<bool, k_max_task_function_arguments> task_argument_mappings;
-	ZERO_STRUCT(&task_argument_mappings);
+	zero_type(&task_argument_mappings);
 
 	// Ensure that all indices are valid and that all mapping types match
 	for (size_t arg = 0; arg < native_module.argument_count; arg++) {
@@ -190,7 +190,7 @@ static void validate_task_function_mapping(const s_native_module &native_module,
 			continue;
 		}
 
-		wl_assert(VALID_INDEX(mapping_index, task_function.argument_count));
+		wl_assert(valid_index(mapping_index, task_function.argument_count));
 		wl_assert(!task_argument_mappings[mapping_index]);
 		task_argument_mappings[mapping_index] = true;
 

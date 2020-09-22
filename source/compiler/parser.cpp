@@ -59,10 +59,10 @@ static bool process_source_file(
 	const s_lexer_source_file_output &source_file_input,
 	int32 source_file_index,
 	s_parser_source_file_output &source_file_output,
-	std::vector<s_compiler_result> &out_errors);
+	std::vector<s_compiler_result> &errors_out);
 
 #if IS_TRUE(OUTPUT_PARSE_TREE_ENABLED)
-static const char *k_parse_tree_output_filename = "parse_tree.gv";
+static constexpr char k_parse_tree_output_filename[] = "parse_tree.gv";
 static void print_parse_tree(
 	c_graphviz_generator &graph,
 	const s_lexer_source_file_output &tokens,
@@ -77,7 +77,7 @@ void c_parser::initialize_parser() {
 	// Build the production set from the provided rules
 	c_lr_production_set production_set;
 	production_set.initialize(enum_count<e_token_type>(), enum_count<e_parser_nonterminal>());
-	for (size_t index = 0; index < NUMBEROF(k_production_table); index++) {
+	for (size_t index = 0; index < array_count(k_production_table); index++) {
 		production_set.add_production(k_production_table[index]);
 	}
 
@@ -104,7 +104,7 @@ s_compiler_result c_parser::process(
 	const s_compiler_context &context,
 	const s_lexer_output &input,
 	s_parser_output &output,
-	std::vector<s_compiler_result> &out_errors) {
+	std::vector<s_compiler_result> &errors_out) {
 	wl_assert(g_parser_initialized);
 	s_compiler_result result;
 	result.clear();
@@ -126,11 +126,11 @@ s_compiler_result c_parser::process(
 			source_file,
 			input.source_file_output[source_file_index],
 			cast_integer_verify<int32>(source_file_index),
-			output.source_file_output.back(), out_errors);
+			output.source_file_output.back(), errors_out);
 	}
 
 	if (failed) {
-		// Don't associate the error with a particular file, those errors are collected through out_errors
+		// Don't associate the error with a particular file, those errors are collected through errors_out
 		result.result = e_compiler_result::k_parser_error;
 		result.message = "Parser encountered error(s)";
 	}
@@ -143,7 +143,7 @@ static bool process_source_file(
 	const s_lexer_source_file_output &source_file_input,
 	int32 source_file_index,
 	s_parser_source_file_output &source_file_output,
-	std::vector<s_compiler_result> &out_errors) {
+	std::vector<s_compiler_result> &errors_out) {
 	// Initially assume success
 	bool result = true;
 
@@ -151,10 +151,10 @@ static bool process_source_file(
 		const s_lexer_source_file_output *token_stream;
 		size_t next_token_index;
 
-		static bool get_next_token(void *context, uint16 &out_token) {
+		static bool get_next_token(void *context, uint16 &token_out) {
 			s_parser_context *typed_context = static_cast<s_parser_context *>(context);
 			if (typed_context->next_token_index < typed_context->token_stream->tokens.size()) {
-				out_token = static_cast<uint16>(
+				token_out = static_cast<uint16>(
 					typed_context->token_stream->tokens[typed_context->next_token_index].token_type);
 				typed_context->next_token_index++;
 				return true;
@@ -193,7 +193,7 @@ static bool process_source_file(
 		error.result = e_compiler_result::k_unexpected_token;
 		error.source_location = token.source_location;
 		error.message = "Unexpected token '" + token.token_string.to_std_string() + "'";
-		out_errors.push_back(error);
+		errors_out.push_back(error);
 	}
 
 	if (!error_tokens.empty()) {
@@ -245,7 +245,7 @@ static const char *k_parse_tree_output_terminal_strings[] = {
 	"operator-or",
 	"comment"
 };
-static_assert(NUMBEROF(k_parse_tree_output_terminal_strings) == enum_count<e_token_type>(), "Incorrect array size");
+static_assert(array_count(k_parse_tree_output_terminal_strings) == enum_count<e_token_type>(), "Incorrect array size");
 
 static const char *k_parse_tree_output_nonterminal_strings[] = {
 	"start",
@@ -285,7 +285,7 @@ static const char *k_parse_tree_output_nonterminal_strings[] = {
 	"constant-array-list",
 	"array-dereference"
 };
-static_assert(NUMBEROF(k_parse_tree_output_nonterminal_strings) == enum_count<e_parser_nonterminal>(),
+static_assert(array_count(k_parse_tree_output_nonterminal_strings) == enum_count<e_parser_nonterminal>(),
 	"Incorrect array size");
 
 #define PRINT_TERMINAL_STRINGS 1

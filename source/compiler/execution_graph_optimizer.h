@@ -47,7 +47,7 @@ private:
 	bool build_module_call_arguments(
 		const s_native_module &native_module,
 		c_node_reference native_module_node_reference,
-		std::vector<s_native_module_compile_time_argument> &out_arg_list);
+		std::vector<s_native_module_compile_time_argument> &arg_list_out);
 	void store_native_module_call_results(
 		const s_native_module &native_module,
 		c_node_reference native_module_node_reference,
@@ -102,6 +102,6 @@ public:
 	static s_compiler_result optimize_graph(
 		c_execution_graph *execution_graph,
 		const s_instrument_globals *instrument_globals,
-		std::vector<s_compiler_result> &out_errors);
+		std::vector<s_compiler_result> &errors_out);
 };
 

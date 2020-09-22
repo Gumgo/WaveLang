@@ -75,6 +75,7 @@
     <ClInclude Include="threading\condition_variable.h">
       <Filter>threading</Filter>
     </ClInclude>
+    <ClInclude Include="common_utilities.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="SConscript" />

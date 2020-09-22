@@ -12,7 +12,7 @@ TEST(Math, Real32x4) {
 	EXPECT_TRUE(all_true(real32x4(k_constant_elements) == real32x4(1.0f)));
 
 	ALIGNAS_SIMD real32 elements[4];
-	memset(elements, 0, sizeof(elements));
+	zero_type(elements, array_count(elements));
 	real32x4(k_elements).store(elements);
 	EXPECT_EQ(memcmp(elements, k_elements, sizeof(elements)), 0);
 
@@ -78,7 +78,7 @@ TEST(Math, Int32x4) {
 	EXPECT_TRUE(all_true(int32x4(k_constant_elements) == int32x4(1)));
 
 	ALIGNAS_SIMD int32 elements[4];
-	memset(elements, 0, sizeof(elements));
+	zero_type(elements, array_count(elements));
 	int32x4(k_elements).store(elements);
 	EXPECT_EQ(memcmp(elements, k_elements, sizeof(elements)), 0);
 

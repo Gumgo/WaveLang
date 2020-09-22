@@ -26,7 +26,7 @@ struct s_wave_data_subchunk {
 
 // $TODO add cue-points to wav files: http://bleepsandpops.com/post/37792760450/adding-cue-points-to-wav-files-in-c
 
-static bool load_wav(const char *filename, s_loaded_sample &out_loaded_sample) {
+static bool load_wav(const char *filename, s_loaded_sample &loaded_sample_out) {
 	std::ifstream file(filename, std::ios::binary);
 	if (file.fail()) {
 		return false;
@@ -138,16 +138,16 @@ static bool load_wav(const char *filename, s_loaded_sample &out_loaded_sample) {
 		return false;
 	}
 
-	out_loaded_sample.sample_rate = fmt_subchunk.sample_rate;
-	out_loaded_sample.frame_count = frames;
-	out_loaded_sample.channel_count = fmt_subchunk.num_channels;
+	loaded_sample_out.sample_rate = fmt_subchunk.sample_rate;
+	loaded_sample_out.frame_count = frames;
+	loaded_sample_out.channel_count = fmt_subchunk.num_channels;
 	// $TODO add loop point data if it exists (make sure to verify that it's valid first)
-	out_loaded_sample.loop_start_sample_index = 0;
-	out_loaded_sample.loop_end_sample_index = frames;
+	loaded_sample_out.loop_start_sample_index = 0;
+	loaded_sample_out.loop_end_sample_index = frames;
 
 	// Convert to real format
 	// $TODO support more formats, namely float and int24
-	out_loaded_sample.samples.resize(frames * fmt_subchunk.num_channels);
+	loaded_sample_out.samples.resize(frames * fmt_subchunk.num_channels);
 	switch (fmt_subchunk.bits_per_sample) {
 	case 8:
 		for (size_t frame = 0; frame < frames; frame++) {
@@ -155,7 +155,7 @@ static bool load_wav(const char *filename, s_loaded_sample &out_loaded_sample) {
 				size_t index = frame * fmt_subchunk.num_channels + channel;
 				// map [0,255] to [-1,1]
 				real32 value = (static_cast<real32>(raw_data[index]) - 127.5f) * (1.0f / 127.5f);
-				out_loaded_sample.samples[channel * frames + frame] = value;
+				loaded_sample_out.samples[channel * frames + frame] = value;
 			}
 		}
 		break;
@@ -167,7 +167,7 @@ static bool load_wav(const char *filename, s_loaded_sample &out_loaded_sample) {
 				// map [-32768,32767] to [-1,1]
 				int16 integer_value = reinterpret_cast<const int16 *>(&raw_data.front())[index];
 				real32 value = (static_cast<real32>(integer_value) + 0.5f) * (1.0f / 32767.5f);
-				out_loaded_sample.samples[channel * frames + frame] = value;
+				loaded_sample_out.samples[channel * frames + frame] = value;
 			}
 		}
 		break;
@@ -179,7 +179,7 @@ static bool load_wav(const char *filename, s_loaded_sample &out_loaded_sample) {
 	return true;
 }
 
-bool load_sample(const char *filename, s_loaded_sample &out_loaded_sample) {
+bool load_sample(const char *filename, s_loaded_sample &loaded_sample_out) {
 	// $TODO detect format to determine which loading function to call
-	return load_wav(filename, out_loaded_sample);
+	return load_wav(filename, loaded_sample_out);
 }

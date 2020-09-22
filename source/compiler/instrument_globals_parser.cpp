@@ -54,9 +54,9 @@ std::vector<s_instrument_globals> s_instrument_globals_context::build_instrument
 }
 
 // Utilities for parsing arguments
-static bool get_unsigned_integer(const s_token &token, uint32 &out_value);
-static bool get_unsigned_nonzero_integer(const s_token &token, uint32 &out_value);
-static bool get_bool(const s_token &token, bool &out_value);
+static bool get_unsigned_integer(const s_token &token, uint32 &value_out);
+static bool get_unsigned_nonzero_integer(const s_token &token, uint32 &value_out);
+static bool get_bool(const s_token &token, bool &value_out);
 
 // Preprocessor commands
 static s_compiler_result preprocessor_command_max_voices(
@@ -80,7 +80,7 @@ void c_instrument_globals_parser::register_preprocessor_commands(
 		"activate_fx_immediately", globals_context, preprocessor_command_activate_fx_immediately);
 }
 
-static bool get_unsigned_integer(const s_token &token, uint32 &out_value) {
+static bool get_unsigned_integer(const s_token &token, uint32 &value_out) {
 	if (token.token_type != e_token_type::k_constant_real) {
 		return false;
 	}
@@ -90,28 +90,28 @@ static bool get_unsigned_integer(const s_token &token, uint32 &out_value) {
 		return false;
 	}
 
-	out_value = static_cast<uint32>(value);
+	value_out = static_cast<uint32>(value);
 	return true;
 }
 
-static bool get_unsigned_nonzero_integer(const s_token &token, uint32 &out_value) {
+static bool get_unsigned_nonzero_integer(const s_token &token, uint32 &value_out) {
 	uint32 unsigned_value = 0;
 	if (!get_unsigned_integer(token, unsigned_value) || unsigned_value == 0) {
 		return false;
 	}
 
-	out_value = unsigned_value;
+	value_out = unsigned_value;
 	return true;
 }
 
-static bool get_bool(const s_token &token, bool &out_value) {
+static bool get_bool(const s_token &token, bool &value_out) {
 	if (token.token_type != e_token_type::k_constant_bool) {
 		return false;
 	}
 
-	wl_assert(token.token_string == k_token_type_constant_bool_false_string ||
-		token.token_string == k_token_type_constant_bool_true_string);
-	out_value = (token.token_string != k_token_type_constant_bool_false_string);
+	wl_assert(token.token_string == k_token_type_constant_bool_false_string
+		|| token.token_string == k_token_type_constant_bool_true_string);
+	value_out = (token.token_string != k_token_type_constant_bool_false_string);
 	return true;
 }
 

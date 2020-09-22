@@ -13,9 +13,9 @@ class c_event_interface;
 // Extracts sample data
 static void get_sample_time_data(
 	const c_sample *sample,
-	real64 &out_length_samples,
-	real64 &out_loop_start_sample,
-	real64 &out_loop_end_sample);
+	real64 &length_samples_out,
+	real64 &loop_start_sample_out,
+	real64 &loop_end_sample_out);
 
 static void run_sampler(
 	const s_task_function_context &context,
@@ -65,7 +65,7 @@ static void run_sampler(
 		size_t samples_remaining = context.buffer_size - samples_written;
 
 		// If the sample ended before the end of the buffer, fill the rest with 0
-		memset(result->get_data(), 0, samples_remaining * sizeof(real32));
+		zero_type(result->get_data(), samples_remaining);
 
 		// If samples_written is 0, the buffer is filled with 0
 		result->set_is_constant(samples_written == 0);
@@ -141,12 +141,12 @@ static void run_sampler_loop(
 
 static void get_sample_time_data(
 	const c_sample *sample,
-	real64 &out_length_samples,
-	real64 &out_loop_start_sample,
-	real64 &out_loop_end_sample) {
-	out_length_samples = static_cast<real64>(sample->get_entry(0)->samples.get_count());
-	out_loop_start_sample = static_cast<real64>(sample->get_loop_start());
-	out_loop_end_sample = static_cast<real64>(sample->get_loop_end());
+	real64 &length_samples_out,
+	real64 &loop_start_sample_out,
+	real64 &loop_end_sample_out) {
+	length_samples_out = static_cast<real64>(sample->get_entry(0)->samples.get_count());
+	loop_start_sample_out = static_cast<real64>(sample->get_loop_start());
+	loop_end_sample_out = static_cast<real64>(sample->get_loop_end());
 }
 
 namespace sampler_task_functions {

@@ -27,9 +27,9 @@
 #define ALIGNAS_SIMD alignas(SIMD_ALIGNMENT)
 
 // More type-friendly version:
-static const size_t k_simd_alignment = SIMD_ALIGNMENT;
-static const size_t k_simd_block_elements = SIMD_BLOCK_ELEMENTS;
-static const size_t k_simd_block_size = SIMD_BLOCK_SIZE;
+static constexpr size_t k_simd_alignment = SIMD_ALIGNMENT;
+static constexpr size_t k_simd_block_elements = SIMD_BLOCK_ELEMENTS;
+static constexpr size_t k_simd_block_size = SIMD_BLOCK_SIZE;
 
 #if IS_TRUE(SIMD_IMPLEMENTATION_SSE_ENABLED)
 

@@ -14,7 +14,7 @@
 #include <sstream>
 #endif // IS_TRUE(OUTPUT_TASK_GRAPH_BUILD_RESULT)
 
-static const uint32 k_invalid_task = static_cast<uint32>(-1);
+static constexpr uint32 k_invalid_task = static_cast<uint32>(-1);
 
 // Rebasing helpers
 template<typename t_pointer> static t_pointer *store_index_in_pointer(size_t index);
@@ -343,9 +343,8 @@ static bool does_native_module_call_input_branch(
 	} else {
 		IF_ASSERTS_ENABLED(e_execution_graph_node_type node_type =
 			execution_graph.get_node_type(source_node_reference);)
-		wl_assert(
-			node_type == e_execution_graph_node_type::k_indexed_output ||
-			node_type == e_execution_graph_node_type::k_input);
+		wl_assert(node_type == e_execution_graph_node_type::k_indexed_output
+			|| node_type == e_execution_graph_node_type::k_input);
 		return (execution_graph.get_node_outgoing_edge_count(source_node_reference) > 1);
 	}
 }
@@ -468,7 +467,7 @@ bool c_task_graph::setup_task(
 	size_t input_index = 0;
 	for (size_t index = 0; index < input_output_count; index++) {
 		uint32 argument_index = task_function.task_function_argument_indices[index];
-		wl_assert(VALID_INDEX(argument_index, task_function.argument_count));
+		wl_assert(valid_index(argument_index, task_function.argument_count));
 		s_task_function_argument &argument = task_function_arguments[argument_index];
 		c_task_qualified_data_type argument_type = task_function.argument_types[argument_index];
 		argument.data.type = argument_type;
@@ -568,7 +567,7 @@ bool c_task_graph::setup_task(
 	size_t output_index = 0;
 	for (size_t index = 0; index < input_output_count; index++) {
 		uint32 argument_index = task_function.task_function_argument_indices[index];
-		wl_assert(VALID_INDEX(argument_index, task_function.argument_count));
+		wl_assert(valid_index(argument_index, task_function.argument_count));
 		s_task_function_argument &argument = task_function_arguments[argument_index];
 		c_task_qualified_data_type argument_type = task_function.argument_types[argument_index];
 		argument.data.type = argument_type;
@@ -1367,7 +1366,7 @@ uint32 c_task_graph::calculate_max_buffer_concurrency(
 uint32 c_task_graph::estimate_max_concurrency(uint32 node_count, const std::vector<bool> &concurrency_matrix) const {
 	wl_assert(node_count * node_count == concurrency_matrix.size());
 
-	static const size_t k_none = static_cast<size_t>(-1);
+	static constexpr size_t k_none = static_cast<size_t>(-1);
 	struct s_merged_node_group {
 		uint32 node_index;
 		size_t next;
@@ -1444,7 +1443,7 @@ static bool output_task_graph_build_result(const c_task_graph &task_graph, const
 
 		std::stringstream uid_stream;
 		uid_stream << "0x" << std::setfill('0') << std::setw(2) << std::hex;
-		for (size_t b = 0; b < NUMBEROF(task_function.uid.data); b++) {
+		for (size_t b = 0; b < array_count(task_function.uid.data); b++) {
 			uid_stream << static_cast<uint32>(task_function.uid.data[b]);
 		}
 

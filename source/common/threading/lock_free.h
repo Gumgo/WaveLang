@@ -10,13 +10,13 @@
 #define ALIGNAS_LOCK_FREE alignas(LOCK_FREE_ALIGNMENT)
 
 // More type-friendly version:
-static const size_t k_lock_free_alignment = LOCK_FREE_ALIGNMENT;
+static constexpr size_t k_lock_free_alignment = LOCK_FREE_ALIGNMENT;
 
 // Can't do partial-template typedefs
 template<typename t_element>
 class c_lock_free_aligned_allocator : public c_aligned_allocator<t_element, k_lock_free_alignment> {};
 
-static const uint32 k_lock_free_invalid_handle = static_cast<uint32>(-1);
+static constexpr uint32 k_lock_free_invalid_handle = static_cast<uint32>(-1);
 
 // Uses 32-bit handles for indexing nodes and 32-bit ABA counter
 struct s_lock_free_handle {

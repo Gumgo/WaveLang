@@ -44,7 +44,7 @@ size_t c_linked_array::allocate_node() {
 }
 
 void c_linked_array::free_node(size_t node_index) {
-	wl_assert(VALID_INDEX(node_index, m_nodes.size()));
+	wl_assert(valid_index(node_index, m_nodes.size()));
 	s_node &node = m_nodes[node_index];
 
 	// Make sure this node isn't on any list, including the free list
@@ -59,14 +59,14 @@ void c_linked_array::free_node(size_t node_index) {
 
 void c_linked_array::insert_node_into_list(
 	s_linked_array_list &list, size_t node_index, size_t insert_before_this_node_index) {
-	wl_assert(VALID_INDEX(node_index, m_nodes.size()));
+	wl_assert(valid_index(node_index, m_nodes.size()));
 
 	s_node &node = m_nodes[node_index];
 	wl_assert(!is_node_either_free_or_in_any_list(node_index));
 
 #if IS_TRUE(SLOW_LINKED_ARRAY_ASSERTS_ENABLED)
-	wl_assert(insert_before_this_node_index == k_invalid_linked_array_index ||
-		is_node_in_list_slow(list, insert_before_this_node_index));
+	wl_assert(insert_before_this_node_index == k_invalid_linked_array_index
+		|| is_node_in_list_slow(list, insert_before_this_node_index));
 #endif // IS_TRUE(SLOW_LINKED_ARRAY_ASSERTS_ENABLED)
 
 	size_t insert_after_this_node_index;
@@ -109,7 +109,7 @@ void c_linked_array::push_node_onto_list_back(s_linked_array_list &list, size_t 
 }
 
 void c_linked_array::remove_node_from_list(s_linked_array_list &list, size_t node_index) {
-	wl_assert(VALID_INDEX(node_index, m_nodes.size()));
+	wl_assert(valid_index(node_index, m_nodes.size()));
 	s_node &node = m_nodes[node_index];
 
 	wl_assert(is_node_either_free_or_in_any_list(node_index));
@@ -149,7 +149,7 @@ size_t c_linked_array::get_next_node(size_t node_index) const {
 }
 
 bool c_linked_array::is_node_allocated_slow(size_t node_index) const {
-	wl_assert(VALID_INDEX(node_index, m_nodes.size()));
+	wl_assert(valid_index(node_index, m_nodes.size()));
 
 	if (m_free_list_front == k_invalid_linked_array_index) {
 		// Free list is empty, must be allocated
@@ -175,7 +175,7 @@ bool c_linked_array::is_node_allocated_slow(size_t node_index) const {
 }
 
 bool c_linked_array::is_node_either_free_or_in_any_list(size_t node_index) const {
-	wl_assert(VALID_INDEX(node_index, m_nodes.size()));
+	wl_assert(valid_index(node_index, m_nodes.size()));
 	const s_node &node = m_nodes[node_index];
 
 	wl_assert((node.next == k_invalid_linked_array_index) == (node.prev == k_invalid_linked_array_index));
@@ -183,7 +183,7 @@ bool c_linked_array::is_node_either_free_or_in_any_list(size_t node_index) const
 }
 
 bool c_linked_array::is_node_in_list_slow(const s_linked_array_list &list, size_t node_index) const {
-	wl_assert(VALID_INDEX(node_index, m_nodes.size()));
+	wl_assert(valid_index(node_index, m_nodes.size()));
 
 	if (list.front == k_invalid_linked_array_index) {
 		// List is empty

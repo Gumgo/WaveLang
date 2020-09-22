@@ -13,7 +13,7 @@
 #include <clang/AST/RecursiveASTVisitor.h> // Can we use DeclVisitor?
 #pragma warning(pop)
 
-static const size_t k_invalid_library_index = static_cast<size_t>(-1);
+static constexpr size_t k_invalid_library_index = static_cast<size_t>(-1);
 
 class c_ast_visitor : public clang::ASTConsumer, public clang::RecursiveASTVisitor<c_ast_visitor> {
 public:
@@ -56,7 +56,7 @@ private:
 		e_task_qualifier qualifier);
 	s_task_argument_type get_task_qualified_data_type(clang::QualType type) const;
 
-	bool parse_optimization_rule(const char *rule, std::vector<std::string> &out_tokens) const;
+	bool parse_optimization_rule(const char *rule, std::vector<std::string> &tokens_out) const;
 
 	std::vector<s_task_function_argument_declaration> parse_task_arguments(
 		clang::FunctionDecl *decl,
@@ -113,8 +113,8 @@ c_ast_visitor::c_ast_visitor(
 }
 
 void c_ast_visitor::HandleTranslationUnit(clang::ASTContext &context) {
-	if (m_compiler_instance.getDiagnosticClient().getNumErrors() > 0 ||
-		m_compiler_instance.getDiagnosticClient().getNumWarnings() > 0) {
+	if (m_compiler_instance.getDiagnosticClient().getNumErrors() > 0
+		|| m_compiler_instance.getDiagnosticClient().getNumWarnings() > 0) {
 		m_diag.error(
 			context.getTranslationUnitDecl(),
 			"Compilation finished with errors or warnings, skipping scraping phase");
@@ -123,8 +123,8 @@ void c_ast_visitor::HandleTranslationUnit(clang::ASTContext &context) {
 	}
 
 	m_result->set_success(
-		(m_compiler_instance.getDiagnosticClient().getNumErrors() == 0) &&
-		(m_compiler_instance.getDiagnosticClient().getNumWarnings() == 0));
+		(m_compiler_instance.getDiagnosticClient().getNumErrors() == 0)
+		&& (m_compiler_instance.getDiagnosticClient().getNumWarnings() == 0));
 }
 
 bool c_ast_visitor::VisitNamespaceDecl(clang::NamespaceDecl *decl) {
@@ -160,12 +160,12 @@ bool c_ast_visitor::VisitNamespaceDecl(clang::NamespaceDecl *decl) {
 		for (size_t index = 0; index < m_result->get_library_count(); index++) {
 			const s_library_declaration &existing_library = m_result->get_library(index);
 
-			if (library.id == existing_library.id ||
-				library.name == existing_library.name) {
+			if (library.id == existing_library.id
+				|| library.name == existing_library.name) {
 				// If namespace name, ID, or name match an existing library, everything must match
-				if (library.id == existing_library.id &&
-					library.name == existing_library.name &&
-					library.version == existing_library.version) {
+				if (library.id == existing_library.id
+					&& library.name == existing_library.name
+					&& library.version == existing_library.version) {
 					m_current_library_index = index;
 					break;
 				} else {
@@ -338,8 +338,8 @@ void c_ast_visitor::visit_native_module_declaration(clang::FunctionDecl *decl) {
 					argument_declaration.type.get_data_type(), e_native_module_qualifier::k_constant);
 			}
 		} else if (out_argument || out_return_argument) {
-			if ((argument_declaration.type.get_qualifier() != e_native_module_qualifier::k_out) ||
-				(out_return_argument && found_out_return_argument)) {
+			if ((argument_declaration.type.get_qualifier() != e_native_module_qualifier::k_out)
+				|| (out_return_argument && found_out_return_argument)) {
 				param_error = true;
 			} else if (out_return_argument) {
 				argument_declaration.is_return_value = true;
@@ -454,7 +454,7 @@ void c_ast_visitor::build_native_module_type_table() {
 			"bool",
 			"c_native_module_string"
 		};
-		static_assert(NUMBEROF(k_cpp_primitive_type_names) == enum_count<e_native_module_primitive_type>(),
+		static_assert(array_count(k_cpp_primitive_type_names) == enum_count<e_native_module_primitive_type>(),
 			"Primitive type name mismatch");
 
 		static const char *k_cpp_primitive_type_array_names[] = {
@@ -462,40 +462,41 @@ void c_ast_visitor::build_native_module_type_table() {
 			"c_native_module_bool_array",
 			"c_native_module_string_array"
 		};
-		static_assert(NUMBEROF(k_cpp_primitive_type_array_names) == enum_count<e_native_module_primitive_type>(),
+		static_assert(array_count(k_cpp_primitive_type_array_names) == enum_count<e_native_module_primitive_type>(),
 			"Primitive type array name mismatch");
 
 		c_native_module_data_type data_type(primitive_type, false);
 		c_native_module_data_type array_data_type(primitive_type, true);
 
-		char buffer[256];
+		static constexpr size_t k_buffer_size = 256;
+		char buffer[k_buffer_size];
 
 		// For each type, recognize the following syntax (for both primitive values and arrays):
 		// type - in
 		// const type & - in
 		// type & - out
 
-		snprintf(buffer, NUMBEROF(buffer), "%s", k_cpp_primitive_type_names[enum_index(primitive_type)]);
+		snprintf(buffer, k_buffer_size, "%s", k_cpp_primitive_type_names[enum_index(primitive_type)]);
 		m_native_module_type_table.insert(std::make_pair(
 			buffer, c_native_module_qualified_data_type(data_type, e_native_module_qualifier::k_in)));
 
-		snprintf(buffer, NUMBEROF(buffer), "const %s &", k_cpp_primitive_type_names[enum_index(primitive_type)]);
+		snprintf(buffer, k_buffer_size, "const %s &", k_cpp_primitive_type_names[enum_index(primitive_type)]);
 		m_native_module_type_table.insert(std::make_pair(
 			buffer, c_native_module_qualified_data_type(data_type, e_native_module_qualifier::k_in)));
 
-		snprintf(buffer, NUMBEROF(buffer), "%s &", k_cpp_primitive_type_names[enum_index(primitive_type)]);
+		snprintf(buffer, k_buffer_size, "%s &", k_cpp_primitive_type_names[enum_index(primitive_type)]);
 		m_native_module_type_table.insert(std::make_pair(
 			buffer, c_native_module_qualified_data_type(data_type, e_native_module_qualifier::k_out)));
 
-		snprintf(buffer, NUMBEROF(buffer), "%s", k_cpp_primitive_type_array_names[enum_index(primitive_type)]);
+		snprintf(buffer, k_buffer_size, "%s", k_cpp_primitive_type_array_names[enum_index(primitive_type)]);
 		m_native_module_type_table.insert(std::make_pair(
 			buffer, c_native_module_qualified_data_type(array_data_type, e_native_module_qualifier::k_in)));
 
-		snprintf(buffer, NUMBEROF(buffer), "const %s &", k_cpp_primitive_type_array_names[enum_index(primitive_type)]);
+		snprintf(buffer, k_buffer_size, "const %s &", k_cpp_primitive_type_array_names[enum_index(primitive_type)]);
 		m_native_module_type_table.insert(std::make_pair(
 			buffer, c_native_module_qualified_data_type(array_data_type, e_native_module_qualifier::k_in)));
 
-		snprintf(buffer, NUMBEROF(buffer), "%s &", k_cpp_primitive_type_array_names[enum_index(primitive_type)]);
+		snprintf(buffer, k_buffer_size, "%s &", k_cpp_primitive_type_array_names[enum_index(primitive_type)]);
 		m_native_module_type_table.insert(std::make_pair(
 			buffer, c_native_module_qualified_data_type(array_data_type, e_native_module_qualifier::k_out)));
 	}
@@ -577,7 +578,7 @@ c_ast_visitor::s_task_argument_type c_ast_visitor::get_task_qualified_data_type(
 	}
 }
 
-bool c_ast_visitor::parse_optimization_rule(const char *rule, std::vector<std::string> &out_tokens) const {
+bool c_ast_visitor::parse_optimization_rule(const char *rule, std::vector<std::string> &tokens_out) const {
 	// Simple parser - recognizes { } [ ] , -> and identifiers
 	std::string next_token;
 
@@ -588,33 +589,33 @@ bool c_ast_visitor::parse_optimization_rule(const char *rule, std::vector<std::s
 
 		if (ch == '\0') {
 			if (!next_token.empty()) {
-				out_tokens.push_back(next_token);
+				tokens_out.push_back(next_token);
 			}
 
 			// Add an extra empty token to simplify token lookahead
-			out_tokens.push_back(std::string());
+			tokens_out.push_back(std::string());
 			break;
 		} else if (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r') {
 			// Whitespace terminates tokens
 			if (!next_token.empty()) {
-				out_tokens.push_back(next_token);
+				tokens_out.push_back(next_token);
 				next_token.clear();
 			}
 		} else if (ch == '(' || ch == ')' || ch == '[' || ch == ']' || ch == ',') {
 			// Terminate the current token
 			if (!next_token.empty()) {
-				out_tokens.push_back(next_token);
+				tokens_out.push_back(next_token);
 				next_token.clear();
 			}
 
 			// Add this token immediately - it is only a single character
 			next_token = ch;
-			out_tokens.push_back(next_token);
+			tokens_out.push_back(next_token);
 			next_token.clear();
 		} else if (ch == '-') {
 			// Terminate the current token
 			if (!next_token.empty()) {
-				out_tokens.push_back(next_token);
+				tokens_out.push_back(next_token);
 				next_token.clear();
 			}
 
@@ -625,7 +626,7 @@ bool c_ast_visitor::parse_optimization_rule(const char *rule, std::vector<std::s
 
 			if (ch == '>' && next_token == "->") {
 				// Terminate the current token
-				out_tokens.push_back(next_token);
+				tokens_out.push_back(next_token);
 				next_token.clear();
 			}
 		} else {

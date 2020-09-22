@@ -13,6 +13,6 @@ public:
 	static s_compiler_result compile(
 		const char *root_path,
 		const char *source_filename,
-		c_instrument *out_instrument);
+		c_instrument *instrument_out);
 };
 

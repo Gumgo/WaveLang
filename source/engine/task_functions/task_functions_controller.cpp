@@ -70,7 +70,7 @@ namespace controller_task_functions {
 		} else {
 			size_t start_index = (note_release_sample < 0) ? 0 : cast_integer_verify<size_t>(note_release_sample);
 
-			memset(result->get_data(), 0, start_index * sizeof(real32));
+			zero_type(result->get_data(), start_index);
 
 			real64 inv_sample_rate = 1.0 / static_cast<real64>(context.sample_rate);
 			real64 current_sample = static_cast<real64>(get_note_release_duration_context->current_sample);

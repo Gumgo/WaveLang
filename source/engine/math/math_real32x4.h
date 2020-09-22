@@ -66,23 +66,7 @@ inline real32x4 sqrt(const real32x4 &v);
 inline real32x4 pow(const real32x4 &a, const real32x4 &b);
 inline real32x4 sin(const real32x4 &v);
 inline real32x4 cos(const real32x4 &v);
-inline void sincos(const real32x4 &v, real32x4 &out_sin, real32x4 &out_cos);
+inline void sincos(const real32x4 &v, real32x4 &sin_out, real32x4 &cos_out);
 
 // Casting
 template<> inline int32x4 reinterpret_bits(const real32x4 &v);
-
-// Shuffle
-inline real32x4 single_element(const real32x4 &v, int32 pos);
-
-#if IS_TRUE(SIMD_IMPLEMENTATION_SSE_ENABLED)
-template<int32 k_pos_0, int32 k_pos_1, int32 k_pos_2, int32 k_pos_3>
-real32x4 shuffle(const real32x4 &v);
-template<int32 k_pos_0, int32 k_pos_1, int32 k_pos_2, int32 k_pos_3>
-real32x4 shuffle(const real32x4 &a, const real32x4 &b);
-#endif // IS_TRUE(SIMD_IMPLEMENTATION_SSE)
-
-// Extract:
-// Treats a and b as a contiguous block of 8 values and shifts left by the given amount; returns only the first 4
-template<int32 k_shift_amount>
-real32x4 extract(const real32x4 &a, const real32x4 &b);
-

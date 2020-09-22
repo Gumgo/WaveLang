@@ -3,7 +3,7 @@
 #include "common/common.h"
 
 // Bump this number when anything changes
-static const uint32 k_instrument_format_version = 0;
+static constexpr uint32 k_instrument_format_version = 0;
 
 enum class e_instrument_result {
 	k_success,

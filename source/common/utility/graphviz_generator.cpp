@@ -4,8 +4,8 @@
 
 const char *k_graphviz_file_extension = "gv";
 
-static const real32 k_default_margin_x = 0.11f;
-static const real32 k_default_margin_y = 0.055f;
+static constexpr real32 k_default_margin_x = 0.11f;
+static constexpr real32 k_default_margin_y = 0.055f;
 
 c_graphviz_node::c_graphviz_node() {
 	m_peripheries = 1;
@@ -124,8 +124,8 @@ bool c_graphviz_generator::output_to_file(const char *fname) {
 		}
 
 		// Shouldn't really be comparing floats for equality but I think it's okay in this case
-		if (node.get_margin_x() != k_default_margin_x ||
-			node.get_margin_y() != k_default_margin_y) {
+		if (node.get_margin_x() != k_default_margin_x
+			|| node.get_margin_y() != k_default_margin_y) {
 			out << (first ? "" : ", ") << "margin=\"" << node.get_margin_x() << "," << node.get_margin_y() << "\"";
 			first = false;
 		}

@@ -7,7 +7,7 @@
 // $TODO $UPSAMPLE this has (mostly) been build to support the eventual addition of upsampled data being passed from the
 // voice graph to the FX graph. should probably double check everything though.
 
-static const uint32 k_invalid_buffer_pool_index = -1;
+static constexpr uint32 k_invalid_buffer_pool_index = -1;
 
 void c_buffer_manager::initialize(
 	const c_runtime_instrument *runtime_instrument,
@@ -80,9 +80,9 @@ void c_buffer_manager::initialize(
 
 	{
 		// Reserve additional buffers to perform channel mixing
-		const c_task_graph *channel_output_task_graph = runtime_instrument->get_fx_task_graph() ?
-			runtime_instrument->get_fx_task_graph() :
-			runtime_instrument->get_voice_task_graph();
+		const c_task_graph *channel_output_task_graph = runtime_instrument->get_fx_task_graph()
+			? runtime_instrument->get_fx_task_graph()
+			: runtime_instrument->get_voice_task_graph();
 
 		// During the channel mixing phase, buffers from the final processing graph are still allocated
 		c_buffer_array channel_outputs = channel_output_task_graph->get_outputs();
@@ -248,7 +248,7 @@ void c_buffer_manager::accumulate_voice_output(uint32 voice_sample_offset) {
 		wl_assert(output_buffer->get_data_type() == voice_accumulation_buffer->get_data_type());
 
 		// First, copy and shift the data into the shift buffer
-		memset(voice_shift_buffer->get_data(), 0, voice_sample_offset * sizeof(real32));
+		zero_type(voice_shift_buffer->get_data(), voice_sample_offset);
 		if (output_buffer->is_constant()) {
 			real32 constant = output_buffer->get_constant();
 			if (voice_sample_offset == 0 || constant == 0.0f) {
@@ -261,10 +261,10 @@ void c_buffer_manager::accumulate_voice_output(uint32 voice_sample_offset) {
 			}
 		} else {
 			voice_shift_buffer->set_is_constant(false);
-			memcpy(
+			copy_type(
 				voice_shift_buffer->get_data() + voice_sample_offset,
 				output_buffer->get_data(),
-				(m_chunk_size - voice_sample_offset) * sizeof(real32));
+				m_chunk_size - voice_sample_offset);
 		}
 
 		// Next, add the shift buffer to the voice accumulation buffer
@@ -312,7 +312,7 @@ void c_buffer_manager::store_fx_output() {
 			fx_output_buffer->assign_constant(output_buffer->get_constant());
 		} else {
 			fx_output_buffer->set_is_constant(false);
-			memcpy(fx_output_buffer->get_data(), output_buffer->get_data(), m_chunk_size * sizeof(real32));
+			copy_type(fx_output_buffer->get_data(), output_buffer->get_data(), m_chunk_size);
 		}
 	}
 
@@ -544,7 +544,7 @@ void c_buffer_manager::initialize_task_buffer_contexts(
 			s_task_buffer_context &context = m_task_buffer_contexts[enum_index(instrument_stage)][buffer_index];
 
 			context.pool_index = get_buffer_pool(buffer->get_data_type(), buffer_usage_info);
-			wl_assert(VALID_INDEX(context.pool_index, buffer_usage_info.size()));
+			wl_assert(valid_index(context.pool_index, buffer_usage_info.size()));
 
 			context.initial_usages = 0;
 			context.usages_remaining = 0;

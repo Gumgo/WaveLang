@@ -20,7 +20,7 @@ void radix_sort_stable(
 	c_wrapped_array<t_value> intermediate_storage,
 	const t_get_key &get_key,
 	const t_get_key_byte &get_key_byte = t_get_key_byte()) {
-	static const size_t k_key_size = sizeof(t_key);
+	static constexpr size_t k_key_size = sizeof(t_key);
 
 	struct s_bucket {
 		size_t count;
@@ -30,7 +30,7 @@ void radix_sort_stable(
 	s_static_array<uint8, 256> buckets;
 
 	for (size_t pass = 0; pass < k_key_size; pass++) {
-		ZERO_STRUCT(&buckets);
+		zero_type(&buckets);
 
 		// First, determine the size of each bucket
 		for (size_t index = 0; index < values.get_count(); index++) {

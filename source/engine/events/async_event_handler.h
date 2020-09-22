@@ -57,7 +57,7 @@ private:
 	static void event_handling_thread_function_entry_point(const s_thread_parameter_block *params);
 	void event_handling_thread_function();
 
-	static const size_t k_buffer_alignment = sizeof(uint32);
+	static constexpr size_t k_buffer_alignment = sizeof(uint32);
 
 	// Whether settings have been initialized
 	bool m_initialized;

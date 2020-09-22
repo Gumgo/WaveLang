@@ -4,7 +4,7 @@
 void lock_free_list_push(c_lock_free_handle_array &node_storage, s_lock_free_handle &list_head, uint32 handle) {
 	// Push the node to the head of the list
 	wl_assert(handle != k_lock_free_invalid_handle);
-	wl_assert(VALID_INDEX(handle, node_storage.get_count()));
+	wl_assert(valid_index(handle, node_storage.get_count()));
 
 	struct s_update_head {
 		s_lock_free_handle *next_handle_pointer;
@@ -54,7 +54,7 @@ uint32 lock_free_list_pop(c_lock_free_handle_array &node_storage, s_lock_free_ha
 
 	struct s_update_head {
 		c_lock_free_handle_array *node_storage;
-		uint32 *out_old_head_handle;
+		uint32 *old_head_handle_out;
 
 		int64 operator()(int64 value) const {
 			// Read the head's current value
@@ -62,7 +62,7 @@ uint32 lock_free_list_pop(c_lock_free_handle_array &node_storage, s_lock_free_ha
 			head.data = value;
 
 			// Store the current head's handle so we can return it to the user
-			*out_old_head_handle = head.handle;
+			*old_head_handle_out = head.handle;
 
 			if (head.handle == k_lock_free_invalid_handle) {
 				// List is empty - don't modify
@@ -83,15 +83,15 @@ uint32 lock_free_list_pop(c_lock_free_handle_array &node_storage, s_lock_free_ha
 	};
 
 	s_update_head update_head;
-	uint32 old_head_handle;
+	uint32 head_handle_out;
 
 	update_head.node_storage = &node_storage;
-	update_head.out_old_head_handle = &old_head_handle;
+	update_head.old_head_handle_out = &head_handle_out;
 
 	// Perform the update atomically
 	execute_atomic(list_head.handle, update_head);
 
-	return old_head_handle;
+	return head_handle_out;
 }
 
 #if IS_TRUE(ASSERTS_ENABLED)

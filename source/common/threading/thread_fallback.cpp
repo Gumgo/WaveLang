@@ -25,21 +25,23 @@ void c_thread::start(const s_thread_definition &thread_definition) {
 
 	// Store thread function and parameter block for the thread to use
 	m_thread_entry_point = thread_definition.thread_entry_point;
-	memcpy(&m_thread_parameter_block, &thread_definition.parameter_block, sizeof(m_thread_parameter_block));
+	copy_type(&m_thread_parameter_block, &thread_definition.parameter_block);
 
 	// Create the thread using the definition provided
 	// Currently, no way to specify stack size, priority, or processor...
 	m_thread = std::thread(c_thread::thread_entry_point, this);
 
 #if IS_TRUE(PLATFORM_LINUX)
-	/*static const int k_thread_priority_map[] = {
+	/*static constexpr int k_thread_priority_map[] = {
 		1,
 		10,
 		40,
 		70,
 		80
 	};
-	static_assert(NUMBEROF(k_thread_priority_map) == enum_count(e_thread_priority), "Thread priority mapping mismatch");
+	static_assert(
+		array_count(k_thread_priority_map) == enum_count(e_thread_priority),
+		"Thread priority mapping mismatch");
 
 	sched_param sch_params;
 	sch_params.sched_priority = k_thread_priority_map[enum_index(thread_definition.thread_priority)];

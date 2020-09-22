@@ -207,7 +207,7 @@ namespace core_task_functions {
 			if (value->is_constant()) {
 				result->assign_constant(value->get_constant());
 			} else {
-				memcpy(result->get_data(), value->get_data(), context.buffer_size * sizeof(real32));
+				copy_type(result->get_data(), value->get_data(), context.buffer_size);
 				result->set_is_constant(false);
 			}
 		} else {
@@ -237,10 +237,10 @@ namespace core_task_functions {
 			if (value->is_constant()) {
 				result->assign_constant(value->get_constant());
 			} else {
-				memcpy(
+				copy_type(
 					result->get_data(),
 					value->get_data(),
-					bool_buffer_int32_count(context.buffer_size) * sizeof(int32));
+					bool_buffer_int32_count(context.buffer_size));
 				result->set_is_constant(false);
 			}
 		} else {

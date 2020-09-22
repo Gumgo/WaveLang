@@ -108,7 +108,7 @@ public:
 	bool is_stream_running() const;
 	const s_audio_driver_settings &get_settings() const;
 
-	void get_stream_clock(f_audio_driver_stream_clock &out_clock, void *&out_context);
+	void get_stream_clock(f_audio_driver_stream_clock &clock_out, void *&context_out);
 
 private:
 	static int stream_callback_internal(

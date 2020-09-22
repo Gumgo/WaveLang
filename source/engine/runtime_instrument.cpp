@@ -5,8 +5,8 @@
 #include "execution_graph/instrument.h"
 
 c_runtime_instrument::c_runtime_instrument() {
-	ZERO_STRUCT(&m_task_graphs);
-	ZERO_STRUCT(&m_instrument_globals);
+	zero_type(&m_task_graphs);
+	zero_type(&m_instrument_globals);
 }
 
 c_runtime_instrument::~c_runtime_instrument() {

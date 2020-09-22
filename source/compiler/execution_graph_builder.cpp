@@ -12,9 +12,9 @@
 #include <stack>
 
 // Set a cap to prevent crazy things from happening if a user tries to loop billions of times
-static const uint32 k_max_loop_count = 10000;
+static constexpr uint32 k_max_loop_count = 10000;
 
-static const e_native_module_primitive_type k_ast_primitive_type_to_native_module_primitive_type_mapping[] = {
+static constexpr e_native_module_primitive_type k_ast_primitive_type_to_native_module_primitive_type_mapping[] = {
 	e_native_module_primitive_type::k_count,	// e_ast_primitive_type::k_void (invalid)
 	e_native_module_primitive_type::k_count,	// e_ast_primitive_type::k_module (invalid)
 	e_native_module_primitive_type::k_real,	// e_ast_primitive_type::k_real
@@ -22,7 +22,7 @@ static const e_native_module_primitive_type k_ast_primitive_type_to_native_modul
 	e_native_module_primitive_type::k_string	// e_ast_primitive_type::k_string
 };
 static_assert(
-	NUMBEROF(k_ast_primitive_type_to_native_module_primitive_type_mapping) == enum_count<e_ast_primitive_type>(),
+	array_count(k_ast_primitive_type_to_native_module_primitive_type_mapping) == enum_count<e_ast_primitive_type>(),
 	"Ast primitive type to native module primitive type mismatch");
 
 static e_native_module_primitive_type convert_ast_primitive_type_to_native_module_primitive_type(
@@ -47,7 +47,7 @@ private:
 
 	// Represents an identifier associated with a name
 	struct s_identifier {
-		static const size_t k_invalid_argument = static_cast<size_t>(-1);
+		static constexpr size_t k_invalid_argument = static_cast<size_t>(-1);
 
 		c_ast_data_type data_type;						// Data type associated with this identifier
 		c_node_reference current_value_node_reference;	// Reference to the node holding the most recent value
@@ -385,8 +385,8 @@ public:
 			uint32 native_module_index = node->get_native_module_index();
 			const s_native_module &native_module = c_native_module_registry::get_native_module(native_module_index);
 
-			wl_assert((native_module.return_argument_index == k_invalid_argument_index) ||
-				(node->get_return_type() != c_ast_data_type(e_ast_primitive_type::k_void)));
+			wl_assert((native_module.return_argument_index == k_invalid_argument_index)
+				|| (node->get_return_type() != c_ast_data_type(e_ast_primitive_type::k_void)));
 
 			// Create a native module call node
 			c_node_reference native_module_call_node_reference =
@@ -494,9 +494,9 @@ public:
 		wl_assert(node->get_is_valid_named_value());
 
 		// Optimization: see if we can immediately evaluate as a constant
-		if (result.node_reference.is_valid() &&
-			m_execution_graph->get_node_type(result.node_reference) != e_execution_graph_node_type::k_constant &&
-			m_constant_evaluator.evaluate_constant(result.node_reference)) {
+		if (result.node_reference.is_valid()
+			&& m_execution_graph->get_node_type(result.node_reference) != e_execution_graph_node_type::k_constant
+			&& m_constant_evaluator.evaluate_constant(result.node_reference)) {
 			c_execution_graph_constant_evaluator::s_result constant_result =
 				m_constant_evaluator.get_result();
 
@@ -565,9 +565,9 @@ public:
 						c_native_module_data_type(e_native_module_primitive_type::k_real));
 
 					real32 array_index_real = m_constant_evaluator.get_result().real_value;
-					if (std::isnan(array_index_real) ||
-						std::isinf(array_index_real) ||
-						array_index_real != std::floor(array_index_real)) {
+					if (std::isnan(array_index_real)
+						|| std::isinf(array_index_real)
+						|| array_index_real != std::floor(array_index_real)) {
 						array_failed = true;
 						s_compiler_result error;
 						error.result = e_compiler_result::k_invalid_array_index;
@@ -690,10 +690,10 @@ public:
 				c_native_module_data_type(e_native_module_primitive_type::k_real));
 
 			real32 loop_count_real = m_constant_evaluator.get_result().real_value;
-			if (std::isnan(loop_count_real) ||
-				std::isinf(loop_count_real) ||
-				loop_count_real < 0.0f ||
-				loop_count_real != std::floor(loop_count_real)) {
+			if (std::isnan(loop_count_real)
+				|| std::isinf(loop_count_real)
+				|| loop_count_real < 0.0f
+				|| loop_count_real != std::floor(loop_count_real)) {
 				s_compiler_result error;
 				error.result = e_compiler_result::k_invalid_loop_count;
 				error.source_location = node->get_source_location();
@@ -896,7 +896,9 @@ public:
 };
 
 s_compiler_result c_execution_graph_builder::build_execution_graphs(
-	const c_ast_node *ast, c_instrument_variant *out_instrument_variant, std::vector<s_compiler_result> &out_errors) {
+	const c_ast_node *ast,
+	c_instrument_variant *instrument_variant_out,
+	std::vector<s_compiler_result> &errors_out) {
 	s_compiler_result result;
 	result.clear();
 
@@ -910,13 +912,13 @@ s_compiler_result c_execution_graph_builder::build_execution_graphs(
 
 	if (voice_entry_point_module) {
 		c_execution_graph *execution_graph = new c_execution_graph();
-		out_instrument_variant->set_voice_execution_graph(execution_graph);
+		instrument_variant_out->set_voice_execution_graph(execution_graph);
 
 		c_execution_graph_module_builder builder(
-			&out_errors,
+			&errors_out,
 			ast,
 			execution_graph,
-			&out_instrument_variant->get_instrument_globals(),
+			&instrument_variant_out->get_instrument_globals(),
 			voice_entry_point_module);
 		voice_entry_point_module->iterate(&builder);
 
@@ -942,13 +944,13 @@ s_compiler_result c_execution_graph_builder::build_execution_graphs(
 
 	if (fx_entry_point_module) {
 		c_execution_graph *execution_graph = new c_execution_graph();
-		out_instrument_variant->set_fx_execution_graph(execution_graph);
+		instrument_variant_out->set_fx_execution_graph(execution_graph);
 
 		c_execution_graph_module_builder builder(
-			&out_errors,
+			&errors_out,
 			ast,
 			execution_graph,
-			&out_instrument_variant->get_instrument_globals(),
+			&instrument_variant_out->get_instrument_globals(),
 			fx_entry_point_module);
 
 		// Add an input node for each input argument
@@ -998,8 +1000,8 @@ s_compiler_result c_execution_graph_builder::build_execution_graphs(
 		}
 	}
 
-	if (!out_errors.empty()) {
-		// Don't associate the error with a particular file, those errors are collected through out_errors
+	if (!errors_out.empty()) {
+		// Don't associate the error with a particular file, those errors are collected through errors_out
 		result.result = e_compiler_result::k_graph_error;
 		result.message = "Graph error(s) detected";
 	}

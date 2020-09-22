@@ -6,14 +6,14 @@
 #include <unordered_map>
 
 // Strings for native module registry output
-static const char *k_native_module_no_return_type_string = "void";
+static constexpr char k_native_module_no_return_type_string[] = "void";
 
 static const char *k_native_module_primitive_type_strings[] = {
 	"real",		// e_native_module_primitive_type::k_real
 	"bool",		// e_native_module_primitive_type::k_bool
 	"string"	// e_native_module_primitive_type::k_string
 };
-static_assert(NUMBEROF(k_native_module_primitive_type_strings) == enum_count<e_native_module_primitive_type>(),
+static_assert(array_count(k_native_module_primitive_type_strings) == enum_count<e_native_module_primitive_type>(),
 	"Native module primitive type string mismatch");
 
 static const char *k_native_module_qualifier_strings[] = {
@@ -21,7 +21,7 @@ static const char *k_native_module_qualifier_strings[] = {
 	"out",	// e_native_module_qualifier::k_out
 	"const"	// e_native_module_qualifier::k_constant
 };
-static_assert(NUMBEROF(k_native_module_qualifier_strings) == enum_count<e_native_module_qualifier>(),
+static_assert(array_count(k_native_module_qualifier_strings) == enum_count<e_native_module_qualifier>(),
 	"Native module qualifier string mismatch");
 
 // $TODO $PLUGIN error reporting for registration errors. Important when we have plugins - we will want a global error
@@ -80,7 +80,7 @@ static void validate_optimization_rule(const s_native_module_optimization_rule &
 void c_native_module_registry::initialize() {
 	wl_assert(g_native_module_registry_state == e_native_module_registry_state::k_uninitialized);
 
-	ZERO_STRUCT(&g_native_module_registry_data.native_operators);
+	zero_type(&g_native_module_registry_data.native_operators);
 	g_native_module_registry_data.optimizations_enabled = false;
 
 	g_native_module_registry_state = e_native_module_registry_state::k_initialized;
@@ -166,8 +166,8 @@ bool c_native_module_registry::register_native_module(const s_native_module &nat
 	wl_assert(!native_module.name.is_empty());
 	wl_assert(native_module.argument_count <= k_max_native_module_arguments);
 	wl_assert(native_module.argument_count == native_module.in_argument_count + native_module.out_argument_count);
-	wl_assert((native_module.return_argument_index == k_invalid_argument_index) ||
-		(native_module.arguments[native_module.return_argument_index].type.get_qualifier() ==
+	wl_assert((native_module.return_argument_index == k_invalid_argument_index)
+		|| (native_module.arguments[native_module.return_argument_index].type.get_qualifier() ==
 			e_native_module_qualifier::k_out));
 #if IS_TRUE(ASSERTS_ENABLED)
 	for (size_t arg = 0; arg < native_module.argument_count; arg++) {
@@ -269,7 +269,7 @@ uint32 c_native_module_registry::get_native_module_index(s_native_module_uid nat
 }
 
 const s_native_module &c_native_module_registry::get_native_module(uint32 index) {
-	wl_assert(VALID_INDEX(index, get_native_module_count()));
+	wl_assert(valid_index(index, get_native_module_count()));
 	return g_native_module_registry_data.native_modules[index].native_module;
 }
 
@@ -283,7 +283,7 @@ uint32 c_native_module_registry::get_optimization_rule_count() {
 }
 
 const s_native_module_optimization_rule &c_native_module_registry::get_optimization_rule(uint32 index) {
-	wl_assert(VALID_INDEX(index, get_optimization_rule_count()));
+	wl_assert(valid_index(index, get_optimization_rule_count()));
 	return g_native_module_registry_data.optimization_rules[index];
 }
 
@@ -429,8 +429,8 @@ bool c_native_module_registry::output_registered_native_modules(const char *file
 
 static bool do_native_modules_conflict(
 	const s_native_module_internal &native_module_a, const s_native_module_internal &native_module_b) {
-	if (native_module_a.native_operator == e_native_operator::k_invalid &&
-		native_module_b.native_operator == e_native_operator::k_invalid) {
+	if (native_module_a.native_operator == e_native_operator::k_invalid
+		&& native_module_b.native_operator == e_native_operator::k_invalid) {
 		// If we're not comparing operators and the libraries don't match, these native modules will never conflict
 		// because the library prefix will prevent conflicts
 		if (native_module_a.native_module.uid.get_library_id() != native_module_b.native_module.uid.get_library_id()) {
@@ -446,10 +446,12 @@ static bool do_native_modules_conflict(
 	// conflicts, because using qualifiers would cause ambiguity. The return value cannot be used to resolve overloads,
 	// so we need to do a bit of work if the first output argument is used as the return value.
 
-	size_t argument_count_a = (native_module_a.native_module.return_argument_index == k_invalid_argument_index) ?
-		native_module_a.native_module.argument_count : native_module_a.native_module.argument_count - 1;
-	size_t argument_count_b = (native_module_a.native_module.return_argument_index == k_invalid_argument_index) ?
-		native_module_b.native_module.argument_count : native_module_b.native_module.argument_count - 1;
+	size_t argument_count_a = (native_module_a.native_module.return_argument_index == k_invalid_argument_index)
+		? native_module_a.native_module.argument_count
+		: native_module_a.native_module.argument_count - 1;
+	size_t argument_count_b = (native_module_a.native_module.return_argument_index == k_invalid_argument_index)
+		? native_module_b.native_module.argument_count
+		: native_module_b.native_module.argument_count - 1;
 
 	if (argument_count_a != argument_count_b) {
 		return false;

@@ -117,7 +117,7 @@ bool compiler_utility::is_valid_source_character(char c) {
 	return c >= 0x20 && c <= 0x7E;
 }
 
-size_t compiler_utility::resolve_escape_sequence(c_compiler_string str, char *out_result) {
+size_t compiler_utility::resolve_escape_sequence(c_compiler_string str, char *result_out) {
 	char result = 0;
 	size_t advance = 0;
 
@@ -211,8 +211,8 @@ size_t compiler_utility::resolve_escape_sequence(c_compiler_string str, char *ou
 		}
 	}
 
-	if (advance > 0 && out_result) {
-		*out_result = result;
+	if (advance > 0 && result_out) {
+		*result_out = result;
 	}
 
 	return advance;

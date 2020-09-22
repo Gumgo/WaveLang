@@ -231,35 +231,3 @@ inline bool any_false(const int32x4 &v) {
 	int32x2_t low_high = vand_s32(vget_low_s32(v), vget_high_s32(v));
 	return (vget_lane_s32(low_high, 0) & vget_lane_s32(low_high, 1)) == 0;
 }
-
-inline int32x4 single_element(const int32x4 &v, int32 pos) {
-	wl_assert(VALID_INDEX(pos, 4));
-	switch (pos) {
-	case 0:
-		return vdupq_lane_s32(vget_low_s32(v), 0);
-
-	case 1:
-		return vdupq_lane_s32(vget_low_s32(v), 1);
-
-	case 2:
-		return vdupq_lane_s32(vget_high_s32(v), 0);
-
-	case 3:
-		return vdupq_lane_s32(vget_high_s32(v), 1);
-
-	default:
-		wl_unreachable();
-		return int32x4(0);
-	}
-}
-
-template<int32 k_shift_amount>
-int32x4 extract(const int32x4 &a, const int32x4 &b) {
-	static_assert(VALID_INDEX(k_shift_amount, k_simd_block_elements), "Must be in range [0,4]");
-	return vextq_s32(a, b, k_shift_amount);
-}
-
-template<>
-inline int32x4 extract<4>(const int32x4 &a, const int32x4 &b) {
-	return b;
-}

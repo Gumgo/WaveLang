@@ -12,17 +12,17 @@
 #define TAB3_STR "\t\t\t"
 #define NEWLINE_STR "\n"
 
-static const size_t k_invalid_task_argument_index = static_cast<size_t>(-1);
+static constexpr size_t k_invalid_task_argument_index = static_cast<size_t>(-1);
 
 static const char *k_bool_strings[] = { "false", "true" };
-static_assert(NUMBEROF(k_bool_strings) == 2, "Invalid bool strings");
+static_assert(array_count(k_bool_strings) == 2, "Invalid bool strings");
 
 static const char *k_task_primitive_type_enum_strings[] = {
 	"e_task_primitive_type::k_real",
 	"e_task_primitive_type::k_bool",
 	"e_task_primitive_type::k_string"
 };
-static_assert(NUMBEROF(k_task_primitive_type_enum_strings) == enum_count<e_task_primitive_type>(),
+static_assert(array_count(k_task_primitive_type_enum_strings) == enum_count<e_task_primitive_type>(),
 	"Invalid task primitive type enum strings");
 
 static const char *k_task_qualifier_enum_strings[] = {
@@ -30,7 +30,7 @@ static const char *k_task_qualifier_enum_strings[] = {
 	"e_task_qualifier::k_out",
 	"e_task_qualifier::k_constant"
 };
-static_assert(NUMBEROF(k_task_qualifier_enum_strings) == enum_count<e_task_qualifier>(),
+static_assert(array_count(k_task_qualifier_enum_strings) == enum_count<e_task_qualifier>(),
 	"Invalid task qualifier enum strings");
 
 static const char *k_task_primitive_type_getter_names[] = {
@@ -38,7 +38,7 @@ static const char *k_task_primitive_type_getter_names[] = {
 	"bool",
 	"string"
 };
-static_assert(NUMBEROF(k_task_primitive_type_getter_names) == enum_count<e_task_primitive_type>(),
+static_assert(array_count(k_task_primitive_type_getter_names) == enum_count<e_task_primitive_type>(),
 	"Primitive type getter names mismatch");
 
 static const char *k_task_qualifier_getter_names[] = {
@@ -46,7 +46,7 @@ static const char *k_task_qualifier_getter_names[] = {
 	"_out",
 	"_in" // k_constant still uses "in" for the getter
 };
-static_assert(NUMBEROF(k_task_qualifier_getter_names) == enum_count<e_task_qualifier>(),
+static_assert(array_count(k_task_qualifier_getter_names) == enum_count<e_task_qualifier>(),
 	"Qualifier getter names mismatch");
 
 struct s_task_argument_mapping {
@@ -192,7 +192,7 @@ bool generate_task_function_registration(
 
 		out << TAB_STR "{" NEWLINE_STR;
 		out << TAB2_STR "s_task_function task_function;" NEWLINE_STR;
-		out << TAB2_STR "ZERO_STRUCT(&task_function);" NEWLINE_STR;
+		out << TAB2_STR "zero_type(&task_function);" NEWLINE_STR;
 		out << TAB2_STR "task_function.uid = s_task_function_uid::build(" <<
 			id_to_string(library.id) << ", " << id_to_string(task_function.id) << ");" NEWLINE_STR;
 		out << TAB2_STR "task_function.name.set_verify(\"" << task_function.name << "\");" NEWLINE_STR;
@@ -280,8 +280,8 @@ static bool generate_task_function_mapping(
 	for (size_t index = 0; index < result->get_native_module_count(); index++) {
 		const s_native_module_declaration &native_module_to_check = result->get_native_module(index);
 
-		if (task_function.library_index == native_module_to_check.library_index &&
-			task_function.native_module_source == native_module_to_check.identifier) {
+		if (task_function.library_index == native_module_to_check.library_index
+			&& task_function.native_module_source == native_module_to_check.identifier) {
 			native_module = &native_module_to_check;
 			mapping.native_module_index = index;
 			break;
@@ -355,8 +355,8 @@ static bool generate_task_function_mapping(
 		return false;
 	}
 
-	if (task_memory_query &&
-		!map_native_module_arguments_to_task_arguments(
+	if (task_memory_query
+		&& !map_native_module_arguments_to_task_arguments(
 			*native_module,
 			task_memory_query->arguments,
 			"task memory query",
@@ -367,8 +367,8 @@ static bool generate_task_function_mapping(
 		return false;
 	}
 
-	if (task_initializer &&
-		!map_native_module_arguments_to_task_arguments(
+	if (task_initializer
+		&& !map_native_module_arguments_to_task_arguments(
 			*native_module,
 			task_initializer->arguments,
 			"task initializer",
@@ -379,8 +379,8 @@ static bool generate_task_function_mapping(
 		return false;
 	}
 
-	if (task_voice_initializer &&
-		!map_native_module_arguments_to_task_arguments(
+	if (task_voice_initializer
+		&& !map_native_module_arguments_to_task_arguments(
 			*native_module,
 			task_voice_initializer->arguments,
 			"task voice initializer",
@@ -501,12 +501,12 @@ static bool is_task_argument_compatible_with_native_module_argument(
 	const s_native_module_argument_declaration &native_module_argument,
 	const char *task_function_name,
 	const char *native_module_name) {
-	static const e_task_primitive_type k_task_primitive_types_from_native_module_primitive_types[] = {
+	static constexpr e_task_primitive_type k_task_primitive_types_from_native_module_primitive_types[] = {
 		e_task_primitive_type::k_real,	// e_native_module_primitive_type::k_real
 		e_task_primitive_type::k_bool,	// e_native_module_primitive_type::k_bool
 		e_task_primitive_type::k_string	// e_native_module_primitive_type::k_string
 	};
-	static_assert(NUMBEROF(k_task_primitive_types_from_native_module_primitive_types) ==
+	static_assert(array_count(k_task_primitive_types_from_native_module_primitive_types) ==
 		enum_count<e_native_module_primitive_type>(),
 		"Native module/task primitive type mismatch");
 

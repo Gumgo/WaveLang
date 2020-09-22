@@ -7,7 +7,7 @@ struct s_preprocessor_command_executor {
 	f_preprocessor_command_executor command_executor;
 };
 
-static const size_t k_max_preprocessor_command_executors = 8;
+static constexpr size_t k_max_preprocessor_command_executors = 8;
 
 static s_static_array<s_preprocessor_command_executor, k_max_preprocessor_command_executors>
 	g_preprocessor_command_executors;
@@ -111,17 +111,17 @@ s_compiler_result c_preprocessor::preprocess(
 				} else {
 					s_token token = c_lexer::read_next_token(line_remaining);
 
-					if (!preprocessor_command_found &&
-						((token.token_type >= e_token_type::k_first_keyword &&
-						  token.token_type <= e_token_type::k_last_keyword) ||
-						 token.token_type == e_token_type::k_identifier)) {
+					if (!preprocessor_command_found
+						&& ((token.token_type >= e_token_type::k_first_keyword
+							&& token.token_type <= e_token_type::k_last_keyword)
+							|| token.token_type == e_token_type::k_identifier)) {
 						// Detect any identifier, keywords shouldn't matter in this context
 						preprocessor_command_token = token;
 						preprocessor_command_found = true;
-					} else if (preprocessor_command_found &&
-						(token.token_type == e_token_type::k_constant_real ||
-						 token.token_type == e_token_type::k_constant_bool ||
-						 token.token_type == e_token_type::k_constant_string)) {
+					} else if (preprocessor_command_found
+						&& (token.token_type == e_token_type::k_constant_real
+							|| token.token_type == e_token_type::k_constant_bool
+							|| token.token_type == e_token_type::k_constant_string)) {
 						// Only these token types are allowed in preprocessor commands
 						token.source_location.source_file_index = source_file_index;
 						token.source_location.line = line_number;
@@ -218,8 +218,8 @@ static s_compiler_result preprocessor_command_import(
 	s_compiler_result result;
 	result.clear();
 
-	if (arguments.get_argument_count() != 1 ||
-		arguments.get_argument(0).token_type != e_token_type::k_constant_string) {
+	if (arguments.get_argument_count() != 1
+		|| arguments.get_argument(0).token_type != e_token_type::k_constant_string) {
 		result.result = e_compiler_result::k_preprocessor_error;
 		result.source_location = arguments.get_command().source_location;
 		result.message = "Invalid import command";

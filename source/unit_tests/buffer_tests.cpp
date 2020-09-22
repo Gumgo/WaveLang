@@ -13,16 +13,16 @@ TEST(Buffer, Cico) {
 	static constexpr bool k_bool_constant = true;
 
 	ALIGNAS_SIMD real32 real_buffer_memory_in[align_size(k_buffer_size, k_simd_alignment)];
-	memset(real_buffer_memory_in, 0, sizeof(real_buffer_memory_in));
+	zero_type(real_buffer_memory_in, array_count(real_buffer_memory_in));
 
 	ALIGNAS_SIMD real32 real_buffer_memory_out[align_size(k_buffer_size, k_simd_alignment)];
-	memset(real_buffer_memory_out, 0, sizeof(real_buffer_memory_out));
+	zero_type(real_buffer_memory_out, array_count(real_buffer_memory_out));
 
 	ALIGNAS_SIMD int32 bool_buffer_memory_in[align_size(bool_buffer_int32_count(k_buffer_size), k_simd_alignment)];
-	memset(bool_buffer_memory_in, 0, sizeof(bool_buffer_memory_in));
+	zero_type(bool_buffer_memory_in, array_count(bool_buffer_memory_in));
 
 	ALIGNAS_SIMD int32 bool_buffer_memory_out[align_size(bool_buffer_int32_count(k_buffer_size), k_simd_alignment)];
-	memset(bool_buffer_memory_out, 0, sizeof(bool_buffer_memory_out));
+	zero_type(bool_buffer_memory_out, array_count(bool_buffer_memory_out));
 
 	c_buffer real_dynamic_in_untyped = c_buffer::construct(c_task_data_type(e_task_primitive_type::k_real));
 	real_dynamic_in_untyped.set_memory(real_buffer_memory_in);
@@ -53,7 +53,7 @@ TEST(Buffer, Cico) {
 	// Basic tests:
 
 	{
-		memset(real_buffer_memory_out, 0, sizeof(real_buffer_memory_out));
+		zero_type(real_buffer_memory_out, array_count(real_buffer_memory_out));
 		size_t iterations = 0;
 		iterate_buffers<1, false>(k_buffer_size, real_dynamic_in, real_constant_in, real_dynamic_out,
 			[&](size_t i, real32 a, real32 b, real32 &c) {
@@ -65,7 +65,7 @@ TEST(Buffer, Cico) {
 	}
 
 	{
-		memset(real_buffer_memory_out, 0, sizeof(real_buffer_memory_out));
+		zero_type(real_buffer_memory_out, array_count(real_buffer_memory_out));
 		size_t iterations = 0;
 		iterate_buffers<1, true>(k_buffer_size, real_dynamic_in, real_constant_in, real_dynamic_out,
 			[&](size_t i, real32 a, real32 b, real32 &c) {
@@ -77,7 +77,7 @@ TEST(Buffer, Cico) {
 	}
 
 	{
-		memset(real_buffer_memory_out, 0, sizeof(real_buffer_memory_out));
+		zero_type(real_buffer_memory_out, array_count(real_buffer_memory_out));
 		size_t iterations = 0;
 		iterate_buffers<1, false>(k_buffer_size, real_constant_in, real_dynamic_out,
 			[&](size_t i, real32 a, real32 &b) {
@@ -89,7 +89,7 @@ TEST(Buffer, Cico) {
 	}
 
 	{
-		memset(real_buffer_memory_out, 0, sizeof(real_buffer_memory_out));
+		zero_type(real_buffer_memory_out, array_count(real_buffer_memory_out));
 		size_t iterations = 0;
 		iterate_buffers<1, true>(k_buffer_size, real_constant_in, real_dynamic_out,
 			[&](size_t i, real32 a, real32 &b) {
@@ -102,7 +102,7 @@ TEST(Buffer, Cico) {
 	}
 
 	{
-		memset(bool_buffer_memory_out, 0, sizeof(bool_buffer_memory_out));
+		zero_type(bool_buffer_memory_out, array_count(bool_buffer_memory_out));
 		size_t iterations = 0;
 		iterate_buffers<1, false>(k_buffer_size, bool_dynamic_in, bool_constant_in, bool_dynamic_out,
 			[&](size_t i, bool a, bool b, bool &c) {
@@ -114,7 +114,7 @@ TEST(Buffer, Cico) {
 	}
 
 	{
-		memset(bool_buffer_memory_out, 0, sizeof(bool_buffer_memory_out));
+		zero_type(bool_buffer_memory_out, array_count(bool_buffer_memory_out));
 		size_t iterations = 0;
 		iterate_buffers<1, true>(k_buffer_size, bool_dynamic_in, bool_constant_in, bool_dynamic_out,
 			[&](size_t i, bool a, bool b, bool &c) {
@@ -126,7 +126,7 @@ TEST(Buffer, Cico) {
 	}
 
 	{
-		memset(bool_buffer_memory_out, 0, sizeof(bool_buffer_memory_out));
+		zero_type(bool_buffer_memory_out, array_count(bool_buffer_memory_out));
 		size_t iterations = 0;
 		iterate_buffers<1, false>(k_buffer_size, bool_constant_in, bool_dynamic_out,
 			[&](size_t i, bool a, bool &b) {
@@ -138,7 +138,7 @@ TEST(Buffer, Cico) {
 	}
 
 	{
-		memset(bool_buffer_memory_out, 0, sizeof(bool_buffer_memory_out));
+		zero_type(bool_buffer_memory_out, array_count(bool_buffer_memory_out));
 		size_t iterations = 0;
 		iterate_buffers<1, true>(k_buffer_size, bool_constant_in, bool_dynamic_out,
 			[&](size_t i, bool a, bool &b) {
@@ -153,7 +153,7 @@ TEST(Buffer, Cico) {
 	// Test strides:
 
 	{
-		memset(real_buffer_memory_out, 0, sizeof(real_buffer_memory_out));
+		zero_type(real_buffer_memory_out, array_count(real_buffer_memory_out));
 		size_t iterations = 0;
 		iterate_buffers<4, true>(k_buffer_size, real_constant_in, real_dynamic_out,
 			[&](size_t i, const real32x4 &a, real32x4 &b) {
@@ -166,7 +166,7 @@ TEST(Buffer, Cico) {
 	}
 
 	{
-		memset(bool_buffer_memory_out, 0, sizeof(bool_buffer_memory_out));
+		zero_type(bool_buffer_memory_out, array_count(bool_buffer_memory_out));
 		size_t iterations = 0;
 		iterate_buffers<4, true>(k_buffer_size, bool_constant_in, bool_dynamic_out,
 			[&](size_t i, const int32x4 &a, int32x4 &b) {
@@ -179,7 +179,7 @@ TEST(Buffer, Cico) {
 	}
 
 	{
-		memset(bool_buffer_memory_out, 0, sizeof(bool_buffer_memory_out));
+		zero_type(bool_buffer_memory_out, array_count(bool_buffer_memory_out));
 		size_t iterations = 0;
 		iterate_buffers<128, true>(k_buffer_size, bool_constant_in, bool_dynamic_out,
 			[&](size_t i, const int32x4 &a, int32x4 &b) {
@@ -194,8 +194,8 @@ TEST(Buffer, Cico) {
 	// Mixed types:
 
 	{
-		memset(real_buffer_memory_out, 0, sizeof(real_buffer_memory_out));
-		memset(bool_buffer_memory_out, 0, sizeof(bool_buffer_memory_out));
+		zero_type(real_buffer_memory_out, array_count(real_buffer_memory_out));
+		zero_type(bool_buffer_memory_out, array_count(bool_buffer_memory_out));
 		size_t iterations = 0;
 		iterate_buffers<1, true>(
 			k_buffer_size, real_constant_in, bool_constant_in, real_dynamic_out, bool_dynamic_out,
@@ -220,10 +220,10 @@ TEST(Buffer, Constant) {
 	static constexpr bool k_bool_constant = true;
 
 	ALIGNAS_SIMD real32 real_buffer_memory[align_size(k_buffer_size, k_simd_alignment)];
-	memset(real_buffer_memory, 0, sizeof(real_buffer_memory));
+	zero_type(real_buffer_memory, array_count(real_buffer_memory));
 
 	ALIGNAS_SIMD int32 bool_buffer_memory[align_size(bool_buffer_int32_count(k_buffer_size), k_simd_alignment)];
-	memset(bool_buffer_memory, 0, sizeof(bool_buffer_memory));
+	zero_type(bool_buffer_memory, array_count(bool_buffer_memory));
 
 	c_buffer real_compile_time_constant_buffer_untyped = c_real_buffer::construct_compile_time_constant(
 		c_task_data_type(e_task_primitive_type::k_real),
@@ -369,16 +369,16 @@ TEST(Buffer, IterationOrder) {
 	static constexpr size_t k_buffer_size = 259;
 
 	ALIGNAS_SIMD real32 real_buffer_memory_in[align_size(k_buffer_size, k_simd_alignment)];
-	memset(real_buffer_memory_in, 0, sizeof(real_buffer_memory_in));
+	zero_type(real_buffer_memory_in, array_count(real_buffer_memory_in));
 
 	ALIGNAS_SIMD real32 real_buffer_memory_out[align_size(k_buffer_size, k_simd_alignment)];
-	memset(real_buffer_memory_out, 0, sizeof(real_buffer_memory_out));
+	zero_type(real_buffer_memory_out, array_count(real_buffer_memory_out));
 
 	ALIGNAS_SIMD int32 bool_buffer_memory_in[align_size(bool_buffer_int32_count(k_buffer_size), k_simd_alignment)];
-	memset(bool_buffer_memory_in, 0, sizeof(bool_buffer_memory_in));
+	zero_type(bool_buffer_memory_in, array_count(bool_buffer_memory_in));
 
 	ALIGNAS_SIMD int32 bool_buffer_memory_out[align_size(bool_buffer_int32_count(k_buffer_size), k_simd_alignment)];
-	memset(bool_buffer_memory_out, 0, sizeof(bool_buffer_memory_out));
+	zero_type(bool_buffer_memory_out, array_count(bool_buffer_memory_out));
 
 	c_buffer real_in_untyped = c_buffer::construct(c_task_data_type(e_task_primitive_type::k_real));
 	real_in_untyped.set_memory(real_buffer_memory_in);
@@ -412,56 +412,56 @@ TEST(Buffer, IterationOrder) {
 	}
 
 	{
-		memset(real_buffer_memory_out, 0, sizeof(real_buffer_memory_out));
+		zero_type(real_buffer_memory_out, array_count(real_buffer_memory_out));
 		iterate_buffers<1, false>(k_buffer_size, real_in, real_out,
 			[](size_t i, real32 a, real32 &b) {
 				b = a;
 			});
-		for (size_t index = 0; index < NUMBEROF(real_buffer_memory_in); index++) {
+		for (size_t index = 0; index < array_count(real_buffer_memory_in); index++) {
 			EXPECT_EQ(real_buffer_memory_in[index], real_buffer_memory_out[index]);
 		}
 	}
 
 	{
-		memset(real_buffer_memory_out, 0, sizeof(real_buffer_memory_out));
+		zero_type(real_buffer_memory_out, array_count(real_buffer_memory_out));
 		iterate_buffers<4, false>(k_buffer_size, real_in, real_out,
 			[](size_t i, const real32x4 &a, real32x4 &b) {
 				b = a;
 			});
-		for (size_t index = 0; index < NUMBEROF(real_buffer_memory_in); index++) {
+		for (size_t index = 0; index < array_count(real_buffer_memory_in); index++) {
 			EXPECT_EQ(real_buffer_memory_in[index], real_buffer_memory_out[index]);
 		}
 	}
 
 	{
-		memset(bool_buffer_memory_out, 0, sizeof(bool_buffer_memory_out));
+		zero_type(bool_buffer_memory_out, array_count(bool_buffer_memory_out));
 		iterate_buffers<1, false>(k_buffer_size, bool_in, bool_out,
 			[](size_t i, bool a, bool &b) {
 				b = a;
 			});
-		for (size_t index = 0; index < NUMBEROF(bool_buffer_memory_in); index++) {
+		for (size_t index = 0; index < array_count(bool_buffer_memory_in); index++) {
 			EXPECT_EQ(bool_buffer_memory_in[index], bool_buffer_memory_out[index]);
 		}
 	}
 
 	{
-		memset(bool_buffer_memory_out, 0, sizeof(bool_buffer_memory_out));
+		zero_type(bool_buffer_memory_out, array_count(bool_buffer_memory_out));
 		iterate_buffers<4, false>(k_buffer_size, bool_in, bool_out,
 			[](size_t i, const int32x4 &a, int32x4 &b) {
 				b = a;
 			});
-		for (size_t index = 0; index < NUMBEROF(bool_buffer_memory_in); index++) {
+		for (size_t index = 0; index < array_count(bool_buffer_memory_in); index++) {
 			EXPECT_EQ(bool_buffer_memory_in[index], bool_buffer_memory_out[index]);
 		}
 	}
 
 	{
-		memset(bool_buffer_memory_out, 0, sizeof(bool_buffer_memory_out));
+		zero_type(bool_buffer_memory_out, array_count(bool_buffer_memory_out));
 		iterate_buffers<128, false>(k_buffer_size, bool_in, bool_out,
 			[](size_t i, const int32x4 &a, int32x4 &b) {
 				b = a;
 			});
-		for (size_t index = 0; index < NUMBEROF(bool_buffer_memory_in); index++) {
+		for (size_t index = 0; index < array_count(bool_buffer_memory_in); index++) {
 			EXPECT_EQ(bool_buffer_memory_in[index], bool_buffer_memory_out[index]);
 		}
 	}

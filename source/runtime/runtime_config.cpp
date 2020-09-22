@@ -13,47 +13,48 @@ static const char *k_sample_format_xml_strings[] = {
 	"float32"
 };
 
-static_assert(NUMBEROF(k_sample_format_xml_strings) == enum_count<e_sample_format>(), "Sample format strings mismatch");
+static_assert(array_count(k_sample_format_xml_strings) == enum_count<e_sample_format>(),
+	"Sample format strings mismatch");
 
 static const char *k_bool_xml_strings[] = {
 	"false",
 	"true"
 };
 
-static const char *k_default_xml_string = "default";
-static const char *k_none_xml_string = "none";
+static constexpr char k_default_xml_string[] = "default";
+static constexpr char k_none_xml_string[] = "none";
 
-static const uint32 k_default_audio_input_channels = 0;
-static const uint32 k_default_audio_output_channels = 2;
-static const e_sample_format k_default_audio_sample_format = e_sample_format::k_float32;
-static const uint32 k_default_audio_frames_per_buffer = 512;
+static constexpr uint32 k_default_audio_input_channels = 0;
+static constexpr uint32 k_default_audio_output_channels = 2;
+static constexpr e_sample_format k_default_audio_sample_format = e_sample_format::k_float32;
+static constexpr uint32 k_default_audio_frames_per_buffer = 512;
 
-static const bool k_default_controller_enabled = false;
-static const uint32 k_default_controller_event_queue_size = 1024;
-static const uint32 k_default_controller_unknown_latency = 15;
+static constexpr bool k_default_controller_enabled = false;
+static constexpr uint32 k_default_controller_event_queue_size = 1024;
+static constexpr uint32 k_default_controller_unknown_latency = 15;
 
-static const uint32 k_default_executor_thread_count = 0;
-static const uint32 k_default_executor_max_controller_parameters = 1024;
-static const bool k_default_executor_console_enabled = true;
-static const bool k_default_executor_profiling_enabled = false;
-static const real32 k_default_executor_profiling_threshold = 0.0f;
+static constexpr uint32 k_default_executor_thread_count = 0;
+static constexpr uint32 k_default_executor_max_controller_parameters = 1024;
+static constexpr bool k_default_executor_console_enabled = true;
+static constexpr bool k_default_executor_profiling_enabled = false;
+static constexpr real32 k_default_executor_profiling_threshold = 0.0f;
 
 static bool try_to_get_value_from_child_node(
 	const rapidxml::xml_node<> *parent_node,
 	const char *child_node_name,
 	uint32 default_value,
-	uint32 &out_value) {
+	uint32 &value_out) {
 	const rapidxml::xml_node<> *node = parent_node->first_node(child_node_name);
 	if (node) {
 		const char *value = node->value();
 
 		if (strcmp(value, k_default_xml_string) == 0) {
-			out_value = default_value;
+			value_out = default_value;
 			return true;
 		}
 
 		try {
-			out_value = std::stoul(value);
+			value_out = std::stoul(value);
 			return true;
 		} catch (const std::out_of_range &) {
 			std::cout << "Failed to parse '" << child_node_name << "'\n";
@@ -69,9 +70,9 @@ static bool try_to_get_value_from_child_node(
 	uint32 range_min,
 	uint32 range_max,
 	uint32 default_value,
-	uint32 &out_value) {
-	if (try_to_get_value_from_child_node(parent_node, child_node_name, default_value, out_value)) {
-		if (out_value < range_min || out_value > range_max) {
+	uint32 &value_out) {
+	if (try_to_get_value_from_child_node(parent_node, child_node_name, default_value, value_out)) {
+		if (value_out < range_min || value_out > range_max) {
 			std::cout << "'" << child_node_name << "'out of range\n";
 			return false;
 		}
@@ -81,18 +82,18 @@ static bool try_to_get_value_from_child_node(
 }
 
 static bool try_to_get_value_from_child_node(
-	const rapidxml::xml_node<> *parent_node, const char *child_node_name, bool default_value, bool &out_value) {
+	const rapidxml::xml_node<> *parent_node, const char *child_node_name, bool default_value, bool &value_out) {
 	const rapidxml::xml_node<> *node = parent_node->first_node(child_node_name);
 	if (node) {
 		const char *value = node->value();
 		if (strcmp(value, k_default_xml_string) == 0) {
-			out_value = default_value;
+			value_out = default_value;
 			return true;
 		} else if (strcmp(value, k_bool_xml_strings[false]) == 0) {
-			out_value = false;
+			value_out = false;
 			return true;
 		} else if (strcmp(value, k_bool_xml_strings[true]) == 0) {
-			out_value = true;
+			value_out = true;
 			return true;
 		}
 
@@ -103,18 +104,18 @@ static bool try_to_get_value_from_child_node(
 }
 
 static bool try_to_get_value_from_child_node(
-	const rapidxml::xml_node<> *parent_node, const char *child_node_name, real32 default_value, real32 &out_value) {
+	const rapidxml::xml_node<> *parent_node, const char *child_node_name, real32 default_value, real32 &value_out) {
 	const rapidxml::xml_node<> *node = parent_node->first_node(child_node_name);
 	if (node) {
 		const char *value = node->value();
 
 		if (strcmp(value, k_default_xml_string) == 0) {
-			out_value = default_value;
+			value_out = default_value;
 			return true;
 		}
 
 		try {
-			out_value = std::stof(value);
+			value_out = std::stof(value);
 			return true;
 		} catch (const std::out_of_range &) {
 			std::cout << "Failed to parse '" << child_node_name << "'\n";
@@ -130,9 +131,9 @@ static real32 try_to_get_value_from_child_node(
 	real32 range_min,
 	real32 range_max,
 	real32 default_value,
-	real32 &out_value) {
-	if (try_to_get_value_from_child_node(parent_node, child_node_name, default_value, out_value)) {
-		if (out_value < range_min || out_value > range_max) {
+	real32 &value_out) {
+	if (try_to_get_value_from_child_node(parent_node, child_node_name, default_value, value_out)) {
+		if (value_out < range_min || value_out > range_max) {
 			std::cout << "'" << child_node_name << "'out of range\n";
 			return false;
 		}
@@ -147,19 +148,19 @@ static bool try_to_get_value_from_child_node(
 	const char *child_node_name,
 	c_wrapped_array<const char *const> enum_strings,
 	t_enum default_value,
-	t_enum &out_value) {
+	t_enum &value_out) {
 	const rapidxml::xml_node<> *node = parent_node->first_node(child_node_name);
 	if (node) {
 		const char *value = node->value();
 
 		if (strcmp(value, k_default_xml_string) == 0) {
-			out_value = default_value;
+			value_out = default_value;
 			return true;
 		}
 
 		for (size_t index = 0; index < enum_strings.get_count(); index++) {
 			if (strcmp(value, enum_strings[index]) == 0) {
-				out_value = static_cast<t_enum>(index);
+				value_out = static_cast<t_enum>(index);
 				return true;
 			}
 		}
@@ -382,18 +383,17 @@ e_runtime_config_result c_runtime_config::read_settings(
 			const rapidxml::xml_node<> *audio_device_index_node = audio_node->first_node("device_index");
 			if (audio_device_index_node) {
 				uint32 index;
-				if (try_to_get_value_from_child_node(
-					audio_node, "device_index", m_settings.audio_device_index, index) &&
-					index < audio_driver_interface->get_device_count()) {
+				if (try_to_get_value_from_child_node(audio_node, "device_index", m_settings.audio_device_index, index)
+					&& index < audio_driver_interface->get_device_count()) {
 					m_settings.audio_device_index = index;
 				}
 			}
 		}
 
 		if (controller_node) {
-			uint32 default_device_index = (m_settings.controller_device_count == 0) ?
-				0 :
-				m_settings.controller_device_indices[0];
+			uint32 default_device_index = (m_settings.controller_device_count == 0)
+				? 0
+				: m_settings.controller_device_indices[0];
 
 			for (uint32 device = 0; device < k_max_controller_devices; device++) {
 				std::string node_name = "device_index_" + std::to_string(device);
@@ -414,8 +414,8 @@ e_runtime_config_result c_runtime_config::read_settings(
 					} else {
 						uint32 index;
 						if (try_to_get_value_from_child_node(
-							controller_node , node_name.c_str(), default_device_index, index) &&
-							index < controller_driver_interface->get_device_count()) {
+							controller_node, node_name.c_str(), default_device_index, index)
+							&& index < controller_driver_interface->get_device_count()) {
 							// Determine if this device is already in use
 							bool in_use = false;
 							for (size_t used_device = 0;

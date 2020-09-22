@@ -4,7 +4,7 @@
 #include "engine/executor/task_memory_manager.h"
 
 // Since we initially store offsets when computing memory requirements, this value cast to a pointer represents null
-static const size_t k_invalid_memory_pointer = static_cast<size_t>(-1);
+static constexpr size_t k_invalid_memory_pointer = static_cast<size_t>(-1);
 
 void c_task_memory_manager::initialize(
 	const c_runtime_instrument *runtime_instrument,
@@ -77,7 +77,7 @@ void c_task_memory_manager::initialize(
 			required_fx_task_memory);
 
 		// Zero out all the memory - tasks can detect whether it is initialized by providing an "initialized" field
-		memset(m_task_memory_allocator.get_array().get_pointer(), 0, m_task_memory_allocator.get_array().get_count());
+		zero_type(m_task_memory_allocator.get_array().get_pointer(), m_task_memory_allocator.get_array().get_count());
 	} else {
 #if IS_TRUE(ASSERTS_ENABLED)
 		// All pointers should be invalid
@@ -148,9 +148,9 @@ void c_task_memory_manager::resolve_task_memory_pointers(
 	// Compute offset pointers
 	for (size_t index = 0; index < task_memory_pointers.size(); index++) {
 		size_t offset = reinterpret_cast<size_t>(task_memory_pointers[index]);
-		void *offset_pointer = (offset == k_invalid_memory_pointer) ?
-			nullptr :
-			reinterpret_cast<void *>(task_memory_base_uint + offset);
+		void *offset_pointer = (offset == k_invalid_memory_pointer)
+			? nullptr
+			: reinterpret_cast<void *>(task_memory_base_uint + offset);
 		task_memory_pointers[index] = offset_pointer;
 	}
 
@@ -162,9 +162,9 @@ void c_task_memory_manager::resolve_task_memory_pointers(
 		size_t voice_memory_offset = voice * required_memory_per_voice;
 		for (size_t index = 0; index < task_count; index++) {
 			size_t base_pointer = reinterpret_cast<size_t>(task_memory_pointers[index]);
-			void *offset_pointer = (base_pointer == 0) ?
-				nullptr :
-				reinterpret_cast<void *>(base_pointer + voice_memory_offset);
+			void *offset_pointer = (base_pointer == 0)
+				? nullptr
+				: reinterpret_cast<void *>(base_pointer + voice_memory_offset);
 			task_memory_pointers[voice_offset + index] = offset_pointer;
 		}
 	}

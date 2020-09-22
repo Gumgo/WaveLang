@@ -82,19 +82,3 @@ inline bool all_true(const int32x4 &v);
 inline bool all_false(const int32x4 &v);
 inline bool any_true(const int32x4 &v);
 inline bool any_false(const int32x4 &v);
-
-// Shuffle
-inline int32x4 single_element(const int32x4 &v, int32 pos);
-
-#if IS_TRUE(SIMD_IMPLEMENTATION_SSE_ENABLED)
-template<int32 k_pos_0, int32 k_pos_1, int32 k_pos_2, int32 k_pos_3>
-int32x4 shuffle(const int32x4 &v);
-template<int32 k_pos_0, int32 k_pos_1, int32 k_pos_2, int32 k_pos_3>
-int32x4 shuffle(const int32x4 &a, const int32x4 &b);
-#endif // IS_TRUE(SIMD_IMPLEMENTATION_SSE)
-
-// Extract:
-// Treats a and b as a contiguous block of 8 values and shifts left by the given amount; returns only the first 4
-template<int32 k_shift_amount>
-int32x4 extract(const int32x4 &a, const int32x4 &b);
-

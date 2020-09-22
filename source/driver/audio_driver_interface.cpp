@@ -21,9 +21,9 @@ static PaSampleFormat get_pa_sample_format(e_sample_format sample_format) {
 static void setup_stream_parameters(
 	const s_audio_driver_settings &settings,
 	uint32 device_count,
-	PaStreamParameters &out_input_params,
-	PaStreamParameters &out_output_params) {
-	wl_assert(VALID_INDEX(settings.device_index, device_count));
+	PaStreamParameters &input_params_out,
+	PaStreamParameters &output_params_out) {
+	wl_assert(valid_index(settings.device_index, device_count));
 	wl_assert(settings.frames_per_buffer > 0);
 
 	PaDeviceIndex device_index = static_cast<PaDeviceIndex>(settings.device_index);
@@ -31,14 +31,14 @@ static void setup_stream_parameters(
 	wl_assert(device_info);
 
 	// $TODO $INPUT fill these out eventually if we want to support line-in processing
-	ZERO_STRUCT(&out_input_params);
-	out_input_params.device = paNoDevice;
+	zero_type(&input_params_out);
+	input_params_out.device = paNoDevice;
 
-	ZERO_STRUCT(&out_output_params);
-	out_output_params.device = device_index;
-	out_output_params.channelCount = cast_integer_verify<int>(settings.output_channels);
-	out_output_params.sampleFormat = get_pa_sample_format(settings.sample_format);
-	out_output_params.suggestedLatency = device_info->defaultLowOutputLatency;
+	zero_type(&output_params_out);
+	output_params_out.device = device_index;
+	output_params_out.channelCount = cast_integer_verify<int>(settings.output_channels);
+	output_params_out.sampleFormat = get_pa_sample_format(settings.sample_format);
+	output_params_out.suggestedLatency = device_info->defaultLowOutputLatency;
 	// $TODO should suggestedLatency be user-provided?
 }
 
@@ -116,7 +116,7 @@ uint32 c_audio_driver_interface::get_default_device_index() const {
 
 s_audio_device_info c_audio_driver_interface::get_device_info(uint32 device_index) const {
 	wl_assert(m_initialized);
-	wl_assert(VALID_INDEX(device_index, m_device_count));
+	wl_assert(valid_index(device_index, m_device_count));
 
 	s_audio_device_info result;
 	const PaDeviceInfo *device_info = Pa_GetDeviceInfo(static_cast<PaDeviceIndex>(device_index));
@@ -223,10 +223,10 @@ const s_audio_driver_settings &c_audio_driver_interface::get_settings() const {
 	return m_settings;
 }
 
-void c_audio_driver_interface::get_stream_clock(f_audio_driver_stream_clock &out_clock, void *&out_context) {
+void c_audio_driver_interface::get_stream_clock(f_audio_driver_stream_clock &clock_out, void *&context_out) {
 	wl_assert(is_stream_running());
-	out_clock = stream_clock;
-	out_context = m_stream;
+	clock_out = stream_clock;
+	context_out = m_stream;
 }
 
 int c_audio_driver_interface::stream_callback_internal(

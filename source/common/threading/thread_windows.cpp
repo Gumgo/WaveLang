@@ -23,7 +23,7 @@ void c_thread::start(const s_thread_definition &thread_definition) {
 
 	// Store thread function and parameter block for the thread to use
 	m_thread_entry_point = thread_definition.thread_entry_point;
-	memcpy(&m_thread_parameter_block, &thread_definition.parameter_block, sizeof(m_thread_parameter_block));
+	copy_type(&m_thread_parameter_block, &thread_definition.parameter_block);
 
 	// Create the thread using the definition provided
 	DWORD thread_id;
@@ -41,22 +41,22 @@ void c_thread::start(const s_thread_definition &thread_definition) {
 	m_thread_id = static_cast<uint32>(thread_id);
 
 	// Setup thread properties
-	static const int k_thread_priority_map[] = {
+	static constexpr int k_thread_priority_map[] = {
 		THREAD_PRIORITY_LOWEST,
 		THREAD_PRIORITY_BELOW_NORMAL,
 		THREAD_PRIORITY_NORMAL,
 		THREAD_PRIORITY_ABOVE_NORMAL,
 		THREAD_PRIORITY_HIGHEST
 	};
-	static_assert(NUMBEROF(k_thread_priority_map) == enum_count<e_thread_priority>(),
+	static_assert(array_count(k_thread_priority_map) == enum_count<e_thread_priority>(),
 		"Thread priority mapping mismatch");
 
 	if (!SetThreadPriority(m_thread_handle, k_thread_priority_map[enum_index(thread_definition.thread_priority)])) {
 		wl_vhalt("Failed to set thread priority");
 	}
 
-	if (thread_definition.processor != -1 &&
-		SetThreadIdealProcessor(m_thread_handle, static_cast<DWORD>(thread_definition.processor)) < 0) {
+	if (thread_definition.processor != -1
+		&& SetThreadIdealProcessor(m_thread_handle, static_cast<DWORD>(thread_definition.processor)) < 0) {
 		wl_vhalt("Failed to set ideal processor");
 	}
 

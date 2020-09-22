@@ -4,7 +4,7 @@
 
 #include "driver/controller.h"
 
-static const size_t k_max_controller_devices = 16;
+static constexpr size_t k_max_controller_devices = 16;
 
 enum class e_controller_driver_result {
 	k_success,
@@ -49,7 +49,7 @@ struct s_controller_driver_settings {
 
 	void set_default() {
 		device_count = 1;
-		ZERO_STRUCT(&device_indices);
+		zero_type(&device_indices);
 		controller_event_queue_size = 1024;
 		unknown_latency = 0.015;
 		clock = nullptr;

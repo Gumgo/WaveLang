@@ -1,6 +1,6 @@
 #include "compiler/ast_data_type.h"
 
-static const s_ast_primitive_type_traits k_ast_primitive_type_traits[] = {
+static constexpr s_ast_primitive_type_traits k_ast_primitive_type_traits[] = {
 	//	name		is_data		is_dynamic	is_returnable
 	{	"void",		false,		false,		true	},
 	{	"module",	false,		false,		false	},
@@ -9,7 +9,7 @@ static const s_ast_primitive_type_traits k_ast_primitive_type_traits[] = {
 	{	"string",	true,		false,		true	}
 };
 
-static_assert(NUMBEROF(k_ast_primitive_type_traits) == enum_count<e_ast_primitive_type>(),
+static_assert(array_count(k_ast_primitive_type_traits) == enum_count<e_ast_primitive_type>(),
 	"Primitive type traits mismatch");
 
 c_ast_data_type::c_ast_data_type() {

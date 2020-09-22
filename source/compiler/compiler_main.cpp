@@ -12,9 +12,9 @@
 #include <iostream>
 
 // $TODO move somewhere better?
-static const char *k_wavelang_synth_extension = "wls";
+static constexpr char k_wavelang_synth_extension[] = "wls";
 
-static const char *k_documentation_filename = "registered_native_modules.txt";
+static constexpr char k_documentation_filename[] = "registered_native_modules.txt";
 
 int main(int argc, char **argv) {
 	int32 result = 0;
@@ -61,8 +61,8 @@ int main(int argc, char **argv) {
 		first_file_argument_index = optind;
 	}
 
-	if (first_file_argument_index >= argc &&
-		!output_documentation) { // No compilation necessary if we're outputting documentation
+	if (first_file_argument_index >= argc
+		&& !output_documentation) { // No compilation necessary if we're outputting documentation
 		command_line_option_error = true;
 	}
 
@@ -93,8 +93,8 @@ int main(int argc, char **argv) {
 			// dot, no separator => remove
 			// dot before separator => don't remove
 			// dot after separator => remove
-			if (last_dot != std::string::npos &&
-				(last_separator == std::string::npos || last_dot > last_separator)) {
+			if (last_dot != std::string::npos
+				&& (last_separator == std::string::npos || last_dot > last_separator)) {
 				fname_no_ext.resize(last_dot);
 			}
 
@@ -122,7 +122,7 @@ int main(int argc, char **argv) {
 						"fx"
 					};
 
-					for (size_t type = 0; type < NUMBEROF(execution_graphs); type++) {
+					for (size_t type = 0; type < array_count(execution_graphs); type++) {
 						std::string graph_fname = fname_no_ext + '.' + std::string(k_instrument_stages[type]) +
 							'.' + std::to_string(variant_index) + '.' + k_graphviz_file_extension;
 

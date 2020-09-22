@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 
-static const char *k_runtime_config_filename = "wavelang_runtime_config.xml";
+static constexpr char k_runtime_config_filename[] = "wavelang_runtime_config.xml";
 
 class c_command_line_interface {
 public:
@@ -39,7 +39,7 @@ private:
 	static s_command read_command();
 	static size_t skip_whitespace(const std::string &str, size_t pos);
 	static size_t skip_to_whitespace(const std::string &str, size_t pos);
-	static size_t skip_to_quote(const std::string &str, size_t pos, std::string &out_result);
+	static size_t skip_to_quote(const std::string &str, size_t pos, std::string &result_out);
 	static bool is_whitespace(char c);
 
 	bool run_command(const s_command &command);
@@ -148,7 +148,7 @@ int c_command_line_interface::main_function() {
 		}
 
 		s_thread_definition controller_command_thread_definition;
-		ZERO_STRUCT(&controller_command_thread_definition);
+		zero_type(&controller_command_thread_definition);
 		controller_command_thread_definition.thread_name = "controller command thread";
 		controller_command_thread_definition.thread_priority = e_thread_priority::k_normal;
 		controller_command_thread_definition.processor = -1;
@@ -238,7 +238,7 @@ size_t c_command_line_interface::skip_to_whitespace(const std::string &str, size
 	return str.length();
 }
 
-size_t c_command_line_interface::skip_to_quote(const std::string &str, size_t pos, std::string &out_result) {
+size_t c_command_line_interface::skip_to_quote(const std::string &str, size_t pos, std::string &result_out) {
 	wl_assert(str[pos] == '"');
 
 	bool prev_was_escape_character = false;
@@ -246,7 +246,7 @@ size_t c_command_line_interface::skip_to_quote(const std::string &str, size_t po
 		if (prev_was_escape_character) {
 			if (str[index] == '"' || str[index] == '\\') {
 				// Escaped character
-				out_result.push_back(str[index]);
+				result_out.push_back(str[index]);
 			} else {
 				// Error - unknown escape sequence
 				break;
@@ -263,7 +263,7 @@ size_t c_command_line_interface::skip_to_quote(const std::string &str, size_t po
 				prev_was_escape_character = true;
 			} else {
 				// Append to string
-				out_result.push_back(str[index]);
+				result_out.push_back(str[index]);
 			}
 		}
 	}
@@ -443,7 +443,7 @@ bool c_command_line_interface::controller_hook_wrapper(void *context, const s_co
 bool c_command_line_interface::controller_hook(const s_controller_event &controller_event) {
 #if IS_TRUE(TARGET_RASPBERRY_PI)
 	// Hack: use events on MIDI parameter 15 to load a different synths!
-	static const uint32 k_synth_parameter = 15;
+	static constexpr uint32 k_synth_parameter = 15;
 	if (controller_event.event_type == e_controller_event_type::k_parameter_change) {
 		const s_controller_event_data_parameter_change *parameter_change_controller_event =
 			controller_event.get_data<s_controller_event_data_parameter_change>();

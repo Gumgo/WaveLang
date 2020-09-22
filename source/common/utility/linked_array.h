@@ -11,7 +11,7 @@ struct s_linked_array_list {
 
 class c_linked_array {
 public:
-	static const size_t k_invalid_linked_array_index = static_cast<size_t>(-1);
+	static constexpr size_t k_invalid_linked_array_index = static_cast<size_t>(-1);
 
 	void initialize(size_t count);
 

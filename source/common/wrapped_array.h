@@ -1,10 +1,11 @@
 #pragma once
 
 #include "common/asserts.h"
+#include "common/common_utilities.h"
 #include "common/macros.h"
 #include "common/types.h"
 
-// Wrapped arrays can safely be ZERO_STRUCT'd
+// Wrapped arrays can safely be zero_type'd
 
 template<typename t_element>
 class c_wrapped_array {
@@ -56,24 +57,24 @@ public:
 	}
 
 	c_wrapped_array<t_element> get_range(size_t index, size_t count) {
-		wl_assert(count == 0 || VALID_INDEX(index, m_count));
+		wl_assert(count == 0 || valid_index(index, m_count));
 		wl_assert(index + count <= m_count);
 		return c_wrapped_array<t_element>(m_pointer + index, count);
 	}
 
 	c_wrapped_array<const t_element> get_range(size_t index, size_t count) const {
-		wl_assert(count == 0 || VALID_INDEX(index, m_count));
+		wl_assert(count == 0 || valid_index(index, m_count));
 		wl_assert(index + count <= m_count);
 		return c_wrapped_array<const t_element>(m_pointer + index, count);
 	}
 
 	t_element &operator[](size_t index) {
-		wl_assert(VALID_INDEX(index, m_count));
+		wl_assert(valid_index(index, m_count));
 		return m_pointer[index];
 	}
 
 	const t_element &operator[](size_t index) const {
-		wl_assert(VALID_INDEX(index, m_count));
+		wl_assert(valid_index(index, m_count));
 		return m_pointer[index];
 	}
 

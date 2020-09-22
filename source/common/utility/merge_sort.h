@@ -14,8 +14,8 @@ void merge_sort_merge_helper(
 	size_t right = 0;
 
 	for (size_t scratch_index = 0; scratch_index < scratch_buffer.get_count(); scratch_index++) {
-		if (left < left_values.get_count() &&
-			(right >= right_values.get_count() || !comparator(right_values[right], left_values[left]))) {
+		if ((left < left_values.get_count())
+			&& (right >= right_values.get_count() || !comparator(right_values[right], left_values[left]))) {
 			// Take left value
 			scratch_buffer[scratch_index] = left_values[left];
 			left++;

@@ -33,7 +33,7 @@ size_t c_string_table::add_string(const char *str) {
 }
 
 const char *c_string_table::get_string(size_t offset) const {
-	wl_assert(VALID_INDEX(offset, m_table.size()));
+	wl_assert(valid_index(offset, m_table.size()));
 	return &m_table[offset];
 }
 

@@ -2,14 +2,14 @@
 
 const s_native_module_uid s_native_module_uid::k_invalid = s_native_module_uid::build(0xffffffff, 0xffffffff);
 
-static const s_native_module_primitive_type_traits k_native_module_primitive_type_traits[] = {
+static constexpr s_native_module_primitive_type_traits k_native_module_primitive_type_traits[] = {
 	//	is_dynamic
 	{	true	},	// real
 	{	true	},	// bool
 	{	false	}	// string
 };
 
-static_assert(NUMBEROF(k_native_module_primitive_type_traits) == enum_count<e_native_module_primitive_type>(),
+static_assert(array_count(k_native_module_primitive_type_traits) == enum_count<e_native_module_primitive_type>(),
 	"Primitive type traits mismatch");
 
 static const char *k_native_operator_names[] = {
@@ -31,7 +31,8 @@ static const char *k_native_operator_names[] = {
 	"operator_||",
 	"operator_[]"
 };
-static_assert(NUMBEROF(k_native_operator_names) == enum_count<e_native_operator>(), "Native operator count mismatch");
+static_assert(array_count(k_native_operator_names) == enum_count<e_native_operator>(),
+	"Native operator count mismatch");
 
 const char *get_native_operator_native_module_name(e_native_operator native_operator) {
 	wl_assert(valid_enum_index(native_operator));
@@ -143,7 +144,7 @@ bool c_native_module_data_type::read(uint32 data) {
 	s_native_module_data_type_format format;
 	format.data = data;
 
-	if (!VALID_INDEX(format.primitive_type, enum_count<e_native_module_primitive_type>())) {
+	if (!valid_index(format.primitive_type, enum_count<e_native_module_primitive_type>())) {
 		return false;
 	}
 

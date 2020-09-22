@@ -8,23 +8,23 @@
 
 #include <stdexcept>
 
-static const e_ast_primitive_type k_native_module_primitive_type_to_ast_primitive_type_mapping[] = {
+static constexpr e_ast_primitive_type k_native_module_primitive_type_to_ast_primitive_type_mapping[] = {
 	e_ast_primitive_type::k_real,	// e_native_module_primitive_type::k_real
 	e_ast_primitive_type::k_bool,	// e_native_module_primitive_type::k_bool
 	e_ast_primitive_type::k_string	// e_native_module_primitive_type::k_string
 };
 static_assert(
-	NUMBEROF(k_native_module_primitive_type_to_ast_primitive_type_mapping) ==
+	array_count(k_native_module_primitive_type_to_ast_primitive_type_mapping) ==
 	enum_count<e_native_module_primitive_type>(),
 	"Native module argument primitive type to ast primitive type mismatch");
 
-static const e_ast_qualifier k_native_module_qualifier_to_ast_qualifier_mapping[] = {
+static constexpr e_ast_qualifier k_native_module_qualifier_to_ast_qualifier_mapping[] = {
 	e_ast_qualifier::k_in,	// e_native_module_qualifier::k_in
 	e_ast_qualifier::k_out,	// e_native_module_qualifier::k_out
 	e_ast_qualifier::k_in	// e_native_module_qualifier::k_constant
 };
 static_assert(
-	NUMBEROF(k_native_module_qualifier_to_ast_qualifier_mapping) == enum_count<e_native_module_qualifier>(),
+	array_count(k_native_module_qualifier_to_ast_qualifier_mapping) == enum_count<e_native_module_qualifier>(),
 	"Native module qualifier to ast qualifier mismatch");
 
 static c_ast_data_type get_ast_data_type(c_native_module_data_type type) {
@@ -49,8 +49,8 @@ static bool node_is_type(const c_lr_parse_tree_node &node, e_parser_nonterminal 
 static c_ast_data_type get_data_type_from_node(const c_lr_parse_tree &parse_tree, const c_lr_parse_tree_node &node) {
 	const c_lr_parse_tree_node *type_node = &node;
 
-	if (node_is_type(*type_node, e_parser_nonterminal::k_type_or_void) ||
-		node_is_type(*type_node, e_parser_nonterminal::k_type)) {
+	if (node_is_type(*type_node, e_parser_nonterminal::k_type_or_void)
+		|| node_is_type(*type_node, e_parser_nonterminal::k_type)) {
 		type_node = &parse_tree.get_node(type_node->get_child_index());
 	}
 
@@ -160,8 +160,8 @@ static bool extract_named_value_assignment_lhs_expression(
 	const c_lr_parse_tree &parse_tree,
 	const s_lexer_source_file_output &tokens,
 	const c_lr_parse_tree_node &named_value_lhs_expression_node,
-	std::string &out_named_value,
-	c_ast_node_expression *&out_array_index_expression);
+	std::string &named_value_out,
+	c_ast_node_expression *&array_index_expression_out);
 
 static c_ast_node_return_statement *build_return_statement(
 	const c_lr_parse_tree &parse_tree,
@@ -661,7 +661,11 @@ static c_ast_node_named_value_assignment *build_named_value_assignment(
 	std::string named_value;
 	c_ast_node_expression *array_index_expression;
 	bool lhs_expression_is_valid = extract_named_value_assignment_lhs_expression(
-		parse_tree, tokens, named_value_expression_node, named_value, array_index_expression);
+		parse_tree,
+		tokens,
+		named_value_expression_node,
+		named_value,
+		array_index_expression);
 
 	result->set_is_valid_named_value(lhs_expression_is_valid);
 	if (lhs_expression_is_valid) {
@@ -681,8 +685,8 @@ static bool extract_named_value_assignment_lhs_expression(
 	const c_lr_parse_tree &parse_tree,
 	const s_lexer_source_file_output &tokens,
 	const c_lr_parse_tree_node &named_value_lhs_expression_node,
-	std::string &out_named_value,
-	c_ast_node_expression *&out_array_index_expression) {
+	std::string &named_value_out,
+	c_ast_node_expression *&array_index_expression_out) {
 	// Manually parse the LHS expression, looking for a specific pattern. Gross!
 	wl_assert(node_is_type(named_value_lhs_expression_node, e_parser_nonterminal::k_expression));
 
@@ -690,13 +694,13 @@ static bool extract_named_value_assignment_lhs_expression(
 	wl_assert(node_is_type(it.get_node(), e_parser_nonterminal::k_expr_1));
 
 	// Iterate down to expr_8
-	static const e_parser_nonterminal k_expression_chain[] = {
+	static constexpr e_parser_nonterminal k_expression_chain[] = {
 		e_parser_nonterminal::k_expr_2, e_parser_nonterminal::k_expr_3, e_parser_nonterminal::k_expr_4,
 		e_parser_nonterminal::k_expr_5, e_parser_nonterminal::k_expr_6, e_parser_nonterminal::k_expr_7,
 		e_parser_nonterminal::k_expr_8
 	};
 
-	for (size_t iter = 0; iter < NUMBEROF(k_expression_chain); iter++) {
+	for (size_t iter = 0; iter < array_count(k_expression_chain); iter++) {
 		wl_assert(it.has_child());
 		it.follow_child();
 
@@ -745,12 +749,12 @@ static bool extract_named_value_assignment_lhs_expression(
 
 	// Success
 	if (array_index_expression_node) {
-		out_array_index_expression = build_expression(parse_tree, tokens, *array_index_expression_node);
+		array_index_expression_out = build_expression(parse_tree, tokens, *array_index_expression_node);
 	} else {
-		out_array_index_expression = nullptr;
+		array_index_expression_out = nullptr;
 	}
 
-	out_named_value = tokens.tokens[it.get_node().get_token_index()].token_string.to_std_string();
+	named_value_out = tokens.tokens[it.get_node().get_token_index()].token_string.to_std_string();
 	return true;
 }
 
@@ -975,9 +979,8 @@ static c_ast_node_expression *build_expression(
 				std::string string_value = tokens.tokens[child_node.get_token_index()].token_string.to_std_string();
 				c_ast_node_constant *constant_node = new c_ast_node_constant();
 				constant_node->set_source_location(tokens.tokens[child_node.get_token_index()].source_location);
-				wl_vassert(
-					string_value == k_token_type_constant_bool_false_string ||
-					string_value == k_token_type_constant_bool_true_string,
+				wl_vassert(string_value == k_token_type_constant_bool_false_string
+					|| string_value == k_token_type_constant_bool_true_string,
 					"We should have already caught this in the lexer");
 				bool bool_value = (string_value == k_token_type_constant_bool_true_string);
 				constant_node->set_bool_value(bool_value);

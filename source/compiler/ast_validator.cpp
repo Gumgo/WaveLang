@@ -545,8 +545,8 @@ public:
 			wl_assert(scope.module_for_scope);
 
 			// Make sure a return statement was found if necessary
-			if (scope.module_for_scope->get_return_type() != c_ast_data_type(e_ast_primitive_type::k_void) &&
-				scope.return_statement < 0) {
+			if (scope.module_for_scope->get_return_type() != c_ast_data_type(e_ast_primitive_type::k_void)
+				&& scope.return_statement < 0) {
 				s_compiler_result error;
 				error.result = e_compiler_result::k_missing_return_statement;
 				error.source_location = scope.module_for_scope->get_source_location();
@@ -597,8 +597,8 @@ public:
 			bool is_fx_entry_point = (node->get_name() == k_fx_entry_point_name);
 
 			if (is_voice_entry_point || is_fx_entry_point) {
-				if ((is_voice_entry_point && m_voice_entry_point_found) ||
-					(is_fx_entry_point && m_fx_entry_point_found)) {
+				if ((is_voice_entry_point && m_voice_entry_point_found)
+					|| (is_fx_entry_point && m_fx_entry_point_found)) {
 					s_compiler_result error;
 					error.result = e_compiler_result::k_invalid_entry_point;
 					error.source_location = node->get_source_location();
@@ -763,17 +763,17 @@ public:
 				// We're trying to dereference a non-array type
 				dereference_non_array_error(node->get_source_location(), identifier->data_type);
 			} else {
-				c_ast_data_type expected_type = node->get_array_index_expression() ?
-					expected_type = identifier->data_type.get_element_type() :
-					identifier->data_type;
+				c_ast_data_type expected_type = node->get_array_index_expression()
+					? identifier->data_type.get_element_type()
+					: identifier->data_type;
 
 				if (result.type != expected_type) {
 					type_mismatch_error(node->get_source_location(), expected_type, result.type);
 				} else if (!result.has_value) {
 					// The result is a named value which hasn't been assigned yet
 					unassigned_named_value_error(node->get_source_location(), result.identifier_name);
-				} else if (node->get_array_index_expression() &&
-					array_index_result.type != c_ast_data_type(e_ast_primitive_type::k_real)) {
+				} else if (node->get_array_index_expression()
+					&& array_index_result.type != c_ast_data_type(e_ast_primitive_type::k_real)) {
 					// The array index should be a real
 					type_mismatch_error(
 						node->get_array_index_expression()->get_source_location(),
@@ -1084,8 +1084,8 @@ public:
 
 						// If this argument has an out qualifier, it must take a direct named value
 						// We currently don't support outputting to an array element directly
-						if (argument->get_qualifier() == e_ast_qualifier::k_out &&
-							argument_result.identifier_name.empty()) {
+						if (argument->get_qualifier() == e_ast_qualifier::k_out
+							&& argument_result.identifier_name.empty()) {
 							s_compiler_result error;
 							error.result = e_compiler_result::k_named_value_expected;
 							error.source_location = node->get_argument(arg)->get_source_location();
@@ -1093,8 +1093,8 @@ public:
 							m_errors->push_back(error);
 						}
 
-						if (argument->get_qualifier() == e_ast_qualifier::k_in &&
-							!argument_result.has_value) {
+						if (argument->get_qualifier() == e_ast_qualifier::k_in
+							&& !argument_result.has_value) {
 							unassigned_named_value_error(
 								node->get_argument(arg)->get_source_location(),
 								argument_result.identifier_name);
@@ -1148,13 +1148,13 @@ public:
 s_compiler_result c_ast_validator::validate(
 	const s_compiler_context *compiler_context,
 	const c_ast_node *ast,
-	std::vector<s_compiler_result> &out_errors) {
+	std::vector<s_compiler_result> &errors_out) {
 	wl_assert(ast);
 
 	s_compiler_result result;
 	result.clear();
 
-	c_ast_validator_visitor visitor(&out_errors);
+	c_ast_validator_visitor visitor(&errors_out);
 	visitor.set_compiler_context(compiler_context);
 	visitor.set_pass(c_ast_validator_visitor::e_pass::k_register_global_identifiers);
 	ast->iterate(&visitor);
@@ -1163,18 +1163,18 @@ s_compiler_result c_ast_validator::validate(
 	ast->iterate(&visitor);
 
 	// Validate that an entry point was found
-	if (!visitor.was_voice_entry_point_found() &&
-		!visitor.was_fx_entry_point_found()) {
+	if (!visitor.was_voice_entry_point_found()
+		&& !visitor.was_fx_entry_point_found()) {
 		s_compiler_result error;
 		error.result = e_compiler_result::k_no_entry_point;
 		error.source_location.clear();
 		error.message = "No voice entry point '" + std::string(k_voice_entry_point_name) +
 			"' or FX entry point '" + std::string(k_fx_entry_point_name) + "' found";
-		out_errors.push_back(error);
+		errors_out.push_back(error);
 	}
 
-	if (!out_errors.empty()) {
-		// Don't associate the error with a particular file, those errors are collected through out_errors
+	if (!errors_out.empty()) {
+		// Don't associate the error with a particular file, those errors are collected through errors_out
 		result.result = e_compiler_result::k_syntax_error;
 		result.message = "Syntax error(s) detected";
 	}

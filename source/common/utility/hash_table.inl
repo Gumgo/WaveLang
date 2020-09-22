@@ -27,9 +27,9 @@ void c_hash_table<t_key, t_value, t_hash>::initialize(size_t bucket_count, size_
 
 	m_free_list = 0;
 	for (size_t element_index = 0; element_index < element_count; element_index++) {
-		m_elements[element_index].next_element_index = (element_index + 1 == element_count) ?
-			k_invalid_element_index :
-			element_index + 1;
+		m_elements[element_index].next_element_index = (element_index + 1 == element_count)
+			? k_invalid_element_index
+			: element_index + 1;
 	}
 }
 

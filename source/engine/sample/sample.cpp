@@ -10,10 +10,10 @@
 
 #include <iostream>
 
-static const char *k_wavetable_cache_folder = "cache";
-static const char *k_wavetable_cache_extension = ".wtc";
-static const char k_wavetable_cache_identifier[] = { 'w', 't', 'c', 'h' };
-static const uint32 k_wavetable_cache_version = 0;
+static constexpr char k_wavetable_cache_folder[] = "cache";
+static constexpr char k_wavetable_cache_extension[] = ".wtc";
+static constexpr char k_wavetable_cache_identifier[] = { 'w', 't', 'c', 'h' };
+static constexpr uint32 k_wavetable_cache_version = 0;
 
 // Factor to upsample samples by generating a cubic fit for interpolation
 static constexpr uint32 k_interpolation_upsample_factor = 8;
@@ -30,7 +30,7 @@ static constexpr uint32 k_min_wavetable_sample_count = 16;
 class c_interpolation_coefficient_solver {
 public:
 	c_interpolation_coefficient_solver();
-	void solve(const real32 *samples, size_t stride, s_sample_interpolation_coefficients &out_coefficients);
+	void solve(const real32 *samples, size_t stride, s_sample_interpolation_coefficients &coefficients_out);
 
 private:
 	// Include an extra sample for the right endpoint
@@ -53,14 +53,14 @@ void solve_system_using_lu_decomposition(
 	c_wrapped_array<const real32> vector,
 	c_wrapped_array<real32> solution);
 
-// out_required_sample_count holds the number of samples required to support all frequencies
-// out_actual_sample_count may be more than this because we impose a minimum sample count for interpolation quality
+// required_sample_count_out holds the number of samples required to support all frequencies
+// actual_sample_count_out may be more than this because we impose a minimum sample count for interpolation quality
 static void calculate_wavetable_level_sample_count(
 	uint32 level,
 	uint32 previous_level_required_sample_count,
 	real32 harmonic_weight,
-	uint32 &out_required_sample_count,
-	uint32 &out_actual_sample_count);
+	uint32 &required_sample_count_out,
+	uint32 &actual_sample_count_out);
 
 static std::string hash_wavetable_parameters(c_wrapped_array<const real32> harmonic_weights, bool phase_shift_enabled);
 
@@ -78,14 +78,14 @@ bool c_sample::load_file(
 	const char *filename,
 	e_sample_loop_mode loop_mode,
 	bool phase_shift_enabled,
-	std::vector<c_sample *> &out_channel_samples) {
-	wl_assert(out_channel_samples.empty());
+	std::vector<c_sample *> &channel_samples_out) {
+	wl_assert(channel_samples_out.empty());
 	s_loaded_sample loaded_sample;
 	if (!load_sample(filename, loaded_sample)) {
 		return false;
 	}
 
-	out_channel_samples.reserve(loaded_sample.channel_count);
+	channel_samples_out.reserve(loaded_sample.channel_count);
 
 	// With regular looping, we sample up to the end of the loop, and then we duplicate some samples for padding. We do
 	// this because if we're sampling using a window size of N, then the first time we loop, we actually want our window
@@ -166,19 +166,19 @@ bool c_sample::load_file(
 
 		if (loop_mode == e_sample_loop_mode::k_none) {
 			// Simply copy the non-looping content - beginning and end don't need to be re-zeroed
-			memcpy(
+			copy_type(
 				&padded_samples[initial_padding],
 				channel_samples.get_pointer(),
-				loaded_sample.frame_count * sizeof(real32));
+				loaded_sample.frame_count);
 
 			sample->m_loop_start = 0;
 			sample->m_loop_end = content_samples;
 		} else {
 			// Copy content until the end of the loop
-			memcpy(
+			copy_type(
 				&padded_samples[initial_padding],
 				channel_samples.get_pointer(),
-				loaded_sample.loop_end_sample_index * sizeof(real32));
+				loaded_sample.loop_end_sample_index);
 
 			uint32 loop_samples = loaded_sample.loop_end_sample_index - loaded_sample.loop_start_sample_index;
 
@@ -239,7 +239,7 @@ bool c_sample::load_file(
 			sample->m_samples.size());
 
 
-		out_channel_samples.push_back(sample);
+		channel_samples_out.push_back(sample);
 	}
 
 	return true;
@@ -306,7 +306,7 @@ c_sample *c_sample::generate_wavetable(c_wrapped_array<const real32> harmonic_we
 
 	if (!loaded_from_cache) {
 		sine_buffer.allocate(sine_buffer_length);
-		real32x4 sine_index_multiplier(2.0f * static_cast<real32>(k_pi) / static_cast<real32>(sine_buffer_length));
+		real32x4 sine_index_multiplier(2.0f * k_pi<real32> / static_cast<real32>(sine_buffer_length));
 		real32x4 sine_index_offsets(0.0f, 1.0f, 2.0f, 3.0f);
 		for (uint32 sine_index = 0; sine_index < sine_buffer_length; sine_index += 4) {
 			real32x4 sine_indices = real32x4(static_cast<real32>(sine_index)) + sine_index_offsets;
@@ -365,10 +365,10 @@ c_sample *c_sample::generate_wavetable(c_wrapped_array<const real32> harmonic_we
 
 			if (phase_shift_enabled) {
 				// Copy the loop to support phase shifting
-				memcpy(
+				copy_type(
 					&sample->m_samples[next_entry_start_sample_index + actual_sample_count],
 					&sample->m_samples[next_entry_start_sample_index],
-					actual_sample_count * sizeof(real32));
+					actual_sample_count);
 			}
 		}
 
@@ -484,7 +484,7 @@ c_interpolation_coefficient_solver::c_interpolation_coefficient_solver() {
 void c_interpolation_coefficient_solver::solve(
 	const real32 *samples,
 	size_t stride,
-	s_sample_interpolation_coefficients &out_coefficients) {
+	s_sample_interpolation_coefficients &coefficients_out) {
 	// Remove constant coefficient
 	real32 sample_0 = *samples;
 	s_static_array<real32, k_sample_count - 1> offset_samples;
@@ -511,8 +511,8 @@ void c_interpolation_coefficient_solver::solve(
 		c_wrapped_array<const real32>(vector.get_elements(), vector.get_count()),
 		c_wrapped_array<real32>(solution.get_elements(), solution.get_count()));
 
-	out_coefficients.coefficients[0] = sample_0;
-	memcpy(&out_coefficients.coefficients[1], solution.get_elements(), 3 * sizeof(real32));
+	coefficients_out.coefficients[0] = sample_0;
+	copy_type(&coefficients_out.coefficients[1], solution.get_elements(), 3);
 }
 
 template<uint32 k_n>
@@ -523,7 +523,7 @@ void solve_system_using_lu_decomposition(c_wrapped_array<const real32> matrix, c
 	wl_assert(solution.get_count() == k_n);
 
 	s_static_array<real32, k_n * k_n> lu;
-	ZERO_STRUCT(&lu);
+	zero_type(&lu);
 	for (uint32 i = 0; i < k_n; i++) {
 		for (uint32 j = i; j < k_n; j++) {
 			real32 sum = 0.0f;
@@ -548,7 +548,7 @@ void solve_system_using_lu_decomposition(c_wrapped_array<const real32> matrix, c
 	// lu = L + U - I
 	// Find solution of Ly = b
 	s_static_array<real32, k_n> y;
-	ZERO_STRUCT(&y);
+	zero_type(&y);
 	for (uint32 i = 0; i < k_n; i++) {
 		real32 sum = 0.0f;
 		for (uint32 k = 0; k < i; k++) {
@@ -559,7 +559,7 @@ void solve_system_using_lu_decomposition(c_wrapped_array<const real32> matrix, c
 	}
 
 	// Find solution of Ux = y
-	memset(solution.get_pointer(), 0, k_n * sizeof(real32));
+	zero_type(solution.get_pointer(), k_n);
 	for (uint32 j = 0; j < k_n; j++) {
 		uint32 i = k_n - j - 1;
 		real32 sum = 0.0f;
@@ -576,18 +576,18 @@ static void calculate_wavetable_level_sample_count(
 	uint32 level,
 	uint32 previous_level_required_sample_count,
 	real32 harmonic_weight,
-	uint32 &out_required_sample_count,
-	uint32 &out_actual_sample_count) {
+	uint32 &required_sample_count_out,
+	uint32 &actual_sample_count_out) {
 	uint32 sample_count;
 	if (harmonic_weight == 0.0) {
 		if (previous_level_required_sample_count == 0) {
 			// This is the first level. There's no harmonic data here, but we need samples.
-			out_required_sample_count = 1;
-			out_actual_sample_count = k_min_wavetable_sample_count;
+			required_sample_count_out = 1;
+			actual_sample_count_out = k_min_wavetable_sample_count;
 		} else {
 			// No harmonic data was added, so we can reuse the previous level's sample data
-			out_required_sample_count = previous_level_required_sample_count;
-			out_actual_sample_count = 0;
+			required_sample_count_out = previous_level_required_sample_count;
+			actual_sample_count_out = 0;
 		}
 	} else {
 		// Since this level includes all previous levels, we need at least as many samples as the previous level
@@ -599,8 +599,8 @@ static void calculate_wavetable_level_sample_count(
 			sample_count *= 2;
 		}
 
-		out_required_sample_count = sample_count;
-		out_actual_sample_count = std::max(sample_count, k_min_wavetable_sample_count);
+		required_sample_count_out = sample_count;
+		actual_sample_count_out = std::max(sample_count, k_min_wavetable_sample_count);
 	}
 }
 
@@ -671,8 +671,8 @@ static bool read_wavetable_cache(
 			std::vector<real32> file_harmonic_weights(file_harmonic_weights_count);
 			size_t harmonic_weights_size = sizeof(file_harmonic_weights[0]) * file_harmonic_weights.size();
 			file.read(reinterpret_cast<char *>(&file_harmonic_weights.front()), harmonic_weights_size);
-			if (file.fail() ||
-				memcmp(&file_harmonic_weights.front(), harmonic_weights.get_pointer(), harmonic_weights_size) != 0) {
+			if (file.fail()
+				|| memcmp(&file_harmonic_weights.front(), harmonic_weights.get_pointer(), harmonic_weights_size) != 0) {
 				result = false;
 			}
 		}

@@ -74,7 +74,8 @@ public:
 
 	// Chooses the instrument variant which best matches the given requirements
 	e_instrument_variant_for_requirements_result get_instrument_variant_for_requirements(
-		const s_instrument_variant_requirements &requirements, uint32 &out_instrument_variant_index) const;
+		const s_instrument_variant_requirements &requirements,
+		uint32 &instrument_variant_index_out) const;
 
 private:
 	std::vector<c_instrument_variant *> m_instrument_variants;

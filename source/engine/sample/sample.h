@@ -40,7 +40,7 @@ public:
 		const char *filename,
 		e_sample_loop_mode loop_mode,
 		bool phase_shift_enabled,
-		std::vector<c_sample *> &out_channel_samples);
+		std::vector<c_sample *> &channel_samples_out);
 
 	static c_sample *generate_wavetable(
 		c_wrapped_array<const real32> harmonic_weights,

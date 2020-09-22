@@ -13,7 +13,7 @@ class c_execution_graph_builder {
 public:
 	static s_compiler_result build_execution_graphs(
 		const c_ast_node *ast,
-		c_instrument_variant *out_instrument_variant,
-		std::vector<s_compiler_result> &out_errors);
+		c_instrument_variant *instrument_variant_out,
+		std::vector<s_compiler_result> &errors_out);
 };
 

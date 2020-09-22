@@ -47,8 +47,8 @@ public:
 private:
 	friend class c_execution_graph;
 
-	static const uint32 k_invalid_node_index = static_cast<uint32>(-1);
-	static const uint32 k_invalid_salt = static_cast<uint32>(-1);
+	static constexpr uint32 k_invalid_node_index = static_cast<uint32>(-1);
+	static constexpr uint32 k_invalid_salt = static_cast<uint32>(-1);
 
 #if IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
 	c_node_reference(uint32 node_index, uint32 salt) {

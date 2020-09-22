@@ -55,7 +55,7 @@ static const char *k_lexer_token_table[] = {
 	"//"		// e_token_type::k_comment
 };
 
-static_assert(NUMBEROF(k_lexer_token_table) == enum_count<e_token_type>(), "Invalid lexer token table");
+static_assert(array_count(k_lexer_token_table) == enum_count<e_token_type>(), "Invalid lexer token table");
 
 const char *k_token_type_constant_bool_false_string = "false";
 const char *k_token_type_constant_bool_true_string = "true";
@@ -75,7 +75,7 @@ static bool process_source_file(
 	const s_compiler_source_file &source_file,
 	int32 source_file_index,
 	s_lexer_source_file_output &source_file_output,
-	std::vector<s_compiler_result> &out_errors);
+	std::vector<s_compiler_result> &errors_out);
 
 static s_token read_next_token(c_compiler_string str);
 
@@ -129,7 +129,7 @@ void c_lexer::shutdown_lexer() {
 s_compiler_result c_lexer::process(
 	const s_compiler_context &context,
 	s_lexer_output &output,
-	std::vector<s_compiler_result> &out_errors) {
+	std::vector<s_compiler_result> &errors_out) {
 	wl_assert(g_lexer_initialized);
 	s_compiler_result result;
 	result.clear();
@@ -141,11 +141,11 @@ s_compiler_result c_lexer::process(
 		const s_compiler_source_file &source_file = context.source_files[source_file_index];
 		output.source_file_output.push_back(s_lexer_source_file_output());
 		failed |= !process_source_file(
-			source_file, cast_integer_verify<int32>(source_file_index), output.source_file_output.back(), out_errors);
+			source_file, cast_integer_verify<int32>(source_file_index), output.source_file_output.back(), errors_out);
 	}
 
 	if (failed) {
-		// Don't associate the error with a particular file, those errors are collected through out_errors
+		// Don't associate the error with a particular file, those errors are collected through errors_out
 		result.result = e_compiler_result::k_lexer_error;
 		result.message = "Lexer encountered error(s)";
 	}
@@ -161,7 +161,7 @@ static bool process_source_file(
 	const s_compiler_source_file &source_file,
 	int32 source_file_index,
 	s_lexer_source_file_output &source_file_output,
-	std::vector<s_compiler_result> &out_errors) {
+	std::vector<s_compiler_result> &errors_out) {
 	// Initially assume success
 	bool result = true;
 
@@ -207,8 +207,8 @@ static bool process_source_file(
 
 					if (token.token_type == e_token_type::k_invalid) {
 						// Report the error using the string returned
-						out_errors.push_back(s_compiler_result());
-						s_compiler_result &error = out_errors.back();
+						errors_out.push_back(s_compiler_result());
+						s_compiler_result &error = errors_out.back();
 
 						error.clear();
 						error.result = e_compiler_result::k_invalid_token;
@@ -394,11 +394,10 @@ static s_token read_next_token(
 		for (operator_end_index = 0; operator_end_index < str.get_length(); operator_end_index++) {
 			char ch = str[operator_end_index];
 			// We consider valid characters which are not identifiers, numbers, or whitespace to be operators
-			bool is_operator =
-				compiler_utility::is_valid_source_character(ch) &&
-				!compiler_utility::is_whitespace(ch) &&
-				!compiler_utility::is_valid_identifier_character(ch) &&
-				!compiler_utility::is_number(ch);
+			bool is_operator = compiler_utility::is_valid_source_character(ch)
+				&& !compiler_utility::is_whitespace(ch)
+				&& !compiler_utility::is_valid_identifier_character(ch)
+				&& !compiler_utility::is_number(ch);
 
 			if (is_operator) {
 				// Exclude single character operators

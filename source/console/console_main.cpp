@@ -75,7 +75,7 @@ static bool process_next_command() {
 			return true;
 		}
 
-		if (!VALID_INDEX(color, enum_count<e_console_color>())) {
+		if (!valid_index(color, enum_count<e_console_color>())) {
 			return true;
 		}
 
@@ -152,8 +152,8 @@ static bool read_platform(uint32 bytes_to_read, void *buffer) {
 	wl_assert(g_pipe);
 
 	DWORD bytes_read;
-	if (!ReadFile(g_pipe, buffer, bytes_to_read, &bytes_read, nullptr) ||
-		bytes_read != bytes_to_read) {
+	if (!ReadFile(g_pipe, buffer, bytes_to_read, &bytes_read, nullptr)
+		|| bytes_read != bytes_to_read) {
 		return false;
 	}
 
@@ -184,7 +184,7 @@ static void clear_platform() {
 		return;
 	}
 
-	static const COORD k_coords = { 0, 0 };
+	static constexpr COORD k_coords = { 0, 0 };
 	DWORD length = console_info.dwSize.X * console_info.dwSize.Y;
 
 	DWORD chars_written;

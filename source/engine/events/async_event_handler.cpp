@@ -5,7 +5,7 @@
 #include <algorithm>
 
 // Flush if we wake up and we're within this window of time until the next flush
-static const int64 k_flush_time_padding_ms = 50;
+static constexpr int64 k_flush_time_padding_ms = 50;
 
 struct s_read_write_position {
 	union {
@@ -59,7 +59,7 @@ void c_async_event_handler::initialize(const s_async_event_handler_settings &set
 	size_t total_buffer_size = m_settings.buffer_size + m_settings.max_event_size;
 	m_buffer.allocate(total_buffer_size);
 	// Zero out the buffer
-	memset(m_buffer.get_array().get_pointer(), 0, m_buffer.get_array().get_count());
+	zero_type(m_buffer.get_array().get_pointer(), m_buffer.get_array().get_count());
 
 	m_initialized = true;
 }
@@ -85,7 +85,7 @@ void c_async_event_handler::begin_event_handling() {
 	thread_definition.thread_priority = e_thread_priority::k_normal;
 	thread_definition.processor = -1;
 	thread_definition.thread_entry_point = event_handling_thread_function_entry_point;
-	ZERO_STRUCT(&thread_definition.parameter_block);
+	zero_type(&thread_definition.parameter_block);
 	// Set a single parameter to point to 'this'
 	*thread_definition.parameter_block.get_memory_typed<c_async_event_handler *>() = this;
 	m_event_handling_thread.start(thread_definition);
@@ -233,7 +233,7 @@ void c_async_event_handler::flush() {
 			uint32 read_advance = static_cast<uint32>(align_size(sizeof(uint32) + event_size, k_buffer_alignment));
 
 			// Clear the buffer we just read from to 0 so we don't accidentally read it again
-			memset(buffer.get_pointer() + current_position.read, 0, read_advance);
+			zero_type(buffer.get_pointer() + current_position.read, read_advance);
 
 			// Make sure the memset is published before updating the read pointer (though this should be unnecessary,
 			// since the read pointer update is atomic)

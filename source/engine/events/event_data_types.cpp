@@ -8,7 +8,7 @@ bool s_event_data_type_definition<bool>::build_event(c_event_data_stack &event_d
 
 size_t s_event_data_type_definition<bool>::build_event_string(c_event_string &event_string, const void *data_pointer) {
 	char buffer[16];
-	snprintf(buffer, NUMBEROF(buffer), "%d", *static_cast<const bool *>(data_pointer));
+	snprintf(buffer, array_count(buffer), "%d", *static_cast<const bool *>(data_pointer));
 	event_string.append_truncate(buffer);
 	return sizeof(bool);
 }
@@ -21,7 +21,7 @@ bool s_event_data_type_definition<int8>::build_event(c_event_data_stack &event_d
 
 size_t s_event_data_type_definition<int8>::build_event_string(c_event_string &event_string, const void *data_pointer) {
 	char buffer[16];
-	snprintf(buffer, NUMBEROF(buffer), "%d", *static_cast<const int8 *>(data_pointer));
+	snprintf(buffer, array_count(buffer), "%d", *static_cast<const int8 *>(data_pointer));
 	event_string.append_truncate(buffer);
 	return sizeof(int8);
 }
@@ -34,7 +34,7 @@ bool s_event_data_type_definition<uint8>::build_event(c_event_data_stack &event_
 
 size_t s_event_data_type_definition<uint8>::build_event_string(c_event_string &event_string, const void *data_pointer) {
 	char buffer[16];
-	snprintf(buffer, NUMBEROF(buffer), "%u", *static_cast<const uint8 *>(data_pointer));
+	snprintf(buffer, array_count(buffer), "%u", *static_cast<const uint8 *>(data_pointer));
 	event_string.append_truncate(buffer);
 	return sizeof(uint8);
 }
@@ -47,7 +47,7 @@ bool s_event_data_type_definition<int16>::build_event(c_event_data_stack &event_
 
 size_t s_event_data_type_definition<int16>::build_event_string(c_event_string &event_string, const void *data_pointer) {
 	char buffer[16];
-	snprintf(buffer, NUMBEROF(buffer), "%d", *static_cast<const int16 *>(data_pointer));
+	snprintf(buffer, array_count(buffer), "%d", *static_cast<const int16 *>(data_pointer));
 	event_string.append_truncate(buffer);
 	return sizeof(int16);
 }
@@ -61,7 +61,7 @@ bool s_event_data_type_definition<uint16>::build_event(c_event_data_stack &event
 size_t s_event_data_type_definition<uint16>::build_event_string(
 	c_event_string &event_string, const void *data_pointer) {
 	char buffer[16];
-	snprintf(buffer, NUMBEROF(buffer), "%u", *static_cast<const uint16 *>(data_pointer));
+	snprintf(buffer, array_count(buffer), "%u", *static_cast<const uint16 *>(data_pointer));
 	event_string.append_truncate(buffer);
 	return sizeof(uint16);
 }
@@ -74,7 +74,7 @@ bool s_event_data_type_definition<int32>::build_event(c_event_data_stack &event_
 
 size_t s_event_data_type_definition<int32>::build_event_string(c_event_string &event_string, const void *data_pointer) {
 	char buffer[16];
-	snprintf(buffer, NUMBEROF(buffer), "%d", *static_cast<const int32 *>(data_pointer));
+	snprintf(buffer, array_count(buffer), "%d", *static_cast<const int32 *>(data_pointer));
 	event_string.append_truncate(buffer);
 	return sizeof(int32);
 }
@@ -88,7 +88,7 @@ bool s_event_data_type_definition<uint32>::build_event(c_event_data_stack &event
 size_t s_event_data_type_definition<uint32>::build_event_string(
 	c_event_string &event_string, const void *data_pointer) {
 	char buffer[16];
-	snprintf(buffer, NUMBEROF(buffer), "%u", *static_cast<const uint32 *>(data_pointer));
+	snprintf(buffer, array_count(buffer), "%u", *static_cast<const uint32 *>(data_pointer));
 	event_string.append_truncate(buffer);
 	return sizeof(uint32);
 }
@@ -101,7 +101,7 @@ bool s_event_data_type_definition<int64>::build_event(c_event_data_stack &event_
 
 size_t s_event_data_type_definition<int64>::build_event_string(c_event_string &event_string, const void *data_pointer) {
 	char buffer[16];
-	snprintf(buffer, NUMBEROF(buffer), "%" PRId64, *static_cast<const int64 *>(data_pointer));
+	snprintf(buffer, array_count(buffer), "%" PRId64, *static_cast<const int64 *>(data_pointer));
 	event_string.append_truncate(buffer);
 	return sizeof(int64);
 }
@@ -115,7 +115,7 @@ bool s_event_data_type_definition<uint64>::build_event(c_event_data_stack &event
 size_t s_event_data_type_definition<uint64>::build_event_string(
 	c_event_string &event_string, const void *data_pointer) {
 	char buffer[16];
-	snprintf(buffer, NUMBEROF(buffer), "%" PRIu64, *static_cast<const uint64 *>(data_pointer));
+	snprintf(buffer, array_count(buffer), "%" PRIu64, *static_cast<const uint64 *>(data_pointer));
 	event_string.append_truncate(buffer);
 	return sizeof(uint64);
 }
@@ -129,7 +129,7 @@ bool s_event_data_type_definition<real32>::build_event(c_event_data_stack &event
 size_t s_event_data_type_definition<real32>::build_event_string(
 	c_event_string &event_string, const void *data_pointer) {
 	char buffer[16];
-	snprintf(buffer, NUMBEROF(buffer), "%f", *static_cast<const real32 *>(data_pointer));
+	snprintf(buffer, array_count(buffer), "%f", *static_cast<const real32 *>(data_pointer));
 	event_string.append_truncate(buffer);
 	return sizeof(real32);
 }
@@ -143,7 +143,7 @@ bool s_event_data_type_definition<real64>::build_event(c_event_data_stack &event
 size_t s_event_data_type_definition<real64>::build_event_string(
 	c_event_string &event_string, const void *data_pointer) {
 	char buffer[16];
-	snprintf(buffer, NUMBEROF(buffer), "%f", *static_cast<const real64 *>(data_pointer));
+	snprintf(buffer, array_count(buffer), "%f", *static_cast<const real64 *>(data_pointer));
 	event_string.append_truncate(buffer);
 	return sizeof(real64);
 }

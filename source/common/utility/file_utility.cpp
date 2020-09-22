@@ -28,16 +28,15 @@ bool are_file_paths_equivalent(const char *path_a, const char *path_b) {
 				NULL);
 		}
 
-		if (file_handles[0] != INVALID_HANDLE_VALUE &&
-			file_handles[1] != INVALID_HANDLE_VALUE) {
+		if (file_handles[0] != INVALID_HANDLE_VALUE
+			&& file_handles[1] != INVALID_HANDLE_VALUE) {
 			BY_HANDLE_FILE_INFORMATION file_a_info;
 			BY_HANDLE_FILE_INFORMATION file_b_info;
-			if (GetFileInformationByHandle(file_handles[0], &file_a_info) &&
-				GetFileInformationByHandle(file_handles[1], &file_b_info)) {
-				result =
-					(file_a_info.dwVolumeSerialNumber == file_b_info.dwVolumeSerialNumber) &&
-					(file_a_info.nFileIndexHigh == file_b_info.nFileIndexHigh) &&
-					(file_a_info.nFileIndexLow == file_b_info.nFileIndexLow);
+			if (GetFileInformationByHandle(file_handles[0], &file_a_info)
+				&& GetFileInformationByHandle(file_handles[1], &file_b_info)) {
+				result = (file_a_info.dwVolumeSerialNumber == file_b_info.dwVolumeSerialNumber)
+					&& (file_a_info.nFileIndexHigh == file_b_info.nFileIndexHigh)
+					&& (file_a_info.nFileIndexLow == file_b_info.nFileIndexLow);
 			}
 		}
 
@@ -75,7 +74,7 @@ bool is_path_relative(const char *path) {
 #endif // IS_TRUE(PLATFORM_WINDOWS)
 }
 
-bool get_file_last_modified_timestamp(const char *path, uint64 &out_timestamp) {
+bool get_file_last_modified_timestamp(const char *path, uint64 &timestamp_out) {
 	bool result = false;
 
 #if IS_TRUE(PLATFORM_WINDOWS)
@@ -96,7 +95,7 @@ bool get_file_last_modified_timestamp(const char *path, uint64 &out_timestamp) {
 			conv.HighPart = last_write_time.dwHighDateTime;
 			// FILETIME is the number of 100-nanosecond intervals from Jan. 1 1601 UTC
 			// Our timestamp uses the number of seconds since Jan. 1 1970 UTC
-			out_timestamp = (conv.QuadPart / 1000000000ull) - 11644473600ull;
+			timestamp_out = (conv.QuadPart / 1000000000ull) - 11644473600ull;
 			result = true;
 		}
 	}
@@ -107,7 +106,7 @@ bool get_file_last_modified_timestamp(const char *path, uint64 &out_timestamp) {
 #else // IS_TRUE(PLATFORM_WINDOWS)
 	struct stat stat_buffer;
 	if (stat(path, &stat_buffer) == 0) {
-		out_timestamp = stat_buffer.st_mtime;
+		timestamp_out = stat_buffer.st_mtime;
 		result = true;
 	}
 #endif // IS_TRUE(PLATFORM_WINDOWS)

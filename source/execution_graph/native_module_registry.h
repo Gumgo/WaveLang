@@ -4,7 +4,7 @@
 
 #include "execution_graph/native_module.h"
 
-static const uint32 k_invalid_native_module_index = static_cast<uint32>(-1);
+static constexpr uint32 k_invalid_native_module_index = static_cast<uint32>(-1);
 
 // The registry of all native modules, which are the built-in modules of the language
 class c_native_module_registry {

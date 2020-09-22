@@ -17,4 +17,4 @@ struct s_loaded_sample {
 	std::vector<real32> samples;
 };
 
-bool load_sample(const char *filename, s_loaded_sample &out_loaded_sample);
+bool load_sample(const char *filename, s_loaded_sample &loaded_sample_out);

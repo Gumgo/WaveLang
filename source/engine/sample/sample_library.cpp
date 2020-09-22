@@ -44,7 +44,7 @@ h_sample c_sample_library::request_sample(const s_file_sample_parameters &parame
 		s_wavetable_sample_parameters wavetable_parameters;
 		std::vector<real32> harmonic_weights(1024, 0.0f);
 		for (size_t index = 0; index < harmonic_weights.size(); index++) {
-			harmonic_weights[index] = static_cast<real32>(-2.0 / (k_pi * static_cast<real64>(index + 1)));
+			harmonic_weights[index] = static_cast<real32>(-2.0 / (k_pi<real64> * static_cast<real64>(index + 1)));
 		}
 		wavetable_parameters.harmonic_weights =
 			c_wrapped_array<const real32>(&harmonic_weights.front(), harmonic_weights.size());
@@ -56,7 +56,7 @@ h_sample c_sample_library::request_sample(const s_file_sample_parameters &parame
 		for (size_t index = 0; index < harmonic_weights.size(); index++) {
 			if ((index + 1) % 2 != 0) {
 				real64 s = (index / 2) % 2 == 0 ? 1.0 : -1.0;
-				real64 sqrt_denom = k_pi * static_cast<real64>(index + 1);
+				real64 sqrt_denom = k_pi<real64> * static_cast<real64>(index + 1);
 				harmonic_weights[index] = static_cast<real32>(s * 8.0 / (sqrt_denom * sqrt_denom));
 			}
 		}
@@ -147,7 +147,7 @@ void c_sample_library::update_loaded_samples() {
 const c_sample *c_sample_library::get_sample(h_sample handle, uint32 channel_index) const {
 	if (handle.is_valid()) {
 		const s_requested_sample &requested_sample = m_requested_samples[handle.get_data()];
-		if (VALID_INDEX(channel_index, requested_sample.channel_samples.size())) {
+		if (valid_index(channel_index, requested_sample.channel_samples.size())) {
 			return requested_sample.channel_samples[channel_index];
 		}
 	}

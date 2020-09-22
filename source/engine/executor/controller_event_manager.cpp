@@ -35,8 +35,8 @@ void c_controller_event_manager::process_controller_events(size_t controller_eve
 			uint64 sort_key_a = 0;
 			uint64 sort_key_b = 0;
 
-			if (event_a.controller_event.event_type == e_controller_event_type::k_note_on ||
-				event_a.controller_event.event_type == e_controller_event_type::k_note_off) {
+			if (event_a.controller_event.event_type == e_controller_event_type::k_note_on
+				|| event_a.controller_event.event_type == e_controller_event_type::k_note_off) {
 				sort_key_a = 0;
 			} else {
 				wl_assert(event_a.controller_event.event_type == e_controller_event_type::k_parameter_change);
@@ -46,8 +46,8 @@ void c_controller_event_manager::process_controller_events(size_t controller_eve
 				sort_key_a++; // Offset by 1 to avoid colliding with the note sort key
 			}
 
-			if (event_b.controller_event.event_type == e_controller_event_type::k_note_on ||
-				event_b.controller_event.event_type == e_controller_event_type::k_note_off) {
+			if (event_b.controller_event.event_type == e_controller_event_type::k_note_on
+				|| event_b.controller_event.event_type == e_controller_event_type::k_note_off) {
 				sort_key_b = 0;
 			} else {
 				wl_assert(event_b.controller_event.event_type == e_controller_event_type::k_parameter_change);
@@ -57,9 +57,9 @@ void c_controller_event_manager::process_controller_events(size_t controller_eve
 				sort_key_b++; // Offset by 1 to avoid colliding with the note sort key
 			}
 
-			return (sort_key_a == sort_key_b) ?
-				event_a.timestamp_sec < event_b.timestamp_sec :
-				sort_key_a < sort_key_b;
+			return (sort_key_a == sort_key_b)
+				? event_a.timestamp_sec < event_b.timestamp_sec
+				: sort_key_a < sort_key_b;
 		}
 	};
 
@@ -79,8 +79,8 @@ void c_controller_event_manager::process_controller_events(size_t controller_eve
 	for (size_t index = 0; index < controller_event_count; index++) {
 		const s_timestamped_controller_event &controller_event = m_controller_events[index];
 
-		if (controller_event.controller_event.event_type == e_controller_event_type::k_note_on ||
-			controller_event.controller_event.event_type == e_controller_event_type::k_note_off) {
+		if (controller_event.controller_event.event_type == e_controller_event_type::k_note_on
+			|| controller_event.controller_event.event_type == e_controller_event_type::k_note_off) {
 			m_note_events = c_wrapped_array<const s_timestamped_controller_event>(
 				&m_controller_events.front(), m_note_events.get_count() + 1);
 		} else {
@@ -90,13 +90,15 @@ void c_controller_event_manager::process_controller_events(size_t controller_eve
 			const s_controller_event_data_parameter_change *parameter_change_event_data =
 				controller_event.controller_event.get_data<s_controller_event_data_parameter_change>();
 
-			if (previous_event_type != e_controller_event_type::k_parameter_change ||
-				previous_parameter_change_id != parameter_change_event_data->parameter_id) {
+			if (previous_event_type != e_controller_event_type::k_parameter_change
+				|| previous_parameter_change_id != parameter_change_event_data->parameter_id) {
 				// This is the first parameter change event we've seen for this ID
 				if (parameter_change_count > 0) {
 					// Store the previous parameter event list
 					update_parameter_state(
-						previous_parameter_change_id, parameter_change_start_index, parameter_change_count);
+						previous_parameter_change_id,
+						parameter_change_start_index,
+						parameter_change_count);
 				}
 
 				parameter_change_start_index = index;
@@ -121,16 +123,17 @@ c_wrapped_array<const s_timestamped_controller_event> c_controller_event_manager
 }
 
 c_wrapped_array<const s_timestamped_controller_event> c_controller_event_manager::get_parameter_change_events(
-	uint32 parameter_id, real32 &out_previous_value) const {
+	uint32 parameter_id,
+	real32 &previous_value_out) const {
 	c_wrapped_array<const s_timestamped_controller_event> result;
 
 	const s_parameter_state *parameter_state = m_parameter_state_table.find(parameter_id);
 	if (!parameter_state) {
 		// This parameter hasn't been used yet
-		out_previous_value = 0.0f;
+		previous_value_out = 0.0f;
 	} else if (parameter_state->last_buffer_active == m_buffer) {
 		// There are new events for this buffer
-		out_previous_value = parameter_state->previous_value;
+		previous_value_out = parameter_state->previous_value;
 		result = parameter_state->current_events;
 	} else {
 		wl_assert(parameter_state->last_buffer_active < m_buffer);
@@ -138,14 +141,16 @@ c_wrapped_array<const s_timestamped_controller_event> c_controller_event_manager
 		// This parameter wasn't updated for this buffer. We want our previous value to be the value after the last
 		// update, so we actually return next_previous_value, since previous_value refers to the value before the last
 		// update. There are no events for this buffer.
-		out_previous_value = parameter_state->next_previous_value;
+		previous_value_out = parameter_state->next_previous_value;
 	}
 
 	return result;
 }
 
 void c_controller_event_manager::update_parameter_state(
-	uint32 parameter_id, size_t event_start_index, size_t event_count) {
+	uint32 parameter_id,
+	size_t event_start_index,
+	size_t event_count) {
 	wl_assert(event_count > 0);
 
 #if IS_TRUE(ASSERTS_ENABLED)

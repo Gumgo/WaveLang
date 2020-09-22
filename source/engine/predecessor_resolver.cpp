@@ -31,7 +31,7 @@ void c_predecessor_resolver::resolve() {
 		done = true;
 
 		// Initialize the next update set
-		memset(&next_columns_to_update.front(), 0, m_row_size * sizeof(uint32));
+		zero_type(&next_columns_to_update.front(), m_row_size);
 
 		// Loop over each possible successor
 		for (uint32 b = 0; b < m_node_count; b++) {

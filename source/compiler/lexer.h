@@ -116,7 +116,7 @@ public:
 	static s_compiler_result process(
 		const s_compiler_context &context,
 		s_lexer_output &output,
-		std::vector<s_compiler_result> &out_errors);
+		std::vector<s_compiler_result> &errors_out);
 
 	// Token parsing is used in the preprocessor as well
 	static s_token read_next_token(c_compiler_string str);

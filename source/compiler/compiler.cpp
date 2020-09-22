@@ -25,16 +25,16 @@ static s_compiler_result read_and_preprocess_source_file(
 	s_compiler_context &context,
 	size_t source_file_index);
 
-static void fixup_source(std::vector<char> &inout_source);
+static void fixup_source(std::vector<char> &source_inout);
 
 s_compiler_result c_compiler::compile(
 	const char *root_path,
 	const char *source_filename,
-	c_instrument *out_instrument) {
+	c_instrument *instrument_out) {
 	wl_assert(root_path);
 	wl_assert(source_filename);
-	wl_assert(out_instrument);
-	wl_assert(out_instrument->get_instrument_variant_count() == 0);
+	wl_assert(instrument_out);
+	wl_assert(instrument_out->get_instrument_variant_count() == 0);
 
 	s_compiler_result result;
 	result.clear();
@@ -43,9 +43,9 @@ s_compiler_result c_compiler::compile(
 	// Fix up the root path by adding a backslash if necessary
 	context.root_path = root_path;
 
-	if (!context.root_path.empty() &&
-		context.root_path.back() != '/' &&
-		context.root_path.back() != '\\') {
+	if (!context.root_path.empty()
+		&& context.root_path.back() != '/'
+		&& context.root_path.back() != '\\') {
 		context.root_path.push_back('/');
 	}
 
@@ -155,7 +155,7 @@ s_compiler_result c_compiler::compile(
 			c_instrument_variant *instrument_variant = new c_instrument_variant();
 
 			// Add to the instrument immediately to prevent memory leaks
-			out_instrument->add_instrument_variant(instrument_variant);
+			instrument_out->add_instrument_variant(instrument_variant);
 
 			// Store the globals in the instrument variant so they are accessible in future compilation phases
 			instrument_variant->set_instrument_globals(instrument_globals_set[index]);
@@ -213,7 +213,7 @@ s_compiler_result c_compiler::compile(
 		}
 	}
 
-	wl_assert(out_instrument->validate());
+	wl_assert(instrument_out->validate());
 
 	return result;
 }
@@ -361,18 +361,18 @@ static s_compiler_result read_and_preprocess_source_file(
 	return result;
 }
 
-static void fixup_source(std::vector<char> &inout_source) {
+static void fixup_source(std::vector<char> &source_inout) {
 	// Fixup the file. For simplicity, just remove all \r symbols
 	size_t read_index = 0;
 	size_t write_index = 0;
-	while (read_index < inout_source.size()) {
-		if (inout_source[read_index] != '\r') {
-			inout_source[write_index] = inout_source[read_index];
+	while (read_index < source_inout.size()) {
+		if (source_inout[read_index] != '\r') {
+			source_inout[write_index] = source_inout[read_index];
 			write_index++;
 		}
 
 		read_index++;
 	}
 
-	inout_source.resize(write_index);
+	source_inout.resize(write_index);
 }

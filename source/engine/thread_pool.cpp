@@ -41,7 +41,7 @@ void c_thread_pool::start(const s_thread_pool_settings &settings) {
 		thread_definition.processor = -1;
 		thread_definition.thread_entry_point = worker_thread_entry_point;
 		
-		ZERO_STRUCT(&thread_definition.parameter_block);
+		zero_type(&thread_definition.parameter_block);
 		s_worker_thread_context *params = thread_definition.parameter_block.get_memory_typed<s_worker_thread_context>();
 		params->this_ptr = this;
 		params->worker_thread_index = cast_integer_verify<uint32>(thread);
@@ -60,7 +60,7 @@ uint32 c_thread_pool::stop() {
 	// Push a "terminate" task for each thread - a task with no function pointer.
 	// Note: when a thread encounters this, it will terminate immediately! There could still be pending tasks left.
 	s_task terminate_task;
-	ZERO_STRUCT(&terminate_task);
+	zero_type(&terminate_task);
 	for (size_t thread = 0; thread < m_threads.size(); thread++) {
 		IF_ASSERTS_ENABLED(bool push_result = ) m_pending_tasks.push(terminate_task);
 		wl_assert(push_result);
@@ -134,7 +134,7 @@ bool c_thread_pool::add_task(const s_thread_pool_task &task) {
 
 	s_task pending_task;
 	pending_task.task_function = task.task_entry_point;
-	memcpy(&pending_task.params, &task.parameter_block, sizeof(pending_task.params));
+	copy_type(&pending_task.params, &task.parameter_block);
 
 	return m_pending_tasks.push(pending_task);
 }

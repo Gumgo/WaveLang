@@ -20,7 +20,7 @@ enum class e_event_level {
 
 class c_event_data_stack {
 public:
-	static const size_t k_event_data_stack_size = 256;
+	static constexpr size_t k_event_data_stack_size = 256;
 
 	c_event_data_stack() {
 		m_event_size = 0;
@@ -118,7 +118,9 @@ public:
 
 	// Constructs an event string from event data
 	static e_event_level build_event_string(
-		size_t event_size, const void *event_data, c_event_string &out_event_string);
+		size_t event_size,
+		const void *event_data,
+		c_event_string &event_string_out);
 
 private:
 	c_async_event_handler *m_event_handler;

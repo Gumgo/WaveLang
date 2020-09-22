@@ -11,11 +11,11 @@
 
 class c_diagnostic;
 
-static const size_t k_max_native_module_library_name_length = 64;
-static const size_t k_max_native_module_name_length = 64;
-static const size_t k_max_native_module_arguments = 10;
-static const size_t k_max_native_module_argument_name_length = 20;
-static const size_t k_invalid_argument_index = static_cast<size_t>(-1);
+static constexpr size_t k_max_native_module_library_name_length = 64;
+static constexpr size_t k_max_native_module_name_length = 64;
+static constexpr size_t k_max_native_module_arguments = 10;
+static constexpr size_t k_max_native_module_argument_name_length = 20;
+static constexpr size_t k_invalid_argument_index = static_cast<size_t>(-1);
 
 struct s_native_module_library {
 	uint32 id;
@@ -333,10 +333,10 @@ enum class e_native_module_optimization_symbol_type {
 	k_count
 };
 
-static const size_t k_max_native_module_optimization_pattern_length = 16;
+static constexpr size_t k_max_native_module_optimization_pattern_length = 16;
 
 struct s_native_module_optimization_symbol {
-	static const uint32 k_max_matched_symbols = 4;
+	static constexpr uint32 k_max_matched_symbols = 4;
 
 	e_native_module_optimization_symbol_type type;
 	union {
@@ -349,7 +349,7 @@ struct s_native_module_optimization_symbol {
 
 	static s_native_module_optimization_symbol invalid() {
 		s_native_module_optimization_symbol result;
-		ZERO_STRUCT(&result);
+		zero_type(&result);
 		return result;
 	}
 
@@ -359,7 +359,7 @@ struct s_native_module_optimization_symbol {
 
 	static s_native_module_optimization_symbol build_native_module(s_native_module_uid native_module_uid) {
 		s_native_module_optimization_symbol result;
-		ZERO_STRUCT(&result);
+		zero_type(&result);
 		result.type = e_native_module_optimization_symbol_type::k_native_module;
 		result.data.native_module_uid = native_module_uid;
 		return result;
@@ -367,31 +367,31 @@ struct s_native_module_optimization_symbol {
 
 	static s_native_module_optimization_symbol build_array_dereference() {
 		s_native_module_optimization_symbol result;
-		ZERO_STRUCT(&result);
+		zero_type(&result);
 		result.type = e_native_module_optimization_symbol_type::k_array_dereference;
 		return result;
 	}
 
 	static s_native_module_optimization_symbol build_native_module_end() {
 		s_native_module_optimization_symbol result;
-		ZERO_STRUCT(&result);
+		zero_type(&result);
 		result.type = e_native_module_optimization_symbol_type::k_native_module_end;
 		return result;
 	}
 
 	static s_native_module_optimization_symbol build_variable(uint32 index) {
-		wl_assert(VALID_INDEX(index, k_max_matched_symbols));
+		wl_assert(valid_index(index, k_max_matched_symbols));
 		s_native_module_optimization_symbol result;
-		ZERO_STRUCT(&result);
+		zero_type(&result);
 		result.type = e_native_module_optimization_symbol_type::k_variable;
 		result.data.index = index;
 		return result;
 	}
 
 	static s_native_module_optimization_symbol build_constant(uint32 index) {
-		wl_assert(VALID_INDEX(index, k_max_matched_symbols));
+		wl_assert(valid_index(index, k_max_matched_symbols));
 		s_native_module_optimization_symbol result;
-		ZERO_STRUCT(&result);
+		zero_type(&result);
 		result.type = e_native_module_optimization_symbol_type::k_constant;
 		result.data.index = index;
 		return result;
@@ -399,7 +399,7 @@ struct s_native_module_optimization_symbol {
 
 	static s_native_module_optimization_symbol build_real_value(real32 real_value) {
 		s_native_module_optimization_symbol result;
-		ZERO_STRUCT(&result);
+		zero_type(&result);
 		result.type = e_native_module_optimization_symbol_type::k_real_value;
 		result.data.real_value = real_value;
 		return result;
@@ -407,7 +407,7 @@ struct s_native_module_optimization_symbol {
 
 	static s_native_module_optimization_symbol build_bool_value(bool bool_value) {
 		s_native_module_optimization_symbol result;
-		ZERO_STRUCT(&result);
+		zero_type(&result);
 		result.type = e_native_module_optimization_symbol_type::k_bool_value;
 		result.data.bool_value = bool_value;
 		return result;

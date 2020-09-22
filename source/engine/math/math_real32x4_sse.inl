@@ -126,7 +126,7 @@ inline int32x4 operator<=(const real32x4 &lhs, const real32x4 &rhs) {
 
 inline real32x4 abs(const real32x4 &v) {
 	// Mask off the sign bit for fast abs
-	static const t_simd_real32 k_sign_mask = _mm_set1_ps(-0.0f);
+	const t_simd_real32 k_sign_mask = _mm_set1_ps(-0.0f);
 	return _mm_andnot_ps(k_sign_mask, v);
 }
 
@@ -177,87 +177,10 @@ inline real32x4 cos(const real32x4 &v) {
 	return cos_ps(v);
 }
 
-inline void sincos(const real32x4 &v, real32x4 &out_sin, real32x4 &out_cos) {
-	sincos_ps(v, reinterpret_cast<t_simd_real32 *>(&out_sin), reinterpret_cast<t_simd_real32 *>(&out_cos));
+inline void sincos(const real32x4 &v, real32x4 &sin_out, real32x4 &cos_out) {
+	sincos_ps(v, reinterpret_cast<t_simd_real32 *>(&sin_out), reinterpret_cast<t_simd_real32 *>(&cos_out));
 }
 
 template<> inline int32x4 reinterpret_bits(const real32x4 &v) {
 	return _mm_castps_si128(v);
-}
-
-inline real32x4 single_element(const real32x4 &v, int32 pos) {
-	wl_assert(VALID_INDEX(pos, 4));
-	switch (pos) {
-	case 0:
-		return reinterpret_bits<real32x4>(
-			int32x4(_mm_shuffle_epi32(reinterpret_bits<int32x4>(v), 0)));
-
-	case 1:
-		return reinterpret_bits<real32x4>(
-			int32x4(_mm_shuffle_epi32(reinterpret_bits<int32x4>(v), (1 | (1 << 2) | (1 << 4) | (1 << 6)))));
-
-	case 2:
-		return reinterpret_bits<real32x4>(
-			int32x4(_mm_shuffle_epi32(reinterpret_bits<int32x4>(v), (2 | (2 << 2) | (2 << 4) | (2 << 6)))));
-
-	case 3:
-		return reinterpret_bits<real32x4>(
-			int32x4(_mm_shuffle_epi32(reinterpret_bits<int32x4>(v), (3 | (3 << 2) | (3 << 4) | (3 << 6)))));
-
-	default:
-		wl_unreachable();
-		return real32x4(0.0f);
-	}
-}
-
-template<int32 k_pos_0, int32 k_pos_1, int32 k_pos_2, int32 k_pos_3>
-real32x4 shuffle(const real32x4 &v) {
-	static_assert(VALID_INDEX(k_pos_0, k_simd_block_elements), "Must be in range [0,3]");
-	static_assert(VALID_INDEX(k_pos_1, k_simd_block_elements), "Must be in range [0,3]");
-	static_assert(VALID_INDEX(k_pos_2, k_simd_block_elements), "Must be in range [0,3]");
-	static_assert(VALID_INDEX(k_pos_3, k_simd_block_elements), "Must be in range [0,3]");
-	static const int32 k_shuffle_pos = k_pos_0 | (k_pos_1 << 2) | (k_pos_2 << 4) | (k_pos_3 << 6);
-	return reinterpret_bits<real32x4>(int32x4(_mm_shuffle_epi32(reinterpret_bits<int32x4>(v), k_shuffle_pos)));
-}
-
-template<int32 k_pos_0, int32 k_pos_1, int32 k_pos_2, int32 k_pos_3>
-real32x4 shuffle(const real32x4 &a, const real32x4 &b) {
-	static_assert(VALID_INDEX(k_pos_0, k_simd_block_elements), "Must be in range [0,3]");
-	static_assert(VALID_INDEX(k_pos_1, k_simd_block_elements), "Must be in range [0,3]");
-	static_assert(VALID_INDEX(k_pos_2, k_simd_block_elements), "Must be in range [0,3]");
-	static_assert(VALID_INDEX(k_pos_3, k_simd_block_elements), "Must be in range [0,3]");
-	static const int32 k_shuffle_pos = k_pos_0 | (k_pos_1 << 2) | (k_pos_2 << 4) | (k_pos_3 << 6);
-	return _mm_shuffle_ps(a, b, k_shuffle_pos);
-}
-
-template<>
-inline real32x4 extract<0>(const real32x4 &a, const real32x4 &b) {
-	return a;
-}
-
-template<>
-inline real32x4 extract<1>(const real32x4 &a, const real32x4 &b) {
-	// [.xyz][w...] => [z.w.]
-	// [.xyz][z.w.] => [xyzw]
-	real32x4 c = shuffle<3, 0, 0, 0>(a, b);
-	return shuffle<1, 2, 0, 2>(a, c);
-}
-
-template<>
-inline real32x4 extract<2>(const real32x4 &a, const real32x4 &b) {
-	// [..xy][zw..] => [xyzw]
-	return shuffle<2, 3, 0, 1>(a, b);
-}
-
-template<>
-inline real32x4 extract<3>(const real32x4 &a, const real32x4 &b) {
-	// [...x][yzw.] => [x.y.]
-	// [x.y.][yzw.] => [xyzw]
-	real32x4 c = shuffle<3, 0, 0, 0>(a, b);
-	return shuffle<0, 2, 1, 2>(c, b);
-}
-
-template<>
-inline real32x4 extract<4>(const real32x4 &a, const real32x4 &b) {
-	return b;
 }

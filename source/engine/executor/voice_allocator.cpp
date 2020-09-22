@@ -20,14 +20,14 @@ void c_voice_allocator::initialize(uint32 max_voices, bool has_fx, bool activate
 	// All voices are initially inactive and the voice list is put in its initial state
 	m_voice_list_nodes.initialize_list(m_voice_list);
 	for (size_t index = 0; index < max_voices; index++) {
-		ZERO_STRUCT(&m_voices[index]);
+		zero_type(&m_voices[index]);
 
 		size_t list_node_index = m_voice_list_nodes.allocate_node();
 		m_voice_list_nodes.push_node_onto_list_back(m_voice_list, list_node_index);
 	}
 
 	m_has_fx = has_fx;
-	ZERO_STRUCT(&m_fx_voice);
+	zero_type(&m_fx_voice);
 	m_fx_needs_activation = activate_fx_immediately;
 }
 

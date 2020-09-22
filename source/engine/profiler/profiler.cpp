@@ -78,7 +78,7 @@ bool output_profiler_report(const char *filename, const s_profiler_report &repor
 
 			std::stringstream uid_stream;
 			uid_stream << "0x" << std::setfill('0') << std::setw(2) << std::hex;
-			for (size_t b = 0; b < NUMBEROF(task_function.uid.data); b++) {
+			for (size_t b = 0; b < array_count(task_function.uid.data); b++) {
 				uid_stream << static_cast<uint32>(task_function.uid.data[b]);
 			}
 
@@ -131,7 +131,7 @@ void c_profiler::start() {
 	for (e_instrument_stage instrument_stage : iterate_enum<e_instrument_stage>()) {
 		for (size_t index = 0; index < m_tasks[enum_index(instrument_stage)].get_array().get_count(); index++) {
 			s_task &task = m_tasks[enum_index(instrument_stage)].get_array()[index];
-			ZERO_STRUCT(&task);
+			zero_type(&task);
 			task.total_time.reset();
 			task.function_time.reset();
 			task.overhead_time.reset();
@@ -158,15 +158,15 @@ void c_profiler::stop() {
 	}
 }
 
-void c_profiler::get_report(s_profiler_report &out_report) const {
-	out_report.execution_total_time = m_execution.total_time;
-	out_report.execution_overhead_time = m_execution.overhead_time;
-	out_report.voice_time = m_execution.voice_time;
-	out_report.fx_time = m_execution.fx_time;
+void c_profiler::get_report(s_profiler_report &report_out) const {
+	report_out.execution_total_time = m_execution.total_time;
+	report_out.execution_overhead_time = m_execution.overhead_time;
+	report_out.voice_time = m_execution.voice_time;
+	report_out.fx_time = m_execution.fx_time;
 
 	for (e_instrument_stage instrument_stage : iterate_enum<e_instrument_stage>()) {
 		c_wrapped_array<const s_task> tasks = m_tasks[enum_index(instrument_stage)].get_array();
-		std::vector<s_profiler_report::s_task> &report_tasks = out_report.tasks[enum_index(instrument_stage)];
+		std::vector<s_profiler_report::s_task> &report_tasks = report_out.tasks[enum_index(instrument_stage)];
 		report_tasks.resize(tasks.get_count());
 
 		for (size_t index = 0; index < tasks.get_count(); index++) {
@@ -180,7 +180,7 @@ void c_profiler::get_report(s_profiler_report &out_report) const {
 }
 
 void c_profiler::begin_execution() {
-	ZERO_STRUCT(&m_execution.query_points);
+	zero_type(&m_execution.query_points);
 	m_execution.stopwatch.reset();
 }
 

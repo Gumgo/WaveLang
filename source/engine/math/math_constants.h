@@ -2,5 +2,4 @@
 
 #include "common/types.h"
 
-constexpr real64 k_pi = 3.1415926535897932384626433832795;
-
+template<typename t_type> constexpr t_type k_pi = t_type(3.1415926535897932384626433832795);

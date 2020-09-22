@@ -26,7 +26,7 @@ public:
 	c_task_qualified_data_type get_buffer_type() const;
 
 protected:
-	static const size_t k_invalid_index = static_cast<size_t>(-1);
+	static constexpr size_t k_invalid_index = static_cast<size_t>(-1);
 
 	c_task_function_arguments m_arguments;
 	size_t m_argument_index;
@@ -66,7 +66,7 @@ public:
 	c_wrapped_array<const s_buffer_usage_info> get_buffer_usage_info() const;
 
 private:
-	static const size_t k_invalid_list_index = static_cast<size_t>(-1);
+	static constexpr size_t k_invalid_list_index = static_cast<size_t>(-1);
 
 	struct s_task {
 		// The function to execute during this task

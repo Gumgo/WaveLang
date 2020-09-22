@@ -2,8 +2,8 @@
 
 #include "common/common.h"
 
-static const int64 k_nanoseconds_per_second = 1000000000l;
-static const int64 k_milliseconds_per_second = 1000l;
+static constexpr int64 k_nanoseconds_per_second = 1000000000l;
+static constexpr int64 k_milliseconds_per_second = 1000l;
 
 class c_stopwatch {
 public:
