@@ -76,6 +76,48 @@
       <Filter>threading</Filter>
     </ClInclude>
     <ClInclude Include="common_utilities.h" />
+    <ClInclude Include="math\floating_point.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\int32x4.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\math.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\math_constants.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\neon_mathfun.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\real32x4.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\simd.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\sse_mathfun.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\utilities.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\sse\int32x4_sse.h">
+      <Filter>math\sse</Filter>
+    </ClInclude>
+    <ClInclude Include="math\sse\real32x4_sse.h">
+      <Filter>math\sse</Filter>
+    </ClInclude>
+    <ClInclude Include="math\neon\real32x4_neon.h">
+      <Filter>math\neon</Filter>
+    </ClInclude>
+    <ClInclude Include="math\neon\int32x4_neon.h">
+      <Filter>math\neon</Filter>
+    </ClInclude>
+    <ClInclude Include="math\avx_mathfun.h">
+      <Filter>math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="SConscript" />
@@ -127,6 +169,12 @@
     <ClCompile Include="threading\condition_variable.cpp">
       <Filter>threading</Filter>
     </ClCompile>
+    <ClCompile Include="math\floating_point.cpp">
+      <Filter>math</Filter>
+    </ClCompile>
+    <ClCompile Include="math\simd.cpp">
+      <Filter>math</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="threading">
@@ -137,6 +185,15 @@
     </Filter>
     <Filter Include="utility\sha1">
       <UniqueIdentifier>{f7631248-c990-4cef-9b8f-fed13485d422}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="math">
+      <UniqueIdentifier>{fece2479-130f-46c3-9960-cbfff0bed8df}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="math\neon">
+      <UniqueIdentifier>{ada19dbd-71ad-48da-9f2b-199b35ae72aa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="math\sse">
+      <UniqueIdentifier>{14065141-5bdd-41ec-aa91-a5945b9a6d27}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

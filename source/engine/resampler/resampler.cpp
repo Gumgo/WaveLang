@@ -1,4 +1,5 @@
-#include "engine/math/math.h"
+#include "common/math/math.h"
+
 #include "engine/resampler/resampler.h"
 #include "engine/resampler/resampler_filters.inl"
 
@@ -40,9 +41,8 @@ real32 c_resampler::resample(
 		real32x4 sample_block;
 		sample_block.load_unaligned(sample_pointer);
 
-		// $TODO $SIMD add += operator
-		phase_a_result = phase_a_result + phase_a_coefficients * sample_block;
-		phase_b_result = phase_b_result + phase_b_coefficients * sample_block;
+		phase_a_result += phase_a_coefficients * sample_block;
+		phase_b_result += phase_b_coefficients * sample_block;
 
 		phase_a_coefficients_pointer += 4;
 		phase_b_coefficients_pointer += 4;

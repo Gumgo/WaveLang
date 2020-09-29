@@ -62,7 +62,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='development|x64'">
     <NMakeOutput />
-    <NMakePreprocessorDefinitions>_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <NMakePreprocessorDefinitions>_DEBUG;__AVX__;__AVX2__;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
     <NMakeBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeBuildCommandLine>
     <NMakeReBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName) &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeReBuildCommandLine>
     <NMakeCleanCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)</NMakeCleanCommandLine>
@@ -96,14 +96,6 @@
     <ClInclude Include="executor\executor.h" />
     <ClInclude Include="executor\task_memory_manager.h" />
     <ClInclude Include="executor\voice_allocator.h" />
-    <ClInclude Include="math\math.h" />
-    <ClInclude Include="math\math_constants.h" />
-    <ClInclude Include="math\math_int32x4.h" />
-    <ClInclude Include="math\math_real32x4.h" />
-    <ClInclude Include="math\neon_mathfun.h" />
-    <ClInclude Include="math\simd.h" />
-    <ClInclude Include="math\sse_mathfun.h" />
-    <ClInclude Include="math\utilities.h" />
     <ClInclude Include="predecessor_resolver.h" />
     <ClInclude Include="profiler\profiler.h" />
     <ClInclude Include="resampler\resampler.h" />
@@ -172,10 +164,6 @@
     <ClCompile Include="voice_interface\voice_interface.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="math\math_int32x4_neon.inl" />
-    <None Include="math\math_int32x4_sse.inl" />
-    <None Include="math\math_real32x4_neon.inl" />
-    <None Include="math\math_real32x4_sse.inl" />
     <None Include="resampler\resampler_filters.inl" />
     <None Include="SConscript" />
   </ItemGroup>

@@ -44,27 +44,6 @@
     <ClInclude Include="executor\channel_mixer.h">
       <Filter>executor</Filter>
     </ClInclude>
-    <ClInclude Include="math\math_real32x4.h">
-      <Filter>math</Filter>
-    </ClInclude>
-    <ClInclude Include="math\neon_mathfun.h">
-      <Filter>math</Filter>
-    </ClInclude>
-    <ClInclude Include="math\simd.h">
-      <Filter>math</Filter>
-    </ClInclude>
-    <ClInclude Include="math\sse_mathfun.h">
-      <Filter>math</Filter>
-    </ClInclude>
-    <ClInclude Include="math\math.h">
-      <Filter>math</Filter>
-    </ClInclude>
-    <ClInclude Include="math\math_constants.h">
-      <Filter>math</Filter>
-    </ClInclude>
-    <ClInclude Include="math\math_int32x4.h">
-      <Filter>math</Filter>
-    </ClInclude>
     <ClInclude Include="profiler\profiler.h">
       <Filter>profiler</Filter>
     </ClInclude>
@@ -128,9 +107,6 @@
     </ClInclude>
     <ClInclude Include="resampler\resampler.h">
       <Filter>resampler</Filter>
-    </ClInclude>
-    <ClInclude Include="math\utilities.h">
-      <Filter>math</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -240,18 +216,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="SConscript" />
-    <None Include="math\math_int32x4_neon.inl">
-      <Filter>math</Filter>
-    </None>
-    <None Include="math\math_int32x4_sse.inl">
-      <Filter>math</Filter>
-    </None>
-    <None Include="math\math_real32x4_neon.inl">
-      <Filter>math</Filter>
-    </None>
-    <None Include="math\math_real32x4_sse.inl">
-      <Filter>math</Filter>
-    </None>
     <None Include="resampler\resampler_filters.inl">
       <Filter>resampler</Filter>
     </None>
@@ -268,9 +232,6 @@
     </Filter>
     <Filter Include="executor">
       <UniqueIdentifier>{302adeca-ebd4-4b38-8cdd-6b263e729b45}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="math">
-      <UniqueIdentifier>{2fc6f5f6-e42e-4234-9737-233502e1bae2}</UniqueIdentifier>
     </Filter>
     <Filter Include="profiler">
       <UniqueIdentifier>{ba6fcd02-1b4e-4739-bde5-c3e0a7f69c86}</UniqueIdentifier>

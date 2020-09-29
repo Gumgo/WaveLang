@@ -10,15 +10,13 @@ Import("*")
 env = env.Clone()
 
 if str(platform) == "win32":
-	googletest_include_dir = os.environ["GOOGLETEST_INCLUDE_DIR"]
+	googletest_include_dir = build_options.googletest_include_dir
 
-	googletest_lib_dir_variable_name = {
-		build_config.Configuration.DEBUG: "GOOGLETEST_LIB_DIR_DEBUG",
-		build_config.Configuration.DEVELOPMENT: "GOOGLETEST_LIB_DIR_DEBUG",
-		build_config.Configuration.RELEASE: "GOOGLETEST_LIB_DIR_RELEASE"
+	googletest_lib_dir = {
+		build_config.Configuration.DEBUG: build_options.googletest_lib_dir_debug,
+		build_config.Configuration.DEVELOPMENT: build_options.googletest_lib_dir_debug,
+		build_config.Configuration.RELEASE: build_options.googletest_lib_dir_release
 	}[configuration]
-
-	googletest_lib_dir = os.environ[googletest_lib_dir_variable_name]
 
 	googletest_lib_name = {
 		build_config.Configuration.DEBUG: "gtestd.lib",

@@ -1,3 +1,12 @@
+#pragma once
+
+#include "common/common.h"
+#include "common/math/int32x4.h"
+#include "common/math/real32x4.h"
+#include "common/math/simd.h"
+
+#if IS_TRUE(SIMD_128_ENABLED) && IS_TRUE(SIMD_IMPLEMENTATION_NEON_ENABLED)
+
 inline int32x4::int32x4() {
 }
 
@@ -7,7 +16,7 @@ inline int32x4::int32x4(int32 v)
 
 inline int32x4::int32x4(int32 a, int32 b, int32 c, int32 d) {
 	// $TODO is there a more direct way?
-	ALIGNAS_SIMD int32 values[] = { a, b, c, d };
+	ALIGNAS_SIMD_128 int32 values[] = { a, b, c, d };
 	load(values);
 }
 
@@ -15,7 +24,7 @@ inline int32x4::int32x4(const int32 *ptr) {
 	load(ptr);
 }
 
-inline int32x4::int32x4(const t_simd_int32 &v)
+inline int32x4::int32x4(const t_simd_int32x4 &v)
 	: m_value(v) {
 }
 
@@ -24,26 +33,26 @@ inline int32x4::int32x4(const int32x4 &v)
 }
 
 inline void int32x4::load(const int32 *ptr) {
-	wl_assert(is_pointer_aligned(ptr, k_simd_alignment));
-	const int32 *aligned_ptr = ASSUME_ALIGNED(ptr, k_simd_alignment);
+	wl_assert(is_pointer_aligned(ptr, k_simd_128_alignment));
+	const int32 *aligned_ptr = ASSUME_ALIGNED(ptr, k_simd_128_alignment);
 #if IS_TRUE(COMPILER_MSVC)
-	m_value = vld1q_s32_ex(aligned_ptr, k_simd_alignment);
+	m_value = vld1q_s32_ex(aligned_ptr, k_simd_128_alignment);
 #else // IS_TRUE(COMPILER_MSVC)
 	m_value = vld1q_s32(aligned_ptr);
 #endif // IS_TRUE(COMPILER_MSVC)
 }
 
 inline void int32x4::store(int32 *ptr) const {
-	wl_assert(is_pointer_aligned(ptr, k_simd_alignment));
-	int32 *aligned_ptr = ASSUME_ALIGNED(ptr, k_simd_alignment);
+	wl_assert(is_pointer_aligned(ptr, k_simd_128_alignment));
+	int32 *aligned_ptr = ASSUME_ALIGNED(ptr, k_simd_128_alignment);
 #if IS_TRUE(COMPILER_MSVC)
-	vst1q_s32_ex(aligned_ptr, m_value, k_simd_alignment);
+	vst1q_s32_ex(aligned_ptr, m_value, k_simd_128_alignment);
 #else // IS_TRUE(COMPILER_MSVC)
 	vst1q_s32(aligned_ptr, m_value);
 #endif // IS_TRUE(COMPILER_MSVC)
 }
 
-inline int32x4 &int32x4::operator=(const t_simd_int32 &v) {
+inline int32x4 &int32x4::operator=(const t_simd_int32x4 &v) {
 	m_value = v;
 	return *this;
 }
@@ -53,7 +62,7 @@ inline int32x4 &int32x4::operator=(const int32x4 &v) {
 	return *this;
 }
 
-inline int32x4::operator t_simd_int32() const {
+inline int32x4::operator t_simd_int32x4() const {
 	return m_value;
 }
 
@@ -231,3 +240,5 @@ inline bool any_false(const int32x4 &v) {
 	int32x2_t low_high = vand_s32(vget_low_s32(v), vget_high_s32(v));
 	return (vget_lane_s32(low_high, 0) & vget_lane_s32(low_high, 1)) == 0;
 }
+
+#endif // IS_TRUE(SIMD_128_ENABLED) && IS_TRUE(SIMD_IMPLEMENTATION_NEON_ENABLED)

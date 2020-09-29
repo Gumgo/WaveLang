@@ -1,8 +1,8 @@
 #pragma once
 
 #include "common/common.h"
+#include "common/math/math.h"
 
-#include "engine/math/math.h"
 #include "engine/sample/sample.h"
 #include "engine/task_function.h"
 

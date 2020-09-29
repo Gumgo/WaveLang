@@ -1,3 +1,4 @@
+#include "common/math/floating_point.h"
 #include "common/threading/thread.h"
 
 #if IS_TRUE(USE_THREAD_IMPLEMENTATION_WINDOWS)
@@ -89,6 +90,8 @@ c_thread::t_thread_id c_thread::get_current_thread_id() {
 }
 
 DWORD WINAPI c_thread::thread_entry_point(LPVOID param) {
+	initialize_floating_point_behavior();
+
 	c_thread *this_thread = static_cast<c_thread *>(param);
 
 	// Run the thread function

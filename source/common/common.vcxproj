@@ -20,6 +20,20 @@
     <ClInclude Include="common.h" />
     <ClInclude Include="common_utilities.h" />
     <ClInclude Include="macros.h" />
+    <ClInclude Include="math\avx_mathfun.h" />
+    <ClInclude Include="math\floating_point.h" />
+    <ClInclude Include="math\int32x4.h" />
+    <ClInclude Include="math\math.h" />
+    <ClInclude Include="math\math_constants.h" />
+    <ClInclude Include="math\neon\int32x4_neon.h" />
+    <ClInclude Include="math\neon\real32x4_neon.h" />
+    <ClInclude Include="math\neon_mathfun.h" />
+    <ClInclude Include="math\real32x4.h" />
+    <ClInclude Include="math\simd.h" />
+    <ClInclude Include="math\sse\int32x4_sse.h" />
+    <ClInclude Include="math\sse\real32x4_sse.h" />
+    <ClInclude Include="math\sse_mathfun.h" />
+    <ClInclude Include="math\utilities.h" />
     <ClInclude Include="platform.h" />
     <ClInclude Include="platform_macros.h" />
     <ClInclude Include="scraper_attributes.h" />
@@ -56,6 +70,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="asserts.cpp" />
+    <ClCompile Include="math\floating_point.cpp" />
+    <ClCompile Include="math\simd.cpp" />
     <ClCompile Include="threading\condition_variable.cpp" />
     <ClCompile Include="threading\lock_free.cpp" />
     <ClCompile Include="threading\lock_free_pool.cpp" />

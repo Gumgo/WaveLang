@@ -1,4 +1,5 @@
 #include "common/common.h"
+#include "common/math/floating_point.h"
 #include "common/threading/mutex.h"
 #include "common/threading/semaphore.h"
 #include "common/threading/thread.h"
@@ -69,6 +70,8 @@ private:
 };
 
 int main(int argc, char **argv) {
+	initialize_floating_point_behavior();
+
 	int result;
 	{
 		c_command_line_interface cli(argc, argv);

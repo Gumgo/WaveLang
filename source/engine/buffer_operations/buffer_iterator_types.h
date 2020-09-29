@@ -1,7 +1,9 @@
 #pragma once
 
+#include "common/common.h"
+#include "common/math/math.h"
+
 #include "engine/buffer.h"
-#include "engine/math/math.h"
 
 namespace buffer_iterator_internal {
 	enum class e_buffer_iterator_type {

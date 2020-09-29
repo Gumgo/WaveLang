@@ -1,6 +1,7 @@
 #define _SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING // Silence LLVM C++17 warning
 
 #include "common/common.h"
+#include "common/math/floating_point.h"
 
 #include "scraper/ast_visitor.h"
 #include "scraper/native_module_registration_generator.h"
@@ -47,6 +48,8 @@ private:
 
 int main(int argc, const char **argv) {
 	int32 result = 0;
+
+	initialize_floating_point_behavior();
 
 	// This is the resulting data structure we will be filling in
 	c_scraper_result scraper_result;

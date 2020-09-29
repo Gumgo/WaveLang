@@ -1,9 +1,8 @@
 #pragma once
 
 #include "common/common.h"
+#include "common/math/simd.h"
 #include "common/utility/aligned_allocator.h"
-
-#include "engine/math/simd.h"
 
 #include <vector>
 
@@ -19,7 +18,7 @@ struct s_sample_interpolation_coefficients {
 	// Coefficients for a cubic polynomial to be evaluated for x in range [0, 1]. This polynomial models the curve
 	// between samples i and i+1. It is constructed from a properly upsampled version of the signal. The coefficients
 	// are stored in the order [a, b, c, d] for the polynomial a + bx + cx^2 + dx^3.
-	ALIGNAS_SIMD s_static_array<real32, 4> coefficients; // $TODO $SIMD change this to alignas(real32x4::k_elements)
+	ALIGNAS_SIMD_128 s_static_array<real32, 4> coefficients;
 };
 
 struct s_sample_data {

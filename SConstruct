@@ -15,6 +15,13 @@ except ValueError:
 
 print("Building '{}' configuration on platform '{}'".format(configuration.value, platform))
 
+build_options_filename = "build_options.json"
+build_options = build_config.BuildOptions()
+if not build_options.read(build_options_filename):
+	build_options.write(build_options_filename)
+	print("{} has been created, edit this file and rebuild".format(build_options_filename))
+	Exit(1)
+
 # Setup configuration- and platform-specific flags
 compiler = env["CC"]
 cc_flags = []
@@ -50,6 +57,14 @@ if compiler == "cl":
 		"/std:c++latest",		# Use the latest C++ standard available
 		"/FS"					# Allows synchonous PDB writes for multiprocess builds
 	]
+
+	arch_flag = {
+		build_config.SIMDSupport.NONE: None,
+		build_config.SIMDSupport.AVX: "/arch:AVX",
+		build_config.SIMDSupport.AVX2: "/arch:AVX2"
+	}[build_options.simd_support]
+	if arch_flag is not None:
+		cc_flags.append(arch_flag)
 
 	link_flags += [
 		"/MACHINE:X64",
@@ -109,7 +124,7 @@ env.Append(CPPDEFINES = cpp_defines)
 
 variant_dir = "build/{}/{}".format(platform, configuration.value)
 
-Export("env", "platform", "configuration", "compiler")
+Export("env", "platform", "configuration", "compiler", "build_options")
 
 projects = [
 	"common",

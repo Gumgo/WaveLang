@@ -1,10 +1,13 @@
 #include "common/common.h"
+#include "common/math/floating_point.h"
 
 #include <gtest/gtest.h>
 
 #include <iostream>
 
 int main(int argc, char **argv) {
+	initialize_floating_point_behavior();
+
 	testing::InitGoogleTest(&argc, argv);
 	int32 result = RUN_ALL_TESTS();
 

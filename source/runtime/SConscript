@@ -11,27 +11,25 @@ Import("*")
 env = env.Clone()
 
 if str(platform) == "win32":
-	portaudio_lib_dir_variable_name = {
-		build_config.Configuration.DEBUG: "PORTAUDIO_LIB_DIR_DEBUG",
-		build_config.Configuration.DEVELOPMENT: "PORTAUDIO_LIB_DIR_DEBUG",
-		build_config.Configuration.RELEASE: "PORTAUDIO_LIB_DIR_RELEASE"
+	portaudio_lib_dir = {
+		build_config.Configuration.DEBUG: build_options.portaudio_lib_dir_debug,
+		build_config.Configuration.DEVELOPMENT: build_options.portaudio_lib_dir_debug,
+		build_config.Configuration.RELEASE: build_options.portaudio_lib_dir_release
 	}[configuration]
 
-	portaudio_lib_dir = os.environ[portaudio_lib_dir_variable_name]
 	portaudio_lib_name = "portaudio_x64"
 	portaudio_shared_lib_name = "portaudio_x64.dll"
 
-	rtmidi_lib_dir_variable_name = {
-		build_config.Configuration.DEBUG: "RTMIDI_LIB_DIR_DEBUG",
-		build_config.Configuration.DEVELOPMENT: "RTMIDI_LIB_DIR_DEBUG",
-		build_config.Configuration.RELEASE: "RTMIDI_LIB_DIR_RELEASE"
+	rtmidi_lib_dir = {
+		build_config.Configuration.DEBUG: build_options.rtmidi_lib_dir_debug,
+		build_config.Configuration.DEVELOPMENT: build_options.rtmidi_lib_dir_debug,
+		build_config.Configuration.RELEASE: build_options.rtmidi_lib_dir_release
 	}[configuration]
 
-	rtmidi_lib_dir = os.environ[rtmidi_lib_dir_variable_name]
 	rtmidi_lib_name = "rtmidi"
 	rtmidi_shared_lib_name = "rtmidi.dll"
 
-	rapidxml_include_dir = os.environ["RAPIDXML_INCLUDE_DIR"]
+	rapidxml_include_dir = build_options.rapidxml_include_dir
 else:
 	raise SCons.Errors.BuildError("Unsupported platform '{}'".format(platform))
 

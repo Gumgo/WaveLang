@@ -10,16 +10,16 @@ Import("*")
 env = env.Clone()
 
 if str(platform) == "win32":
-	llvm_config_dir = os.environ.get("LLVM_CONFIG_DIR", "C:\\Program Files (x86)\\LLVM\\bin")
+	llvm_config_dir = build_options.llvm_config_dir
 	llvm_config_binary = "\"{}\\llvm-config.exe\"".format(llvm_config_dir).strip()
 	llvm_include_dir = os.popen("{} --includedir".format(llvm_config_binary)).read().strip()
-	llvm_lib_dir = os.popen("{} --libdir".format(llvm_config_binary)).read().strip()
-	if configuration is build_config.Configuration.DEBUG or configuration is build_config.Configuration.DEVELOPMENT:
-		llvm_lib_dir = os.environ.get("LLVM_LIB_DIR_DEBUG", llvm_lib_dir)
-	else:
-		assert configuration is build_config.Configuration.RELEASE
-		llvm_lib_dir = os.environ.get("LLVM_LIB_DIR_RELEASE", llvm_lib_dir)
-	print("LLVM library directory is '{}'".format(llvm_lib_dir))
+	#llvm_lib_dir = os.popen("{} --libdir".format(llvm_config_binary)).read().strip()
+	llvm_lib_dir = {
+		build_config.Configuration.DEBUG: build_options.llvm_lib_dir_debug,
+		build_config.Configuration.DEVELOPMENT: build_options.llvm_lib_dir_debug,
+		build_config.Configuration.RELEASE: build_options.llvm_lib_dir_release
+	}[configuration]
+
 	# Do these work with MSVC?
 	#llvm_cpp_flags = os.popen("{} --cppflags".format(llvm_config_binary)).read().strip().split(" ")
 	#llvm_cxx_flags = os.popen("{} --cxxflags".format(llvm_config_binary)).read().strip().split(" ")
@@ -94,6 +94,11 @@ scraper_flags = [
 	"-DSCRAPER_ENABLED",
 	"\"-I{}\"".format(env.Dir("#source").abspath)
 ]
+
+if build_options.simd_support is build_config.SIMDSupport.AVX:
+	scraper_flags.append("-mavx")
+elif build_options.simd_support is build_config.SIMDSupport.AVX2:
+	scraper_flags.append("-mavx2")
 
 scraper_command = "${{SOURCES[0]}} -n {} -t {} -o $TARGET ${{SOURCES[1]}} -- {}".format(
 	native_module_registration_function_name,

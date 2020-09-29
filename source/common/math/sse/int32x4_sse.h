@@ -1,3 +1,12 @@
+#pragma once
+
+#include "common/common.h"
+#include "common/math/int32x4.h"
+#include "common/math/real32x4.h"
+#include "common/math/simd.h"
+
+#if IS_TRUE(SIMD_128_ENABLED) && IS_TRUE(SIMD_IMPLEMENTATION_AVX_ENABLED)
+
 inline int32x4::int32x4() {
 }
 
@@ -13,7 +22,7 @@ inline int32x4::int32x4(const int32 *ptr) {
 	load(ptr);
 }
 
-inline int32x4::int32x4(const t_simd_int32 &v)
+inline int32x4::int32x4(const t_simd_int32x4 &v)
 	: m_value(v) {
 }
 
@@ -22,16 +31,16 @@ inline int32x4::int32x4(const int32x4 &v)
 }
 
 inline void int32x4::load(const int32 *ptr) {
-	wl_assert(is_pointer_aligned(ptr, k_simd_alignment));
-	m_value = _mm_load_si128(reinterpret_cast<const t_simd_int32 *>(ptr));
+	wl_assert(is_pointer_aligned(ptr, k_simd_128_alignment));
+	m_value = _mm_load_si128(reinterpret_cast<const t_simd_int32x4 *>(ptr));
 }
 
 inline void int32x4::store(int32 *ptr) const {
-	wl_assert(is_pointer_aligned(ptr, k_simd_alignment));
-	_mm_store_si128(reinterpret_cast<t_simd_int32 *>(ptr), m_value);
+	wl_assert(is_pointer_aligned(ptr, k_simd_128_alignment));
+	_mm_store_si128(reinterpret_cast<t_simd_int32x4 *>(ptr), m_value);
 }
 
-inline int32x4 &int32x4::operator=(const t_simd_int32 &v) {
+inline int32x4 &int32x4::operator=(const t_simd_int32x4 &v) {
 	m_value = v;
 	return *this;
 }
@@ -41,7 +50,7 @@ inline int32x4 &int32x4::operator=(const int32x4 &v) {
 	return *this;
 }
 
-inline int32x4::operator t_simd_int32() const {
+inline int32x4::operator t_simd_int32x4() const {
 	return m_value;
 }
 
@@ -209,3 +218,5 @@ inline bool any_true(const int32x4 &v) {
 inline bool any_false(const int32x4 &v) {
 	return mask_from_msb(v) != 0xf;
 }
+
+#endif // IS_TRUE(SIMD_128_ENABLED) && IS_TRUE(SIMD_IMPLEMENTATION_AVX_ENABLED)

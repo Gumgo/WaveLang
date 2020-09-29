@@ -1,17 +1,16 @@
 #include "common/common.h"
-
-#include "engine/math/math.h"
+#include "common/math/math.h"
 
 #include <gtest/gtest.h>
 
 TEST(Math, Real32x4) {
-	ALIGNAS_SIMD static constexpr real32 k_elements[] = { 1.0f, 2.0f, 3.0f, 4.0f };
-	ALIGNAS_SIMD static constexpr real32 k_constant_elements[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	ALIGNAS_SIMD_128 static constexpr real32 k_elements[] = { 1.0f, 2.0f, 3.0f, 4.0f };
+	ALIGNAS_SIMD_128 static constexpr real32 k_constant_elements[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 
 	EXPECT_TRUE(all_true(real32x4(k_elements) == real32x4(1.0f, 2.0f, 3.0f, 4.0f)));
 	EXPECT_TRUE(all_true(real32x4(k_constant_elements) == real32x4(1.0f)));
 
-	ALIGNAS_SIMD real32 elements[4];
+	ALIGNAS_SIMD_128 real32 elements[4];
 	zero_type(elements, array_count(elements));
 	real32x4(k_elements).store(elements);
 	EXPECT_EQ(memcmp(elements, k_elements, sizeof(elements)), 0);
@@ -71,13 +70,13 @@ TEST(Math, Real32x4) {
 }
 
 TEST(Math, Int32x4) {
-	ALIGNAS_SIMD static constexpr int32 k_elements[] = { 1, 2, 3, 4 };
-	ALIGNAS_SIMD static constexpr int32 k_constant_elements[] = { 1, 1, 1, 1 };
+	ALIGNAS_SIMD_128 static constexpr int32 k_elements[] = { 1, 2, 3, 4 };
+	ALIGNAS_SIMD_128 static constexpr int32 k_constant_elements[] = { 1, 1, 1, 1 };
 
 	EXPECT_TRUE(all_true(int32x4(k_elements) == int32x4(1, 2, 3, 4)));
 	EXPECT_TRUE(all_true(int32x4(k_constant_elements) == int32x4(1)));
 
-	ALIGNAS_SIMD int32 elements[4];
+	ALIGNAS_SIMD_128 int32 elements[4];
 	zero_type(elements, array_count(elements));
 	int32x4(k_elements).store(elements);
 	EXPECT_EQ(memcmp(elements, k_elements, sizeof(elements)), 0);

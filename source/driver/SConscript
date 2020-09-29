@@ -10,8 +10,8 @@ Import("*")
 env = env.Clone()
 
 if str(platform) == "win32":
-	portaudio_include_dir = os.environ["PORTAUDIO_INCLUDE_DIR"]
-	rtmidi_include_dir = os.environ["RTMIDI_INCLUDE_DIR"]
+	portaudio_include_dir = build_options.portaudio_include_dir
+	rtmidi_include_dir = build_options.rtmidi_include_dir
 else:
 	raise SCons.Errors.BuildError("Unsupported platform '{}'".format(platform))
 

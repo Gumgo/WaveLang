@@ -1,4 +1,5 @@
 #include "common/common.h"
+#include "common/math/floating_point.h"
 #include "common/utility/graphviz_generator.h"
 
 #include "compiler/compiler.h"
@@ -18,6 +19,8 @@ static constexpr char k_documentation_filename[] = "registered_native_modules.tx
 
 int main(int argc, char **argv) {
 	int32 result = 0;
+
+	initialize_floating_point_behavior();
 
 	c_native_module_registry::initialize();
 	register_native_modules(true);

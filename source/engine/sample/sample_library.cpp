@@ -1,6 +1,6 @@
+#include "common/math/math_constants.h" // MEGA HACK $TODO $JSON remove this
 #include "common/utility/file_utility.h"
 
-#include "engine/math/math_constants.h" // MEGA HACK
 #include "engine/sample/sample.h"
 #include "engine/sample/sample_library.h"
 

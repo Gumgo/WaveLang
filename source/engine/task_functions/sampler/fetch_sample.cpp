@@ -1,4 +1,5 @@
-#include "engine/math/math.h"
+#include "common/math/math.h"
+
 #include "engine/task_functions/sampler/fetch_sample.h"
 
 #include <cmath>

@@ -1,3 +1,12 @@
+#pragma once
+
+#include "common/common.h"
+#include "common/math/int32x4.h"
+#include "common/math/real32x4.h"
+#include "common/math/simd.h"
+
+#if IS_TRUE(SIMD_128_ENABLED) && IS_TRUE(SIMD_IMPLEMENTATION_NEON_ENABLED)
+
 inline real32x4::real32x4() {
 }
 
@@ -7,7 +16,7 @@ inline real32x4::real32x4(real32 v)
 
 inline real32x4::real32x4(real32 a, real32 b, real32 c, real32 d) {
 	// $TODO is there a more direct way?
-	ALIGNAS_SIMD real32 values[] = { a, b, c, d };
+	ALIGNAS_SIMD_128 real32 values[] = { a, b, c, d };
 	load(values);
 }
 
@@ -15,7 +24,7 @@ inline real32x4::real32x4(const real32 *ptr) {
 	load(ptr);
 }
 
-inline real32x4::real32x4(const t_simd_real32 &v)
+inline real32x4::real32x4(const t_simd_real32x4 &v)
 	: m_value(v) {
 }
 
@@ -24,10 +33,10 @@ inline real32x4::real32x4(const real32x4 &v)
 }
 
 inline void real32x4::load(const real32 *ptr) {
-	wl_assert(is_pointer_aligned(ptr, k_simd_alignment));
-	const real32 *aligned_ptr = ASSUME_ALIGNED(ptr, k_simd_alignment);
+	wl_assert(is_pointer_aligned(ptr, k_simd_128_alignment));
+	const real32 *aligned_ptr = ASSUME_ALIGNED(ptr, k_simd_128_alignment);
 #if IS_TRUE(COMPILER_MSVC)
-	m_value = vld1q_f32_ex(aligned_ptr, k_simd_alignment);
+	m_value = vld1q_f32_ex(aligned_ptr, k_simd_128_alignment);
 #else // IS_TRUE(COMPILER_MSVC)
 	m_value = vld1q_f32(aligned_ptr);
 #endif // IS_TRUE(COMPILER_MSVC)
@@ -38,10 +47,10 @@ inline void real32x4::load_unaligned(const real32 *ptr) {
 }
 
 inline void real32x4::store(real32 *ptr) const {
-	wl_assert(is_pointer_aligned(ptr, k_simd_alignment));
-	real32 *aligned_ptr = ASSUME_ALIGNED(ptr, k_simd_alignment);
+	wl_assert(is_pointer_aligned(ptr, k_simd_128_alignment));
+	real32 *aligned_ptr = ASSUME_ALIGNED(ptr, k_simd_128_alignment);
 #if IS_TRUE(COMPILER_MSVC)
-	vst1q_f32_ex(aligned_ptr, m_value, k_simd_alignment);
+	vst1q_f32_ex(aligned_ptr, m_value, k_simd_128_alignment);
 #else // IS_TRUE(COMPILER_MSVC)
 	vst1q_f32(aligned_ptr, m_value);
 #endif // IS_TRUE(COMPILER_MSVC)
@@ -51,7 +60,7 @@ inline void real32x4::store_unaligned(real32 *ptr) {
 	vst1q_f32(ptr, m_value);
 }
 
-inline real32x4 &real32x4::real32x4::operator=(const t_simd_real32 &v) {
+inline real32x4 &real32x4::real32x4::operator=(const t_simd_real32x4 &v) {
 	m_value = v;
 	return *this;
 }
@@ -61,7 +70,7 @@ inline real32x4 &real32x4::operator=(const real32x4 &v) {
 	return *this;
 }
 
-inline real32x4::operator t_simd_real32() const {
+inline real32x4::operator t_simd_real32x4() const {
 	return m_value;
 }
 
@@ -102,18 +111,18 @@ inline real32x4 operator*(const real32x4 &lhs, const real32x4 &rhs) {
 
 inline real32x4 operator/(const real32x4 &lhs, const real32x4 &rhs) {
 	// see http://stackoverflow.com/questions/6759897/how-to-divide-in-neon-intrinsics-by-a-float-number
-	t_simd_real32 reciprocal_0 = vrecpeq_f32(rhs);
-	t_simd_real32 reciprocal_1 = vmulq_f32(vrecpsq_f32(rhs, reciprocal_0), reciprocal_0);
-	t_simd_real32 reciprocal_2 = vmulq_f32(vrecpsq_f32(rhs, reciprocal_1), reciprocal_1);
+	t_simd_real32x4 reciprocal_0 = vrecpeq_f32(rhs);
+	t_simd_real32x4 reciprocal_1 = vmulq_f32(vrecpsq_f32(rhs, reciprocal_0), reciprocal_0);
+	t_simd_real32x4 reciprocal_2 = vmulq_f32(vrecpsq_f32(rhs, reciprocal_1), reciprocal_1);
 	return vmulq_f32(lhs, reciprocal_2);
 }
 
 inline real32x4 operator%(const real32x4 &lhs, const real32x4 &rhs) {
 	// Rounds toward 0
-	t_simd_real32 c = vmulq_f32(lhs, vrecpeq_f32(rhs));
-	t_simd_int32 i = vcvtq_s32_f32(c);
-	t_simd_real32 c_trunc = vcvtq_f32_s32(i);
-	t_simd_real32 base = vmulq_f32(c_trunc, rhs);
+	t_simd_real32x4 c = vmulq_f32(lhs, vrecpeq_f32(rhs));
+	t_simd_int32x4 i = vcvtq_s32_f32(c);
+	t_simd_real32x4 c_trunc = vcvtq_f32_s32(i);
+	t_simd_real32x4 base = vmulq_f32(c_trunc, rhs);
 	return vsubq_f32(lhs, base);
 }
 
@@ -225,9 +234,11 @@ inline real32x4 cos(const real32x4 &v) {
 }
 
 inline void sincos(const real32x4 &v, real32x4 &sin_out, real32x4 &cos_out) {
-	sincos_ps(v, reinterpret_cast<t_simd_real32 *>(&sin_out), reinterpret_cast<t_simd_real32 *>(&cos_out));
+	sincos_ps(v, reinterpret_cast<t_simd_real32x4 *>(&sin_out), reinterpret_cast<t_simd_real32x4 *>(&cos_out));
 }
 
 template<> inline int32x4 reinterpret_bits(const real32x4 &v) {
 	return vreinterpretq_s32_f32(v);
 }
+
+#endif // IS_TRUE(SIMD_128_ENABLED) && IS_TRUE(SIMD_IMPLEMENTATION_NEON_ENABLED)

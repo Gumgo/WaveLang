@@ -1,3 +1,4 @@
+#include "common/math/floating_point.h"
 #include "common/threading/thread.h"
 
 #if IS_TRUE(PLATFORM_LINUX)
@@ -74,6 +75,8 @@ c_thread::t_thread_id c_thread::get_current_thread_id() {
 }
 
 void c_thread::thread_entry_point(const c_thread *this_ptr) {
+	initialize_floating_point_behavior();
+
 	// Run the thread function
 	wl_assert(this_ptr->m_thread_entry_point);
 	this_ptr->m_thread_entry_point(&this_ptr->m_thread_parameter_block);

@@ -1,4 +1,5 @@
 #include "common/common.h"
+#include "common/math/floating_point.h"
 
 #include "console/console_commands.h"
 
@@ -17,6 +18,8 @@ static void clear_platform();
 static bool process_next_command();
 
 int main(int argc, char **argv) {
+	initialize_floating_point_behavior();
+
 	int init_result = initialize_platform(argc, argv);
 	if (init_result != 0) {
 		return init_result;

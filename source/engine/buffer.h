@@ -1,9 +1,9 @@
 #pragma once
 
 #include "common/common.h"
+#include "common/math/math.h"
 #include "common/threading/lock_free.h"
 
-#include "engine/math/math.h"
 #include "engine/task_data_type.h"
 
 enum class e_buffer_data_state {
@@ -113,7 +113,7 @@ protected:
 
 	// Pointer to the data. If this is a compile-time constant, this points to m_compile_time_constant.
 	void *m_pointer = nullptr;
-	ALIGNAS_SIMD uint8 m_compile_time_constant[k_simd_block_size];
+	ALIGNAS_SIMD uint8 m_compile_time_constant[k_simd_size];
 };
 
 // Typed buffers act as interfaces only. c_buffer can be safely cast to and from these types.

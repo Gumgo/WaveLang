@@ -1,3 +1,12 @@
+#pragma once
+
+#include "common/common.h"
+#include "common/math/int32x4.h"
+#include "common/math/real32x4.h"
+#include "common/math/simd.h"
+
+#if IS_TRUE(SIMD_128_ENABLED) && IS_TRUE(SIMD_IMPLEMENTATION_AVX_ENABLED)
+
 inline real32x4::real32x4() {
 }
 
@@ -13,7 +22,7 @@ inline real32x4::real32x4(const real32 *ptr) {
 	load(ptr);
 }
 
-inline real32x4::real32x4(const t_simd_real32 &v)
+inline real32x4::real32x4(const t_simd_real32x4 &v)
 	: m_value(v) {
 }
 
@@ -22,7 +31,7 @@ inline real32x4::real32x4(const real32x4 &v)
 }
 
 inline void real32x4::load(const real32 *ptr) {
-	wl_assert(is_pointer_aligned(ptr, k_simd_alignment));
+	wl_assert(is_pointer_aligned(ptr, k_simd_128_alignment));
 	m_value = _mm_load_ps(ptr);
 }
 
@@ -31,7 +40,7 @@ inline void real32x4::load_unaligned(const real32 *ptr) {
 }
 
 inline void real32x4::store(real32 *ptr) const {
-	wl_assert(is_pointer_aligned(ptr, k_simd_alignment));
+	wl_assert(is_pointer_aligned(ptr, k_simd_128_alignment));
 	_mm_store_ps(ptr, m_value);
 }
 
@@ -39,7 +48,7 @@ inline void real32x4::store_unaligned(real32 *ptr) const {
 	_mm_storeu_ps(ptr, m_value);
 }
 
-inline real32x4 &real32x4::real32x4::operator=(const t_simd_real32 &v) {
+inline real32x4 &real32x4::real32x4::operator=(const t_simd_real32x4 &v) {
 	m_value = v;
 	return *this;
 }
@@ -49,7 +58,7 @@ inline real32x4 &real32x4::operator=(const real32x4 &v) {
 	return *this;
 }
 
-inline real32x4::operator t_simd_real32() const {
+inline real32x4::operator t_simd_real32x4() const {
 	return m_value;
 }
 
@@ -93,10 +102,10 @@ inline real32x4 operator/(const real32x4 &lhs, const real32x4 &rhs) {
 
 inline real32x4 operator%(const real32x4 &lhs, const real32x4 &rhs) {
 	// Rounds toward 0
-	t_simd_real32 c = _mm_div_ps(lhs, rhs);
-	t_simd_int32 i = _mm_cvttps_epi32(c);
-	t_simd_real32 c_trunc = _mm_cvtepi32_ps(i);
-	t_simd_real32 base = _mm_mul_ps(c_trunc, rhs);
+	t_simd_real32x4 c = _mm_div_ps(lhs, rhs);
+	t_simd_int32x4 i = _mm_cvttps_epi32(c);
+	t_simd_real32x4 c_trunc = _mm_cvtepi32_ps(i);
+	t_simd_real32x4 base = _mm_mul_ps(c_trunc, rhs);
 	return _mm_sub_ps(lhs, base);
 }
 
@@ -126,7 +135,7 @@ inline int32x4 operator<=(const real32x4 &lhs, const real32x4 &rhs) {
 
 inline real32x4 abs(const real32x4 &v) {
 	// Mask off the sign bit for fast abs
-	const t_simd_real32 k_sign_mask = _mm_set1_ps(-0.0f);
+	const t_simd_real32x4 k_sign_mask = _mm_set1_ps(-0.0f);
 	return _mm_andnot_ps(k_sign_mask, v);
 }
 
@@ -178,9 +187,11 @@ inline real32x4 cos(const real32x4 &v) {
 }
 
 inline void sincos(const real32x4 &v, real32x4 &sin_out, real32x4 &cos_out) {
-	sincos_ps(v, reinterpret_cast<t_simd_real32 *>(&sin_out), reinterpret_cast<t_simd_real32 *>(&cos_out));
+	sincos_ps(v, reinterpret_cast<t_simd_real32x4 *>(&sin_out), reinterpret_cast<t_simd_real32x4 *>(&cos_out));
 }
 
 template<> inline int32x4 reinterpret_bits(const real32x4 &v) {
 	return _mm_castps_si128(v);
 }
+
+#endif // IS_TRUE(SIMD_128_ENABLED) && IS_TRUE(SIMD_IMPLEMENTATION_AVX_ENABLED)
