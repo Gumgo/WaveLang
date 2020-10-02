@@ -306,11 +306,17 @@ c_sample *c_sample::generate_wavetable(c_wrapped_array<const real32> harmonic_we
 
 	if (!loaded_from_cache) {
 		sine_buffer.allocate(sine_buffer_length);
-		real32x4 sine_index_multiplier(2.0f * k_pi<real32> / static_cast<real32>(sine_buffer_length));
-		real32x4 sine_index_offsets(0.0f, 1.0f, 2.0f, 3.0f);
-		for (uint32 sine_index = 0; sine_index < sine_buffer_length; sine_index += 4) {
-			real32x4 sine_indices = real32x4(static_cast<real32>(sine_index)) + sine_index_offsets;
-			real32x4 sine_result = sin(sine_indices * sine_index_multiplier);
+		real32xN sine_index_multiplier(2.0f * k_pi<real32> / static_cast<real32>(sine_buffer_length));
+#if IS_TRUE(SIMD_256_ENABLED)
+		real32xN sine_index_offsets(0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f);
+#elif IS_TRUE(SIMD_128_ENABLED)
+		real32xN sine_index_offsets(0.0f, 1.0f, 2.0f, 3.0f);
+#else // SIMD
+#error Single element SIMD type not supported // $TODO $SIMD real32x1 fallback
+#endif // SIMD
+		for (uint32 sine_index = 0; sine_index < sine_buffer_length; sine_index += k_simd_32_lanes) {
+			real32xN sine_indices = real32xN(static_cast<real32>(sine_index)) + sine_index_offsets;
+			real32xN sine_result = sin(sine_indices * sine_index_multiplier);
 			sine_result.store(&sine_buffer.get_array()[sine_index]);
 		}
 	}

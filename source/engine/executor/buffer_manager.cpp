@@ -268,16 +268,16 @@ void c_buffer_manager::accumulate_voice_output(uint32 voice_sample_offset) {
 		}
 
 		// Next, add the shift buffer to the voice accumulation buffer
-		iterate_buffers<4, true>(
+		iterate_buffers<k_simd_32_lanes, true>(
 			m_chunk_size,
 			static_cast<const c_real_buffer *>(voice_shift_buffer),
 			static_cast<const c_real_buffer *>(voice_accumulation_buffer),
 			voice_accumulation_buffer,
 			[](
 				size_t i,
-				const real32x4 &voice,
-				const real32x4 &voice_accumulation_in,
-				real32x4 &voice_accumulation_out) {
+				const real32xN &voice,
+				const real32xN &voice_accumulation_in,
+				real32xN &voice_accumulation_out) {
 				voice_accumulation_out = voice_accumulation_in + voice;
 			});
 	}
@@ -341,9 +341,9 @@ bool c_buffer_manager::process_remain_active_output(e_instrument_stage instrumen
 		remain_active = false;
 
 		uint32 chunk_size = m_chunk_size;
-		iterate_buffers<128, true>(m_chunk_size, static_cast<const c_bool_buffer *>(remain_active_buffer),
-			[&remain_active](size_t i, const int32x4 &value) {
-				if (any_false(value == int32x4(0))) {
+		iterate_buffers<k_simd_size_bits, true>(m_chunk_size, static_cast<const c_bool_buffer *>(remain_active_buffer),
+			[&remain_active](size_t i, const int32xN &value) {
+				if (any_false(value == int32xN(0))) {
 					// At least one bit was true
 					remain_active = true;
 				}
@@ -351,18 +351,25 @@ bool c_buffer_manager::process_remain_active_output(e_instrument_stage instrumen
 				// Stop iterating once we've discovered that we shouldn't remain active
 				return !remain_active;
 			},
-			[&remain_active, &chunk_size](size_t i, const int32x4 &value) {
+			[&remain_active, &chunk_size](size_t i, const int32xN &value) {
 				// This only runs on the final iteration
+#if IS_TRUE(SIMD_256_ENABLED)
+				const int32xN bit_offsets(0, 32, 64, 96, 128, 160, 192, 224);
+#elif IS_TRUE(SIMD_128_ENABLED)
+				const int32xN bit_offsets(0, 32, 64, 96);
+#else // SIMD
+#error Single element SIMD type not supported // $TODO $SIMD int32x1 fallback
+#endif // SIMD
 				int32 samples_remaining = cast_integer_verify<int32>(chunk_size - i);
-				int32x4 elements_remaining = int32x4(samples_remaining) - int32x4(0, 32, 64, 96);
-				int32x4 clamped_elements_remaining = min(max(elements_remaining, int32x4(0)), int32x4(32));
-				int32x4 zeros_to_shift = int32x4(32) - clamped_elements_remaining;
-				int32x4 overflow_mask = int32x4(0xffffffff) << zeros_to_shift;
+				int32xN elements_remaining = int32xN(samples_remaining) - bit_offsets;
+				int32xN clamped_elements_remaining = min(max(elements_remaining, int32xN(0)), int32xN(32));
+				int32xN zeros_to_shift = int32xN(32) - clamped_elements_remaining;
+				int32xN overflow_mask = int32xN(0xffffffff) << zeros_to_shift;
 
 				// We now have zeros in the positions of all bits past the end of the buffer
 				// Mask the value being tested so we don't get false positives
-				int32x4 padded_value = value & overflow_mask;
-				if (any_false(padded_value == int32x4(0))) {
+				int32xN padded_value = value & overflow_mask;
+				if (any_false(padded_value == int32xN(0))) {
 					// At least one bit was true, so stop scanning
 					remain_active = true;
 				}

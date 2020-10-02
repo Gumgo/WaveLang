@@ -13,9 +13,10 @@
 #include "common/math/neon/int32x4_neon.h"
 #include "common/math/neon/real32x4_neon.h"
 #include "common/math/sse/int32x4_sse.h"
+#include "common/math/sse/int32x8_sse.h"
 #include "common/math/sse/real32x4_sse.h"
+#include "common/math/sse/real32x8_sse.h"
 
-#if 0 // $TODO $SIMD enable this soon
 // These typedefs are for when the maximum size SIMD type should be used
 #if IS_TRUE(SIMD_256_ENABLED)
 using int32xN = int32x8;
@@ -27,4 +28,3 @@ using real32xN = real32x4;
 // No SIMD types are available
 // $TODO add int32x1 and real32x1 types which just wrap an int and a float to support this case
 #endif // SIMD
-#endif

@@ -40,13 +40,13 @@ void mix_output_buffers_to_channel_buffers(
 		channel_buffer.assign_constant(0.0f);
 
 		// Accumulate and scale by 1/N (we could do 1/sqrt(N) but there's no guarantee the channels add incoherently)
-		real32x4 scale(1.0f / static_cast<real32>(channel_buffer_count));
+		real32xN scale(1.0f / static_cast<real32>(channel_buffer_count));
 		for (const c_buffer &output_buffer : output_buffers) {
 			const c_real_buffer &real_output_buffer = output_buffer.get_as<c_real_buffer>();
 			const c_real_buffer &channel_buffer_const = channel_buffer;
 
-			iterate_buffers<4, true>(frames, &real_output_buffer, &channel_buffer_const, &channel_buffer,
-				[&scale](size_t i, const real32x4 &output, const real32x4 &channel_in, real32x4 &channel_out) {
+			iterate_buffers<k_simd_32_lanes, true>(frames, &real_output_buffer, &channel_buffer_const, &channel_buffer,
+				[&scale](size_t i, const real32xN &output, const real32xN &channel_in, real32xN &channel_out) {
 					channel_out = channel_in + output * scale;
 				});
 		}

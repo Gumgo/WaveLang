@@ -163,7 +163,7 @@ struct s_constant_accessor_real {
 	}
 
 	static void set(void *data, real32 value) {
-		real32x4(value).store(static_cast<real32 *>(data));
+		real32xN(value).store(static_cast<real32 *>(data));
 	}
 };
 
@@ -174,7 +174,7 @@ struct s_constant_accessor_bool {
 
 	static void set(void *data, bool value) {
 		// Duplicate the value across all 128 bits
-		int32x4(-static_cast<int32>(value)).store(static_cast<int32 *>(data));
+		int32xN(-static_cast<int32>(value)).store(static_cast<int32 *>(data));
 	}
 };
 

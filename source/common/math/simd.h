@@ -100,6 +100,9 @@ static constexpr size_t k_simd_size_bits = k_simd_128_size_bits;
 static constexpr size_t k_simd_alignment = k_simd_128_alignment;
 #endif // IS_TRUE(SIMD_256_ENABLED)
 
+// Number of lanes for 32-bit SIMD types
+static constexpr size_t k_simd_32_lanes = k_simd_size_bits / 32;
+
 #define ALIGNAS_SIMD_128 alignas(k_simd_128_alignment)
 #define ALIGNAS_SIMD_256 alignas(k_simd_256_alignment)
 #define ALIGNAS_SIMD alignas(k_simd_alignment)

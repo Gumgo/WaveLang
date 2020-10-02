@@ -29,16 +29,15 @@ real32 c_resampler::resample(
 	const real32 *phase_b_coefficients_pointer = &m_phases[phase_b_index * m_taps_per_phase];
 	const real32 *sample_pointer = &samples[start_sample_index];
 
-	real32x4 phase_a_result(0.0f);
-	real32x4 phase_b_result(0.0f);
+	real32xN phase_a_result(0.0f);
+	real32xN phase_b_result(0.0f);
 
 	// Apply the two phase FIRs
-	// $TODO $SIMD change this to real32xN::k_elements
 	for (uint32 tap_index = 0; tap_index < m_taps_per_phase; tap_index += 4) {
-		real32x4 phase_a_coefficients(phase_a_coefficients_pointer);
-		real32x4 phase_b_coefficients(phase_b_coefficients_pointer);
+		real32xN phase_a_coefficients(phase_a_coefficients_pointer);
+		real32xN phase_b_coefficients(phase_b_coefficients_pointer);
 
-		real32x4 sample_block;
+		real32xN sample_block;
 		sample_block.load_unaligned(sample_pointer);
 
 		phase_a_result += phase_a_coefficients * sample_block;
@@ -51,6 +50,6 @@ real32 c_resampler::resample(
 
 	// Because we're only performing linear operations, we can apply interpolation before calling sum_elements() so we
 	// only have to perform one hadd
-	real32x4 interpolated_result = phase_a_result + (phase_b_result - phase_a_result) * real32x4(phase_fraction);
+	real32xN interpolated_result = phase_a_result + (phase_b_result - phase_a_result) * real32xN(phase_fraction);
 	return interpolated_result.sum_elements().first_element();
 }

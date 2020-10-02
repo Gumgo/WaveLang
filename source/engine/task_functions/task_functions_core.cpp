@@ -8,8 +8,8 @@ namespace core_task_functions {
 		const s_task_function_context &context,
 		const c_real_buffer *a,
 		c_real_buffer *result) {
-		iterate_buffers<4, true>(context.buffer_size, a, result,
-			[](size_t i, const real32x4 &a, real32x4 &result) {
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, result,
+			[](size_t i, const real32xN &a, real32xN &result) {
 				result = -a;
 			});
 	}
@@ -19,8 +19,8 @@ namespace core_task_functions {
 		const c_real_buffer *a,
 		const c_real_buffer *b,
 		c_real_buffer *result) {
-		iterate_buffers<4, true>(context.buffer_size, a, b, result,
-			[](size_t i, const real32x4 &a, const real32x4 &b, real32x4 &result) {
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
+			[](size_t i, const real32xN &a, const real32xN &b, real32xN &result) {
 				result = a + b;
 			});
 	}
@@ -30,8 +30,8 @@ namespace core_task_functions {
 		const c_real_buffer *a,
 		const c_real_buffer *b,
 		c_real_buffer *result) {
-		iterate_buffers<4, true>(context.buffer_size, a, b, result,
-			[](size_t i, const real32x4 &a, const real32x4 &b, real32x4 &result) {
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
+			[](size_t i, const real32xN &a, const real32xN &b, real32xN &result) {
 				result = a - b;
 			});
 	}
@@ -47,8 +47,8 @@ namespace core_task_functions {
 			return;
 		}
 
-		iterate_buffers<4, true>(context.buffer_size, a, b, result,
-			[](size_t i, const real32x4 &a, const real32x4 &b, real32x4 &result) {
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
+			[](size_t i, const real32xN &a, const real32xN &b, real32xN &result) {
 				result = a * b;
 			});
 	}
@@ -58,8 +58,8 @@ namespace core_task_functions {
 		const c_real_buffer *a,
 		const c_real_buffer *b,
 		c_real_buffer *result) {
-		iterate_buffers<4, true>(context.buffer_size, a, b, result,
-			[](size_t i, const real32x4 &a, const real32x4 &b, real32x4 &result) {
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
+			[](size_t i, const real32xN &a, const real32xN &b, real32xN &result) {
 				result = a / b;
 			});
 	}
@@ -69,8 +69,8 @@ namespace core_task_functions {
 		const c_real_buffer *a,
 		const c_real_buffer *b,
 		c_real_buffer *result) {
-		iterate_buffers<4, true>(context.buffer_size, a, b, result,
-			[](size_t i, const real32x4 &a, const real32x4 &b, real32x4 &result) {
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
+			[](size_t i, const real32xN &a, const real32xN &b, real32xN &result) {
 				result = a % b;
 			});
 	}
@@ -79,8 +79,8 @@ namespace core_task_functions {
 		const s_task_function_context &context,
 		const c_bool_buffer *a,
 		c_bool_buffer *result) {
-		iterate_buffers<128, true>(context.buffer_size, a, result,
-			[](size_t i, const int32x4 &a, int32x4 &result) {
+		iterate_buffers<k_simd_size_bits, true>(context.buffer_size, a, result,
+			[](size_t i, const int32xN &a, int32xN &result) {
 				result = ~a;
 			});
 	}
@@ -90,8 +90,8 @@ namespace core_task_functions {
 		const c_real_buffer *a,
 		const c_real_buffer *b,
 		c_bool_buffer *result) {
-		iterate_buffers<4, true>(context.buffer_size, a, b, result,
-			[](size_t i, const real32x4 &a, const real32x4 &b, int32x4 &result) {
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
+			[](size_t i, const real32xN &a, const real32xN &b, int32xN &result) {
 				result = a == b;
 			});
 	}
@@ -101,8 +101,8 @@ namespace core_task_functions {
 		const c_real_buffer *a,
 		const c_real_buffer *b,
 		c_bool_buffer *result) {
-		iterate_buffers<4, true>(context.buffer_size, a, b, result,
-			[](size_t i, const real32x4 &a, const real32x4 &b, int32x4 &result) {
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
+			[](size_t i, const real32xN &a, const real32xN &b, int32xN &result) {
 				result = a != b;
 			});
 	}
@@ -112,8 +112,8 @@ namespace core_task_functions {
 		const c_bool_buffer *a,
 		const c_bool_buffer *b,
 		c_bool_buffer *result) {
-		iterate_buffers<128, true>(context.buffer_size, a, b, result,
-			[](size_t i, const int32x4 &a, const int32x4 &b, int32x4 &result) {
+		iterate_buffers<k_simd_size_bits, true>(context.buffer_size, a, b, result,
+			[](size_t i, const int32xN &a, const int32xN &b, int32xN &result) {
 				result = ~(a ^ b);
 			});
 	}
@@ -123,8 +123,8 @@ namespace core_task_functions {
 		const c_bool_buffer *a,
 		const c_bool_buffer *b,
 		c_bool_buffer *result) {
-		iterate_buffers<128, true>(context.buffer_size, a, b, result,
-			[](size_t i, const int32x4 &a, const int32x4 &b, int32x4 &result) {
+		iterate_buffers<k_simd_size_bits, true>(context.buffer_size, a, b, result,
+			[](size_t i, const int32xN &a, const int32xN &b, int32xN &result) {
 				result = a ^ b;
 			});
 	}
@@ -134,8 +134,8 @@ namespace core_task_functions {
 		const c_real_buffer *a,
 		const c_real_buffer *b,
 		c_bool_buffer *result) {
-		iterate_buffers<4, true>(context.buffer_size, a, b, result,
-			[](size_t i, const real32x4 &a, const real32x4 &b, int32x4 &result) {
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
+			[](size_t i, const real32xN &a, const real32xN &b, int32xN &result) {
 				result = a > b;
 			});
 	}
@@ -145,8 +145,8 @@ namespace core_task_functions {
 		const c_real_buffer *a,
 		const c_real_buffer *b,
 		c_bool_buffer *result) {
-		iterate_buffers<4, true>(context.buffer_size, a, b, result,
-			[](size_t i, const real32x4 &a, const real32x4 &b, int32x4 &result) {
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
+			[](size_t i, const real32xN &a, const real32xN &b, int32xN &result) {
 				result = a < b;
 			});
 	}
@@ -156,8 +156,8 @@ namespace core_task_functions {
 		const c_real_buffer *a,
 		const c_real_buffer *b,
 		c_bool_buffer *result) {
-		iterate_buffers<4, true>(context.buffer_size, a, b, result,
-			[](size_t i, const real32x4 &a, const real32x4 &b, int32x4 &result) {
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
+			[](size_t i, const real32xN &a, const real32xN &b, int32xN &result) {
 				result = a >= b;
 			});
 	}
@@ -167,8 +167,8 @@ namespace core_task_functions {
 		const c_real_buffer *a,
 		const c_real_buffer *b,
 		c_bool_buffer *result) {
-		iterate_buffers<4, true>(context.buffer_size, a, b, result,
-			[](size_t i, const real32x4 &a, const real32x4 &b, int32x4 &result) {
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
+			[](size_t i, const real32xN &a, const real32xN &b, int32xN &result) {
 				result = a <= b;
 			});
 	}
@@ -178,8 +178,8 @@ namespace core_task_functions {
 		const c_bool_buffer *a,
 		const c_bool_buffer *b,
 		c_bool_buffer *result) {
-		iterate_buffers<128, true>(context.buffer_size, a, b, result,
-			[](size_t i, const int32x4 &a, const int32x4 &b, int32x4 &result) {
+		iterate_buffers<k_simd_size_bits, true>(context.buffer_size, a, b, result,
+			[](size_t i, const int32xN &a, const int32xN &b, int32xN &result) {
 				result = a & b;
 			});
 	}
@@ -189,8 +189,8 @@ namespace core_task_functions {
 		const c_bool_buffer *a,
 		const c_bool_buffer *b,
 		c_bool_buffer *result) {
-		iterate_buffers<128, true>(context.buffer_size, a, b, result,
-			[](size_t i, const int32x4 &a, const int32x4 &b, int32x4 &result) {
+		iterate_buffers<k_simd_size_bits, true>(context.buffer_size, a, b, result,
+			[](size_t i, const int32xN &a, const int32xN &b, int32xN &result) {
 				result = a | b;
 			});
 	}
@@ -211,16 +211,16 @@ namespace core_task_functions {
 				result->set_is_constant(false);
 			}
 		} else {
-			iterate_buffers<4, true>(context.buffer_size, condition, true_value, false_value, result,
+			iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, condition, true_value, false_value, result,
 				[](
 					size_t i,
-					const int32x4 &condition,
-					const real32x4 &true_value,
-					const real32x4 &false_value,
-					real32x4 &result) {
-						result = reinterpret_bits<real32x4>(
-							(condition & reinterpret_bits<int32x4>(true_value))
-							| (~condition & reinterpret_bits<int32x4>(false_value)));
+					const int32xN &condition,
+					const real32xN &true_value,
+					const real32xN &false_value,
+					real32xN &result) {
+						result = reinterpret_bits<real32xN>(
+							(condition & reinterpret_bits<int32xN>(true_value))
+							| (~condition & reinterpret_bits<int32xN>(false_value)));
 				});
 		}
 	}
@@ -244,13 +244,13 @@ namespace core_task_functions {
 				result->set_is_constant(false);
 			}
 		} else {
-			iterate_buffers<128, true>(context.buffer_size, condition, true_value, false_value, result,
+			iterate_buffers<k_simd_size_bits, true>(context.buffer_size, condition, true_value, false_value, result,
 				[](
 					size_t i,
-					const int32x4 &condition,
-					const int32x4 &true_value,
-					const int32x4 &false_value,
-					int32x4 &result) {
+					const int32xN &condition,
+					const int32xN &true_value,
+					const int32xN &false_value,
+					int32xN &result) {
 					result = (condition & true_value) | (~condition & false_value);
 				});
 		}

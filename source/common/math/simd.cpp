@@ -87,4 +87,6 @@ uint32 get_simd_availability() {
 #else // ARCHITECTURE
 #error Unknown architecture
 #endif // ARCHITECTURE
+
+	return simd_availability;
 }

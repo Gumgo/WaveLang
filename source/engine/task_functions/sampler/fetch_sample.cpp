@@ -79,7 +79,7 @@ static void split_fractional_sample_index(real64 sample_index, uint32 &int_out, 
 }
 
 static real32 interpolate_samples(const s_sample_interpolation_coefficients &coefficients, real32 fraction) {
-#if SIMD_IMPLEMENTATION_SSE_ENABLED
+#if SIMD_IMPLEMENTATION_SSE3_ENABLED
 	__m128 ones = _mm_set1_ps(1.0f);
 	__m128 x = _mm_set1_ps(fraction);
 	__m128 p = _mm_load_ps(coefficients.coefficients.get_elements());

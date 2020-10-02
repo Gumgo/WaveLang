@@ -118,6 +118,18 @@
     <ClInclude Include="math\avx_mathfun.h">
       <Filter>math</Filter>
     </ClInclude>
+    <ClInclude Include="math\sse\int32x8_sse.h">
+      <Filter>math\sse</Filter>
+    </ClInclude>
+    <ClInclude Include="math\sse\real32x8_sse.h">
+      <Filter>math\sse</Filter>
+    </ClInclude>
+    <ClInclude Include="math\int32x8.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\real32x8.h">
+      <Filter>math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="SConscript" />

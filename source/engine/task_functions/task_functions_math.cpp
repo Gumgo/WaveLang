@@ -8,8 +8,8 @@ namespace math_task_functions {
 		const s_task_function_context &context,
 		const c_real_buffer *a,
 		c_real_buffer *result) {
-		iterate_buffers<4, true>(context.buffer_size, a, result,
-			[](size_t i, const real32x4 &a, real32x4 &result) {
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, result,
+			[](size_t i, const real32xN &a, real32xN &result) {
 				result = -a;
 			});
 	}
@@ -18,8 +18,8 @@ namespace math_task_functions {
 		const s_task_function_context &context,
 		const c_real_buffer *a,
 		c_real_buffer *result) {
-		iterate_buffers<4, true>(context.buffer_size, a, result,
-			[](size_t i, const real32x4 &a, real32x4 &result) {
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, result,
+			[](size_t i, const real32xN &a, real32xN &result) {
 				result = floor(a);
 			});
 	}
@@ -28,8 +28,8 @@ namespace math_task_functions {
 		const s_task_function_context &context,
 		const c_real_buffer *a,
 		c_real_buffer *result) {
-		iterate_buffers<4, true>(context.buffer_size, a, result,
-			[](size_t i, const real32x4 &a, real32x4 &result) {
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, result,
+			[](size_t i, const real32xN &a, real32xN &result) {
 				result = ceil(a);
 			});
 	}
@@ -38,8 +38,8 @@ namespace math_task_functions {
 		const s_task_function_context &context,
 		const c_real_buffer *a,
 		c_real_buffer *result) {
-		iterate_buffers<4, true>(context.buffer_size, a, result,
-			[](size_t i, const real32x4 &a, real32x4 &result) {
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, result,
+			[](size_t i, const real32xN &a, real32xN &result) {
 				result = round(a);
 			});
 	}
@@ -49,8 +49,8 @@ namespace math_task_functions {
 		const c_real_buffer *a,
 		const c_real_buffer *b,
 		c_real_buffer *result) {
-		iterate_buffers<4, true>(context.buffer_size, a, b, result,
-			[](size_t i, const real32x4 &a, const real32x4 &b, real32x4 &result) {
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
+			[](size_t i, const real32xN &a, const real32xN &b, real32xN &result) {
 				result = min(a, b);
 			});
 	}
@@ -60,8 +60,8 @@ namespace math_task_functions {
 		const c_real_buffer *a,
 		const c_real_buffer *b,
 		c_real_buffer *result) {
-		iterate_buffers<4, true>(context.buffer_size, a, b, result,
-			[](size_t i, const real32x4 &a, const real32x4 &b, real32x4 &result) {
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
+			[](size_t i, const real32xN &a, const real32xN &b, real32xN &result) {
 				result = max(a, b);
 			});
 	}
@@ -70,8 +70,8 @@ namespace math_task_functions {
 		const s_task_function_context &context,
 		const c_real_buffer *a,
 		c_real_buffer *result) {
-		iterate_buffers<4, true>(context.buffer_size, a, result,
-			[](size_t i, const real32x4 &a, real32x4 &result) {
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, result,
+			[](size_t i, const real32xN &a, real32xN &result) {
 				result = exp(a);
 			});
 	}
@@ -80,8 +80,8 @@ namespace math_task_functions {
 		const s_task_function_context &context,
 		const c_real_buffer *a,
 		c_real_buffer *result) {
-		iterate_buffers<4, true>(context.buffer_size, a, result,
-			[](size_t i, const real32x4 &a, real32x4 &result) {
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, result,
+			[](size_t i, const real32xN &a, real32xN &result) {
 				result = log(a);
 			});
 	}
@@ -90,8 +90,8 @@ namespace math_task_functions {
 		const s_task_function_context &context,
 		const c_real_buffer *a,
 		c_real_buffer *result) {
-		iterate_buffers<4, true>(context.buffer_size, a, result,
-			[](size_t i, const real32x4 &a, real32x4 &result) {
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, result,
+			[](size_t i, const real32xN &a, real32xN &result) {
 				result = sqrt(a);
 			});
 	}
@@ -104,14 +104,14 @@ namespace math_task_functions {
 		// Exponentiation is special because it is cheaper if the base is constant
 		if (a->is_constant()) {
 			real32 base = a->get_constant();
-			real32x4 log_base = log(real32x4(base));
-			iterate_buffers<4, true>(context.buffer_size, b, result,
-				[&log_base](size_t i, const real32x4 &b, real32x4 &result) {
+			real32xN log_base = log(real32xN(base));
+			iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, b, result,
+				[&log_base](size_t i, const real32xN &b, real32xN &result) {
 					result = exp(log_base * b);
 				});
 		} else {
-			iterate_buffers<4, true>(context.buffer_size, a, b, result,
-				[](size_t i, const real32x4 &a, const real32x4 &b, real32x4 &result) {
+			iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
+				[](size_t i, const real32xN &a, const real32xN &b, real32xN &result) {
 					result = pow(a, b);
 				});
 		}
@@ -121,8 +121,8 @@ namespace math_task_functions {
 		const s_task_function_context &context,
 		const c_real_buffer *a,
 		c_real_buffer *result) {
-		iterate_buffers<4, true>(context.buffer_size, a, result,
-			[](size_t i, const real32x4 &a, real32x4 &result) {
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, result,
+			[](size_t i, const real32xN &a, real32xN &result) {
 				result = sin(a);
 			});
 	}
@@ -131,8 +131,8 @@ namespace math_task_functions {
 		const s_task_function_context &context,
 		const c_real_buffer *a,
 		c_real_buffer *result) {
-		iterate_buffers<4, true>(context.buffer_size, a, result,
-			[](size_t i, const real32x4 &a, real32x4 &result) {
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, result,
+			[](size_t i, const real32xN &a, real32xN &result) {
 				result = cos(a);
 			});
 	}
@@ -142,8 +142,8 @@ namespace math_task_functions {
 		const c_real_buffer *a,
 		c_real_buffer *sin_out,
 		c_real_buffer *cos_out) {
-		iterate_buffers<4, true>(context.buffer_size, a, sin_out, cos_out,
-			[](size_t i, const real32x4 &a, real32x4 &sin_out, real32x4 &cos_out) {
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, sin_out, cos_out,
+			[](size_t i, const real32xN &a, real32xN &sin_out, real32xN &cos_out) {
 				sincos(a, sin_out, cos_out);
 			});
 	}

@@ -59,7 +59,9 @@ inline int32x4::operator real32x4() const {
 }
 
 inline int32x4 int32x4::sum_elements() const {
-	int32x4 x = _mm_hadd_epi32(m_value, m_value);
+	// $TODO $SIMD:
+	// https://stackoverflow.com/questions/6996764/fastest-way-to-do-horizontal-sse-vector-sum-or-other-reduction
+	__m128i x = _mm_hadd_epi32(m_value, m_value);
 	x = _mm_hadd_epi32(x, x);
 	return x;
 }
@@ -77,7 +79,7 @@ inline int32x4 operator-(const int32x4 &v) {
 }
 
 inline int32x4 operator~(const int32x4 &v) {
-	return _mm_andnot_si128(v, _mm_set1_epi32(0xffffffff));
+	return _mm_xor_si128(v, _mm_cmpeq_epi32(v, v)); // cmpeq(v, v) sets all bits to 1
 }
 
 inline int32x4 operator+(const int32x4 &lhs, const int32x4 &rhs) {
@@ -109,7 +111,6 @@ inline int32x4 operator<<(const int32x4 &lhs, int32 rhs) {
 }
 
 inline int32x4 operator<<(const int32x4 &lhs, const int32x4 &rhs) {
-	// $TODO don't use AVX
 	return _mm_sllv_epi32(lhs, rhs);
 }
 
@@ -118,7 +119,6 @@ inline int32x4 operator>>(const int32x4 &lhs, int32 rhs) {
 }
 
 inline int32x4 operator>>(const int32x4 &lhs, const int32x4 &rhs) {
-	// $TODO don't use AVX
 	return _mm_srav_epi32(lhs, rhs);
 }
 
@@ -127,7 +127,6 @@ inline int32x4 int32x4::shift_right_unsigned(int32 rhs) const {
 }
 
 inline int32x4 int32x4::shift_right_unsigned(const int32x4 &rhs) const {
-	// $TODO don't use AVX
 	return _mm_srlv_epi32(m_value, rhs);
 }
 
@@ -176,22 +175,18 @@ inline int32x4 abs(const int32x4 &v) {
 }
 
 inline int32x4 min(const int32x4 &a, const int32x4 &b) {
-	// $TODO support SSE3
 	return _mm_min_epi32(a, b);
 }
 
 inline int32x4 max(const int32x4 &a, const int32x4 &b) {
-	// $TODO support SSE3
 	return _mm_max_epi32(a, b);
 }
 
 inline int32x4 min_unsigned(const int32x4 &a, const int32x4 &b) {
-	// $TODO support SSE3
 	return _mm_min_epu32(a, b);
 }
 
 inline int32x4 max_unsigned(const int32x4 &a, const int32x4 &b) {
-	// $TODO support SSE3
 	return _mm_max_epu32(a, b);
 }
 
@@ -204,11 +199,11 @@ inline int32 mask_from_msb(const int32x4 &v) {
 }
 
 inline bool all_true(const int32x4 &v) {
-	return mask_from_msb(v) == 0xf;
+	return mask_from_msb(v) == 0xf; // Alternative: _mm_test_all_ones
 }
 
 inline bool all_false(const int32x4 &v) {
-	return mask_from_msb(v) == 0x0;
+	return mask_from_msb(v) == 0x0; // Alternative: _mm_test_all_zeros
 }
 
 inline bool any_true(const int32x4 &v) {

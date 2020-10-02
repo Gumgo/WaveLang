@@ -152,6 +152,7 @@ TEST(Buffer, Cico) {
 
 	// Test strides:
 
+#if IS_TRUE(SIMD_128_ENABLED)
 	{
 		zero_type(real_buffer_memory_out, array_count(real_buffer_memory_out));
 		size_t iterations = 0;
@@ -190,6 +191,48 @@ TEST(Buffer, Cico) {
 		EXPECT_TRUE(bool_dynamic_out->is_constant());
 		EXPECT_EQ(bool_dynamic_out->get_constant(), k_bool_constant);
 	}
+#endif // IS_TRUE(SIMD_128_ENABLED)
+
+#if IS_TRUE(SIMD_256_ENABLED)
+	{
+		zero_type(real_buffer_memory_out, array_count(real_buffer_memory_out));
+		size_t iterations = 0;
+		iterate_buffers<8, true>(k_buffer_size, real_constant_in, real_dynamic_out,
+			[&](size_t i, const real32x8 &a, real32x8 &b) {
+				b = a;
+				iterations++;
+			});
+		EXPECT_EQ(iterations, 1);
+		EXPECT_TRUE(real_dynamic_out->is_constant());
+		EXPECT_EQ(real_dynamic_out->get_constant(), k_real_constant);
+	}
+
+	{
+		zero_type(bool_buffer_memory_out, array_count(bool_buffer_memory_out));
+		size_t iterations = 0;
+		iterate_buffers<8, true>(k_buffer_size, bool_constant_in, bool_dynamic_out,
+			[&](size_t i, const int32x8 &a, int32x8 &b) {
+				b = a;
+				iterations++;
+			});
+		EXPECT_EQ(iterations, 1);
+		EXPECT_TRUE(bool_dynamic_out->is_constant());
+		EXPECT_EQ(bool_dynamic_out->get_constant(), k_bool_constant);
+	}
+
+	{
+		zero_type(bool_buffer_memory_out, array_count(bool_buffer_memory_out));
+		size_t iterations = 0;
+		iterate_buffers<256, true>(k_buffer_size, bool_constant_in, bool_dynamic_out,
+			[&](size_t i, const int32x8 &a, int32x8 &b) {
+				b = a;
+				iterations++;
+			});
+		EXPECT_EQ(iterations, 1);
+		EXPECT_TRUE(bool_dynamic_out->is_constant());
+		EXPECT_EQ(bool_dynamic_out->get_constant(), k_bool_constant);
+	}
+#endif // IS_TRUE(SIMD_256_ENABLED)
 
 	// Mixed types:
 
@@ -254,16 +297,29 @@ TEST(Buffer, Constant) {
 
 	for (const c_real_buffer *buffer : real_buffers) {
 		EXPECT_EQ(buffer->get_constant(), k_real_constant);
+#if IS_TRUE(SIMD_128_ENABLED)
 		EXPECT_TRUE(all_true(real32x4(buffer->get_data()) == real32x4(k_real_constant)));
+#endif // IS_TRUE(SIMD_128_ENABLED)
+#if IS_TRUE(SIMD_256_ENABLED)
+		EXPECT_TRUE(all_true(real32x8(buffer->get_data()) == real32x8(k_real_constant)));
+#endif // IS_TRUE(SIMD_256_ENABLED)
 
 		iterate_buffers<1, false>(k_buffer_size, buffer,
 			[](size_t i, real32 x) {
 				EXPECT_EQ(x, k_real_constant);
 			});
+#if IS_TRUE(SIMD_128_ENABLED)
 		iterate_buffers<4, false>(k_buffer_size, buffer,
 			[](size_t i, const real32x4 &x) {
 				EXPECT_TRUE(all_true(x == real32x4(k_real_constant)));
 			});
+#endif // IS_TRUE(SIMD_128_ENABLED)
+#if IS_TRUE(SIMD_256_ENABLED)
+		iterate_buffers<8, false>(k_buffer_size, buffer,
+			[](size_t i, const real32x8 &x) {
+				EXPECT_TRUE(all_true(x == real32x8(k_real_constant)));
+			});
+#endif // IS_TRUE(SIMD_256_ENABLED)
 	}
 
 	const c_bool_buffer *bool_buffers[] = {
@@ -273,12 +329,18 @@ TEST(Buffer, Constant) {
 
 	for (const c_bool_buffer *buffer : bool_buffers) {
 		EXPECT_EQ(buffer->get_constant(), k_bool_constant);
+#if IS_TRUE(SIMD_128_ENABLED)
 		EXPECT_TRUE(all_true(int32x4(buffer->get_data()) == -static_cast<int32>(k_bool_constant)));
+#endif // IS_TRUE(SIMD_128_ENABLED)
+#if IS_TRUE(SIMD_256_ENABLED)
+		EXPECT_TRUE(all_true(int32x8(buffer->get_data()) == -static_cast<int32>(k_bool_constant)));
+#endif // IS_TRUE(SIMD_256_ENABLED)
 
 		iterate_buffers<1, false>(k_buffer_size, buffer,
 			[](size_t i, bool x) {
 				EXPECT_EQ(x, k_bool_constant);
 			});
+#if IS_TRUE(SIMD_128_ENABLED)
 		iterate_buffers<4, false>(k_buffer_size, buffer,
 			[](size_t i, const int32x4 &x) {
 				EXPECT_TRUE(all_true(x == -int32x4(static_cast<int32>(k_bool_constant))));
@@ -287,6 +349,17 @@ TEST(Buffer, Constant) {
 			[](size_t i, const int32x4 &x) {
 				EXPECT_TRUE(all_true(x == -int32x4(static_cast<int32>(k_bool_constant))));
 			});
+#endif // IS_TRUE(SIMD_128_ENABLED)
+#if IS_TRUE(SIMD_128_ENABLED)
+		iterate_buffers<8, false>(k_buffer_size, buffer,
+			[](size_t i, const int32x8 &x) {
+				EXPECT_TRUE(all_true(x == -int32x8(static_cast<int32>(k_bool_constant))));
+			});
+		iterate_buffers<256, false>(k_buffer_size, buffer,
+			[](size_t i, const int32x8 &x) {
+				EXPECT_TRUE(all_true(x == -int32x8(static_cast<int32>(k_bool_constant))));
+			});
+#endif // IS_TRUE(SIMD_128_ENABLED)
 	}
 }
 
@@ -318,6 +391,7 @@ TEST(Buffer, TerminateEarly) {
 		EXPECT_EQ(iterations, 6);
 	}
 
+#if IS_TRUE(SIMD_128_ENABLED)
 	{
 		size_t iterations = 0;
 		iterate_buffers<4, false>(k_buffer_size, real_buffer,
@@ -327,6 +401,19 @@ TEST(Buffer, TerminateEarly) {
 			});
 		EXPECT_EQ(iterations, 4);
 	}
+#endif // IS_TRUE(SIMD_128_ENABLED)
+
+#if IS_TRUE(SIMD_256_ENABLED)
+	{
+		size_t iterations = 0;
+		iterate_buffers<8, false>(k_buffer_size, real_buffer,
+			[&](size_t i, const real32x8 &a) {
+				iterations++;
+				return i < 20;
+			});
+		EXPECT_EQ(iterations, 4);
+	}
+#endif // IS_TRUE(SIMD_256_ENABLED)
 }
 
 TEST(Buffer, LastIterationFunction) {
@@ -335,6 +422,7 @@ TEST(Buffer, LastIterationFunction) {
 		1.0f);
 	const c_real_buffer *real_buffer = &buffer.get_as<c_real_buffer>();
 
+#if IS_TRUE(SIMD_128_ENABLED)
 	{
 		size_t iterations = 0;
 		bool last_iteration_called = false;
@@ -363,6 +451,38 @@ TEST(Buffer, LastIterationFunction) {
 		EXPECT_EQ(iterations, 4);
 		EXPECT_TRUE(last_iteration_called);
 	}
+#endif // IS_TRUE(SIMD_128_ENABLED)
+
+#if IS_TRUE(SIMD_256_ENABLED)
+	{
+		size_t iterations = 0;
+		bool last_iteration_called = false;
+		iterate_buffers<8, false>(16, real_buffer,
+			[&](size_t i, const real32x8 &a) {
+				iterations++;
+			},
+			[&](size_t i, const real32x8 &a) {
+				last_iteration_called = true;
+			});
+		EXPECT_EQ(iterations, 2);
+		EXPECT_FALSE(last_iteration_called);
+	}
+
+	{
+		size_t iterations = 0;
+		bool last_iteration_called = false;
+		iterate_buffers<8, false>(18, real_buffer,
+			[&](size_t i, const real32x8 &a) {
+				iterations++;
+			},
+			[&](size_t i, const real32x8 &a) {
+				EXPECT_EQ(i, 16);
+				last_iteration_called = true;
+			});
+		EXPECT_EQ(iterations, 2);
+		EXPECT_TRUE(last_iteration_called);
+	}
+#endif // IS_TRUE(SIMD_256_ENABLED)
 }
 
 TEST(Buffer, IterationOrder) {
@@ -422,6 +542,7 @@ TEST(Buffer, IterationOrder) {
 		}
 	}
 
+#if IS_TRUE(SIMD_128_ENABLED)
 	{
 		zero_type(real_buffer_memory_out, array_count(real_buffer_memory_out));
 		iterate_buffers<4, false>(k_buffer_size, real_in, real_out,
@@ -432,6 +553,20 @@ TEST(Buffer, IterationOrder) {
 			EXPECT_EQ(real_buffer_memory_in[index], real_buffer_memory_out[index]);
 		}
 	}
+#endif // IS_TRUE(SIMD_128_ENABLED)
+
+#if IS_TRUE(SIMD_256_ENABLED)
+	{
+		zero_type(real_buffer_memory_out, array_count(real_buffer_memory_out));
+		iterate_buffers<8, false>(k_buffer_size, real_in, real_out,
+			[](size_t i, const real32x8 &a, real32x8 &b) {
+				b = a;
+			});
+		for (size_t index = 0; index < array_count(real_buffer_memory_in); index++) {
+			EXPECT_EQ(real_buffer_memory_in[index], real_buffer_memory_out[index]);
+		}
+	}
+#endif // IS_TRUE(SIMD_256_ENABLED)
 
 	{
 		zero_type(bool_buffer_memory_out, array_count(bool_buffer_memory_out));
@@ -444,6 +579,7 @@ TEST(Buffer, IterationOrder) {
 		}
 	}
 
+#if IS_TRUE(SIMD_128_ENABLED)
 	{
 		zero_type(bool_buffer_memory_out, array_count(bool_buffer_memory_out));
 		iterate_buffers<4, false>(k_buffer_size, bool_in, bool_out,
@@ -465,4 +601,29 @@ TEST(Buffer, IterationOrder) {
 			EXPECT_EQ(bool_buffer_memory_in[index], bool_buffer_memory_out[index]);
 		}
 	}
+#endif // IS_TRUE(SIMD_128_ENABLED)
+
+#if IS_TRUE(SIMD_256_ENABLED)
+	{
+		zero_type(bool_buffer_memory_out, array_count(bool_buffer_memory_out));
+		iterate_buffers<8, false>(k_buffer_size, bool_in, bool_out,
+			[](size_t i, const int32x8 &a, int32x8 &b) {
+				b = a;
+			});
+		for (size_t index = 0; index < array_count(bool_buffer_memory_in); index++) {
+			EXPECT_EQ(bool_buffer_memory_in[index], bool_buffer_memory_out[index]);
+		}
+	}
+
+	{
+		zero_type(bool_buffer_memory_out, array_count(bool_buffer_memory_out));
+		iterate_buffers<256, false>(k_buffer_size, bool_in, bool_out,
+			[](size_t i, const int32x8 &a, int32x8 &b) {
+				b = a;
+			});
+		for (size_t index = 0; index < array_count(bool_buffer_memory_in); index++) {
+			EXPECT_EQ(bool_buffer_memory_in[index], bool_buffer_memory_out[index]);
+		}
+	}
+#endif // IS_TRUE(SIMD_256_ENABLED)
 }

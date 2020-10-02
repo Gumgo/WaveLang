@@ -23,15 +23,19 @@
     <ClInclude Include="math\avx_mathfun.h" />
     <ClInclude Include="math\floating_point.h" />
     <ClInclude Include="math\int32x4.h" />
+    <ClInclude Include="math\int32x8.h" />
     <ClInclude Include="math\math.h" />
     <ClInclude Include="math\math_constants.h" />
     <ClInclude Include="math\neon\int32x4_neon.h" />
     <ClInclude Include="math\neon\real32x4_neon.h" />
     <ClInclude Include="math\neon_mathfun.h" />
     <ClInclude Include="math\real32x4.h" />
+    <ClInclude Include="math\real32x8.h" />
     <ClInclude Include="math\simd.h" />
     <ClInclude Include="math\sse\int32x4_sse.h" />
+    <ClInclude Include="math\sse\int32x8_sse.h" />
     <ClInclude Include="math\sse\real32x4_sse.h" />
+    <ClInclude Include="math\sse\real32x8_sse.h" />
     <ClInclude Include="math\sse_mathfun.h" />
     <ClInclude Include="math\utilities.h" />
     <ClInclude Include="platform.h" />
@@ -128,7 +132,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='debug|x64'">
     <NMakeOutput>
     </NMakeOutput>
-    <NMakePreprocessorDefinitions>_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <NMakePreprocessorDefinitions>_DEBUG;__AVX__;__AVX2__;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
     <NMakeBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeBuildCommandLine>
     <NMakeReBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName) &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeReBuildCommandLine>
     <NMakeCleanCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)</NMakeCleanCommandLine>
@@ -137,7 +141,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='development|x64'">
     <NMakeOutput />
-    <NMakePreprocessorDefinitions>_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <NMakePreprocessorDefinitions>_DEBUG;__AVX__;__AVX2__;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
     <NMakeBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeBuildCommandLine>
     <NMakeReBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName) &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeReBuildCommandLine>
     <NMakeCleanCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)</NMakeCleanCommandLine>
@@ -147,7 +151,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='release|x64'">
     <NMakeOutput>
     </NMakeOutput>
-    <NMakePreprocessorDefinitions>NDEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <NMakePreprocessorDefinitions>NDEBUG;__AVX__;__AVX2__;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
     <NMakeBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeBuildCommandLine>
     <NMakeReBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName) &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeReBuildCommandLine>
     <NMakeCleanCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)</NMakeCleanCommandLine>
