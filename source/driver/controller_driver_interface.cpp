@@ -155,7 +155,8 @@ size_t c_controller_driver_interface::process_controller_events(
 }
 
 void c_controller_driver_interface::submit_controller_event_wrapper(
-	void *context, const s_controller_event &controller_event) {
+	void *context,
+	const s_controller_event &controller_event) {
 	static_cast<c_controller_driver_interface *>(context)->submit_controller_event(controller_event);
 }
 

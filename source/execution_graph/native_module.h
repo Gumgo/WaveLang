@@ -10,17 +10,24 @@
 #include <vector>
 
 class c_diagnostic;
+class c_node_interface;
 
 static constexpr size_t k_max_native_module_library_name_length = 64;
 static constexpr size_t k_max_native_module_name_length = 64;
 static constexpr size_t k_max_native_module_arguments = 10;
 static constexpr size_t k_max_native_module_argument_name_length = 20;
-static constexpr size_t k_invalid_argument_index = static_cast<size_t>(-1);
+static constexpr size_t k_invalid_native_module_argument_index = static_cast<size_t>(-1);
+
+using f_library_compiler_initializer = void *(*)();
+using f_library_compiler_deinitializer = void *(*)(void *library_context);
 
 struct s_native_module_library {
 	uint32 id;
 	c_static_string<k_max_native_module_library_name_length> name;
 	uint32 version;
+
+	f_library_compiler_initializer compiler_initializer;
+	f_library_compiler_deinitializer compiler_deinitializer;
 };
 
 // Unique identifier for each native module
@@ -277,7 +284,7 @@ using c_native_module_compile_time_argument_list = c_wrapped_array<s_native_modu
 
 struct s_native_module_context {
 	c_diagnostic *diagnostic;
-
+	c_node_interface *node_interface;
 	const s_instrument_globals *instrument_globals;
 
 	c_native_module_compile_time_argument_list *arguments;
@@ -297,7 +304,8 @@ struct s_native_module {
 	size_t in_argument_count;
 	size_t out_argument_count;
 
-	// Index of the argument representing the return value when called from script, or k_invalid_argument_index
+	// Index of the argument representing the return value when called from script, or
+	// k_invalid_native_module_argument_index
 	size_t return_argument_index;
 
 	// List of arguments
@@ -309,9 +317,11 @@ struct s_native_module {
 
 // Helpers to translate between nth argument and mth input/output
 size_t get_native_module_input_index_for_argument_index(
-	const s_native_module &native_module, size_t argument_index);
+	const s_native_module &native_module,
+	size_t argument_index);
 size_t get_native_module_output_index_for_argument_index(
-	const s_native_module &native_module, size_t argument_index);
+	const s_native_module &native_module,
+	size_t argument_index);
 
 // Optimization rules
 

@@ -84,12 +84,18 @@ void c_annotation_specifications::add_existence(const char *annotation, const ch
 }
 
 void c_annotation_specifications::add_string(
-	const char *prefix, const char *name, bool required, std::string *storage) {
+	const char *prefix,
+	const char *name,
+	bool required,
+	std::string *storage) {
 	add_specification_internal(e_annotation_type::k_string, prefix, name, required, storage);
 	storage->clear();
 }
 void c_annotation_specifications::add_uint32(
-	const char *prefix, const char *name, bool required, uint32 *storage) {
+	const char *prefix,
+	const char *name,
+	bool required,
+	uint32 *storage) {
 	add_specification_internal(e_annotation_type::k_uint32, prefix, name, required, storage);
 	*storage = 0;
 }

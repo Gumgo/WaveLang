@@ -210,7 +210,8 @@ private:
 
 	// Returns true if the two sets of module arguments would prevent a module with the same name from being overloaded
 	bool do_module_arguments_conflict_for_overload(
-		const c_ast_node_module_declaration *node_a, const c_ast_node_module_declaration *node_b) {
+		const c_ast_node_module_declaration *node_a,
+		const c_ast_node_module_declaration *node_b) {
 		wl_assert(node_a);
 		wl_assert(node_b);
 

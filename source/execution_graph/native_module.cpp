@@ -178,7 +178,7 @@ size_t get_native_module_input_index_for_argument_index(const s_native_module &n
 	}
 
 	wl_vhalt("Invalid argument index");
-	return k_invalid_argument_index;
+	return k_invalid_native_module_argument_index;
 }
 
 size_t get_native_module_output_index_for_argument_index(const s_native_module &native_module, size_t argument_index) {
@@ -195,5 +195,5 @@ size_t get_native_module_output_index_for_argument_index(const s_native_module &
 	}
 
 	wl_vhalt("Invalid argument index");
-	return k_invalid_argument_index;
+	return k_invalid_native_module_argument_index;
 }

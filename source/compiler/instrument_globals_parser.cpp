@@ -60,16 +60,24 @@ static bool get_bool(const s_token &token, bool &value_out);
 
 // Preprocessor commands
 static s_compiler_result preprocessor_command_max_voices(
-	void *context, const c_preprocessor_command_arguments &arguments, c_preprocessor_output &output);
+	void *context,
+	const c_preprocessor_command_arguments &arguments,
+	c_preprocessor_output &output);
 
 static s_compiler_result preprocessor_command_sample_rate(
-	void *context, const c_preprocessor_command_arguments &arguments, c_preprocessor_output &output);
+	void *context,
+	const c_preprocessor_command_arguments &arguments,
+	c_preprocessor_output &output);
 
 static s_compiler_result preprocessor_command_chunk_size(
-	void *context, const c_preprocessor_command_arguments &arguments, c_preprocessor_output &output);
+	void *context,
+	const c_preprocessor_command_arguments &arguments,
+	c_preprocessor_output &output);
 
 static s_compiler_result preprocessor_command_activate_fx_immediately(
-	void *context, const c_preprocessor_command_arguments &arguments, c_preprocessor_output &output);
+	void *context,
+	const c_preprocessor_command_arguments &arguments,
+	c_preprocessor_output &output);
 
 void c_instrument_globals_parser::register_preprocessor_commands(
 	s_instrument_globals_context *globals_context) {
@@ -116,7 +124,9 @@ static bool get_bool(const s_token &token, bool &value_out) {
 }
 
 static s_compiler_result preprocessor_command_max_voices(
-	void *context, const c_preprocessor_command_arguments &arguments, c_preprocessor_output &output) {
+	void *context,
+	const c_preprocessor_command_arguments &arguments,
+	c_preprocessor_output &output) {
 	s_instrument_globals_context *globals_context = static_cast<s_instrument_globals_context *>(context);
 
 	s_compiler_result result;
@@ -149,7 +159,9 @@ static s_compiler_result preprocessor_command_max_voices(
 }
 
 static s_compiler_result preprocessor_command_sample_rate(
-	void *context, const c_preprocessor_command_arguments &arguments, c_preprocessor_output &output) {
+	void *context,
+	const c_preprocessor_command_arguments &arguments,
+	c_preprocessor_output &output) {
 	s_instrument_globals_context *globals_context = static_cast<s_instrument_globals_context *>(context);
 
 	s_compiler_result result;
@@ -197,7 +209,9 @@ static s_compiler_result preprocessor_command_sample_rate(
 }
 
 static s_compiler_result preprocessor_command_chunk_size(
-	void *context, const c_preprocessor_command_arguments &arguments, c_preprocessor_output &output) {
+	void *context,
+	const c_preprocessor_command_arguments &arguments,
+	c_preprocessor_output &output) {
 	s_instrument_globals_context *globals_context = static_cast<s_instrument_globals_context *>(context);
 
 	s_compiler_result result;
@@ -230,7 +244,9 @@ static s_compiler_result preprocessor_command_chunk_size(
 }
 
 static s_compiler_result preprocessor_command_activate_fx_immediately(
-	void *context, const c_preprocessor_command_arguments &arguments, c_preprocessor_output &output) {
+	void *context,
+	const c_preprocessor_command_arguments &arguments,
+	c_preprocessor_output &output) {
 	s_instrument_globals_context *globals_context = static_cast<s_instrument_globals_context *>(context);
 
 	s_compiler_result result;

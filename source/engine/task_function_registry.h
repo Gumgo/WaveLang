@@ -4,6 +4,7 @@
 
 #include "engine/task_function.h"
 
+// $TODO $HANDLE add h_task_function and h_task_function_library
 static constexpr uint32 k_invalid_task_function_index = static_cast<uint32>(-1);
 
 // The registry of all task functions
@@ -14,6 +15,15 @@ public:
 
 	static void begin_registration();
 	static bool end_registration();
+
+	// Registers a library which task functions are grouped under
+	static bool register_task_function_library(const s_task_function_library &library);
+
+	static bool is_task_function_library_registered(uint32 library_id);
+	static uint32 get_task_function_library_index(uint32 library_id);
+
+	static uint32 get_task_function_library_count();
+	static const s_task_function_library &get_task_function_library(uint32 index);
 
 	static bool register_task_function(const s_task_function &task_function);
 

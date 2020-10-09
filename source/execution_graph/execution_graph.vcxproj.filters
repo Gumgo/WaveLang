@@ -39,6 +39,9 @@
     <ClCompile Include="native_modules\native_modules_controller.cpp">
       <Filter>native_modules</Filter>
     </ClCompile>
+    <ClCompile Include="node_interface\node_interface.cpp">
+      <Filter>node_interface</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="execution_graph.h" />
@@ -83,6 +86,9 @@
     <ClInclude Include="native_modules\native_modules_controller.h">
       <Filter>native_modules</Filter>
     </ClInclude>
+    <ClInclude Include="node_interface\node_interface.h">
+      <Filter>node_interface</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="SConscript" />
@@ -93,6 +99,9 @@
     </Filter>
     <Filter Include="native_modules">
       <UniqueIdentifier>{a5ad8846-c8fd-4c02-8068-ebb2bf50137c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="node_interface">
+      <UniqueIdentifier>{26378491-e7c0-4298-8614-578c3914334e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

@@ -268,8 +268,9 @@ static std::vector<size_t> build_left_recursive_list(
 static void build_native_module_declarations(c_ast_node_scope *global_scope) {
 	for (uint32 index = 0; index < c_native_module_registry::get_native_module_count(); index++) {
 		const s_native_module &native_module = c_native_module_registry::get_native_module(index);
-		const s_native_module_library &library = c_native_module_registry::get_native_module_library(
-			native_module.uid.get_library_id());
+		uint32 library_index =
+			c_native_module_registry::get_native_module_library_index(native_module.uid.get_library_id());
+		const s_native_module_library &library = c_native_module_registry::get_native_module_library(library_index);
 
 		c_ast_node_module_declaration *module_declaration = new c_ast_node_module_declaration();
 		module_declaration->set_is_native(true);

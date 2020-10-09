@@ -7,7 +7,8 @@ c_scraper_diagnostic::c_scraper_diagnostic(clang::CompilerInstance &compiler_ins
 }
 
 clang::DiagnosticBuilder c_scraper_diagnostic::error(
-	const clang::SourceLocation &source_location, const char *message_format) {
+	const clang::SourceLocation &source_location,
+	const char *message_format) {
 	// This will either create a new diagnostic ID or return an existing one based on a hash of message_format
 	unsigned diagnostic_id = m_compiler_instance.getDiagnostics().getDiagnosticIDs()->getCustomDiagID(
 		clang::DiagnosticIDs::Error, message_format);

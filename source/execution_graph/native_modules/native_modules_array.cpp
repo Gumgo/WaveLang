@@ -3,7 +3,8 @@
 #include <algorithm>
 
 static std::vector<c_node_reference> array_combine(
-	const std::vector<c_node_reference> &array_0, const std::vector<c_node_reference> &array_1) {
+	const std::vector<c_node_reference> &array_0,
+	const std::vector<c_node_reference> &array_1) {
 	std::vector<c_node_reference> result;
 	result.resize(array_0.size() + array_1.size());
 	std::copy(array_0.begin(), array_0.end(), result.begin());

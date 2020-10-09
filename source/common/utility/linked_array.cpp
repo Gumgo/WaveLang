@@ -58,7 +58,9 @@ void c_linked_array::free_node(size_t node_index) {
 }
 
 void c_linked_array::insert_node_into_list(
-	s_linked_array_list &list, size_t node_index, size_t insert_before_this_node_index) {
+	s_linked_array_list &list,
+	size_t node_index,
+	size_t insert_before_this_node_index) {
 	wl_assert(valid_index(node_index, m_nodes.size()));
 
 	s_node &node = m_nodes[node_index];

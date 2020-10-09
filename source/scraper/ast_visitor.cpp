@@ -39,6 +39,12 @@ private:
 		c_task_qualified_data_type data_type;
 	};
 
+	void visit_library_compiler_initializer_declaration(clang::FunctionDecl *decl);
+	void visit_library_compiler_deinitializer_declaration(clang::FunctionDecl *decl);
+	void visit_library_engine_initializer_declaration(clang::FunctionDecl *decl);
+	void visit_library_engine_deinitializer_declaration(clang::FunctionDecl *decl);
+	void visit_library_tasks_pre_initializer_declaration(clang::FunctionDecl *decl);
+	void visit_library_tasks_post_initializer_declaration(clang::FunctionDecl *decl);
 	void visit_native_module_declaration(clang::FunctionDecl *decl);
 	void visit_task_memory_query_declaration(clang::FunctionDecl *decl);
 	void visit_task_initializer_declaration(clang::FunctionDecl *decl);
@@ -132,8 +138,8 @@ bool c_ast_visitor::VisitNamespaceDecl(clang::NamespaceDecl *decl) {
 
 	if (annotations.contains_annotation(WL_LIBRARY_DECLARATION)) {
 		if (m_current_library_index != k_invalid_library_index) {
-			m_diag.error(decl, "Cannot declare library within existing library '%0'") <<
-				m_result->get_library(m_current_library_index).name;
+			m_diag.error(decl, "Cannot declare library within existing library '%0'")
+				<< m_result->get_library(m_current_library_index).name;
 			return true;
 		}
 
@@ -169,8 +175,8 @@ bool c_ast_visitor::VisitNamespaceDecl(clang::NamespaceDecl *decl) {
 					m_current_library_index = index;
 					break;
 				} else {
-					m_diag.error(decl, "Library declaration '%0' conflicts with existing library '%1'") <<
-						library.name << existing_library.name;
+					m_diag.error(decl, "Library declaration '%0' conflicts with existing library '%1'")
+						<< library.name << existing_library.name;
 				}
 			}
 		}
@@ -199,6 +205,30 @@ bool c_ast_visitor::VisitFunctionDecl(clang::FunctionDecl *decl) {
 	}
 
 	c_annotation_collection annotations(decl->attrs());
+
+	if (annotations.contains_annotation(WL_LIBRARY_COMPILER_INITIALIZER)) {
+		visit_library_compiler_initializer_declaration(decl);
+	}
+
+	if (annotations.contains_annotation(WL_LIBRARY_COMPILER_DEINITIALIZER)) {
+		visit_library_compiler_deinitializer_declaration(decl);
+	}
+
+	if (annotations.contains_annotation(WL_LIBRARY_ENGINE_INITIALIZER)) {
+		visit_library_engine_initializer_declaration(decl);
+	}
+
+	if (annotations.contains_annotation(WL_LIBRARY_ENGINE_DEINITIALIZER)) {
+		visit_library_engine_deinitializer_declaration(decl);
+	}
+
+	if (annotations.contains_annotation(WL_LIBRARY_TASKS_PRE_INITIALIZER)) {
+		visit_library_tasks_pre_initializer_declaration(decl);
+	}
+
+	if (annotations.contains_annotation(WL_LIBRARY_TASKS_POST_INITIALIZER)) {
+		visit_library_tasks_post_initializer_declaration(decl);
+	}
 
 	if (annotations.contains_annotation(WL_NATIVE_MODULE_DECLARATION)) {
 		visit_native_module_declaration(decl);
@@ -250,6 +280,131 @@ bool c_ast_visitor::VisitRecordDecl(clang::RecordDecl *decl) {
 	return true;
 }
 
+void c_ast_visitor::visit_library_compiler_initializer_declaration(clang::FunctionDecl *decl) {
+	s_library_compiler_initializer_declaration library_compiler_initializer;
+	library_compiler_initializer.library_index = m_current_library_index;
+	library_compiler_initializer.function_call = get_function_call(decl);
+
+	std::string function_name = decl->getName().str();
+
+	if (!decl->getReturnType().getCanonicalType().getTypePtr()->isVoidPointerType()) {
+		m_diag.error(decl, "Library compiler initializer '%0' return type must be void pointer")
+			<< function_name;
+	}
+
+	if (!decl->param_empty()) {
+		m_diag.error(decl, "Library compiler initializer '%0' must take no parameters")
+			<< function_name;
+	}
+
+	m_result->add_library_compiler_initializer(library_compiler_initializer);
+}
+
+void c_ast_visitor::visit_library_compiler_deinitializer_declaration(clang::FunctionDecl *decl) {
+	s_library_compiler_deinitializer_declaration library_compiler_deinitializer;
+	library_compiler_deinitializer.library_index = m_current_library_index;
+	library_compiler_deinitializer.function_call = get_function_call(decl);
+
+	std::string function_name = decl->getName().str();
+
+	if (!decl->getReturnType().getCanonicalType().getTypePtr()->isVoidType()) {
+		m_diag.error(decl, "Library compiler deinitializer '%0' return type must be void")
+			<< function_name;
+	}
+
+	if (decl->param_size() != 1
+		|| decl->parameters()[0]->getType().getCanonicalType().getTypePtr()->isVoidPointerType()) {
+		m_diag.error(decl, "Library compiler deinitializer '%0' must take a single void pointer parameter")
+			<< function_name;
+	}
+
+	m_result->add_library_compiler_deinitializer(library_compiler_deinitializer);
+
+}
+
+void c_ast_visitor::visit_library_engine_initializer_declaration(clang::FunctionDecl *decl) {
+	s_library_engine_initializer_declaration library_engine_initializer;
+	library_engine_initializer.library_index = m_current_library_index;
+	library_engine_initializer.function_call = get_function_call(decl);
+
+	std::string function_name = decl->getName().str();
+
+	if (!decl->getReturnType().getCanonicalType().getTypePtr()->isVoidPointerType()) {
+		m_diag.error(decl, "Library engine initializer '%0' return type must be void pointer")
+			<< function_name;
+	}
+
+	if (!decl->param_empty()) {
+		m_diag.error(decl, "Library engine initializer '%0' must take no parameters")
+			<< function_name;
+	}
+
+	m_result->add_library_engine_initializer(library_engine_initializer);
+}
+
+void c_ast_visitor::visit_library_engine_deinitializer_declaration(clang::FunctionDecl *decl) {
+	s_library_engine_deinitializer_declaration library_engine_deinitializer;
+	library_engine_deinitializer.library_index = m_current_library_index;
+	library_engine_deinitializer.function_call = get_function_call(decl);
+
+	std::string function_name = decl->getName().str();
+
+	if (!decl->getReturnType().getCanonicalType().getTypePtr()->isVoidType()) {
+		m_diag.error(decl, "Library engine deinitializer '%0' return type must be void")
+			<< function_name;
+	}
+
+	if (decl->param_size() != 1
+		|| decl->parameters()[0]->getType().getCanonicalType().getTypePtr()->isVoidPointerType()) {
+		m_diag.error(decl, "Library engine deinitializer '%0' must take a single void pointer parameter")
+			<< function_name;
+	}
+
+	m_result->add_library_engine_deinitializer(library_engine_deinitializer);
+}
+
+void c_ast_visitor::visit_library_tasks_pre_initializer_declaration(clang::FunctionDecl *decl) {
+	s_library_tasks_pre_initializer_declaration library_tasks_pre_initializer;
+	library_tasks_pre_initializer.library_index = m_current_library_index;
+	library_tasks_pre_initializer.function_call = get_function_call(decl);
+
+	std::string function_name = decl->getName().str();
+
+	if (!decl->getReturnType().getCanonicalType().getTypePtr()->isVoidType()) {
+		m_diag.error(decl, "Library tasks pre-initializer '%0' return type must be void")
+			<< function_name;
+	}
+
+	if (decl->param_size() != 1
+		|| decl->parameters()[0]->getType().getCanonicalType().getTypePtr()->isVoidPointerType()) {
+		m_diag.error(decl, "Library tasks pre-initializer '%0' must take a single void pointer parameter")
+			<< function_name;
+	}
+
+	m_result->add_library_tasks_pre_initializer(library_tasks_pre_initializer);
+}
+
+void c_ast_visitor::visit_library_tasks_post_initializer_declaration(clang::FunctionDecl *decl) {
+	s_library_tasks_post_initializer_declaration library_tasks_post_initializer;
+	library_tasks_post_initializer.library_index = m_current_library_index;
+	library_tasks_post_initializer.function_call = get_function_call(decl);
+
+	std::string function_name = decl->getName().str();
+
+	if (!decl->getReturnType().getCanonicalType().getTypePtr()->isVoidType()) {
+		m_diag.error(decl, "Library tasks post-initializer '%0' return type must be void")
+			<< function_name;
+	}
+
+	if (decl->param_size() != 1
+		|| decl->parameters()[0]->getType().getCanonicalType().getTypePtr()->isVoidPointerType()) {
+		m_diag.error(decl, "Library tasks post-initializer '%0' must take a single void pointer parameter")
+			<< function_name;
+	}
+
+	m_result->add_library_tasks_post_initializer(library_tasks_post_initializer);
+}
+
 void c_ast_visitor::visit_native_module_declaration(clang::FunctionDecl *decl) {
 	c_annotation_collection annotations(decl->attrs());
 
@@ -261,7 +416,7 @@ void c_ast_visitor::visit_native_module_declaration(clang::FunctionDecl *decl) {
 	native_module.compile_time_function_call = get_function_call(decl);
 
 	if (!decl->getReturnType().getCanonicalType().getTypePtr()->isVoidType()) {
-		m_diag.error(decl, "Native module '%0' declaration return type must be void") << function_name;
+		m_diag.error(decl, "Native module '%0' return type must be void") << function_name;
 	}
 
 	c_annotation_specifications specs;
@@ -315,8 +470,8 @@ void c_ast_visitor::visit_native_module_declaration(clang::FunctionDecl *decl) {
 		argument_declaration.is_return_value = false;
 
 		if (!argument_declaration.type.is_valid()) {
-			m_diag.error(param_decl, "Unsupported type %0 for parameter '%1' of native module '%2'") <<
-				param_decl->getType() << argument_declaration.name << function_name;
+			m_diag.error(param_decl, "Unsupported type %0 for parameter '%1' of native module '%2'")
+				<< param_decl->getType() << argument_declaration.name << function_name;
 			continue;
 		}
 
@@ -347,8 +502,8 @@ void c_ast_visitor::visit_native_module_declaration(clang::FunctionDecl *decl) {
 		}
 
 		if (param_error) {
-			m_diag.error(param_decl, "Invalid qualifier(s) on parameter '%0' of native module '%1'") <<
-				argument_declaration.name << function_name;
+			m_diag.error(param_decl, "Invalid qualifier(s) on parameter '%0' of native module '%1'")
+				<< argument_declaration.name << function_name;
 		}
 
 		native_module.arguments.push_back(argument_declaration);
@@ -364,8 +519,8 @@ void c_ast_visitor::visit_task_memory_query_declaration(clang::FunctionDecl *dec
 	task_memory_query.function_call = get_function_call(decl);
 
 	if (!decl->getReturnType().getCanonicalType().getTypePtr()->isUnsignedIntegerType()) {
-		m_diag.error(decl, "Task memory query '%0' declaration return type must be unsigned integral type") <<
-			function_name;
+		m_diag.error(decl, "Task memory query '%0' return type must be unsigned integral type")
+			<< function_name;
 	}
 
 	task_memory_query.arguments = parse_task_arguments(decl, "task memory query", "Task memory query");
@@ -380,7 +535,7 @@ void c_ast_visitor::visit_task_initializer_declaration(clang::FunctionDecl *decl
 	task_initializer.function_call = get_function_call(decl);
 
 	if (!decl->getReturnType().getCanonicalType().getTypePtr()->isVoidType()) {
-		m_diag.error(decl, "Task initializer '%0' declaration return type must be void") << function_name;
+		m_diag.error(decl, "Task initializer '%0' return type must be void") << function_name;
 	}
 
 	task_initializer.arguments = parse_task_arguments(decl, "task initializer", "Task initializer");
@@ -395,7 +550,7 @@ void c_ast_visitor::visit_task_voice_initializer_declaration(clang::FunctionDecl
 	task_voice_initializer.function_call = get_function_call(decl);
 
 	if (!decl->getReturnType().getCanonicalType().getTypePtr()->isVoidType()) {
-		m_diag.error(decl, "Task voice initializer '%0' declaration return type must be void") << function_name;
+		m_diag.error(decl, "Task voice initializer '%0' return type must be void") << function_name;
 	}
 
 	task_voice_initializer.arguments =
@@ -414,7 +569,7 @@ void c_ast_visitor::visit_task_function_declaration(clang::FunctionDecl *decl) {
 	task_function.function_call = get_function_call(decl);
 
 	if (!decl->getReturnType().getCanonicalType().getTypePtr()->isVoidType()) {
-		m_diag.error(decl, "Task function '%0' declaration return type must be void") << function_name;
+		m_diag.error(decl, "Task function '%0' return type must be void") << function_name;
 	}
 
 	c_annotation_specifications specs;
@@ -647,8 +802,8 @@ std::vector<s_task_function_argument_declaration> c_ast_visitor::parse_task_argu
 	std::string function_name = decl->getName().str();
 
 	if (decl->param_empty()) {
-		m_diag.error(decl, "%0 '%1' must take task function context as its first parameter") <<
-			function_type_cap << function_name;
+		m_diag.error(decl, "%0 '%1' must take task function context as its first parameter")
+			<< function_type_cap << function_name;
 	}
 
 	for (clang::ParmVarDecl **it = decl->param_begin(); it != decl->param_end(); it++) {
@@ -663,8 +818,8 @@ std::vector<s_task_function_argument_declaration> c_ast_visitor::parse_task_argu
 				m_printing_policy);
 
 			if (type_string != "const s_task_function_context &") {
-				m_diag.error(decl, "%0 '%1' must take task function context as its first parameter") <<
-					function_type_cap << function_name;
+				m_diag.error(decl, "%0 '%1' must take task function context as its first parameter")
+					<< function_type_cap << function_name;
 			}
 
 			continue;
@@ -679,8 +834,8 @@ std::vector<s_task_function_argument_declaration> c_ast_visitor::parse_task_argu
 		argument_declaration.type = type.data_type;
 
 		if (!argument_declaration.type.is_valid()) {
-			m_diag.error(param_decl, "Unsupported type %0 for parameter '%1' of %2 '%3'") <<
-				param_decl->getType() << argument_declaration.name << function_type << function_name;
+			m_diag.error(param_decl, "Unsupported type %0 for parameter '%1' of %2 '%3'")
+				<< param_decl->getType() << argument_declaration.name << function_type << function_name;
 			continue;
 		}
 
@@ -690,8 +845,8 @@ std::vector<s_task_function_argument_declaration> c_ast_visitor::parse_task_argu
 		if (source_argument) {
 			argument_declaration.source = source_argument + strlen(WL_SOURCE_PREFIX);
 		} else {
-			m_diag.error(param_decl, "No source provided on parameter '%0' of %1 '%2'") <<
-				argument_declaration.name << function_type << function_name;
+			m_diag.error(param_decl, "No source provided on parameter '%0' of %1 '%2'")
+				<< argument_declaration.name << function_type << function_name;
 		}
 
 		result.push_back(argument_declaration);

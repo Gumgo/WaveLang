@@ -6,6 +6,7 @@
 
 # Per-user VS files
 **/.vs
+**/*.vcxproj.user
 
 # Ignore anything in the generated source folder
 /source/generated

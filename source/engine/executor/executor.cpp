@@ -18,10 +18,12 @@ c_executor::c_executor() {
 	m_sample_library_accessor.initialize(&m_sample_library);
 }
 
-void c_executor::initialize(const s_executor_settings &settings) {
+void c_executor::initialize(
+	const s_executor_settings &settings,
+	c_wrapped_array<void *> task_function_library_contexts) {
 	wl_assert(m_state == enum_index(e_state::k_uninitialized));
 
-	initialize_internal(settings);
+	initialize_internal(settings, task_function_library_contexts);
 
 	IF_ASSERTS_ENABLED(int32 old_state = ) m_state.exchange(enum_index(e_state::k_initialized));
 	wl_assert(old_state == enum_index(e_state::k_uninitialized));
@@ -82,8 +84,18 @@ void c_executor::execute(const s_executor_chunk_context &chunk_context) {
 	}
 }
 
-void c_executor::initialize_internal(const s_executor_settings &settings) {
+void c_executor::initialize_internal(
+	const s_executor_settings &settings,
+	c_wrapped_array<void *> task_function_library_contexts) {
 	m_settings = settings;
+
+	if (task_function_library_contexts.get_count() > 0) {
+		m_task_function_library_contexts.resize(task_function_library_contexts.get_count());
+		copy_type(
+			&m_task_function_library_contexts.front(),
+			task_function_library_contexts.get_pointer(),
+			task_function_library_contexts.get_count());
+	}
 
 	wl_assert(settings.runtime_instrument->get_voice_task_graph() || settings.runtime_instrument->get_fx_task_graph());
 	m_active_task_graph = nullptr;
@@ -92,8 +104,10 @@ void c_executor::initialize_internal(const s_executor_settings &settings) {
 	initialize_events();
 	initialize_thread_pool();
 	initialize_buffer_manager();
+	pre_initialize_task_function_libraries();
 	initialize_task_memory();
 	initialize_tasks();
+	post_initialize_task_function_libraries();
 	initialize_voice_allocator();
 	initialize_controller_event_manager();
 	initialize_task_contexts();
@@ -162,8 +176,25 @@ void c_executor::initialize_buffer_manager() {
 	m_buffer_manager.initialize(m_settings.runtime_instrument, m_settings.max_buffer_size, m_settings.output_channels);
 }
 
+void c_executor::pre_initialize_task_function_libraries() {
+	for (uint32 library_index = 0;
+		library_index < c_task_function_registry::get_task_function_library_count();
+		library_index++) {
+		const s_task_function_library &library = c_task_function_registry::get_task_function_library(library_index);
+		if (library.tasks_pre_initializer) {
+			library.tasks_pre_initializer(m_task_function_library_contexts[library_index]);
+		}
+	}
+}
+
 void c_executor::initialize_task_memory() {
-	m_task_memory_manager.initialize(m_settings.runtime_instrument, task_memory_query_wrapper, this);
+	m_task_memory_manager.initialize(
+		c_wrapped_array<void *>(
+			m_task_function_library_contexts.empty() ? nullptr : &m_task_function_library_contexts.front(),
+			m_task_function_library_contexts.size()),
+		m_settings.runtime_instrument,
+		task_memory_query_wrapper,
+		this);
 
 	// The memory query function changes the active task graph, so reset it here to avoid bugs
 	m_active_task_graph = nullptr;
@@ -202,6 +233,8 @@ void c_executor::initialize_tasks() {
 				task_function_context.arguments = task_graph->get_task_arguments(task);
 
 				for (uint32 voice = 0; voice < max_voices_for_this_graph; voice++) {
+					task_function_context.library_context =
+						m_task_memory_manager.get_task_library_context(instrument_stage, task);
 					task_function_context.task_memory =
 						m_task_memory_manager.get_task_memory(instrument_stage, task, voice);
 					task_function.initializer(task_function_context);
@@ -214,6 +247,17 @@ void c_executor::initialize_tasks() {
 	m_active_instrument_stage = e_instrument_stage::k_invalid;
 
 	m_sample_library.update_loaded_samples();
+}
+
+void c_executor::post_initialize_task_function_libraries() {
+	for (uint32 library_index = 0;
+		library_index < c_task_function_registry::get_task_function_library_count();
+		library_index++) {
+		const s_task_function_library &library = c_task_function_registry::get_task_function_library(library_index);
+		if (library.tasks_post_initializer) {
+			library.tasks_post_initializer(m_task_function_library_contexts[library_index]);
+		}
+	}
 }
 
 void c_executor::initialize_voice_allocator() {
@@ -283,14 +327,24 @@ void c_executor::shutdown_internal() {
 		m_profiler.get_report(report);
 		output_profiler_report("profiler_report.csv", report);
 	}
+
+	m_task_function_library_contexts.clear();
 }
 
-size_t c_executor::task_memory_query_wrapper(void *context, const c_task_graph *task_graph, uint32 task_index) {
-	return static_cast<c_executor *>(context)->task_memory_query(task_graph, task_index);
+size_t c_executor::task_memory_query_wrapper(
+	void *context,
+	e_instrument_stage instrument_stage,
+	const c_task_graph *task_graph,
+	uint32 task_index) {
+	return static_cast<c_executor *>(context)->task_memory_query(instrument_stage, task_graph, task_index);
 }
 
-size_t c_executor::task_memory_query(const c_task_graph *task_graph, uint32 task_index) {
+size_t c_executor::task_memory_query(
+	e_instrument_stage instrument_stage,
+	const c_task_graph *task_graph,
+	uint32 task_index) {
 	m_active_task_graph = task_graph;
+	m_active_instrument_stage = instrument_stage;
 
 	const s_task_function &task_function =
 		c_task_function_registry::get_task_function(task_graph->get_task_function_index(task_index));
@@ -304,6 +358,12 @@ size_t c_executor::task_memory_query(const c_task_graph *task_graph, uint32 task
 		zero_type(&task_function_context);
 		task_function_context.event_interface = &m_event_interface;
 		task_function_context.sample_rate = m_settings.sample_rate;
+
+		// This function is being called by c_task_memory_manager, but c_task_memory manager initializes all library
+		// contexts before querying task memory, so it's okay to call get_task_library_context() at this point in time.
+		task_function_context.library_context =
+			m_task_memory_manager.get_task_library_context(instrument_stage, task_index);
+
 		task_function_context.arguments = task_graph->get_task_arguments(task_index);
 
 		required_memory_for_task = task_function.memory_query(task_function_context);
@@ -518,6 +578,8 @@ void c_executor::process_task(uint32 thread_index, const s_task_parameters *para
 		task_function_context.buffer_size = params->frames;
 		task_function_context.task_memory =
 			m_task_memory_manager.get_task_memory(m_active_instrument_stage, params->task_index, params->voice_index);
+		task_function_context.library_context =
+			m_task_memory_manager.get_task_library_context(m_active_instrument_stage, params->task_index);
 		task_function_context.arguments = m_active_task_graph->get_task_arguments(params->task_index);
 
 		// Call the task function

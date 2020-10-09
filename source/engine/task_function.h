@@ -13,6 +13,27 @@ class c_sample_library_accessor;
 class c_sample_library_requester;
 class c_voice_interface;
 
+static constexpr size_t k_max_task_function_library_name_length = 64;
+static constexpr size_t k_max_task_function_name_length = 64;
+static constexpr size_t k_max_task_function_arguments = 10;
+static constexpr uint32 k_invalid_task_argument_index = static_cast<uint32>(-1);
+
+using f_library_engine_initializer = void *(*)();
+using f_library_engine_deinitializer = void *(*)(void *library_context);
+using f_library_tasks_pre_initializer = void *(*)(void *library_context);
+using f_library_tasks_post_initializer = void *(*)(void *library_context);
+
+struct s_task_function_library {
+	uint32 id;
+	c_static_string<k_max_task_function_library_name_length> name;
+	uint32 version;
+
+	f_library_engine_initializer engine_initializer;
+	f_library_engine_deinitializer engine_deinitializer;
+	f_library_tasks_pre_initializer tasks_pre_initializer;
+	f_library_tasks_post_initializer tasks_post_initializer;
+};
+
 // Unique identifier for each task function
 struct s_task_function_uid {
 	// Unique identifier consists of 8 bytes
@@ -185,6 +206,7 @@ struct s_task_function_context {
 
 	uint32 sample_rate;
 	uint32 buffer_size;
+	void *library_context;
 	void *task_memory;
 
 	// $TODO add more fields for things like timing info
@@ -206,10 +228,6 @@ using f_task_voice_initializer = void (*)(const s_task_function_context &context
 
 // Function executed for the task
 using f_task_function = void (*)(const s_task_function_context &context);
-
-static constexpr size_t k_max_task_function_name_length = 64;
-static constexpr size_t k_max_task_function_arguments = 10;
-static constexpr uint32 k_invalid_task_argument_index = static_cast<uint32>(-1);
 
 struct s_task_function {
 	// Unique identifier for this task function

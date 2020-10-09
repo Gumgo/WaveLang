@@ -4,6 +4,7 @@
 
 #include "execution_graph/native_module.h"
 
+// $TODO $HANDLE add h_native_module and h_native_module_library
 static constexpr uint32 k_invalid_native_module_index = static_cast<uint32>(-1);
 
 // The registry of all native modules, which are the built-in modules of the language
@@ -19,7 +20,10 @@ public:
 	static bool register_native_module_library(const s_native_module_library &library);
 
 	static bool is_native_module_library_registered(uint32 library_id);
-	static const s_native_module_library &get_native_module_library(uint32 library_id);
+	static uint32 get_native_module_library_index(uint32 library_id);
+
+	static uint32 get_native_module_library_count();
+	static const s_native_module_library &get_native_module_library(uint32 index);
 
 	// Registers a native module - returns whether successful
 	static bool register_native_module(const s_native_module &native_module);

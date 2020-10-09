@@ -30,7 +30,7 @@ public:
 
 	c_execution_graph_constant_evaluator();
 	void initialize(
-		const c_execution_graph *execution_graph,
+		c_execution_graph *execution_graph,
 		const s_instrument_globals *instrument_globals,
 		std::vector<s_compiler_result> *errors);
 
@@ -54,7 +54,7 @@ private:
 		const std::vector<s_native_module_compile_time_argument> &arg_list);
 
 	// The graph
-	const c_execution_graph *m_execution_graph;
+	c_execution_graph *m_execution_graph;
 
 	// Globals
 	const s_instrument_globals *m_instrument_globals;
@@ -79,7 +79,9 @@ public:
 
 	c_execution_graph_trimmer();
 	void initialize(
-		c_execution_graph *execution_graph, f_on_node_removed on_node_removed, void *on_node_removed_context);
+		c_execution_graph *execution_graph,
+		f_on_node_removed on_node_removed,
+		void *on_node_removed_context);
 
 	void try_trim_node(c_node_reference node_reference);
 

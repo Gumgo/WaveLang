@@ -8,6 +8,36 @@ void c_scraper_result::add_library(const s_library_declaration &library) {
 	m_library_declarations.push_back(library);
 }
 
+void c_scraper_result::add_library_compiler_initializer(
+	const s_library_compiler_initializer_declaration &library_compiler_initializer) {
+	m_library_compiler_initializer_declarations.push_back(library_compiler_initializer);
+}
+
+void c_scraper_result::add_library_compiler_deinitializer(
+	const s_library_compiler_deinitializer_declaration &library_compiler_deinitializer) {
+	m_library_compiler_deinitializer_declarations.push_back(library_compiler_deinitializer);
+}
+
+void c_scraper_result::add_library_engine_initializer(
+	const s_library_engine_initializer_declaration &library_engine_initializer) {
+	m_library_engine_initializer_declarations.push_back(library_engine_initializer);
+}
+
+void c_scraper_result::add_library_engine_deinitializer(
+	const s_library_engine_deinitializer_declaration &library_engine_deinitializer) {
+	m_library_engine_deinitializer_declarations.push_back(library_engine_deinitializer);
+}
+
+void c_scraper_result::add_library_tasks_pre_initializer(
+	const s_library_tasks_pre_initializer_declaration &library_tasks_pre_initializer) {
+	m_library_tasks_pre_initializer_declarations.push_back(library_tasks_pre_initializer);
+}
+
+void c_scraper_result::add_library_tasks_post_initializer(
+	const s_library_tasks_post_initializer_declaration &library_tasks_post_initializer) {
+	m_library_tasks_post_initializer_declarations.push_back(library_tasks_post_initializer);
+}
+
 void c_scraper_result::add_native_module(const s_native_module_declaration &native_module) {
 	m_native_module_declarations.push_back(native_module);
 }
@@ -38,6 +68,60 @@ size_t c_scraper_result::get_library_count() const {
 
 const s_library_declaration &c_scraper_result::get_library(size_t index) const {
 	return m_library_declarations[index];
+}
+
+size_t c_scraper_result::get_library_compiler_initializer_count() const {
+	return m_library_compiler_initializer_declarations.size();
+}
+
+const s_library_compiler_initializer_declaration &c_scraper_result::get_library_compiler_initializer(
+	size_t index) const {
+	return m_library_compiler_initializer_declarations[index];
+}
+
+size_t c_scraper_result::get_library_compiler_deinitializer_count() const {
+	return m_library_compiler_deinitializer_declarations.size();
+}
+
+const s_library_compiler_deinitializer_declaration &c_scraper_result::get_library_compiler_deinitializer(
+	size_t index) const {
+	return m_library_compiler_deinitializer_declarations[index];
+}
+
+size_t c_scraper_result::get_library_engine_initializer_count() const {
+	return m_library_engine_initializer_declarations.size();
+}
+
+const s_library_engine_initializer_declaration &c_scraper_result::get_library_engine_initializer(
+	size_t index) const {
+	return m_library_engine_initializer_declarations[index];
+}
+
+size_t c_scraper_result::get_library_engine_deinitializer_count() const {
+	return m_library_engine_deinitializer_declarations.size();
+}
+
+const s_library_engine_deinitializer_declaration &c_scraper_result::get_library_engine_deinitializer(
+	size_t index) const {
+	return m_library_engine_deinitializer_declarations[index];
+}
+
+size_t c_scraper_result::get_library_tasks_pre_initializer_count() const {
+	return m_library_tasks_pre_initializer_declarations.size();
+}
+
+const s_library_tasks_pre_initializer_declaration &c_scraper_result::get_library_tasks_pre_initializer(
+	size_t index) const {
+	return m_library_tasks_pre_initializer_declarations[index];
+}
+
+size_t c_scraper_result::get_library_tasks_post_initializer_count() const {
+	return m_library_tasks_post_initializer_declarations.size();
+}
+
+const s_library_tasks_post_initializer_declaration &c_scraper_result::get_library_tasks_post_initializer(
+	size_t index) const {
+	return m_library_tasks_post_initializer_declarations[index];
 }
 
 size_t c_scraper_result::get_native_module_count() const {

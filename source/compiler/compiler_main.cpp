@@ -25,6 +25,16 @@ int main(int argc, char **argv) {
 	c_native_module_registry::initialize();
 	register_native_modules(true);
 
+	std::vector<void *> library_contexts(c_native_module_registry::get_native_module_library_count(), nullptr);
+	for (uint32 library_index = 0;
+		library_index < c_native_module_registry::get_native_module_library_count();
+		library_index++) {
+		const s_native_module_library &library = c_native_module_registry::get_native_module_library(library_index);
+		if (library.compiler_initializer) {
+			library_contexts[library_index] = library.compiler_initializer();
+		}
+	}
+
 	// Command line options
 	bool output_documentation = false;
 	bool output_execution_graph = false;
@@ -145,6 +155,15 @@ int main(int argc, char **argv) {
 		} else {
 			std::cerr << "Failed to compile '" << argv[arg] << "'\n";
 			result = 1;
+		}
+	}
+
+	for (uint32 library_index = 0;
+		library_index < c_native_module_registry::get_native_module_library_count();
+		library_index++) {
+		const s_native_module_library &library = c_native_module_registry::get_native_module_library(library_index);
+		if (library.compiler_deinitializer) {
+			library.compiler_deinitializer(library_contexts[library_index]);
 		}
 	}
 

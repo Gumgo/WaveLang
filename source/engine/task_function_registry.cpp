@@ -32,6 +32,9 @@ namespace std {
 }
 
 struct s_task_function_registry_data {
+	std::vector<s_task_function_library> task_function_libraries;
+	std::unordered_map<uint32, uint32> task_function_library_ids_to_indices;
+
 	std::vector<s_task_function> task_functions;
 	std::unordered_map<s_task_function_uid, uint32> task_function_uids_to_indices;
 
@@ -70,6 +73,9 @@ void c_task_function_registry::shutdown() {
 	wl_assert(g_task_function_registry_state != e_task_function_registry_state::k_uninitialized);
 
 	// Clear and free all memory
+	g_task_function_registry_data.task_function_libraries.clear();
+	g_task_function_registry_data.task_function_libraries.shrink_to_fit();
+	g_task_function_registry_data.task_function_library_ids_to_indices.clear();
 	g_task_function_registry_data.task_functions.clear();
 	g_task_function_registry_data.task_functions.shrink_to_fit();
 	g_task_function_registry_data.task_function_uids_to_indices.clear();
@@ -99,6 +105,56 @@ bool c_task_function_registry::end_registration() {
 	return true;
 }
 
+bool c_task_function_registry::register_task_function_library(const s_task_function_library &library) {
+	wl_assert(g_task_function_registry_state == e_task_function_registry_state::k_registering);
+
+	// Make sure there isn't already a library registered with this ID
+	auto it = g_task_function_registry_data.task_function_library_ids_to_indices.find(library.id);
+	if (it != g_task_function_registry_data.task_function_library_ids_to_indices.end()) {
+		return false;
+	}
+
+	// Validate that there is a matching native module library
+	if (!c_native_module_registry::is_native_module_library_registered(library.id)) {
+		return false;
+	}
+
+	// Make sure the details of the library are consistent
+	uint32 native_module_library_index = c_native_module_registry::get_native_module_library_index(library.id);
+	const s_native_module_library &native_module_library =
+		c_native_module_registry::get_native_module_library(native_module_library_index);
+	if (library.name != native_module_library.name || library.version != native_module_library.version) {
+		return false;
+	}
+
+	// $TODO $PLUGIN make sure there isn't a library with the same name
+
+	uint32 index = cast_integer_verify<uint32>(g_task_function_registry_data.task_function_libraries.size());
+
+	g_task_function_registry_data.task_function_libraries.push_back(library);
+	g_task_function_registry_data.task_function_library_ids_to_indices.insert(std::make_pair(library.id, index));
+	return true;
+}
+
+bool c_task_function_registry::is_task_function_library_registered(uint32 library_id) {
+	auto it = g_task_function_registry_data.task_function_library_ids_to_indices.find(library_id);
+	return it != g_task_function_registry_data.task_function_library_ids_to_indices.end();
+}
+
+uint32 c_task_function_registry::get_task_function_library_index(uint32 library_id) {
+	wl_assert(is_task_function_library_registered(library_id));
+	auto it = g_task_function_registry_data.task_function_library_ids_to_indices.find(library_id);
+	return it->second;
+}
+
+uint32 c_task_function_registry::get_task_function_library_count() {
+	return cast_integer_verify<uint32>(g_task_function_registry_data.task_function_libraries.size());
+}
+
+const s_task_function_library &c_task_function_registry::get_task_function_library(uint32 index) {
+	return g_task_function_registry_data.task_function_libraries[index];
+}
+
 bool c_task_function_registry::register_task_function(const s_task_function &task_function) {
 	wl_assert(g_task_function_registry_state == e_task_function_registry_state::k_registering);
 
@@ -114,6 +170,15 @@ bool c_task_function_registry::register_task_function(const s_task_function &tas
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
 	// $TODO $PLUGIN Check that the library referenced by the UID is registered
+
+	// Check that the library referenced by the UID is registered
+	{
+		auto it = g_task_function_registry_data.task_function_library_ids_to_indices.find(
+			task_function.uid.get_library_id());
+		if (it == g_task_function_registry_data.task_function_library_ids_to_indices.end()) {
+			return false;
+		}
+	}
 
 	// Check that the UID isn't already in use
 	if (g_task_function_registry_data.task_function_uids_to_indices.find(task_function.uid) !=
@@ -141,11 +206,8 @@ bool c_task_function_registry::register_task_function(const s_task_function &tas
 	uint32 index = cast_integer_verify<uint32>(g_task_function_registry_data.task_functions.size());
 
 	// Append the native module
-	g_task_function_registry_data.task_functions.push_back(s_task_function());
-	copy_type(&g_task_function_registry_data.task_functions.back(), &task_function);
-
-	g_task_function_registry_data.task_function_uids_to_indices.insert(
-		std::make_pair(task_function.uid, index));
+	g_task_function_registry_data.task_functions.push_back(task_function);
+	g_task_function_registry_data.task_function_uids_to_indices.insert(std::make_pair(task_function.uid, index));
 
 	g_task_function_registry_data.task_function_mappings[native_module_index] = task_function.uid;
 

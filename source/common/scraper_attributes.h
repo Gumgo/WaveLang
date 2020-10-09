@@ -12,6 +12,12 @@
 // If an argument is expected, use _PREFIX suffix and end the annotation with ':'
 // Otherwise, end the annotation with '.'
 #define WL_LIBRARY_DECLARATION "wl_library_declaration."
+#define WL_LIBRARY_COMPILER_INITIALIZER "wl_library_compiler_initializer."
+#define WL_LIBRARY_COMPILER_DEINITIALIZER "wl_library_compiler_deinitializer."
+#define WL_LIBRARY_ENGINE_INITIALIZER "wl_library_engine_initializer."
+#define WL_LIBRARY_ENGINE_DEINITIALIZER "wl_library_engine_deinitializer."
+#define WL_LIBRARY_TASKS_PRE_INITIALIZER "wl_library_tasks_pre_initializer."
+#define WL_LIBRARY_TASKS_POST_INITIALIZER "wl_library_tasks_post_initializer."
 #define WL_NATIVE_MODULE_DECLARATION "wl_native_module_declaration."
 #define WL_ID_PREFIX "wl_id:"
 #define WL_NAME_PREFIX "wl_name:"
@@ -35,6 +41,30 @@
 
 // Declares a library
 #define wl_library_declaration SCRAPER_ATTRIBUTE(WL_LIBRARY_DECLARATION)
+
+// Declares a function used to initialize the library for the compiler. This function should return a pointer to the
+// initialized library context.
+#define wl_library_compiler_initializer SCRAPER_ATTRIBUTE(WL_LIBRARY_COMPILER_INITIALIZER)
+
+// Declares a function used to deinitialize the library for the compiler. This function receives a pointer to the
+// initialized library context.
+#define wl_library_compiler_deinitializer SCRAPER_ATTRIBUTE(WL_LIBRARY_COMPILER_DEINITIALIZER)
+
+// Declares a function used to initialize the library for the engine. This function should return a pointer to
+// initialized library context.
+#define wl_library_engine_initializer SCRAPER_ATTRIBUTE(WL_LIBRARY_ENGINE_INITIALIZER)
+
+// Declares a function used to deinitialize the library for the engine. This function receives a pointer to the
+// initialized library context.
+#define wl_library_engine_deinitializer SCRAPER_ATTRIBUTE(WL_LIBRARY_ENGINE_DEINITIALIZER)
+
+// Declares a function which is called directly before tasks are initialized. This function receives a pointer to the
+// initialized library context.
+#define wl_library_tasks_pre_initializer SCRAPER_ATTRIBUTE(WL_LIBRARY_TASKS_PRE_INITIALIZER)
+
+// Declares a function which is called directly after tasks are initialized. This function receives a pointer to the
+// initialized library context.
+#define wl_library_tasks_post_initializer SCRAPER_ATTRIBUTE(WL_LIBRARY_TASKS_POST_INITIALIZER)
 
 // Defines a native module
 #define wl_native_module_declaration SCRAPER_ATTRIBUTE(WL_NATIVE_MODULE_DECLARATION)

@@ -66,7 +66,9 @@ struct s_task_mapping {
 };
 
 static bool generate_task_function_mapping(
-	const c_scraper_result *result, size_t task_function_index, s_task_mapping &mapping);
+	const c_scraper_result *result,
+	size_t task_function_index,
+	s_task_mapping &mapping);
 static bool map_native_module_arguments_to_task_arguments(
 	const s_native_module_declaration &native_module,
 	const std::vector<s_task_function_argument_declaration> &task_arguments,
@@ -82,10 +84,14 @@ static bool is_task_argument_compatible_with_native_module_argument(
 	const char *task_function_name,
 	const char *native_module_name);
 static void write_task_arguments(
-	std::ofstream &out, const s_task_mapping &mapping, const std::vector<size_t> argument_indices);
+	std::ofstream &out,
+	const s_task_mapping &mapping,
+	const std::vector<size_t> argument_indices);
 
 bool generate_task_function_registration(
-	const c_scraper_result *result, const char *registration_function_name, std::ofstream &out) {
+	const c_scraper_result *result,
+	const char *registration_function_name,
+	std::ofstream &out) {
 	wl_assert(result);
 	wl_assert(registration_function_name);
 
@@ -182,6 +188,89 @@ bool generate_task_function_registration(
 	out << "bool " << registration_function_name << "() {" NEWLINE_STR;
 	out << TAB_STR "bool result = true;" NEWLINE_STR;
 
+	// Generate library registration
+	for (size_t library_index = 0; library_index < result->get_library_count(); library_index++) {
+		const s_library_declaration &library = result->get_library(library_index);
+
+		const s_library_engine_initializer_declaration *library_engine_initializer = nullptr;
+		const s_library_engine_deinitializer_declaration *library_engine_deinitializer = nullptr;
+		const s_library_tasks_pre_initializer_declaration *library_tasks_pre_initializer = nullptr;
+		const s_library_tasks_post_initializer_declaration *library_tasks_post_initializer = nullptr;
+
+		for (size_t index = 0; index < result->get_library_engine_initializer_count(); index++) {
+			const s_library_engine_initializer_declaration &declaration =
+				result->get_library_engine_initializer(index);
+			if (library_index == declaration.library_index) {
+				if (library_engine_initializer) {
+					std::cerr << "Multiple engine initializers specified for library '" << library.name << "'\n";
+					return false;
+				}
+
+				library_engine_initializer = &declaration;
+			}
+		}
+
+		for (size_t index = 0; index < result->get_library_engine_deinitializer_count(); index++) {
+			const s_library_engine_deinitializer_declaration &declaration =
+				result->get_library_engine_deinitializer(index);
+			if (library_index == declaration.library_index) {
+				if (library_engine_deinitializer) {
+					std::cerr << "Multiple engine deinitializers specified for library '" << library.name << "'\n";
+					return false;
+				}
+
+				library_engine_deinitializer = &declaration;
+			}
+		}
+
+		for (size_t index = 0; index < result->get_library_tasks_pre_initializer_count(); index++) {
+			const s_library_tasks_pre_initializer_declaration &declaration =
+				result->get_library_tasks_pre_initializer(index);
+			if (library_index == declaration.library_index) {
+				if (library_tasks_pre_initializer) {
+					std::cerr << "Multiple tasks pre-initializers specified for library '" << library.name << "'\n";
+					return false;
+				}
+
+				library_tasks_pre_initializer = &declaration;
+			}
+		}
+
+		for (size_t index = 0; index < result->get_library_tasks_post_initializer_count(); index++) {
+			const s_library_tasks_post_initializer_declaration &declaration =
+				result->get_library_tasks_post_initializer(index);
+			if (library_index == declaration.library_index) {
+				if (library_tasks_post_initializer) {
+					std::cerr << "Multiple tasks post-initializers specified for library '" << library.name << "'\n";
+					return false;
+				}
+
+				library_tasks_post_initializer = &declaration;
+			}
+		}
+
+		out << TAB_STR "{" NEWLINE_STR;
+		out << TAB2_STR "s_task_function_library library;" NEWLINE_STR;
+		out << TAB2_STR "zero_type(&library);" NEWLINE_STR;
+		out << TAB2_STR "library.id = " << id_to_string(library.id) << ";" NEWLINE_STR;
+		out << TAB2_STR "library.name.set_verify(\"" << library.name << "\");" NEWLINE_STR;
+		out << TAB2_STR "library.version = " << library.version << ";" NEWLINE_STR;
+		out << TAB2_STR "library.engine_initializer = "
+			<< (library_engine_initializer ? library_engine_initializer->function_call.c_str() : "nullptr")
+			<< ";" NEWLINE_STR;
+		out << TAB2_STR "library.engine_deinitializer = "
+			<< (library_engine_deinitializer ? library_engine_deinitializer->function_call.c_str() : "nullptr")
+			<< ";" NEWLINE_STR;
+		out << TAB2_STR "library.tasks_pre_initializer = "
+			<< (library_tasks_pre_initializer ? library_tasks_pre_initializer->function_call.c_str() : "nullptr")
+			<< ";" NEWLINE_STR;
+		out << TAB2_STR "library.tasks_post_initializer = "
+			<< (library_tasks_post_initializer ? library_tasks_post_initializer->function_call.c_str() : "nullptr")
+			<< ";" NEWLINE_STR;
+		out << TAB2_STR "result &= c_task_function_registry::register_task_function_library(library);" NEWLINE_STR;
+		out << TAB_STR "}" NEWLINE_STR;
+	}
+
 	// Generate each task function
 	for (size_t index = 0; index < result->get_task_function_count(); index++) {
 		const s_task_function_declaration &task_function = result->get_task_function(index);
@@ -240,7 +329,7 @@ bool generate_task_function_registration(
 
 		for (size_t task_arg = 0; task_arg < task_mapping.task_arguments.size(); task_arg++) {
 			size_t source_index = task_mapping.task_arguments[task_arg].source_index;
-			wl_assert(source_index != k_invalid_argument_index);
+			wl_assert(source_index != k_invalid_native_module_argument_index);
 			wl_assert(native_module_task_function_argument_indices[source_index] == k_invalid_task_argument_index);
 			native_module_task_function_argument_indices[source_index] = task_arg;
 		}
@@ -272,7 +361,9 @@ bool generate_task_function_registration(
 }
 
 static bool generate_task_function_mapping(
-	const c_scraper_result *result, size_t task_function_index, s_task_mapping &mapping) {
+	const c_scraper_result *result,
+	size_t task_function_index,
+	s_task_mapping &mapping) {
 	const s_task_function_declaration &task_function = result->get_task_function(task_function_index);
 
 	// First, find the source native module
@@ -441,7 +532,7 @@ static bool map_native_module_arguments_to_task_arguments(
 			argument_mapping.source = argument.source;
 			if (!argument.source.empty()) {
 				argument_mapping.source_index = find_native_module_argument(native_module, argument.source.c_str());
-				wl_assert(argument_mapping.source_index != k_invalid_argument_index);
+				wl_assert(argument_mapping.source_index != k_invalid_native_module_argument_index);
 
 				if (!is_task_argument_compatible_with_native_module_argument(
 					argument,
@@ -451,7 +542,7 @@ static bool map_native_module_arguments_to_task_arguments(
 					return false;
 				}
 			} else {
-				argument_mapping.source_index = k_invalid_argument_index;
+				argument_mapping.source_index = k_invalid_native_module_argument_index;
 			}
 
 			argument_mapping.type = argument.type;
@@ -493,7 +584,7 @@ static size_t find_native_module_argument(const s_native_module_declaration &nat
 	}
 
 	std::cerr << "Native module '" << native_module.identifier << "' has no argument named '" << argument_name << "'\n";
-	return k_invalid_argument_index;
+	return k_invalid_native_module_argument_index;
 }
 
 static bool is_task_argument_compatible_with_native_module_argument(
@@ -551,7 +642,9 @@ static bool is_task_argument_compatible_with_native_module_argument(
 }
 
 static void write_task_arguments(
-	std::ofstream &out, const s_task_mapping &mapping, const std::vector<size_t> argument_indices) {
+	std::ofstream &out,
+	const s_task_mapping &mapping,
+	const std::vector<size_t> argument_indices) {
 	// First argument is the context
 	out << TAB2_STR << "context" << (argument_indices.empty() ? ");" : ",") << NEWLINE_STR;
 

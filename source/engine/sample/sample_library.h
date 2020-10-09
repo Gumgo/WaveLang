@@ -73,7 +73,8 @@ private:
 	};
 
 	static bool are_requested_samples_equal(
-		const s_requested_sample &requested_sample_a, const s_requested_sample &requested_sample_b);
+		const s_requested_sample &requested_sample_a,
+		const s_requested_sample &requested_sample_b);
 	h_sample request_sample(const s_requested_sample &requested_sample);
 
 	std::string m_root_path;

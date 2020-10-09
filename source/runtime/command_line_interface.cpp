@@ -55,6 +55,8 @@ private:
 	static void controller_command_thread_entry_point(const s_thread_parameter_block *params);
 	void controller_command_thread_main();
 
+	std::vector<void *> m_task_function_library_contexts;
+
 	c_runtime_config m_runtime_config;
 	s_runtime_context m_runtime_context;
 	c_mutex m_command_lock;
@@ -103,6 +105,16 @@ int c_command_line_interface::main_function() {
 
 	register_native_modules(false);
 	register_task_functions();
+
+	m_task_function_library_contexts.resize(c_task_function_registry::get_task_function_library_count(), nullptr);
+	for (uint32 library_index = 0;
+		library_index < c_task_function_registry::get_task_function_library_count();
+		library_index++) {
+		const s_task_function_library &library = c_task_function_registry::get_task_function_library(library_index);
+		if (library.engine_initializer) {
+			m_task_function_library_contexts[library_index] = library.engine_initializer();
+		}
+	}
 
 	{
 		s_audio_driver_result driver_result = m_runtime_context.audio_driver_interface.initialize();
@@ -181,6 +193,15 @@ int c_command_line_interface::main_function() {
 	m_runtime_context.controller_driver_interface.shutdown();
 	m_runtime_context.audio_driver_interface.stop_stream();
 	m_runtime_context.audio_driver_interface.shutdown();
+
+	for (uint32 library_index = 0;
+		library_index < c_task_function_registry::get_task_function_library_count();
+		library_index++) {
+		const s_task_function_library &library = c_task_function_registry::get_task_function_library(library_index);
+		if (library.engine_deinitializer) {
+			library.engine_deinitializer(m_task_function_library_contexts[library_index]);
+		}
+	}
 
 	c_task_function_registry::shutdown();
 	c_native_module_registry::shutdown();
@@ -429,7 +450,11 @@ void c_command_line_interface::process_command_load_synth(const s_command &comma
 			settings.event_console_enabled = runtime_config_settings.executor_console_enabled;
 			settings.profiling_enabled = runtime_config_settings.executor_profiling_enabled;
 			settings.profiling_threshold = runtime_config_settings.executor_profiling_threshold;
-			m_runtime_context.executor.initialize(settings);
+			m_runtime_context.executor.initialize(
+				settings,
+				c_wrapped_array<void *>(
+					m_task_function_library_contexts.empty() ? nullptr : &m_task_function_library_contexts.front(),
+					m_task_function_library_contexts.size()));
 		}
 
 		m_runtime_context.active_instrument = loading_instrument;

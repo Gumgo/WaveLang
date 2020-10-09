@@ -573,7 +573,8 @@ c_node_reference c_execution_graph::add_constant_array_node(c_native_module_data
 }
 
 void c_execution_graph::add_constant_array_value(
-	c_node_reference constant_array_node_reference, c_node_reference value_node_reference) {
+	c_node_reference constant_array_node_reference,
+	c_node_reference value_node_reference) {
 #if IS_TRUE(ASSERTS_ENABLED)
 	const s_node &constant_array_node = get_node(constant_array_node_reference);
 	wl_assert(constant_array_node.type == e_execution_graph_node_type::k_constant);
@@ -586,7 +587,6 @@ void c_execution_graph::add_constant_array_value(
 	wl_assert(element_type == value_node_type);
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
-
 	// Create an indexed input node to represent this array index
 	c_node_reference input_node_reference = allocate_node();
 	s_node &input_node = get_node(input_node_reference);
@@ -596,7 +596,9 @@ void c_execution_graph::add_constant_array_value(
 }
 
 c_node_reference c_execution_graph::set_constant_array_value_at_index(
-	c_node_reference constant_array_node_reference, uint32 index, c_node_reference value_node_reference) {
+	c_node_reference constant_array_node_reference,
+	uint32 index,
+	c_node_reference value_node_reference) {
 	const s_node &constant_array_node = get_node(constant_array_node_reference);
 
 #if IS_TRUE(ASSERTS_ENABLED)
@@ -1282,7 +1284,8 @@ size_t c_execution_graph::get_node_incoming_edge_count(c_node_reference node_ref
 }
 
 c_node_reference c_execution_graph::get_node_incoming_edge_reference(
-	c_node_reference node_reference, size_t edge) const {
+	c_node_reference node_reference,
+	size_t edge) const {
 	const s_node &node = get_node(node_reference);
 	return node.incoming_edge_references[edge];
 }
@@ -1293,7 +1296,8 @@ size_t c_execution_graph::get_node_outgoing_edge_count(c_node_reference node_ref
 }
 
 c_node_reference c_execution_graph::get_node_outgoing_edge_reference(
-	c_node_reference node_reference, size_t edge) const {
+	c_node_reference node_reference,
+	size_t edge) const {
 	const s_node &node = get_node(node_reference);
 	return node.outgoing_edge_references[edge];
 }

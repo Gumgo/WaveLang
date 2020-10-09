@@ -96,6 +96,7 @@
     <ClCompile Include="native_modules\native_module_registration.cpp" />
     <ClCompile Include="native_module_compile_time_types.cpp" />
     <ClCompile Include="native_module_registry.cpp" />
+    <ClCompile Include="node_interface\node_interface.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="diagnostic\diagnostic.h" />
@@ -117,6 +118,7 @@
     <ClInclude Include="native_modules\native_module_registration.h" />
     <ClInclude Include="native_module_compile_time_types.h" />
     <ClInclude Include="native_module_registry.h" />
+    <ClInclude Include="node_interface\node_interface.h" />
     <ClInclude Include="node_reference.h" />
   </ItemGroup>
   <ItemGroup>

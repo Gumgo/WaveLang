@@ -59,7 +59,8 @@ bool s_event_data_type_definition<uint16>::build_event(c_event_data_stack &event
 }
 
 size_t s_event_data_type_definition<uint16>::build_event_string(
-	c_event_string &event_string, const void *data_pointer) {
+	c_event_string &event_string,
+	const void *data_pointer) {
 	char buffer[16];
 	snprintf(buffer, array_count(buffer), "%u", *static_cast<const uint16 *>(data_pointer));
 	event_string.append_truncate(buffer);
@@ -86,7 +87,8 @@ bool s_event_data_type_definition<uint32>::build_event(c_event_data_stack &event
 }
 
 size_t s_event_data_type_definition<uint32>::build_event_string(
-	c_event_string &event_string, const void *data_pointer) {
+	c_event_string &event_string,
+	const void *data_pointer) {
 	char buffer[16];
 	snprintf(buffer, array_count(buffer), "%u", *static_cast<const uint32 *>(data_pointer));
 	event_string.append_truncate(buffer);
@@ -113,7 +115,8 @@ bool s_event_data_type_definition<uint64>::build_event(c_event_data_stack &event
 }
 
 size_t s_event_data_type_definition<uint64>::build_event_string(
-	c_event_string &event_string, const void *data_pointer) {
+	c_event_string &event_string,
+	const void *data_pointer) {
 	char buffer[16];
 	snprintf(buffer, array_count(buffer), "%" PRIu64, *static_cast<const uint64 *>(data_pointer));
 	event_string.append_truncate(buffer);
@@ -127,7 +130,8 @@ bool s_event_data_type_definition<real32>::build_event(c_event_data_stack &event
 }
 
 size_t s_event_data_type_definition<real32>::build_event_string(
-	c_event_string &event_string, const void *data_pointer) {
+	c_event_string &event_string,
+	const void *data_pointer) {
 	char buffer[16];
 	snprintf(buffer, array_count(buffer), "%f", *static_cast<const real32 *>(data_pointer));
 	event_string.append_truncate(buffer);
@@ -141,7 +145,8 @@ bool s_event_data_type_definition<real64>::build_event(c_event_data_stack &event
 }
 
 size_t s_event_data_type_definition<real64>::build_event_string(
-	c_event_string &event_string, const void *data_pointer) {
+	c_event_string &event_string,
+	const void *data_pointer) {
 	char buffer[16];
 	snprintf(buffer, array_count(buffer), "%f", *static_cast<const real64 *>(data_pointer));
 	event_string.append_truncate(buffer);
@@ -155,7 +160,8 @@ bool s_event_data_type_definition<const char *>::build_event(c_event_data_stack 
 }
 
 size_t s_event_data_type_definition<const char *>::build_event_string(
-	c_event_string &event_string, const void *data_pointer) {
+	c_event_string &event_string,
+	const void *data_pointer) {
 	const char *str = *static_cast<const char * const *>(data_pointer);
 	event_string.append_truncate(str);
 	return sizeof(const char *);
@@ -168,7 +174,8 @@ bool s_event_data_type_definition<c_dstr>::build_event(c_event_data_stack &event
 }
 
 size_t s_event_data_type_definition<c_dstr>::build_event_string(
-	c_event_string &event_string, const void *data_pointer) {
+	c_event_string &event_string,
+	const void *data_pointer) {
 	const char *str = static_cast<const char *>(data_pointer);
 	event_string.append_truncate(str);
 	return strlen(str) + 1;

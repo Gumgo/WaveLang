@@ -56,7 +56,9 @@ public:
 		f_preprocessor_command_executor command_executor);
 
 	static s_compiler_result preprocess(
-		c_compiler_string source, int32 source_file_index, c_preprocessor_output &output);
+		c_compiler_string source,
+		int32 source_file_index,
+		c_preprocessor_output &output);
 	static bool is_valid_preprocessor_line(c_compiler_string line);
 };
 

@@ -113,7 +113,9 @@ private:
 };
 
 bool generate_native_module_registration(
-	const c_scraper_result *result, const char *registration_function_name, std::ofstream &out) {
+	const c_scraper_result *result,
+	const char *registration_function_name,
+	std::ofstream &out) {
 	wl_assert(result);
 	wl_assert(registration_function_name);
 
@@ -164,12 +166,48 @@ bool generate_native_module_registration(
 	// Generate library registration
 	for (size_t library_index = 0; library_index < result->get_library_count(); library_index++) {
 		const s_library_declaration &library = result->get_library(library_index);
+
+		const s_library_compiler_initializer_declaration *library_compiler_initializer = nullptr;
+		const s_library_compiler_deinitializer_declaration *library_compiler_deinitializer = nullptr;
+
+		for (size_t index = 0; index < result->get_library_compiler_initializer_count(); index++) {
+			const s_library_compiler_initializer_declaration &declaration =
+				result->get_library_compiler_initializer(index);
+			if (library_index == declaration.library_index) {
+				if (library_compiler_initializer) {
+					std::cerr << "Multiple compiler initializers specified for library '" << library.name << "'\n";
+					return false;
+				}
+
+				library_compiler_initializer = &declaration;
+			}
+		}
+
+		for (size_t index = 0; index < result->get_library_compiler_deinitializer_count(); index++) {
+			const s_library_compiler_deinitializer_declaration &declaration =
+				result->get_library_compiler_deinitializer(index);
+			if (library_index == declaration.library_index) {
+				if (library_compiler_deinitializer) {
+					std::cerr << "Multiple compiler deinitializers specified for library '" << library.name << "'\n";
+					return false;
+				}
+
+				library_compiler_deinitializer = &declaration;
+			}
+		}
+
 		out << TAB_STR "{" NEWLINE_STR;
 		out << TAB2_STR "s_native_module_library library;" NEWLINE_STR;
 		out << TAB2_STR "zero_type(&library);" NEWLINE_STR;
 		out << TAB2_STR "library.id = " << id_to_string(library.id) << ";" NEWLINE_STR;
 		out << TAB2_STR "library.name.set_verify(\"" << library.name << "\");" NEWLINE_STR;
 		out << TAB2_STR "library.version = " << library.version << ";" NEWLINE_STR;
+		out << TAB2_STR "library.compiler_initializer = "
+			<< (library_compiler_initializer ? library_compiler_initializer->function_call.c_str() : "nullptr")
+			<< ";" NEWLINE_STR;
+		out << TAB2_STR "library.compiler_deinitializer = "
+			<< (library_compiler_deinitializer ? library_compiler_deinitializer->function_call.c_str() : "nullptr")
+			<< ";" NEWLINE_STR;
 		out << TAB2_STR "result &= c_native_module_registry::register_native_module_library(library);" NEWLINE_STR;
 		out << TAB_STR "}" NEWLINE_STR;
 	}
@@ -183,7 +221,7 @@ bool generate_native_module_registration(
 
 		size_t in_argument_count = 0;
 		size_t out_argument_count = 0;
-		size_t return_argument_index = k_invalid_argument_index;
+		size_t return_argument_index = k_invalid_native_module_argument_index;
 
 		for (size_t arg = 0; arg < native_module.arguments.size(); arg++) {
 			if (native_module_qualifier_is_input(native_module.arguments[arg].type.get_qualifier())) {
@@ -230,8 +268,8 @@ bool generate_native_module_registration(
 		out << TAB2_STR "native_module.in_argument_count = " << in_argument_count << ";" NEWLINE_STR;
 		out << TAB2_STR "native_module.out_argument_count = " << out_argument_count << ";" NEWLINE_STR;
 		out << TAB2_STR "native_module.return_argument_index = ";
-		if (return_argument_index == k_invalid_argument_index) {
-			out << "k_invalid_argument_index;" NEWLINE_STR;
+		if (return_argument_index == k_invalid_native_module_argument_index) {
+			out << "k_invalid_native_module_argument_index;" NEWLINE_STR;
 		} else {
 			out << return_argument_index << ";" NEWLINE_STR;
 		}
@@ -526,7 +564,9 @@ std::string c_optimization_rule_builder::get_native_module_uid_string(
 }
 
 std::string c_optimization_rule_builder::get_build_identifier_string(
-	const std::string &identifier, bool is_constant, bool building_source) {
+	const std::string &identifier,
+	bool is_constant,
+	bool building_source) {
 	auto it = m_identifier_map.find(identifier);
 
 	if (it == m_identifier_map.end()) {

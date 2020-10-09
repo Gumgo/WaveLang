@@ -14,7 +14,8 @@ public:
 	~c_controller_driver_midi();
 
 	s_controller_driver_result initialize(
-		f_submit_controller_event submit_controller_event, void *submit_controller_event_context);
+		f_submit_controller_event submit_controller_event,
+		void *submit_controller_event_context);
 	void shutdown();
 
 	uint32 get_device_count() const;

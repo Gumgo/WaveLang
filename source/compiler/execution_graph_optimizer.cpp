@@ -1,9 +1,10 @@
 #include "compiler/execution_graph_optimizer.h"
 
+#include "execution_graph/diagnostic/diagnostic.h"
 #include "execution_graph/execution_graph.h"
 #include "execution_graph/native_module.h"
 #include "execution_graph/native_module_registry.h"
-#include "execution_graph/diagnostic/diagnostic.h"
+#include "execution_graph/node_interface/node_interface.h"
 
 #include <array>
 #include <set>
@@ -29,6 +30,7 @@ static void native_module_diagnostic_callback(
 	const std::string &message);
 static void execute_compile_time_call(
 	const c_execution_graph *execution_graph,
+	c_node_interface *node_interface,
 	const s_instrument_globals *instrument_globals,
 	const s_native_module &native_module,
 	c_native_module_compile_time_argument_list arguments,
@@ -64,7 +66,7 @@ c_execution_graph_constant_evaluator::c_execution_graph_constant_evaluator() {
 }
 
 void c_execution_graph_constant_evaluator::initialize(
-	const c_execution_graph *execution_graph,
+	c_execution_graph *execution_graph,
 	const s_instrument_globals *instrument_globals,
 	std::vector<s_compiler_result> *errors) {
 	wl_assert(!m_execution_graph);
@@ -177,8 +179,11 @@ void c_execution_graph_constant_evaluator::try_evaluate_node(c_node_reference no
 
 		// Make the compile time call to resolve the outputs
 		if (all_inputs_evaluated) {
+			c_node_interface node_interface(m_execution_graph);
+
 			execute_compile_time_call(
 				m_execution_graph,
+				&node_interface,
 				m_instrument_globals,
 				native_module,
 				c_native_module_compile_time_argument_list(
@@ -186,6 +191,13 @@ void c_execution_graph_constant_evaluator::try_evaluate_node(c_node_reference no
 					arg_list.size()),
 				m_errors);
 			store_native_module_call_results(native_module, native_module_node_reference, arg_list);
+
+			// Remove any newly created but unused constant nodes
+			for (c_node_reference constant_node_reference : node_interface.get_created_node_references()) {
+				if (m_execution_graph->get_node_outgoing_edge_count(constant_node_reference) == 0) {
+					m_execution_graph->remove_node(constant_node_reference);
+				}
+			}
 		}
 	} else {
 		// We should only ever add constants and native module output nodes
@@ -316,7 +328,9 @@ c_execution_graph_trimmer::c_execution_graph_trimmer() {
 }
 
 void c_execution_graph_trimmer::initialize(
-	c_execution_graph *execution_graph, f_on_node_removed on_node_removed, void *on_node_removed_context) {
+	c_execution_graph *execution_graph,
+	f_on_node_removed on_node_removed,
+	void *on_node_removed_context) {
 	m_execution_graph = execution_graph;
 	m_on_node_removed = on_node_removed;
 	m_on_node_removed_context = on_node_removed_context;
@@ -551,6 +565,7 @@ static void native_module_diagnostic_callback(
 
 static void execute_compile_time_call(
 	const c_execution_graph *execution_graph,
+	c_node_interface *node_interface,
 	const s_instrument_globals *instrument_globals,
 	const s_native_module &native_module,
 	c_native_module_compile_time_argument_list arguments,
@@ -568,6 +583,7 @@ static void execute_compile_time_call(
 	c_diagnostic diagnostic(native_module_diagnostic_callback, &native_module_diagnostic_callback_context);
 
 	native_module_context.diagnostic = &diagnostic;
+	native_module_context.node_interface = node_interface;
 	native_module_context.instrument_globals = instrument_globals;
 	native_module_context.arguments = &arguments;
 
@@ -704,8 +720,10 @@ static bool optimize_native_module_call(
 			wl_assert(next_output == native_module.out_argument_count);
 
 			// Make the compile time call to resolve the outputs
+			c_node_interface node_interface(execution_graph);
 			execute_compile_time_call(
 				execution_graph,
+				&node_interface,
 				instrument_globals,
 				native_module,
 				c_native_module_compile_time_argument_list(
@@ -772,6 +790,13 @@ static bool optimize_native_module_call(
 			}
 
 			wl_assert(next_output == native_module.out_argument_count);
+
+			// Remove any newly created but unused constant nodes
+			for (c_node_reference constant_node_reference : node_interface.get_created_node_references()) {
+				if (execution_graph->get_node_outgoing_edge_count(constant_node_reference) == 0) {
+					execution_graph->remove_node(constant_node_reference);
+				}
+			}
 
 			// Finally, remove the native module call entirely
 			execution_graph->remove_node(node_reference);
@@ -1233,7 +1258,9 @@ public:
 };
 
 static bool try_to_apply_optimization_rule(
-	c_execution_graph *execution_graph, c_node_reference node_reference, uint32 rule_index) {
+	c_execution_graph *execution_graph,
+	c_node_reference node_reference,
+	uint32 rule_index) {
 	c_optimization_rule_applier optimization_rule_applier(execution_graph, node_reference, rule_index);
 	return optimization_rule_applier.try_to_apply_optimization_rule();
 }

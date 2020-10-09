@@ -11,13 +11,22 @@
 
 class c_task_memory_manager {
 public:
-	using f_task_memory_query_callback = size_t (*)(void *context, const c_task_graph *task_graph, uint32 task_index);
+	using f_task_memory_query_callback = size_t (*)(
+		void *context,
+		e_instrument_stage instrument_stage,
+		const c_task_graph *task_graph,
+		uint32 task_index);
 
 	void initialize(
+		c_wrapped_array<void *> task_function_library_contexts,
 		const c_runtime_instrument *runtime_instrument,
 		f_task_memory_query_callback task_memory_query_callback,
 		void *task_memory_query_callback_context);
 	void shutdown();
+
+	inline void *get_task_library_context(e_instrument_stage instrument_stage, uint32 task_index) const {
+		return m_task_library_contexts[enum_index(instrument_stage)][task_index];
+	}
 
 	inline void *get_task_memory(e_instrument_stage instrument_stage, uint32 task_index, uint32 voice_index) const {
 		wl_assert(instrument_stage == e_instrument_stage::k_voice || voice_index == 0);
@@ -27,6 +36,7 @@ public:
 
 private:
 	size_t calculate_required_memory_for_task_graph(
+		e_instrument_stage instrument_stage,
 		const c_task_graph *task_graph,
 		f_task_memory_query_callback task_memory_query_callback,
 		void *task_memory_query_callback_context,
@@ -37,6 +47,9 @@ private:
 		std::vector<void *> &task_memory_pointers,
 		uint32 max_voices,
 		size_t required_memory_per_voice);
+
+	// Pointers to each task's library context
+	s_static_array<std::vector<void *>, enum_count<e_instrument_stage>()> m_task_library_contexts;
 
 	// Allocator for task-persistent memory
 	c_lock_free_aligned_allocator<uint8> m_task_memory_allocator;

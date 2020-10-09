@@ -61,10 +61,13 @@ public:
 	c_node_reference add_constant_node(const std::string &constant_value);
 	c_node_reference add_constant_array_node(c_native_module_data_type element_data_type);
 	void add_constant_array_value(
-		c_node_reference constant_array_node_reference, c_node_reference value_node_reference);
+		c_node_reference constant_array_node_reference,
+		c_node_reference value_node_reference);
 	// Returns the old value
 	c_node_reference set_constant_array_value_at_index(
-		c_node_reference constant_array_node_reference, uint32 index, c_node_reference value_node_reference);
+		c_node_reference constant_array_node_reference,
+		uint32 index,
+		c_node_reference value_node_reference);
 	c_node_reference add_native_module_call_node(uint32 native_module_index);
 	c_node_reference add_input_node(uint32 input_index);
 	c_node_reference add_output_node(uint32 output_index);

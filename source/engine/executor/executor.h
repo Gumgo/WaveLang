@@ -64,7 +64,7 @@ class c_executor {
 public:
 	c_executor();
 
-	void initialize(const s_executor_settings &settings);
+	void initialize(const s_executor_settings &settings, c_wrapped_array<void *> task_function_library_contexts);
 	void shutdown();
 
 	void execute(const s_executor_chunk_context &chunk_context);
@@ -103,12 +103,16 @@ private:
 		uint32 frames;
 	};
 
-	void initialize_internal(const s_executor_settings &settings);
+	void initialize_internal(
+		const s_executor_settings &settings,
+		c_wrapped_array<void *> task_function_library_contexts);
 	void initialize_events();
 	void initialize_thread_pool();
 	void initialize_buffer_manager();
+	void pre_initialize_task_function_libraries();
 	void initialize_task_memory();
 	void initialize_tasks();
+	void post_initialize_task_function_libraries();
 	void initialize_voice_allocator();
 	void initialize_controller_event_manager();
 	void initialize_task_contexts();
@@ -116,8 +120,15 @@ private:
 
 	void shutdown_internal();
 
-	static size_t task_memory_query_wrapper(void *context, const c_task_graph *task_graph, uint32 task_index);
-	size_t task_memory_query(const c_task_graph *task_graph, uint32 task_index);
+	static size_t task_memory_query_wrapper(
+		void *context,
+		e_instrument_stage instrument_stage,
+		const c_task_graph *task_graph,
+		uint32 task_index);
+	size_t task_memory_query(
+		e_instrument_stage instrument_stage,
+		const c_task_graph *task_graph,
+		uint32 task_index);
 
 	void execute_internal(const s_executor_chunk_context &chunk_context);
 	void process_fx(const s_executor_chunk_context &chunk_context);
@@ -135,6 +146,9 @@ private:
 	// Used to enable/disable the executor in a thread-safe manner
 	std::atomic<int32> m_state;
 	c_semaphore m_shutdown_signal;
+
+	// Contexts for each task function library
+	std::vector<void *> m_task_function_library_contexts;
 
 	// The active task graph (voice or FX)
 	const c_task_graph *m_active_task_graph;

@@ -37,7 +37,9 @@ void c_event_interface::submit(const c_event &e) {
 }
 
 e_event_level c_event_interface::build_event_string(
-	size_t event_size, const void *event_data, c_event_string &event_string_out) {
+	size_t event_size,
+	const void *event_data,
+	c_event_string &event_string_out) {
 	e_event_level event_level = e_event_level::k_invalid;
 	event_string_out.clear();
 

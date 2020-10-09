@@ -82,7 +82,10 @@ static bool try_to_get_value_from_child_node(
 }
 
 static bool try_to_get_value_from_child_node(
-	const rapidxml::xml_node<> *parent_node, const char *child_node_name, bool default_value, bool &value_out) {
+	const rapidxml::xml_node<> *parent_node,
+	const char *child_node_name,
+	bool default_value,
+	bool &value_out) {
 	const rapidxml::xml_node<> *node = parent_node->first_node(child_node_name);
 	if (node) {
 		const char *value = node->value();
@@ -104,7 +107,10 @@ static bool try_to_get_value_from_child_node(
 }
 
 static bool try_to_get_value_from_child_node(
-	const rapidxml::xml_node<> *parent_node, const char *child_node_name, real32 default_value, real32 &value_out) {
+	const rapidxml::xml_node<> *parent_node,
+	const char *child_node_name,
+	real32 default_value,
+	real32 &value_out) {
 	const rapidxml::xml_node<> *node = parent_node->first_node(child_node_name);
 	if (node) {
 		const char *value = node->value();

@@ -14,7 +14,9 @@ static s_static_array<s_preprocessor_command_executor, k_max_preprocessor_comman
 static size_t g_preprocessor_command_executor_count = 0;
 
 static s_compiler_result preprocessor_command_import(
-	void *context, const c_preprocessor_command_arguments &arguments, c_preprocessor_output &output);
+	void *context,
+	const c_preprocessor_command_arguments &arguments,
+	c_preprocessor_output &output);
 
 void c_preprocessor::initialize_preprocessor() {
 	g_preprocessor_command_executor_count = 0;
@@ -58,7 +60,9 @@ void c_preprocessor::register_preprocessor_command(
 }
 
 s_compiler_result c_preprocessor::preprocess(
-	c_compiler_string source, int32 source_file_index, c_preprocessor_output &output) {
+	c_compiler_string source,
+	int32 source_file_index,
+	c_preprocessor_output &output) {
 	s_compiler_result result;
 	result.clear();
 
@@ -214,7 +218,9 @@ bool c_preprocessor::is_valid_preprocessor_line(c_compiler_string line) {
 }
 
 static s_compiler_result preprocessor_command_import(
-	void *context, const c_preprocessor_command_arguments &arguments, c_preprocessor_output &output) {
+	void *context,
+	const c_preprocessor_command_arguments &arguments,
+	c_preprocessor_output &output) {
 	s_compiler_result result;
 	result.clear();
 

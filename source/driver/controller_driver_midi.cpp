@@ -13,7 +13,8 @@ c_controller_driver_midi::~c_controller_driver_midi() {
 }
 
 s_controller_driver_result c_controller_driver_midi::initialize(
-	f_submit_controller_event submit_controller_event, void *submit_controller_event_context) {
+	f_submit_controller_event submit_controller_event,
+	void *submit_controller_event_context) {
 	wl_assert(!m_initialized);
 
 	wl_assert(submit_controller_event);
@@ -133,7 +134,9 @@ const s_controller_driver_settings &c_controller_driver_midi::get_settings() con
 }
 
 void c_controller_driver_midi::message_callback_wrapper(
-	real64 time_stamp, std::vector<uint8> *message, void *user_data) {
+	real64 time_stamp,
+	std::vector<uint8> *message,
+	void *user_data) {
 	c_controller_driver_midi *this_ptr = static_cast<c_controller_driver_midi *>(user_data);
 	c_wrapped_array<const uint8> message_array(
 		message->empty() ? nullptr : &message->front(),
