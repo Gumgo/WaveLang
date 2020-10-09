@@ -1,13 +1,12 @@
 #include "engine/events/event_data_types.h"
 #include "engine/events/event_interface.h"
-#include "engine/sample/sample_library.h"
 #include "engine/task_functions/sampler/sampler_context.h"
 
 #include <cmath>
 
 void s_sampler_context::initialize_file(
 	c_event_interface *event_interface,
-	c_sample_library_requester *sample_requester,
+	c_sample_library *sample_library,
 	const char *sample,
 	e_sample_loop_mode loop_mode,
 	bool phase_shift_enabled,
@@ -18,7 +17,7 @@ void s_sampler_context::initialize_file(
 	parameters.filename = sample;
 	parameters.loop_mode = loop_mode;
 	parameters.phase_shift_enabled = phase_shift_enabled;
-	sample_handle = sample_requester->request_sample(parameters);
+	sample_handle = sample_library->request_sample(parameters);
 	if (channel_real < 0.0f
 		|| std::floor(channel_real) != channel_real) {
 		sample_handle = h_sample::invalid();
@@ -31,7 +30,7 @@ void s_sampler_context::initialize_file(
 
 void s_sampler_context::initialize_wavetable(
 	c_event_interface *event_interface,
-	c_sample_library_requester *sample_requester,
+	c_sample_library *sample_library,
 	c_real_constant_array harmonic_weights,
 	bool phase_shift_enabled) {
 	bool valid = true;
@@ -44,7 +43,7 @@ void s_sampler_context::initialize_wavetable(
 		s_wavetable_sample_parameters parameters;
 		parameters.harmonic_weights = harmonic_weights;
 		parameters.phase_shift_enabled = phase_shift_enabled;
-		sample_handle = sample_requester->request_sample(parameters);
+		sample_handle = sample_library->request_sample(parameters);
 	} else {
 		sample_handle = h_sample::invalid();
 	}
@@ -60,13 +59,13 @@ void s_sampler_context::voice_initialize() {
 }
 
 const c_sample *s_sampler_context::get_sample_or_fail_gracefully(
-	const c_sample_library_accessor *sample_accessor,
+	const c_sample_library *sample_library,
 	c_real_buffer *result,
 	c_event_interface *event_interface,
 	const char *sample_name) {
 	bool failed = false;
 
-	const c_sample *sample = sample_accessor->get_sample(sample_handle, channel);
+	const c_sample *sample = sample_library->get_sample(sample_handle, channel);
 
 	// If the sample failed, fill the buffer with 0
 	if (!sample) {
@@ -74,7 +73,7 @@ const c_sample *s_sampler_context::get_sample_or_fail_gracefully(
 			sample_failure_reported = true;
 
 			// Determine whether the same failed to load or an invalid channel was specified
-			if (!sample_accessor->get_sample(sample_handle, 0)) {
+			if (!sample_library->get_sample(sample_handle, 0)) {
 				event_interface->submit(EVENT_ERROR << "Failed to load sample '" << c_dstr(sample_name) << "'");
 			} else {
 				event_interface->submit(

@@ -68,7 +68,8 @@ inline int32x8 int32x8::sum_elements() const {
 }
 
 inline int32 int32x8::first_element() const {
-	return _mm256_cvtsi256_si32(m_value);
+	//return _mm256_cvtsi256_si32(m_value); // Doesn't seem to exist on clang
+	return _mm_cvtsi128_si32(_mm256_castsi256_si128(m_value));
 }
 
 inline int32x8 operator+(const int32x8 &v) {

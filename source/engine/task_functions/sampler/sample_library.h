@@ -3,7 +3,7 @@
 #include "common/common.h"
 #include "common/utility/handle.h"
 
-#include "engine/sample/sample.h"
+#include "engine/task_functions/sampler/sample.h"
 
 //#include <filesystem>
 #include <string>
@@ -81,28 +81,3 @@ private:
 	std::vector<s_requested_sample> m_requested_samples;
 	std::vector<s_requested_sample> m_previous_requested_samples;
 };
-
-// Additional sub-interfaces
-class c_sample_library_accessor {
-public:
-	c_sample_library_accessor() = default;
-	void initialize(const c_sample_library *m_sample_library);
-
-	const c_sample *get_sample(h_sample handle, uint32 channel_index) const;
-
-private:
-	const c_sample_library *m_sample_library = nullptr;
-};
-
-class c_sample_library_requester {
-public:
-	c_sample_library_requester() = default;
-	void initialize(c_sample_library *m_sample_library);
-
-	h_sample request_sample(const s_file_sample_parameters &parameters);
-	h_sample request_sample(const s_wavetable_sample_parameters &parameters);
-
-private:
-	c_sample_library *m_sample_library = nullptr;
-};
-

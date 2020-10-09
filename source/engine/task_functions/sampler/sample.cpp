@@ -5,8 +5,8 @@
 #include "common/utility/sha1/SHA1.h"
 
 #include "engine/resampler/resampler.h"
-#include "engine/sample/sample.h"
-#include "engine/sample/sample_loader.h"
+#include "engine/task_functions/sampler/sample.h"
+#include "engine/task_functions/sampler/sample_loader.h"
 
 #include <iostream>
 

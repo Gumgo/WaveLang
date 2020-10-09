@@ -9,6 +9,18 @@
 
 namespace sampler_task_functions wl_library(k_sampler_library_id, "sampler", 0) {
 
+	wl_library_engine_initializer
+	void *sampler_library_engine_initializer();
+
+	wl_library_engine_deinitializer
+	void sampler_library_engine_deinitializer(void *library_context);
+
+	wl_library_tasks_pre_initializer
+	void sampler_library_tasks_pre_initializer(void *library_context);
+
+	wl_library_tasks_post_initializer
+	void sampler_library_tasks_post_initializer(void *library_context);
+
 	wl_task_memory_query
 	size_t sampler_memory_query(const s_task_function_context &context);
 

@@ -9,8 +9,6 @@
 
 class c_controller_interface;
 class c_event_interface;
-class c_sample_library_accessor;
-class c_sample_library_requester;
 class c_voice_interface;
 
 static constexpr size_t k_max_task_function_library_name_length = 64;
@@ -19,9 +17,9 @@ static constexpr size_t k_max_task_function_arguments = 10;
 static constexpr uint32 k_invalid_task_argument_index = static_cast<uint32>(-1);
 
 using f_library_engine_initializer = void *(*)();
-using f_library_engine_deinitializer = void *(*)(void *library_context);
-using f_library_tasks_pre_initializer = void *(*)(void *library_context);
-using f_library_tasks_post_initializer = void *(*)(void *library_context);
+using f_library_engine_deinitializer = void (*)(void *library_context);
+using f_library_tasks_pre_initializer = void (*)(void *library_context);
+using f_library_tasks_post_initializer = void (*)(void *library_context);
 
 struct s_task_function_library {
 	uint32 id;
@@ -199,8 +197,6 @@ using c_task_function_arguments = c_wrapped_array<const s_task_function_argument
 
 struct s_task_function_context {
 	c_event_interface *event_interface;
-	c_sample_library_accessor *sample_accessor;
-	c_sample_library_requester *sample_requester;
 	c_voice_interface *voice_interface;
 	c_controller_interface *controller_interface;
 

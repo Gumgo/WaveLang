@@ -313,7 +313,7 @@ void c_ast_visitor::visit_library_compiler_deinitializer_declaration(clang::Func
 	}
 
 	if (decl->param_size() != 1
-		|| decl->parameters()[0]->getType().getCanonicalType().getTypePtr()->isVoidPointerType()) {
+		|| !decl->parameters()[0]->getType().getCanonicalType().getTypePtr()->isVoidPointerType()) {
 		m_diag.error(decl, "Library compiler deinitializer '%0' must take a single void pointer parameter")
 			<< function_name;
 	}
@@ -355,7 +355,7 @@ void c_ast_visitor::visit_library_engine_deinitializer_declaration(clang::Functi
 	}
 
 	if (decl->param_size() != 1
-		|| decl->parameters()[0]->getType().getCanonicalType().getTypePtr()->isVoidPointerType()) {
+		|| !decl->parameters()[0]->getType().getCanonicalType().getTypePtr()->isVoidPointerType()) {
 		m_diag.error(decl, "Library engine deinitializer '%0' must take a single void pointer parameter")
 			<< function_name;
 	}
@@ -376,7 +376,7 @@ void c_ast_visitor::visit_library_tasks_pre_initializer_declaration(clang::Funct
 	}
 
 	if (decl->param_size() != 1
-		|| decl->parameters()[0]->getType().getCanonicalType().getTypePtr()->isVoidPointerType()) {
+		|| !decl->parameters()[0]->getType().getCanonicalType().getTypePtr()->isVoidPointerType()) {
 		m_diag.error(decl, "Library tasks pre-initializer '%0' must take a single void pointer parameter")
 			<< function_name;
 	}
@@ -397,7 +397,7 @@ void c_ast_visitor::visit_library_tasks_post_initializer_declaration(clang::Func
 	}
 
 	if (decl->param_size() != 1
-		|| decl->parameters()[0]->getType().getCanonicalType().getTypePtr()->isVoidPointerType()) {
+		|| !decl->parameters()[0]->getType().getCanonicalType().getTypePtr()->isVoidPointerType()) {
 		m_diag.error(decl, "Library tasks post-initializer '%0' must take a single void pointer parameter")
 			<< function_name;
 	}

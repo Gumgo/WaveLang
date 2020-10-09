@@ -19,7 +19,7 @@ static constexpr size_t k_max_native_module_argument_name_length = 20;
 static constexpr size_t k_invalid_native_module_argument_index = static_cast<size_t>(-1);
 
 using f_library_compiler_initializer = void *(*)();
-using f_library_compiler_deinitializer = void *(*)(void *library_context);
+using f_library_compiler_deinitializer = void (*)(void *library_context);
 
 struct s_native_module_library {
 	uint32 id;

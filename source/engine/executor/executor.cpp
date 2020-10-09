@@ -13,9 +13,6 @@ c_executor::c_executor() {
 	m_state = enum_index(e_state::k_uninitialized);
 
 	m_controller_interface.initialize(&m_controller_event_manager);
-
-	m_sample_library.initialize("./");
-	m_sample_library_accessor.initialize(&m_sample_library);
 }
 
 void c_executor::initialize(
@@ -158,7 +155,6 @@ void c_executor::initialize_thread_pool() {
 			m_thread_contexts.get_array()[thread_index].task_function_context;
 		zero_type(&task_function_context);
 		task_function_context.event_interface = &m_event_interface;
-		task_function_context.sample_accessor = &m_sample_library_accessor;
 		task_function_context.voice_interface = &m_voice_interface;
 		task_function_context.controller_interface = &m_controller_interface;
 		task_function_context.sample_rate = m_settings.sample_rate;
@@ -166,7 +162,6 @@ void c_executor::initialize_thread_pool() {
 
 	zero_type(&m_voice_initializer_task_function_context);
 	m_voice_initializer_task_function_context.event_interface = &m_event_interface;
-	m_voice_initializer_task_function_context.sample_accessor = &m_sample_library_accessor;
 	m_voice_initializer_task_function_context.sample_rate = m_settings.sample_rate;
 
 	m_thread_pool.start(thread_pool_settings);
@@ -202,8 +197,6 @@ void c_executor::initialize_task_memory() {
 }
 
 void c_executor::initialize_tasks() {
-	m_sample_library.clear_requested_samples();
-
 	uint32 max_voices = m_settings.runtime_instrument->get_instrument_globals().max_voices;
 
 	for (e_instrument_stage instrument_stage : iterate_enum<e_instrument_stage>()) {
@@ -222,13 +215,9 @@ void c_executor::initialize_tasks() {
 				c_task_function_registry::get_task_function(task_graph->get_task_function_index(task));
 
 			if (task_function.initializer) {
-				c_sample_library_requester sample_library_requester;
-				sample_library_requester.initialize(&m_sample_library);
-
 				s_task_function_context task_function_context;
 				zero_type(&task_function_context);
 				task_function_context.event_interface = &m_event_interface;
-				task_function_context.sample_requester = &sample_library_requester;
 				task_function_context.sample_rate = m_settings.sample_rate;
 				task_function_context.arguments = task_graph->get_task_arguments(task);
 
@@ -245,8 +234,6 @@ void c_executor::initialize_tasks() {
 
 	m_active_task_graph = nullptr;
 	m_active_instrument_stage = e_instrument_stage::k_invalid;
-
-	m_sample_library.update_loaded_samples();
 }
 
 void c_executor::post_initialize_task_function_libraries() {

@@ -17,7 +17,6 @@
 #include "engine/executor/task_memory_manager.h"
 #include "engine/executor/voice_allocator.h"
 #include "engine/profiler/profiler.h"
-#include "engine/sample/sample_library.h"
 #include "engine/voice_interface/voice_interface.h"
 
 #include "execution_graph/instrument_stage.h"
@@ -191,12 +190,6 @@ private:
 
 	// Signaled when all tasks are complete
 	c_semaphore m_all_tasks_complete_signal;
-
-	// Sample library
-	c_sample_library m_sample_library;
-
-	// Interface to access the sample library
-	c_sample_library_accessor m_sample_library_accessor;
 
 	// Sends events from the stream threads to the event handling thread
 	c_async_event_handler m_async_event_handler;

@@ -1,8 +1,8 @@
 #include "common/math/math_constants.h" // MEGA HACK $TODO $JSON remove this
 #include "common/utility/file_utility.h"
 
-#include "engine/sample/sample.h"
-#include "engine/sample/sample_library.h"
+#include "engine/task_functions/sampler/sample.h"
+#include "engine/task_functions/sampler/sample_library.h"
 
 c_sample_library::c_sample_library() {
 }
@@ -217,28 +217,4 @@ h_sample c_sample_library::request_sample(const s_requested_sample &requested_sa
 	}
 
 	return result;
-}
-
-void c_sample_library_accessor::initialize(const c_sample_library *sample_library) {
-	wl_assert(!m_sample_library);
-	wl_assert(sample_library);
-	m_sample_library = sample_library;
-}
-
-const c_sample *c_sample_library_accessor::get_sample(h_sample handle, uint32 channel_index) const {
-	return m_sample_library->get_sample(handle, channel_index);
-}
-
-void c_sample_library_requester::initialize(c_sample_library *sample_library) {
-	wl_assert(!m_sample_library);
-	wl_assert(sample_library);
-	m_sample_library = sample_library;
-}
-
-h_sample c_sample_library_requester::request_sample(const s_file_sample_parameters &parameters) {
-	return m_sample_library->request_sample(parameters);
-}
-
-h_sample c_sample_library_requester::request_sample(const s_wavetable_sample_parameters &parameters) {
-	return m_sample_library->request_sample(parameters);
 }

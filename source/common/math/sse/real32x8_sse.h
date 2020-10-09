@@ -79,7 +79,8 @@ inline real32x8 real32x8::sum_elements() const {
 }
 
 inline real32 real32x8::first_element() const {
-	return _mm256_cvtss_f32(m_value);
+	//return _mm256_cvtss_f32(m_value); // Doesn't seem to exist on clang
+	return _mm_cvtss_f32(_mm256_castps256_ps128(m_value));
 }
 
 inline real32x8 operator+(const real32x8 &v) {

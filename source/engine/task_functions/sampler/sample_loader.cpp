@@ -1,6 +1,6 @@
 #include "common/utility/file_utility.h"
 
-#include "engine/sample/sample_loader.h"
+#include "engine/task_functions/sampler/sample_loader.h"
 
 struct s_wave_riff_header {
 	uint32 chunk_id;

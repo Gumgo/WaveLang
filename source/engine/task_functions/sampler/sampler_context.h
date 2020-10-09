@@ -3,23 +3,23 @@
 #include "common/common.h"
 #include "common/math/math.h"
 
-#include "engine/sample/sample.h"
 #include "engine/task_function.h"
+#include "engine/task_functions/sampler/sample.h"
+#include "engine/task_functions/sampler/sample_library.h"
 
 class c_event_interface;
-class c_sample_library_requester;
 
 struct s_sampler_context {
 	void initialize_file(
 		c_event_interface *event_interface,
-		c_sample_library_requester *sample_requester,
+		c_sample_library *sample_library,
 		const char *sample,
 		e_sample_loop_mode loop_mode,
 		bool phase_shift_enabled,
 		real32 channel_real);
 	void initialize_wavetable(
 		c_event_interface *event_interface,
-		c_sample_library_requester *sample_requester,
+		c_sample_library *sample_library,
 		c_real_constant_array harmonic_weights,
 		bool phase_shift_enabled);
 	void voice_initialize();
@@ -28,7 +28,7 @@ struct s_sampler_context {
 
 	// Fills the output buffer with 0s if the sample failed to load or if the channel is invalid
 	const c_sample *get_sample_or_fail_gracefully(
-		const c_sample_library_accessor *sample_accessor,
+		const c_sample_library *sample_library,
 		c_real_buffer *result,
 		c_event_interface *event_interface,
 		const char *sample_name);

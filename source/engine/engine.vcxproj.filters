@@ -47,12 +47,6 @@
     <ClInclude Include="profiler\profiler.h">
       <Filter>profiler</Filter>
     </ClInclude>
-    <ClInclude Include="sample\sample.h">
-      <Filter>sample</Filter>
-    </ClInclude>
-    <ClInclude Include="sample\sample_library.h">
-      <Filter>sample</Filter>
-    </ClInclude>
     <ClInclude Include="task_functions\task_functions_controller.h">
       <Filter>task_functions</Filter>
     </ClInclude>
@@ -102,11 +96,17 @@
     <ClInclude Include="buffer_operations\buffer_iterator_types.h">
       <Filter>buffer_operations</Filter>
     </ClInclude>
-    <ClInclude Include="sample\sample_loader.h">
-      <Filter>sample</Filter>
-    </ClInclude>
     <ClInclude Include="resampler\resampler.h">
       <Filter>resampler</Filter>
+    </ClInclude>
+    <ClInclude Include="task_functions\sampler\sample.h">
+      <Filter>task_functions\sampler</Filter>
+    </ClInclude>
+    <ClInclude Include="task_functions\sampler\sample_library.h">
+      <Filter>task_functions\sampler</Filter>
+    </ClInclude>
+    <ClInclude Include="task_functions\sampler\sample_loader.h">
+      <Filter>task_functions\sampler</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -161,12 +161,6 @@
     <ClCompile Include="profiler\profiler.cpp">
       <Filter>profiler</Filter>
     </ClCompile>
-    <ClCompile Include="sample\sample_library.cpp">
-      <Filter>sample</Filter>
-    </ClCompile>
-    <ClCompile Include="sample\sample.cpp">
-      <Filter>sample</Filter>
-    </ClCompile>
     <ClCompile Include="task_functions\task_functions_controller.cpp">
       <Filter>task_functions</Filter>
     </ClCompile>
@@ -207,11 +201,17 @@
       <Filter>voice_interface</Filter>
     </ClCompile>
     <ClCompile Include="task_data_type.cpp" />
-    <ClCompile Include="sample\sample_loader.cpp">
-      <Filter>sample</Filter>
-    </ClCompile>
     <ClCompile Include="resampler\resampler.cpp">
       <Filter>resampler</Filter>
+    </ClCompile>
+    <ClCompile Include="task_functions\sampler\sample_library.cpp">
+      <Filter>task_functions\sampler</Filter>
+    </ClCompile>
+    <ClCompile Include="task_functions\sampler\sample_loader.cpp">
+      <Filter>task_functions\sampler</Filter>
+    </ClCompile>
+    <ClCompile Include="task_functions\sampler\sample.cpp">
+      <Filter>task_functions\sampler</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -235,9 +235,6 @@
     </Filter>
     <Filter Include="profiler">
       <UniqueIdentifier>{ba6fcd02-1b4e-4739-bde5-c3e0a7f69c86}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="sample">
-      <UniqueIdentifier>{b914e832-3749-4264-868d-caf47141075f}</UniqueIdentifier>
     </Filter>
     <Filter Include="task_functions">
       <UniqueIdentifier>{813452dd-428e-42ca-a44c-99e25f201a05}</UniqueIdentifier>

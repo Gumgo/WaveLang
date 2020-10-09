@@ -2,7 +2,7 @@
 
 #include "common/common.h"
 
-#include "engine/sample/sample.h"
+#include "engine/task_functions/sampler/sample.h"
 
 // Calculates the interpolated sample at the given time. The input sample should not be a mipmap.
 real32 fetch_sample(const c_sample *sample, real64 sample_index);
