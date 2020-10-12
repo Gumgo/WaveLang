@@ -29,6 +29,7 @@ static void native_module_diagnostic_callback(
 	e_diagnostic_level diagnostic_level,
 	const std::string &message);
 static void execute_compile_time_call(
+	c_wrapped_array<void *> native_module_library_contexts,
 	const c_execution_graph *execution_graph,
 	c_node_interface *node_interface,
 	const s_instrument_globals *instrument_globals,
@@ -37,11 +38,13 @@ static void execute_compile_time_call(
 	std::vector<s_compiler_result> *errors);
 
 static bool optimize_node(
+	c_wrapped_array<void *> native_module_library_contexts,
 	c_execution_graph *execution_graph,
 	const s_instrument_globals *instrument_globals,
 	c_node_reference node_reference,
 	std::vector<s_compiler_result> *errors);
 static bool optimize_native_module_call(
+	c_wrapped_array<void *> native_module_library_contexts,
 	c_execution_graph *execution_graph,
 	const s_instrument_globals *instrument_globals,
 	c_node_reference node_reference,
@@ -66,11 +69,13 @@ c_execution_graph_constant_evaluator::c_execution_graph_constant_evaluator() {
 }
 
 void c_execution_graph_constant_evaluator::initialize(
+	c_wrapped_array<void *> native_module_library_contexts,
 	c_execution_graph *execution_graph,
 	const s_instrument_globals *instrument_globals,
 	std::vector<s_compiler_result> *errors) {
 	wl_assert(!m_execution_graph);
 	wl_assert(!m_instrument_globals);
+	m_native_module_library_contexts = native_module_library_contexts;
 	m_execution_graph = execution_graph;
 	m_instrument_globals = instrument_globals;
 	m_errors = errors;
@@ -182,6 +187,7 @@ void c_execution_graph_constant_evaluator::try_evaluate_node(c_node_reference no
 			c_node_interface node_interface(m_execution_graph);
 
 			execute_compile_time_call(
+				m_native_module_library_contexts,
 				m_execution_graph,
 				&node_interface,
 				m_instrument_globals,
@@ -461,6 +467,7 @@ void c_execution_graph_trimmer::add_pending_node(c_node_reference node_reference
 }
 
 s_compiler_result c_execution_graph_optimizer::optimize_graph(
+	c_wrapped_array<void *> native_module_library_contexts,
 	c_execution_graph *execution_graph,
 	const s_instrument_globals *instrument_globals,
 	std::vector<s_compiler_result> &errors_out) {
@@ -477,7 +484,12 @@ s_compiler_result c_execution_graph_optimizer::optimize_graph(
 		for (c_node_reference node_reference = execution_graph->nodes_begin();
 			node_reference.is_valid();
 			node_reference = execution_graph->nodes_next(node_reference)) {
-			optimization_performed |= optimize_node(execution_graph, instrument_globals, node_reference, &errors_out);
+			optimization_performed |= optimize_node(
+				native_module_library_contexts,
+				execution_graph,
+				instrument_globals,
+				node_reference,
+				&errors_out);
 		}
 
 		remove_useless_nodes(execution_graph);
@@ -564,6 +576,7 @@ static void native_module_diagnostic_callback(
 }
 
 static void execute_compile_time_call(
+	c_wrapped_array<void *> native_module_library_contexts,
 	const c_execution_graph *execution_graph,
 	c_node_interface *node_interface,
 	const s_instrument_globals *instrument_globals,
@@ -585,12 +598,18 @@ static void execute_compile_time_call(
 	native_module_context.diagnostic = &diagnostic;
 	native_module_context.node_interface = node_interface;
 	native_module_context.instrument_globals = instrument_globals;
+
+	uint32 library_index =
+		c_native_module_registry::get_native_module_library_index(native_module.uid.get_library_id());
+	native_module_context.library_context = native_module_library_contexts[library_index];
+
 	native_module_context.arguments = &arguments;
 
 	native_module.compile_time_call(native_module_context);
 }
 
 static bool optimize_node(
+	c_wrapped_array<void *> native_module_library_contexts,
 	c_execution_graph *execution_graph,
 	const s_instrument_globals *instrument_globals,
 	c_node_reference node_reference,
@@ -607,7 +626,12 @@ static bool optimize_node(
 		break;
 
 	case e_execution_graph_node_type::k_native_module_call:
-		optimized = optimize_native_module_call(execution_graph, instrument_globals, node_reference, errors);
+		optimized = optimize_native_module_call(
+			native_module_library_contexts,
+			execution_graph,
+			instrument_globals,
+			node_reference,
+			errors);
 		break;
 
 	case e_execution_graph_node_type::k_indexed_input:
@@ -639,6 +663,7 @@ static bool optimize_node(
 }
 
 static bool optimize_native_module_call(
+	c_wrapped_array<void *> native_module_library_contexts,
 	c_execution_graph *execution_graph,
 	const s_instrument_globals *instrument_globals,
 	c_node_reference node_reference,
@@ -722,6 +747,7 @@ static bool optimize_native_module_call(
 			// Make the compile time call to resolve the outputs
 			c_node_interface node_interface(execution_graph);
 			execute_compile_time_call(
+				native_module_library_contexts,
 				execution_graph,
 				&node_interface,
 				instrument_globals,

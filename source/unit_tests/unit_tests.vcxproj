@@ -58,6 +58,7 @@
     <NMakeCleanCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)_app</NMakeCleanCommandLine>
     <IntDir>$(SolutionDir)..\build\win32\$(Configuration)\msvc</IntDir>
     <IncludePath>$(SolutionDir);C:\Programming\googletest\googletest\include;$(IncludePath)</IncludePath>
+    <AdditionalOptions>/std:c++latest</AdditionalOptions>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='development|x64'">
     <NMakeOutput>unit_tests.exe</NMakeOutput>
@@ -67,6 +68,7 @@
     <NMakeCleanCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)_app</NMakeCleanCommandLine>
     <IntDir>$(SolutionDir)..\build\win32\$(Configuration)\msvc</IntDir>
     <IncludePath>$(SolutionDir);C:\Programming\googletest\googletest\include;$(IncludePath)</IncludePath>
+    <AdditionalOptions>/std:c++latest</AdditionalOptions>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='release|x64'">
     <NMakeOutput>unit_tests.exe</NMakeOutput>
@@ -76,6 +78,7 @@
     <NMakeCleanCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)_app</NMakeCleanCommandLine>
     <IntDir>$(SolutionDir)..\build\win32\$(Configuration)\msvc</IntDir>
     <IncludePath>$(SolutionDir);C:\Programming\googletest\googletest\include;$(IncludePath)</IncludePath>
+    <AdditionalOptions>/std:c++latest</AdditionalOptions>
   </PropertyGroup>
   <ItemDefinitionGroup>
   </ItemDefinitionGroup>
@@ -87,6 +90,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="buffer_tests.cpp" />
+    <ClCompile Include="json_tests.cpp" />
     <ClCompile Include="math_tests.cpp" />
     <ClCompile Include="unit_tests_main.cpp" />
   </ItemGroup>

@@ -28,6 +28,7 @@ static s_compiler_result read_and_preprocess_source_file(
 static void fixup_source(std::vector<char> &source_inout);
 
 s_compiler_result c_compiler::compile(
+	c_wrapped_array<void *> native_module_library_contexts,
 	const char *root_path,
 	const char *source_filename,
 	c_instrument *instrument_out) {
@@ -40,6 +41,7 @@ s_compiler_result c_compiler::compile(
 	result.clear();
 
 	s_compiler_context context;
+	context.native_module_library_contexts = native_module_library_contexts;
 	// Fix up the root path by adding a backslash if necessary
 	context.root_path = root_path;
 
@@ -180,6 +182,7 @@ s_compiler_result c_compiler::compile(
 			if (instrument_variant->get_voice_execution_graph()) {
 				std::vector<s_compiler_result> optimization_errors;
 				result = c_execution_graph_optimizer::optimize_graph(
+					native_module_library_contexts,
 					instrument_variant->get_voice_execution_graph(),
 					&instrument_variant->get_instrument_globals(),
 					optimization_errors);
@@ -197,6 +200,7 @@ s_compiler_result c_compiler::compile(
 			if (instrument_variant->get_fx_execution_graph()) {
 				std::vector<s_compiler_result> optimization_errors;
 				result = c_execution_graph_optimizer::optimize_graph(
+					native_module_library_contexts,
 					instrument_variant->get_fx_execution_graph(),
 					&instrument_variant->get_instrument_globals(),
 					optimization_errors);

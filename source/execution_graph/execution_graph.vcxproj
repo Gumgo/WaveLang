@@ -59,6 +59,7 @@
     <NMakeCleanCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)</NMakeCleanCommandLine>
     <IntDir>$(SolutionDir)..\build\win32\$(Configuration)\msvc</IntDir>
     <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
+    <AdditionalOptions>/std:c++latest</AdditionalOptions>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='development|x64'">
     <NMakeOutput />
@@ -68,6 +69,7 @@
     <NMakeCleanCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)</NMakeCleanCommandLine>
     <IntDir>$(SolutionDir)..\build\win32\$(Configuration)\msvc</IntDir>
     <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
+    <AdditionalOptions>/std:c++latest</AdditionalOptions>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='release|x64'">
     <NMakeOutput>
@@ -78,17 +80,21 @@
     <NMakeCleanCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)</NMakeCleanCommandLine>
     <IntDir>$(SolutionDir)..\build\win32\$(Configuration)\msvc</IntDir>
     <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
+    <AdditionalOptions>/std:c++latest</AdditionalOptions>
   </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="diagnostic\diagnostic.cpp" />
     <ClCompile Include="execution_graph.cpp" />
     <ClCompile Include="instrument.cpp" />
     <ClCompile Include="native_module.cpp" />
+    <ClCompile Include="native_modules\json\json_file.cpp" />
+    <ClCompile Include="native_modules\json\json_file_manager.cpp" />
     <ClCompile Include="native_modules\native_modules_array.cpp" />
     <ClCompile Include="native_modules\native_modules_controller.cpp" />
     <ClCompile Include="native_modules\native_modules_core.cpp" />
     <ClCompile Include="native_modules\native_modules_delay.cpp" />
     <ClCompile Include="native_modules\native_modules_filter.cpp" />
+    <ClCompile Include="native_modules\native_modules_json.cpp" />
     <ClCompile Include="native_modules\native_modules_math.cpp" />
     <ClCompile Include="native_modules\native_modules_sampler.cpp" />
     <ClCompile Include="native_modules\native_modules_stream.cpp" />
@@ -106,11 +112,14 @@
     <ClInclude Include="instrument_globals.h" />
     <ClInclude Include="instrument_stage.h" />
     <ClInclude Include="native_module.h" />
+    <ClInclude Include="native_modules\json\json_file.h" />
+    <ClInclude Include="native_modules\json\json_file_manager.h" />
     <ClInclude Include="native_modules\native_modules_array.h" />
     <ClInclude Include="native_modules\native_modules_controller.h" />
     <ClInclude Include="native_modules\native_modules_core.h" />
     <ClInclude Include="native_modules\native_modules_delay.h" />
     <ClInclude Include="native_modules\native_modules_filter.h" />
+    <ClInclude Include="native_modules\native_modules_json.h" />
     <ClInclude Include="native_modules\native_modules_math.h" />
     <ClInclude Include="native_modules\native_modules_sampler.h" />
     <ClInclude Include="native_modules\native_modules_stream.h" />

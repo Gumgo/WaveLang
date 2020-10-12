@@ -287,6 +287,8 @@ struct s_native_module_context {
 	c_node_interface *node_interface;
 	const s_instrument_globals *instrument_globals;
 
+	void *library_context;
+
 	c_native_module_compile_time_argument_list *arguments;
 };
 

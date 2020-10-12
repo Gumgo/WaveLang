@@ -315,6 +315,7 @@ static s_token read_next_token(
 		} else {
 			// Make sure the value is valid
 			try {
+				// $TODO replace usages of stoi, stol, stof, etc. with std::from_chars
 				std::stof(result.token_string.to_std_string());
 				result.token_type = e_token_type::k_constant_real;
 			} catch (const std::invalid_argument &) {

@@ -92,7 +92,13 @@ int main(int argc, char **argv) {
 	for (int arg = first_file_argument_index; arg < argc; arg++) {
 		std::cout << "Compiling '" << argv[arg] << "'\n";
 		c_instrument instrument;
-		s_compiler_result compile_result = c_compiler::compile(".\\", argv[arg], &instrument);
+		s_compiler_result compile_result = c_compiler::compile(
+			c_wrapped_array<void *>(
+				library_contexts.empty() ? nullptr : &library_contexts.front(),
+				library_contexts.size()),
+			".\\",
+			argv[arg],
+			&instrument);
 
 		if (compile_result.result == e_compiler_result::k_success) {
 			std::string fname_no_ext = argv[arg];

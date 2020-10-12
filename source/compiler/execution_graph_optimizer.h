@@ -30,6 +30,7 @@ public:
 
 	c_execution_graph_constant_evaluator();
 	void initialize(
+		c_wrapped_array<void *> native_module_library_contexts,
 		c_execution_graph *execution_graph,
 		const s_instrument_globals *instrument_globals,
 		std::vector<s_compiler_result> *errors);
@@ -52,6 +53,9 @@ private:
 		const s_native_module &native_module,
 		c_node_reference native_module_node_reference,
 		const std::vector<s_native_module_compile_time_argument> &arg_list);
+
+	// Contexts for native module libraries
+	c_wrapped_array<void *> m_native_module_library_contexts;
 
 	// The graph
 	c_execution_graph *m_execution_graph;
@@ -102,6 +106,7 @@ private:
 class c_execution_graph_optimizer {
 public:
 	static s_compiler_result optimize_graph(
+		c_wrapped_array<void *> native_module_library_contexts,
 		c_execution_graph *execution_graph,
 		const s_instrument_globals *instrument_globals,
 		std::vector<s_compiler_result> &errors_out);

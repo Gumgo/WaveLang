@@ -81,6 +81,7 @@ struct s_compiler_source_file {
 };
 
 struct s_compiler_context {
+	c_wrapped_array<void *> native_module_library_contexts;
 	std::string root_path;
 	std::vector<s_compiler_source_file> source_files;
 };

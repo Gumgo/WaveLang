@@ -10,5 +10,6 @@
     <ClCompile Include="unit_tests_main.cpp" />
     <ClCompile Include="buffer_tests.cpp" />
     <ClCompile Include="math_tests.cpp" />
+    <ClCompile Include="json_tests.cpp" />
   </ItemGroup>
 </Project>
