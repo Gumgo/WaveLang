@@ -59,6 +59,9 @@ private:
 		std::map<std::string, s_identifier> identifiers;
 	};
 
+	// Contexts for native module libraries
+	c_wrapped_array<void *> m_native_module_library_contexts;
+
 	// Vector into which we accumulate errors
 	std::vector<s_compiler_result> *m_errors;
 
@@ -233,6 +236,7 @@ private:
 
 public:
 	c_execution_graph_module_builder(
+		c_wrapped_array<void *> native_module_library_contexts,
 		std::vector<s_compiler_result> *error_accumulator,
 		const c_ast_node *ast_root,
 		c_execution_graph *execution_graph,
@@ -242,6 +246,7 @@ public:
 		wl_assert(execution_graph);
 		wl_assert(module_declaration);
 
+		m_native_module_library_contexts = native_module_library_contexts;
 		m_errors = error_accumulator;
 		m_ast_root = ast_root;
 		m_execution_graph = execution_graph;
@@ -251,7 +256,7 @@ public:
 
 		m_loop_count_for_next_scope = 1;
 
-		m_constant_evaluator.initialize(execution_graph, instrument_globals, error_accumulator);
+		m_constant_evaluator.initialize(native_module_library_contexts, execution_graph, instrument_globals, error_accumulator);
 		m_trimmer.initialize(execution_graph, on_node_removed, this);
 
 		m_argument_node_references.resize(module_declaration->get_argument_count());
@@ -840,7 +845,12 @@ public:
 		wl_assert(module_call_declaration);
 
 		c_execution_graph_module_builder module_builder(
-			m_errors, m_ast_root, m_execution_graph, m_instrument_globals, module_call_declaration);
+			m_native_module_library_contexts,
+			m_errors,
+			m_ast_root,
+			m_execution_graph,
+			m_instrument_globals,
+			module_call_declaration);
 
 		// Hook up the input arguments
 		for (size_t arg = 0; arg < module_call_declaration->get_argument_count(); arg++) {
@@ -898,6 +908,7 @@ public:
 };
 
 s_compiler_result c_execution_graph_builder::build_execution_graphs(
+	c_wrapped_array<void *> native_module_library_contexts,
 	const c_ast_node *ast,
 	c_instrument_variant *instrument_variant_out,
 	std::vector<s_compiler_result> &errors_out) {
@@ -917,6 +928,7 @@ s_compiler_result c_execution_graph_builder::build_execution_graphs(
 		instrument_variant_out->set_voice_execution_graph(execution_graph);
 
 		c_execution_graph_module_builder builder(
+			native_module_library_contexts,
 			&errors_out,
 			ast,
 			execution_graph,
@@ -949,6 +961,7 @@ s_compiler_result c_execution_graph_builder::build_execution_graphs(
 		instrument_variant_out->set_fx_execution_graph(execution_graph);
 
 		c_execution_graph_module_builder builder(
+			native_module_library_contexts,
 			&errors_out,
 			ast,
 			execution_graph,

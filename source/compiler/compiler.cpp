@@ -165,7 +165,11 @@ s_compiler_result c_compiler::compile(
 			// Build the execution graphs. This can fail if loops don't resolve to constants.
 			{
 				std::vector<s_compiler_result> graph_errors;
-				result = c_execution_graph_builder::build_execution_graphs(ast.get(), instrument_variant, graph_errors);
+				result = c_execution_graph_builder::build_execution_graphs(
+					native_module_library_contexts,
+					ast.get(),
+					instrument_variant,
+					graph_errors);
 
 				for (size_t error = 0; error < graph_errors.size(); error++) {
 					output_error(context, graph_errors[error]);

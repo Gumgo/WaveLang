@@ -7,6 +7,7 @@
 #include "execution_graph/native_modules/native_modules_core.h"
 #include "execution_graph/native_modules/native_modules_delay.h"
 #include "execution_graph/native_modules/native_modules_filter.h"
+#include "execution_graph/native_modules/native_modules_json.h"
 #include "execution_graph/native_modules/native_modules_math.h"
 #include "execution_graph/native_modules/native_modules_sampler.h"
 #include "execution_graph/native_modules/native_modules_stream.h"

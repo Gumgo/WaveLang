@@ -93,6 +93,8 @@ public:
 	uint32 get_input_node_input_index(c_node_reference node_reference) const;
 	uint32 get_output_node_output_index(c_node_reference node_reference) const;
 	size_t get_node_incoming_edge_count(c_node_reference node_reference) const;
+	// $TODO consider adding convenience accessors for array elements and native module inputs/outputs since these need
+	// to go through indexed nodes
 	c_node_reference get_node_incoming_edge_reference(c_node_reference node_reference, size_t edge) const;
 	size_t get_node_outgoing_edge_count(c_node_reference node_reference) const;
 	c_node_reference get_node_outgoing_edge_reference(c_node_reference node_reference, size_t edge) const;

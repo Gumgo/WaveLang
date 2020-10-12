@@ -198,12 +198,14 @@ void c_execution_graph_constant_evaluator::try_evaluate_node(c_node_reference no
 				m_errors);
 			store_native_module_call_results(native_module, native_module_node_reference, arg_list);
 
+			// $TODO BUG: Fix this! We can't call this here because the nodes aren't actually in use yet. This whole
+			// caching system is kind of janky and should probably be removed or rethought.
 			// Remove any newly created but unused constant nodes
-			for (c_node_reference constant_node_reference : node_interface.get_created_node_references()) {
-				if (m_execution_graph->get_node_outgoing_edge_count(constant_node_reference) == 0) {
-					m_execution_graph->remove_node(constant_node_reference);
-				}
-			}
+			//for (c_node_reference constant_node_reference : node_interface.get_created_node_references()) {
+			//	if (m_execution_graph->get_node_outgoing_edge_count(constant_node_reference) == 0) {
+			//		m_execution_graph->remove_node(constant_node_reference);
+			//	}
+			//}
 		}
 	} else {
 		// We should only ever add constants and native module output nodes

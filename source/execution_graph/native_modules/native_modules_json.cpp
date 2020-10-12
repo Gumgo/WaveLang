@@ -71,25 +71,32 @@ namespace json_native_modules {
 
 	void read_real(
 		const s_native_module_context &context,
-		const char *filename,
-		const char *path,
+		const c_native_module_string &filename,
+		const c_native_module_string &path,
 		real32 &result) {
 		result = 0.0f;
 		c_json_file_manager *json_file_manager = static_cast<c_json_file_manager *>(context.library_context);
-		const c_json_file *json_file = load_json_file_or_report_error(json_file_manager, context.diagnostic, filename);
+		const c_json_file *json_file = load_json_file_or_report_error(
+			json_file_manager,
+			context.diagnostic,
+			filename.get_string().c_str());
 		if (!json_file) {
 			return;
 		}
 
-		const c_json_node *node = get_json_node_or_report_error(json_file, context.diagnostic, filename, path);
+		const c_json_node *node = get_json_node_or_report_error(
+			json_file,
+			context.diagnostic,
+			filename.get_string().c_str(),
+			path.get_string().c_str());
 		if (!node) {
 			return;
 		}
 
 		const c_json_node_number *number_node = node->try_get_as<c_json_node_number>();
 		if (!number_node) {
-			context.diagnostic->error(("Node '" + std::string(path) + "' in JSON file '"
-				+ std::string(filename) + "' is not a number").c_str());
+			context.diagnostic->error(("Node '" + path.get_string() + "' in JSON file '"
+				+ filename.get_string() + "' is not a number").c_str());
 			return;
 		}
 
@@ -98,31 +105,38 @@ namespace json_native_modules {
 
 	void read_real_array(
 		const s_native_module_context &context,
-		const char *filename,
-		const char *path,
+		const c_native_module_string &filename,
+		const c_native_module_string &path,
 		c_native_module_real_array &result) {
 		c_json_file_manager *json_file_manager = static_cast<c_json_file_manager *>(context.library_context);
-		const c_json_file *json_file = load_json_file_or_report_error(json_file_manager, context.diagnostic, filename);
+		const c_json_file *json_file = load_json_file_or_report_error(
+			json_file_manager,
+			context.diagnostic,
+			filename.get_string().c_str());
 		if (!json_file) {
 			return;
 		}
 
-		const c_json_node *node = get_json_node_or_report_error(json_file, context.diagnostic, filename, path);
+		const c_json_node *node = get_json_node_or_report_error(
+			json_file,
+			context.diagnostic,
+			filename.get_string().c_str(),
+			path.get_string().c_str());
 		if (!node) {
 			return;
 		}
 
 		const c_json_node_array *array_node = node->try_get_as<c_json_node_array>();
 		if (!array_node) {
-			context.diagnostic->error(("Node '" + std::string(path) + "' in JSON file '"
-				+ std::string(filename) + "' is not an array").c_str());
+			context.diagnostic->error(("Node '" + path.get_string() + "' in JSON file '"
+				+ filename.get_string() + "' is not an array").c_str());
 			return;
 		}
 
 		for (size_t index = 0; index < array_node->get_value().get_count(); index++) {
 			if (array_node->get_value()[index]->get_type() != e_json_node_type::k_number) {
-				context.diagnostic->error(("Node '" + std::string(path) + "' in JSON file '"
-					+ std::string(filename) + "' contains non-number elements").c_str());
+				context.diagnostic->error(("Node '" + path.get_string() + "' in JSON file '"
+					+ filename.get_string() + "' contains non-number elements").c_str());
 				return;
 			}
 		}
@@ -136,25 +150,32 @@ namespace json_native_modules {
 
 	void read_bool(
 		const s_native_module_context &context,
-		const char *filename,
-		const char *path,
+		const c_native_module_string &filename,
+		const c_native_module_string &path,
 		bool &result) {
 		result = false;
 		c_json_file_manager *json_file_manager = static_cast<c_json_file_manager *>(context.library_context);
-		const c_json_file *json_file = load_json_file_or_report_error(json_file_manager, context.diagnostic, filename);
+		const c_json_file *json_file = load_json_file_or_report_error(
+			json_file_manager,
+			context.diagnostic,
+			filename.get_string().c_str());
 		if (!json_file) {
 			return;
 		}
 
-		const c_json_node *node = get_json_node_or_report_error(json_file, context.diagnostic, filename, path);
+		const c_json_node *node = get_json_node_or_report_error(
+			json_file,
+			context.diagnostic,
+			filename.get_string().c_str(),
+			path.get_string().c_str());
 		if (!node) {
 			return;
 		}
 
 		const c_json_node_number *number_node = node->try_get_as<c_json_node_number>();
 		if (!number_node) {
-			context.diagnostic->error(("Node '" + std::string(path) + "' in JSON file '"
-				+ std::string(filename) + "' is not a boolean").c_str());
+			context.diagnostic->error(("Node '" + path.get_string() + "' in JSON file '"
+				+ filename.get_string() + "' is not a boolean").c_str());
 			return;
 		}
 
@@ -163,31 +184,38 @@ namespace json_native_modules {
 
 	void read_bool_array(
 		const s_native_module_context &context,
-		const char *filename,
-		const char *path,
+		const c_native_module_string &filename,
+		const c_native_module_string &path,
 		c_native_module_bool_array &result) {
 		c_json_file_manager *json_file_manager = static_cast<c_json_file_manager *>(context.library_context);
-		const c_json_file *json_file = load_json_file_or_report_error(json_file_manager, context.diagnostic, filename);
+		const c_json_file *json_file = load_json_file_or_report_error(
+			json_file_manager,
+			context.diagnostic,
+			filename.get_string().c_str());
 		if (!json_file) {
 			return;
 		}
 
-		const c_json_node *node = get_json_node_or_report_error(json_file, context.diagnostic, filename, path);
+		const c_json_node *node = get_json_node_or_report_error(
+			json_file,
+			context.diagnostic,
+			filename.get_string().c_str(),
+			path.get_string().c_str());
 		if (!node) {
 			return;
 		}
 
 		const c_json_node_array *array_node = node->try_get_as<c_json_node_array>();
 		if (!array_node) {
-			context.diagnostic->error(("Node '" + std::string(path) + "' in JSON file '"
-				+ std::string(filename) + "' is not an array").c_str());
+			context.diagnostic->error(("Node '" + path.get_string() + "' in JSON file '"
+				+ filename.get_string() + "' is not an array").c_str());
 			return;
 		}
 
 		for (size_t index = 0; index < array_node->get_value().get_count(); index++) {
 			if (array_node->get_value()[index]->get_type() != e_json_node_type::k_boolean) {
-				context.diagnostic->error(("Node '" + std::string(path) + "' in JSON file '"
-					+ std::string(filename) + "' contains non-boolean elements").c_str());
+				context.diagnostic->error(("Node '" + path.get_string() + "' in JSON file '"
+					+ filename.get_string() + "' contains non-boolean elements").c_str());
 				return;
 			}
 		}
@@ -201,24 +229,31 @@ namespace json_native_modules {
 
 	void read_string(
 		const s_native_module_context &context,
-		const char *filename,
-		const char *path,
+		const c_native_module_string &filename,
+		const c_native_module_string &path,
 		c_native_module_string &result) {
 		c_json_file_manager *json_file_manager = static_cast<c_json_file_manager *>(context.library_context);
-		const c_json_file *json_file = load_json_file_or_report_error(json_file_manager, context.diagnostic, filename);
+		const c_json_file *json_file = load_json_file_or_report_error(
+			json_file_manager,
+			context.diagnostic,
+			filename.get_string().c_str());
 		if (!json_file) {
 			return;
 		}
 
-		const c_json_node *node = get_json_node_or_report_error(json_file, context.diagnostic, filename, path);
+		const c_json_node *node = get_json_node_or_report_error(
+			json_file,
+			context.diagnostic,
+			filename.get_string().c_str(),
+			path.get_string().c_str());
 		if (!node) {
 			return;
 		}
 
 		const c_json_node_string *string_node = node->try_get_as<c_json_node_string>();
 		if (!string_node) {
-			context.diagnostic->error(("Node '" + std::string(path) + "' in JSON file '"
-				+ std::string(filename) + "' is not a string").c_str());
+			context.diagnostic->error(("Node '" + path.get_string() + "' in JSON file '"
+				+ filename.get_string() + "' is not a string").c_str());
 			return;
 		}
 
@@ -228,31 +263,38 @@ namespace json_native_modules {
 
 	void read_string_array(
 		const s_native_module_context &context,
-		const char *filename,
-		const char *path,
+		const c_native_module_string &filename,
+		const c_native_module_string &path,
 		c_native_module_string_array &result) {
 		c_json_file_manager *json_file_manager = static_cast<c_json_file_manager *>(context.library_context);
-		const c_json_file *json_file = load_json_file_or_report_error(json_file_manager, context.diagnostic, filename);
+		const c_json_file *json_file = load_json_file_or_report_error(
+			json_file_manager,
+			context.diagnostic,
+			filename.get_string().c_str());
 		if (!json_file) {
 			return;
 		}
 
-		const c_json_node *node = get_json_node_or_report_error(json_file, context.diagnostic, filename, path);
+		const c_json_node *node = get_json_node_or_report_error(
+			json_file,
+			context.diagnostic,
+			filename.get_string().c_str(),
+			path.get_string().c_str());
 		if (!node) {
 			return;
 		}
 
 		const c_json_node_array *array_node = node->try_get_as<c_json_node_array>();
 		if (!array_node) {
-			context.diagnostic->error(("Node '" + std::string(path) + "' in JSON file '"
-				+ std::string(filename) + "' is not an array").c_str());
+			context.diagnostic->error(("Node '" + path.get_string() + "' in JSON file '"
+				+ filename.get_string() + "' is not an array").c_str());
 			return;
 		}
 
 		for (size_t index = 0; index < array_node->get_value().get_count(); index++) {
 			if (array_node->get_value()[index]->get_type() != e_json_node_type::k_string) {
-				context.diagnostic->error(("Node '" + std::string(path) + "' in JSON file '"
-					+ std::string(filename) + "' contains non-string elements").c_str());
+				context.diagnostic->error(("Node '" + path.get_string() + "' in JSON file '"
+					+ filename.get_string() + "' contains non-string elements").c_str());
 				return;
 			}
 		}

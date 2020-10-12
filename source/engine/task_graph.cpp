@@ -777,8 +777,10 @@ c_real_constant_array c_task_graph::build_real_constant_array(
 		bool match_inner = true;
 		for (size_t index = 0; index < array_count; index++) {
 			real32 existing_value = m_real_constant_arrays[start_index + index];
-			c_node_reference constant_node_reference =
+			c_node_reference input_node_reference =
 				execution_graph.get_node_incoming_edge_reference(node_reference, index);
+			c_node_reference constant_node_reference =
+				execution_graph.get_node_incoming_edge_reference(input_node_reference, 0);
 			real32 node_value = execution_graph.get_constant_node_real_value(constant_node_reference);
 
 			if (existing_value != node_value) {
@@ -797,8 +799,10 @@ c_real_constant_array c_task_graph::build_real_constant_array(
 		start_index = m_real_constant_arrays.size();
 		m_real_constant_arrays.resize(start_index + array_count);
 		for (size_t index = 0; index < array_count; index++) {
-			c_node_reference constant_node_reference =
+			c_node_reference input_node_reference =
 				execution_graph.get_node_incoming_edge_reference(node_reference, index);
+			c_node_reference constant_node_reference =
+				execution_graph.get_node_incoming_edge_reference(input_node_reference, 0);
 			real32 node_value = execution_graph.get_constant_node_real_value(constant_node_reference);
 			m_real_constant_arrays[start_index + index] = node_value;
 		}
@@ -819,8 +823,10 @@ c_bool_constant_array c_task_graph::build_bool_constant_array(
 		bool match_inner = true;
 		for (size_t index = 0; index < array_count; index++) {
 			bool existing_value = static_cast<bool>(m_bool_constant_arrays[start_index + index]);
-			c_node_reference constant_node_reference =
+			c_node_reference input_node_reference =
 				execution_graph.get_node_incoming_edge_reference(node_reference, index);
+			c_node_reference constant_node_reference =
+				execution_graph.get_node_incoming_edge_reference(input_node_reference, 0);
 			bool node_value = execution_graph.get_constant_node_bool_value(constant_node_reference);
 
 			if (existing_value != node_value) {
@@ -839,8 +845,10 @@ c_bool_constant_array c_task_graph::build_bool_constant_array(
 		start_index = m_bool_constant_arrays.size();
 		m_bool_constant_arrays.resize(start_index + array_count);
 		for (size_t index = 0; index < array_count; index++) {
-			c_node_reference constant_node_reference =
+			c_node_reference input_node_reference =
 				execution_graph.get_node_incoming_edge_reference(node_reference, index);
+			c_node_reference constant_node_reference =
+				execution_graph.get_node_incoming_edge_reference(input_node_reference, 0);
 			bool node_value = execution_graph.get_constant_node_bool_value(constant_node_reference);
 			m_bool_constant_arrays[start_index + index] = node_value;
 		}
@@ -861,8 +869,10 @@ c_string_constant_array c_task_graph::build_string_constant_array(
 		bool match_inner = true;
 		for (size_t index = 0; index < array_count; index++) {
 			const char *existing_value = get_pre_rebased_string(m_string_constant_arrays[start_index + index]);
-			c_node_reference constant_node_reference =
+			c_node_reference input_node_reference =
 				execution_graph.get_node_incoming_edge_reference(node_reference, index);
+			c_node_reference constant_node_reference =
+				execution_graph.get_node_incoming_edge_reference(input_node_reference, 0);
 			const char *node_value = execution_graph.get_constant_node_string_value(constant_node_reference);
 
 			if (strcmp(existing_value, node_value) == 0) {
@@ -881,8 +891,10 @@ c_string_constant_array c_task_graph::build_string_constant_array(
 		start_index = m_string_constant_arrays.size();
 		m_string_constant_arrays.resize(start_index + array_count);
 		for (size_t index = 0; index < array_count; index++) {
-			c_node_reference constant_node_reference =
+			c_node_reference input_node_reference =
 				execution_graph.get_node_incoming_edge_reference(node_reference, index);
+			c_node_reference constant_node_reference =
+				execution_graph.get_node_incoming_edge_reference(input_node_reference, 0);
 			const char *node_value = execution_graph.get_constant_node_string_value(constant_node_reference);
 			m_string_constant_arrays[start_index + index] = add_string(node_value);
 		}
@@ -902,7 +914,7 @@ void c_task_graph::rebase_arrays() {
 					size_t start_index =
 						extract_index_from_pointer(argument.data.value.real_constant_array.get_pointer());
 					argument.data.value.real_constant_array = c_real_constant_array(
-						&m_real_constant_arrays.front() + start_index,
+						m_real_constant_arrays.empty() ? nullptr : &m_real_constant_arrays.front() + start_index,
 						argument.data.value.real_constant_array.get_count());
 					break;
 				}
@@ -912,7 +924,8 @@ void c_task_graph::rebase_arrays() {
 					size_t start_index =
 						extract_index_from_pointer(argument.data.value.bool_constant_array.get_pointer());
 					argument.data.value.bool_constant_array = c_bool_constant_array(
-						reinterpret_cast<bool *>(&m_bool_constant_arrays.front()) + start_index,
+						reinterpret_cast<bool *>(
+							m_bool_constant_arrays.empty() ? nullptr : &m_bool_constant_arrays.front() + start_index),
 						argument.data.value.bool_constant_array.get_count());
 					break;
 				}
@@ -922,7 +935,7 @@ void c_task_graph::rebase_arrays() {
 					size_t start_index =
 						extract_index_from_pointer(argument.data.value.string_constant_array.get_pointer());
 					argument.data.value.string_constant_array = c_string_constant_array(
-						&m_string_constant_arrays.front() + start_index,
+						m_string_constant_arrays.empty() ? nullptr : &m_string_constant_arrays.front() + start_index,
 						argument.data.value.string_constant_array.get_count());
 					break;
 				}
@@ -934,7 +947,7 @@ void c_task_graph::rebase_arrays() {
 				size_t start_index =
 					extract_index_from_pointer(argument.data.value.buffer_array.get_pointer());
 				argument.data.value.buffer_array = c_buffer_array(
-					&m_buffer_arrays.front() + start_index,
+					m_buffer_arrays.empty() ? nullptr : &m_buffer_arrays.front() + start_index,
 					argument.data.value.buffer_array.get_count());
 			}
 		}

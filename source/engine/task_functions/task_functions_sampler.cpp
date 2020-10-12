@@ -237,12 +237,7 @@ namespace sampler_task_functions {
 		const c_sample *sample = sample_library->get_sample(
 			sampler_context->sample_handle,
 			sampler_context->channel);
-		if (sample && sample->is_wavetable()) {
-			// $TODO remove this branch, it only exists due to the __native_sin, etc. named wavetable hacks.
-			run_sampler_loop<true>(sample_library, context, name, speed, phase, result);
-		} else {
-			run_sampler_loop<false>(sample_library, context, name, speed, phase, result);
-		}
+		run_sampler_loop<false>(sample_library, context, name, speed, phase, result);
 	}
 
 	void sampler_wavetable_initializer(

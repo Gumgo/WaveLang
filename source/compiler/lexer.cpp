@@ -397,7 +397,7 @@ static s_token read_next_token(
 			// We consider valid characters which are not identifiers, numbers, or whitespace to be operators
 			bool is_operator = compiler_utility::is_valid_source_character(ch)
 				&& !compiler_utility::is_whitespace(ch)
-				&& !compiler_utility::is_valid_identifier_character(ch)
+				&& !compiler_utility::is_valid_start_identifier_character(ch)
 				&& !compiler_utility::is_number(ch);
 
 			if (is_operator) {

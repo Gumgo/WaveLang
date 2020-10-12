@@ -18,10 +18,10 @@ s_json_result c_json_file_manager::load_json_file(const char *filename, const c_
 	std::unique_ptr<c_json_file> json_file(new c_json_file());
 	new_request.result = json_file->load(filename);
 	if (new_request.result.result == e_json_result::k_success) {
-		*json_file_out = nullptr;
-	} else {
 		new_request.json_file.swap(json_file);
 		*json_file_out = new_request.json_file.get();
+	} else {
+		*json_file_out = nullptr;
 	}
 
 	return new_request.result;

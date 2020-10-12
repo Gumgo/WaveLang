@@ -1,4 +1,3 @@
-#include "common/math/math_constants.h" // MEGA HACK $TODO $JSON remove this
 #include "common/utility/file_utility.h"
 
 #include "engine/task_functions/sampler/sample.h"
@@ -28,45 +27,6 @@ void c_sample_library::clear_requested_samples() {
 h_sample c_sample_library::request_sample(const s_file_sample_parameters &parameters) {
 	wl_assert(parameters.filename);
 	wl_assert(valid_enum_index(parameters.loop_mode));
-
-	// MEGA HACK: currently, scriptable wavetables don't really work because the compiler is too slow to deal with large
-	// arrays. To work around this for now, hardcode a few predefined wavetables here.
-
-	if (strcmp(parameters.filename, "__native_sin") == 0) {
-		s_wavetable_sample_parameters wavetable_parameters;
-		std::vector<real32> harmonic_weights(1024, 0.0f);
-		harmonic_weights[0] = 1.0f;
-		wavetable_parameters.harmonic_weights =
-			c_wrapped_array<const real32>(&harmonic_weights.front(), harmonic_weights.size());
-		wavetable_parameters.phase_shift_enabled = parameters.phase_shift_enabled;
-		return request_sample(wavetable_parameters);
-	} else if (strcmp(parameters.filename, "__native_sawtooth") == 0) {
-		s_wavetable_sample_parameters wavetable_parameters;
-		std::vector<real32> harmonic_weights(1024, 0.0f);
-		for (size_t index = 0; index < harmonic_weights.size(); index++) {
-			harmonic_weights[index] = static_cast<real32>(-2.0 / (k_pi<real64> * static_cast<real64>(index + 1)));
-		}
-		wavetable_parameters.harmonic_weights =
-			c_wrapped_array<const real32>(&harmonic_weights.front(), harmonic_weights.size());
-		wavetable_parameters.phase_shift_enabled = parameters.phase_shift_enabled;
-		return request_sample(wavetable_parameters);
-	} else if (strcmp(parameters.filename, "__native_triangle") == 0) {
-		s_wavetable_sample_parameters wavetable_parameters;
-		std::vector<real32> harmonic_weights(1024, 0.0f);
-		for (size_t index = 0; index < harmonic_weights.size(); index++) {
-			if ((index + 1) % 2 != 0) {
-				real64 s = (index / 2) % 2 == 0 ? 1.0 : -1.0;
-				real64 sqrt_denom = k_pi<real64> * static_cast<real64>(index + 1);
-				harmonic_weights[index] = static_cast<real32>(s * 8.0 / (sqrt_denom * sqrt_denom));
-			}
-		}
-		wavetable_parameters.harmonic_weights =
-			c_wrapped_array<const real32>(&harmonic_weights.front(), harmonic_weights.size());
-		wavetable_parameters.phase_shift_enabled = parameters.phase_shift_enabled;
-		return request_sample(wavetable_parameters);
-	}
-
-	// END MEGA HACK
 
 	s_requested_sample requested_sample;
 	requested_sample.sample_type = e_sample_type::k_file;
