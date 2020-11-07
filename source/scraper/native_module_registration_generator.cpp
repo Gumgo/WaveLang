@@ -11,10 +11,10 @@
 #define TAB3_STR "\t\t\t"
 #define NEWLINE_STR "\n"
 
-static const char *k_bool_strings[] = { "false", "true" };
+static constexpr const char *k_bool_strings[] = { "false", "true" };
 static_assert(array_count(k_bool_strings) == 2, "Invalid bool strings");
 
-static const char *k_native_module_primitive_type_enum_strings[] = {
+static constexpr const char *k_native_module_primitive_type_enum_strings[] = {
 	"e_native_module_primitive_type::k_real",
 	"e_native_module_primitive_type::k_bool",
 	"e_native_module_primitive_type::k_string"
@@ -22,7 +22,7 @@ static const char *k_native_module_primitive_type_enum_strings[] = {
 static_assert(array_count(k_native_module_primitive_type_enum_strings) == enum_count<e_native_module_primitive_type>(),
 	"Invalid native module primitive type enum strings");
 
-static const char *k_native_module_qualifier_enum_strings[] = {
+static constexpr const char *k_native_module_qualifier_enum_strings[] = {
 	"e_native_module_qualifier::k_in",
 	"e_native_module_qualifier::k_out",
 	"e_native_module_qualifier::k_constant"
@@ -30,7 +30,7 @@ static const char *k_native_module_qualifier_enum_strings[] = {
 static_assert(array_count(k_native_module_qualifier_enum_strings) == enum_count<e_native_module_qualifier>(),
 	"Invalid native module qualifier enum strings");
 
-static const char *k_native_operator_enum_strings[] = {
+static constexpr const char *k_native_operator_enum_strings[] = {
 	"e_native_operator::k_noop",
 	"e_native_operator::k_negation",
 	"e_native_operator::k_addition",
@@ -52,7 +52,7 @@ static const char *k_native_operator_enum_strings[] = {
 static_assert(array_count(k_native_operator_enum_strings) == enum_count<e_native_operator>(),
 	"Invalid native operator enum strings");
 
-static const char *k_native_module_primitive_type_argument_strings[] = {
+static constexpr const char *k_native_module_primitive_type_argument_strings[] = {
 	"real",
 	"bool",
 	"string"
@@ -61,7 +61,7 @@ static_assert(
 	array_count(k_native_module_primitive_type_argument_strings) == enum_count<e_native_module_primitive_type>(),
 	"Invalid native module primitive type argument strings");
 
-static const char *k_native_module_qualifier_argument_strings[] = {
+static constexpr const char *k_native_module_qualifier_argument_strings[] = {
 	"in",
 	"out",
 	"in"

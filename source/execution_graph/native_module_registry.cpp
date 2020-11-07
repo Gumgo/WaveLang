@@ -6,9 +6,9 @@
 #include <unordered_map>
 
 // Strings for native module registry output
-static constexpr char k_native_module_no_return_type_string[] = "void";
+static constexpr const char *k_native_module_no_return_type_string = "void";
 
-static const char *k_native_module_primitive_type_strings[] = {
+static constexpr const char *k_native_module_primitive_type_strings[] = {
 	"real",		// e_native_module_primitive_type::k_real
 	"bool",		// e_native_module_primitive_type::k_bool
 	"string"	// e_native_module_primitive_type::k_string
@@ -16,7 +16,7 @@ static const char *k_native_module_primitive_type_strings[] = {
 static_assert(array_count(k_native_module_primitive_type_strings) == enum_count<e_native_module_primitive_type>(),
 	"Native module primitive type string mismatch");
 
-static const char *k_native_module_qualifier_strings[] = {
+static constexpr const char *k_native_module_qualifier_strings[] = {
 	"in",	// e_native_module_qualifier::k_in
 	"out",	// e_native_module_qualifier::k_out
 	"const"	// e_native_module_qualifier::k_constant

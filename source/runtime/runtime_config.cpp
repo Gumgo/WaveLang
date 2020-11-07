@@ -9,20 +9,20 @@
 #include <iostream>
 #include <vector>
 
-static const char *k_sample_format_xml_strings[] = {
+static constexpr const char *k_sample_format_xml_strings[] = {
 	"float32"
 };
 
 static_assert(array_count(k_sample_format_xml_strings) == enum_count<e_sample_format>(),
 	"Sample format strings mismatch");
 
-static const char *k_bool_xml_strings[] = {
+static constexpr const char *k_bool_xml_strings[] = {
 	"false",
 	"true"
 };
 
-static constexpr char k_default_xml_string[] = "default";
-static constexpr char k_none_xml_string[] = "none";
+static constexpr const char *k_default_xml_string = "default";
+static constexpr const char *k_none_xml_string = "none";
 
 static constexpr uint32 k_default_audio_input_channels = 0;
 static constexpr uint32 k_default_audio_output_channels = 2;

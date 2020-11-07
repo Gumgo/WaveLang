@@ -39,7 +39,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="compiler_utility.inl" />
-    <None Include="lr_parse_tables.inl" />
     <None Include="SConscript" />
   </ItemGroup>
   <ItemGroup>

@@ -16,7 +16,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
-    <ProjectGuid>{33EC9111-5900-4E3F-A3BC-A0D912AFE133}</ProjectGuid>
+    <ProjectGuid>{56bf9147-8ae9-43e8-a5e0-00e2898f32b7}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -51,27 +51,27 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='debug|x64'">
-    <NMakeOutput>compiler.exe</NMakeOutput>
+    <NMakeOutput>parser_generator.exe</NMakeOutput>
     <NMakePreprocessorDefinitions>_DEBUG;__AVX__;__AVX2__;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
-    <NMakeBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons config=$(Configuration) $(ProjectName)_app</NMakeBuildCommandLine>
-    <NMakeReBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)_app &amp;&amp; SCons config=$(Configuration) $(ProjectName)_app</NMakeReBuildCommandLine>
-    <NMakeCleanCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)_app</NMakeCleanCommandLine>
+    <NMakeBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeBuildCommandLine>
+    <NMakeReBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName) &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeReBuildCommandLine>
+    <NMakeCleanCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)</NMakeCleanCommandLine>
     <IntDir>$(SolutionDir)..\build\win32\$(Configuration)\msvc</IntDir>
     <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
     <AdditionalOptions>/std:c++latest</AdditionalOptions>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='development|x64'">
-    <NMakeOutput>compiler.exe</NMakeOutput>
+    <NMakeOutput>parser_generator.exe</NMakeOutput>
     <NMakePreprocessorDefinitions>_DEBUG;__AVX__;__AVX2__;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
-    <NMakeBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons config=$(Configuration) $(ProjectName)_app</NMakeBuildCommandLine>
-    <NMakeReBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)_app &amp;&amp; SCons config=$(Configuration) $(ProjectName)_app</NMakeReBuildCommandLine>
-    <NMakeCleanCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)_app</NMakeCleanCommandLine>
+    <NMakeBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeBuildCommandLine>
+    <NMakeReBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName) &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeReBuildCommandLine>
+    <NMakeCleanCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)</NMakeCleanCommandLine>
     <IntDir>$(SolutionDir)..\build\win32\$(Configuration)\msvc</IntDir>
     <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
     <AdditionalOptions>/std:c++latest</AdditionalOptions>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='release|x64'">
-    <NMakeOutput>compiler.exe</NMakeOutput>
+    <NMakeOutput>parser_generator.exe</NMakeOutput>
     <NMakePreprocessorDefinitions>NDEBUG;__AVX__;__AVX2__;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
     <NMakeBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons config=$(Configuration) $(ProjectName)_app</NMakeBuildCommandLine>
     <NMakeReBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)_app &amp;&amp; SCons config=$(Configuration) $(ProjectName)_app</NMakeReBuildCommandLine>
@@ -81,47 +81,25 @@
     <AdditionalOptions>/std:c++latest</AdditionalOptions>
   </PropertyGroup>
   <ItemGroup>
-    <ClInclude Include="ast.h" />
-    <ClInclude Include="ast_builder.h" />
-    <ClInclude Include="ast_data_type.h" />
-    <ClInclude Include="ast_validator.h" />
-    <ClInclude Include="compiler.h" />
-    <ClInclude Include="compiler_utility.h" />
-    <ClInclude Include="execution_graph_builder.h" />
-    <ClInclude Include="execution_graph_optimizer.h" />
-    <ClInclude Include="getopt\getopt.h" />
-    <ClInclude Include="instrument_globals_parser.h" />
-    <ClInclude Include="lexer.h" />
-    <ClInclude Include="lr_parser.h" />
-    <ClInclude Include="parser.h" />
-    <ClInclude Include="preprocessor.h" />
+    <Natvis Include="..\natvis\project.natvis" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ast.cpp" />
-    <ClCompile Include="ast_builder.cpp" />
-    <ClCompile Include="ast_data_type.cpp" />
-    <ClCompile Include="ast_validator.cpp" />
-    <ClCompile Include="compiler.cpp" />
-    <ClCompile Include="compiler_main.cpp" />
-    <ClCompile Include="compiler_utility.cpp" />
-    <ClCompile Include="execution_graph_builder.cpp" />
-    <ClCompile Include="execution_graph_optimizer.cpp" />
-    <ClCompile Include="getopt\getopt.c" />
-    <ClCompile Include="instrument_globals_parser.cpp" />
-    <ClCompile Include="lexer.cpp" />
-    <ClCompile Include="lr_parser.cpp" />
-    <ClCompile Include="parser.cpp" />
-    <ClCompile Include="preprocessor.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="compiler_utility.inl" />
     <None Include="SConscript" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="parser_rules.txt" />
+    <ClInclude Include="grammar.h" />
+    <ClInclude Include="grammar_lexer.h" />
+    <ClInclude Include="grammar_parser.h" />
+    <ClInclude Include="lr_parser_generator.h" />
   </ItemGroup>
   <ItemGroup>
-    <Natvis Include="..\natvis\project.natvis" />
+    <ClCompile Include="grammar_lexer.cpp" />
+    <ClCompile Include="grammar_parser.cpp" />
+    <ClCompile Include="lr_parser_generator.cpp" />
+    <ClCompile Include="parser_generator_main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="parser_rules.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

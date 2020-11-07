@@ -1,0 +1,40 @@
+# Parser Generator - Generates the parser used by the compiler
+
+import utils
+
+Import("*")
+
+env = env.Clone()
+
+env.Append(CPPPATH = ["#source"])
+
+sources = utils.enumerate_files(env, ".", utils.SOURCE_EXTENSIONS)
+static_libraries = ["common"]
+env.Append(LIBS = static_libraries, LIBPATH = ["../bin"])
+
+objects = []
+for source in sources:
+	obj = env.StaticObject(source)
+	objects += obj
+
+parser_generator_program = env.Program("parser_generator", objects)
+
+parser_generator_installed = env.Install("../bin", [parser_generator_program])
+env.Alias("parser_generator", [parser_generator_installed])
+
+# Run the parser generator
+parser_generator_input = "#source/wavelang_grammar.txt"
+parser_generator_output_h = "#source/generated/wavelang_grammar.h"
+parser_generator_output_inl = "#source/generated/wavelang_grammar.inl"
+
+# Syntax: parser_generator <input> <output_h> <output_inl>
+parser_generator_command = "${SOURCES[0]} ${SOURCES[1]} ${TARGETS[0]} ${TARGETS[1]}"
+
+parser_generator_output_targets = env.Command(
+	[parser_generator_output_h, parser_generator_output_inl],
+	[parser_generator_program, parser_generator_input],
+	parser_generator_command)
+env.Alias("wavelang_grammar", parser_generator_output_targets)
+
+# Note that including wavelang_grammar.h/inl creates a dependency on wavelang_grammar - no explicit dependency is
+# necessary.

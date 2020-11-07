@@ -604,7 +604,7 @@ void c_ast_visitor::build_native_module_type_table() {
 	// could recognize them by their clang::Type, but this is easier.
 
 	for (e_native_module_primitive_type primitive_type : iterate_enum<e_native_module_primitive_type>()) {
-		static const char *k_cpp_primitive_type_names[] = {
+		static constexpr const char *k_cpp_primitive_type_names[] = {
 			"float",
 			"bool",
 			"c_native_module_string"
@@ -612,7 +612,7 @@ void c_ast_visitor::build_native_module_type_table() {
 		static_assert(array_count(k_cpp_primitive_type_names) == enum_count<e_native_module_primitive_type>(),
 			"Primitive type name mismatch");
 
-		static const char *k_cpp_primitive_type_array_names[] = {
+		static constexpr const char *k_cpp_primitive_type_array_names[] = {
 			"c_native_module_real_array",
 			"c_native_module_bool_array",
 			"c_native_module_string_array"

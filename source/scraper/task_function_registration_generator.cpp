@@ -14,10 +14,10 @@
 
 static constexpr size_t k_invalid_task_argument_index = static_cast<size_t>(-1);
 
-static const char *k_bool_strings[] = { "false", "true" };
+static constexpr const char *k_bool_strings[] = { "false", "true" };
 static_assert(array_count(k_bool_strings) == 2, "Invalid bool strings");
 
-static const char *k_task_primitive_type_enum_strings[] = {
+static constexpr const char *k_task_primitive_type_enum_strings[] = {
 	"e_task_primitive_type::k_real",
 	"e_task_primitive_type::k_bool",
 	"e_task_primitive_type::k_string"
@@ -25,7 +25,7 @@ static const char *k_task_primitive_type_enum_strings[] = {
 static_assert(array_count(k_task_primitive_type_enum_strings) == enum_count<e_task_primitive_type>(),
 	"Invalid task primitive type enum strings");
 
-static const char *k_task_qualifier_enum_strings[] = {
+static constexpr const char *k_task_qualifier_enum_strings[] = {
 	"e_task_qualifier::k_in",
 	"e_task_qualifier::k_out",
 	"e_task_qualifier::k_constant"
@@ -33,7 +33,7 @@ static const char *k_task_qualifier_enum_strings[] = {
 static_assert(array_count(k_task_qualifier_enum_strings) == enum_count<e_task_qualifier>(),
 	"Invalid task qualifier enum strings");
 
-static const char *k_task_primitive_type_getter_names[] = {
+static constexpr const char *k_task_primitive_type_getter_names[] = {
 	"real",
 	"bool",
 	"string"
@@ -41,7 +41,7 @@ static const char *k_task_primitive_type_getter_names[] = {
 static_assert(array_count(k_task_primitive_type_getter_names) == enum_count<e_task_primitive_type>(),
 	"Primitive type getter names mismatch");
 
-static const char *k_task_qualifier_getter_names[] = {
+static constexpr const char *k_task_qualifier_getter_names[] = {
 	"_in",
 	"_out",
 	"_in" // k_constant still uses "in" for the getter

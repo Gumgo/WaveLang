@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <unordered_map>
 
-static const char *k_lexer_token_table[] = {
+static constexpr const char *k_lexer_token_table[] = {
 	"",			// e_token_type::k_invalid
 
 	"const",	// e_token_type::k_keyword_const

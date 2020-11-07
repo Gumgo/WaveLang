@@ -9,47 +9,7 @@
 #include <fstream>
 #endif // IS_TRUE(OUTPUT_PARSE_TREE_ENABLED)
 
-static s_lr_production make_production(
-	c_lr_symbol lhs,
-	c_lr_symbol rhs_0 = c_lr_symbol(),
-	c_lr_symbol rhs_1 = c_lr_symbol(),
-	c_lr_symbol rhs_2 = c_lr_symbol(),
-	c_lr_symbol rhs_3 = c_lr_symbol(),
-	c_lr_symbol rhs_4 = c_lr_symbol(),
-	c_lr_symbol rhs_5 = c_lr_symbol(),
-	c_lr_symbol rhs_6 = c_lr_symbol(),
-	c_lr_symbol rhs_7 = c_lr_symbol(),
-	c_lr_symbol rhs_8 = c_lr_symbol(),
-	c_lr_symbol rhs_9 = c_lr_symbol()) {
-	s_lr_production production;
-	production.lhs = lhs;
-	production.rhs[0] = rhs_0;
-	production.rhs[1] = rhs_1;
-	production.rhs[2] = rhs_2;
-	production.rhs[3] = rhs_3;
-	production.rhs[4] = rhs_4;
-	production.rhs[5] = rhs_5;
-	production.rhs[6] = rhs_6;
-	production.rhs[7] = rhs_7;
-	production.rhs[8] = rhs_8;
-	production.rhs[9] = rhs_9;
-	return production;
-}
-
-// Shorthand
-#define PROD(x, ...) make_production(x, ##__VA_ARGS__), // Hack to allow the macro to accept commas
-#define TS(x) c_lr_symbol(true, static_cast<uint16>(e_token_type::k_ ## x))
-#define NS(x) c_lr_symbol(false, static_cast<uint16>(e_parser_nonterminal::k_ ## x))
-
-// Production table
-static const s_lr_production k_production_table[] = {
-	// txt file, because it's annoying to try to edit this as an inl file
-	#include "parser_rules.txt"
-};
-
-#if !IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
-#include "lr_parse_tables.inl"
-#endif IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
+#include "generated/wavelang_grammar.inl"
 
 static bool g_parser_initialized = false;
 static c_lr_parser g_lr_parser;
@@ -62,7 +22,7 @@ static bool process_source_file(
 	std::vector<s_compiler_result> &errors_out);
 
 #if IS_TRUE(OUTPUT_PARSE_TREE_ENABLED)
-static constexpr char k_parse_tree_output_filename[] = "parse_tree.gv";
+static constexpr const char *k_parse_tree_output_filename = "parse_tree.gv";
 static void print_parse_tree(
 	c_graphviz_generator &graph,
 	const s_lexer_source_file_output &tokens,
@@ -73,22 +33,7 @@ static void print_parse_tree(
 
 void c_parser::initialize_parser() {
 	wl_assert(!g_parser_initialized);
-
-	// Build the production set from the provided rules
-	c_lr_production_set production_set;
-	production_set.initialize(enum_count<e_token_type>(), enum_count<e_parser_nonterminal>());
-	for (size_t index = 0; index < array_count(k_production_table); index++) {
-		production_set.add_production(k_production_table[index]);
-	}
-
-#if IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
-	g_lr_parser.initialize(production_set);
-#else // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
-	g_lr_parser.initialize(
-		production_set,
-		c_wrapped_array<const c_lr_action>::construct(k_lr_action_table),
-		c_wrapped_array<const uint32>::construct(k_lr_goto_table));
-#endif // IS_TRUE(LR_PARSE_TABLE_GENERATION_ENABLED)
+	initialize_wavelang_parser(g_lr_parser);
 	g_parser_initialized = true;
 }
 
@@ -204,7 +149,7 @@ static bool process_source_file(
 }
 
 #if IS_TRUE(OUTPUT_PARSE_TREE_ENABLED)
-static const char *k_parse_tree_output_terminal_strings[] = {
+static constexpr const char *k_parse_tree_output_terminal_strings[] = {
 	"invalid",
 	"keyword-const",
 	"keyword-in",
@@ -247,7 +192,7 @@ static const char *k_parse_tree_output_terminal_strings[] = {
 };
 static_assert(array_count(k_parse_tree_output_terminal_strings) == enum_count<e_token_type>(), "Incorrect array size");
 
-static const char *k_parse_tree_output_nonterminal_strings[] = {
+static constexpr const char *k_parse_tree_output_nonterminal_strings[] = {
 	"start",
 	"global-scope",
 	"global-scope-item-list",

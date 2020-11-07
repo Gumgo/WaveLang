@@ -9,7 +9,7 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 
-static constexpr char k_event_console_executable_name[] = "console";
+static constexpr const char *k_event_console_executable_name = "console";
 
 void c_event_console::initialize_platform() {
 	m_pipe = -1;

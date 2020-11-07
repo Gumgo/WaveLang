@@ -133,6 +133,7 @@ projects = [
 	"driver",
 	"engine",
 	"execution_graph",
+	"parser_generator",
 	"runtime",
 	"scraper",
 	"unit_tests"

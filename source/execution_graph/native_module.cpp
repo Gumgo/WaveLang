@@ -12,7 +12,7 @@ static constexpr s_native_module_primitive_type_traits k_native_module_primitive
 static_assert(array_count(k_native_module_primitive_type_traits) == enum_count<e_native_module_primitive_type>(),
 	"Primitive type traits mismatch");
 
-static const char *k_native_operator_names[] = {
+static constexpr const char *k_native_operator_names[] = {
 	"operator_u+",
 	"operator_u-",
 	"operator_+",

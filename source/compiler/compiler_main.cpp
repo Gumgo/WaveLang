@@ -13,9 +13,9 @@
 #include <iostream>
 
 // $TODO move somewhere better?
-static constexpr char k_wavelang_synth_extension[] = "wls";
+static constexpr const char *k_wavelang_synth_extension = "wls";
 
-static constexpr char k_documentation_filename[] = "registered_native_modules.txt";
+static constexpr const char *k_documentation_filename = "registered_native_modules.txt";
 
 int main(int argc, char **argv) {
 	int32 result = 0;
@@ -136,7 +136,7 @@ int main(int argc, char **argv) {
 						instrument_variant->get_fx_execution_graph()
 					};
 
-					static const char *k_instrument_stages[] = {
+					static constexpr const char *k_instrument_stages[] = {
 						"voice",
 						"fx"
 					};

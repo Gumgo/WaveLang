@@ -10,8 +10,8 @@
 
 #include <iostream>
 
-static constexpr char k_wavetable_cache_folder[] = "cache";
-static constexpr char k_wavetable_cache_extension[] = ".wtc";
+static constexpr const char *k_wavetable_cache_folder = "cache";
+static constexpr const char *k_wavetable_cache_extension = ".wtc";
 static constexpr char k_wavetable_cache_identifier[] = { 'w', 't', 'c', 'h' };
 static constexpr uint32 k_wavetable_cache_version = 0;
 

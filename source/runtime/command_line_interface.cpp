@@ -22,7 +22,7 @@
 #include <string>
 #include <vector>
 
-static constexpr char k_runtime_config_filename[] = "wavelang_runtime_config.xml";
+static constexpr const char *k_runtime_config_filename = "wavelang_runtime_config.xml";
 
 class c_command_line_interface {
 public:

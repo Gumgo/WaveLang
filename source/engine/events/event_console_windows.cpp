@@ -2,7 +2,7 @@
 
 #if IS_TRUE(PLATFORM_WINDOWS)
 
-static constexpr char k_event_console_executable_name[] = "console.exe";
+static constexpr const char *k_event_console_executable_name = "console.exe";
 
 void c_event_console::initialize_platform() {
 	m_pipe = INVALID_HANDLE_VALUE;

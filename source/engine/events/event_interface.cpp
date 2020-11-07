@@ -5,7 +5,7 @@
 static f_build_event_string g_event_string_builders[256];
 static size_t g_next_event_data_type_id = 0;
 
-static const char *k_event_level_strings[] = {
+static constexpr const char *k_event_level_strings[] = {
 	"VERBOSE:  ",
 	"MESSAGE:  ",
 	"WARNING:  ",
