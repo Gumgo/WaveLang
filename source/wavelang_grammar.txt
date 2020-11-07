@@ -1,0 +1,257 @@
+grammar_name: wavelang;
+
+terminal_type_name: "e_token_type";
+terminal_context_type: "s_token";
+terminal_value_prefix: k_;
+terminals: {
+	// Invalid token to indicate errors
+	invalid;
+
+	// Keywords
+	keyword_const;
+	keyword_in;
+	keyword_out;
+	keyword_module;
+	keyword_void;
+	keyword_real;
+	keyword_bool;
+	keyword_string;
+	keyword_return;
+	keyword_repeat;
+
+	// Identifiers start with [a-zA-Z_] followed by 0 or more [a-zA-Z0-9_]
+	identifier;
+
+	// Constants
+	constant_real;
+	constant_bool;
+	constant_string;
+
+	// Parentheses
+	left_parenthesis;
+	right_parenthesis;
+
+	// Braces
+	left_brace;
+	right_brace;
+
+	// Brackets
+	left_bracket;
+	right_bracket;
+
+	comma;
+	semicolon;
+
+	// Operators
+	operator_assignment;
+	operator_addition;
+	operator_subtraction;
+	operator_multiplication;
+	operator_division;
+	operator_modulo;
+	operator_not;
+	operator_equal;
+	operator_not_equal;
+	operator_greater;
+	operator_less;
+	operator_greater_equal;
+	operator_less_equal;
+	operator_and;
+	operator_or;
+
+	// Comment tokens - should never be a result of the lexer
+	comment;
+}
+
+nonterminal_type_name: "e_parser_nonterminal";
+nonterminal_value_prefix: k_;
+nonterminals: {
+	start: {
+		global_scope;
+	}
+
+	global_scope: {
+		global_scope_item_list;
+	}
+
+	global_scope_item_list: {
+		.;
+		global_scope_item_list global_scope_item;
+	}
+
+	global_scope_item: {
+		module_declaration;
+	}
+
+	basic_type: {
+		keyword_real;
+		keyword_bool;
+		keyword_string;
+	}
+
+	array_type: {
+		keyword_real left_bracket right_bracket;
+		keyword_bool left_bracket right_bracket;
+		keyword_string left_bracket right_bracket;
+	}
+
+	type: {
+		basic_type;
+		array_type;
+	}
+
+	type_or_void: {
+		basic_type;
+		array_type;
+		keyword_void;
+	}
+
+	module_declaration: {
+		keyword_module type_or_void identifier left_parenthesis module_declaration_arguments right_parenthesis scope;
+	}
+
+	module_declaration_arguments: {
+		.;
+		module_declaration_argument_list;
+	}
+
+	module_declaration_argument_list: {
+		module_declaration_argument;
+		module_declaration_argument_list comma module_declaration_argument;
+	}
+
+	module_declaration_argument: {
+		module_declaration_argument_qualifier type identifier;
+	}
+
+	module_declaration_argument_qualifier: {
+		keyword_in;
+		keyword_out;
+	}
+
+	scope: {
+		left_brace scope_item_list right_brace;
+	}
+
+	scope_item_list: {
+		.;
+		scope_item_list scope_item;
+	}
+
+	scope_item: {
+		scope;
+		named_value_declaration semicolon;
+		named_value_assignment semicolon;
+		module_return_statement semicolon;
+		repeat_loop;
+		expression semicolon;
+	}
+
+	module_return_statement: {
+		keyword_return expression;
+	}
+
+	named_value_declaration: {
+		type identifier;
+		type identifier expression_assignment;
+	}
+
+	named_value_assignment: {
+		expression expression_assignment;
+	}
+
+	repeat_loop: {
+		keyword_repeat left_parenthesis expression right_parenthesis scope;
+	}
+
+	expression: {
+		expr_1;
+	}
+
+	expression_assignment: {
+		operator_assignment expression;
+	}
+
+	expr_1: {
+		expr_1 operator_or expr_2;
+		expr_2;
+	}
+
+	expr_2: {
+		expr_2 operator_and expr_3;
+		expr_3;
+	}
+
+	expr_3: {
+		expr_3 operator_equal expr_4;
+		expr_3 operator_not_equal expr_4;
+		expr_4;
+	}
+
+	expr_4: {
+		expr_4 operator_greater expr_5;
+		expr_4 operator_less expr_5;
+		expr_4 operator_greater_equal expr_5;
+		expr_4 operator_less_equal expr_5;
+		expr_5;
+	}
+
+	expr_5: {
+		expr_5 operator_addition expr_6;
+		expr_5 operator_subtraction expr_6;
+		expr_6;
+	}
+
+	expr_6: {
+		expr_6 operator_multiplication expr_7;
+		expr_6 operator_division expr_7;
+		expr_6 operator_modulo expr_7;
+		expr_7;
+	}
+
+	expr_7: {
+		operator_addition expr_8;
+		operator_subtraction expr_8;
+		operator_not expr_8;
+		expr_8;
+	}
+
+	expr_8: {
+		expr_8 array_dereference;
+		expr_9;
+	}
+
+	expr_9: {
+		left_parenthesis expression right_parenthesis;
+		identifier;
+		module_call;
+		constant_real;
+		constant_bool;
+		constant_string;
+		constant_array;
+	}
+
+	module_call: {
+		identifier left_parenthesis right_parenthesis;
+		identifier left_parenthesis module_call_argument_list right_parenthesis;
+	}
+
+	module_call_argument_list: {
+		expression;
+		module_call_argument_list comma expression;
+	}
+
+	constant_array: {
+		array_type left_parenthesis right_parenthesis;
+		array_type left_parenthesis constant_array_list right_parenthesis;
+	}
+
+	constant_array_list: {
+		expression;
+		constant_array_list comma expression;
+	}
+
+	array_dereference: {
+		left_bracket expression right_bracket;
+	}
+}
