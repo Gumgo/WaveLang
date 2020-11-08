@@ -11,12 +11,14 @@
     <ClInclude Include="grammar_parser.h" />
     <ClInclude Include="grammar_lexer.h" />
     <ClInclude Include="grammar.h" />
+    <ClInclude Include="visitor_class_generator.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="lr_parser_generator.cpp" />
     <ClCompile Include="parser_generator_main.cpp" />
     <ClCompile Include="grammar_parser.cpp" />
     <ClCompile Include="grammar_lexer.cpp" />
+    <ClCompile Include="visitor_class_generator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="parser_rules.txt" />

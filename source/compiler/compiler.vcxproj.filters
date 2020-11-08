@@ -17,6 +17,7 @@
     <ClInclude Include="getopt\getopt.h">
       <Filter>getopt</Filter>
     </ClInclude>
+    <ClInclude Include="token.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ast_data_type.cpp" />

@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
 	}
 
 	// Compile each input file
-	for (int arg = first_file_argument_index; arg < argc; arg++) {
+	for (int32 arg = first_file_argument_index; arg < argc; arg++) {
 		std::cout << "Compiling '" << argv[arg] << "'\n";
 		c_instrument instrument;
 		s_compiler_result compile_result = c_compiler::compile(

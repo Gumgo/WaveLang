@@ -116,8 +116,8 @@ s_compiler_result c_preprocessor::preprocess(
 					s_token token = c_lexer::read_next_token(line_remaining);
 
 					if (!preprocessor_command_found
-						&& ((token.token_type >= e_token_type::k_first_keyword
-							&& token.token_type <= e_token_type::k_last_keyword)
+						&& ((token.token_type >= k_first_keyword
+							&& token.token_type <= k_last_keyword)
 							|| token.token_type == e_token_type::k_identifier)) {
 						// Detect any identifier, keywords shouldn't matter in this context
 						preprocessor_command_token = token;

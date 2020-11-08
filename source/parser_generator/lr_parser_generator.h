@@ -7,7 +7,7 @@
 #include <fstream>
 #include <vector>
 
-// nocheckin Deduplicate lots of this code with lr_parser.h
+// $TODO $COMPILER a lot of this is duplicated with lr_parser.h
 
 class c_lr_symbol {
 public:

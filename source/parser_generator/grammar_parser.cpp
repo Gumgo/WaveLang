@@ -51,6 +51,17 @@ bool c_grammar_parser::parse() {
 			continue;
 		}
 
+		std::string include;
+		if (!try_read_simple_command(
+			"include",
+			e_grammar_token_type::k_string,
+			include,
+			processed_command)) {
+			return false;
+		} else if (processed_command) {
+			m_grammar->includes.push_back(include);
+		}
+
 		if (!try_read_simple_command(
 			"terminal_type_name",
 			e_grammar_token_type::k_string,

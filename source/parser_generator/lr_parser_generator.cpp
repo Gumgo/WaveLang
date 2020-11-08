@@ -1,4 +1,5 @@
 #include "parser_generator/lr_parser_generator.h"
+#include "parser_generator/visitor_class_generator.h"
 
 #include <fstream>
 
@@ -480,6 +481,8 @@ e_lr_conflict c_lr_parser_generator::generate_lr_parser(
 		return conflict;
 	}
 
+	c_visitor_class_generator visitor_class_generator(grammar);
+
 	{
 		std::ofstream file(output_filename_h);
 		file << "#pragma once\n\n";
@@ -488,19 +491,37 @@ e_lr_conflict c_lr_parser_generator::generate_lr_parser(
 
 		file << "#include \"compiler/lr_parser.h\"\n\n";
 
+		for (const std::string &include : grammar.includes) {
+			file << "#include \"" << include << "\"\n";
+		}
+
+		if (!grammar.includes.empty()) {
+			file << "\n";
+		}
+
+		file << "#include <variant>\n";
+		file << "#include <vector>\n\n";
+
 		file << "// THIS FILE WAS AUTOMATICALLY GENERATED - DO NOT EDIT\n\n";
 
 		file << "enum class " << grammar.terminal_type_name << " : uint16 {\n";
 		for (const s_grammar::s_terminal &terminal : grammar.terminals) {
 			file << "\t" << grammar.terminal_value_prefix << terminal.value << ",\n";
 		}
+		file << "\n";
+		file << "\tk_count\n";
 		file << "};\n\n";
 
 		file << "enum class " << grammar.nonterminal_type_name << " : uint16 {\n";
 		for (const s_grammar::s_nonterminal &nonterminal : grammar.nonterminals) {
 			file << "\t" << grammar.nonterminal_value_prefix << nonterminal.value << ",\n";
 		}
+		file << "\n";
+		file << "\tk_count\n";
 		file << "};\n\n";
+
+		visitor_class_generator.generate_class_declaration(file);
+		file << "\n";
 
 		file << "void initialize_" << grammar.grammar_name << "_parser(c_lr_parser &parser);\n";
 	}
@@ -512,6 +533,9 @@ e_lr_conflict c_lr_parser_generator::generate_lr_parser(
 
 		m_action_goto_table.output_action_goto_tables(file);
 		m_production_set.output_productions(file);
+
+		visitor_class_generator.generate_class_definition(file);
+		file << "\n";
 
 		file << "void initialize_" << grammar.grammar_name << "_parser(c_lr_parser &parser) {\n";
 		file << "\tparser.initialize(\n";

@@ -40,6 +40,8 @@ struct s_grammar {
 
 	std::string grammar_name;
 
+	std::vector<std::string> includes;
+
 	std::string terminal_type_name;
 	std::string terminal_context_type;
 	std::string terminal_value_prefix;

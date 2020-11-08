@@ -140,6 +140,7 @@ public:
 	size_t add_nonterminal_node(c_lr_symbol symbol, size_t production_index);
 	void make_first_child_node(size_t parent_index, size_t child_index);
 	const c_lr_parse_tree_node &get_node(size_t index) const;
+	size_t get_node_count() const;
 
 private:
 	size_t add_node(c_lr_symbol symbol, size_t token_or_production_index);
@@ -148,6 +149,21 @@ private:
 	std::vector<c_lr_parse_tree_node> m_nodes;
 };
 
+class c_lr_parse_tree_visitor {
+public:
+	c_lr_parse_tree_visitor(const c_lr_parse_tree &parse_tree);
+	virtual void visit();
+
+protected:
+	virtual bool enter_node(size_t node_index) = 0;
+	virtual void exit_node(size_t node_index) = 0;
+
+	void get_child_node_indices(size_t node_index, std::vector<size_t> &child_node_indices_out) const;
+
+	const c_lr_parse_tree &m_parse_tree;
+};
+
+// $TODO $COMPILER Remove once this isn't used anymore
 class c_lr_parse_tree_iterator {
 public:
 	c_lr_parse_tree_iterator(const c_lr_parse_tree &parse_tree, size_t node_index);

@@ -82,8 +82,8 @@ static s_token read_next_token(c_compiler_string str);
 void c_lexer::initialize_lexer() {
 	wl_assert(!g_lexer_initialized);
 
-	for (size_t token_type = enum_index(e_token_type::k_first_keyword);
-		token_type <= enum_index(e_token_type::k_last_keyword);
+	for (size_t token_type = enum_index(k_first_keyword);
+		token_type <= enum_index(k_last_keyword);
 		token_type++) {
 		g_lexer_globals.keyword_table.insert(std::make_pair(
 			k_lexer_token_table[token_type], static_cast<e_token_type>(token_type)));
@@ -95,15 +95,15 @@ void c_lexer::initialize_lexer() {
 	g_lexer_globals.keyword_table.insert(std::make_pair(
 		k_token_type_constant_bool_true_string, e_token_type::k_constant_bool));
 
-	for (size_t token_type = enum_index(e_token_type::k_first_single_character_operator);
-		token_type <= enum_index(e_token_type::k_last_single_character_operator);
+	for (size_t token_type = enum_index(k_first_single_character_operator);
+		token_type <= enum_index(k_last_single_character_operator);
 		token_type++) {
 		g_lexer_globals.single_character_operator_table.insert(std::make_pair(
 			k_lexer_token_table[token_type], static_cast<e_token_type>(token_type)));
 	}
 
-	for (size_t token_type = enum_index(e_token_type::k_first_operator);
-		token_type <= enum_index(e_token_type::k_last_operator);
+	for (size_t token_type = enum_index(k_first_operator);
+		token_type <= enum_index(k_last_operator);
 		token_type++) {
 		g_lexer_globals.operator_table.insert(std::make_pair(
 			k_lexer_token_table[token_type], static_cast<e_token_type>(token_type)));

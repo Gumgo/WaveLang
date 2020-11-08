@@ -239,6 +239,10 @@ const c_lr_parse_tree_node &c_lr_parse_tree::get_node(size_t index) const {
 	return m_nodes[index];
 }
 
+size_t c_lr_parse_tree::get_node_count() const {
+	return m_nodes.size();
+}
+
 size_t c_lr_parse_tree::add_node(c_lr_symbol symbol, size_t token_or_production_index) {
 	c_lr_parse_tree_node node;
 	node.m_symbol = symbol;
@@ -248,6 +252,48 @@ size_t c_lr_parse_tree::add_node(c_lr_symbol symbol, size_t token_or_production_
 	size_t index = m_nodes.size();
 	m_nodes.push_back(node);
 	return index;
+}
+
+c_lr_parse_tree_visitor::c_lr_parse_tree_visitor(const c_lr_parse_tree &parse_tree)
+	: m_parse_tree(parse_tree) {
+}
+
+void c_lr_parse_tree_visitor::visit() {
+	struct s_node_state {
+		size_t node_index;
+		bool entered;
+	};
+	std::vector<s_node_state> node_stack;
+	node_stack.push_back({ m_parse_tree.get_root_node_index(), false });
+	while (!node_stack.empty()) {
+		s_node_state &node_state = node_stack.back();
+		if (!node_state.entered) {
+			bool enter_child_nodes = enter_node(node_state.node_index);
+			node_state.entered = true;
+			if (enter_child_nodes && m_parse_tree.get_node(node_state.node_index).has_child()) {
+				node_stack.push_back({ m_parse_tree.get_node(node_state.node_index).get_child_index() });
+			}
+		} else {
+			exit_node(node_state.node_index);
+			if (m_parse_tree.get_node(node_state.node_index).has_sibling()) {
+				node_state = { m_parse_tree.get_node(node_state.node_index).get_sibling_index(), false };
+			} else {
+				node_stack.pop_back();
+			}
+		}
+	}
+}
+
+void c_lr_parse_tree_visitor::get_child_node_indices(
+	size_t node_index,
+	std::vector<size_t> &child_node_indices_out) const {
+	child_node_indices_out.clear();
+
+	size_t next_child_node_index = m_parse_tree.get_node(node_index).get_child_index();
+	while (next_child_node_index != c_lr_parse_tree::k_invalid_index) {
+		child_node_indices_out.push_back(next_child_node_index);
+		next_child_node_index = m_parse_tree.get_node(next_child_node_index).get_sibling_index();
+	}
 }
 
 c_lr_parse_tree_iterator::c_lr_parse_tree_iterator(const c_lr_parse_tree &parse_tree, size_t node_index)

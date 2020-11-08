@@ -95,6 +95,7 @@
     <ClInclude Include="lr_parser.h" />
     <ClInclude Include="parser.h" />
     <ClInclude Include="preprocessor.h" />
+    <ClInclude Include="token.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ast.cpp" />

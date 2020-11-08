@@ -1,5 +1,7 @@
 grammar_name: wavelang;
 
+include: "compiler/token.h";
+
 terminal_type_name: "e_token_type";
 terminal_context_type: "s_token";
 terminal_value_prefix: k_;
@@ -67,7 +69,7 @@ nonterminal_type_name: "e_parser_nonterminal";
 nonterminal_value_prefix: k_;
 nonterminals: {
 	start: {
-		global_scope;
+		global_scope -> temp_filler;
 	}
 
 	global_scope: {
