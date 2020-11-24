@@ -115,16 +115,18 @@ bool c_native_module_registry::end_registration() {
 	// Make sure all the native operators are set and point to existing native modules. Don't bother checking arguments
 	// here though, errors will show up as argument mismatches during compilation.
 	for (e_native_operator native_operator : iterate_enum<e_native_operator>()) {
-		if (g_native_module_registry_data.native_operators[enum_index(native_operator)].native_module_name.is_empty()) {
+		const s_native_operator &native_operator_data =
+			g_native_module_registry_data.native_operators[enum_index(native_operator)];
+		if (native_operator_data.native_module_name.is_empty()) {
 			return false;
 		}
 
 		bool found = false;
-		for (uint32 native_module_index = 0;
-			!found && native_module_index < g_native_module_registry_data.native_modules.size();
-			native_module_index++) {
-			found = (g_native_module_registry_data.native_modules[native_module_index].native_module.name ==
-				g_native_module_registry_data.native_operators[enum_index(native_operator)].native_module_name);
+		for (const s_native_module_internal &native_module : g_native_module_registry_data.native_modules) {
+			if (native_module.native_module.name == native_operator_data.native_module_name) {
+				found = true;
+				break;
+			}
 		}
 
 		if (!found) {
@@ -159,18 +161,22 @@ bool c_native_module_registry::is_native_module_library_registered(uint32 librar
 	return it != g_native_module_registry_data.native_module_library_ids_to_indices.end();
 }
 
-uint32 c_native_module_registry::get_native_module_library_index(uint32 library_id) {
+h_native_module_library c_native_module_registry::get_native_module_library_handle(uint32 library_id) {
 	wl_assert(is_native_module_library_registered(library_id));
 	auto it = g_native_module_registry_data.native_module_library_ids_to_indices.find(library_id);
-	return it->second;
+	return h_native_module_library::construct(it->second);
 }
 
 uint32 c_native_module_registry::get_native_module_library_count() {
 	return cast_integer_verify<uint32>(g_native_module_registry_data.native_module_libraries.size());
 }
 
-const s_native_module_library &c_native_module_registry::get_native_module_library(uint32 index) {
-	return g_native_module_registry_data.native_module_libraries[index];
+c_index_handle_iterator<h_native_module_library> c_native_module_registry::iterate_native_module_libraries() {
+	return c_index_handle_iterator<h_native_module_library>(get_native_module_library_count());
+}
+
+const s_native_module_library &c_native_module_registry::get_native_module_library(h_native_module_library handle) {
+	return g_native_module_registry_data.native_module_libraries[handle.get_data()];
 }
 
 bool c_native_module_registry::register_native_module(const s_native_module &native_module) {
@@ -252,9 +258,9 @@ void c_native_module_registry::register_native_operator(
 }
 
 e_native_operator c_native_module_registry::get_native_module_operator(s_native_module_uid native_module_uid) {
-	uint32 native_module_index = get_native_module_index(native_module_uid);
-	wl_assert(native_module_index != k_invalid_native_module_index);
-	return g_native_module_registry_data.native_modules[native_module_index].native_operator;
+	h_native_module native_module_handle = get_native_module_handle(native_module_uid);
+	wl_assert(native_module_handle.is_valid());
+	return g_native_module_registry_data.native_modules[native_module_handle.get_data()].native_operator;
 }
 
 bool c_native_module_registry::register_optimization_rule(const s_native_module_optimization_rule &optimization_rule) {
@@ -274,18 +280,22 @@ uint32 c_native_module_registry::get_native_module_count() {
 	return cast_integer_verify<uint32>(g_native_module_registry_data.native_modules.size());
 }
 
-uint32 c_native_module_registry::get_native_module_index(s_native_module_uid native_module_uid) {
+c_index_handle_iterator<h_native_module> c_native_module_registry::iterate_native_modules() {
+	return c_index_handle_iterator<h_native_module>(get_native_module_count());
+}
+
+h_native_module c_native_module_registry::get_native_module_handle(s_native_module_uid native_module_uid) {
 	auto it = g_native_module_registry_data.native_module_uids_to_indices.find(native_module_uid);
 	if (it == g_native_module_registry_data.native_module_uids_to_indices.end()) {
-		return k_invalid_native_module_index;
+		return h_native_module::invalid();
 	} else {
-		return it->second;
+		return h_native_module::construct(it->second);
 	}
 }
 
-const s_native_module &c_native_module_registry::get_native_module(uint32 index) {
-	wl_assert(valid_index(index, get_native_module_count()));
-	return g_native_module_registry_data.native_modules[index].native_module;
+const s_native_module &c_native_module_registry::get_native_module(h_native_module handle) {
+	wl_assert(valid_index(handle.get_data(), get_native_module_count()));
+	return g_native_module_registry_data.native_modules[handle.get_data()].native_module;
 }
 
 const char *c_native_module_registry::get_native_module_for_native_operator(e_native_operator native_operator) {
@@ -373,8 +383,8 @@ bool c_native_module_registry::output_registered_native_modules(const char *file
 
 		case s_output_item::e_type::k_native_module:
 		{
-			uint32 native_module_index = get_native_module_index(item.uid);
-			const s_native_module &native_module = get_native_module(native_module_index);
+			h_native_module native_module_handle = get_native_module_handle(item.uid);
+			const s_native_module &native_module = get_native_module(native_module_handle);
 
 			out << "\t";
 
@@ -459,6 +469,7 @@ static bool do_native_modules_conflict(
 	// If the arguments match, it's an overload conflict. We currently consider only types when detecting overload
 	// conflicts, because using qualifiers would cause ambiguity. The return value cannot be used to resolve overloads,
 	// so we need to do a bit of work if the first output argument is used as the return value.
+	// $TODO potentially revisit tn 
 
 	size_t argument_count_a =
 		(native_module_a.native_module.return_argument_index == k_invalid_native_module_argument_index)

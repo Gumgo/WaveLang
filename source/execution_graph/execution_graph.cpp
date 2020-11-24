@@ -37,8 +37,7 @@ static e_instrument_result invalid_graph_or_read_failure(const std::ifstream &in
 	return in.eof() ? e_instrument_result::k_invalid_graph : e_instrument_result::k_failed_to_read;
 }
 
-c_execution_graph::c_execution_graph() {
-}
+c_execution_graph::c_execution_graph() {}
 
 e_instrument_result c_execution_graph::save(std::ofstream &out) const {
 	wl_assert(validate());
@@ -103,7 +102,7 @@ e_instrument_result c_execution_graph::save(std::ofstream &out) const {
 		{
 			// Save out the UID, not the index
 			const s_native_module &native_module =
-				c_native_module_registry::get_native_module(node.node_data.native_module_call.native_module_index);
+				c_native_module_registry::get_native_module(node.node_data.native_module_call.native_module_handle);
 			writer.write(native_module.uid);
 			break;
 		}
@@ -248,12 +247,12 @@ e_instrument_result c_execution_graph::load(std::ifstream &in) {
 				return invalid_graph_or_read_failure(in);
 			}
 
-			uint32 native_module_index = c_native_module_registry::get_native_module_index(uid);
-			if (native_module_index == k_invalid_native_module_index) {
+			h_native_module native_module_handle = c_native_module_registry::get_native_module_handle(uid);
+			if (!native_module_handle.is_valid()) {
 				return e_instrument_result::k_unregistered_native_module;
 			}
 
-			node.node_data.native_module_call.native_module_index = native_module_index;
+			node.node_data.native_module_call.native_module_handle = native_module_handle;
 			break;
 		}
 
@@ -620,18 +619,18 @@ c_node_reference c_execution_graph::set_constant_array_value_at_index(
 	return old_value_node_reference;
 }
 
-c_node_reference c_execution_graph::add_native_module_call_node(uint32 native_module_index) {
-	wl_assert(valid_index(native_module_index, c_native_module_registry::get_native_module_count()));
+c_node_reference c_execution_graph::add_native_module_call_node(h_native_module native_module_handle) {
+	wl_assert(native_module_handle.is_valid());
 
 	c_node_reference node_reference = allocate_node();
 	// Don't store a reference to the node, it gets invalidated if the vector is resized when adding inputs/outputs
 	get_node(node_reference).type = e_execution_graph_node_type::k_native_module_call;
-	get_node(node_reference).node_data.native_module_call.native_module_index = native_module_index;
+	get_node(node_reference).node_data.native_module_call.native_module_handle = native_module_handle;
 
 	// Add nodes for each argument; the return value is output 0
 	// Note that the incoming and outgoing edge lists are ordered by argument index so accessing the nth edge will give
 	// us the nth indexed input/output node
-	const s_native_module &native_module = c_native_module_registry::get_native_module(native_module_index);
+	const s_native_module &native_module = c_native_module_registry::get_native_module(native_module_handle);
 	for (size_t arg = 0; arg < native_module.argument_count; arg++) {
 		s_native_module_argument argument = native_module.arguments[arg];
 		c_node_reference argument_node_reference = allocate_node();
@@ -860,13 +859,13 @@ bool c_execution_graph::validate_node(c_node_reference node_reference) const {
 
 	case e_execution_graph_node_type::k_native_module_call:
 	{
-		if (!valid_index(node.node_data.native_module_call.native_module_index, 
+		if (!valid_index(node.node_data.native_module_call.native_module_handle.get_data(), 
 			c_native_module_registry::get_native_module_count())) {
 			return false;
 		}
 
 		const s_native_module &native_module =
-			c_native_module_registry::get_native_module(node.node_data.native_module_call.native_module_index);
+			c_native_module_registry::get_native_module(node.node_data.native_module_call.native_module_handle);
 
 		return (node.incoming_edge_references.size() == native_module.in_argument_count)
 			&& (node.outgoing_edge_references.size() == native_module.out_argument_count);
@@ -986,7 +985,7 @@ bool c_execution_graph::validate_constants() const {
 		}
 
 		const s_native_module &native_module = c_native_module_registry::get_native_module(
-			get_native_module_call_native_module_index(node_reference));
+			get_native_module_call_native_module_handle(node_reference));
 
 		wl_assert(native_module.in_argument_count == get_node_incoming_edge_count(node_reference));
 		// For each constant input, verify that a constant node is linked up
@@ -1075,7 +1074,7 @@ bool c_execution_graph::get_type_from_node(c_node_reference node_reference, c_na
 			return true;
 		} else if (dest_node.type == e_execution_graph_node_type::k_native_module_call) {
 			const s_native_module &native_module = c_native_module_registry::get_native_module(
-				dest_node.node_data.native_module_call.native_module_index);
+				dest_node.node_data.native_module_call.native_module_handle);
 
 			size_t input = 0;
 			for (size_t arg = 0; arg < native_module.argument_count; arg++) {
@@ -1113,7 +1112,7 @@ bool c_execution_graph::get_type_from_node(c_node_reference node_reference, c_na
 
 		if (dest_node.type == e_execution_graph_node_type::k_native_module_call) {
 			const s_native_module &native_module = c_native_module_registry::get_native_module(
-				dest_node.node_data.native_module_call.native_module_index);
+				dest_node.node_data.native_module_call.native_module_handle);
 
 			size_t output = 0;
 			for (size_t arg = 0; arg < native_module.argument_count; arg++) {
@@ -1260,10 +1259,10 @@ const char *c_execution_graph::get_constant_node_string_value(c_node_reference n
 	return m_string_table.get_string(node.node_data.constant.string_index);
 }
 
-uint32 c_execution_graph::get_native_module_call_native_module_index(c_node_reference node_reference) const {
+h_native_module c_execution_graph::get_native_module_call_native_module_handle(c_node_reference node_reference) const {
 	const s_node &node = get_node(node_reference);
 	wl_assert(node.type == e_execution_graph_node_type::k_native_module_call);
-	return node.node_data.native_module_call.native_module_index;
+	return node.node_data.native_module_call.native_module_handle;
 }
 
 uint32 c_execution_graph::get_input_node_input_index(c_node_reference node_reference) const {
@@ -1466,7 +1465,7 @@ bool c_execution_graph::generate_graphviz_file(const char *fname, bool collapse_
 		case e_execution_graph_node_type::k_native_module_call:
 			graph_node.set_shape("box");
 			graph_node.set_label(c_native_module_registry::get_native_module(
-				node.node_data.native_module_call.native_module_index).name.get_string());
+				node.node_data.native_module_call.native_module_handle).name.get_string());
 			break;
 
 		case e_execution_graph_node_type::k_indexed_input:

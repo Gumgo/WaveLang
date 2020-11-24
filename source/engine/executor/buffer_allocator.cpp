@@ -8,8 +8,7 @@ static constexpr size_t k_bits_per_buffer_element[] = {
 };
 static_assert(array_count(k_bits_per_buffer_element) == enum_count<e_buffer_type>(), "Buffer type bits mismatch");
 
-c_buffer_allocator::c_buffer_allocator() {
-}
+c_buffer_allocator::c_buffer_allocator() {}
 
 void c_buffer_allocator::initialize(const s_buffer_allocator_settings &settings) {
 	size_t total_buffer_count = 0;

@@ -7,28 +7,23 @@
 
 #if IS_TRUE(SIMD_128_ENABLED) && IS_TRUE(SIMD_IMPLEMENTATION_AVX_ENABLED)
 
-inline real32x4::real32x4() {
-}
+inline real32x4::real32x4() {}
 
 inline real32x4::real32x4(real32 v)
-	: m_value(_mm_set1_ps(v)) {
-}
+	: m_value(_mm_set1_ps(v)) {}
 
 inline real32x4::real32x4(real32 a, real32 b, real32 c, real32 d)
-	: m_value(_mm_set_ps(d, c, b, a)) {
-}
+	: m_value(_mm_set_ps(d, c, b, a)) {}
 
 inline real32x4::real32x4(const real32 *ptr) {
 	load(ptr);
 }
 
 inline real32x4::real32x4(const t_simd_real32x4 &v)
-	: m_value(v) {
-}
+	: m_value(v) {}
 
 inline real32x4::real32x4(const real32x4 &v)
-	: m_value(v.m_value) {
-}
+	: m_value(v.m_value) {}
 
 inline void real32x4::load(const real32 *ptr) {
 	wl_assert(is_pointer_aligned(ptr, k_simd_128_alignment));

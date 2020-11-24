@@ -184,9 +184,7 @@ void c_executor::pre_initialize_task_function_libraries() {
 
 void c_executor::initialize_task_memory() {
 	m_task_memory_manager.initialize(
-		c_wrapped_array<void *>(
-			m_task_function_library_contexts.empty() ? nullptr : &m_task_function_library_contexts.front(),
-			m_task_function_library_contexts.size()),
+		c_wrapped_array<void *>(m_task_function_library_contexts),
 		m_settings.runtime_instrument,
 		task_memory_query_wrapper,
 		this);

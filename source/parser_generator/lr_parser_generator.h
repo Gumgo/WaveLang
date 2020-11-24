@@ -81,10 +81,14 @@ public:
 	c_lr_production_set();
 	void initialize(uint16 terminal_count, uint16 nonterminal_count);
 	void add_production(const s_lr_production &production);
-	void set_terminal_associativity(uint16 terminal_index, e_associativity associativity);
+	void set_terminal_precedence_and_associativity(
+		uint16 terminal_index,
+		int32 precedence,
+		e_associativity associativity);
 
 	size_t get_production_count() const;
 	const s_lr_production &get_production(size_t index) const;
+	int32 get_terminal_precedence(uint16 terminal_index) const;
 	e_associativity get_terminal_associativity(uint16 terminal_index) const;
 
 	uint16 get_terminal_count() const;
@@ -112,6 +116,7 @@ private:
 	uint16 m_terminal_count;
 	uint16 m_nonterminal_count;
 	std::vector<s_lr_production> m_productions;
+	std::vector<int32> m_terminal_precedence;
 	std::vector<e_associativity> m_terminal_associativity;
 };
 
@@ -175,6 +180,24 @@ enum class e_lr_conflict {
 	k_count
 };
 
+struct s_lr_conflict {
+	e_lr_conflict conflict;
+
+	union {
+		// Set if this is a shift-reduce conflict
+		struct {
+			uint16 terminal_index;
+			uint32 production_index;
+		};
+
+		// Set if this is a reduce-reduce conflict
+		struct {
+			uint32 production_index_a;
+			uint32 production_index_b;
+		};
+	};
+};
+
 class c_lr_action_goto_table {
 public:
 	static constexpr uint32 k_invalid_state_index = static_cast<uint32>(-1);
@@ -187,7 +210,7 @@ public:
 
 	void initialize(const c_lr_production_set *production_set);
 	void add_state();
-	e_lr_conflict set_action(uint32 state_index, uint16 terminal_index, c_lr_action action);
+	s_lr_conflict set_action(uint32 state_index, uint16 terminal_index, c_lr_action action);
 	void set_goto(uint32 state_index, uint16 nonterminal_index, uint32 goto_index);
 
 	void output_action_goto_tables(std::ofstream &file) const;
@@ -220,7 +243,7 @@ private:
 
 class c_lr_parser_generator {
 public:
-	e_lr_conflict generate_lr_parser(
+	s_lr_conflict generate_lr_parser(
 		const s_grammar &grammar,
 		const char *output_filename_h,
 		const char *output_filename_inl);
@@ -245,7 +268,7 @@ private:
 	bool is_symbol_string_nullable(const c_lr_symbol *str, size_t count) const;
 	c_lr_symbol_set compute_symbol_string_first_set(const c_lr_symbol *str, size_t count) const;
 
-	e_lr_conflict compute_item_sets();
+	s_lr_conflict compute_item_sets();
 	c_lr_item_set compute_closure(const c_lr_item_set &item_set) const;
 	c_lr_item_set compute_goto(const c_lr_item_set &item_set, c_lr_symbol symbol) const;
 };

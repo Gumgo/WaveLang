@@ -1,7 +1,5 @@
 #include "engine/task_function_registry.h"
 
-#include "execution_graph/native_module_registry.h"
-
 #include <vector>
 #include <unordered_map>
 
@@ -120,9 +118,10 @@ bool c_task_function_registry::register_task_function_library(const s_task_funct
 	}
 
 	// Make sure the details of the library are consistent
-	uint32 native_module_library_index = c_native_module_registry::get_native_module_library_index(library.id);
+	h_native_module_library native_module_library_handle =
+		c_native_module_registry::get_native_module_library_handle(library.id);
 	const s_native_module_library &native_module_library =
-		c_native_module_registry::get_native_module_library(native_module_library_index);
+		c_native_module_registry::get_native_module_library(native_module_library_handle);
 	if (library.name != native_module_library.name || library.version != native_module_library.version) {
 		return false;
 	}
@@ -187,19 +186,21 @@ bool c_task_function_registry::register_task_function(const s_task_function &tas
 	}
 
 	// Look up the native module
-	uint32 native_module_index = c_native_module_registry::get_native_module_index(task_function.native_module_uid);
-	if (native_module_index == k_invalid_native_module_index) {
+	h_native_module native_module_handle =
+		c_native_module_registry::get_native_module_handle(task_function.native_module_uid);
+	if (!native_module_handle.is_valid()) {
 		return false;
 	}
 
 	// Make sure the same native module doesn't map to two task functions
-	if (g_task_function_registry_data.task_function_mappings[native_module_index] != s_task_function_uid::k_invalid) {
+	if (g_task_function_registry_data.task_function_mappings[native_module_handle.get_data()]
+		!= s_task_function_uid::k_invalid) {
 		return false;
 	}
 
 	// $TODO $PLUGIN validate that the library UID on all tasks matches the library UID on the native module
 #if IS_TRUE(ASSERTS_ENABLED)
-	const s_native_module &native_module = c_native_module_registry::get_native_module(native_module_index);
+	const s_native_module &native_module = c_native_module_registry::get_native_module(native_module_handle);
 	validate_task_function_mapping(native_module, task_function);
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
@@ -209,7 +210,7 @@ bool c_task_function_registry::register_task_function(const s_task_function &tas
 	g_task_function_registry_data.task_functions.push_back(task_function);
 	g_task_function_registry_data.task_function_uids_to_indices.insert(std::make_pair(task_function.uid, index));
 
-	g_task_function_registry_data.task_function_mappings[native_module_index] = task_function.uid;
+	g_task_function_registry_data.task_function_mappings[native_module_handle] = task_function.uid;
 
 	return true;
 }
@@ -232,9 +233,9 @@ const s_task_function &c_task_function_registry::get_task_function(uint32 index)
 	return g_task_function_registry_data.task_functions[index];
 }
 
-s_task_function_uid c_task_function_registry::get_task_function_mapping(uint32 native_module_index) {
-	wl_assert(valid_index(native_module_index, c_native_module_registry::get_native_module_count()));
-	return g_task_function_registry_data.task_function_mappings[native_module_index];
+s_task_function_uid c_task_function_registry::get_task_function_mapping(h_native_module native_module_handle) {
+	wl_assert(valid_index(native_module_handle.get_data(), c_native_module_registry::get_native_module_count()));
+	return g_task_function_registry_data.task_function_mappings[native_module_handle.get_data()];
 }
 
 #if IS_TRUE(ASSERTS_ENABLED)

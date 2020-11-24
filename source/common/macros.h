@@ -13,3 +13,7 @@
 
 #define TOKEN_CONCATENATE_HELPER(x, y) x ## y
 #define TOKEN_CONCATENATE(x, y) TOKEN_CONCATENATE_HELPER(x, y)
+
+#define CONDITION_DECLARATION(...)				\
+	bool k_condition = __VA_ARGS__,				\
+	typename = std::enable_if_t<k_condition>

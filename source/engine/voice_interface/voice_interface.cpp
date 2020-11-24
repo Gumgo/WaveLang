@@ -1,7 +1,6 @@
 #include "engine/voice_interface/voice_interface.h"
 
-c_voice_interface::c_voice_interface() {
-}
+c_voice_interface::c_voice_interface() {}
 
 c_voice_interface::c_voice_interface(int32 note_id, real32 note_velocity, int32 note_release_sample) {
 	m_note_id = note_id;

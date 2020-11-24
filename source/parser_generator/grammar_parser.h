@@ -36,7 +36,7 @@ private:
 	bool try_read_terminals_command(bool &processed_command_out);
 	bool try_read_nonterminals_command(bool &processed_command_out);
 
-	bool read_terminal();
+	bool read_terminal(int32 precedence);
 	bool read_nonterminal();
 	bool read_rule(const std::string &nonterminal);
 

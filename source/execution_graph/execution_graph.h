@@ -68,7 +68,7 @@ public:
 		c_node_reference constant_array_node_reference,
 		uint32 index,
 		c_node_reference value_node_reference);
-	c_node_reference add_native_module_call_node(uint32 native_module_index);
+	c_node_reference add_native_module_call_node(h_native_module native_module_handle);
 	c_node_reference add_input_node(uint32 input_index);
 	c_node_reference add_output_node(uint32 output_index);
 	c_node_reference add_temporary_reference_node();
@@ -89,7 +89,7 @@ public:
 	real32 get_constant_node_real_value(c_node_reference node_reference) const;
 	bool get_constant_node_bool_value(c_node_reference node_reference) const;
 	const char *get_constant_node_string_value(c_node_reference node_reference) const;
-	uint32 get_native_module_call_native_module_index(c_node_reference node_reference) const;
+	h_native_module get_native_module_call_native_module_handle(c_node_reference node_reference) const;
 	uint32 get_input_node_input_index(c_node_reference node_reference) const;
 	uint32 get_output_node_output_index(c_node_reference node_reference) const;
 	size_t get_node_incoming_edge_count(c_node_reference node_reference) const;
@@ -114,7 +114,7 @@ private:
 			u_node_data() {}
 
 			struct {
-				uint32 native_module_index;
+				h_native_module native_module_handle;
 			} native_module_call;
 
 			struct {

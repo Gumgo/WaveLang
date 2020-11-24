@@ -102,11 +102,9 @@ bool output_profiler_report(const char *filename, const s_profiler_report &repor
 	return !out.fail();
 }
 
-c_profiler::c_profiler() {
-}
+c_profiler::c_profiler() {}
 
-c_profiler::~c_profiler() {
-}
+c_profiler::~c_profiler() {}
 
 void c_profiler::initialize(const s_profiler_settings &settings) {
 	m_thread_contexts.free();

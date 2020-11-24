@@ -3,6 +3,7 @@
 #include "common/asserts.h"
 #include "common/cast_integer_verify.h"
 #include "common/common_utilities.h"
+#include "common/enum.h"
 #include "common/macros.h"
 #include "common/platform.h"
 #include "common/platform_macros.h"

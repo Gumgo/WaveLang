@@ -3,8 +3,7 @@
 #include "engine/task_functions/sampler/sample.h"
 #include "engine/task_functions/sampler/sample_library.h"
 
-c_sample_library::c_sample_library() {
-}
+c_sample_library::c_sample_library() {}
 
 c_sample_library::~c_sample_library() {
 	// This will clear out all samples

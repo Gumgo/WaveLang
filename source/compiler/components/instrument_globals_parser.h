@@ -2,6 +2,8 @@
 
 #include "common/common.h"
 
+#include "compiler/compiler_context.h"
+
 #include "execution_graph/instrument_globals.h"
 
 #include <vector>
@@ -33,6 +35,13 @@ struct s_instrument_globals_context {
 
 class c_instrument_globals_parser {
 public:
-	static void register_preprocessor_commands(s_instrument_globals_context *globals_context);
+	static void initialize();
+	static void deinitialize();
+
+	static void parse_instrument_globals(
+		c_compiler_context &context,
+		h_compiler_source_file source_file_handle,
+		bool is_top_level_source_file,
+		s_instrument_globals_context &instrument_globals);
 };
 

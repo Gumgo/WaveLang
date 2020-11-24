@@ -6,8 +6,7 @@ c_stopwatch::c_stopwatch() {
 	m_frequency = 0;
 }
 
-c_stopwatch::~c_stopwatch() {
-}
+c_stopwatch::~c_stopwatch() {}
 
 void c_stopwatch::initialize() {
 	LARGE_INTEGER frequency;
@@ -46,8 +45,7 @@ c_stopwatch::c_stopwatch() {
 	m_frequency = 0; // Unused on Linux because clock is in nanoseconds already
 }
 
-c_stopwatch::~c_stopwatch() {
-}
+c_stopwatch::~c_stopwatch() {}
 
 void c_stopwatch::initialize() {
 	// Nothing to do

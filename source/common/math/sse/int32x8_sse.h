@@ -7,24 +7,20 @@
 
 #if IS_TRUE(SIMD_256_ENABLED) && IS_TRUE(SIMD_IMPLEMENTATION_AVX2_ENABLED)
 
-inline int32x8::int32x8() {
-}
+inline int32x8::int32x8() {}
 
 inline int32x8::int32x8(int32 v)
-	: m_value(_mm256_set1_epi32(v)) {
-}
+	: m_value(_mm256_set1_epi32(v)) {}
 
 inline int32x8::int32x8(int32 a, int32 b, int32 c, int32 d, int32 e, int32 f, int32 g, int32 h)
-	: m_value(_mm256_set_epi32(h, g, f, e, d, c, b, a)) {
-}
+	: m_value(_mm256_set_epi32(h, g, f, e, d, c, b, a)) {}
 
 inline int32x8::int32x8(const int32 *ptr) {
 	load(ptr);
 }
 
 inline int32x8::int32x8(const t_simd_int32x8 &v)
-	: m_value(v) {
-}
+	: m_value(v) {}
 
 inline int32x8::int32x8(const int32x8 &v)
 	: m_value(v) {

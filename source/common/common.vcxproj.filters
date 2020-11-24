@@ -130,6 +130,10 @@
     <ClInclude Include="math\real32x8.h">
       <Filter>math</Filter>
     </ClInclude>
+    <ClInclude Include="enum.h" />
+    <ClInclude Include="utility\temporary_reference.h">
+      <Filter>utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="SConscript" />

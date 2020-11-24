@@ -123,9 +123,7 @@ public:
 	}
 
 	c_wrapped_array<const c_json_node *const> get_value() const {
-		return c_wrapped_array<const c_json_node *const>(
-			m_pointers.empty() ? nullptr : &m_pointers.front(),
-			m_pointers.size());
+		return c_wrapped_array<const c_json_node *const>(m_pointers);
 	}
 
 private:

@@ -3,13 +3,13 @@
 #include <unordered_map>
 
 // Convenience macro that returns false if the next token isn't what we expect
-#define EXPECT_TOKEN(expected_token_type)								\
-MACRO_BLOCK(															\
-	if (m_tokens[m_token_index].token_type != (expected_token_type)) {	\
-		m_error_message = "Unexpected token";							\
-		return false;													\
-	}																	\
-)
+#define EXPECT_TOKEN(expected_token_type)									\
+	MACRO_BLOCK(															\
+		if (m_tokens[m_token_index].token_type != (expected_token_type)) {	\
+			m_error_message = "Unexpected token";							\
+			return false;													\
+		}																	\
+	)
 
 static constexpr const char *k_end_of_input_terminal_name = "end_of_input";
 static constexpr const char *k_start_nonterminal_name = "start";
@@ -60,6 +60,7 @@ bool c_grammar_parser::parse() {
 			return false;
 		} else if (processed_command) {
 			m_grammar->includes.push_back(include);
+			continue;
 		}
 
 		if (!try_read_simple_command(
@@ -197,10 +198,30 @@ bool c_grammar_parser::try_read_terminals_command(bool &processed_command_out) {
 	EXPECT_TOKEN(e_grammar_token_type::k_left_brace);
 	m_token_index++;
 
+	int32 precedence = 0;
 	while (next_token().token_type != e_grammar_token_type::k_right_brace) {
-		if (!read_terminal()) {
+		if (next_token().token_type == e_grammar_token_type::k_identifier
+			&& next_token_string() == "precedence_group") {
+			m_token_index++;
+
+			EXPECT_TOKEN(e_grammar_token_type::k_colon);
+			m_token_index++;
+
+			EXPECT_TOKEN(e_grammar_token_type::k_left_brace);
+			m_token_index++;
+
+			while (next_token().token_type != e_grammar_token_type::k_right_brace) {
+				if (!read_terminal(precedence)) {
+					return false;
+				}
+			}
+
+			m_token_index++;
+		} else if (!read_terminal(precedence)) {
 			return false;
 		}
+
+		precedence++;
 	}
 
 	m_token_index++;
@@ -246,8 +267,9 @@ bool c_grammar_parser::try_read_nonterminals_command(bool &processed_command_out
 	return true;
 }
 
-bool c_grammar_parser::read_terminal() {
+bool c_grammar_parser::read_terminal(int32 precedence) {
 	s_grammar::s_terminal terminal;
+	terminal.precedence = precedence;
 	terminal.associativity = s_grammar::e_associativity::k_none;
 
 	EXPECT_TOKEN(e_grammar_token_type::k_identifier);
@@ -272,23 +294,52 @@ bool c_grammar_parser::read_terminal() {
 	if (next_token().token_type == e_grammar_token_type::k_left_parenthesis) {
 		m_token_index++;
 
-		EXPECT_TOKEN(e_grammar_token_type::k_identifier);
-		std::string associativity = next_token_string();
+		bool first = true;
+		while (next_token().token_type != e_grammar_token_type::k_right_parenthesis) {
+			if (!first) {
+				EXPECT_TOKEN(e_grammar_token_type::k_comma);
+				m_token_index++;
+			} else {
+				first = false;
+			}
 
-		if (associativity == "left") {
-			terminal.associativity = s_grammar::e_associativity::k_left;
-		} else if (associativity == "right") {
-			terminal.associativity = s_grammar::e_associativity::k_right;
-		} else if (associativity == "nonassoc") {
-			terminal.associativity = s_grammar::e_associativity::k_nonassoc;
-		} else {
-			m_error_message = "Invalid associativity";
-			return false;
+			if (next_token().token_type == e_grammar_token_type::k_identifier) {
+				if (terminal.associativity != s_grammar::e_associativity::k_none) {
+					m_error_message = "Associativity already specified";
+					return false;
+				}
+
+				std::string associativity = next_token_string();
+
+				if (associativity == "left") {
+					terminal.associativity = s_grammar::e_associativity::k_left;
+				} else if (associativity == "right") {
+					terminal.associativity = s_grammar::e_associativity::k_right;
+				} else if (associativity == "nonassoc") {
+					terminal.associativity = s_grammar::e_associativity::k_nonassoc;
+				} else {
+					m_error_message = "Invalid associativity";
+					return false;
+				}
+
+				m_token_index++;
+			} else {
+				EXPECT_TOKEN(e_grammar_token_type::k_string);
+				if (!terminal.string.empty()) {
+					m_error_message = "Terminal string already specified";
+					return false;
+				}
+
+				terminal.string = next_token_string();
+				if (terminal.string.empty()) {
+					m_error_message = "Empty terminal string specified";
+					return false;
+				}
+
+				m_token_index++;
+			}
 		}
 
-		m_token_index++;
-
-		EXPECT_TOKEN(e_grammar_token_type::k_right_parenthesis);
 		m_token_index++;
 	}
 
@@ -369,6 +420,18 @@ bool c_grammar_parser::read_rule(const std::string &nonterminal) {
 	m_grammar->rules.push_back(s_grammar::s_rule());
 	s_grammar::s_rule &rule = m_grammar->rules.back();
 	rule.nonterminal = nonterminal;
+
+	if (next_token().token_type == e_grammar_token_type::k_left_parenthesis) {
+		// Read precedence override
+		m_token_index++;
+
+		EXPECT_TOKEN(e_grammar_token_type::k_identifier);
+		rule.precedence_override_terminal = next_token_string();
+		m_token_index++;
+
+		EXPECT_TOKEN(e_grammar_token_type::k_right_parenthesis);
+		m_token_index++;
+	}
 
 	if (next_token().token_type == e_grammar_token_type::k_period) {
 		// Empty rule
@@ -457,6 +520,23 @@ bool c_grammar_parser::finalize_and_validate() {
 		}
 		wl_assert(found);
 
+		rule.precedence_override_terminal_index = static_cast<size_t>(-1);
+		if (!rule.precedence_override_terminal.empty()) {
+			bool found = false;
+			for (size_t index = 0; index < m_grammar->terminals.size(); index++) {
+				if (rule.precedence_override_terminal == m_grammar->terminals[index].value) {
+					rule.precedence_override_terminal_index = index;
+					found = true;
+					break;
+				}
+			}
+
+			if (!found) {
+				m_error_message = "'" + rule.precedence_override_terminal + "' is not a terminal";
+				return false;
+			}
+		}
+
 		// Make sure all the rule components are valid
 		for (s_grammar::s_rule_component &component : rule.components) {
 			bool found = false;
@@ -513,9 +593,14 @@ bool c_grammar_parser::finalize_and_validate() {
 				// Verify that the two function usages match
 				const s_grammar::s_rule &other_rule = *iter->second;
 
-				if (rule.nonterminal != other_rule.nonterminal) {
-					m_error_message =
-						"Function '" + rule.function + "' is referenced by multiple rules with different nonterminals";
+				const s_grammar::s_nonterminal &nonterminal_a = m_grammar->nonterminals[rule.nonterminal_index];
+				const s_grammar::s_nonterminal &nonterminal_b = m_grammar->nonterminals[other_rule.nonterminal_index];
+
+				// Note: it's okay for the nonterminals themselves to differ as long as the types are the same. This is
+				// because the argument name for the rule terminal context is always the same.
+				if (nonterminal_a.context_type != nonterminal_b.context_type) {
+					m_error_message = "Function '" + rule.function
+						+ "' is referenced by multiple rules with different nonterminal types";
 				}
 
 				std::vector<const s_grammar::s_rule_component *> argument_components_a;
@@ -540,16 +625,22 @@ bool c_grammar_parser::finalize_and_validate() {
 				}
 
 				for (size_t index = 0; index < argument_components_a.size(); index++) {
-					const s_grammar::s_rule_component &argument_component_a = *argument_components_a[index];
-					const s_grammar::s_rule_component &argument_component_b = *argument_components_b[index];
+					const s_grammar::s_rule_component &component_a = *argument_components_a[index];
+					const s_grammar::s_rule_component &component_b = *argument_components_b[index];
 
-					if (argument_component_a.terminal_or_nonterminal != argument_component_b.terminal_or_nonterminal) {
+					const std::string &component_a_type = component_a.is_terminal
+						? m_grammar->terminal_type_name
+						: m_grammar->nonterminals[component_a.terminal_or_nonterminal_index].context_type;
+					const std::string &component_b_type = component_b.is_terminal
+						? m_grammar->terminal_type_name
+						: m_grammar->nonterminals[component_b.terminal_or_nonterminal_index].context_type;
+					if (component_a_type != component_b_type) {
 						m_error_message = "Function '" + rule.function
 							+ "' is referenced by multiple rules with different argument types";
 						return false;
 					}
 
-					if (argument_component_a.argument != argument_component_b.argument) {
+					if (component_a.argument != component_b.argument) {
 						m_error_message = "Function '" + rule.function
 							+ "' is referenced by multiple rules with different argument names";
 						return false;

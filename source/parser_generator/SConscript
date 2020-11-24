@@ -6,6 +6,9 @@ Import("*")
 
 env = env.Clone()
 
+if str(platform) == "win32":
+	env.Append(LIBS = ["shlwapi.lib"])
+
 env.Append(CPPPATH = ["#source"])
 
 sources = utils.enumerate_files(env, ".", utils.SOURCE_EXTENSIONS)

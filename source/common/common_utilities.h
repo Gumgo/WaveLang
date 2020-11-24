@@ -8,7 +8,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
-#include <type_traits>
 
 template<typename t_element, size_t k_count>
 constexpr size_t array_count(const t_element (&)[k_count]) {
@@ -143,79 +142,4 @@ t_to reinterpret_bits(t_from from) {
 	t_to to;
 	memcpy(&to, &from, sizeof(to));
 	return to;
-}
-
-template<typename t_enum>
-constexpr std::underlying_type_t<t_enum> enum_index(t_enum value) {
-	return static_cast<std::underlying_type_t<t_enum>>(value);
-}
-
-template<typename t_enum>
-constexpr std::underlying_type_t<t_enum> enum_count() {
-	return static_cast<std::underlying_type_t<t_enum>>(t_enum::k_count);
-}
-
-template<typename t_enum>
-constexpr bool valid_enum_index(t_enum value) {
-	return enum_index(value) >= 0 && enum_index(value) < enum_count<t_enum>();
-}
-
-template<typename t_enum>
-class c_enum_iterator {
-public:
-	c_enum_iterator()
-		: m_index(0) {
-	}
-
-	bool is_valid() const {
-		return m_index < enum_count<t_enum>();
-	}
-
-	void next() {
-		m_index++;
-	}
-
-	t_enum get() const {
-		wl_assert(is_valid());
-		return static_cast<t_enum>(m_index);
-	}
-
-	class c_iterand {
-	public:
-		c_iterand(std::underlying_type_t<t_enum> index)
-			: m_index(index) {
-		}
-
-		bool operator!=(const c_iterand &other) {
-			return m_index != other.m_index;
-		}
-
-		c_iterand &operator++() {
-			m_index++;
-			return *this;
-		}
-
-		t_enum operator*() const {
-			return static_cast<t_enum>(m_index);
-		}
-
-	private:
-		std::underlying_type_t<t_enum> m_index;
-	};
-
-	c_iterand begin() const {
-		return c_iterand(0);
-	}
-
-	c_iterand end() const {
-		return c_iterand(enum_count<t_enum>());
-	}
-
-private:
-	std::underlying_type_t<t_enum> m_index;
-};
-
-template<typename t_enum>
-c_enum_iterator<t_enum> iterate_enum() {
-	return c_enum_iterator<t_enum>();
 }

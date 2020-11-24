@@ -165,9 +165,9 @@ void c_execution_graph_constant_evaluator::try_evaluate_node(c_node_reference no
 			e_execution_graph_node_type::k_native_module_call);
 
 		// First check if it can even be evaluated at compile-time
-		uint32 native_module_index =
-			m_execution_graph->get_native_module_call_native_module_index(native_module_node_reference);
-		const s_native_module &native_module = c_native_module_registry::get_native_module(native_module_index);
+		h_native_module native_module_handle =
+			m_execution_graph->get_native_module_call_native_module_handle(native_module_node_reference);
+		const s_native_module &native_module = c_native_module_registry::get_native_module(native_module_handle);
 
 		if (!native_module.compile_time_call) {
 			// This native module can't be evaluated at compile-time
@@ -192,9 +192,7 @@ void c_execution_graph_constant_evaluator::try_evaluate_node(c_node_reference no
 				&node_interface,
 				m_instrument_globals,
 				native_module,
-				c_native_module_compile_time_argument_list(
-					arg_list.empty() ? nullptr : &arg_list.front(),
-					arg_list.size()),
+				c_native_module_compile_time_argument_list(arg_list),
 				m_errors);
 			store_native_module_call_results(native_module, native_module_node_reference, arg_list);
 
@@ -601,9 +599,9 @@ static void execute_compile_time_call(
 	native_module_context.node_interface = node_interface;
 	native_module_context.instrument_globals = instrument_globals;
 
-	uint32 library_index =
-		c_native_module_registry::get_native_module_library_index(native_module.uid.get_library_id());
-	native_module_context.library_context = native_module_library_contexts[library_index];
+	h_native_module_library library_handle =
+		c_native_module_registry::get_native_module_library_handle(native_module.uid.get_library_id());
+	native_module_context.library_context = native_module_library_contexts[library_handle.get_data()];
 
 	native_module_context.arguments = &arguments;
 
@@ -672,7 +670,7 @@ static bool optimize_native_module_call(
 	std::vector<s_compiler_result> *errors) {
 	wl_assert(execution_graph->get_node_type(node_reference) == e_execution_graph_node_type::k_native_module_call);
 	const s_native_module &native_module = c_native_module_registry::get_native_module(
-		execution_graph->get_native_module_call_native_module_index(node_reference));
+		execution_graph->get_native_module_call_native_module_handle(node_reference));
 
 	// Determine if all inputs are constants
 	if (native_module.compile_time_call) {
@@ -754,9 +752,7 @@ static bool optimize_native_module_call(
 				&node_interface,
 				instrument_globals,
 				native_module,
-				c_native_module_compile_time_argument_list(
-					arg_list.empty() ? nullptr : &arg_list.front(),
-					arg_list.size()),
+				c_native_module_compile_time_argument_list(arg_list),
 				errors);
 
 			next_output = 0;
@@ -913,13 +909,13 @@ private:
 		}
 	}
 
-	bool handle_source_native_module_symbol_match(uint32 native_module_index) const {
+	bool handle_source_native_module_symbol_match(h_native_module native_module_handle) const {
 		const s_match_state &current_state = m_match_state_stack.top();
 		c_node_reference node_reference = current_state.current_node_reference;
 
 		// It's a match if the current node is a native module of the same index
 		return (m_execution_graph->get_node_type(node_reference) == e_execution_graph_node_type::k_native_module_call)
-			&& (m_execution_graph->get_native_module_call_native_module_index(node_reference) == native_module_index);
+			&& (m_execution_graph->get_native_module_call_native_module_handle(node_reference) == native_module_handle);
 	}
 
 	bool handle_source_value_symbol_match(
@@ -977,8 +973,8 @@ private:
 			case e_native_module_optimization_symbol_type::k_native_module:
 			{
 				wl_assert(symbol.data.native_module_uid != s_native_module_uid::k_invalid);
-				uint32 native_module_index =
-					c_native_module_registry::get_native_module_index(symbol.data.native_module_uid);
+				h_native_module native_module_handle =
+					c_native_module_registry::get_native_module_handle(symbol.data.native_module_uid);
 
 				if (m_match_state_stack.empty()) {
 					// This is the beginning of the source pattern, so add the initial module call to the stack
@@ -1001,7 +997,7 @@ private:
 				}
 
 				// The module described by the rule should match the top of the state stack
-				if (!handle_source_native_module_symbol_match(native_module_index)) {
+				if (!handle_source_native_module_symbol_match(native_module_handle)) {
 					return false;
 				}
 
@@ -1136,9 +1132,9 @@ private:
 			switch (symbol.type) {
 			case e_native_module_optimization_symbol_type::k_native_module:
 			{
-				uint32 native_module_index =
-					c_native_module_registry::get_native_module_index(symbol.data.native_module_uid);
-				c_node_reference node_reference = m_execution_graph->add_native_module_call_node(native_module_index);
+				h_native_module native_module_handle =
+					c_native_module_registry::get_native_module_handle(symbol.data.native_module_uid);
+				c_node_reference node_reference = m_execution_graph->add_native_module_call_node(native_module_handle);
 				// We currently only allow a single outgoing edge, due to the way we express rules
 				wl_assert(m_execution_graph->get_node_outgoing_edge_count(node_reference) == 1);
 
@@ -1452,8 +1448,8 @@ static void deduplicate_nodes(c_execution_graph *execution_graph) {
 				e_execution_graph_node_type node_type = execution_graph->get_node_type(node_a_reference);
 				if (node_type == e_execution_graph_node_type::k_native_module_call) {
 					// If native module indices don't match, skip
-					if (execution_graph->get_native_module_call_native_module_index(node_a_reference) !=
-						execution_graph->get_native_module_call_native_module_index(node_b_reference)) {
+					if (execution_graph->get_native_module_call_native_module_handle(node_a_reference) !=
+						execution_graph->get_native_module_call_native_module_handle(node_b_reference)) {
 						continue;
 					}
 				} else if (node_type == e_execution_graph_node_type::k_constant) {
@@ -1543,7 +1539,7 @@ static void validate_optimized_constants(
 		}
 
 		const s_native_module &native_module = c_native_module_registry::get_native_module(
-			execution_graph->get_native_module_call_native_module_index(node_reference));
+			execution_graph->get_native_module_call_native_module_handle(node_reference));
 
 		wl_assert(native_module.in_argument_count == execution_graph->get_node_incoming_edge_count(node_reference));
 		// For each constant input, verify that a constant node is linked up

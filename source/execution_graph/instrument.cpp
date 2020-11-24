@@ -172,8 +172,7 @@ const c_execution_graph *c_instrument_variant::get_fx_execution_graph() const {
 	return m_fx_execution_graph;
 }
 
-c_instrument::c_instrument() {
-}
+c_instrument::c_instrument() {}
 
 c_instrument::~c_instrument() {
 	for (size_t index = 0; index < m_instrument_variants.size(); index++) {

@@ -39,8 +39,7 @@ bool c_lr_symbol::operator!=(const c_lr_symbol &other) const {
 	return !(*this == other);
 }
 
-c_lr_symbol_set::c_lr_symbol_set() {
-}
+c_lr_symbol_set::c_lr_symbol_set() {}
 
 bool c_lr_symbol_set::add_symbol(const c_lr_symbol &symbol) {
 	for (size_t index = 0; index < m_symbols.size(); index++) {
@@ -81,6 +80,7 @@ void c_lr_production_set::initialize(uint16 terminal_count, uint16 nonterminal_c
 	m_terminal_count = terminal_count;
 	m_nonterminal_count = nonterminal_count;
 	m_productions.clear();
+	m_terminal_precedence.resize(terminal_count, 0);
 	m_terminal_associativity.resize(terminal_count, e_associativity::k_none);
 }
 
@@ -89,7 +89,11 @@ void c_lr_production_set::add_production(const s_lr_production &production) {
 	m_productions.push_back(production);
 }
 
-void c_lr_production_set::set_terminal_associativity(uint16 terminal_index, e_associativity associativity) {
+void c_lr_production_set::set_terminal_precedence_and_associativity(
+	uint16 terminal_index,
+	int32 precedence,
+	e_associativity associativity) {
+	m_terminal_precedence[terminal_index] = precedence;
 	m_terminal_associativity[terminal_index] = associativity;
 }
 
@@ -99,6 +103,10 @@ size_t c_lr_production_set::get_production_count() const {
 
 const s_lr_production &c_lr_production_set::get_production(size_t index) const {
 	return m_productions[index];
+}
+
+int32 c_lr_production_set::get_terminal_precedence(uint16 terminal_index) const {
+	return m_terminal_precedence[terminal_index];
 }
 
 c_lr_production_set::e_associativity c_lr_production_set::get_terminal_associativity(uint16 terminal_index) const {
@@ -189,8 +197,7 @@ bool s_lr_item::operator!=(const s_lr_item &other) const {
 	return !(*this == other);
 }
 
-c_lr_item_set::c_lr_item_set() {
-}
+c_lr_item_set::c_lr_item_set() {}
 
 bool c_lr_item_set::add_item(const s_lr_item &item) {
 	for (size_t index = 0; index < m_items.size(); index++) {
@@ -318,7 +325,7 @@ void c_lr_action_goto_table::add_state() {
 	m_goto_table.resize(m_goto_table.size() + m_production_set->get_nonterminal_count(), k_invalid_state_index);
 }
 
-e_lr_conflict c_lr_action_goto_table::set_action(uint32 state_index, uint16 terminal_index, c_lr_action action) {
+s_lr_conflict c_lr_action_goto_table::set_action(uint32 state_index, uint16 terminal_index, c_lr_action action) {
 	wl_assert(valid_index(state_index, get_state_count()));
 	wl_assert(valid_index(terminal_index, m_production_set->get_terminal_count()));
 	wl_assert(action.get_action_type() != e_lr_action_type::k_invalid);
@@ -334,7 +341,11 @@ e_lr_conflict c_lr_action_goto_table::set_action(uint32 state_index, uint16 term
 		// Solve shift-reduce conflict
 		resolved_action = try_resolve_shift_reduce_conflict(action, terminal_index, current_action);
 		if (resolved_action.action.get_action_type() == e_lr_action_type::k_invalid) {
-			return e_lr_conflict::k_shift_reduce;
+			s_lr_conflict result;
+			result.conflict = e_lr_conflict::k_shift_reduce;
+			result.terminal_index = terminal_index;
+			result.production_index = current_action.get_reduce_production_index();
+			return result;
 		}
 	} else if (action.get_action_type() == e_lr_action_type::k_reduce
 		&& current_action.get_action_type() == e_lr_action_type::k_shift) {
@@ -342,13 +353,21 @@ e_lr_conflict c_lr_action_goto_table::set_action(uint32 state_index, uint16 term
 		resolved_action =
 			try_resolve_shift_reduce_conflict(current_action, m_action_table[index].terminal_index, action);
 		if (resolved_action.action.get_action_type() == e_lr_action_type::k_invalid) {
-			return e_lr_conflict::k_shift_reduce;
+			s_lr_conflict result;
+			result.conflict = e_lr_conflict::k_shift_reduce;
+			result.terminal_index = m_action_table[index].terminal_index;
+			result.production_index = action.get_reduce_production_index();
+			return result;
 		}
 	} else if (action.get_action_type() == e_lr_action_type::k_reduce
 		&& current_action.get_action_type() == e_lr_action_type::k_reduce) {
 		resolved_action = try_resolve_reduce_reduce_conflict(action, current_action);
 		if (resolved_action.action.get_action_type() == e_lr_action_type::k_invalid) {
-			return e_lr_conflict::k_reduce_reduce;
+			s_lr_conflict result;
+			result.conflict = e_lr_conflict::k_reduce_reduce;
+			result.production_index_a = action.get_reduce_production_index();
+			result.production_index_b = current_action.get_reduce_production_index();
+			return result;
 		}
 	} else {
 		// Accept should never conflict, and shift-shift should never occur
@@ -358,7 +377,7 @@ e_lr_conflict c_lr_action_goto_table::set_action(uint32 state_index, uint16 term
 	}
 
 	m_action_table[index] = resolved_action;
-	return e_lr_conflict::k_none;
+	return { e_lr_conflict::k_none };
 }
 
 void c_lr_action_goto_table::set_goto(uint32 state_index, uint16 nonterminal_index, uint32 goto_index) {
@@ -425,7 +444,7 @@ c_lr_action_goto_table::s_action c_lr_action_goto_table::try_resolve_shift_reduc
 		m_production_set->get_terminal_associativity(shift_terminal_index);
 	int32 shift_terminal_precedence = shift_terminal_associativity == c_lr_production_set::e_associativity::k_none
 		? -1
-		: cast_integer_verify<int32>(shift_terminal_index);
+		: m_production_set->get_terminal_precedence(shift_terminal_index);
 	int32 reduce_precedence = m_production_set->get_production(reduce_action.get_reduce_production_index()).precedence;
 
 	// If either lacks precedence info, we have a conflict
@@ -470,14 +489,14 @@ c_lr_action_goto_table::s_action c_lr_action_goto_table::try_resolve_reduce_redu
 	return s_action();
 }
 
-e_lr_conflict c_lr_parser_generator::generate_lr_parser(
+s_lr_conflict c_lr_parser_generator::generate_lr_parser(
 	const s_grammar &grammar,
 	const char *output_filename_h,
 	const char *output_filename_inl) {
 	create_production_set(grammar);
 	compute_symbols_properties();
-	e_lr_conflict conflict = compute_item_sets();
-	if (conflict != e_lr_conflict::k_none) {
+	s_lr_conflict conflict = compute_item_sets();
+	if (conflict.conflict != e_lr_conflict::k_none) {
 		return conflict;
 	}
 
@@ -523,7 +542,15 @@ e_lr_conflict c_lr_parser_generator::generate_lr_parser(
 		visitor_class_generator.generate_class_declaration(file);
 		file << "\n";
 
-		file << "void initialize_" << grammar.grammar_name << "_parser(c_lr_parser &parser);\n";
+		file << "const char *get_" << grammar.grammar_name << "_terminal_string("
+			<< grammar.terminal_type_name << " terminal);\n";
+		file << "void initialize_" << grammar.grammar_name << "_parser(c_lr_parser &parser);\n\n";
+
+		// $TODO could restrict these to non-release builds
+		file << "const char *get_" << grammar.grammar_name << "_terminal_reflection_string("
+			<< grammar.terminal_type_name << " terminal);\n";
+		file << "const char *get_" << grammar.grammar_name << "_nonterminal_reflection_string("
+			<< grammar.nonterminal_type_name << " nonterminal);\n";
 	}
 
 	{
@@ -534,8 +561,24 @@ e_lr_conflict c_lr_parser_generator::generate_lr_parser(
 		m_action_goto_table.output_action_goto_tables(file);
 		m_production_set.output_productions(file);
 
+		file << "static constexpr const char *k_terminal_strings[] = {\n";
+		for (const s_grammar::s_terminal &terminal : grammar.terminals) {
+			if (terminal.string.empty()) {
+				file << "\tnullptr,\n";
+			} else {
+				file << "\t\"" << terminal.string.c_str() << "\",\n";
+			}
+		}
+		file << "};\n\n";
+
 		visitor_class_generator.generate_class_definition(file);
 		file << "\n";
+
+		file << "const char *get_" << grammar.grammar_name << "_terminal_string("
+			<< grammar.terminal_type_name << " terminal) {\n";
+		file << "\twl_assert(valid_enum_index(terminal));\n";
+		file << "\treturn k_terminal_strings[enum_index(terminal)];\n";
+		file << "}\n\n";
 
 		file << "void initialize_" << grammar.grammar_name << "_parser(c_lr_parser &parser) {\n";
 		file << "\tparser.initialize(\n";
@@ -545,10 +588,46 @@ e_lr_conflict c_lr_parser_generator::generate_lr_parser(
 		file << "\t\tc_wrapped_array<const s_lr_production>::construct(k_productions),\n";
 		file << "\t\tc_wrapped_array<const c_lr_action>::construct(k_lr_action_table),\n";
 		file << "\t\tc_wrapped_array<const uint32>::construct(k_lr_goto_table));\n";
+		file << "}\n\n";
+
+		file << "static constexpr const char *k_terminal_reflection_strings[] = {\n";
+		for (const s_grammar::s_terminal &terminal : grammar.terminals) {
+			std::string value = terminal.value;
+			for (size_t i = 0; i < value.size(); i++) {
+				if (value[i] == '_') {
+					value[i] = '-';
+				}
+			}
+			file << "\t\"" << value << "\",\n";
+		}
+		file << "};\n\n";
+
+		file << "static constexpr const char *k_nonterminal_reflection_strings[] = {\n";
+		for (const s_grammar::s_nonterminal &nonterminal : grammar.nonterminals) {
+			std::string value = nonterminal.value;
+			for (size_t i = 0; i < value.size(); i++) {
+				if (value[i] == '_') {
+					value[i] = '-';
+				}
+			}
+			file << "\t\"" << value << "\",\n";
+		}
+		file << "};\n\n";
+
+		file << "const char *get_" << grammar.grammar_name << "_terminal_reflection_string("
+			<< grammar.terminal_type_name << " terminal) {\n";
+		file << "\twl_assert(valid_enum_index(terminal));\n";
+		file << "\treturn k_terminal_reflection_strings[enum_index(terminal)];\n";
+		file << "}\n\n";
+
+		file << "const char *get_" << grammar.grammar_name << "_nonterminal_reflection_string("
+			<< grammar.nonterminal_type_name << " nonterminal) {\n";
+		file << "\twl_assert(valid_enum_index(nonterminal));\n";
+		file << "\treturn k_nonterminal_reflection_strings[enum_index(nonterminal)];\n";
 		file << "}\n";
 	}
 
-	return e_lr_conflict::k_none;
+	return { e_lr_conflict::k_none };
 }
 
 void c_lr_parser_generator::create_production_set(const s_grammar &grammar) {
@@ -567,25 +646,32 @@ void c_lr_parser_generator::create_production_set(const s_grammar &grammar) {
 			"Associativity mismatch");
 		c_lr_production_set::e_associativity associativity =
 			static_cast<c_lr_production_set::e_associativity>(grammar.terminals[terminal_index].associativity);
-		m_production_set.set_terminal_associativity(cast_integer_verify<uint16>(terminal_index), associativity);
+		m_production_set.set_terminal_precedence_and_associativity(
+			cast_integer_verify<uint16>(terminal_index),
+			grammar.terminals[terminal_index].precedence,
+			associativity);
 	}
 
 	for (const s_grammar::s_rule &rule : grammar.rules) {
 		s_lr_production production;
 		production.precedence = -1;
 		production.lhs = c_lr_symbol(false, cast_integer_verify<uint16>(rule.nonterminal_index));
+
+		if (!rule.precedence_override_terminal.empty()) {
+			production.precedence = grammar.terminals[rule.precedence_override_terminal_index].precedence;
+		}
+
 		for (const s_grammar::s_rule_component &component : rule.components) {
 			production.rhs.push_back(
 				c_lr_symbol(
 					component.is_terminal,
 					cast_integer_verify<uint16>(component.terminal_or_nonterminal_index)));
-			// Precedence of a production is determined by the leftmost terminal that has associativity data. The
-			// precedence of a terminal is equal to its index in the production list.
-			if (!production.has_precedence() && component.is_terminal) {
-				s_grammar::e_associativity associativity =
-					grammar.terminals[component.terminal_or_nonterminal_index].associativity;
-				if (associativity != s_grammar::e_associativity::k_none) {
-					production.precedence = cast_integer_verify<int32>(component.terminal_or_nonterminal_index);
+
+			// Precedence of a production is determined by the leftmost terminal that has associativity data
+			if (rule.precedence_override_terminal.empty() && !production.has_precedence() && component.is_terminal) {
+				const s_grammar::s_terminal &terminal = grammar.terminals[component.terminal_or_nonterminal_index];
+				if (terminal.associativity != s_grammar::e_associativity::k_none) {
+					production.precedence = terminal.precedence;
 				}
 			}
 		}
@@ -797,7 +883,7 @@ c_lr_symbol_set c_lr_parser_generator::compute_symbol_string_first_set(const c_l
 	return result;
 }
 
-e_lr_conflict c_lr_parser_generator::compute_item_sets() {
+s_lr_conflict c_lr_parser_generator::compute_item_sets() {
 	m_action_goto_table.initialize(&m_production_set);
 
 	// Create the initial item set
@@ -857,12 +943,12 @@ e_lr_conflict c_lr_parser_generator::compute_item_sets() {
 								item_production.get_rhs_symbol_or_epsilon(item.pointer_index);
 
 							if (symbol_after_pointer == symbol) {
-								e_lr_conflict conflict = m_action_goto_table.set_action(
+								s_lr_conflict conflict = m_action_goto_table.set_action(
 									item_set_index,
 									symbol.get_index(),
 									c_lr_action(e_lr_action_type::k_shift, match_index));
 
-								if (conflict != e_lr_conflict::k_none) {
+								if (conflict.conflict != e_lr_conflict::k_none) {
 									return conflict;
 								}
 							}
@@ -892,22 +978,22 @@ e_lr_conflict c_lr_parser_generator::compute_item_sets() {
 					wl_assert(item_production.rhs[0] == c_lr_symbol(false, 0)); // Should point to the first "real" rule
 					wl_assert(item.lookahead == c_lr_symbol(true, m_end_of_input_terminal_index));
 
-					e_lr_conflict conflict = m_action_goto_table.set_action(
+					s_lr_conflict conflict = m_action_goto_table.set_action(
 						item_set_index,
 						m_end_of_input_terminal_index,
 						c_lr_action(e_lr_action_type::k_accept));
 
-					if (conflict != e_lr_conflict::k_none) {
+					if (conflict.conflict != e_lr_conflict::k_none) {
 						return conflict;
 					}
 				} else {
 					// This is a reduce action
-					e_lr_conflict conflict = m_action_goto_table.set_action(
+					s_lr_conflict conflict = m_action_goto_table.set_action(
 						item_set_index,
 						item.lookahead.get_index(),
 						c_lr_action(e_lr_action_type::k_reduce, cast_integer_verify<uint32>(item.production_index)));
 
-					if (conflict != e_lr_conflict::k_none) {
+					if (conflict.conflict != e_lr_conflict::k_none) {
 						return conflict;
 					}
 				}
@@ -916,7 +1002,7 @@ e_lr_conflict c_lr_parser_generator::compute_item_sets() {
 	}
 
 	wl_assert(m_item_sets.size() == m_action_goto_table.get_state_count());
-	return e_lr_conflict::k_none;
+	return { e_lr_conflict::k_none };
 }
 
 c_lr_item_set c_lr_parser_generator::compute_closure(const c_lr_item_set &item_set) const {

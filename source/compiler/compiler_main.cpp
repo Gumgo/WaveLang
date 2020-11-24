@@ -26,12 +26,10 @@ int main(int argc, char **argv) {
 	register_native_modules(true);
 
 	std::vector<void *> library_contexts(c_native_module_registry::get_native_module_library_count(), nullptr);
-	for (uint32 library_index = 0;
-		library_index < c_native_module_registry::get_native_module_library_count();
-		library_index++) {
-		const s_native_module_library &library = c_native_module_registry::get_native_module_library(library_index);
+	for (h_native_module_library library_handle : c_native_module_registry::iterate_native_module_libraries()) {
+		const s_native_module_library &library = c_native_module_registry::get_native_module_library(library_handle);
 		if (library.compiler_initializer) {
-			library_contexts[library_index] = library.compiler_initializer();
+			library_contexts[library_handle.get_data()] = library.compiler_initializer();
 		}
 	}
 
@@ -92,15 +90,12 @@ int main(int argc, char **argv) {
 	for (int32 arg = first_file_argument_index; arg < argc; arg++) {
 		std::cout << "Compiling '" << argv[arg] << "'\n";
 		c_instrument instrument;
-		s_compiler_result compile_result = c_compiler::compile(
-			c_wrapped_array<void *>(
-				library_contexts.empty() ? nullptr : &library_contexts.front(),
-				library_contexts.size()),
-			".\\",
+		bool compile_result = c_compiler::compile(
+			c_wrapped_array<void *>(library_contexts),
 			argv[arg],
 			&instrument);
 
-		if (compile_result.result == e_compiler_result::k_success) {
+		if (compile_result) {
 			std::string fname_no_ext = argv[arg];
 			// Add or replace extension
 			size_t last_slash = fname_no_ext.find_last_of('/');
@@ -164,12 +159,10 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	for (uint32 library_index = 0;
-		library_index < c_native_module_registry::get_native_module_library_count();
-		library_index++) {
-		const s_native_module_library &library = c_native_module_registry::get_native_module_library(library_index);
+	for (h_native_module_library library_handle : c_native_module_registry::iterate_native_module_libraries()) {
+		const s_native_module_library &library = c_native_module_registry::get_native_module_library(library_handle);
 		if (library.compiler_deinitializer) {
-			library.compiler_deinitializer(library_contexts[library_index]);
+			library.compiler_deinitializer(library_contexts[library_handle.get_data()]);
 		}
 	}
 

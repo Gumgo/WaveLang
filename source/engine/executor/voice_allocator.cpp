@@ -6,11 +6,9 @@
 
 static uint32 compute_sample_offset(real64 timestamp_sec, uint32 sample_rate, uint32 frame_count);
 
-c_voice_allocator::c_voice_allocator() {
-}
+c_voice_allocator::c_voice_allocator() {}
 
-c_voice_allocator::~c_voice_allocator() {
-}
+c_voice_allocator::~c_voice_allocator() {}
 
 void c_voice_allocator::initialize(uint32 max_voices, bool has_fx, bool activate_fx_immediately) {
 	wl_assert(max_voices > 0);

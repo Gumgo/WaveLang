@@ -4,6 +4,9 @@
 
 #include "engine/task_function.h"
 
+#include "execution_graph/native_module_registry.h"
+
+
 // $TODO $HANDLE add h_task_function and h_task_function_library
 static constexpr uint32 k_invalid_task_function_index = static_cast<uint32>(-1);
 
@@ -31,5 +34,5 @@ public:
 	static uint32 get_task_function_index(s_task_function_uid task_function_uid);
 	static const s_task_function &get_task_function(uint32 index);
 
-	static s_task_function_uid get_task_function_mapping(uint32 native_module_index);
+	static s_task_function_uid get_task_function_mapping(h_native_module native_module_handle);
 };

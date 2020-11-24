@@ -71,7 +71,7 @@ const c_ast_node *c_ast_node_scope::get_child(size_t index) const {
 c_ast_node_module_declaration::c_ast_node_module_declaration()
 	: c_ast_node(e_ast_node_type::k_module_declaration) {
 	m_is_native = false;
-	m_native_module_index = static_cast<uint32>(-1);
+	m_native_module_handle = h_native_module::invalid();
 	m_return_type = c_ast_data_type(e_ast_primitive_type::k_void);
 	m_scope = nullptr;
 }
@@ -127,14 +127,14 @@ bool c_ast_node_module_declaration::get_is_native() const {
 	return m_is_native;
 }
 
-void c_ast_node_module_declaration::set_native_module_index(uint32 native_module_index) {
+void c_ast_node_module_declaration::set_native_module_handle(h_native_module native_module_handle) {
 	wl_assert(m_is_native);
-	m_native_module_index = native_module_index;
+	m_native_module_handle = native_module_handle;
 }
 
-uint32 c_ast_node_module_declaration::get_native_module_index() const {
+h_native_module c_ast_node_module_declaration::get_native_module_handle() const {
 	wl_assert(m_is_native);
-	return m_native_module_index;
+	return m_native_module_handle;
 }
 
 void c_ast_node_module_declaration::set_name(const std::string &name) {

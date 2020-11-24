@@ -1,0 +1,35 @@
+// comment
+
+grammar_name: my_grammar;
+
+include: "path.h";
+
+terminal_type_name: "e_terminal";
+terminal_context_type: "s_token";
+terminal_value_prefix: k_;
+terminals: {
+	token_a;
+	token_b("token_string");
+	token_c(left);
+	token_d(right);
+	token_e(nonassoc);
+	precedence_group: {
+		token_f(left, "f");
+		token_g(left, "g");
+	}
+}
+
+nonterminal_type_name: "e_nonterminal";
+nonterminal_value_prefix: k_;
+nonterminals: {
+	nonterminal_a: {
+		token_a nonterminal_b token_c;
+		token_d nonterminal_b token_e -> function_to_call;
+		token_f(f) nonterminal_b(b) token_g(g) -> function_with_args;
+	}
+
+	nonterminal_b("c_nonterminal_b *"): {
+		. -> end_of_list; // Empty rule
+		nonterminal_b(list_child) token_a(item) -> add_item_to_list;
+	}
+}

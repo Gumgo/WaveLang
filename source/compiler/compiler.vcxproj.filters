@@ -8,46 +8,222 @@
     <ClInclude Include="compiler_utility.h" />
     <ClInclude Include="execution_graph_builder.h" />
     <ClInclude Include="execution_graph_optimizer.h" />
-    <ClInclude Include="instrument_globals_parser.h" />
-    <ClInclude Include="lexer.h" />
     <ClInclude Include="lr_parser.h" />
-    <ClInclude Include="parser.h" />
     <ClInclude Include="preprocessor.h" />
     <ClInclude Include="ast.h" />
     <ClInclude Include="getopt\getopt.h">
       <Filter>getopt</Filter>
     </ClInclude>
     <ClInclude Include="token.h" />
+    <ClInclude Include="compiler_context.h" />
+    <ClInclude Include="source_file.h" />
+    <ClInclude Include="ast\node_scope.h">
+      <Filter>ast</Filter>
+    </ClInclude>
+    <ClInclude Include="ast\nodes.h">
+      <Filter>ast</Filter>
+    </ClInclude>
+    <ClInclude Include="ast\node.h">
+      <Filter>ast</Filter>
+    </ClInclude>
+    <ClInclude Include="ast\node_declaration.h">
+      <Filter>ast</Filter>
+    </ClInclude>
+    <ClInclude Include="ast\node_module_declaration.h">
+      <Filter>ast</Filter>
+    </ClInclude>
+    <ClInclude Include="ast\data_type.h">
+      <Filter>ast</Filter>
+    </ClInclude>
+    <ClInclude Include="ast\node_scope_item.h">
+      <Filter>ast</Filter>
+    </ClInclude>
+    <ClInclude Include="ast\node_value_declaration.h">
+      <Filter>ast</Filter>
+    </ClInclude>
+    <ClInclude Include="ast\node_expression.h">
+      <Filter>ast</Filter>
+    </ClInclude>
+    <ClInclude Include="ast\node_expression_placeholder.h">
+      <Filter>ast</Filter>
+    </ClInclude>
+    <ClInclude Include="ast\node_access.h">
+      <Filter>ast</Filter>
+    </ClInclude>
+    <ClInclude Include="ast\node_literal.h">
+      <Filter>ast</Filter>
+    </ClInclude>
+    <ClInclude Include="ast\node_module_call.h">
+      <Filter>ast</Filter>
+    </ClInclude>
+    <ClInclude Include="ast\node_array.h">
+      <Filter>ast</Filter>
+    </ClInclude>
+    <ClInclude Include="ast\node_module_declaration_argument.h">
+      <Filter>ast</Filter>
+    </ClInclude>
+    <ClInclude Include="ast\node_module_call_argument.h">
+      <Filter>ast</Filter>
+    </ClInclude>
+    <ClInclude Include="tracked_scope.h" />
+    <ClInclude Include="ast\node_declaration_reference.h">
+      <Filter>ast</Filter>
+    </ClInclude>
+    <ClInclude Include="ast\node_namespace_declaration.h">
+      <Filter>ast</Filter>
+    </ClInclude>
+    <ClInclude Include="ast\node_convert.h">
+      <Filter>ast</Filter>
+    </ClInclude>
+    <ClInclude Include="ast\node_if_statement.h">
+      <Filter>ast</Filter>
+    </ClInclude>
+    <ClInclude Include="ast\node_for_loop.h">
+      <Filter>ast</Filter>
+    </ClInclude>
+    <ClInclude Include="ast\node_return_statement.h">
+      <Filter>ast</Filter>
+    </ClInclude>
+    <ClInclude Include="ast\node_expression_statement.h">
+      <Filter>ast</Filter>
+    </ClInclude>
+    <ClInclude Include="ast\node_assignment_statement.h">
+      <Filter>ast</Filter>
+    </ClInclude>
+    <ClInclude Include="components\instrument_globals_parser.h">
+      <Filter>components</Filter>
+    </ClInclude>
+    <ClInclude Include="components\lexer.h">
+      <Filter>components</Filter>
+    </ClInclude>
+    <ClInclude Include="components\parser.h">
+      <Filter>components</Filter>
+    </ClInclude>
+    <ClInclude Include="components\ast_builder.h">
+      <Filter>components</Filter>
+    </ClInclude>
+    <ClInclude Include="components\ast_builder_types.h">
+      <Filter>components</Filter>
+    </ClInclude>
+    <ClInclude Include="components\importer.h">
+      <Filter>components</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ast_data_type.cpp" />
     <ClCompile Include="ast_validator.cpp" />
     <ClCompile Include="compiler.cpp" />
     <ClCompile Include="compiler_main.cpp" />
-    <ClCompile Include="compiler_utility.cpp" />
     <ClCompile Include="execution_graph_builder.cpp" />
     <ClCompile Include="execution_graph_optimizer.cpp" />
-    <ClCompile Include="instrument_globals_parser.cpp" />
-    <ClCompile Include="lexer.cpp" />
     <ClCompile Include="lr_parser.cpp" />
-    <ClCompile Include="parser.cpp" />
     <ClCompile Include="preprocessor.cpp" />
     <ClCompile Include="ast.cpp" />
     <ClCompile Include="ast_builder.cpp" />
     <ClCompile Include="getopt\getopt.c">
       <Filter>getopt</Filter>
     </ClCompile>
+    <ClCompile Include="compiler_context.cpp" />
+    <ClCompile Include="wavelang_grammar.cpp" />
+    <ClCompile Include="token.cpp" />
+    <ClCompile Include="ast\node.cpp">
+      <Filter>ast</Filter>
+    </ClCompile>
+    <ClCompile Include="ast\node_declaration.cpp">
+      <Filter>ast</Filter>
+    </ClCompile>
+    <ClCompile Include="ast\node_module_declaration.cpp">
+      <Filter>ast</Filter>
+    </ClCompile>
+    <ClCompile Include="ast\node_scope.cpp">
+      <Filter>ast</Filter>
+    </ClCompile>
+    <ClCompile Include="ast\data_type.cpp">
+      <Filter>ast</Filter>
+    </ClCompile>
+    <ClCompile Include="ast\node_scope_item.cpp">
+      <Filter>ast</Filter>
+    </ClCompile>
+    <ClCompile Include="ast\node_value_declaration.cpp">
+      <Filter>ast</Filter>
+    </ClCompile>
+    <ClCompile Include="ast\node_expression.cpp">
+      <Filter>ast</Filter>
+    </ClCompile>
+    <ClCompile Include="ast\node_expression_placeholder.cpp">
+      <Filter>ast</Filter>
+    </ClCompile>
+    <ClCompile Include="ast\node_access.cpp">
+      <Filter>ast</Filter>
+    </ClCompile>
+    <ClCompile Include="ast\node_literal.cpp">
+      <Filter>ast</Filter>
+    </ClCompile>
+    <ClCompile Include="ast\node_module_call.cpp">
+      <Filter>ast</Filter>
+    </ClCompile>
+    <ClCompile Include="ast\node_array.cpp">
+      <Filter>ast</Filter>
+    </ClCompile>
+    <ClCompile Include="ast\node_module_declaration_argument.cpp">
+      <Filter>ast</Filter>
+    </ClCompile>
+    <ClCompile Include="ast\node_module_call_argument.cpp">
+      <Filter>ast</Filter>
+    </ClCompile>
+    <ClCompile Include="tracked_scope.cpp" />
+    <ClCompile Include="ast\node_declaration_reference.cpp">
+      <Filter>ast</Filter>
+    </ClCompile>
+    <ClCompile Include="ast\node_namespace_declaration.cpp">
+      <Filter>ast</Filter>
+    </ClCompile>
+    <ClCompile Include="ast\node_convert.cpp">
+      <Filter>ast</Filter>
+    </ClCompile>
+    <ClCompile Include="ast\node_if_statement.cpp">
+      <Filter>ast</Filter>
+    </ClCompile>
+    <ClCompile Include="ast\node_for_loop.cpp">
+      <Filter>ast</Filter>
+    </ClCompile>
+    <ClCompile Include="ast\node_return_statement.cpp">
+      <Filter>ast</Filter>
+    </ClCompile>
+    <ClCompile Include="ast\node_expression_statement.cpp">
+      <Filter>ast</Filter>
+    </ClCompile>
+    <ClCompile Include="ast\node_assignment_statement.cpp">
+      <Filter>ast</Filter>
+    </ClCompile>
+    <ClCompile Include="components\lexer.cpp">
+      <Filter>components</Filter>
+    </ClCompile>
+    <ClCompile Include="components\parser.cpp">
+      <Filter>components</Filter>
+    </ClCompile>
+    <ClCompile Include="components\ast_builder.cpp">
+      <Filter>components</Filter>
+    </ClCompile>
+    <ClCompile Include="components\importer.cpp">
+      <Filter>components</Filter>
+    </ClCompile>
+    <ClCompile Include="components\instrument_globals_parser.cpp">
+      <Filter>components</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="compiler_utility.inl" />
     <None Include="SConscript" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="parser_rules.txt" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="getopt">
       <UniqueIdentifier>{ac4eb251-0933-4901-a463-84302e3f7dd8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ast">
+      <UniqueIdentifier>{2217f3da-2d0d-49f4-ace8-e0bd8cf95f4e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="components">
+      <UniqueIdentifier>{d30f01a6-6508-4ac4-bd73-f02023cde0a0}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

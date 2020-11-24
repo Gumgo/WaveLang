@@ -1,11 +1,11 @@
 #include "common/common.h"
 #include "common/math/floating_point.h"
+#include "common/utility/file_utility.h"
 
 #include "parser_generator/grammar_lexer.h"
 #include "parser_generator/grammar_parser.h"
 #include "parser_generator/lr_parser_generator.h"
 
-#include <fstream>
 #include <iostream>
 
 int main(int argc, char **argv) {
@@ -21,35 +21,29 @@ int main(int argc, char **argv) {
 	const char *parser_output_filename_inl = argv[3];
 
 	std::vector<char> source;
-	{
-		std::ifstream grammar_file(grammar_filename, std::ios::binary | std::ios::ate);
+	e_read_full_file_result read_result = read_full_file(grammar_filename, source);
+	switch (read_result) {
+	case e_read_full_file_result::k_success:
+		break;
 
-		if (!grammar_file.is_open()) {
-			std::cerr << "Failed to open grammar file '" << grammar_filename << "'\n";
-			return -1;
-		}
+	case e_read_full_file_result::k_failed_to_open:
+		std::cerr << "Failed to open grammar file '" << grammar_filename << "'\n";
+		return -1;
 
-		std::streampos full_file_size = grammar_file.tellg();
-		grammar_file.seekg(0);
+	case e_read_full_file_result::k_failed_to_read:
+		std::cerr << "Failed to read grammar file '" << grammar_filename << "'\n";
+		return -1;
 
-		// cast_integer_verify doesn't work with std::streampos
-		if (full_file_size > static_cast<std::streampos>(std::numeric_limits<int32>::max())) {
-			std::cerr << "Grammar file '" << grammar_filename << "' is too big\n";
-			return -1;
-		}
+	case e_read_full_file_result::k_file_too_big:
+		std::cerr << "Grammar file '" << grammar_filename << "' is too big\n";
+		return -1;
 
-		size_t file_size = static_cast<size_t>(full_file_size);
-		wl_assert(static_cast<std::streampos>(file_size) == full_file_size);
-
-		source.resize(file_size + 1);
-		grammar_file.read(&source.front(), file_size);
-		source.back() = '\0';
-
-		if (grammar_file.fail()) {
-			std::cerr << "Failed to read source file '" << grammar_filename << "'\n";
-			return -1;
-		}
+	default:
+		wl_unreachable();
 	}
+
+	// Add null terminator so that we can detect EOF easily
+	source.push_back('\0');
 
 	std::vector<s_grammar_token> tokens;
 	c_grammar_lexer lexer(&source.front());
@@ -79,15 +73,27 @@ int main(int argc, char **argv) {
 	}
 
 	c_lr_parser_generator lr_parser_generator;
-	e_lr_conflict conflict = lr_parser_generator.generate_lr_parser(
+	s_lr_conflict conflict = lr_parser_generator.generate_lr_parser(
 		grammar,
 		parser_output_filename_h,
 		parser_output_filename_inl);
-	if (conflict == e_lr_conflict::k_shift_reduce) {
-		std::cerr << "Shift-reduce conflict encountered";
+	if (conflict.conflict == e_lr_conflict::k_shift_reduce) {
+		const std::string function = grammar.rules[conflict.production_index].function;
+		std::cerr << "Shift-reduce conflict encountered between terminal '"
+			<< grammar.terminals[conflict.terminal_index].value
+			<< "' and production for nonterminal '"
+			<< grammar.rules[conflict.production_index].nonterminal << "'"
+			<< (function.empty() ? "" : " (" + function + ")");
 		return -1;
-	} else if (conflict == e_lr_conflict::k_reduce_reduce) {
-		std::cerr << "Reduce-reduce conflict encountered";
+	} else if (conflict.conflict == e_lr_conflict::k_reduce_reduce) {
+		const std::string function_a = grammar.rules[conflict.production_index_a].function;
+		const std::string function_b = grammar.rules[conflict.production_index_b].function;
+		std::cerr << "Reduce-reduce conflict encountered between productions for nonterminals '"
+			<< grammar.rules[conflict.production_index_a].nonterminal << "'"
+			<< (function_a.empty() ? "" : " (" + function_a + ")")
+			<< " and '"
+			<< grammar.rules[conflict.production_index_b].nonterminal << "'"
+			<< (function_b.empty() ? "" : " (" + function_b + ")");
 		return -1;
 	}
 

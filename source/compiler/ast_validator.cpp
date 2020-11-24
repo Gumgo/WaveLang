@@ -828,8 +828,7 @@ public:
 		return true;
 	}
 
-	virtual void end_visit(const c_ast_node_repeat_loop *node) {
-	}
+	virtual void end_visit(const c_ast_node_repeat_loop *node) {}
 
 	virtual bool begin_visit(const c_ast_node_return_statement *node) {
 		s_scope &scope = m_scope_stack.front();

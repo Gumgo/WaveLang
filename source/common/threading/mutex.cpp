@@ -1,10 +1,8 @@
 #include "common/threading/mutex.h"
 
-c_mutex::c_mutex() {
-}
+c_mutex::c_mutex() {}
 
-c_mutex::~c_mutex() {
-}
+c_mutex::~c_mutex() {}
 
 void c_mutex::lock() {
 	m_mutex.lock();

@@ -50,8 +50,7 @@ public:
 
 	c_index_handle_iterator(c_data index_count)
 		: m_index_count(index_count)
-		, m_index(0) {
-	}
+		, m_index(0) {}
 
 	bool is_valid() const {
 		return m_index < m_index_count;
@@ -71,8 +70,7 @@ public:
 	class c_iterand {
 	public:
 		c_iterand(c_data index)
-			: m_index(index) {
-		}
+			: m_index(index) {}
 
 		bool operator!=(const c_iterand &other) const {
 			return m_index != other.m_index;

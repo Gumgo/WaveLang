@@ -6,6 +6,7 @@
 
 #include <cstring>
 #include <string>
+#include <string_view>
 
 inline bool string_compare_case_insensitive(const char *str_a, const char *str_b) {
 	for (size_t index = 0; true; index++) {
@@ -162,6 +163,14 @@ public:
 		return strcmp(get_string(), str) == 0;
 	}
 
+	bool operator==(const std::string &str) const {
+		return strcmp(get_string(), str.c_str()) == 0;
+	}
+
+	bool operator==(const std::string_view &str) const {
+		return str.compare(m_buffer) == 0;
+	}
+
 	template<size_t k_other_buffer_size>
 	bool operator!=(const c_static_string<k_other_buffer_size> &other) const {
 		return strcmp(get_string(), other.get_string()) != 0;
@@ -169,6 +178,14 @@ public:
 
 	bool operator!=(const char *str) const {
 		return strcmp(get_string(), str) != 0;
+	}
+
+	bool operator!=(const std::string &str) const {
+		return strcmp(get_string(), str.c_str()) != 0;
+	}
+
+	bool operator!=(const std::string_view &str) const {
+		return str.compare(m_buffer) != 0;
 	}
 
 	// Makes sure the string has a null terminator

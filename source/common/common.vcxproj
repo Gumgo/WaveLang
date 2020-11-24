@@ -19,6 +19,7 @@
     <ClInclude Include="cast_integer_verify.h" />
     <ClInclude Include="common.h" />
     <ClInclude Include="common_utilities.h" />
+    <ClInclude Include="enum.h" />
     <ClInclude Include="macros.h" />
     <ClInclude Include="math\avx_mathfun.h" />
     <ClInclude Include="math\floating_point.h" />
@@ -65,6 +66,7 @@
     <ClInclude Include="utility\sha1\SHA1.h" />
     <ClInclude Include="utility\stopwatch.h" />
     <ClInclude Include="utility\string_table.h" />
+    <ClInclude Include="utility\temporary_reference.h" />
     <ClInclude Include="wrapped_array.h" />
   </ItemGroup>
   <ItemGroup>

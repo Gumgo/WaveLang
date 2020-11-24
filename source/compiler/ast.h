@@ -5,6 +5,8 @@
 #include "compiler/ast_data_type.h"
 #include "compiler/compiler_utility.h"
 
+#include "execution_graph/native_module_registry.h"
+
 #include <vector>
 
 extern const char *k_voice_entry_point_name;
@@ -88,8 +90,8 @@ public:
 	void set_is_native(bool is_native);
 	bool get_is_native() const;
 
-	void set_native_module_index(uint32 native_module_index);
-	uint32 get_native_module_index() const;
+	void set_native_module_handle(h_native_module native_module_handle);
+	h_native_module get_native_module_handle() const;
 
 	void set_name(const std::string &name);
 	const std::string &get_name() const;
@@ -108,7 +110,7 @@ public:
 
 private:
 	bool m_is_native;												// Whether this module is native
-	uint32 m_native_module_index;									// Native module index, if native
+	h_native_module m_native_module_handle;							// Native module handle, if native
 	std::string m_name;												// Name of this module
 	c_ast_data_type m_return_type;									// Module return type
 	std::vector<c_ast_node_named_value_declaration *> m_arguments;	// List of arguments for this module

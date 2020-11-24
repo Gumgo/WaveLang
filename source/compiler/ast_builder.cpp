@@ -266,15 +266,16 @@ static std::vector<size_t> build_left_recursive_list(
 }
 
 static void build_native_module_declarations(c_ast_node_scope *global_scope) {
-	for (uint32 index = 0; index < c_native_module_registry::get_native_module_count(); index++) {
-		const s_native_module &native_module = c_native_module_registry::get_native_module(index);
-		uint32 library_index =
-			c_native_module_registry::get_native_module_library_index(native_module.uid.get_library_id());
-		const s_native_module_library &library = c_native_module_registry::get_native_module_library(library_index);
+	for (h_native_module handle
+		: c_index_handle_iterator<h_native_module>(c_native_module_registry::get_native_module_count())) {
+		const s_native_module &native_module = c_native_module_registry::get_native_module(handle);
+		h_native_module_library library_handle =
+			c_native_module_registry::get_native_module_library_handle(native_module.uid.get_library_id());
+		const s_native_module_library &library = c_native_module_registry::get_native_module_library(library_handle);
 
 		c_ast_node_module_declaration *module_declaration = new c_ast_node_module_declaration();
 		module_declaration->set_is_native(true);
-		module_declaration->set_native_module_index(index);
+		module_declaration->set_native_module_handle(handle);
 
 		if (c_native_module_registry::get_native_module_operator(native_module.uid) == e_native_operator::k_invalid) {
 			// Set the name to "library.module_name"
@@ -961,7 +962,7 @@ static c_ast_node_expression *build_expression(
 				result->set_expression_value(build_module_call(
 					parse_tree, tokens, parse_tree.get_node(child_node.get_child_index())));
 				expression_type_found = true;
-			} else if (node_is_type(child_node, e_token_type::k_constant_real)) {
+			} else if (node_is_type(child_node, e_token_type::k_literal_real)) {
 				try {
 					// This is a real
 					std::string string_value = tokens.tokens[child_node.get_token_index()].token_string.to_std_string();
@@ -975,7 +976,7 @@ static c_ast_node_expression *build_expression(
 				} catch (const std::out_of_range &) {
 					wl_vhalt("We should have already caught this in the lexer");
 				}
-			} else if (node_is_type(child_node, e_token_type::k_constant_bool)) {
+			} else if (node_is_type(child_node, e_token_type::k_literal_bool)) {
 				// This is a bool
 				std::string string_value = tokens.tokens[child_node.get_token_index()].token_string.to_std_string();
 				c_ast_node_constant *constant_node = new c_ast_node_constant();
@@ -987,9 +988,9 @@ static c_ast_node_expression *build_expression(
 				constant_node->set_bool_value(bool_value);
 				result->set_expression_value(constant_node);
 				expression_type_found = true;
-			} else if (node_is_type(child_node, e_token_type::k_constant_string)) {
+			} else if (node_is_type(child_node, e_token_type::k_literal_string)) {
 				// This is a string
-				c_compiler_string unescaped_string = tokens.tokens[child_node.get_token_index()].token_string;
+				std::string_view unescaped_string = tokens.tokens[child_node.get_token_index()].token_string;
 				// We should always successfully escape the string because the lexer will have failed if any of the
 				// escape sequences were invalid.
 				std::string escaped_string = compiler_utility::escape_string(unescaped_string);

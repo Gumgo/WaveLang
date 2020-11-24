@@ -1,5 +1,9 @@
 grammar_name: wavelang;
 
+include: "common/utility/temporary_reference.h";
+include: "compiler/ast/data_type.h";
+include: "compiler/ast/nodes.h";
+include: "compiler/components/ast_builder_types.h";
 include: "compiler/token.h";
 
 terminal_type_name: "e_token_type";
@@ -9,251 +13,415 @@ terminals: {
 	// Invalid token to indicate errors
 	invalid;
 
+	// Returned when the end of the file is reached
+	eof;
+
+	// Used to mark the beginning of the keywords section
+	keywords_start;
+
 	// Keywords
-	keyword_const;
-	keyword_in;
-	keyword_out;
-	keyword_module;
-	keyword_void;
-	keyword_real;
-	keyword_bool;
-	keyword_string;
-	keyword_return;
-	keyword_repeat;
+	keyword_import("import");
+	keyword_as("as");
+	keyword_private("private");
+	keyword_public("public");
+	keyword_const("const");
+	keyword_void("void");
+	keyword_real("real");
+	keyword_bool("bool");
+	keyword_string("string");
+	keyword_module("module");
+	keyword_in("in");
+	keyword_out("out");
+	keyword_return("return");
+	keyword_if("if");
+	keyword_else("else");
+	keyword_for("for");
+	keyword_break("break");
+	keyword_continue("continue");
+
+	// Used to mark the end of the keywords section
+	keywords_end;
 
 	// Identifiers start with [a-zA-Z_] followed by 0 or more [a-zA-Z0-9_]
 	identifier;
 
-	// Constants
-	constant_real;
-	constant_bool;
-	constant_string;
+	// Literals
+	literal_real;
+	literal_bool;
+	literal_string;
 
-	// Parentheses
-	left_parenthesis;
-	right_parenthesis;
+	// Used to mark the beginning of the symbols section
+	symbols_start;
 
 	// Braces
-	left_brace;
-	right_brace;
+	left_brace("{");
+	right_brace("}");
+
+	at("@");		// Used to force a native import
+	pound("#");		// Prefix to instrument globals
+	period(".");
+	comma(",");
+	colon(":");
+	semicolon(";");
+	question_mark("?");
+
+	// Assignment operators
+	assign("=");
+	assign_plus("+=");
+	assign_minus("-=");
+	assign_multiply("*=");
+	assign_divide("/=");
+	assign_modulo("%=");
+	assign_and("&=");
+	assign_or("|=");
+
+	or("||");
+	and("&&");
+	equal("==");
+	not_equal("!=");
+	less_than("<");
+	greater_than(">");
+	less_than_equal("<=");
+	greater_than_equal(">=");
+	plus("+");
+	minus("-");
+	multiply("*");
+	divide("/");
+	modulo("%");
+	not("!");
+
+	// Parentheses
+	left_parenthesis("(");
+	right_parenthesis(")");
 
 	// Brackets
-	left_bracket;
-	right_bracket;
+	left_bracket("[");
+	right_bracket("]");
 
-	comma;
-	semicolon;
-
-	// Operators
-	operator_assignment;
-	operator_addition;
-	operator_subtraction;
-	operator_multiplication;
-	operator_division;
-	operator_modulo;
-	operator_not;
-	operator_equal;
-	operator_not_equal;
-	operator_greater;
-	operator_less;
-	operator_greater_equal;
-	operator_less_equal;
-	operator_and;
-	operator_or;
-
-	// Comment tokens - should never be a result of the lexer
-	comment;
+	// Used to mark the end of the symbols section
+	symbols_end;
 }
 
 nonterminal_type_name: "e_parser_nonterminal";
 nonterminal_value_prefix: k_;
 nonterminals: {
-	start: {
-		global_scope -> temp_filler;
+	source_file: {
+		import_list instrument_global_list global_scope_item_list;
 	}
 
-	global_scope: {
-		global_scope_item_list;
-	}
+	// Imports:
 
-	global_scope_item_list: {
+	import_list: {
 		.;
-		global_scope_item_list global_scope_item;
+		import_list import -> import_list;
 	}
 
-	global_scope_item: {
-		module_declaration;
+	import: {
+		import_type import_path import_as semicolon -> import;
 	}
 
-	basic_type: {
-		keyword_real;
-		keyword_bool;
-		keyword_string;
+	import_type: {
+		keyword_import(location_token) -> normal_import_type;
+		at(location_token) keyword_import -> native_import_type;
 	}
 
-	array_type: {
-		keyword_real left_bracket right_bracket;
-		keyword_bool left_bracket right_bracket;
-		keyword_string left_bracket right_bracket;
+	// Import paths use the following rules:
+	// "a.b.c" - search from top-level source directory ($TODO add installed package location too)
+	// ".a.b.c" - search from current directory
+	// "..a.b.c" - search from parent directory (each additional . moves up the directory tree one level)
+	import_path: {
+		import_path_prefix_list import_path_component_list;
 	}
 
-	type: {
-		basic_type;
-		array_type;
-	}
-
-	type_or_void: {
-		basic_type;
-		array_type;
-		keyword_void;
-	}
-
-	module_declaration: {
-		keyword_module type_or_void identifier left_parenthesis module_declaration_arguments right_parenthesis scope;
-	}
-
-	module_declaration_arguments: {
+	import_path_prefix_list: {
 		.;
-		module_declaration_argument_list;
+		import_path_prefix_list period -> import_path_prefix_list;
 	}
 
-	module_declaration_argument_list: {
-		module_declaration_argument;
-		module_declaration_argument_list comma module_declaration_argument;
+	import_path_component_list: {
+		identifier(component) -> import_path_component_list;
+		import_path_component_list period identifier(component) -> import_path_component_list;
 	}
 
-	module_declaration_argument: {
-		module_declaration_argument_qualifier type identifier;
-	}
-
-	module_declaration_argument_qualifier: {
-		keyword_in;
-		keyword_out;
-	}
-
-	scope: {
-		left_brace scope_item_list right_brace;
-	}
-
-	scope_item_list: {
+	import_as: {
 		.;
-		scope_item_list scope_item;
+		keyword_as period -> import_as_local;
+		keyword_as import_as_component_list;
 	}
 
-	scope_item: {
-		scope;
-		named_value_declaration semicolon;
-		named_value_assignment semicolon;
-		module_return_statement semicolon;
-		repeat_loop;
-		expression semicolon;
+	// Similar to import paths but can only start with a single .
+	import_as_component_list: {
+		identifier(component) -> import_as_component_list;
+		import_as_component_list period identifier(component) -> import_as_component_list;
 	}
 
-	module_return_statement: {
-		keyword_return expression;
+	// Instrument globals
+
+	instrument_global_list: {
+		.;
+		instrument_global_list instrument_global;
 	}
 
-	named_value_declaration: {
-		type identifier;
-		type identifier expression_assignment;
+	instrument_global: {
+		pound identifier(command) instrument_global_parameter_list semicolon -> instrument_global;
 	}
 
-	named_value_assignment: {
-		expression expression_assignment;
+	instrument_global_parameter_list: {
+		.;
+		instrument_global_parameter_list instrument_global_parameter;
 	}
 
-	repeat_loop: {
-		keyword_repeat left_parenthesis expression right_parenthesis scope;
+	instrument_global_parameter: {
+		literal_real(parameter) -> instrument_global_real_parameter;
+		literal_bool(parameter) -> instrument_global_bool_parameter;
+		literal_string(parameter) -> instrument_global_string_parameter;
 	}
 
-	expression: {
-		expr_1;
+	// Global scope
+
+	global_scope("c_temporary_reference<c_AST_node_scope>"): {
+		global_scope_item_list(item_list) -> global_scope;
 	}
 
-	expression_assignment: {
-		operator_assignment expression;
+	global_scope_item_list("c_AST_node_scope *"): {
+		.;
+		global_scope_item_list(list_child) global_scope_item(item) -> global_scope_item_list;
 	}
 
-	expr_1: {
-		expr_1 operator_or expr_2;
-		expr_2;
+	global_scope_item("c_temporary_reference<c_AST_node_scope_item>"): {
+		// The global scope can only contain declarations
+		global_scope_item_visibility(visibility) value_declaration(value_declaration) semicolon -> global_scope_item_value_declaration;
+		global_scope_item_visibility(visibility) module_declaration(module_declaration) -> global_scope_item_module_declaration;
 	}
 
-	expr_2: {
-		expr_2 operator_and expr_3;
-		expr_3;
+	global_scope_item_visibility("e_ast_visibility"): {
+		. -> default_visibility;
+		keyword_private(visibility) -> visibility_specifier;
+		keyword_public(visibility) -> visibility_specifier;
 	}
 
-	expr_3: {
-		expr_3 operator_equal expr_4;
-		expr_3 operator_not_equal expr_4;
-		expr_4;
+	// Value declarations
+
+	value_declaration("c_temporary_reference<c_AST_node_value_declaration>"): {
+		value_declaration_without_initialization(declaration) -> forward_value_declaration;
+		value_declaration_data_type_name(declaration) assign expression(expression) -> value_declaration_with_initialization;
 	}
 
-	expr_4: {
-		expr_4 operator_greater expr_5;
-		expr_4 operator_less expr_5;
-		expr_4 operator_greater_equal expr_5;
-		expr_4 operator_less_equal expr_5;
-		expr_5;
+	value_declaration_without_initialization("c_temporary_reference<c_AST_node_value_declaration>"): {
+		value_declaration_data_type_name(declaration) -> value_declaration_without_initialization;
 	}
 
-	expr_5: {
-		expr_5 operator_addition expr_6;
-		expr_5 operator_subtraction expr_6;
-		expr_6;
+	value_declaration_data_type_name("c_temporary_reference<c_AST_node_value_declaration>"): {
+		qualified_data_type(data_type) identifier(name) -> value_declaration_data_type_name;
 	}
 
-	expr_6: {
-		expr_6 operator_multiplication expr_7;
-		expr_6 operator_division expr_7;
-		expr_6 operator_modulo expr_7;
-		expr_7;
+	// Module declarations
+
+	module_declaration("c_temporary_reference<c_AST_node_module_declaration>"): {
+		qualified_data_type(return_type) identifier(name) left_parenthesis module_declaration_argument_list(argument_list) right_parenthesis module_body(body) -> module_declaration;
 	}
 
-	expr_7: {
-		operator_addition expr_8;
-		operator_subtraction expr_8;
-		operator_not expr_8;
-		expr_8;
+	module_declaration_argument_list("c_AST_node_module_declaration *"): {
+		.;
+		module_declaration_nonempty_argument_list(argument_list) -> module_declaration_argument_list;
 	}
 
-	expr_8: {
-		expr_8 array_dereference;
-		expr_9;
+	module_declaration_nonempty_argument_list("c_AST_node_module_declaration *"): {
+		module_declaration_argument(argument) -> module_declaration_single_item_argument_list_item;
+		module_declaration_nonempty_argument_list(list_child) comma module_declaration_argument(argument) -> module_declaration_nonempty_argument_list_item;
 	}
 
-	expr_9: {
-		left_parenthesis expression right_parenthesis;
-		identifier;
-		module_call;
-		constant_real;
-		constant_bool;
-		constant_string;
-		constant_array;
+	module_declaration_argument("c_temporary_reference<c_AST_node_module_declaration_argument>"): {
+		argument_qualifier(argument_direction) value_declaration(value_declaration) -> module_declaration_argument;
 	}
 
-	module_call: {
-		identifier left_parenthesis right_parenthesis;
-		identifier left_parenthesis module_call_argument_list right_parenthesis;
+	argument_qualifier("s_value_with_source_location<e_AST_argument_direction>"): {
+		keyword_in(direction) -> argument_qualifier;
+		keyword_out(direction) -> argument_qualifier;
 	}
 
-	module_call_argument_list: {
-		expression;
-		module_call_argument_list comma expression;
+	// This exists so we can pre-construct the module's scope with the arguments
+	module_body("c_AST_node_module_declaration *"): {
+		left_brace(brace) scope(scope) right_brace -> module_body;
 	}
 
-	constant_array: {
-		array_type left_parenthesis right_parenthesis;
-		array_type left_parenthesis constant_array_list right_parenthesis;
+	// Data type
+
+	qualified_data_type("s_value_with_source_location<c_AST_qualified_data_type>"): {
+		qualifier(mutability) data_type(data_type) -> qualified_data_type;
 	}
 
-	constant_array_list: {
-		expression;
-		constant_array_list comma expression;
+	qualifier("s_value_with_source_location<e_AST_data_mutability>"): {
+		. -> no_qualifier;
+		keyword_const(const_keyword) -> const_qualifier;
+		keyword_const(const_keyword) question_mark -> dependent_const_qualifier;
 	}
 
-	array_dereference: {
-		left_bracket expression right_bracket;
+	data_type("s_value_with_source_location<c_AST_data_type>"): {
+		primitive_type(primitive_type) array_specifier(is_array) -> data_type;
+	}
+
+	primitive_type("s_value_with_source_location<e_AST_primitive_type>"): {
+		keyword_void(type) -> primitive_type;
+		keyword_real(type) -> primitive_type;
+		keyword_bool(type) -> primitive_type;
+		keyword_string(type) -> primitive_type;
+	}
+
+	array_specifier("bool"): {
+		. -> is_not_array;
+		left_bracket right_bracket -> is_array;
+	}
+
+	// Expressions
+
+	expression("c_temporary_reference<c_AST_node_expression>"): {
+		expr_1(expression) -> expression;
+	}
+
+	// Note: I ran into issues with precedence and associativity so I'm just doing it manually instead. Oh well.
+
+	expr_1("c_temporary_reference<c_AST_node_expression>"): {
+		expr_1(lhs) or(op) expr_2(rhs) -> binary_operator;
+		expr_2(expression) -> forward_expression;
+	}
+
+	expr_2("c_temporary_reference<c_AST_node_expression>"): {
+		expr_2(lhs) and(op) expr_3(rhs) -> binary_operator;
+		expr_3(expression) -> forward_expression;
+	}
+
+	expr_3("c_temporary_reference<c_AST_node_expression>"): {
+		expr_3(lhs) equal(op) expr_4(rhs) -> binary_operator;
+		expr_3(lhs) not_equal(op) expr_4(rhs) -> binary_operator;
+		expr_4(expression) -> forward_expression;
+	}
+
+	expr_4("c_temporary_reference<c_AST_node_expression>"): {
+		expr_4(lhs) less_than(op) expr_5(rhs) -> binary_operator;
+		expr_4(lhs) greater_than(op) expr_5(rhs) -> binary_operator;
+		expr_4(lhs) less_than_equal(op) expr_5(rhs) -> binary_operator;
+		expr_4(lhs) greater_than_equal(op) expr_5(rhs) -> binary_operator;
+		expr_5(expression) -> forward_expression;
+	}
+
+	expr_5("c_temporary_reference<c_AST_node_expression>"): {
+		expr_5(lhs) plus(op) expr_6(rhs) -> binary_operator;
+		expr_5(lhs) minus(op) expr_6(rhs) -> binary_operator;
+		expr_6(expression) -> forward_expression;
+	}
+
+	expr_6("c_temporary_reference<c_AST_node_expression>"): {
+		expr_6(lhs) multiply(op) expr_7(rhs) -> binary_operator;
+		expr_6(lhs) divide(op) expr_7(rhs) -> binary_operator;
+		expr_6(lhs) modulo(op) expr_7(rhs) -> binary_operator;
+		expr_7(expression) -> forward_expression;
+	}
+
+	expr_7("c_temporary_reference<c_AST_node_expression>"): {
+		plus(op) expr_8(rhs) -> unary_operator;
+		minus(op) expr_8(rhs) -> unary_operator;
+		not(op) expr_8(rhs) -> unary_operator;
+		expr_8(expression) -> forward_expression;
+	}
+
+	expr_8("c_temporary_reference<c_AST_node_expression>"): {
+		expr_8(lhs) left_bracket(op) expression(rhs) right_bracket -> binary_operator; // Array access can be treated as a binary operator
+		expr_8(module) left_parenthesis module_call_argument_list(argument_list) right_parenthesis -> module_call;
+		qualified_data_type(data_type) left_parenthesis expression(expression) right_parenthesis -> convert;
+		expr_8(lhs) period identifier(identifier) -> access;
+		identifier(identifier) -> identifier;
+		literal_real(literal) -> literal;
+		literal_bool(literal) -> literal;
+		literal_string(literal) -> literal;
+		left_brace(brace) left_bracket array_value_list(values) right_bracket right_brace -> array; // Note: {[]} syntax is used to avoid conflicts with type names (e.g. real[]) and scopes
+		left_parenthesis expression(expression) right_parenthesis -> forward_expression;
+	}
+
+	array_value_list("c_AST_node_array *"): {
+		.;
+		array_nonempty_value_list(value_list) -> array_value_list;
+	}
+
+	array_nonempty_value_list("c_AST_node_array *"): {
+		expression(value) -> array_single_item_value_list_item;
+		array_nonempty_value_list(list_child) comma expression(value) -> array_nonempty_value_list_item;
+	}
+
+	module_call_argument_list("c_AST_node_module_call *"): {
+		.;
+		module_call_nonempty_argument_list(argument_list) -> module_call_argument_list;
+	}
+
+	module_call_nonempty_argument_list("c_AST_node_module_call *"): {
+		module_call_argument(argument) -> module_call_single_item_argument_list_item;
+		module_call_nonempty_argument_list(list_child) comma module_call_argument(argument) -> module_call_nonempty_argument_list_item;
+	}
+
+	module_call_argument("c_temporary_reference<c_AST_node_module_call_argument>"): {
+		call_argument_qualifier(direction) expression(expression) -> module_call_unnamed_argument;
+		call_argument_qualifier(direction) identifier(name) assign expression(expression) -> module_call_named_argument;
+	}
+
+	call_argument_qualifier("s_value_with_source_location<e_AST_argument_direction>"): {
+		. -> in_call_argument_qualifier;
+		keyword_out(direction) -> out_call_argument_qualifier;
+	}
+
+	// Scope
+
+	scope("c_temporary_reference<c_AST_node_scope>"): {
+		scope_item_list(statement_list) -> scope;
+	}
+
+	scope_item_list("c_AST_node_scope *"): {
+		.;
+		scope_item_list(list_child) scope_item(scope_item) -> scope_item_list;
+	}
+
+	scope_item("c_temporary_reference<c_AST_node_scope_item>"): {
+		expression(expression) semicolon -> scope_item_expression;
+		value_declaration(value_declaration) semicolon -> scope_item_value_declaration;
+		expression(lhs) assignment(assignment_type) expression(rhs) semicolon -> scope_item_assignment;
+		keyword_return(return_keyword) semicolon -> scope_item_return_void_statement;
+		keyword_return(return_keyword) expression(expression) semicolon -> scope_item_return_statement;
+		if_statement(if_statement) -> scope_item_if_statement;
+		keyword_for(for_keyword) left_parenthesis for_loop_iterator(iterator) right_parenthesis left_brace(brace) scope(scope) right_brace -> scope_item_for_loop;
+		keyword_break(break_keyword) semicolon -> break_statement;
+		keyword_continue(continue_keyword) semicolon -> continue_statement;
+		left_brace(brace) scope(scope) right_brace -> scope_item_scope;
+	}
+
+	if_statement("c_temporary_reference<c_AST_node_if_statement>"): {
+		keyword_if left_parenthesis if_statement_expression(expression) right_parenthesis if_statement_scope(true_scope) -> if_statement;
+		keyword_if left_parenthesis if_statement_expression(expression) right_parenthesis if_statement_scope(true_scope) keyword_else if_statement_scope(false_scope) -> if_else_statement;
+		keyword_if left_parenthesis if_statement_expression(expression) right_parenthesis if_statement_scope(true_scope) keyword_else else_if(false_scope) -> if_else_statement;
+	}
+
+	if_statement_expression("c_temporary_reference<c_AST_node_expression>"): {
+		expression(expression) -> if_statement_expression;
+	}
+
+	if_statement_scope("c_temporary_reference<c_AST_node_scope>"): {
+		left_brace(brace) scope(scope) right_brace -> if_statement_scope;
+	}
+
+	else_if("c_temporary_reference<c_AST_node_scope>"): {
+		if_statement(if_statement) -> else_if;
+	}
+
+	for_loop_iterator("c_AST_node_for_loop *"): {
+		value_declaration_without_initialization(value) colon expression(range) -> for_loop_iterator;
+	}
+
+	assignment("s_value_with_source_location<e_native_operator>"): {
+		assign(op) -> assignment;
+		assign_plus(op) -> assignment;
+		assign_minus(op) -> assignment;
+		assign_multiply(op) -> assignment;
+		assign_divide(op) -> assignment;
+		assign_modulo(op) -> assignment;
+		assign_and(op) -> assignment;
+		assign_or(op) -> assignment;
 	}
 }

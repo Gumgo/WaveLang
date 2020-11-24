@@ -1,7 +1,6 @@
 #include "common/utility/string_table.h"
 
-c_string_table::c_string_table() {
-}
+c_string_table::c_string_table() {}
 
 void c_string_table::clear() {
 	m_table.clear();

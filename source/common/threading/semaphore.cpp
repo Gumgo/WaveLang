@@ -4,8 +4,7 @@ c_semaphore::c_semaphore() {
 	m_count = 0;
 }
 
-c_semaphore::~c_semaphore() {
-}
+c_semaphore::~c_semaphore() {}
 
 void c_semaphore::notify(uint32 count) {
 	wl_assert(count > 0);

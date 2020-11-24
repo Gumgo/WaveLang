@@ -124,8 +124,8 @@ s_compiler_result c_preprocessor::preprocess(
 						preprocessor_command_found = true;
 					} else if (preprocessor_command_found
 						&& (token.token_type == e_token_type::k_constant_real
-							|| token.token_type == e_token_type::k_constant_bool
-							|| token.token_type == e_token_type::k_constant_string)) {
+							|| token.token_type == e_token_type::k_literal_bool
+							|| token.token_type == e_token_type::k_literal_string)) {
 						// Only these token types are allowed in preprocessor commands
 						token.source_location.source_file_index = source_file_index;
 						token.source_location.line = line_number;
@@ -145,7 +145,7 @@ s_compiler_result c_preprocessor::preprocess(
 					}
 
 					line_remaining = line_remaining.advance(token.token_string.get_length());
-					if (token.token_type == e_token_type::k_constant_string) {
+					if (token.token_type == e_token_type::k_literal_string) {
 						// We need to also skip the quotes because they're not included in the string
 						line_remaining = line_remaining.advance(2);
 					}
@@ -225,7 +225,7 @@ static s_compiler_result preprocessor_command_import(
 	result.clear();
 
 	if (arguments.get_argument_count() != 1
-		|| arguments.get_argument(0).token_type != e_token_type::k_constant_string) {
+		|| arguments.get_argument(0).token_type != e_token_type::k_literal_string) {
 		result.result = e_compiler_result::k_preprocessor_error;
 		result.source_location = arguments.get_command().source_location;
 		result.message = "Invalid import command";

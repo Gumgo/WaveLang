@@ -1,5 +1,7 @@
 #include "parser_generator/visitor_class_generator.h"
 
+#include <unordered_set>
+
 c_visitor_class_generator::c_visitor_class_generator(const s_grammar &grammar)
 	: m_grammar(grammar) {
 	m_class_name = "c_" + m_grammar.grammar_name + "_lr_parse_tree_visitor";
@@ -8,26 +10,28 @@ c_visitor_class_generator::c_visitor_class_generator(const s_grammar &grammar)
 void c_visitor_class_generator::generate_class_declaration(std::ofstream &file) {
 	file << "class " << m_class_name << " : public c_lr_parse_tree_visitor {\n";
 	file << "public:\n";
-	file << "\t" << m_class_name << "(const c_lr_parse_tree &parse_tree, c_wrapped_array<"
+	file << "\t" << m_class_name << "(const c_lr_parse_tree &parse_tree, c_wrapped_array<const "
 		<< m_grammar.terminal_context_type << "> tokens);\n";
 	file << "\tvoid visit() override;\n";
 	file << "\n";
 	file << "protected:\n";
 
+	// Functions can be duplicated across multiple rules (all arguments are guaranteed to match). Keep track of which
+	// ones we've generated so we don't write out duplicates.
+	std::unordered_set<std::string> generated_functions;
+
 	// Declarations for all of the functions associated with rules
 	for (const s_grammar::s_rule &rule : m_grammar.rules) {
-		if (!rule.function.empty()) {
+		if (!rule.function.empty() && !generated_functions.contains(rule.function)) {
 			file << "\tvirtual bool enter_" << rule.function << "(";
 			output_rule_function_declaration_arguments(rule, file);
 			file << ") { return true; }\n";
 			file << "\tvirtual void exit_" << rule.function << "(";
 			output_rule_function_declaration_arguments(rule, file);
-			file << ") {}\n";
-		}
-	}
+			file << ") {}\n\n";
 
-	if (!m_grammar.rules.empty()) {
-		file << "\n";
+			generated_functions.insert(rule.function);
+		}
 	}
 
 	file << "\tbool enter_node(size_t node_index) override;\n";
@@ -46,7 +50,7 @@ void c_visitor_class_generator::generate_class_declaration(std::ofstream &file) 
 	file << ">;\n\n";
 
 	// List of tokens
-	file << "\tc_wrapped_array<" << m_grammar.terminal_context_type << "> m_tokens;\n";
+	file << "\tc_wrapped_array<const " << m_grammar.terminal_context_type << "> m_tokens;\n";
 
 	// This is a vector of contexts for each node
 	file << "\tstd::vector<t_context_variant> m_node_contexts;\n";
@@ -58,7 +62,7 @@ void c_visitor_class_generator::generate_class_declaration(std::ofstream &file) 
 }
 
 void c_visitor_class_generator::generate_class_definition(std::ofstream &file) {
-	file << m_class_name << "::" << m_class_name << "(const c_lr_parse_tree &parse_tree, c_wrapped_array<"
+	file << m_class_name << "::" << m_class_name << "(const c_lr_parse_tree &parse_tree, c_wrapped_array<const "
 		<< m_grammar.terminal_context_type << "> tokens)\n";
 	file << "\t: c_lr_parse_tree_visitor(parse_tree)\n";
 	file << "\t, m_tokens(tokens) {\n";
@@ -116,7 +120,7 @@ std::vector<c_visitor_class_generator::s_rule_function_argument> c_visitor_class
 
 	const s_grammar::s_nonterminal &nonterminal = m_grammar.nonterminals[rule.nonterminal_index];
 	if (!nonterminal.context_type.empty()) {
-		arguments.push_back({ e_argument_type::k_rule_nonterminal, nonterminal.context_type, nonterminal.value, 0 });
+		arguments.push_back({ e_argument_type::k_rule_nonterminal, nonterminal.context_type, "rule_head_context", 0 });
 	}
 
 	for (size_t index = 0; index < rule.components.size(); index++) {
@@ -126,7 +130,7 @@ std::vector<c_visitor_class_generator::s_rule_function_argument> c_visitor_class
 				arguments.push_back(
 					{
 						e_argument_type::k_terminal,
-						m_grammar.terminal_context_type,
+						"const " + m_grammar.terminal_context_type,
 						rule_component.argument,
 						index
 					});

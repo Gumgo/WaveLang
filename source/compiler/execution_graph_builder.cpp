@@ -389,15 +389,15 @@ public:
 		wl_assert(m_module_declaration == node);
 
 		if (node->get_is_native()) {
-			uint32 native_module_index = node->get_native_module_index();
-			const s_native_module &native_module = c_native_module_registry::get_native_module(native_module_index);
+			h_native_module native_module_handle = node->get_native_module_handle();
+			const s_native_module &native_module = c_native_module_registry::get_native_module(native_module_handle);
 
 			wl_assert((native_module.return_argument_index == k_invalid_native_module_argument_index)
 				|| (node->get_return_type() != c_ast_data_type(e_ast_primitive_type::k_void)));
 
 			// Create a native module call node
 			c_node_reference native_module_call_node_reference =
-				m_execution_graph->add_native_module_call_node(native_module_index);
+				m_execution_graph->add_native_module_call_node(native_module_handle);
 
 			if (native_module.return_argument_index != k_invalid_native_module_argument_index) {
 				wl_assert(native_module.argument_count == m_argument_node_references.size() + 1);
@@ -452,8 +452,7 @@ public:
 		}
 	}
 
-	virtual void end_visit(const c_ast_node_module_declaration *node) {
-	}
+	virtual void end_visit(const c_ast_node_module_declaration *node) {}
 
 	virtual bool begin_visit(const c_ast_node_named_value_declaration *node) {
 		add_identifier_to_scope(node->get_name(), node->get_data_type());
@@ -735,8 +734,7 @@ public:
 		return true;
 	}
 
-	virtual void end_visit(const c_ast_node_repeat_loop *node) {
-	}
+	virtual void end_visit(const c_ast_node_repeat_loop *node) {}
 
 	virtual bool begin_visit(const c_ast_node_expression *node) {
 		return true;

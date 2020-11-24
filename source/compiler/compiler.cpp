@@ -1,14 +1,18 @@
 #include "common/utility/file_utility.h"
 
 #include "compiler/ast.h"
-#include "compiler/ast_builder.h"
-#include "compiler/ast_validator.h"
 #include "compiler/compiler.h"
+#include "compiler/compiler_context.h"
+#include "compiler/components/ast_builder.h"
+#include "compiler/components/importer.h"
+#include "compiler/components/instrument_globals_parser.h"
+#include "compiler/components/lexer.h"
+#include "compiler/components/parser.h"
+
+// $TODO $COMPILER remove these imports
+#include "compiler/ast_validator.h"
 #include "compiler/execution_graph_builder.h"
 #include "compiler/execution_graph_optimizer.h"
-#include "compiler/instrument_globals_parser.h"
-#include "compiler/lexer.h"
-#include "compiler/parser.h"
 #include "compiler/preprocessor.h"
 
 #include "execution_graph/instrument.h"
@@ -19,50 +23,94 @@
 #include <memory>
 #include <vector>
 
+// $TODO $COMPILER remove, no longer needed
 static void output_error(const s_compiler_context &context, const s_compiler_result &result);
 
+// $TODO $COMPILER remove, no longer needed
 static s_compiler_result read_and_preprocess_source_file(
 	s_compiler_context &context,
 	size_t source_file_index);
 
+// $TODO $COMPILER remove, no longer needed
 static void fixup_source(std::vector<char> &source_inout);
 
-s_compiler_result c_compiler::compile(
+static bool read_source_file(c_compiler_context &context, h_compiler_source_file source_file_handle);
+
+bool c_compiler::compile(
 	c_wrapped_array<void *> native_module_library_contexts,
-	const char *root_path,
 	const char *source_filename,
 	c_instrument *instrument_out) {
-	wl_assert(root_path);
 	wl_assert(source_filename);
 	wl_assert(instrument_out);
 	wl_assert(instrument_out->get_instrument_variant_count() == 0);
 
-	s_compiler_result result;
-	result.clear();
+	c_compiler_context context(native_module_library_contexts);
 
-	s_compiler_context context;
-	context.native_module_library_contexts = native_module_library_contexts;
-	// Fix up the root path by adding a backslash if necessary
-	context.root_path = root_path;
-
-	if (!context.root_path.empty()
-		&& context.root_path.back() != '/'
-		&& context.root_path.back() != '\\') {
-		context.root_path.push_back('/');
+	// Add the initial source
+	bool was_added;
+	if (!context.get_or_add_source_file(source_filename, was_added).is_valid()) {
+		context.error(e_compiler_error::k_failed_to_find_file, "Failed to find file '%s'", source_filename);
+		return false;
 	}
 
-	// List of source files we need to process
-	context.source_files.push_back(s_compiler_source_file());
-	{
-		s_compiler_source_file &first_source_file = context.source_files.back();
-		first_source_file.filename = source_filename;
+	wl_assert(was_added);
 
-		// This source file is available as an "import" to itself
-		first_source_file.imports.push_back(true);
+	c_lexer::initialize();
+	c_parser::initialize();
+	c_importer::initialize();
+	c_instrument_globals_parser::initialize();
+
+	s_instrument_globals_context instrument_globals;
+	instrument_globals.assign_defaults();
+
+	// Iterate and process imports for each source file. This will continue looping until no new imports are discovered.
+	for (size_t source_file_index = 0; source_file_index < context.get_source_file_count(); source_file_index++) {
+		h_compiler_source_file source_file_handle = h_compiler_source_file::construct(source_file_index);
+		s_compiler_source_file &source_file = context.get_source_file(source_file_handle);
+
+		if (read_source_file(context, source_file_handle)) {
+			if (c_lexer::process(context, source_file_handle)) {
+				if (c_parser::process(context, source_file_handle)) {
+					c_importer::resolve_imports(context, source_file_handle);
+					c_instrument_globals_parser::parse_instrument_globals(
+						context,
+						source_file_handle,
+						source_file_index == 0,
+						instrument_globals);
+				}
+			}
+		}
 	}
+
+	c_instrument_globals_parser::deinitialize();
+	c_importer::deinitialize();
+	c_parser::deinitialize();
+	c_lexer::deinitialize();
+
+	// Fail early if we ran into lexer, parser, import, or instrument globals errors. They're sure to cause all sorts of
+	// issues further down the line.
+	if (context.get_error_count() > 0) {
+		return false;
+	}
+
+
+	// Build all declarations
+	for (size_t source_file_index = 0; source_file_index < context.get_source_file_count(); source_file_index++) {
+		h_compiler_source_file source_file_handle = h_compiler_source_file::construct(source_file_index);
+		c_AST_builder::build_ast_declarations(context, source_file_handle);
+	}
+
+	// Pull in imports and build definitions
+	for (size_t source_file_index = 0; source_file_index < context.get_source_file_count(); source_file_index++) {
+		h_compiler_source_file source_file_handle = h_compiler_source_file::construct(source_file_index);
+		c_importer::add_imports_to_global_scope(context, source_file_handle);
+		c_AST_builder::build_ast_definitions(context, source_file_handle);
+	}
+
+	// $TODO $COMPILER continue from here
 
 	// We need to initialize the lexer early because it is used by the preprocessor
-	c_lexer::initialize_lexer();
+	c_lexer::initialize();
 	c_preprocessor::initialize_preprocessor();
 
 	s_instrument_globals_context instrument_globals_context;
@@ -103,9 +151,9 @@ s_compiler_result c_compiler::compile(
 		}
 	}
 
-	c_lexer::shutdown_lexer();
+	c_lexer::deinitialize();
 
-	c_parser::initialize_parser();
+	c_parser::initialize();
 
 	// Run the parser on the lexer's output
 	s_parser_output parser_output;
@@ -123,7 +171,7 @@ s_compiler_result c_compiler::compile(
 		}
 	}
 
-	c_parser::shutdown_parser();
+	c_parser::deinitialize();
 
 	// Build the AST from the result of the parser
 	std::unique_ptr<c_ast_node> ast(c_ast_builder::build_ast(lexer_output, parser_output));
@@ -244,6 +292,44 @@ static void output_error(const s_compiler_context &context, const s_compiler_res
 	}
 
 	std::cout << ": " << result.message << "\n";
+}
+
+static bool read_source_file(c_compiler_context &context, h_compiler_source_file source_file_handle) {
+	s_compiler_source_file &source_file = context.get_source_file(source_file_handle);
+
+	e_read_full_file_result result = read_full_file(source_file.path.c_str(), source_file.source);
+	switch (result) {
+	case e_read_full_file_result::k_success:
+		return true;
+
+	case e_read_full_file_result::k_failed_to_open:
+		context.error(
+			e_compiler_error::k_failed_to_open_file,
+			s_compiler_source_location(source_file_handle),
+			"Failed to open source file '%s'",
+			source_file.path.c_str());
+		return false;
+
+	case e_read_full_file_result::k_failed_to_read:
+		context.error(
+			e_compiler_error::k_failed_to_read_file,
+			s_compiler_source_location(source_file_handle),
+			"Failed to read source file '%s'",
+			source_file.path.c_str());
+		return false;
+
+	case e_read_full_file_result::k_file_too_big:
+		context.error(
+			e_compiler_error::k_failed_to_read_file,
+			s_compiler_source_location(source_file_handle),
+			"Source file '%s' is too big",
+			source_file.path.c_str());
+		return false;
+
+	default:
+		wl_unreachable();
+		return false;
+	}
 }
 
 static s_compiler_result read_and_preprocess_source_file(

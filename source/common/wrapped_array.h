@@ -5,6 +5,8 @@
 #include "common/macros.h"
 #include "common/types.h"
 
+#include <vector>
+
 // Wrapped arrays can safely be zero_type'd
 
 template<typename t_element>
@@ -16,23 +18,27 @@ public:
 
 	constexpr c_wrapped_array(t_element *pointer, size_t count)
 		: m_pointer(pointer)
-		, m_count(count) {
-	}
+		, m_count(count) {}
 
-	// $TODO if we use SFINAE more often, consider adding a FUNCTION_CONDITION(condition) macro
 	template<
 		typename t_mutable_element,
-		bool k_cond = std::is_const_v<t_element> && std::is_same_v<t_mutable_element, std::remove_const_t<t_element>>,
-		typename = std::enable_if_t<k_cond>>
-	c_wrapped_array(const c_wrapped_array<t_mutable_element> &other)
+		CONDITION_DECLARATION(
+			std::is_const_v<t_element> && std::is_same_v<t_mutable_element, std::remove_const_t<t_element>>)>
+	constexpr c_wrapped_array(const c_wrapped_array<t_mutable_element> &other)
 		: m_pointer(other.get_pointer())
-		, m_count(other.get_count()) {
-	}
+		, m_count(other.get_count()) {}
+
+	template<
+		typename t_vector_element,
+		CONDITION_DECLARATION(std::is_same_v<t_vector_element, std::remove_const_t<t_element>>)>
+	c_wrapped_array(const std::vector<t_vector_element> &vector)
+		: m_pointer(vector.empty() ? nullptr : &vector.front())
+		, m_count(vector.size()) {}
 
 	template<
 		typename t_mutable_element,
-		bool k_cond = std::is_const_v<t_element> &&std::is_same_v<t_mutable_element, std::remove_const_t<t_element>>,
-		typename = std::enable_if_t<k_cond>>
+		CONDITION_DECLARATION(
+			std::is_const_v<t_element> &&std::is_same_v<t_mutable_element, std::remove_const_t<t_element>>)>
 	c_wrapped_array &operator=(const c_wrapped_array<t_mutable_element> &other) {
 		m_pointer = other.get_pointer();
 		m_count = other.get_count();

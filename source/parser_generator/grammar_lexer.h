@@ -8,6 +8,7 @@ enum class e_grammar_token_type {
 	k_identifier,
 	k_string,
 	k_period,
+	k_comma,
 	k_colon,
 	k_semicolon,
 	k_left_brace,

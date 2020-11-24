@@ -255,8 +255,7 @@ size_t c_lr_parse_tree::add_node(c_lr_symbol symbol, size_t token_or_production_
 }
 
 c_lr_parse_tree_visitor::c_lr_parse_tree_visitor(const c_lr_parse_tree &parse_tree)
-	: m_parse_tree(parse_tree) {
-}
+	: m_parse_tree(parse_tree) {}
 
 void c_lr_parse_tree_visitor::visit() {
 	struct s_node_state {
@@ -298,8 +297,7 @@ void c_lr_parse_tree_visitor::get_child_node_indices(
 
 c_lr_parse_tree_iterator::c_lr_parse_tree_iterator(const c_lr_parse_tree &parse_tree, size_t node_index)
 	: m_parse_tree(parse_tree)
-	, m_current_node_index(node_index) {
-}
+	, m_current_node_index(node_index) {}
 
 bool c_lr_parse_tree_iterator::is_valid() const {
 	return m_current_node_index != c_lr_parse_tree::k_invalid_index;

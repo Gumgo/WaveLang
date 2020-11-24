@@ -1,11 +1,15 @@
 #pragma once
 
 #include "common/common.h"
+#include "common/utility/handle.h"
 
 #include "execution_graph/native_module.h"
 
-// $TODO $HANDLE add h_native_module and h_native_module_library
-static constexpr uint32 k_invalid_native_module_index = static_cast<uint32>(-1);
+struct s_native_module_library_handle_identifier {};
+using h_native_module_library = c_handle<s_native_module_library_handle_identifier, uint32>;
+
+struct s_native_module_handle_identifier {};
+using h_native_module = c_handle<s_native_module_handle_identifier, uint32>;
 
 // The registry of all native modules, which are the built-in modules of the language
 class c_native_module_registry {
@@ -20,16 +24,18 @@ public:
 	static bool register_native_module_library(const s_native_module_library &library);
 
 	static bool is_native_module_library_registered(uint32 library_id);
-	static uint32 get_native_module_library_index(uint32 library_id);
+	static h_native_module_library get_native_module_library_handle(uint32 library_id);
 
 	static uint32 get_native_module_library_count();
-	static const s_native_module_library &get_native_module_library(uint32 index);
+	static c_index_handle_iterator<h_native_module_library> iterate_native_module_libraries();
+	static const s_native_module_library &get_native_module_library(h_native_module_library handle);
 
 	// Registers a native module - returns whether successful
 	static bool register_native_module(const s_native_module &native_module);
 
 	// Registers a native operator by associating it with the name of a native module. We use the name and not UID
 	// because the operator can be overloaded.
+	// $TODO $COMPILER these two functions can go away I think, and the internals of them
 	static void register_native_operator(e_native_operator native_operator, const char *native_module_name);
 	static e_native_operator get_native_module_operator(s_native_module_uid native_module_uid);
 
@@ -37,8 +43,9 @@ public:
 	static bool register_optimization_rule(const s_native_module_optimization_rule &optimization_rule);
 
 	static uint32 get_native_module_count();
-	static uint32 get_native_module_index(s_native_module_uid native_module_uid);
-	static const s_native_module &get_native_module(uint32 index);
+	static c_index_handle_iterator<h_native_module> iterate_native_modules();
+	static h_native_module get_native_module_handle(s_native_module_uid native_module_uid);
+	static const s_native_module &get_native_module(h_native_module handle);
 	static const char *get_native_module_for_native_operator(e_native_operator native_operator);
 
 	static uint32 get_optimization_rule_count();

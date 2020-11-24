@@ -16,7 +16,9 @@ struct s_grammar {
 
 	struct s_terminal {
 		std::string value;
+		int32 precedence;
 		e_associativity associativity;
+		std::string string;
 	};
 
 	struct s_nonterminal {
@@ -34,6 +36,8 @@ struct s_grammar {
 	struct s_rule {
 		std::string nonterminal;
 		size_t nonterminal_index;
+		std::string precedence_override_terminal;
+		size_t precedence_override_terminal_index;
 		std::string function;
 		std::vector<s_rule_component> components;
 	};

@@ -23,7 +23,5 @@ c_node_reference c_node_interface::create_constant_node(const char *value) {
 }
 
 c_wrapped_array<const c_node_reference> c_node_interface::get_created_node_references() const {
-	return c_wrapped_array<const c_node_reference>(
-		m_created_node_references.empty() ? nullptr : &m_created_node_references.front(),
-		m_created_node_references.size());
+	return c_wrapped_array<const c_node_reference>(m_created_node_references);
 }

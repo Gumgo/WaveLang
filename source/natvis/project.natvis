@@ -13,18 +13,6 @@
 		</Expand>
 	</Type>
 
-	<Type Name="c_wrapped_array_const&lt;*&gt;">
-		<DisplayString>{{count={m_count}}}</DisplayString>
-
-		<Expand>
-			<Item Name="[count]">m_count</Item>
-			<ArrayItems>
-				<Size>m_count</Size>
-				<ValuePointer>m_pointer</ValuePointer>
-			</ArrayItems>
-		</Expand>
-	</Type>
-
 	<Type Name="c_lr_symbol">
 		<DisplayString Condition="!m_is_nonepsilon">
 			{{epsilon}}
@@ -36,14 +24,5 @@
 			{(e_token_type) m_index}
 		</DisplayString>
 	</Type>
-
-  <Type Name="c_compiler_string">
-    <DisplayString>{m_str,[m_length]s}</DisplayString>
-
-    <Expand>
-      <Item Name="[value]">m_str,[m_length]s</Item>
-      <Item Name="[length]">m_length</Item>
-    </Expand>
-  </Type>
 
 </AutoVisualizer>

@@ -452,9 +452,7 @@ void c_command_line_interface::process_command_load_synth(const s_command &comma
 			settings.profiling_threshold = runtime_config_settings.executor_profiling_threshold;
 			m_runtime_context.executor.initialize(
 				settings,
-				c_wrapped_array<void *>(
-					m_task_function_library_contexts.empty() ? nullptr : &m_task_function_library_contexts.front(),
-					m_task_function_library_contexts.size()));
+				c_wrapped_array<void *>(m_task_function_library_contexts));
 		}
 
 		m_runtime_context.active_instrument = loading_instrument;

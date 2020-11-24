@@ -3,8 +3,7 @@
 #include "scraper/diagnostic.h"
 
 c_scraper_diagnostic::c_scraper_diagnostic(clang::CompilerInstance &compiler_instance)
-	: m_compiler_instance(compiler_instance) {
-}
+	: m_compiler_instance(compiler_instance) {}
 
 clang::DiagnosticBuilder c_scraper_diagnostic::error(
 	const clang::SourceLocation &source_location,

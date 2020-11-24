@@ -1,8 +1,7 @@
 template<typename t_element>
 c_lock_free_queue<t_element>::c_lock_free_queue()
 	: m_elements(nullptr, 0)
-	, m_queue(nullptr, 0) {
-}
+	, m_queue(nullptr, 0) {}
 
 template<typename t_element>
 void c_lock_free_queue<t_element>::initialize(

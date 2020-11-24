@@ -166,15 +166,11 @@ c_task_graph_task_array c_task_graph::get_initial_tasks() const {
 }
 
 c_buffer_array c_task_graph::get_inputs() const {
-	return c_buffer_array(
-		m_input_buffers.empty() ? nullptr : &m_input_buffers.front(),
-		m_input_buffers.size());
+	return c_buffer_array(m_input_buffers);
 }
 
 c_buffer_array c_task_graph::get_outputs() const {
-	return c_buffer_array(
-		m_output_buffers.empty() ? nullptr : &m_output_buffers.front(),
-		m_output_buffers.size());
+	return c_buffer_array(m_output_buffers);
 }
 
 c_buffer *c_task_graph::get_remain_active_output() const {
@@ -195,9 +191,7 @@ size_t c_task_graph::get_buffer_index(const c_buffer *buffer) const {
 }
 
 c_wrapped_array<const c_task_graph::s_buffer_usage_info> c_task_graph::get_buffer_usage_info() const {
-	return c_wrapped_array<const c_task_graph::s_buffer_usage_info>(
-		m_buffer_usage_info.empty() ? nullptr : &m_buffer_usage_info.front(),
-		m_buffer_usage_info.size());
+	return c_wrapped_array<const c_task_graph::s_buffer_usage_info>(m_buffer_usage_info);
 }
 
 bool c_task_graph::build(const c_execution_graph &execution_graph) {
@@ -418,7 +412,7 @@ bool c_task_graph::add_task_for_node(
 	wl_assert(nodes_to_tasks.find(node_reference) == nodes_to_tasks.end());
 	nodes_to_tasks.insert(std::make_pair(node_reference, task_index));
 
-	uint32 native_module_index = execution_graph.get_native_module_call_native_module_index(node_reference);
+	h_native_module native_module_handle = execution_graph.get_native_module_call_native_module_handle(node_reference);
 	return setup_task(execution_graph, node_reference, task_index);
 }
 
@@ -427,8 +421,8 @@ bool c_task_graph::setup_task(
 	c_node_reference node_reference,
 	uint32 task_index) {
 	wl_assert(execution_graph.get_node_type(node_reference) == e_execution_graph_node_type::k_native_module_call);
-	uint32 native_module_index = execution_graph.get_native_module_call_native_module_index(node_reference);
-	s_task_function_uid task_function_uid = c_task_function_registry::get_task_function_mapping(native_module_index);
+	h_native_module native_module_handle = execution_graph.get_native_module_call_native_module_handle(node_reference);
+	s_task_function_uid task_function_uid = c_task_function_registry::get_task_function_mapping(native_module_handle);
 	if (task_function_uid == s_task_function_uid::k_invalid) {
 		// No valid task function mapping for the native module
 		return false;

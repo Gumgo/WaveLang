@@ -1,7 +1,8 @@
+#include "common/utility/file_utility.h"
+
 #include "execution_graph/native_modules/json/json_file.h"
 
 #include <charconv>
-#include <fstream>
 
 static bool is_digit(char c);
 
@@ -11,41 +12,16 @@ s_json_result c_json_file::load(const char *filename) {
 	s_json_result result;
 	zero_type(&result);
 
+	// First read the whole file
 	std::vector<char> file_buffer;
-	{
-		// First read the whole file
-		std::ifstream file(filename, std::ios::binary | std::ios::ate);
-
-		if (!file.is_open()) {
-			result.result = e_json_result::k_file_error;
-			return result;
-		}
-
-		std::streampos full_file_size = file.tellg();
-		file.seekg(0);
-
-		if (full_file_size > static_cast<std::streampos>(std::numeric_limits<int32>::max())) {
-			// File is too big
-			result.result = e_json_result::k_file_error;
-			return result;
-		}
-
-		size_t file_size = static_cast<size_t>(full_file_size);
-		wl_assert(static_cast<std::streampos>(file_size) == full_file_size);
-
-		file_buffer.resize(file_size + 1);
-		if (file_size > 0) {
-			file.read(&file_buffer.front(), file_size);
-		}
-
-		// Place a null terminator at the end so we always have a valid offset
-		file_buffer.back() = '\0';
-
-		if (file.fail()) {
-			result.result = e_json_result::k_file_error;
-			return result;
-		}
+	e_read_full_file_result read_result = read_full_file(filename, file_buffer);
+	if (read_result != e_read_full_file_result::k_success) {
+		result.result = e_json_result::k_file_error;
+		return result;
 	}
+
+	// Place a null terminator at the end so we always have a valid offset
+	file_buffer.back() = '\0';
 
 	s_buffer_with_offset buffer_with_offset;
 	buffer_with_offset.buffer = &file_buffer.front();

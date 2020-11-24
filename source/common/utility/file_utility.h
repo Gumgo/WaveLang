@@ -3,17 +3,36 @@
 #include "common/common.h"
 
 #include <fstream>
+#include <vector>
+
+#if IS_TRUE(PLATFORM_WINDOWS)
+constexpr char k_path_separator = '\\';
+constexpr char k_alt_path_separator = '/';
+#else // IS_TRUE(PLATFORM_WINDOWS)
+constexpr char k_path_separator = '/';
+constexpr char k_alt_path_separator = '/'; // No alternative on other platforms
+#endif // IS_TRUE(PLATFORM_WINDOWS)
 
 bool are_file_paths_equivalent(const char *path_a, const char *path_b);
+std::string canonicalize_path(const char *path);
+std::string get_path_directory(const char *path);
 bool is_path_relative(const char *path);
 bool get_file_last_modified_timestamp(const char *path, uint64 &timestamp_out);
 void create_directory(const char *path);
 
+enum class e_read_full_file_result {
+	k_success,
+	k_failed_to_open,
+	k_failed_to_read,
+	k_file_too_big
+};
+
+e_read_full_file_result read_full_file(const char *path, std::vector<char> &file_contents_out);
+
 class c_binary_file_reader {
 public:
 	c_binary_file_reader(std::ifstream &file)
-		: m_file(file) {
-	}
+		: m_file(file) {}
 
 	// Performs endian byte swapping
 	template<typename t_value> bool read(t_value &value_out) {
@@ -52,8 +71,7 @@ private:
 class c_binary_file_writer {
 public:
 	c_binary_file_writer(std::ofstream &file)
-		: m_file(file) {
-	}
+		: m_file(file) {}
 
 	// Performs endian byte swapping
 	template<typename t_value> void write(t_value value) {

@@ -15,7 +15,8 @@ void register_native_modules(bool optimizations_enabled) {
 	// Register all operators first
 	for (e_native_operator native_operator : iterate_enum<e_native_operator>()) {
 		c_native_module_registry::register_native_operator(
-			native_operator, get_native_operator_native_module_name(native_operator));
+			native_operator,
+			get_native_operator_native_module_name(native_operator));
 	}
 
 	//bool result = // $TODO $PLUGIN handle failure

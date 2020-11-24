@@ -80,6 +80,7 @@ s_grammar_token c_grammar_lexer::get_next_token() {
 		static const s_token_match_string k_token_match_strings[] = {
 			{ e_grammar_token_type::k_arrow, "->" },
 			{ e_grammar_token_type::k_period, "." },
+			{ e_grammar_token_type::k_comma, "," },
 			{ e_grammar_token_type::k_colon, ":" },
 			{ e_grammar_token_type::k_semicolon, ";" },
 			{ e_grammar_token_type::k_left_brace, "{" },

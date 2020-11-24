@@ -7,8 +7,7 @@
 
 #if !IS_TRUE(USE_THREAD_IMPLEMENTATION_WINDOWS)
 
-c_thread::c_thread() {
-}
+c_thread::c_thread() {}
 
 c_thread::c_thread(c_thread &&other) {
 	wl_assert(!other.is_running());
