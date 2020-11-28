@@ -81,13 +81,14 @@
     <AdditionalOptions>/std:c++latest</AdditionalOptions>
   </PropertyGroup>
   <ItemGroup>
-    <ClInclude Include="ast.h" />
     <ClInclude Include="ast\data_type.h" />
     <ClInclude Include="ast\node.h" />
     <ClInclude Include="ast\nodes.h" />
     <ClInclude Include="ast\node_access.h" />
     <ClInclude Include="ast\node_array.h" />
     <ClInclude Include="ast\node_assignment_statement.h" />
+    <ClInclude Include="ast\node_break_statement.h" />
+    <ClInclude Include="ast\node_continue_statement.h" />
     <ClInclude Include="ast\node_convert.h" />
     <ClInclude Include="ast\node_expression.h" />
     <ClInclude Include="ast\node_expression_placeholder.h" />
@@ -101,39 +102,40 @@
     <ClInclude Include="ast\node_module_declaration_argument.h" />
     <ClInclude Include="ast\node_module_call.h" />
     <ClInclude Include="ast\node_return_statement.h" />
+    <ClInclude Include="ast\node_subscript.h" />
     <ClInclude Include="ast\node_value_declaration.h" />
     <ClInclude Include="ast\node_declaration.h" />
     <ClInclude Include="ast\node_module_declaration.h" />
     <ClInclude Include="ast\node_scope.h" />
     <ClInclude Include="ast\node_scope_item.h" />
-    <ClInclude Include="ast_builder.h" />
-    <ClInclude Include="ast_data_type.h" />
-    <ClInclude Include="ast_validator.h" />
     <ClInclude Include="compiler.h" />
     <ClInclude Include="compiler_context.h" />
     <ClInclude Include="compiler_utility.h" />
     <ClInclude Include="components\ast_builder.h" />
     <ClInclude Include="components\ast_builder_types.h" />
+    <ClInclude Include="components\entry_point_extractor.h" />
     <ClInclude Include="components\importer.h" />
+    <ClInclude Include="components\instrument_variant_builder.h" />
     <ClInclude Include="components\instrument_globals_parser.h" />
     <ClInclude Include="components\lexer.h" />
     <ClInclude Include="components\parser.h" />
-    <ClInclude Include="execution_graph_builder.h" />
     <ClInclude Include="execution_graph_optimizer.h" />
     <ClInclude Include="getopt\getopt.h" />
+    <ClInclude Include="graph_trimmer.h" />
     <ClInclude Include="lr_parser.h" />
-    <ClInclude Include="preprocessor.h" />
     <ClInclude Include="source_file.h" />
     <ClInclude Include="token.h" />
     <ClInclude Include="tracked_scope.h" />
+    <ClInclude Include="try_call_native_module.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ast.cpp" />
     <ClCompile Include="ast\data_type.cpp" />
     <ClCompile Include="ast\node.cpp" />
     <ClCompile Include="ast\node_access.cpp" />
     <ClCompile Include="ast\node_array.cpp" />
     <ClCompile Include="ast\node_assignment_statement.cpp" />
+    <ClCompile Include="ast\node_break_statement.cpp" />
+    <ClCompile Include="ast\node_continue_statement.cpp" />
     <ClCompile Include="ast\node_convert.cpp" />
     <ClCompile Include="ast\node_expression.cpp" />
     <ClCompile Include="ast\node_expression_placeholder.cpp" />
@@ -147,29 +149,29 @@
     <ClCompile Include="ast\node_module_declaration_argument.cpp" />
     <ClCompile Include="ast\node_module_call.cpp" />
     <ClCompile Include="ast\node_return_statement.cpp" />
+    <ClCompile Include="ast\node_subscript.cpp" />
     <ClCompile Include="ast\node_value_declaration.cpp" />
     <ClCompile Include="ast\node_declaration.cpp" />
     <ClCompile Include="ast\node_module_declaration.cpp" />
     <ClCompile Include="ast\node_scope.cpp" />
     <ClCompile Include="ast\node_scope_item.cpp" />
-    <ClCompile Include="ast_builder.cpp" />
-    <ClCompile Include="ast_data_type.cpp" />
-    <ClCompile Include="ast_validator.cpp" />
     <ClCompile Include="compiler.cpp" />
     <ClCompile Include="compiler_context.cpp" />
     <ClCompile Include="compiler_main.cpp" />
     <ClCompile Include="components\ast_builder.cpp" />
+    <ClCompile Include="components\entry_point_extractor.cpp" />
     <ClCompile Include="components\importer.cpp" />
+    <ClCompile Include="components\instrument_variant_builder.cpp" />
     <ClCompile Include="components\instrument_globals_parser.cpp" />
     <ClCompile Include="components\lexer.cpp" />
     <ClCompile Include="components\parser.cpp" />
-    <ClCompile Include="execution_graph_builder.cpp" />
     <ClCompile Include="execution_graph_optimizer.cpp" />
     <ClCompile Include="getopt\getopt.c" />
+    <ClCompile Include="graph_trimmer.cpp" />
     <ClCompile Include="lr_parser.cpp" />
-    <ClCompile Include="preprocessor.cpp" />
     <ClCompile Include="token.cpp" />
     <ClCompile Include="tracked_scope.cpp" />
+    <ClCompile Include="try_call_native_module.cpp" />
     <ClCompile Include="wavelang_grammar.cpp" />
   </ItemGroup>
   <ItemGroup>

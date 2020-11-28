@@ -29,7 +29,6 @@ terminals: {
 	keyword_real("real");
 	keyword_bool("bool");
 	keyword_string("string");
-	keyword_module("module");
 	keyword_in("in");
 	keyword_out("out");
 	keyword_return("return");

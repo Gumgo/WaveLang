@@ -6,6 +6,9 @@
 
 class c_AST_node_access : public c_AST_node_expression {
 public:
-	AST_NODE_TYPE(k_access);
+	AST_NODE_TYPE(c_AST_node_access, k_access);
 	c_AST_node_access();
+
+protected:
+	c_AST_node *copy_internal() const override;
 };

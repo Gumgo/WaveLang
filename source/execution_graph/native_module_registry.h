@@ -53,4 +53,3 @@ public:
 
 	static bool output_registered_native_modules(const char *filename);
 };
-

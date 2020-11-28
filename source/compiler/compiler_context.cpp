@@ -164,6 +164,10 @@ h_compiler_source_file c_compiler_context::get_or_add_source_file(const char *pa
 	return handle;
 }
 
+void *c_compiler_context::get_native_module_library_context(h_native_module_library native_module_library_handle) {
+	return m_native_module_library_contexts[native_module_library_handle.get_data()];
+}
+
 void c_compiler_context::output_to_stream(
 	std::ostream &stream,
 	const char *prefix,

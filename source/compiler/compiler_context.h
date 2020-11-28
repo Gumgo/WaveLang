@@ -8,7 +8,10 @@
 #include <vector>
 
 enum class e_compiler_warning {
-	k_count
+	k_entry_point_argument_initializer_ignored,
+	k_native_module_warning,
+
+	k_count,
 };
 
 enum class e_compiler_error {
@@ -73,6 +76,18 @@ enum class e_compiler_error {
 	k_invalid_if_statement_data_type,
 	k_illegal_break_statement,
 	k_illegal_continue_statement,
+	k_illegal_variable_subscript_assignment,
+
+	// Entry point errors
+	k_ambiguous_entry_point,
+	k_invalid_entry_point,
+	k_incompatible_entry_points,
+
+	// Evaluation errors
+	k_self_referential_constant,
+	k_module_call_depth_limit_exceeded,
+	k_array_index_out_of_bounds,
+	k_native_module_error,
 
 	k_count
 };
@@ -137,6 +152,8 @@ public:
 	s_compiler_source_file &get_source_file(h_compiler_source_file handle);
 	const s_compiler_source_file &get_source_file(h_compiler_source_file handle) const;
 	h_compiler_source_file get_or_add_source_file(const char *path, bool &was_added_out);
+
+	void *get_native_module_library_context(h_native_module_library native_module_library_handle);
 
 private:
 	void output_to_stream(

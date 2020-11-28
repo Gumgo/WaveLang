@@ -81,6 +81,21 @@ void c_AST_node_module_declaration::set_native_module_uid(const s_native_module_
 	m_native_module_uid = native_module_uid;
 }
 
+c_AST_node *c_AST_node_module_declaration::copy_internal() const {
+	c_AST_node_module_declaration *node_copy = new c_AST_node_module_declaration();
+	node_copy->m_arguments.reserve(m_arguments.size());
+	for (const std::unique_ptr<c_AST_node_module_declaration_argument> &argument : m_arguments) {
+		node_copy->m_arguments.emplace_back(argument->copy());
+	}
+	node_copy->m_return_type = m_return_type;
+	if (node_copy->m_body_scope) {
+		node_copy->m_body_scope.reset(m_body_scope->copy());
+	}
+	node_copy->m_native_module_uid = m_native_module_uid;
+
+	return node_copy;
+}
+
 bool do_module_overloads_conflict(
 	const c_AST_node_module_declaration *module_a,
 	const c_AST_node_module_declaration *module_b) {

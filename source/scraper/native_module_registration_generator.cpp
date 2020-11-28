@@ -47,7 +47,7 @@ static constexpr const char *k_native_operator_enum_strings[] = {
 	"e_native_operator::k_greater_equal",
 	"e_native_operator::k_and",
 	"e_native_operator::k_or",
-	"e_native_operator::k_array_dereference"
+	"e_native_operator::k_subscript"
 };
 static_assert(array_count(k_native_operator_enum_strings) == enum_count<e_native_operator>(),
 	"Invalid native operator enum strings");
@@ -388,7 +388,7 @@ bool c_optimization_rule_builder::build(std::ofstream &out) {
 				// Skip the left paren
 				index++;
 			} else if (next_token_type == e_token_type::k_left_bracket) {
-				// Array dereference
+				// Array subscript
 				if (is_constant) {
 					return false;
 				}
@@ -400,7 +400,7 @@ bool c_optimization_rule_builder::build(std::ofstream &out) {
 				}
 
 				write_symbol_prefix(out);
-				out << "build_array_dereference();" NEWLINE_STR;
+				out << "build_array_subscript();" NEWLINE_STR;
 				m_symbol_index++;
 				write_symbol_prefix(out);
 				out << identifier_string << ";" NEWLINE_STR;
@@ -439,7 +439,7 @@ bool c_optimization_rule_builder::build(std::ofstream &out) {
 			m_symbol_index++;
 			can_skip_comma = true;
 		} else if (token_type == e_token_type::k_right_bracket) {
-			// Nothing to do here: array dereference doesn't have an explicit "end" because it always takes exactly two
+			// Nothing to do here: array subscript doesn't have an explicit "end" because it always takes exactly two
 			// parameters, the variable and the index.
 			can_skip_comma = true;
 		} else if (token_type == e_token_type::k_source_to_target) {

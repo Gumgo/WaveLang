@@ -39,3 +39,5 @@ static_assert(sizeof(c_native_module_real_array) == sizeof(c_native_module_array
 static_assert(sizeof(c_native_module_bool_array) == sizeof(c_native_module_array), "Invalid array sizeof");
 static_assert(sizeof(c_native_module_string_array) == sizeof(c_native_module_array), "Invalid array sizeof");
 
+// Used to convert a real into an array index
+bool get_and_validate_native_module_array_index(real32 index_real, size_t array_count, size_t &index_out);

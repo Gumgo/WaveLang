@@ -27,7 +27,7 @@ static std::vector<c_node_reference> array_repeat(const std::vector<c_node_refer
 
 namespace array_native_modules {
 
-	void dereference_real(const c_native_module_real_array &a, real32 b, real32 &result) {
+	void subscript_real(const c_native_module_real_array &a, real32 b, real32 &result) {
 		wl_vhalt("This module call should always be optimized away");
 	}
 
@@ -50,7 +50,7 @@ namespace array_native_modules {
 		result.get_array() = array_repeat(b.get_array(), a);
 	}
 
-	void dereference_bool(const c_native_module_bool_array &a, real32 b, bool &result) {
+	void subscript_bool(const c_native_module_bool_array &a, real32 b, bool &result) {
 		wl_vhalt("This module call should always be optimized away");
 	}
 
@@ -73,7 +73,7 @@ namespace array_native_modules {
 		result.get_array() = array_repeat(b.get_array(), a);
 	}
 
-	void dereference_string(const c_native_module_string_array &a, real32 b, c_native_module_string &result) {
+	void subscript_string(const c_native_module_string_array &a, real32 b, c_native_module_string &result) {
 		wl_vhalt("This module call should always be optimized away");
 	}
 

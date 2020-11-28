@@ -26,3 +26,14 @@ c_AST_node_expression *c_AST_node_value_declaration::get_initialization_expressi
 void c_AST_node_value_declaration::set_initialization_expression(c_AST_node_expression *initialization_expression) {
 	m_initialization_expression.reset(initialization_expression);
 }
+
+c_AST_node *c_AST_node_value_declaration::copy_internal() const {
+	c_AST_node_value_declaration *node_copy = new c_AST_node_value_declaration();
+	node_copy->m_data_type = m_data_type;
+	node_copy->m_modifiable = m_modifiable;
+	if (m_initialization_expression) {
+		node_copy->m_initialization_expression.reset(m_initialization_expression->copy());
+	}
+
+	return node_copy;
+}

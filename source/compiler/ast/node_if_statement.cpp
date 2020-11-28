@@ -26,3 +26,18 @@ c_AST_node_scope *c_AST_node_if_statement::get_false_scope() const {
 void c_AST_node_if_statement::set_false_scope(c_AST_node_scope *false_scope) {
 	m_false_scope.reset(false_scope);
 }
+
+c_AST_node *c_AST_node_if_statement::copy_internal() const {
+	c_AST_node_if_statement *node_copy = new c_AST_node_if_statement();
+	if (m_expression) {
+		node_copy->m_expression.reset(m_expression->copy());
+	}
+	if (m_true_scope) {
+		node_copy->m_true_scope.reset(m_true_scope->copy());
+	}
+	if (m_false_scope) {
+		node_copy->m_false_scope.reset(m_false_scope->copy());
+	}
+
+	return node_copy;
+}

@@ -16,7 +16,7 @@ enum class e_ast_visibility {
 
 class c_AST_node_scope_item : public c_AST_node {
 public:
-	AST_NODE_TYPE(k_scope_item);
+	AST_NODE_TYPE(c_AST_node_scope_item, k_scope_item);
 	c_AST_node_scope_item(c_ast_node_type type);
 
 	e_ast_visibility get_visibility() const;

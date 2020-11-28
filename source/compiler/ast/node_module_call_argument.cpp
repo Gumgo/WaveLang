@@ -27,3 +27,14 @@ c_AST_node_expression *c_AST_node_module_call_argument::get_value_expression() c
 void c_AST_node_module_call_argument::set_value_expression(c_AST_node_expression *value_expression) {
 	m_value_expression.reset(value_expression);
 }
+
+c_AST_node *c_AST_node_module_call_argument::copy_internal() const {
+	c_AST_node_module_call_argument *node_copy = new c_AST_node_module_call_argument();
+	node_copy->m_argument_direction = m_argument_direction;
+	node_copy->m_name = m_name;
+	if (m_value_expression) {
+		node_copy->m_value_expression.reset(m_value_expression->copy());
+	}
+
+	return node_copy;
+}

@@ -11,7 +11,7 @@
 
 class c_AST_node_for_loop : public c_AST_node_scope_item {
 public:
-	AST_NODE_TYPE_DESCRIPTION(k_for_loop, "for loop");
+	AST_NODE_TYPE_DESCRIPTION(c_AST_node_for_loop, k_for_loop, "for loop");
 	c_AST_node_for_loop();
 
 	c_AST_node_value_declaration *get_value_declaration() const;
@@ -22,6 +22,9 @@ public:
 
 	c_AST_node_scope *get_loop_scope() const;
 	void set_loop_scope(c_AST_node_scope *loop_scope);
+
+protected:
+	c_AST_node *copy_internal() const override;
 
 private:
 	std::unique_ptr<c_AST_node_value_declaration> m_value_declaration;

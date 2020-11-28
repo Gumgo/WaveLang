@@ -37,3 +37,39 @@ void c_AST_node_module_call::set_resolved_module_declaration(
 
 	set_data_type(return_type);
 }
+
+c_AST_node_expression *c_AST_node_module_call::get_resolved_module_argument_expression(size_t argument_index) const {
+	wl_assert(m_resolved_module_declaration);
+	// $PERF could pre-compute this
+
+	c_AST_node_module_declaration_argument *argument = m_resolved_module_declaration->get_argument(argument_index);
+	wl_assert(argument->get_argument_direction() == e_AST_argument_direction::k_in);
+
+	for (size_t call_argument_index = 0; call_argument_index < m_arguments.size(); call_argument_index++) {
+		c_AST_node_module_call_argument *call_argument = m_arguments[call_argument_index].get();
+		if (!call_argument->get_name()) {
+			// Unnamed arguments are ordered
+			if (argument_index == call_argument_index) {
+				return call_argument->get_value_expression();
+			}
+		} else if (strcmp(call_argument->get_name(), argument->get_name()) == 0) {
+			return call_argument->get_value_expression();
+		}
+	}
+
+	// No call argument was provided so the default expression is used
+	wl_assert(argument->get_initialization_expression());
+	return argument->get_initialization_expression();
+}
+
+c_AST_node *c_AST_node_module_call::copy_internal() const {
+	c_AST_node_module_call *node_copy = new c_AST_node_module_call();
+	node_copy->set_data_type(get_data_type());
+	node_copy->m_arguments.reserve(m_arguments.size());
+	for (const std::unique_ptr<c_AST_node_module_call_argument> &argument : m_arguments) {
+		node_copy->m_arguments.emplace_back(argument->copy());
+	}
+	node_copy->m_resolved_module_declaration = m_resolved_module_declaration;
+
+	return node_copy;
+}

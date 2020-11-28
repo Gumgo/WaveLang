@@ -472,7 +472,7 @@ bool c_ast_builder_visitor::enter_global_scope(
 
 		// Create a tracked scope and add all declared items up-front. The global scope is considered a namespace. Note:
 		// consider adding a namespace node as the AST root.
-		c_tracked_scope *tracked_scope = new c_tracked_scope(nullptr, e_tracked_scope_type::k_namespace);
+		c_tracked_scope *tracked_scope = new c_tracked_scope(nullptr, e_tracked_scope_type::k_namespace, nullptr);
 		m_tracked_scopes.push_back(tracked_scope);
 		build_tracked_scope(rule_head_context.get(), tracked_scope);
 
@@ -940,7 +940,8 @@ bool c_ast_builder_visitor::enter_module_body(
 		scope.initialize(new c_AST_node_scope());
 		scope->set_source_location(brace.source_location);
 
-		c_tracked_scope *tracked_scope = new c_tracked_scope(m_tracked_scopes.back(), e_tracked_scope_type::k_module);
+		c_tracked_scope *tracked_scope =
+			new c_tracked_scope(m_tracked_scopes.back(), e_tracked_scope_type::k_module, nullptr);
 		m_tracked_scopes_from_scope_nodes.insert(std::make_pair(scope.get(), tracked_scope));
 		m_tracked_scopes.push_back(tracked_scope);
 
@@ -1211,7 +1212,7 @@ void c_ast_builder_visitor::exit_binary_operator(
 		break;
 
 	case e_token_type::k_left_bracket:
-		native_operator = e_native_operator::k_array_dereference;
+		native_operator = e_native_operator::k_subscript;
 		break;
 	}
 
@@ -1230,6 +1231,18 @@ void c_ast_builder_visitor::exit_binary_operator(
 	rhs_argument_node->set_value_expression(rhs.release());
 
 	resolve_native_operator_call(module_call_node, native_operator, op.source_location);
+
+	// Special case: if this is a subscript operation on a reference, swap this node out to be a subscript node. This
+	// allows it to live on the LHS of assignment statements.
+	if (native_operator == e_native_operator::k_subscript
+		&& rhs_argument_node->get_value_expression()->is_type(e_AST_node_type::k_declaration_reference)) {
+		c_AST_node_subscript *subscript_node = new c_AST_node_subscript();
+		subscript_node->set_source_location(module_call_node->get_source_location());
+		subscript_node->set_module_call(module_call_node);
+
+		rule_head_context.release();
+		rule_head_context.initialize(subscript_node);
+	}
 }
 
 void c_ast_builder_visitor::exit_forward_expression(
@@ -1613,9 +1626,12 @@ void c_ast_builder_visitor::exit_scope_item_assignment(
 	c_AST_node_assignment_statement *assignment_statement_node = new c_AST_node_assignment_statement();
 	rule_head_context.initialize(assignment_statement_node);
 
+	// The LHS might be a subscript node
+	c_AST_node_subscript *subscript_node = lhs->try_get_as<c_AST_node_subscript>();
+
 	// Make sure that the LHS points to a value that we can assign to
 	c_wrapped_array<c_AST_node_declaration *> value_reference = try_get_typed_references(
-		lhs.get(),
+		subscript_node ? subscript_node->get_reference() : lhs.get(),
 		e_AST_node_type::k_value_declaration,
 		e_compiler_error::k_invalid_assignment,
 		"assign to",
@@ -1638,19 +1654,50 @@ void c_ast_builder_visitor::exit_scope_item_assignment(
 		}
 
 		assignment_statement_node->set_lhs_value_declaration(lhs_value_declaration);
+
+		if (subscript_node) {
+			// We can only do subscript assignments with a constant index
+			c_AST_qualified_data_type index_data_type = subscript_node->get_index_expression()->get_data_type();
+			if (!index_data_type.is_error()
+				&& index_data_type.get_data_mutability() != e_AST_data_mutability::k_constant) {
+				c_AST_qualified_data_type const_real_data_type(
+					c_AST_data_type(e_AST_primitive_type::k_real),
+					e_AST_data_mutability::k_constant);
+				m_context.error(
+					e_compiler_error::k_illegal_variable_subscript_assignment,
+					subscript_node->get_index_expression()->get_source_location(),
+					"Subscript assignment of value '%s' must use an index of type '%s', not '%s'",
+					lhs_value_declaration->get_name(),
+					const_real_data_type.to_string().c_str(),
+					index_data_type.to_string().c_str());
+			}
+
+			// Copy the index expression into the assignment statement's LHS. We can't just swap it because if we're
+			// using an assignment operator like +=, the expression gets transformed into x[i] = x[i] + y so the
+			// expression gets duplicated.
+			assignment_statement_node->set_lhs_index_expression(subscript_node->get_index_expression()->copy());
+		}
 	}
 
 	if (assignment_type.value == e_native_operator::k_invalid) {
 		// No additional operation, just assignment, so make sure the RHS type matches
-		if (lhs_value_declaration
-			&& !is_ast_data_type_assignable(rhs->get_data_type(), lhs_value_declaration->get_data_type())) {
-			m_context.error(
-				e_compiler_error::k_type_mismatch,
-				assignment_type.source_location,
-				"Cannot assign to value '%s' of type '%s' with an expression of type '%s'",
-				lhs_value_declaration->get_name(),
-				lhs_value_declaration->get_data_type().to_string().c_str(),
-				rhs->get_data_type().to_string().c_str());
+		if (lhs_value_declaration) {
+			// If this is a subscript operation, we're assigning to an element, not the array itself. The safest way to
+			// grab that element type is to see what the subscript module call would have returned if this expression
+			// were on the RHS. If the subscript call failed to resolve, we'll get an error type back.
+			c_AST_qualified_data_type lhs_data_type = subscript_node
+				? subscript_node->get_module_call()->get_resolved_module_declaration()->get_return_type()
+				: lhs_value_declaration->get_data_type();
+
+			if (!is_ast_data_type_assignable(rhs->get_data_type(), lhs_data_type)) {
+				m_context.error(
+					e_compiler_error::k_type_mismatch,
+					assignment_type.source_location,
+					"Cannot assign to value '%s' of type '%s' with an expression of type '%s'",
+					lhs_value_declaration->get_name(),
+					lhs_value_declaration->get_data_type().to_string().c_str(),
+					rhs->get_data_type().to_string().c_str());
+			}
 		}
 
 		assignment_statement_node->set_rhs_expression(rhs.release());
@@ -1731,7 +1778,8 @@ bool c_ast_builder_visitor::enter_scope_item_for_loop(
 	scope.initialize(new c_AST_node_scope());
 	scope->set_source_location(brace.source_location);
 
-	c_tracked_scope *tracked_scope = new c_tracked_scope(m_tracked_scopes.back(), e_tracked_scope_type::k_local);
+	c_tracked_scope *tracked_scope =
+		new c_tracked_scope(m_tracked_scopes.back(), e_tracked_scope_type::k_local, nullptr);
 	m_tracked_scopes_from_scope_nodes.insert(std::make_pair(scope.get(), tracked_scope));
 	m_tracked_scopes.push_back(tracked_scope);
 
@@ -1750,6 +1798,10 @@ void c_ast_builder_visitor::exit_scope_item_for_loop(
 void c_ast_builder_visitor::exit_break_statement(
 	c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
 	const s_token &break_keyword) {
+	c_AST_node_break_statement *break_statement_node = new c_AST_node_break_statement();
+	rule_head_context.initialize(break_statement_node);
+	break_statement_node->set_source_location(break_keyword.source_location);
+
 	// Make sure we're in a for-loop somewhere down the scope stack
 	if (!is_loop_in_scope_stack()) {
 		m_context.error(
@@ -1764,6 +1816,10 @@ void c_ast_builder_visitor::exit_break_statement(
 void c_ast_builder_visitor::exit_continue_statement(
 	c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
 	const s_token &continue_keyword) {
+	c_AST_node_continue_statement *continue_statement_node = new c_AST_node_continue_statement();
+	rule_head_context.initialize(continue_statement_node);
+	continue_statement_node->set_source_location(continue_keyword.source_location);
+
 	// Make sure we're in a for-loop somewhere down the scope stack
 	if (!is_loop_in_scope_stack()) {
 		m_context.error(
@@ -1782,7 +1838,8 @@ bool c_ast_builder_visitor::enter_scope_item_scope(
 	scope.initialize(new c_AST_node_scope());
 	scope->set_source_location(brace.source_location);
 
-	c_tracked_scope *tracked_scope = new c_tracked_scope(m_tracked_scopes.back(), e_tracked_scope_type::k_local);
+	c_tracked_scope *tracked_scope =
+		new c_tracked_scope(m_tracked_scopes.back(), e_tracked_scope_type::k_local, nullptr);
 	m_tracked_scopes_from_scope_nodes.insert(std::make_pair(scope.get(), tracked_scope));
 	m_tracked_scopes.push_back(tracked_scope);
 
@@ -1860,7 +1917,8 @@ bool c_ast_builder_visitor::enter_if_statement_scope(
 	scope.initialize(new c_AST_node_scope());
 	scope->set_source_location(brace.source_location);
 
-	c_tracked_scope *tracked_scope = new c_tracked_scope(m_tracked_scopes.back(), e_tracked_scope_type::k_if_statement);
+	c_tracked_scope *tracked_scope =
+		new c_tracked_scope(m_tracked_scopes.back(), e_tracked_scope_type::k_if_statement, nullptr);
 	m_tracked_scopes_from_scope_nodes.insert(std::make_pair(scope.get(), tracked_scope));
 	m_tracked_scopes.push_back(tracked_scope);
 	return true;
@@ -1883,7 +1941,8 @@ bool c_ast_builder_visitor::enter_else_if(
 	rule_head_context.initialize(new c_AST_node_scope());
 	// This scope doesn't have a source location
 
-	c_tracked_scope *tracked_scope = new c_tracked_scope(m_tracked_scopes.back(), e_tracked_scope_type::k_if_statement);
+	c_tracked_scope *tracked_scope =
+		new c_tracked_scope(m_tracked_scopes.back(), e_tracked_scope_type::k_if_statement, nullptr);
 	m_tracked_scopes_from_scope_nodes.insert(std::make_pair(rule_head_context.get(), tracked_scope));
 	m_tracked_scopes.push_back(tracked_scope);
 	return true;
@@ -1995,7 +2054,7 @@ void c_ast_builder_visitor::build_tracked_scope(c_AST_node_scope *scope_node, c_
 			declaration_node->try_get_as<c_AST_node_namespace_declaration>();
 		if (namespace_declaration_node) {
 			c_tracked_scope *tracked_namespace_scope =
-				new c_tracked_scope(tracked_scope, e_tracked_scope_type::k_namespace);
+				new c_tracked_scope(tracked_scope, e_tracked_scope_type::k_namespace, nullptr);
 
 			// Recursively build namespace scope
 			build_tracked_scope(namespace_declaration_node->get_scope(), tracked_namespace_scope);
@@ -2244,12 +2303,15 @@ void c_ast_builder_visitor::resolve_module_call_argument(
 				dependent_constant_output_mutability);
 		}
 
-		// An output argument should be a valid value reference
+		// The argument expression might be a subscript node
+		c_AST_node_subscript *subscript_node = argument_expression->try_get_as<c_AST_node_subscript>();
+
+		// An output argument should be a valid value reference or subscript
 		std::string error_action =
 			"initialize module '" + std::string(module_declaration->get_name())
 			+ " out argument '" + argument->get_name() + "' with";
 		c_wrapped_array<c_AST_node_declaration *> value_reference = try_get_typed_references(
-			argument_expression,
+			subscript_node ? subscript_node->get_reference() : argument_expression,
 			e_AST_node_type::k_value_declaration,
 			e_compiler_error::k_invalid_out_argument,
 			error_action.c_str(),
@@ -2274,16 +2336,36 @@ void c_ast_builder_visitor::resolve_module_call_argument(
 					module_declaration->get_name(),
 					argument->get_name(),
 					value_declaration->get_name());
-			} else if (!is_ast_data_type_assignable(argument_data_type, expression_data_type)) {
-				m_context.error(
-					e_compiler_error::k_type_mismatch,
-					argument_expression->get_source_location(),
-					"Cannot initialize module '%s' out argument '%s' of type '%s' with a value '%s' of type '%s'",
-					module_declaration->get_name(),
-					argument->get_name(),
-					argument->get_data_type().to_string(),
-					value_declaration->get_name(),
-					expression_data_type.to_string().c_str());
+			} else {
+				if (!is_ast_data_type_assignable(argument_data_type, expression_data_type)) {
+					m_context.error(
+						e_compiler_error::k_type_mismatch,
+						argument_expression->get_source_location(),
+						"Cannot initialize module '%s' out argument '%s' of type '%s' with a value '%s' of type '%s'",
+						module_declaration->get_name(),
+						argument->get_name(),
+						argument->get_data_type().to_string(),
+						value_declaration->get_name(),
+						expression_data_type.to_string().c_str());
+				}
+			}
+
+			// We can only do subscript assignments with a constant index
+			if (subscript_node) {
+				c_AST_qualified_data_type index_data_type = subscript_node->get_index_expression()->get_data_type();
+				if (!index_data_type.is_error()
+					&& index_data_type.get_data_mutability() != e_AST_data_mutability::k_constant) {
+					c_AST_qualified_data_type const_real_data_type(
+						c_AST_data_type(e_AST_primitive_type::k_real),
+						e_AST_data_mutability::k_constant);
+					m_context.error(
+						e_compiler_error::k_illegal_variable_subscript_assignment,
+						subscript_node->get_index_expression()->get_source_location(),
+						"Subscript assignment of value '%s' must use an index of type '%s', not '%s'",
+						value_declaration->get_name(),
+						const_real_data_type.to_string().c_str(),
+						index_data_type.to_string().c_str());
+				}
 			}
 		}
 	}

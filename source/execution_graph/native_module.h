@@ -91,7 +91,7 @@ enum class e_native_operator {
 	k_and,
 	k_or,
 	// $TODO add k_xor
-	k_array_dereference,
+	k_subscript,
 
 	k_count
 };
@@ -114,6 +114,7 @@ enum class e_native_module_qualifier {
 };
 
 // Many cases accept both "in" and "constant", so use this utility function for those
+// $TODO $COMPILER Change this to use the "data mutability" terminology
 inline bool native_module_qualifier_is_input(e_native_module_qualifier qualifier) {
 	return (qualifier == e_native_module_qualifier::k_in) || (qualifier == e_native_module_qualifier::k_constant);
 }
@@ -317,14 +318,6 @@ struct s_native_module {
 	f_native_module_compile_time_call compile_time_call;
 };
 
-// Helpers to translate between nth argument and mth input/output
-size_t get_native_module_input_index_for_argument_index(
-	const s_native_module &native_module,
-	size_t argument_index);
-size_t get_native_module_output_index_for_argument_index(
-	const s_native_module &native_module,
-	size_t argument_index);
-
 // Optimization rules
 
 // An optimization rule consists of two "patterns", a source and target. Each pattern represents a graph of native
@@ -335,7 +328,7 @@ enum class e_native_module_optimization_symbol_type {
 
 	k_native_module,
 	k_native_module_end,
-	k_array_dereference,
+	k_subscript,
 	k_variable,
 	k_constant,
 	k_real_value,
@@ -377,10 +370,10 @@ struct s_native_module_optimization_symbol {
 		return result;
 	}
 
-	static s_native_module_optimization_symbol build_array_dereference() {
+	static s_native_module_optimization_symbol build_subscript() {
 		s_native_module_optimization_symbol result;
 		zero_type(&result);
-		result.type = e_native_module_optimization_symbol_type::k_array_dereference;
+		result.type = e_native_module_optimization_symbol_type::k_subscript;
 		return result;
 	}
 

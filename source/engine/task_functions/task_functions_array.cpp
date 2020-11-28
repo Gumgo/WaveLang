@@ -27,12 +27,12 @@ static uint32 get_index_or_invalid(uint32 array_count, real32 real_index) {
 
 namespace array_task_functions {
 
-	void dereference_real(
+	void subscript_real(
 		const s_task_function_context &context,
 		c_real_buffer_array_in a,
 		const c_real_buffer *index,
 		c_real_buffer *result) {
-		wl_vassert(!index->is_compile_time_constant(), "Constant-index dereference should have been optimized away");
+		wl_vassert(!index->is_compile_time_constant(), "Constant-index subscript should have been optimized away");
 
 		uint32 array_count = cast_integer_verify<uint32>(a.get_count());
 		if (array_count == 0) {
@@ -86,12 +86,12 @@ namespace array_task_functions {
 		}
 	}
 
-	void dereference_bool(
+	void subscript_bool(
 		const s_task_function_context &context,
 		c_bool_buffer_array_in a,
 		const c_real_buffer *index,
 		c_bool_buffer *result) {
-		wl_vassert(!index->is_compile_time_constant(), "Constant-index dereference should have been optimized away");
+		wl_vassert(!index->is_compile_time_constant(), "Constant-index subscript should have been optimized away");
 
 		uint32 array_count = cast_integer_verify<uint32>(a.get_count());
 		if (array_count == 0) {

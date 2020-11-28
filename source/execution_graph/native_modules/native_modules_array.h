@@ -9,9 +9,9 @@ const uint32 k_array_library_id = 1;
 
 namespace array_native_modules wl_library(k_array_library_id, "array", 0) {
 
-	wl_native_module(0x11630660, "dereference$real")
-	wl_operator(e_native_operator::k_array_dereference)
-	void dereference_real(
+	wl_native_module(0x11630660, "subscript$real")
+	wl_operator(e_native_operator::k_subscript)
+	void subscript_real(
 		wl_in_const const c_native_module_real_array &a,
 		wl_in real32 index,
 		wl_out_return real32 &result);
@@ -40,9 +40,9 @@ namespace array_native_modules wl_library(k_array_library_id, "array", 0) {
 		wl_in_const const c_native_module_real_array &b,
 		wl_out_return c_native_module_real_array &result);
 
-	wl_native_module(0xf846b84e, "dereference$bool")
-	wl_operator(e_native_operator::k_array_dereference)
-	void dereference_bool(
+	wl_native_module(0xf846b84e, "subscript$bool")
+	wl_operator(e_native_operator::k_subscript)
+	void subscript_bool(
 		wl_in_const const c_native_module_bool_array &a,
 		wl_in real32 index,
 		wl_out_return bool &result);
@@ -71,8 +71,8 @@ namespace array_native_modules wl_library(k_array_library_id, "array", 0) {
 		wl_in_const const c_native_module_bool_array &b,
 		wl_out_return c_native_module_bool_array &result);
 
-	wl_native_module(0xf1c6de7f, "dereference$string")
-	void dereference_string(
+	wl_native_module(0xf1c6de7f, "subscript$string")
+	void subscript_string(
 		wl_in_const const c_native_module_string_array &a,
 		wl_in real32 index,
 		wl_out_return c_native_module_string &result);
@@ -103,9 +103,9 @@ namespace array_native_modules wl_library(k_array_library_id, "array", 0) {
 
 	struct
 
-	wl_optimization_rule(dereference$real(const x, const y) -> x[y])
-	wl_optimization_rule(dereference$bool(const x, const y) -> x[y])
-	wl_optimization_rule(dereference$string(const x, const y) -> x[y])
+	wl_optimization_rule(subscript$real(const x, const y) -> x[y])
+	wl_optimization_rule(subscript$bool(const x, const y) -> x[y])
+	wl_optimization_rule(subscript$string(const x, const y) -> x[y])
 
 	s_optimization_rules;
 

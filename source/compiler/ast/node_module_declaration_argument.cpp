@@ -30,3 +30,13 @@ const c_AST_qualified_data_type &c_AST_node_module_declaration_argument::get_dat
 c_AST_node_expression *c_AST_node_module_declaration_argument::get_initialization_expression() const {
 	return m_value_declaration->get_initialization_expression();
 }
+
+c_AST_node *c_AST_node_module_declaration_argument::copy_internal() const {
+	c_AST_node_module_declaration_argument *node_copy = new c_AST_node_module_declaration_argument();
+	node_copy->m_argument_direction = m_argument_direction;
+	if (m_value_declaration) {
+		node_copy->m_value_declaration.reset(m_value_declaration->copy());
+	}
+
+	return node_copy;
+}

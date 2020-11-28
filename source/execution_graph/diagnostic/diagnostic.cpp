@@ -6,9 +6,9 @@ c_diagnostic::c_diagnostic(f_diagnostic_callback diagnostic_callback, void *diag
 	m_diagnostic_callback_context = diagnostic_callback_context;
 }
 
-void c_diagnostic::info(const char *message) {
+void c_diagnostic::message(const char *message) {
 	wl_assert(message);
-	m_diagnostic_callback(m_diagnostic_callback_context, e_diagnostic_level::k_info, message);
+	m_diagnostic_callback(m_diagnostic_callback_context, e_diagnostic_level::k_message, message);
 }
 
 void c_diagnostic::warning(const char *message) {

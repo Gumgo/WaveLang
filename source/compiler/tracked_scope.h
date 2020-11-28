@@ -3,6 +3,9 @@
 #include "common/common.h"
 
 #include "compiler/ast/nodes.h"
+#include "compiler/graph_trimmer.h"
+
+#include "execution_graph/node_reference.h"
 
 #include <memory>
 #include <vector>
@@ -26,27 +29,33 @@ enum class e_tracked_event_state {
 	k_occurred
 };
 
-class c_tracked_declaration { // $TODO $COMPILER not currently needed, but we may use it during execution graph building
+class c_tracked_declaration {
 public:
-
 	UNCOPYABLE_MOVABLE(c_tracked_declaration);
+	~c_tracked_declaration();
 
 	c_AST_node_declaration *get_declaration() const;
 
+	// Keeps track of the last value assigned to this declaration when building an instrument variant
+	c_node_reference get_node_reference() const;
+	void set_node_reference(c_node_reference node_reference);
+
 private:
 	friend class c_tracked_scope;
-	c_tracked_declaration(c_AST_node_declaration *declaration);
+	c_tracked_declaration(c_AST_node_declaration *declaration, c_graph_trimmer *graph_trimmer);
 
-	c_AST_node_declaration *m_declaration;
+	c_AST_node_declaration *m_declaration = nullptr;
+	c_graph_trimmer *m_graph_trimmer = nullptr;
+	c_node_reference m_node_reference;
 
 	// Forms a linked list of scope items with the same name for quick lookups
-	c_tracked_declaration *m_next_name_lookup;
+	c_tracked_declaration *m_next_name_lookup = nullptr;
 };
 
 // Tracks progress through a scope
 class c_tracked_scope {
 public:
-	c_tracked_scope(c_tracked_scope *parent, e_tracked_scope_type scope_type);
+	c_tracked_scope(c_tracked_scope *parent, e_tracked_scope_type scope_type, c_graph_trimmer *graph_trimmer);
 	UNCOPYABLE(c_tracked_scope);
 
 	c_tracked_scope *get_parent();
@@ -80,6 +89,7 @@ private:
 
 	c_tracked_scope *m_parent = nullptr;
 	e_tracked_scope_type m_scope_type;
+	c_graph_trimmer *m_graph_trimmer = nullptr;
 	std::vector<std::unique_ptr<c_tracked_declaration>> m_declarations;
 
 	// Allows lookup of a tracked declaration from an AST declaration

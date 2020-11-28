@@ -36,6 +36,15 @@ public:
 		, m_count(vector.size()) {}
 
 	template<
+		typename t_vector_element,
+		CONDITION_DECLARATION(std::is_same_v<t_vector_element, std::remove_const_t<t_element>>)>
+		c_wrapped_array(const std::vector<t_vector_element> &vector, size_t offset, size_t count)
+		: m_pointer(count == 0 ? nullptr : &vector[offset])
+		, m_count(count) {
+		wl_assert(offset + count <= vector.size());
+	}
+
+	template<
 		typename t_mutable_element,
 		CONDITION_DECLARATION(
 			std::is_const_v<t_element> &&std::is_same_v<t_mutable_element, std::remove_const_t<t_element>>)>

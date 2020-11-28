@@ -6,7 +6,7 @@
 
 class c_AST_node_literal : public c_AST_node_expression {
 public:
-	AST_NODE_TYPE(k_literal);
+	AST_NODE_TYPE(c_AST_node_literal, k_literal);
 	c_AST_node_literal();
 
 	real32 get_real_value() const;
@@ -17,6 +17,9 @@ public:
 
 	const char *get_string_value() const;
 	void set_string_value(const char *value);
+
+protected:
+	c_AST_node *copy_internal() const override;
 
 private:
 	union {

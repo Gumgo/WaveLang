@@ -5,18 +5,43 @@
 static e_tracked_event_state event_state_min(e_tracked_event_state event_state_a, e_tracked_event_state event_state_b);
 static e_tracked_event_state event_state_max(e_tracked_event_state event_state_a, e_tracked_event_state event_state_b);
 
+c_tracked_declaration::~c_tracked_declaration() {
+	if (m_node_reference.is_valid()) {
+		// This will remove the temporary reference and trim the graph
+		set_node_reference(c_node_reference());
+	}
+}
+
 c_AST_node_declaration *c_tracked_declaration::get_declaration() const {
 	return m_declaration;
 }
 
-c_tracked_declaration::c_tracked_declaration(c_AST_node_declaration *declaration) {
+c_tracked_declaration::c_tracked_declaration(c_AST_node_declaration *declaration, c_graph_trimmer *graph_trimmer) {
 	m_declaration = declaration;
+	m_graph_trimmer = graph_trimmer;
 	m_next_name_lookup = nullptr;
 }
 
-c_tracked_scope::c_tracked_scope(c_tracked_scope *parent, e_tracked_scope_type scope_type) {
+c_node_reference c_tracked_declaration::get_node_reference() const {
+	return m_node_reference;
+}
+
+void c_tracked_declaration::set_node_reference(c_node_reference node_reference) {
+	// If we're storing node references, we require that a graph trimmer is available
+	wl_assert(m_graph_trimmer);
+
+	m_graph_trimmer->add_temporary_reference(node_reference);
+	m_graph_trimmer->remove_temporary_reference(m_node_reference);
+	m_node_reference = node_reference;
+}
+
+c_tracked_scope::c_tracked_scope(
+	c_tracked_scope *parent,
+	e_tracked_scope_type scope_type,
+	c_graph_trimmer *graph_trimmer) {
 	m_parent = parent;
 	m_scope_type = scope_type;
+	m_graph_trimmer = graph_trimmer;
 }
 
 c_tracked_scope *c_tracked_scope::get_parent() {
@@ -34,7 +59,7 @@ e_tracked_scope_type c_tracked_scope::get_scope_type() const {
 c_tracked_declaration *c_tracked_scope::add_declaration(c_AST_node_declaration *declaration) {
 	wl_assert(m_tracked_declaration_lookup.find(declaration) == m_tracked_declaration_lookup.end());
 
-	c_tracked_declaration *tracked_declaration = new c_tracked_declaration(declaration);
+	c_tracked_declaration *tracked_declaration = new c_tracked_declaration(declaration, m_graph_trimmer);
 	m_declarations.emplace_back(tracked_declaration);
 
 	m_tracked_declaration_lookup.insert(std::make_pair(declaration, tracked_declaration));

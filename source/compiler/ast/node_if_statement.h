@@ -10,7 +10,7 @@
 
 class c_AST_node_if_statement : public c_AST_node_scope_item {
 public:
-	AST_NODE_TYPE_DESCRIPTION(k_if_statement, "if statement");
+	AST_NODE_TYPE_DESCRIPTION(c_AST_node_if_statement, k_if_statement, "if statement");
 	c_AST_node_if_statement();
 
 	c_AST_node_expression *get_expression() const;
@@ -21,6 +21,9 @@ public:
 
 	c_AST_node_scope *get_false_scope() const;
 	void set_false_scope(c_AST_node_scope *true_scope);
+
+protected:
+	c_AST_node *copy_internal() const override;
 
 private:
 	std::unique_ptr<c_AST_node_expression> m_expression;

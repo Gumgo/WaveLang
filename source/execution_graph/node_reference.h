@@ -8,6 +8,8 @@
 #define EXECUTION_GRAPH_NODE_SALT_ENABLED 0
 #endif // _DEBUG
 
+// $TODO change this to a regular c_handle with a special data type that includes salt. Note that ordinary handles don't
+// get initialized in the constructor.
 class c_node_reference {
 public:
 	c_node_reference() {

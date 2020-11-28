@@ -1309,6 +1309,36 @@ bool c_execution_graph::does_node_use_indexed_outputs(c_node_reference node_refe
 	return does_node_use_indexed_outputs(get_node(node_reference));
 }
 
+size_t c_execution_graph::get_node_indexed_input_incoming_edge_count(
+	c_node_reference node_reference,
+	size_t input_index) const {
+	wl_assert(does_node_use_indexed_inputs(node_reference));
+	return get_node_incoming_edge_count(get_node_incoming_edge_reference(node_reference, input_index));
+}
+
+c_node_reference c_execution_graph::get_node_indexed_input_incoming_edge_reference(
+	c_node_reference node_reference,
+	size_t input_index,
+	size_t edge) const {
+	wl_assert(does_node_use_indexed_inputs(node_reference));
+	return get_node_incoming_edge_reference(get_node_incoming_edge_reference(node_reference, input_index), edge);
+}
+
+size_t c_execution_graph::get_node_indexed_output_outgoing_edge_count(
+	c_node_reference node_reference,
+	size_t output_index) const {
+	wl_assert(does_node_use_indexed_outputs(node_reference));
+	return get_node_outgoing_edge_count(get_node_outgoing_edge_reference(node_reference, output_index));
+}
+
+c_node_reference c_execution_graph::get_node_indexed_output_outgoing_edge_reference(
+	c_node_reference node_reference,
+	size_t output_index,
+	size_t edge) const {
+	wl_assert(does_node_use_indexed_outputs(node_reference));
+	return get_node_outgoing_edge_reference(get_node_outgoing_edge_reference(node_reference, output_index), edge);
+}
+
 void c_execution_graph::remove_unused_nodes_and_reassign_node_indices() {
 	std::vector<c_node_reference> old_to_new_references(m_nodes.size());
 

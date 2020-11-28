@@ -17,7 +17,7 @@ enum class e_execution_graph_node_type {
 	k_invalid,
 
 	// Represents a constant; can only be used as inputs
-	k_constant,
+	k_constant, // $TODO $COMPILER add k_array type
 
 	// Has 1 input per in argument pointing to a e_execution_graph_node_type::k_indexed_input node
 	// Has 1 output per out argument pointing to a e_execution_graph_node_type::k_indexed_output node
@@ -60,7 +60,7 @@ public:
 	c_node_reference add_constant_node(bool constant_value);
 	c_node_reference add_constant_node(const std::string &constant_value);
 	c_node_reference add_constant_array_node(c_native_module_data_type element_data_type);
-	void add_constant_array_value(
+	void add_constant_array_value( // $TODO $COMPILER Change usages of "constant array" to just "array"
 		c_node_reference constant_array_node_reference,
 		c_node_reference value_node_reference);
 	// Returns the old value
@@ -93,14 +93,22 @@ public:
 	uint32 get_input_node_input_index(c_node_reference node_reference) const;
 	uint32 get_output_node_output_index(c_node_reference node_reference) const;
 	size_t get_node_incoming_edge_count(c_node_reference node_reference) const;
-	// $TODO consider adding convenience accessors for array elements and native module inputs/outputs since these need
-	// to go through indexed nodes
 	c_node_reference get_node_incoming_edge_reference(c_node_reference node_reference, size_t edge) const;
 	size_t get_node_outgoing_edge_count(c_node_reference node_reference) const;
 	c_node_reference get_node_outgoing_edge_reference(c_node_reference node_reference, size_t edge) const;
 
 	bool does_node_use_indexed_inputs(c_node_reference node_reference) const;
 	bool does_node_use_indexed_outputs(c_node_reference node_reference) const;
+	size_t get_node_indexed_input_incoming_edge_count(c_node_reference node_reference, size_t input_index) const;
+	c_node_reference get_node_indexed_input_incoming_edge_reference(
+		c_node_reference node_reference,
+		size_t input_index,
+		size_t edge) const;
+	size_t get_node_indexed_output_outgoing_edge_count(c_node_reference node_reference, size_t output_index) const;
+	c_node_reference get_node_indexed_output_outgoing_edge_reference(
+		c_node_reference node_reference,
+		size_t output_index,
+		size_t edge) const;
 
 	void remove_unused_nodes_and_reassign_node_indices();
 
@@ -160,7 +168,6 @@ private:
 		size_t from_edge,
 		size_t to_edge);
 	void remove_edge_internal(c_node_reference from_reference, c_node_reference to_reference);
-	void sort_edges(c_node_reference node_reference);
 
 	bool validate_node(c_node_reference node_reference) const;
 	bool validate_edge(c_node_reference from_reference, c_node_reference to_reference) const;

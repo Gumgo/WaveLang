@@ -1015,8 +1015,8 @@ private:
 				break;
 			}
 
-			case e_native_module_optimization_symbol_type::k_array_dereference:
-				wl_vhalt("Array dereference not allowed in source pattern");
+			case e_native_module_optimization_symbol_type::k_subscript:
+				wl_vhalt("Subscript not allowed in source pattern");
 				break;
 
 			case e_native_module_optimization_symbol_type::k_variable:
@@ -1049,7 +1049,7 @@ private:
 		return true;
 	}
 
-	c_node_reference handle_target_array_dereference_symbol_match(
+	c_node_reference handle_target_subscript_symbol_match(
 		const s_native_module_optimization_symbol &array_symbol,
 		const s_native_module_optimization_symbol &index_symbol) {
 		// Validate the array and index symbols
@@ -1073,19 +1073,19 @@ private:
 			array_index);
 
 		// If array index is out of bounds, we fall back to a default value
-		c_node_reference dereferenced_node_reference = c_node_reference();
+		c_node_reference subscript_node_reference = c_node_reference();
 		if (!valid_array_index) {
 			switch (m_execution_graph->get_constant_node_data_type(array_node_reference).get_primitive_type()) {
 			case e_native_module_primitive_type::k_real:
-				dereferenced_node_reference = m_execution_graph->add_constant_node(0.0f);
+				subscript_node_reference = m_execution_graph->add_constant_node(0.0f);
 				break;
 
 			case e_native_module_primitive_type::k_bool:
-				dereferenced_node_reference = m_execution_graph->add_constant_node(false);
+				subscript_node_reference = m_execution_graph->add_constant_node(false);
 				break;
 
 			case e_native_module_primitive_type::k_string:
-				dereferenced_node_reference = m_execution_graph->add_constant_node("");
+				subscript_node_reference = m_execution_graph->add_constant_node("");
 				break;
 
 			default:
@@ -1095,10 +1095,10 @@ private:
 			// Follow the incoming index specified from the array node
 			c_node_reference input_node_reference =
 				m_execution_graph->get_node_incoming_edge_reference(array_node_reference, array_index);
-			dereferenced_node_reference = m_execution_graph->get_node_incoming_edge_reference(input_node_reference, 0);
+			subscript_node_reference = m_execution_graph->get_node_incoming_edge_reference(input_node_reference, 0);
 		}
 
-		return dereferenced_node_reference;
+		return subscript_node_reference;
 	}
 
 	c_node_reference handle_target_value_symbol_match(const s_native_module_optimization_symbol &symbol) {
@@ -1173,14 +1173,14 @@ private:
 				break;
 			}
 
-			case e_native_module_optimization_symbol_type::k_array_dereference:
+			case e_native_module_optimization_symbol_type::k_subscript:
 			case e_native_module_optimization_symbol_type::k_variable:
 			case e_native_module_optimization_symbol_type::k_constant:
 			case e_native_module_optimization_symbol_type::k_real_value:
 			case e_native_module_optimization_symbol_type::k_bool_value:
 			{
 				c_node_reference matched_node_reference;
-				if (symbol.type == e_native_module_optimization_symbol_type::k_array_dereference) {
+				if (symbol.type == e_native_module_optimization_symbol_type::k_subscript) {
 					// Read the next two symbols - must be constant array and constant index
 					wl_assert(sym + 2 <= m_rule->target.symbols.get_count());
 					sym++;
@@ -1188,7 +1188,7 @@ private:
 					sym++;
 					const s_native_module_optimization_symbol &index_symbol = m_rule->target.symbols[sym];
 
-					matched_node_reference = handle_target_array_dereference_symbol_match(array_symbol, index_symbol);
+					matched_node_reference = handle_target_subscript_symbol_match(array_symbol, index_symbol);
 				} else {
 					matched_node_reference = handle_target_value_symbol_match(symbol);
 				}

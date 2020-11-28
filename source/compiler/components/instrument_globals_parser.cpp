@@ -8,7 +8,7 @@
 
 using f_instrument_global_parser = void (*)(
 	c_compiler_context &context,
-	s_instrument_globals_context &instrument_globals,
+	s_instrument_globals_context &instrument_globals_context,
 	const s_token &command_token,
 	c_wrapped_array<const s_token> tokens);
 
@@ -38,22 +38,22 @@ static bool get_bool(
 
 static void instrument_global_parser_max_voices(
 	c_compiler_context &context,
-	s_instrument_globals_context &instrument_globals,
+	s_instrument_globals_context &instrument_globals_context,
 	const s_token &command_token,
 	c_wrapped_array<const s_token> tokens);
 static void instrument_global_parser_sample_rate(
 	c_compiler_context &context,
-	s_instrument_globals_context &instrument_globals,
+	s_instrument_globals_context &instrument_globals_context,
 	const s_token &command_token,
 	c_wrapped_array<const s_token> tokens);
 static void instrument_global_parser_chunk_size(
 	c_compiler_context &context,
-	s_instrument_globals_context &instrument_globals,
+	s_instrument_globals_context &instrument_globals_context,
 	const s_token &command_token,
 	c_wrapped_array<const s_token> tokens);
 static void instrument_global_parser_activate_fx_immediately(
 	c_compiler_context &context,
-	s_instrument_globals_context &instrument_globals,
+	s_instrument_globals_context &instrument_globals_context,
 	const s_token &command_token,
 	c_wrapped_array<const s_token> tokens);
 
@@ -76,7 +76,7 @@ public:
 		c_compiler_context &context,
 		h_compiler_source_file source_file_handle,
 		bool is_top_level_source_file,
-		s_instrument_globals_context &instrument_globals);
+		s_instrument_globals_context &instrument_globals_context);
 
 protected:
 	bool enter_import_list() override { return false; }
@@ -96,7 +96,7 @@ private:
 	c_compiler_context &m_context;
 	h_compiler_source_file m_source_file_handle;
 	bool m_is_top_level_source_file;
-	s_instrument_globals_context &m_instrument_globals;
+	s_instrument_globals_context &m_instrument_globals_context;
 
 	// Build up tokens for the current instrument global here
 	std::vector<s_token> m_tokens;
@@ -176,9 +176,13 @@ void c_instrument_globals_parser::parse_instrument_globals(
 	c_compiler_context &context,
 	h_compiler_source_file source_file_handle,
 	bool is_top_level_source_file,
-	s_instrument_globals_context &instrument_globals) {
+	s_instrument_globals_context &instrument_globals_context) {
 	wl_assert(g_instrument_globals_parser_initialized);
-	c_instrument_globals_visitor visitor(context, source_file_handle, is_top_level_source_file, instrument_globals);
+	c_instrument_globals_visitor visitor(
+		context,
+		source_file_handle,
+		is_top_level_source_file,
+		instrument_globals_context);
 	visitor.visit();
 }
 
@@ -275,10 +279,10 @@ static bool get_bool(
 
 static void instrument_global_parser_max_voices(
 	c_compiler_context &context,
-	s_instrument_globals_context &instrument_globals,
+	s_instrument_globals_context &instrument_globals_context,
 	const s_token &command_token,
 	c_wrapped_array<const s_token> tokens) {
-	if (instrument_globals.max_voices_command_executed) {
+	if (instrument_globals_context.max_voices_command_executed) {
 		context.error(
 			e_compiler_error::k_duplicate_instrument_global,
 			command_token.source_location,
@@ -296,19 +300,19 @@ static void instrument_global_parser_max_voices(
 		return;
 	}
 
-	if (!get_unsigned_nonzero_integer(context, command_token, tokens[0], instrument_globals.max_voices)) {
+	if (!get_unsigned_nonzero_integer(context, command_token, tokens[0], instrument_globals_context.max_voices)) {
 		return;
 	}
 
-	instrument_globals.max_voices_command_executed = true;
+	instrument_globals_context.max_voices_command_executed = true;
 }
 
 static void instrument_global_parser_sample_rate(
 	c_compiler_context &context,
-	s_instrument_globals_context &instrument_globals,
+	s_instrument_globals_context &instrument_globals_context,
 	const s_token &command_token,
 	c_wrapped_array<const s_token> tokens) {
-	if (instrument_globals.sample_rate_command_executed) {
+	if (instrument_globals_context.sample_rate_command_executed) {
 		context.error(
 			e_compiler_error::k_duplicate_instrument_global,
 			command_token.source_location,
@@ -332,7 +336,7 @@ static void instrument_global_parser_sample_rate(
 			return;
 		}
 
-		for (uint32 existing_sample_rate : instrument_globals.sample_rates) {
+		for (uint32 existing_sample_rate : instrument_globals_context.sample_rates) {
 			if (sample_rate == existing_sample_rate) {
 				context.error(
 					e_compiler_error::k_invalid_instrument_global_parameters,
@@ -344,18 +348,18 @@ static void instrument_global_parser_sample_rate(
 			}
 		}
 
-		instrument_globals.sample_rates.push_back(sample_rate);
+		instrument_globals_context.sample_rates.push_back(sample_rate);
 	}
 
-	instrument_globals.sample_rate_command_executed = true;
+	instrument_globals_context.sample_rate_command_executed = true;
 }
 
 static void instrument_global_parser_chunk_size(
 	c_compiler_context &context,
-	s_instrument_globals_context &instrument_globals,
+	s_instrument_globals_context &instrument_globals_context,
 	const s_token &command_token,
 	c_wrapped_array<const s_token> tokens) {
-	if (instrument_globals.chunk_size_command_executed) {
+	if (instrument_globals_context.chunk_size_command_executed) {
 		context.error(
 			e_compiler_error::k_duplicate_instrument_global,
 			command_token.source_location,
@@ -373,19 +377,19 @@ static void instrument_global_parser_chunk_size(
 		return;
 	}
 
-	if (!get_unsigned_nonzero_integer(context, command_token, tokens[0], instrument_globals.chunk_size)) {
+	if (!get_unsigned_nonzero_integer(context, command_token, tokens[0], instrument_globals_context.chunk_size)) {
 		return;
 	}
 
-	instrument_globals.chunk_size_command_executed = true;
+	instrument_globals_context.chunk_size_command_executed = true;
 }
 
 static void instrument_global_parser_activate_fx_immediately(
 	c_compiler_context &context,
-	s_instrument_globals_context &instrument_globals,
+	s_instrument_globals_context &instrument_globals_context,
 	const s_token &command_token,
 	c_wrapped_array<const s_token> tokens) {
-	if (instrument_globals.activate_fx_immediately_command_executed) {
+	if (instrument_globals_context.activate_fx_immediately_command_executed) {
 		context.error(
 			e_compiler_error::k_duplicate_instrument_global,
 			command_token.source_location,
@@ -403,25 +407,25 @@ static void instrument_global_parser_activate_fx_immediately(
 		return;
 	}
 
-	if (!get_bool(context, command_token, tokens[0], instrument_globals.activate_fx_immediately)) {
+	if (!get_bool(context, command_token, tokens[0], instrument_globals_context.activate_fx_immediately)) {
 		return;
 	}
 
-	instrument_globals.activate_fx_immediately_command_executed = true;
+	instrument_globals_context.activate_fx_immediately_command_executed = true;
 }
 
 c_instrument_globals_visitor::c_instrument_globals_visitor(
 	c_compiler_context &context,
 	h_compiler_source_file source_file_handle,
 	bool is_top_level_source_file,
-	s_instrument_globals_context &instrument_globals)
+	s_instrument_globals_context &instrument_globals_context)
 	: c_wavelang_lr_parse_tree_visitor(
 		context.get_source_file(source_file_handle).parse_tree,
 		context.get_source_file(source_file_handle).tokens)
 	, m_context(context)
 	, m_source_file_handle(source_file_handle)
 	, m_is_top_level_source_file(is_top_level_source_file)
-	, m_instrument_globals(instrument_globals) {}
+	, m_instrument_globals_context(instrument_globals_context) {}
 
 void c_instrument_globals_visitor::exit_instrument_global(const s_token &command) {
 	try_execute_parser(command);
@@ -462,7 +466,7 @@ void c_instrument_globals_visitor::try_execute_parser(const s_token &command_tok
 
 	iter->second(
 		m_context,
-		m_instrument_globals,
+		m_instrument_globals_context,
 		command_token,
 		c_wrapped_array<const s_token>(m_tokens));
 }

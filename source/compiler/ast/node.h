@@ -23,12 +23,15 @@ enum class e_AST_node_type {
 	k_module_call_argument,
 	k_convert,
 	k_access,
+	k_subscript,
 
 	k_expression_statement,
 	k_assignment_statement,
 	k_return_statement,
 	k_if_statement,
 	k_for_loop,
+	k_break_statement,
+	k_continue_statement,
 
 	k_count
 };
@@ -108,6 +111,8 @@ public:
 protected:
 	c_AST_node(c_ast_node_type type);
 
+	virtual c_AST_node *copy_internal() const = 0;
+
 private:
 	c_ast_node_type m_type;
 	s_compiler_source_location m_source_location;
@@ -134,9 +139,14 @@ const t_ast_node *get_ast_node_as_or_null(const c_AST_node *node) {
 }
 
 // Place this at the top of all classes
-#define AST_NODE_TYPE(ast_node_type) static constexpr e_AST_node_type k_ast_node_type = e_AST_node_type::ast_node_type
+#define AST_NODE_TYPE(class_name, ast_node_type)										\
+	class_name *copy() const {															\
+		return copy_internal()->get_as<class_name>();									\
+	}																					\
+																						\
+	static constexpr e_AST_node_type k_ast_node_type = e_AST_node_type::ast_node_type	\
 
 // Use this one to specify a user-facing type description string
-#define AST_NODE_TYPE_DESCRIPTION(ast_node_type, description)						\
+#define AST_NODE_TYPE_DESCRIPTION(class_name, ast_node_type, description)			\
 	virtual const char *describe_type() const override { return (description); }	\
-	AST_NODE_TYPE(ast_node_type)
+	AST_NODE_TYPE(class_name, ast_node_type)

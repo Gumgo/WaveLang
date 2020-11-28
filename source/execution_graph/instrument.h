@@ -49,7 +49,7 @@ public:
 
 private:
 	s_instrument_globals m_instrument_globals;
-	c_execution_graph *m_voice_execution_graph;
+	c_execution_graph *m_voice_execution_graph; // $TODO $COMPILER Change to unique_ptr
 	c_execution_graph *m_fx_execution_graph;
 };
 

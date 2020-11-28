@@ -163,37 +163,3 @@ const s_native_module_primitive_type_traits &get_native_module_primitive_type_tr
 	wl_assert(valid_enum_index(primitive_type));
 	return k_native_module_primitive_type_traits[enum_index(primitive_type)];
 }
-
-size_t get_native_module_input_index_for_argument_index(const s_native_module &native_module, size_t argument_index) {
-	size_t input_index = 0;
-	for (size_t arg = 0; arg < native_module.arguments.get_count(); arg++) {
-		if (arg == argument_index) {
-			wl_assert(native_module_qualifier_is_input(native_module.arguments[arg].type.get_qualifier()));
-			return input_index;
-		}
-
-		if (native_module_qualifier_is_input(native_module.arguments[arg].type.get_qualifier())) {
-			input_index++;
-		}
-	}
-
-	wl_vhalt("Invalid argument index");
-	return k_invalid_native_module_argument_index;
-}
-
-size_t get_native_module_output_index_for_argument_index(const s_native_module &native_module, size_t argument_index) {
-	size_t output_index = 0;
-	for (size_t arg = 0; arg < native_module.arguments.get_count(); arg++) {
-		if (arg == argument_index) {
-			wl_assert(native_module.arguments[arg].type.get_qualifier() == e_native_module_qualifier::k_out);
-			return output_index;
-		}
-
-		if (native_module.arguments[arg].type.get_qualifier() == e_native_module_qualifier::k_out) {
-			output_index++;
-		}
-	}
-
-	wl_vhalt("Invalid argument index");
-	return k_invalid_native_module_argument_index;
-}

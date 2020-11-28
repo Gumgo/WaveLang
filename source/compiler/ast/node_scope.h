@@ -11,7 +11,7 @@
 
 class c_AST_node_scope : public c_AST_node_scope_item {
 public:
-	AST_NODE_TYPE_DESCRIPTION(k_scope, "scope");
+	AST_NODE_TYPE_DESCRIPTION(c_AST_node_scope, k_scope, "scope");
 	c_AST_node_scope();
 
 	// If a scope item is being imported, this node doesn't take ownership
@@ -20,6 +20,9 @@ public:
 	c_AST_node_scope_item *get_scope_item(size_t index) const;
 
 	void lookup_declarations_by_name(const char *name, std::vector<c_AST_node_declaration *> &declarations_out) const;
+
+protected:
+	c_AST_node *copy_internal() const override;
 
 private:
 	struct s_scope_item_entry {

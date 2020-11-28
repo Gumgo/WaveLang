@@ -16,7 +16,7 @@ class c_AST_node_module_call;
 
 class c_AST_node_module_declaration : public c_AST_node_declaration {
 public:
-	AST_NODE_TYPE_DESCRIPTION(k_module_declaration, "module");
+	AST_NODE_TYPE_DESCRIPTION(c_AST_node_module_declaration, k_module_declaration, "module");
 	c_AST_node_module_declaration();
 
 	void add_argument(const c_AST_node_module_declaration_argument *argument);
@@ -34,6 +34,9 @@ public:
 
 	const s_native_module_uid &get_native_module_uid() const;
 	void set_native_module_uid(const s_native_module_uid &native_module_uid);
+
+protected:
+	c_AST_node *copy_internal() const override;
 
 private:
 	std::vector<std::unique_ptr<c_AST_node_module_declaration_argument>> m_arguments;

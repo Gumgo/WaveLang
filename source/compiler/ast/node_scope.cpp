@@ -27,3 +27,17 @@ void c_AST_node_scope::lookup_declarations_by_name(
 		}
 	}
 }
+
+c_AST_node *c_AST_node_scope::copy_internal() const {
+	c_AST_node_scope *node_copy = new c_AST_node_scope();
+	node_copy->m_scope_items.reserve(m_scope_items.size());
+	for (const s_scope_item_entry &scope_item_entry : m_scope_items) {
+		if (scope_item_entry.owned_scope_item) {
+			node_copy->m_scope_items.emplace_back(s_scope_item_entry(scope_item_entry.owned_scope_item->copy(), true));
+		} else {
+			node_copy->m_scope_items.emplace_back(s_scope_item_entry(scope_item_entry.scope_item, false));
+		}
+	}
+
+	return node_copy;
+}

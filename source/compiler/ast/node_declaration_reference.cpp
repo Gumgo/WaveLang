@@ -34,3 +34,11 @@ void c_AST_node_declaration_reference::add_reference(c_AST_node_declaration *ref
 c_wrapped_array<c_AST_node_declaration *> c_AST_node_declaration_reference::get_references() const {
 	return c_wrapped_array<c_AST_node_declaration *>(m_references);
 }
+
+c_AST_node *c_AST_node_declaration_reference::copy_internal() const {
+	c_AST_node_declaration_reference *node_copy = new c_AST_node_declaration_reference();
+	node_copy->set_data_type(get_data_type());
+	node_copy->m_references.assign(m_references.begin(), m_references.end());
+
+	return node_copy;
+}

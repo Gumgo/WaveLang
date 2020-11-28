@@ -9,7 +9,7 @@
 
 class c_AST_node_declaration_reference : public c_AST_node_expression {
 public:
-	AST_NODE_TYPE(k_declaration_reference);
+	AST_NODE_TYPE(c_AST_node_declaration_reference, k_declaration_reference);
 	c_AST_node_declaration_reference();
 
 	// If this is false, the data type is the error type.
@@ -19,6 +19,9 @@ public:
 	// this node references a value, the data type automatically gets set. Otherwise, the data type is invalid.
 	void add_reference(c_AST_node_declaration *reference);
 	c_wrapped_array<c_AST_node_declaration *> get_references() const;
+
+protected:
+	c_AST_node *copy_internal() const override;
 
 private:
 	std::vector<c_AST_node_declaration *> m_references;

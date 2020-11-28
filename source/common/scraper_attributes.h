@@ -119,7 +119,7 @@
 // be built using the following pieces:
 // - module_name$overload_identifier(x, y, z, ...) - Represents a native module call, where x, y, z, ... are the
 //   arguments. Optional syntax: library_name.module_name$overload_identifier. Example: addition$real(x, y)
-// - variable[index] - Represents an array dereference operation. Example: x[0]
+// - variable[index] - Represents an array subscript operation. Example: x[0]
 // - identifier - Used to represent a variable to be matched between the pre- and post-optimization expression.
 // - const identifier - Same as above, but the variable is only matched if it is compile-time constant.
 // - <real value> - matches with a real value.

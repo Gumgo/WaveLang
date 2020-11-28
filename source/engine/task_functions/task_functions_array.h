@@ -9,15 +9,15 @@
 
 namespace array_task_functions wl_library(k_array_library_id, "array", 0) {
 
-	wl_task_function(0xc02d173d, "dereference_real", "dereference$real")
-	void dereference_real(
+	wl_task_function(0xc02d173d, "subscript_real", "subscript$real")
+	void subscript_real(
 		const s_task_function_context &context,
 		wl_source("a") c_real_buffer_array_in a,
 		wl_source("index") const c_real_buffer *index,
 		wl_source("result") c_real_buffer *result);
 
-	wl_task_function(0x91b5380b, "dereference_bool", "dereference$bool")
-	void dereference_bool(
+	wl_task_function(0x91b5380b, "subscript_bool", "subscript$bool")
+	void subscript_bool(
 		const s_task_function_context &context,
 		wl_source("a") c_bool_buffer_array_in a,
 		wl_source("index") const c_real_buffer *index,

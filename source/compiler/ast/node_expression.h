@@ -7,7 +7,7 @@
 
 class c_AST_node_expression : public c_AST_node {
 public:
-	AST_NODE_TYPE_DESCRIPTION(k_expression, "expression");
+	AST_NODE_TYPE_DESCRIPTION(c_AST_node_expression, k_expression, "expression");
 	c_AST_node_expression(c_ast_node_type type);
 
 	const c_AST_qualified_data_type &get_data_type() const;

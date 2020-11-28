@@ -89,13 +89,10 @@ int main(int argc, char **argv) {
 	// Compile each input file
 	for (int32 arg = first_file_argument_index; arg < argc; arg++) {
 		std::cout << "Compiling '" << argv[arg] << "'\n";
-		c_instrument instrument;
-		bool compile_result = c_compiler::compile(
-			c_wrapped_array<void *>(library_contexts),
-			argv[arg],
-			&instrument);
+		std::unique_ptr<c_instrument> instrument(
+			c_compiler::compile(c_wrapped_array<void *>(library_contexts), argv[arg]));
 
-		if (compile_result) {
+		if (instrument) {
 			std::string fname_no_ext = argv[arg];
 			// Add or replace extension
 			size_t last_slash = fname_no_ext.find_last_of('/');
@@ -115,16 +112,16 @@ int main(int argc, char **argv) {
 			std::string out_fname = fname_no_ext + '.' + k_wavelang_synth_extension;
 			std::cout << "Compiled '" << argv[arg] << "' successfully, saving result to '" << out_fname << "'\n";
 
-			e_instrument_result save_result = instrument.save(out_fname.c_str());
+			e_instrument_result save_result = instrument->save(out_fname.c_str());
 			if (save_result != e_instrument_result::k_success) {
 				std::cerr << "Failed to save '" << out_fname << "' (result code " << enum_index(save_result) << ")\n";
 			}
 
 			if (output_execution_graph) {
 				for (uint32 variant_index = 0;
-					variant_index < instrument.get_instrument_variant_count();
+					variant_index < instrument->get_instrument_variant_count();
 					variant_index++) {
-					const c_instrument_variant *instrument_variant = instrument.get_instrument_variant(variant_index);
+					const c_instrument_variant *instrument_variant = instrument->get_instrument_variant(variant_index);
 
 					const c_execution_graph *execution_graphs[] = {
 						instrument_variant->get_voice_execution_graph(),
