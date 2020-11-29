@@ -42,6 +42,7 @@ enum class e_execution_graph_node_type {
 	k_count
 };
 
+// $TODO c_execution_graph -> c_instrument_stage_graph, c_node_reference -> h_graph_node
 class c_execution_graph {
 public:
 	using f_on_node_removed = void (*)(void *context, c_node_reference node_reference);

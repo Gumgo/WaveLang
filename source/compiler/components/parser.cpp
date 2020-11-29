@@ -134,11 +134,11 @@ static void print_parse_tree(c_graphviz_generator &graph, const s_compiler_sourc
 				node_name.c_str());
 		}
 
-		if (node.has_sibling() != c_lr_parse_tree::k_invalid_index) {
+		if (node.has_sibling()) {
 			node_stack.push_back({ node.get_sibling_index(), node_context.index });
 		}
 
-		if (node.has_child() != c_lr_parse_tree::k_invalid_index) {
+		if (node.has_child()) {
 			node_stack.push_back({ node.get_child_index(), node_context.index });
 		}
 	}

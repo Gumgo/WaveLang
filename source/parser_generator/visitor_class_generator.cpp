@@ -51,7 +51,7 @@ void c_visitor_class_generator::generate_class_declaration(std::ofstream &file) 
 
 	// This is used so we can generically construct types from their type name (e.g. construct_type<int32 *>())
 	file << "\ttemplate<typename t_type>\n";
-	file << "\tstatic t_type &&construct_context() {\n";
+	file << "\tstatic t_type construct_context() {\n";
 	file << "\t\treturn t_type();\n";
 	file << "\t}\n\n";
 

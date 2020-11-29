@@ -19,7 +19,7 @@ constexpr bool valid_enum_index(t_enum value) {
 
 template<typename t_enum>
 constexpr t_enum enum_next(t_enum value) {
-	return static_cast<t_enum>(static_cast<std::underlying_type_t<t_enum>>(value + 1));
+	return static_cast<t_enum>(static_cast<std::underlying_type_t<t_enum>>(value) + 1);
 }
 
 template<typename t_enum>

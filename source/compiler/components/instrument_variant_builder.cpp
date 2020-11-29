@@ -304,6 +304,8 @@ bool c_execution_graph_builder::initialize_global_scope_constants(c_ast_node_sco
 			return false;
 		}
 	}
+
+	return true;
 }
 
 bool c_execution_graph_builder::initialize_global_scope_constant(c_ast_node_value_declaration *value_declaration) {
@@ -343,7 +345,7 @@ bool c_execution_graph_builder::initialize_global_scope_constant(c_ast_node_valu
 
 	// Swap the global scope back onto the tracked scopes list
 	wl_assert(m_tracked_scopes.empty());
-	m_tracked_scopes.emplace_back(tracked_scopes_backup[0]);
+	m_tracked_scopes.emplace_back(std::move(tracked_scopes_backup[0]));
 	wl_assert(!tracked_scopes_backup[0]);
 
 	push_ast_node(value_declaration->get_initialization_expression());
@@ -375,6 +377,7 @@ bool c_execution_graph_builder::initialize_global_scope_constant(c_ast_node_valu
 	m_module_call_depth = module_call_depth_backup;
 
 	m_constants_being_initialized.erase(value_declaration);
+	return true;
 }
 
 void c_execution_graph_builder::push_expression_result(c_node_reference node_reference) {
@@ -1195,7 +1198,7 @@ bool c_execution_graph_builder::assign_expression_value(
 			// copying the entire array
 			c_node_reference old_element_node_reference = m_execution_graph.set_constant_array_value_at_index(
 				array_node_reference,
-				array_index,
+				cast_integer_verify<uint32>(array_index),
 				expression_node_reference);
 			m_graph_trimmer.try_trim_node(old_element_node_reference);
 		} else {

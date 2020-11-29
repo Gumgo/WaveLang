@@ -32,7 +32,7 @@ static s_module_call_resolution_result construct_argument_list(
 c_ast_node_module_declaration::c_ast_node_module_declaration()
 	: c_ast_node_declaration(k_ast_node_type) {}
 
-void c_ast_node_module_declaration::add_argument(const c_ast_node_module_declaration_argument *argument) {
+void c_ast_node_module_declaration::add_argument(c_ast_node_module_declaration_argument *argument) {
 	m_arguments.emplace_back(argument);
 }
 
@@ -376,7 +376,7 @@ static s_module_call_resolution_result construct_argument_list(
 				}
 			}
 
-			if (!matched_argument_index == k_invalid_argument_index) {
+			if (matched_argument_index == k_invalid_argument_index) {
 				// This named argument didn't match one of the arguments in the declaration
 				result.result = e_module_call_resolution_result::k_invalid_named_argument;
 				result.call_argument_index = call_argument_index;

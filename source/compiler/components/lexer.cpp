@@ -366,7 +366,7 @@ static bool try_read_real_constant(c_lexer_location &location, s_token &result_o
 	// fraction : ""|("."[0-9]+)
 	// exponent : ""|(("E"|"e")(""|"+"|"-")[0-9]+)
 
-	if (!location.is_next_character_digit() && !location.next_character() == '-') {
+	if (!location.is_next_character_digit() && location.next_character() != '-') {
 		return false;
 	}
 

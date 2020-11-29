@@ -202,7 +202,7 @@ std::string c_compiler_context::get_source_location_string(const s_compiler_sour
 static std::string str_format(const char *format, ...) {
 	va_list args;
 	va_start(args, format);
-	std::string result = str_format(format, args);
+	std::string result = str_vformat(format, args);
 	va_end(args);
 	return result;
 }

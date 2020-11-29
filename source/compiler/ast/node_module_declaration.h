@@ -19,7 +19,7 @@ public:
 	AST_NODE_TYPE_DESCRIPTION(c_ast_node_module_declaration, k_module_declaration, "module");
 	c_ast_node_module_declaration();
 
-	void add_argument(const c_ast_node_module_declaration_argument *argument);
+	void add_argument(c_ast_node_module_declaration_argument *argument);
 	size_t get_argument_count() const;
 	c_ast_node_module_declaration_argument *get_argument(size_t index) const;
 

@@ -1784,6 +1784,7 @@ bool c_ast_builder_visitor::enter_scope_item_for_loop(
 	m_tracked_scopes.push_back(tracked_scope);
 
 	iterator = for_loop_node;
+	return true;
 }
 
 void c_ast_builder_visitor::exit_scope_item_for_loop(
