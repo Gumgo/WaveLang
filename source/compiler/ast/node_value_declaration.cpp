@@ -1,34 +1,34 @@
 #include "compiler/ast/node_value_declaration.h"
 
-c_AST_node_value_declaration::c_AST_node_value_declaration()
-	: c_AST_node_declaration(k_ast_node_type) {}
+c_ast_node_value_declaration::c_ast_node_value_declaration()
+	: c_ast_node_declaration(k_ast_node_type) {}
 
-const c_AST_qualified_data_type &c_AST_node_value_declaration::get_data_type() const {
+const c_ast_qualified_data_type &c_ast_node_value_declaration::get_data_type() const {
 	return m_data_type;
 }
 
-void c_AST_node_value_declaration::set_data_type(const c_AST_qualified_data_type &data_type) {
+void c_ast_node_value_declaration::set_data_type(const c_ast_qualified_data_type &data_type) {
 	m_data_type = data_type;
 }
 
-bool c_AST_node_value_declaration::is_modifiable() const {
+bool c_ast_node_value_declaration::is_modifiable() const {
 	return m_modifiable;
 }
 
-void c_AST_node_value_declaration::set_modifiable(bool modifiable) {
+void c_ast_node_value_declaration::set_modifiable(bool modifiable) {
 	m_modifiable = modifiable;
 }
 
-c_AST_node_expression *c_AST_node_value_declaration::get_initialization_expression() const {
+c_ast_node_expression *c_ast_node_value_declaration::get_initialization_expression() const {
 	return m_initialization_expression.get();
 }
 
-void c_AST_node_value_declaration::set_initialization_expression(c_AST_node_expression *initialization_expression) {
+void c_ast_node_value_declaration::set_initialization_expression(c_ast_node_expression *initialization_expression) {
 	m_initialization_expression.reset(initialization_expression);
 }
 
-c_AST_node *c_AST_node_value_declaration::copy_internal() const {
-	c_AST_node_value_declaration *node_copy = new c_AST_node_value_declaration();
+c_ast_node *c_ast_node_value_declaration::copy_internal() const {
+	c_ast_node_value_declaration *node_copy = new c_ast_node_value_declaration();
 	node_copy->m_data_type = m_data_type;
 	node_copy->m_modifiable = m_modifiable;
 	if (m_initialization_expression) {

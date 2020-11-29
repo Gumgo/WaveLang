@@ -81,7 +81,7 @@ public:
 	void remove_edge(c_node_reference from_reference, c_node_reference to_reference);
 
 	uint32 get_node_count() const;
-	c_node_reference nodes_begin() const;
+	c_node_reference nodes_begin() const; // $TODO $COMPILER make an iterator class instead
 	c_node_reference nodes_next(c_node_reference node_reference) const;
 
 	e_execution_graph_node_type get_node_type(c_node_reference node_reference) const;

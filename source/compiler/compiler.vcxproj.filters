@@ -2,8 +2,6 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClInclude Include="compiler.h" />
-    <ClInclude Include="compiler_utility.h" />
-    <ClInclude Include="execution_graph_optimizer.h" />
     <ClInclude Include="lr_parser.h" />
     <ClInclude Include="getopt\getopt.h">
       <Filter>getopt</Filter>
@@ -119,11 +117,14 @@
       <Filter>ast</Filter>
     </ClInclude>
     <ClInclude Include="try_call_native_module.h" />
+    <ClInclude Include="components\instrument_variant_optimizer.h">
+      <Filter>components</Filter>
+    </ClInclude>
+    <ClInclude Include="optimization_rule_applicator.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="compiler.cpp" />
     <ClCompile Include="compiler_main.cpp" />
-    <ClCompile Include="execution_graph_optimizer.cpp" />
     <ClCompile Include="lr_parser.cpp" />
     <ClCompile Include="getopt\getopt.c">
       <Filter>getopt</Filter>
@@ -233,6 +234,10 @@
       <Filter>ast</Filter>
     </ClCompile>
     <ClCompile Include="try_call_native_module.cpp" />
+    <ClCompile Include="components\instrument_variant_optimizer.cpp">
+      <Filter>components</Filter>
+    </ClCompile>
+    <ClCompile Include="optimization_rule_applicator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="SConscript" />

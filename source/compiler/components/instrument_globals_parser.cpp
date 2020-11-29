@@ -87,8 +87,8 @@ protected:
 	void exit_instrument_global_string_parameter(const s_token &parameter) override;
 
 	bool enter_global_scope(
-		c_temporary_reference<c_AST_node_scope> &rule_head_context,
-		c_AST_node_scope *&item_list) override {
+		c_temporary_reference<c_ast_node_scope> &rule_head_context,
+		c_ast_node_scope *&item_list) override {
 		return false;
 	}
 

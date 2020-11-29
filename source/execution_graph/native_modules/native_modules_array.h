@@ -101,13 +101,5 @@ namespace array_native_modules wl_library(k_array_library_id, "array", 0) {
 		wl_in_const const c_native_module_string_array &b,
 		wl_out_return c_native_module_string_array &result);
 
-	struct
-
-	wl_optimization_rule(subscript$real(const x, const y) -> x[y])
-	wl_optimization_rule(subscript$bool(const x, const y) -> x[y])
-	wl_optimization_rule(subscript$string(const x, const y) -> x[y])
-
-	s_optimization_rules;
-
 }
 

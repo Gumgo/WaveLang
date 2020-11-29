@@ -13,6 +13,6 @@ public:
 	static c_instrument_variant *build_instrument_variant(
 		c_compiler_context &context,
 		const s_instrument_globals &instrument_globals,
-		c_AST_node_module_declaration *voice_entry_point,
-		c_AST_node_module_declaration *fx_entry_point);
+		c_ast_node_module_declaration *voice_entry_point,
+		c_ast_node_module_declaration *fx_entry_point);
 };

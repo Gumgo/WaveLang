@@ -5,14 +5,14 @@ static constexpr const char *k_fx_entry_point_module_name = "fx_main";
 
 void c_entry_point_extractor::extract_entry_points(
 	c_compiler_context &context,
-	c_AST_node_module_declaration *&voice_entry_point_out,
-	c_AST_node_module_declaration *&fx_entry_point_out) {
+	c_ast_node_module_declaration *&voice_entry_point_out,
+	c_ast_node_module_declaration *&fx_entry_point_out) {
 	voice_entry_point_out = nullptr;
 	fx_entry_point_out = nullptr;
 
 	h_compiler_source_file source_file_handle = h_compiler_source_file::construct(0);
 	const s_compiler_source_file &source_file = context.get_source_file(source_file_handle);
-	const c_AST_node_scope *global_scope = source_file.ast->get_as<c_AST_node_scope>();
+	const c_ast_node_scope *global_scope = source_file.ast->get_as<c_ast_node_scope>();
 
 	static constexpr size_t k_voice_entry_point_index = 0;
 	static constexpr size_t k_fx_entry_point_index = 1;
@@ -22,8 +22,8 @@ void c_entry_point_extractor::extract_entry_points(
 	};
 
 	bool failed = false;
-	c_AST_node_module_declaration *entry_points[] = { nullptr, nullptr };
-	std::vector<c_AST_node_declaration *> lookup_buffer;
+	c_ast_node_module_declaration *entry_points[] = { nullptr, nullptr };
+	std::vector<c_ast_node_declaration *> lookup_buffer;
 	for (size_t index = 0; index < array_count(k_entry_point_module_names); index++) {
 		global_scope->lookup_declarations_by_name(k_entry_point_module_names[index], lookup_buffer);
 
@@ -31,10 +31,10 @@ void c_entry_point_extractor::extract_entry_points(
 			continue;
 		}
 
-		c_AST_node_module_declaration *entry_point = nullptr;
-		for (c_AST_node_declaration *declaration : lookup_buffer) {
-			c_AST_node_module_declaration *module_declaration =
-				declaration->try_get_as<c_AST_node_module_declaration>();
+		c_ast_node_module_declaration *entry_point = nullptr;
+		for (c_ast_node_declaration *declaration : lookup_buffer) {
+			c_ast_node_module_declaration *module_declaration =
+				declaration->try_get_as<c_ast_node_module_declaration>();
 			if (!module_declaration) {
 				// Skip over declarations of the incorrect type rather than erroring
 				continue;
@@ -58,12 +58,12 @@ void c_entry_point_extractor::extract_entry_points(
 
 		// $TODO $UPSAMPLE support upsampled data types
 		if (entry_point) {
-			c_AST_qualified_data_type real_data_type(
-				c_AST_data_type(e_AST_primitive_type::k_real),
-				e_AST_data_mutability::k_variable);
-			c_AST_qualified_data_type bool_data_type(
-				c_AST_data_type(e_AST_primitive_type::k_bool),
-				e_AST_data_mutability::k_variable);
+			c_ast_qualified_data_type real_data_type(
+				c_ast_data_type(e_ast_primitive_type::k_real),
+				e_ast_data_mutability::k_variable);
+			c_ast_qualified_data_type bool_data_type(
+				c_ast_data_type(e_ast_primitive_type::k_bool),
+				e_ast_data_mutability::k_variable);
 
 			// Validate input/output types
 			if (!is_ast_data_type_assignable(entry_point->get_return_type(), bool_data_type)) {
@@ -78,10 +78,10 @@ void c_entry_point_extractor::extract_entry_points(
 			}
 
 			for (size_t argument_index = 0; argument_index < entry_point->get_argument_count(); argument_index++) {
-				const c_AST_node_module_declaration_argument *argument = entry_point->get_argument(argument_index);
+				const c_ast_node_module_declaration_argument *argument = entry_point->get_argument(argument_index);
 
 				if (index == k_voice_entry_point_index) {
-					if (argument->get_argument_direction() != e_AST_argument_direction::k_out) {
+					if (argument->get_argument_direction() != e_ast_argument_direction::k_out) {
 						failed = true;
 						context.error(
 							e_compiler_error::k_invalid_entry_point,
@@ -91,7 +91,7 @@ void c_entry_point_extractor::extract_entry_points(
 							argument->get_name());
 					}
 
-					c_AST_qualified_data_type argument_data_type = argument->get_value_declaration()->get_data_type();
+					c_ast_qualified_data_type argument_data_type = argument->get_value_declaration()->get_data_type();
 					if (!is_ast_data_type_assignable(argument_data_type, real_data_type)) {
 						failed = true;
 						context.error(
@@ -108,7 +108,7 @@ void c_entry_point_extractor::extract_entry_points(
 
 					// $TODO $INPUT allow input arguments which must be non-upsampled reals
 
-					if (argument->get_argument_direction() != e_AST_argument_direction::k_in) {
+					if (argument->get_argument_direction() != e_ast_argument_direction::k_in) {
 						failed = true;
 						context.error(
 							e_compiler_error::k_invalid_entry_point,
@@ -118,7 +118,7 @@ void c_entry_point_extractor::extract_entry_points(
 							argument->get_name());
 					}
 
-					c_AST_qualified_data_type argument_data_type = argument->get_value_declaration()->get_data_type();
+					c_ast_qualified_data_type argument_data_type = argument->get_value_declaration()->get_data_type();
 					if (!is_ast_data_type_assignable(real_data_type, argument_data_type)) {
 						failed = true;
 						context.error(

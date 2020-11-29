@@ -35,7 +35,6 @@ public:
 
 	// Registers a native operator by associating it with the name of a native module. We use the name and not UID
 	// because the operator can be overloaded.
-	// $TODO $COMPILER these two functions can go away I think, and the internals of them
 	static void register_native_operator(e_native_operator native_operator, const char *native_module_name);
 	static e_native_operator get_native_module_operator(s_native_module_uid native_module_uid);
 

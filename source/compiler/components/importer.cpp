@@ -15,11 +15,11 @@ static bool are_imports_identical(
 	const s_compiler_source_file_import &import_a,
 	const s_compiler_source_file_import &import_b);
 
-static c_AST_node_module_declaration *create_module_declaration_for_native_module(
+static c_ast_node_module_declaration *create_module_declaration_for_native_module(
 	const s_native_module &native_module,
 	bool is_operator);
 
-static c_AST_qualified_data_type ast_data_type_from_native_module_data_type(
+static c_ast_qualified_data_type ast_data_type_from_native_module_data_type(
 	c_native_module_qualified_data_type native_module_data_type,
 	bool is_runtime_only);
 
@@ -40,8 +40,8 @@ protected:
 
 	bool enter_instrument_global(const s_token &command) override { return false; }
 	bool enter_global_scope(
-		c_temporary_reference<c_AST_node_scope> &rule_head_context,
-		c_AST_node_scope *&item_list) override {
+		c_temporary_reference<c_ast_node_scope> &rule_head_context,
+		c_ast_node_scope *&item_list) override {
 		return false;
 	}
 
@@ -81,7 +81,7 @@ void c_importer::add_imports_to_global_scope(c_compiler_context &context, h_comp
 	s_compiler_source_file &source_file = context.get_source_file(source_file_handle);
 
 	// First add all operators
-	c_AST_node_scope *global_scope = source_file.ast->get_as<c_AST_node_scope>();
+	c_ast_node_scope *global_scope = source_file.ast->get_as<c_ast_node_scope>();
 	for (h_native_module native_module_handle : c_native_module_registry::iterate_native_modules()) {
 		const s_native_module &native_module =
 			c_native_module_registry::get_native_module(native_module_handle);
@@ -91,29 +91,29 @@ void c_importer::add_imports_to_global_scope(c_compiler_context &context, h_comp
 			continue;
 		}
 
-		c_AST_node_module_declaration *module_declaration =
+		c_ast_node_module_declaration *module_declaration =
 			create_module_declaration_for_native_module(native_module, true);
 		global_scope->add_scope_item(module_declaration, true);
 	}
 
-	std::vector<c_AST_node_declaration *> lookup_buffer;
+	std::vector<c_ast_node_declaration *> lookup_buffer;
 	for (const s_compiler_source_file_import &import : source_file.imports) {
 		// First make sure the import-as scope exists
-		c_AST_node_scope *current_scope = source_file.ast->get_as<c_AST_node_scope>();
+		c_ast_node_scope *current_scope = source_file.ast->get_as<c_ast_node_scope>();
 		for (const std::string &import_as_component : import.import_as_components) {
 			// Find a matching namespace or create one if it doesn't yet exist. Our lookup may produce multiple results
 			// which is a conflict that will be reported later (through the use of c_tracked_scope).
 			current_scope->lookup_declarations_by_name(import_as_component.c_str(), lookup_buffer);
-			c_AST_node_namespace_declaration *child_namespace = nullptr;
-			for (c_AST_node_declaration *declaration : lookup_buffer) {
-				child_namespace = declaration->try_get_as<c_AST_node_namespace_declaration>();
+			c_ast_node_namespace_declaration *child_namespace = nullptr;
+			for (c_ast_node_declaration *declaration : lookup_buffer) {
+				child_namespace = declaration->try_get_as<c_ast_node_namespace_declaration>();
 				if (child_namespace) {
 					break;
 				}
 			}
 
 			if (!child_namespace) {
-				child_namespace = new c_AST_node_namespace_declaration();
+				child_namespace = new c_ast_node_namespace_declaration();
 				child_namespace->set_name(import_as_component.c_str());
 			}
 
@@ -126,10 +126,10 @@ void c_importer::add_imports_to_global_scope(c_compiler_context &context, h_comp
 			// Grab each declaration in the imported source file. Don't take ownership of these because they're
 			// already owned by the imported source file's AST.
 			const s_compiler_source_file &imported_source_file = context.get_source_file(import.source_file_handle);
-			const c_AST_node_scope *imported_scope = imported_source_file.ast->get_as<c_AST_node_scope>();
+			const c_ast_node_scope *imported_scope = imported_source_file.ast->get_as<c_ast_node_scope>();
 			for (size_t item_index = 0; item_index < imported_scope->get_scope_item_count(); item_index++) {
-				c_AST_node_declaration *declaration =
-					imported_scope->get_scope_item(item_index)->try_get_as<c_AST_node_declaration>();
+				c_ast_node_declaration *declaration =
+					imported_scope->get_scope_item(item_index)->try_get_as<c_ast_node_declaration>();
 				if (declaration && declaration->get_visibility() == e_ast_visibility::k_public) {
 					current_scope->add_scope_item(declaration, false);
 				}
@@ -150,7 +150,7 @@ void c_importer::add_imports_to_global_scope(c_compiler_context &context, h_comp
 					continue;
 				}
 
-				c_AST_node_module_declaration *module_declaration =
+				c_ast_node_module_declaration *module_declaration =
 					create_module_declaration_for_native_module(native_module, false);
 				current_scope->add_scope_item(module_declaration, true);
 			}
@@ -366,10 +366,10 @@ void c_import_resolver_visitor::try_resolve_import(const s_token &import_keyword
 	}
 }
 
-static c_AST_node_module_declaration *create_module_declaration_for_native_module(
+static c_ast_node_module_declaration *create_module_declaration_for_native_module(
 	const s_native_module &native_module,
 	bool is_operator) {
-	c_AST_node_module_declaration *module_declaration = new c_AST_node_module_declaration();
+	c_ast_node_module_declaration *module_declaration = new c_ast_node_module_declaration();
 	module_declaration->set_visibility(e_ast_visibility::k_public);
 
 	if (is_operator) {
@@ -389,18 +389,18 @@ static c_AST_node_module_declaration *create_module_declaration_for_native_modul
 		}
 
 		const s_native_module_argument &argument = native_module.arguments[argument_index];
-		c_AST_node_module_declaration_argument *module_declaration_argument =
-			new c_AST_node_module_declaration_argument();
+		c_ast_node_module_declaration_argument *module_declaration_argument =
+			new c_ast_node_module_declaration_argument();
 
-		e_AST_argument_direction argument_direction = e_AST_argument_direction::k_invalid;
+		e_ast_argument_direction argument_direction = e_ast_argument_direction::k_invalid;
 		switch (argument.type.get_qualifier()) {
 		case e_native_module_qualifier::k_in:
 		case e_native_module_qualifier::k_constant:
-			argument_direction = e_AST_argument_direction::k_in;
+			argument_direction = e_ast_argument_direction::k_in;
 			break;
 
 		case e_native_module_qualifier::k_out:
-			argument_direction = e_AST_argument_direction::k_out;
+			argument_direction = e_ast_argument_direction::k_out;
 			break;
 
 		default:
@@ -409,7 +409,7 @@ static c_AST_node_module_declaration *create_module_declaration_for_native_modul
 
 		module_declaration_argument->set_argument_direction(argument_direction);
 
-		c_AST_node_value_declaration *value_declaration = new c_AST_node_value_declaration();
+		c_ast_node_value_declaration *value_declaration = new c_ast_node_value_declaration();
 		value_declaration->set_name(argument.name.get_string());
 		value_declaration->set_data_type(ast_data_type_from_native_module_data_type(argument.type, is_runtime_only));
 		module_declaration_argument->set_value_declaration(value_declaration);
@@ -419,9 +419,9 @@ static c_AST_node_module_declaration *create_module_declaration_for_native_modul
 
 	if (native_module.return_argument_index == k_invalid_native_module_argument_index) {
 		module_declaration->set_return_type(
-			c_AST_qualified_data_type(
-				c_AST_data_type(e_AST_primitive_type::k_void),
-				e_AST_data_mutability::k_variable));
+			c_ast_qualified_data_type(
+				c_ast_data_type(e_ast_primitive_type::k_void),
+				e_ast_data_mutability::k_variable));
 	} else {
 		c_native_module_qualified_data_type return_type =
 			native_module.arguments[native_module.return_argument_index].type;
@@ -431,31 +431,31 @@ static c_AST_node_module_declaration *create_module_declaration_for_native_modul
 	return module_declaration;
 }
 
-static c_AST_qualified_data_type ast_data_type_from_native_module_data_type(
+static c_ast_qualified_data_type ast_data_type_from_native_module_data_type(
 	c_native_module_qualified_data_type native_module_data_type,
 	bool is_runtime_only) {
-	e_AST_primitive_type ast_primitive_type = e_AST_primitive_type::k_invalid;
+	e_ast_primitive_type ast_primitive_type = e_ast_primitive_type::k_invalid;
 	switch (native_module_data_type.get_data_type().get_primitive_type()) {
 	case e_native_module_primitive_type::k_real:
-		ast_primitive_type = e_AST_primitive_type::k_real;
+		ast_primitive_type = e_ast_primitive_type::k_real;
 		break;
 
 	case e_native_module_primitive_type::k_bool:
-		ast_primitive_type = e_AST_primitive_type::k_bool;
+		ast_primitive_type = e_ast_primitive_type::k_bool;
 		break;
 
 	case e_native_module_primitive_type::k_string:
-		ast_primitive_type = e_AST_primitive_type::k_string;
+		ast_primitive_type = e_ast_primitive_type::k_string;
 		break;
 
 	default:
 		wl_unreachable();
 	}
 
-	e_AST_data_mutability ast_data_mutability = e_AST_data_mutability::k_invalid;
+	e_ast_data_mutability ast_data_mutability = e_ast_data_mutability::k_invalid;
 	switch (native_module_data_type.get_qualifier()) {
 	case e_native_module_qualifier::k_in:
-		ast_data_mutability = e_AST_data_mutability::k_variable;
+		ast_data_mutability = e_ast_data_mutability::k_variable;
 		break;
 
 	case e_native_module_qualifier::k_out:
@@ -464,19 +464,19 @@ static c_AST_qualified_data_type ast_data_type_from_native_module_data_type(
 		// $TODO $COMPILER I think the definition of constant arrays may be wrong here, we should revisit this. The
 		// problem is that non-runtime-only modules can still accept non-constant arrays.
 		ast_data_mutability = is_runtime_only
-			? e_AST_data_mutability::k_variable
-			: e_AST_data_mutability::k_dependent_constant;
+			? e_ast_data_mutability::k_variable
+			: e_ast_data_mutability::k_dependent_constant;
 		break;
 
 	case e_native_module_qualifier::k_constant:
-		ast_data_mutability = e_AST_data_mutability::k_constant;
+		ast_data_mutability = e_ast_data_mutability::k_constant;
 		break;
 
 	default:
 		wl_unreachable();
 	}
 
-	return c_AST_qualified_data_type(
-		c_AST_data_type(ast_primitive_type, native_module_data_type.get_data_type().is_array()),
+	return c_ast_qualified_data_type(
+		c_ast_data_type(ast_primitive_type, native_module_data_type.get_data_type().is_array()),
 		ast_data_mutability);
 }

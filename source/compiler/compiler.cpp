@@ -1,6 +1,5 @@
 #include "common/utility/file_utility.h"
 
-#include "compiler/ast.h"
 #include "compiler/compiler.h"
 #include "compiler/compiler_context.h"
 #include "compiler/components/ast_builder.h"
@@ -8,6 +7,7 @@
 #include "compiler/components/importer.h"
 #include "compiler/components/instrument_globals_parser.h"
 #include "compiler/components/instrument_variant_builder.h"
+#include "compiler/components/instrument_variant_optimizer.h"
 #include "compiler/components/lexer.h"
 #include "compiler/components/parser.h"
 
@@ -73,14 +73,14 @@ c_instrument *c_compiler::compile(c_wrapped_array<void *> native_module_library_
 	// Build all declarations
 	for (size_t source_file_index = 0; source_file_index < context.get_source_file_count(); source_file_index++) {
 		h_compiler_source_file source_file_handle = h_compiler_source_file::construct(source_file_index);
-		c_AST_builder::build_ast_declarations(context, source_file_handle);
+		c_ast_builder::build_ast_declarations(context, source_file_handle);
 	}
 
 	// Pull in imports and build definitions
 	for (size_t source_file_index = 0; source_file_index < context.get_source_file_count(); source_file_index++) {
 		h_compiler_source_file source_file_handle = h_compiler_source_file::construct(source_file_index);
 		c_importer::add_imports_to_global_scope(context, source_file_handle);
-		c_AST_builder::build_ast_definitions(context, source_file_handle);
+		c_ast_builder::build_ast_definitions(context, source_file_handle);
 	}
 
 	// If AST generation had errors, don't attempt to build the instrument
@@ -88,8 +88,8 @@ c_instrument *c_compiler::compile(c_wrapped_array<void *> native_module_library_
 		return nullptr;
 	}
 
-	c_AST_node_module_declaration *voice_entry_point;
-	c_AST_node_module_declaration *fx_entry_point;
+	c_ast_node_module_declaration *voice_entry_point;
+	c_ast_node_module_declaration *fx_entry_point;
 	c_entry_point_extractor::extract_entry_points(
 		context,
 		voice_entry_point,
@@ -115,7 +115,9 @@ c_instrument *c_compiler::compile(c_wrapped_array<void *> native_module_library_
 			return nullptr;
 		}
 
-		// $TODO $COMPILER Optimize graph
+		if (!c_instrument_variant_optimizer::optimize_instrument_variant(context, *instrument_variant.get())) {
+			return nullptr;
+		}
 
 		instrument->add_instrument_variant(instrument_variant.release());
 	}

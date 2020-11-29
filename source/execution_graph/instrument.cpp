@@ -8,13 +8,6 @@ static constexpr char k_format_identifier[] = { 'w', 'a', 'v', 'e', 'l', 'a', 'n
 
 c_instrument_variant::c_instrument_variant() {
 	zero_type(&m_instrument_globals);
-	m_voice_execution_graph = nullptr;
-	m_fx_execution_graph = nullptr;
-}
-
-c_instrument_variant::~c_instrument_variant() {
-	delete m_voice_execution_graph;
-	delete m_fx_execution_graph;
 }
 
 e_instrument_result c_instrument_variant::save(std::ofstream &out) const {
@@ -68,7 +61,7 @@ e_instrument_result c_instrument_variant::load(std::ifstream &in) {
 	}
 
 	if (has_voice_graph) {
-		m_voice_execution_graph = new c_execution_graph();
+		m_voice_execution_graph.reset(new c_execution_graph());
 		e_instrument_result graph_result = m_voice_execution_graph->load(in);
 		if (graph_result != e_instrument_result::k_success) {
 			return graph_result;
@@ -81,7 +74,7 @@ e_instrument_result c_instrument_variant::load(std::ifstream &in) {
 	}
 
 	if (has_fx_graph) {
-		m_fx_execution_graph = new c_execution_graph();
+		m_fx_execution_graph.reset(new c_execution_graph());
 		e_instrument_result graph_result = m_fx_execution_graph->load(in);
 		if (graph_result != e_instrument_result::k_success) {
 			return graph_result;
@@ -143,13 +136,13 @@ void c_instrument_variant::set_instrument_globals(const s_instrument_globals &in
 void c_instrument_variant::set_voice_execution_graph(c_execution_graph *execution_graph) {
 	wl_assert(execution_graph);
 	wl_assert(!m_voice_execution_graph);
-	m_voice_execution_graph = execution_graph;
+	m_voice_execution_graph.reset(execution_graph);
 }
 
 void c_instrument_variant::set_fx_execution_graph(c_execution_graph *execution_graph) {
 	wl_assert(execution_graph);
 	wl_assert(!m_fx_execution_graph);
-	m_fx_execution_graph = execution_graph;
+	m_fx_execution_graph.reset(execution_graph);
 }
 
 const s_instrument_globals &c_instrument_variant::get_instrument_globals() const {
@@ -157,27 +150,19 @@ const s_instrument_globals &c_instrument_variant::get_instrument_globals() const
 }
 
 c_execution_graph *c_instrument_variant::get_voice_execution_graph() {
-	return m_voice_execution_graph;
+	return m_voice_execution_graph.get();
 }
 
 const c_execution_graph *c_instrument_variant::get_voice_execution_graph() const {
-	return m_voice_execution_graph;
+	return m_voice_execution_graph.get();
 }
 
 c_execution_graph *c_instrument_variant::get_fx_execution_graph() {
-	return m_fx_execution_graph;
+	return m_fx_execution_graph.get();
 }
 
 const c_execution_graph *c_instrument_variant::get_fx_execution_graph() const {
-	return m_fx_execution_graph;
-}
-
-c_instrument::c_instrument() {}
-
-c_instrument::~c_instrument() {
-	for (size_t index = 0; index < m_instrument_variants.size(); index++) {
-		delete m_instrument_variants[index];
-	}
+	return m_fx_execution_graph.get();
 }
 
 e_instrument_result c_instrument::save(const char *fname) const {
@@ -255,7 +240,7 @@ e_instrument_result c_instrument::load(const char *fname) {
 
 	for (uint32 index = 0; index < instrument_variant_count; index++) {
 		c_instrument_variant *variant = new c_instrument_variant();
-		m_instrument_variants.push_back(variant);
+		m_instrument_variants.emplace_back(variant);
 		e_instrument_result instrument_variant_result = variant->load(in);
 		if (instrument_variant_result != e_instrument_result::k_success) {
 			return instrument_variant_result;
@@ -280,7 +265,7 @@ bool c_instrument::validate() const {
 }
 
 void c_instrument::add_instrument_variant(c_instrument_variant *instrument_variant) {
-	m_instrument_variants.push_back(instrument_variant);
+	m_instrument_variants.emplace_back(instrument_variant);
 }
 
 uint32 c_instrument::get_instrument_variant_count() const {
@@ -288,7 +273,7 @@ uint32 c_instrument::get_instrument_variant_count() const {
 }
 
 const c_instrument_variant *c_instrument::get_instrument_variant(uint32 index) const {
-	return m_instrument_variants[index];
+	return m_instrument_variants[index].get();
 }
 
 e_instrument_variant_for_requirements_result c_instrument::get_instrument_variant_for_requirements(

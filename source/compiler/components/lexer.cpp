@@ -458,7 +458,6 @@ static bool try_read_real_constant(c_lexer_location &location, s_token &result_o
 	return true;
 }
 
-// $TODO $COMPILER we should probably disallows null terminators inside of strings. Same for JSON strings.
 // Note: keep this code in sync with get_unescaped_token_string() in token.cpp
 static bool try_read_string_constant(c_lexer_location &location, s_token &result_out) {
 	if (location.next_character() != '"') {
@@ -470,7 +469,6 @@ static bool try_read_string_constant(c_lexer_location &location, s_token &result
 	location.increment();
 	size_t length = 1;
 
-	// $TODO $COMPILER we will need to re-escape this string later
 	bool failed = false;
 	bool done = false;
 	bool escape = false;
@@ -537,6 +535,11 @@ static bool try_read_string_constant(c_lexer_location &location, s_token &result
 
 					// $TODO $UNICODE we currently only support ASCII characters
 					if (unicode_value >= 128) {
+						failed = true;
+					}
+
+					// Don't allow null-terminators in strings - that just makes things tricky
+					if (unicode_value == 0) {
 						failed = true;
 					}
 				}

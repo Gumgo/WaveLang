@@ -11,7 +11,7 @@
 struct s_compiler_source_file_handle_identifier {};
 using h_compiler_source_file = c_handle<s_compiler_source_file_handle_identifier, size_t>;
 
-class c_AST_node;
+class c_ast_node;
 
 struct s_compiler_source_location {
 	h_compiler_source_file source_file_handle;
@@ -58,5 +58,5 @@ struct s_compiler_source_file {
 	std::vector<s_token> tokens;						// Tokens resulting from the lexer
 	c_lr_parse_tree parse_tree;							// Parse tree resulting from the parser
 	std::vector<s_compiler_source_file_import> imports;	// Source files or native module libraries imported by this file
-	std::unique_ptr<c_AST_node> ast;					// Abstract syntax tree for this file
+	std::unique_ptr<c_ast_node> ast;					// Abstract syntax tree for this file
 };

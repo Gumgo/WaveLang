@@ -6,6 +6,7 @@
 #include "execution_graph/instrument_globals.h"
 
 #include <fstream>
+#include <memory>
 #include <vector>
 
 class c_execution_graph;
@@ -28,7 +29,6 @@ enum class e_instrument_variant_for_requirements_result {
 class c_instrument_variant {
 public:
 	c_instrument_variant();
-	~c_instrument_variant();
 
 	e_instrument_result save(std::ofstream &out) const;
 	e_instrument_result load(std::ifstream &in);
@@ -49,8 +49,8 @@ public:
 
 private:
 	s_instrument_globals m_instrument_globals;
-	c_execution_graph *m_voice_execution_graph; // $TODO $COMPILER Change to unique_ptr
-	c_execution_graph *m_fx_execution_graph;
+	std::unique_ptr<c_execution_graph> m_voice_execution_graph;
+	std::unique_ptr<c_execution_graph> m_fx_execution_graph;
 };
 
 // An instrument contains one or more instrument variants. An instrument may contain more than one instrument variant if
@@ -58,8 +58,7 @@ private:
 // different sample rates.
 class c_instrument {
 public:
-	c_instrument();
-	~c_instrument();
+	c_instrument() = default;
 
 	e_instrument_result save(const char *fname) const;
 	e_instrument_result load(const char *fname);
@@ -78,6 +77,6 @@ public:
 		uint32 &instrument_variant_index_out) const;
 
 private:
-	std::vector<c_instrument_variant *> m_instrument_variants;
+	std::vector<std::unique_ptr<c_instrument_variant>> m_instrument_variants;
 };
 

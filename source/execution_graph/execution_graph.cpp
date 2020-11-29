@@ -1152,7 +1152,6 @@ bool c_execution_graph::get_type_from_node(c_node_reference node_reference, c_na
 	}
 }
 
-
 bool c_execution_graph::visit_node_for_cycle_detection(
 	c_node_reference node_reference,
 	std::vector<bool> &nodes_visited,

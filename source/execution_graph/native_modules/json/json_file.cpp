@@ -342,6 +342,11 @@ c_json_node_string *c_json_file::parse_string(s_buffer_with_offset &buffer_with_
 						return nullptr;
 					}
 
+					// Don't allow null-terminators in strings - that just makes things tricky
+					if (unicode_value == 0) {
+						return nullptr;
+					}
+
 					result.push_back(cast_integer_verify<char>(unicode_value));
 				}
 				break;

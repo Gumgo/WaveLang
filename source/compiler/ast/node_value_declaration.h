@@ -8,25 +8,25 @@
 
 #include <memory>
 
-class c_AST_node_value_declaration : public c_AST_node_declaration {
+class c_ast_node_value_declaration : public c_ast_node_declaration {
 public:
-	AST_NODE_TYPE_DESCRIPTION(c_AST_node_value_declaration, k_value_declaration, "value");
-	c_AST_node_value_declaration();
+	AST_NODE_TYPE_DESCRIPTION(c_ast_node_value_declaration, k_value_declaration, "value");
+	c_ast_node_value_declaration();
 
-	const c_AST_qualified_data_type &get_data_type() const;
-	void set_data_type(const c_AST_qualified_data_type &data_type);
+	const c_ast_qualified_data_type &get_data_type() const;
+	void set_data_type(const c_ast_qualified_data_type &data_type);
 
 	bool is_modifiable() const;
 	void set_modifiable(bool modifiable);
 
-	c_AST_node_expression *get_initialization_expression() const;
-	void set_initialization_expression(c_AST_node_expression *initialization_expression);
+	c_ast_node_expression *get_initialization_expression() const;
+	void set_initialization_expression(c_ast_node_expression *initialization_expression);
 
 protected:
-	c_AST_node *copy_internal() const override;
+	c_ast_node *copy_internal() const override;
 
 private:
-	c_AST_qualified_data_type m_data_type;
+	c_ast_qualified_data_type m_data_type;
 	bool m_modifiable = true;
-	std::unique_ptr<c_AST_node_expression> m_initialization_expression;
+	std::unique_ptr<c_ast_node_expression> m_initialization_expression;
 };

@@ -7,17 +7,17 @@
 
 #include <memory>
 
-class c_AST_node_return_statement : public c_AST_node_scope_item {
+class c_ast_node_return_statement : public c_ast_node_scope_item {
 public:
-	AST_NODE_TYPE_DESCRIPTION(c_AST_node_return_statement, k_return_statement, "return statement");
-	c_AST_node_return_statement();
+	AST_NODE_TYPE_DESCRIPTION(c_ast_node_return_statement, k_return_statement, "return statement");
+	c_ast_node_return_statement();
 
-	c_AST_node_expression *get_expression() const;
-	void set_expression(c_AST_node_expression *expression);
+	c_ast_node_expression *get_expression() const;
+	void set_expression(c_ast_node_expression *expression);
 
 protected:
-	c_AST_node *copy_internal() const override;
+	c_ast_node *copy_internal() const override;
 
 private:
-	std::unique_ptr<c_AST_node_expression> m_expression;
+	std::unique_ptr<c_ast_node_expression> m_expression;
 };

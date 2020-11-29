@@ -4,13 +4,13 @@
 
 #include "compiler/ast/node_expression.h"
 
-class c_AST_node_convert : public c_AST_node_expression {
+class c_ast_node_convert : public c_ast_node_expression {
 public:
-	AST_NODE_TYPE(c_AST_node_convert, k_convert);
-	c_AST_node_convert();
+	AST_NODE_TYPE(c_ast_node_convert, k_convert);
+	c_ast_node_convert();
 
-	void set_data_type(const c_AST_qualified_data_type &data_type);
+	void set_data_type(const c_ast_qualified_data_type &data_type);
 
 protected:
-	c_AST_node *copy_internal() const override;
+	c_ast_node *copy_internal() const override;
 };

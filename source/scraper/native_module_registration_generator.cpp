@@ -84,8 +84,6 @@ private:
 		k_const,
 		k_left_parenthesis,
 		k_right_parenthesis,
-		k_left_bracket,
-		k_right_bracket,
 		k_comma,
 		k_source_to_target
 	};
@@ -387,27 +385,6 @@ bool c_optimization_rule_builder::build(std::ofstream &out) {
 
 				// Skip the left paren
 				index++;
-			} else if (next_token_type == e_token_type::k_left_bracket) {
-				// Array subscript
-				if (is_constant) {
-					return false;
-				}
-
-				std::string identifier_string =
-					get_build_identifier_string(m_rule.tokens[index], is_constant, building_source);
-				if (identifier_string.empty()) {
-					return false;
-				}
-
-				write_symbol_prefix(out);
-				out << "build_array_subscript();" NEWLINE_STR;
-				m_symbol_index++;
-				write_symbol_prefix(out);
-				out << identifier_string << ";" NEWLINE_STR;
-				m_symbol_index++;
-
-				// Skip the left bracket
-				index++;
 			} else {
 				std::string identifier_string =
 					get_build_identifier_string(m_rule.tokens[index], is_constant, building_source);
@@ -437,10 +414,6 @@ bool c_optimization_rule_builder::build(std::ofstream &out) {
 			write_symbol_prefix(out);
 			out << "build_native_module_end();" NEWLINE_STR;
 			m_symbol_index++;
-			can_skip_comma = true;
-		} else if (token_type == e_token_type::k_right_bracket) {
-			// Nothing to do here: array subscript doesn't have an explicit "end" because it always takes exactly two
-			// parameters, the variable and the index.
 			can_skip_comma = true;
 		} else if (token_type == e_token_type::k_source_to_target) {
 			if (!building_source) {
@@ -510,10 +483,6 @@ c_optimization_rule_builder::e_token_type c_optimization_rule_builder::get_token
 		return e_token_type::k_left_parenthesis;
 	} else if (token == ")") {
 		return e_token_type::k_right_parenthesis;
-	} else if (token == "[") {
-		return e_token_type::k_left_bracket;
-	} else if (token == "]") {
-		return e_token_type::k_right_bracket;
 	} else if (token == ",") {
 		return e_token_type::k_comma;
 	} else {

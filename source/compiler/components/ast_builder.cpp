@@ -26,35 +26,35 @@ protected:
 	bool enter_instrument_global(const s_token &command) override { return false; }
 
 	bool enter_global_scope(
-		c_temporary_reference<c_AST_node_scope> &rule_head_context,
-		c_AST_node_scope *&item_list) override;
+		c_temporary_reference<c_ast_node_scope> &rule_head_context,
+		c_ast_node_scope *&item_list) override;
 	void exit_global_scope(
-		c_temporary_reference<c_AST_node_scope> &rule_head_context,
-		c_AST_node_scope *&item_list) override;
+		c_temporary_reference<c_ast_node_scope> &rule_head_context,
+		c_ast_node_scope *&item_list) override;
 	bool enter_global_scope_item_list(
-		c_AST_node_scope *&rule_head_context,
-		c_AST_node_scope *&list_child,
-		c_temporary_reference<c_AST_node_scope_item> &item) override;
+		c_ast_node_scope *&rule_head_context,
+		c_ast_node_scope *&list_child,
+		c_temporary_reference<c_ast_node_scope_item> &item) override;
 	void exit_global_scope_item_list(
-		c_AST_node_scope *&rule_head_context,
-		c_AST_node_scope *&list_child,
-		c_temporary_reference<c_AST_node_scope_item> &item) override;
+		c_ast_node_scope *&rule_head_context,
+		c_ast_node_scope *&list_child,
+		c_temporary_reference<c_ast_node_scope_item> &item) override;
 	bool enter_global_scope_item_value_declaration(
-		c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
+		c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 		e_ast_visibility &visibility,
-		c_temporary_reference<c_AST_node_value_declaration> &value_declaration) override;
+		c_temporary_reference<c_ast_node_value_declaration> &value_declaration) override;
 	void exit_global_scope_item_value_declaration(
-		c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
+		c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 		e_ast_visibility &visibility,
-		c_temporary_reference<c_AST_node_value_declaration> &value_declaration) override;
+		c_temporary_reference<c_ast_node_value_declaration> &value_declaration) override;
 	bool enter_global_scope_item_module_declaration(
-		c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
+		c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 		e_ast_visibility &visibility,
-		c_temporary_reference<c_AST_node_module_declaration> &module_declaration) override;
+		c_temporary_reference<c_ast_node_module_declaration> &module_declaration) override;
 	void exit_global_scope_item_module_declaration(
-		c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
+		c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 		e_ast_visibility &visibility,
-		c_temporary_reference<c_AST_node_module_declaration> &module_declaration) override;
+		c_temporary_reference<c_ast_node_module_declaration> &module_declaration) override;
 	void exit_default_visibility(
 		e_ast_visibility &rule_head_context) override;
 	void exit_visibility_specifier(
@@ -62,96 +62,96 @@ protected:
 		const s_token &visibility) override;
 
 	bool enter_forward_value_declaration(
-		c_temporary_reference<c_AST_node_value_declaration> &rule_head_context,
-		c_temporary_reference<c_AST_node_value_declaration> &declaration) override;
+		c_temporary_reference<c_ast_node_value_declaration> &rule_head_context,
+		c_temporary_reference<c_ast_node_value_declaration> &declaration) override;
 	void exit_forward_value_declaration(
-		c_temporary_reference<c_AST_node_value_declaration> &rule_head_context,
-		c_temporary_reference<c_AST_node_value_declaration> &declaration) override;
+		c_temporary_reference<c_ast_node_value_declaration> &rule_head_context,
+		c_temporary_reference<c_ast_node_value_declaration> &declaration) override;
 	bool enter_value_declaration_with_initialization(
-		c_temporary_reference<c_AST_node_value_declaration> &rule_head_context,
-		c_temporary_reference<c_AST_node_value_declaration> &declaration,
-		c_temporary_reference<c_AST_node_expression> &expression) override;
+		c_temporary_reference<c_ast_node_value_declaration> &rule_head_context,
+		c_temporary_reference<c_ast_node_value_declaration> &declaration,
+		c_temporary_reference<c_ast_node_expression> &expression) override;
 	void exit_value_declaration_with_initialization(
-		c_temporary_reference<c_AST_node_value_declaration> &rule_head_context,
-		c_temporary_reference<c_AST_node_value_declaration> &declaration,
-		c_temporary_reference<c_AST_node_expression> &expression) override;
+		c_temporary_reference<c_ast_node_value_declaration> &rule_head_context,
+		c_temporary_reference<c_ast_node_value_declaration> &declaration,
+		c_temporary_reference<c_ast_node_expression> &expression) override;
 	bool enter_value_declaration_without_initialization(
-		c_temporary_reference<c_AST_node_value_declaration> &rule_head_context,
-		c_temporary_reference<c_AST_node_value_declaration> &declaration) override;
+		c_temporary_reference<c_ast_node_value_declaration> &rule_head_context,
+		c_temporary_reference<c_ast_node_value_declaration> &declaration) override;
 	void exit_value_declaration_without_initialization(
-		c_temporary_reference<c_AST_node_value_declaration> &rule_head_context,
-		c_temporary_reference<c_AST_node_value_declaration> &declaration) override;
+		c_temporary_reference<c_ast_node_value_declaration> &rule_head_context,
+		c_temporary_reference<c_ast_node_value_declaration> &declaration) override;
 	void exit_value_declaration_data_type_name(
-		c_temporary_reference<c_AST_node_value_declaration> &rule_head_context,
-		s_value_with_source_location<c_AST_qualified_data_type> &data_type,
+		c_temporary_reference<c_ast_node_value_declaration> &rule_head_context,
+		s_value_with_source_location<c_ast_qualified_data_type> &data_type,
 		const s_token &name) override;
 
 	bool enter_module_declaration(
-		c_temporary_reference<c_AST_node_module_declaration> &rule_head_context,
-		s_value_with_source_location<c_AST_qualified_data_type> &return_type,
+		c_temporary_reference<c_ast_node_module_declaration> &rule_head_context,
+		s_value_with_source_location<c_ast_qualified_data_type> &return_type,
 		const s_token &name,
-		c_AST_node_module_declaration *&argument_list,
-		c_AST_node_module_declaration *&body) override;
+		c_ast_node_module_declaration *&argument_list,
+		c_ast_node_module_declaration *&body) override;
 	void exit_module_declaration(
-		c_temporary_reference<c_AST_node_module_declaration> &rule_head_context,
-		s_value_with_source_location<c_AST_qualified_data_type> &return_type,
+		c_temporary_reference<c_ast_node_module_declaration> &rule_head_context,
+		s_value_with_source_location<c_ast_qualified_data_type> &return_type,
 		const s_token &name,
-		c_AST_node_module_declaration *&argument_list,
-		c_AST_node_module_declaration *&body) override;
+		c_ast_node_module_declaration *&argument_list,
+		c_ast_node_module_declaration *&body) override;
 	bool enter_module_declaration_argument_list(
-		c_AST_node_module_declaration *&rule_head_context,
-		c_AST_node_module_declaration *&argument_list) override;
+		c_ast_node_module_declaration *&rule_head_context,
+		c_ast_node_module_declaration *&argument_list) override;
 	void exit_module_declaration_argument_list(
-		c_AST_node_module_declaration *&rule_head_context,
-		c_AST_node_module_declaration *&argument_list) override;
+		c_ast_node_module_declaration *&rule_head_context,
+		c_ast_node_module_declaration *&argument_list) override;
 	bool enter_module_declaration_single_item_argument_list_item(
-		c_AST_node_module_declaration *&rule_head_context,
-		c_temporary_reference<c_AST_node_module_declaration_argument> &argument) override;
+		c_ast_node_module_declaration *&rule_head_context,
+		c_temporary_reference<c_ast_node_module_declaration_argument> &argument) override;
 	void exit_module_declaration_single_item_argument_list_item(
-		c_AST_node_module_declaration *&rule_head_context,
-		c_temporary_reference<c_AST_node_module_declaration_argument> &argument) override;
+		c_ast_node_module_declaration *&rule_head_context,
+		c_temporary_reference<c_ast_node_module_declaration_argument> &argument) override;
 	bool enter_module_declaration_nonempty_argument_list_item(
-		c_AST_node_module_declaration *&rule_head_context,
-		c_AST_node_module_declaration *&list_child,
-		c_temporary_reference<c_AST_node_module_declaration_argument> &argument) override;
+		c_ast_node_module_declaration *&rule_head_context,
+		c_ast_node_module_declaration *&list_child,
+		c_temporary_reference<c_ast_node_module_declaration_argument> &argument) override;
 	void exit_module_declaration_nonempty_argument_list_item(
-		c_AST_node_module_declaration *&rule_head_context,
-		c_AST_node_module_declaration *&list_child,
-		c_temporary_reference<c_AST_node_module_declaration_argument> &argument) override;
+		c_ast_node_module_declaration *&rule_head_context,
+		c_ast_node_module_declaration *&list_child,
+		c_temporary_reference<c_ast_node_module_declaration_argument> &argument) override;
 	void exit_module_declaration_argument(
-		c_temporary_reference<c_AST_node_module_declaration_argument> &rule_head_context,
-		s_value_with_source_location<e_AST_argument_direction> &argument_direction,
-		c_temporary_reference<c_AST_node_value_declaration> &value_declaration) override;
+		c_temporary_reference<c_ast_node_module_declaration_argument> &rule_head_context,
+		s_value_with_source_location<e_ast_argument_direction> &argument_direction,
+		c_temporary_reference<c_ast_node_value_declaration> &value_declaration) override;
 	void exit_argument_qualifier(
-		s_value_with_source_location<e_AST_argument_direction> &rule_head_context,
+		s_value_with_source_location<e_ast_argument_direction> &rule_head_context,
 		const s_token &direction) override;
 	bool enter_module_body(
-		c_AST_node_module_declaration *&rule_head_context,
+		c_ast_node_module_declaration *&rule_head_context,
 		const s_token &brace,
-		c_temporary_reference<c_AST_node_scope> &scope) override;
+		c_temporary_reference<c_ast_node_scope> &scope) override;
 	void exit_module_body(
-		c_AST_node_module_declaration *&rule_head_context,
+		c_ast_node_module_declaration *&rule_head_context,
 		const s_token &brace,
-		c_temporary_reference<c_AST_node_scope> &scope) override;
+		c_temporary_reference<c_ast_node_scope> &scope) override;
 
 	void exit_qualified_data_type(
-		s_value_with_source_location<c_AST_qualified_data_type> &rule_head_context,
-		s_value_with_source_location<e_AST_data_mutability> &mutability,
-		s_value_with_source_location<c_AST_data_type> &data_type) override;
+		s_value_with_source_location<c_ast_qualified_data_type> &rule_head_context,
+		s_value_with_source_location<e_ast_data_mutability> &mutability,
+		s_value_with_source_location<c_ast_data_type> &data_type) override;
 	void exit_no_qualifier(
-		s_value_with_source_location<e_AST_data_mutability> &rule_head_context) override;
+		s_value_with_source_location<e_ast_data_mutability> &rule_head_context) override;
 	void exit_const_qualifier(
-		s_value_with_source_location<e_AST_data_mutability> &rule_head_context,
+		s_value_with_source_location<e_ast_data_mutability> &rule_head_context,
 		const s_token &const_keyword) override;
 	void exit_dependent_const_qualifier(
-		s_value_with_source_location<e_AST_data_mutability> &rule_head_context,
+		s_value_with_source_location<e_ast_data_mutability> &rule_head_context,
 		const s_token &const_keyword) override;
 	void exit_data_type(
-		s_value_with_source_location<c_AST_data_type> &rule_head_context,
-		s_value_with_source_location<e_AST_primitive_type> &primitive_type,
+		s_value_with_source_location<c_ast_data_type> &rule_head_context,
+		s_value_with_source_location<e_ast_primitive_type> &primitive_type,
 		bool &is_array) override;
 	void exit_primitive_type(
-		s_value_with_source_location<e_AST_primitive_type> &rule_head_context,
+		s_value_with_source_location<e_ast_primitive_type> &rule_head_context,
 		const s_token &type) override;
 	void exit_is_not_array(
 		bool &rule_head_context) override;
@@ -159,184 +159,184 @@ protected:
 		bool &rule_head_context) override;
 
 	bool enter_expression(
-		c_temporary_reference<c_AST_node_expression> &rule_head_context,
-		c_temporary_reference<c_AST_node_expression> &expression) override;
+		c_temporary_reference<c_ast_node_expression> &rule_head_context,
+		c_temporary_reference<c_ast_node_expression> &expression) override;
 	void exit_expression(
-		c_temporary_reference<c_AST_node_expression> &rule_head_context,
-		c_temporary_reference<c_AST_node_expression> &expression) override;
+		c_temporary_reference<c_ast_node_expression> &rule_head_context,
+		c_temporary_reference<c_ast_node_expression> &expression) override;
 	void exit_binary_operator(
-		c_temporary_reference<c_AST_node_expression> &rule_head_context,
-		c_temporary_reference<c_AST_node_expression> &lhs,
+		c_temporary_reference<c_ast_node_expression> &rule_head_context,
+		c_temporary_reference<c_ast_node_expression> &lhs,
 		const s_token &op,
-		c_temporary_reference<c_AST_node_expression> &rhs) override;
+		c_temporary_reference<c_ast_node_expression> &rhs) override;
 	void exit_forward_expression(
-		c_temporary_reference<c_AST_node_expression> &rule_head_context,
-		c_temporary_reference<c_AST_node_expression> &expression) override;
+		c_temporary_reference<c_ast_node_expression> &rule_head_context,
+		c_temporary_reference<c_ast_node_expression> &expression) override;
 	void exit_unary_operator(
-		c_temporary_reference<c_AST_node_expression> &rule_head_context,
+		c_temporary_reference<c_ast_node_expression> &rule_head_context,
 		const s_token &op,
-		c_temporary_reference<c_AST_node_expression> &rhs) override;
+		c_temporary_reference<c_ast_node_expression> &rhs) override;
 	bool enter_module_call(
-		c_temporary_reference<c_AST_node_expression> &rule_head_context,
-		c_temporary_reference<c_AST_node_expression> &module,
-		c_AST_node_module_call *&argument_list) override;
+		c_temporary_reference<c_ast_node_expression> &rule_head_context,
+		c_temporary_reference<c_ast_node_expression> &module,
+		c_ast_node_module_call *&argument_list) override;
 	void exit_module_call(
-		c_temporary_reference<c_AST_node_expression> &rule_head_context,
-		c_temporary_reference<c_AST_node_expression> &module,
-		c_AST_node_module_call *&argument_list) override;
+		c_temporary_reference<c_ast_node_expression> &rule_head_context,
+		c_temporary_reference<c_ast_node_expression> &module,
+		c_ast_node_module_call *&argument_list) override;
 	void exit_convert(
-		c_temporary_reference<c_AST_node_expression> &rule_head_context,
-		s_value_with_source_location<c_AST_qualified_data_type> &data_type,
-		c_temporary_reference<c_AST_node_expression> &expression) override;
+		c_temporary_reference<c_ast_node_expression> &rule_head_context,
+		s_value_with_source_location<c_ast_qualified_data_type> &data_type,
+		c_temporary_reference<c_ast_node_expression> &expression) override;
 	void exit_access(
-		c_temporary_reference<c_AST_node_expression> &rule_head_context,
-		c_temporary_reference<c_AST_node_expression> &lhs,
+		c_temporary_reference<c_ast_node_expression> &rule_head_context,
+		c_temporary_reference<c_ast_node_expression> &lhs,
 		const s_token &identifier) override;
 	void exit_identifier(
-		c_temporary_reference<c_AST_node_expression> &rule_head_context,
+		c_temporary_reference<c_ast_node_expression> &rule_head_context,
 		const s_token &identifier) override;
 	void exit_literal(
-		c_temporary_reference<c_AST_node_expression> &rule_head_context,
+		c_temporary_reference<c_ast_node_expression> &rule_head_context,
 		const s_token &literal) override;
 	bool enter_array(
-		c_temporary_reference<c_AST_node_expression> &rule_head_context,
+		c_temporary_reference<c_ast_node_expression> &rule_head_context,
 		const s_token &brace,
-		c_AST_node_array *&values) override;
+		c_ast_node_array *&values) override;
 	void exit_array(
-		c_temporary_reference<c_AST_node_expression> &rule_head_context,
+		c_temporary_reference<c_ast_node_expression> &rule_head_context,
 		const s_token &brace,
-		c_AST_node_array *&values) override;
+		c_ast_node_array *&values) override;
 	bool enter_array_value_list(
-		c_AST_node_array *&rule_head_context,
-		c_AST_node_array *&value_list) override;
+		c_ast_node_array *&rule_head_context,
+		c_ast_node_array *&value_list) override;
 	void exit_array_single_item_value_list_item(
-		c_AST_node_array *&rule_head_context,
-		c_temporary_reference<c_AST_node_expression> &value) override;
+		c_ast_node_array *&rule_head_context,
+		c_temporary_reference<c_ast_node_expression> &value) override;
 	bool enter_array_nonempty_value_list_item(
-		c_AST_node_array *&rule_head_context,
-		c_AST_node_array *&list_child,
-		c_temporary_reference<c_AST_node_expression> &value) override;
+		c_ast_node_array *&rule_head_context,
+		c_ast_node_array *&list_child,
+		c_temporary_reference<c_ast_node_expression> &value) override;
 	void exit_array_nonempty_value_list_item(
-		c_AST_node_array *&rule_head_context,
-		c_AST_node_array *&list_child,
-		c_temporary_reference<c_AST_node_expression> &value) override;
+		c_ast_node_array *&rule_head_context,
+		c_ast_node_array *&list_child,
+		c_temporary_reference<c_ast_node_expression> &value) override;
 	bool enter_module_call_argument_list(
-		c_AST_node_module_call *&rule_head_context,
-		c_AST_node_module_call *&argument_list) override;
+		c_ast_node_module_call *&rule_head_context,
+		c_ast_node_module_call *&argument_list) override;
 	void exit_module_call_single_item_argument_list_item(
-		c_AST_node_module_call *&rule_head_context,
-		c_temporary_reference<c_AST_node_module_call_argument> &argument) override;
+		c_ast_node_module_call *&rule_head_context,
+		c_temporary_reference<c_ast_node_module_call_argument> &argument) override;
 	bool enter_module_call_nonempty_argument_list_item(
-		c_AST_node_module_call *&rule_head_context,
-		c_AST_node_module_call *&list_child,
-		c_temporary_reference<c_AST_node_module_call_argument> &argument) override;
+		c_ast_node_module_call *&rule_head_context,
+		c_ast_node_module_call *&list_child,
+		c_temporary_reference<c_ast_node_module_call_argument> &argument) override;
 	void exit_module_call_nonempty_argument_list_item(
-		c_AST_node_module_call *&rule_head_context,
-		c_AST_node_module_call *&list_child,
-		c_temporary_reference<c_AST_node_module_call_argument> &argument) override;
+		c_ast_node_module_call *&rule_head_context,
+		c_ast_node_module_call *&list_child,
+		c_temporary_reference<c_ast_node_module_call_argument> &argument) override;
 	void exit_module_call_unnamed_argument(
-		c_temporary_reference<c_AST_node_module_call_argument> &rule_head_context,
-		s_value_with_source_location<e_AST_argument_direction> &direction,
-		c_temporary_reference<c_AST_node_expression> &expression) override;
+		c_temporary_reference<c_ast_node_module_call_argument> &rule_head_context,
+		s_value_with_source_location<e_ast_argument_direction> &direction,
+		c_temporary_reference<c_ast_node_expression> &expression) override;
 	void exit_module_call_named_argument(
-		c_temporary_reference<c_AST_node_module_call_argument> &rule_head_context,
-		s_value_with_source_location<e_AST_argument_direction> &direction,
+		c_temporary_reference<c_ast_node_module_call_argument> &rule_head_context,
+		s_value_with_source_location<e_ast_argument_direction> &direction,
 		const s_token &name,
-		c_temporary_reference<c_AST_node_expression> &expression) override;
+		c_temporary_reference<c_ast_node_expression> &expression) override;
 	void exit_in_call_argument_qualifier(
-		s_value_with_source_location<e_AST_argument_direction> &rule_head_context) override;
+		s_value_with_source_location<e_ast_argument_direction> &rule_head_context) override;
 	void exit_out_call_argument_qualifier(
-		s_value_with_source_location<e_AST_argument_direction> &rule_head_context,
+		s_value_with_source_location<e_ast_argument_direction> &rule_head_context,
 		const s_token &direction) override;
 
 	bool enter_scope(
-		c_temporary_reference<c_AST_node_scope> &rule_head_context,
-		c_AST_node_scope *&statement_list) override;
+		c_temporary_reference<c_ast_node_scope> &rule_head_context,
+		c_ast_node_scope *&statement_list) override;
 	bool enter_scope_item_list(
-		c_AST_node_scope *&rule_head_context,
-		c_AST_node_scope *&list_child,
-		c_temporary_reference<c_AST_node_scope_item> &scope_item) override;
+		c_ast_node_scope *&rule_head_context,
+		c_ast_node_scope *&list_child,
+		c_temporary_reference<c_ast_node_scope_item> &scope_item) override;
 	void exit_scope_item_list(
-		c_AST_node_scope *&rule_head_context,
-		c_AST_node_scope *&list_child,
-		c_temporary_reference<c_AST_node_scope_item> &scope_item) override;
+		c_ast_node_scope *&rule_head_context,
+		c_ast_node_scope *&list_child,
+		c_temporary_reference<c_ast_node_scope_item> &scope_item) override;
 	void exit_scope_item_expression(
-		c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
-		c_temporary_reference<c_AST_node_expression> &expression) override;
+		c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
+		c_temporary_reference<c_ast_node_expression> &expression) override;
 	void exit_scope_item_value_declaration(
-		c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
-		c_temporary_reference<c_AST_node_value_declaration> &value_declaration) override;
+		c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
+		c_temporary_reference<c_ast_node_value_declaration> &value_declaration) override;
 	void exit_scope_item_assignment(
-		c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
-		c_temporary_reference<c_AST_node_expression> &lhs,
+		c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
+		c_temporary_reference<c_ast_node_expression> &lhs,
 		s_value_with_source_location<e_native_operator> &assignment_type,
-		c_temporary_reference<c_AST_node_expression> &rhs) override;
+		c_temporary_reference<c_ast_node_expression> &rhs) override;
 	void exit_scope_item_return_void_statement(
-		c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
+		c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 		const s_token &return_keyword) override;
 	void exit_scope_item_return_statement(
-		c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
+		c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 		const s_token &return_keyword,
-		c_temporary_reference<c_AST_node_expression> &expression) override;
+		c_temporary_reference<c_ast_node_expression> &expression) override;
 	void exit_scope_item_if_statement(
-		c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
-		c_temporary_reference<c_AST_node_if_statement> &if_statement) override;
+		c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
+		c_temporary_reference<c_ast_node_if_statement> &if_statement) override;
 	bool enter_scope_item_for_loop(
-		c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
+		c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 		const s_token &for_keyword,
-		c_AST_node_for_loop *&iterator,
+		c_ast_node_for_loop *&iterator,
 		const s_token &brace,
-		c_temporary_reference<c_AST_node_scope> &scope) override;
+		c_temporary_reference<c_ast_node_scope> &scope) override;
 	void exit_scope_item_for_loop(
-		c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
+		c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 		const s_token &for_keyword,
-		c_AST_node_for_loop *&iterator,
+		c_ast_node_for_loop *&iterator,
 		const s_token &brace,
-		c_temporary_reference<c_AST_node_scope> &scope) override;
+		c_temporary_reference<c_ast_node_scope> &scope) override;
 	void exit_break_statement(
-		c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
+		c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 		const s_token &break_keyword) override;
 	void exit_continue_statement(
-		c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
+		c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 		const s_token &continue_keyword) override;
 	bool enter_scope_item_scope(
-		c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
+		c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 		const s_token &brace,
-		c_temporary_reference<c_AST_node_scope> &scope) override;
+		c_temporary_reference<c_ast_node_scope> &scope) override;
 	void exit_scope_item_scope(
-		c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
+		c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 		const s_token &brace,
-		c_temporary_reference<c_AST_node_scope> &scope) override;
+		c_temporary_reference<c_ast_node_scope> &scope) override;
 	void exit_if_statement(
-		c_temporary_reference<c_AST_node_if_statement> &rule_head_context,
-		c_temporary_reference<c_AST_node_expression> &expression,
-		c_temporary_reference<c_AST_node_scope> &true_scope) override;
+		c_temporary_reference<c_ast_node_if_statement> &rule_head_context,
+		c_temporary_reference<c_ast_node_expression> &expression,
+		c_temporary_reference<c_ast_node_scope> &true_scope) override;
 	void exit_if_else_statement(
-		c_temporary_reference<c_AST_node_if_statement> &rule_head_context,
-		c_temporary_reference<c_AST_node_expression> &expression,
-		c_temporary_reference<c_AST_node_scope> &true_scope,
-		c_temporary_reference<c_AST_node_scope> &false_scope) override;
+		c_temporary_reference<c_ast_node_if_statement> &rule_head_context,
+		c_temporary_reference<c_ast_node_expression> &expression,
+		c_temporary_reference<c_ast_node_scope> &true_scope,
+		c_temporary_reference<c_ast_node_scope> &false_scope) override;
 	void exit_if_statement_expression(
-		c_temporary_reference<c_AST_node_expression> &rule_head_context,
-		c_temporary_reference<c_AST_node_expression> &expression) override;
+		c_temporary_reference<c_ast_node_expression> &rule_head_context,
+		c_temporary_reference<c_ast_node_expression> &expression) override;
 	bool enter_if_statement_scope(
-		c_temporary_reference<c_AST_node_scope> &rule_head_context,
+		c_temporary_reference<c_ast_node_scope> &rule_head_context,
 		const s_token &brace,
-		c_temporary_reference<c_AST_node_scope> &scope) override;
+		c_temporary_reference<c_ast_node_scope> &scope) override;
 	void exit_if_statement_scope(
-		c_temporary_reference<c_AST_node_scope> &rule_head_context,
+		c_temporary_reference<c_ast_node_scope> &rule_head_context,
 		const s_token &brace,
-		c_temporary_reference<c_AST_node_scope> &scope) override;
+		c_temporary_reference<c_ast_node_scope> &scope) override;
 	bool enter_else_if(
-		c_temporary_reference<c_AST_node_scope> &rule_head_context,
-		c_temporary_reference<c_AST_node_if_statement> &if_statement) override;
+		c_temporary_reference<c_ast_node_scope> &rule_head_context,
+		c_temporary_reference<c_ast_node_if_statement> &if_statement) override;
 	void exit_else_if(
-		c_temporary_reference<c_AST_node_scope> &rule_head_context,
-		c_temporary_reference<c_AST_node_if_statement> &if_statement) override;
+		c_temporary_reference<c_ast_node_scope> &rule_head_context,
+		c_temporary_reference<c_ast_node_if_statement> &if_statement) override;
 	void exit_for_loop_iterator(
-		c_AST_node_for_loop *&rule_head_context,
-		c_temporary_reference<c_AST_node_value_declaration> &value,
-		c_temporary_reference<c_AST_node_expression> &range) override;
+		c_ast_node_for_loop *&rule_head_context,
+		c_temporary_reference<c_ast_node_value_declaration> &value,
+		c_temporary_reference<c_ast_node_expression> &range) override;
 
 	void exit_assignment(
 		s_value_with_source_location<e_native_operator> &rule_head_context,
@@ -371,46 +371,46 @@ private:
 	}
 
 	// Builds the scope and recursively builds namespace scopes as well
-	void build_tracked_scope(c_AST_node_scope *scope_node, c_tracked_scope *tracked_scope);
+	void build_tracked_scope(c_ast_node_scope *scope_node, c_tracked_scope *tracked_scope);
 
 	// Adds a declaration to the specified tracked scope and reports conflict errors
 	c_tracked_declaration *add_declaration_to_tracked_scope(
 		c_tracked_scope *tracked_scope,
-		c_AST_node_declaration *declaration);
+		c_ast_node_declaration *declaration);
 
 	// Attempt to resolve the identifier using the scope provided, storing results in the provided reference node and
 	// reporting errors
 	void resolve_identifier(
-		c_AST_node_declaration_reference *reference_node,
+		c_ast_node_declaration_reference *reference_node,
 		c_tracked_scope *tracked_scope,
 		const char *identifier,
 		bool recurse);
 
 	void resolve_module_call(
-		c_AST_node_module_call *module_call,
-		c_wrapped_array<c_AST_node_module_declaration *> module_candidates);
+		c_ast_node_module_call *module_call,
+		c_wrapped_array<c_ast_node_module_declaration *> module_candidates);
 
 	void resolve_module_call_argument(
-		c_AST_node_module_declaration *module_declaration,
-		c_AST_node_module_declaration_argument *argument,
-		c_AST_node_module_call *module_call,
-		c_AST_node_expression *argument_expression,
-		e_AST_data_mutability dependent_constant_output_mutability);
+		c_ast_node_module_declaration *module_declaration,
+		c_ast_node_module_declaration_argument *argument,
+		c_ast_node_module_call *module_call,
+		c_ast_node_expression *argument_expression,
+		e_ast_data_mutability dependent_constant_output_mutability);
 
 	void resolve_native_operator_call(
-		c_AST_node_module_call *module_call,
+		c_ast_node_module_call *module_call,
 		e_native_operator native_operator,
 		const s_compiler_source_location &operator_source_location);
 
-	c_wrapped_array<c_AST_node_declaration *> try_get_typed_references(
-		const c_AST_node_expression *expression_node,
-		e_AST_node_type reference_type,
+	c_wrapped_array<c_ast_node_declaration *> try_get_typed_references(
+		const c_ast_node_expression *expression_node,
+		e_ast_node_type reference_type,
 		e_compiler_error failure_error,
 		const char *error_action,
 		const char *error_reason);
 
 	void validate_current_module_return_type(
-		const c_AST_qualified_data_type &data_type,
+		const c_ast_qualified_data_type &data_type,
 		const s_compiler_source_location &source_location);
 
 	bool is_loop_in_scope_stack() const;
@@ -424,23 +424,23 @@ private:
 	std::vector<size_t> m_left_recursive_list_stack;
 
 	// Associates a tracked scope with a scope AST node
-	std::unordered_map<c_AST_node_scope *, std::unique_ptr<c_tracked_scope>> m_tracked_scopes_from_scope_nodes;
+	std::unordered_map<c_ast_node_scope *, std::unique_ptr<c_tracked_scope>> m_tracked_scopes_from_scope_nodes;
 
 	// Stack of tracked scopes - global is at the bottom
 	std::vector<c_tracked_scope *> m_tracked_scopes;
 
 	// Current module being built. If we ever support nested module declarations, we'll need to turn this into a stack.
-	c_AST_node_module_declaration *m_current_module = nullptr;
+	c_ast_node_module_declaration *m_current_module = nullptr;
 };
 
-static const char *get_argument_direction_string(e_AST_argument_direction argument_direction);
+static const char *get_argument_direction_string(e_ast_argument_direction argument_direction);
 
-void c_AST_builder::build_ast_declarations(c_compiler_context &context, h_compiler_source_file source_file_handle) {
+void c_ast_builder::build_ast_declarations(c_compiler_context &context, h_compiler_source_file source_file_handle) {
 	c_ast_builder_visitor visitor(context, source_file_handle, e_ast_builder_pass::k_declarations);
 	visitor.visit();
 }
 
-void c_AST_builder::build_ast_definitions(c_compiler_context &context, h_compiler_source_file source_file_handle) {
+void c_ast_builder::build_ast_definitions(c_compiler_context &context, h_compiler_source_file source_file_handle) {
 	c_ast_builder_visitor visitor(context, source_file_handle, e_ast_builder_pass::k_definitions);
 	visitor.visit();
 }
@@ -457,17 +457,17 @@ c_ast_builder_visitor::c_ast_builder_visitor(
 	, m_pass(pass) {}
 
 bool c_ast_builder_visitor::enter_global_scope(
-	c_temporary_reference<c_AST_node_scope> &rule_head_context,
-	c_AST_node_scope *&item_list) {
+	c_temporary_reference<c_ast_node_scope> &rule_head_context,
+	c_ast_node_scope *&item_list) {
 	if (m_pass == e_ast_builder_pass::k_declarations) {
 		// Create a new scope node
-		rule_head_context.initialize(new c_AST_node_scope());
+		rule_head_context.initialize(new c_ast_node_scope());
 	} else {
 		wl_assert(m_pass == e_ast_builder_pass::k_definitions);
 
 		// Grab the previously created scope node
 		s_compiler_source_file &source_file = m_context.get_source_file(m_source_file_handle);
-		rule_head_context.initialize(source_file.ast->get_as<c_AST_node_scope>());
+		rule_head_context.initialize(source_file.ast->get_as<c_ast_node_scope>());
 		wl_assert(rule_head_context.get());
 
 		// Create a tracked scope and add all declared items up-front. The global scope is considered a namespace. Note:
@@ -487,8 +487,8 @@ bool c_ast_builder_visitor::enter_global_scope(
 }
 
 void c_ast_builder_visitor::exit_global_scope(
-	c_temporary_reference<c_AST_node_scope> &rule_head_context,
-	c_AST_node_scope *&item_list) {
+	c_temporary_reference<c_ast_node_scope> &rule_head_context,
+	c_ast_node_scope *&item_list) {
 	if (m_pass == e_ast_builder_pass::k_declarations) {
 		// Store the scope node as the AST root
 		s_compiler_source_file &source_file = m_context.get_source_file(m_source_file_handle);
@@ -506,9 +506,9 @@ void c_ast_builder_visitor::exit_global_scope(
 }
 
 bool c_ast_builder_visitor::enter_global_scope_item_list(
-	c_AST_node_scope *&rule_head_context,
-	c_AST_node_scope *&list_child,
-	c_temporary_reference<c_AST_node_scope_item> &item) {
+	c_ast_node_scope *&rule_head_context,
+	c_ast_node_scope *&list_child,
+	c_temporary_reference<c_ast_node_scope_item> &item) {
 
 	if (m_pass == e_ast_builder_pass::k_declarations) {
 		// Nothing to do during the declarations pass
@@ -525,9 +525,9 @@ bool c_ast_builder_visitor::enter_global_scope_item_list(
 }
 
 void c_ast_builder_visitor::exit_global_scope_item_list(
-	c_AST_node_scope *&rule_head_context,
-	c_AST_node_scope *&list_child,
-	c_temporary_reference<c_AST_node_scope_item> &item) {
+	c_ast_node_scope *&rule_head_context,
+	c_ast_node_scope *&list_child,
+	c_temporary_reference<c_ast_node_scope_item> &item) {
 	if (m_pass == e_ast_builder_pass::k_declarations) {
 		rule_head_context->add_scope_item(item.release());
 	} else {
@@ -537,25 +537,25 @@ void c_ast_builder_visitor::exit_global_scope_item_list(
 }
 
 bool c_ast_builder_visitor::enter_global_scope_item_value_declaration(
-	c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
+	c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 	e_ast_visibility &visibility,
-	c_temporary_reference<c_AST_node_value_declaration> &value_declaration) {
+	c_temporary_reference<c_ast_node_value_declaration> &value_declaration) {
 	// Pass along the item
 	value_declaration.initialize(
 		forward_on_definition_pass(
-			get_ast_node_as_or_null<c_AST_node_value_declaration>(rule_head_context.release())));
+			get_ast_node_as_or_null<c_ast_node_value_declaration>(rule_head_context.release())));
 	return true;
 }
 
 void c_ast_builder_visitor::exit_global_scope_item_value_declaration(
-	c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
+	c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 	e_ast_visibility &visibility,
-	c_temporary_reference<c_AST_node_value_declaration> &value_declaration) {
+	c_temporary_reference<c_ast_node_value_declaration> &value_declaration) {
 	if (m_pass == e_ast_builder_pass::k_declarations) {
 		// Global scope values can't be changed after they're initialized
 		value_declaration->set_modifiable(false);
 
-		if (value_declaration->get_data_type().get_data_mutability() != e_AST_data_mutability::k_constant) {
+		if (value_declaration->get_data_type().get_data_mutability() != e_ast_data_mutability::k_constant) {
 			m_context.error(
 				e_compiler_error::k_illegal_global_scope_value_data_type,
 				value_declaration->get_source_location(),
@@ -586,20 +586,20 @@ void c_ast_builder_visitor::exit_global_scope_item_value_declaration(
 }
 
 bool c_ast_builder_visitor::enter_global_scope_item_module_declaration(
-	c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
+	c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 	e_ast_visibility &visibility,
-	c_temporary_reference<c_AST_node_module_declaration> &module_declaration) {
+	c_temporary_reference<c_ast_node_module_declaration> &module_declaration) {
 	// Pass along the item
 	module_declaration.initialize(
 		forward_on_definition_pass(
-			get_ast_node_as_or_null<c_AST_node_module_declaration>(rule_head_context.release())));
+			get_ast_node_as_or_null<c_ast_node_module_declaration>(rule_head_context.release())));
 	return true;
 }
 
 void c_ast_builder_visitor::exit_global_scope_item_module_declaration(
-	c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
+	c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 	e_ast_visibility &visibility,
-	c_temporary_reference<c_AST_node_module_declaration> &module_declaration) {
+	c_temporary_reference<c_ast_node_module_declaration> &module_declaration) {
 	// Pass the item up to the generic parent
 	rule_head_context.initialize(module_declaration.release());
 
@@ -634,41 +634,41 @@ void c_ast_builder_visitor::exit_visibility_specifier(
 }
 
 bool c_ast_builder_visitor::enter_forward_value_declaration(
-	c_temporary_reference<c_AST_node_value_declaration> &rule_head_context,
-	c_temporary_reference<c_AST_node_value_declaration> &declaration) {
+	c_temporary_reference<c_ast_node_value_declaration> &rule_head_context,
+	c_temporary_reference<c_ast_node_value_declaration> &declaration) {
 	declaration.initialize(forward_on_definition_pass(rule_head_context.release()));
 	return true;
 }
 
 void c_ast_builder_visitor::exit_forward_value_declaration(
-	c_temporary_reference<c_AST_node_value_declaration> &rule_head_context,
-	c_temporary_reference<c_AST_node_value_declaration> &declaration) {
+	c_temporary_reference<c_ast_node_value_declaration> &rule_head_context,
+	c_temporary_reference<c_ast_node_value_declaration> &declaration) {
 	rule_head_context.initialize(declaration.release());
 }
 
 bool c_ast_builder_visitor::enter_value_declaration_with_initialization(
-	c_temporary_reference<c_AST_node_value_declaration> &rule_head_context,
-	c_temporary_reference<c_AST_node_value_declaration> &declaration,
-	c_temporary_reference<c_AST_node_expression> &expression) {
+	c_temporary_reference<c_ast_node_value_declaration> &rule_head_context,
+	c_temporary_reference<c_ast_node_value_declaration> &declaration,
+	c_temporary_reference<c_ast_node_expression> &expression) {
 	declaration.initialize(forward_on_definition_pass(rule_head_context.release()));
 	return true;
 }
 
 void c_ast_builder_visitor::exit_value_declaration_with_initialization(
-	c_temporary_reference<c_AST_node_value_declaration> &rule_head_context,
-	c_temporary_reference<c_AST_node_value_declaration> &declaration,
-	c_temporary_reference<c_AST_node_expression> &expression) {
+	c_temporary_reference<c_ast_node_value_declaration> &rule_head_context,
+	c_temporary_reference<c_ast_node_value_declaration> &declaration,
+	c_temporary_reference<c_ast_node_expression> &expression) {
 	rule_head_context.initialize(declaration.release());
 
 	if (m_pass == e_ast_builder_pass::k_declarations) {
-		wl_assert(expression->is_type(e_AST_node_type::k_expression_placeholder));
+		wl_assert(expression->is_type(e_ast_node_type::k_expression_placeholder));
 		rule_head_context->set_initialization_expression(expression.release());
 	} else {
 		wl_assert(m_pass == e_ast_builder_pass::k_definitions);
 
 		// Make sure the default initializer is of a compatible type
-		const c_AST_qualified_data_type &declaration_data_type = rule_head_context->get_data_type();
-		const c_AST_qualified_data_type &initialization_expression_data_type =
+		const c_ast_qualified_data_type &declaration_data_type = rule_head_context->get_data_type();
+		const c_ast_qualified_data_type &initialization_expression_data_type =
 			rule_head_context->get_initialization_expression()->get_data_type();
 		if (!is_ast_data_type_assignable(initialization_expression_data_type, declaration_data_type)) {
 			m_context.error(
@@ -682,30 +682,30 @@ void c_ast_builder_visitor::exit_value_declaration_with_initialization(
 
 		// Replace the placeholder expression with the real one
 		wl_assert(
-			rule_head_context->get_initialization_expression()->is_type(e_AST_node_type::k_expression_placeholder));
+			rule_head_context->get_initialization_expression()->is_type(e_ast_node_type::k_expression_placeholder));
 		rule_head_context->set_initialization_expression(expression.release());
 	}
 }
 
 bool c_ast_builder_visitor::enter_value_declaration_without_initialization(
-	c_temporary_reference<c_AST_node_value_declaration> &rule_head_context,
-	c_temporary_reference<c_AST_node_value_declaration> &declaration) {
+	c_temporary_reference<c_ast_node_value_declaration> &rule_head_context,
+	c_temporary_reference<c_ast_node_value_declaration> &declaration) {
 	declaration.initialize(forward_on_definition_pass(rule_head_context.release()));
 	return true;
 }
 
 void c_ast_builder_visitor::exit_value_declaration_without_initialization(
-	c_temporary_reference<c_AST_node_value_declaration> &rule_head_context,
-	c_temporary_reference<c_AST_node_value_declaration> &declaration) {
+	c_temporary_reference<c_ast_node_value_declaration> &rule_head_context,
+	c_temporary_reference<c_ast_node_value_declaration> &declaration) {
 	rule_head_context.initialize(declaration.release());
 }
 
 void c_ast_builder_visitor::exit_value_declaration_data_type_name(
-	c_temporary_reference<c_AST_node_value_declaration> &rule_head_context,
-	s_value_with_source_location<c_AST_qualified_data_type> &data_type,
+	c_temporary_reference<c_ast_node_value_declaration> &rule_head_context,
+	s_value_with_source_location<c_ast_qualified_data_type> &data_type,
 	const s_token &name) {
 	if (m_pass == e_ast_builder_pass::k_declarations) {
-		rule_head_context.initialize(new c_AST_node_value_declaration());
+		rule_head_context.initialize(new c_ast_node_value_declaration());
 		rule_head_context->set_name(std::string(name.token_string).c_str());
 		rule_head_context->set_source_location(data_type.source_location);
 
@@ -716,7 +716,7 @@ void c_ast_builder_visitor::exit_value_declaration_data_type_name(
 				"Illegal data type '%s' for value '%s'",
 				data_type.value.to_string().c_str(),
 				std::string(name.token_string).c_str());
-			rule_head_context->set_data_type(c_AST_qualified_data_type::error());
+			rule_head_context->set_data_type(c_ast_qualified_data_type::error());
 		} else {
 			rule_head_context->set_data_type(data_type.value);
 		}
@@ -730,14 +730,14 @@ void c_ast_builder_visitor::exit_value_declaration_data_type_name(
 }
 
 bool c_ast_builder_visitor::enter_module_declaration(
-	c_temporary_reference<c_AST_node_module_declaration> &rule_head_context,
-	s_value_with_source_location<c_AST_qualified_data_type> &return_type,
+	c_temporary_reference<c_ast_node_module_declaration> &rule_head_context,
+	s_value_with_source_location<c_ast_qualified_data_type> &return_type,
 	const s_token &name,
-	c_AST_node_module_declaration *&argument_list,
-	c_AST_node_module_declaration *&body) {
+	c_ast_node_module_declaration *&argument_list,
+	c_ast_node_module_declaration *&body) {
 	if (m_pass == e_ast_builder_pass::k_declarations) {
 		// Create a new module declaration node so we have a location to store arguments as they're parsed
-		rule_head_context.initialize(new c_AST_node_module_declaration());
+		rule_head_context.initialize(new c_ast_node_module_declaration());
 	} else {
 		wl_assert(m_pass == e_ast_builder_pass::k_definitions);
 		wl_assert(!m_current_module);
@@ -750,11 +750,11 @@ bool c_ast_builder_visitor::enter_module_declaration(
 }
 
 void c_ast_builder_visitor::exit_module_declaration(
-	c_temporary_reference<c_AST_node_module_declaration> &rule_head_context,
-	s_value_with_source_location<c_AST_qualified_data_type> &return_type,
+	c_temporary_reference<c_ast_node_module_declaration> &rule_head_context,
+	s_value_with_source_location<c_ast_qualified_data_type> &return_type,
 	const s_token &name,
-	c_AST_node_module_declaration *&argument_list,
-	c_AST_node_module_declaration *&body) {
+	c_ast_node_module_declaration *&argument_list,
+	c_ast_node_module_declaration *&body) {
 	if (m_pass == e_ast_builder_pass::k_declarations) {
 		// Validate all arguments
 		size_t argument_count = rule_head_context->get_argument_count();
@@ -762,7 +762,7 @@ void c_ast_builder_visitor::exit_module_declaration(
 		// Detect ordering issues (default initializer expressions must come last)
 		bool found_argument_with_default_value = false;
 		for (size_t argument_index = 0; argument_index < argument_count; argument_index++) {
-			const c_AST_node_module_declaration_argument *argument = rule_head_context->get_argument(argument_index);
+			const c_ast_node_module_declaration_argument *argument = rule_head_context->get_argument(argument_index);
 			if (argument->get_initialization_expression()) {
 				found_argument_with_default_value = true;
 			} else if (found_argument_with_default_value) {
@@ -778,11 +778,11 @@ void c_ast_builder_visitor::exit_module_declaration(
 
 		// Detect duplicate arguments
 		for (size_t argument_index_a = 0; argument_index_a < argument_count; argument_index_a++) {
-			const c_AST_node_module_declaration_argument *argument_a =
+			const c_ast_node_module_declaration_argument *argument_a =
 				rule_head_context->get_argument(argument_index_a);
 
 			for (size_t argument_index_b = 0; argument_index_b < argument_index_a; argument_index_b++) {
-				const c_AST_node_module_declaration_argument *argument_b =
+				const c_ast_node_module_declaration_argument *argument_b =
 					rule_head_context->get_argument(argument_index_b);
 
 				if (strcmp(argument_a->get_name(), argument_b->get_name()) == 0) {
@@ -808,8 +808,8 @@ void c_ast_builder_visitor::exit_module_declaration(
 }
 
 bool c_ast_builder_visitor::enter_module_declaration_argument_list(
-	c_AST_node_module_declaration *&rule_head_context,
-	c_AST_node_module_declaration *&argument_list) {
+	c_ast_node_module_declaration *&rule_head_context,
+	c_ast_node_module_declaration *&argument_list) {
 	if (m_pass == e_ast_builder_pass::k_declarations) {
 		// Nothing to do
 	} else {
@@ -822,8 +822,8 @@ bool c_ast_builder_visitor::enter_module_declaration_argument_list(
 }
 
 void c_ast_builder_visitor::exit_module_declaration_argument_list(
-	c_AST_node_module_declaration *&rule_head_context,
-	c_AST_node_module_declaration *&argument_list) {
+	c_ast_node_module_declaration *&rule_head_context,
+	c_ast_node_module_declaration *&argument_list) {
 	if (m_pass == e_ast_builder_pass::k_declarations) {
 		// Nothing to do
 	} else {
@@ -833,8 +833,8 @@ void c_ast_builder_visitor::exit_module_declaration_argument_list(
 }
 
 bool c_ast_builder_visitor::enter_module_declaration_single_item_argument_list_item(
-	c_AST_node_module_declaration *&rule_head_context,
-	c_temporary_reference<c_AST_node_module_declaration_argument> &argument) {
+	c_ast_node_module_declaration *&rule_head_context,
+	c_temporary_reference<c_ast_node_module_declaration_argument> &argument) {
 	if (m_pass == e_ast_builder_pass::k_declarations) {
 		// Nothing to do
 	} else {
@@ -847,8 +847,8 @@ bool c_ast_builder_visitor::enter_module_declaration_single_item_argument_list_i
 }
 
 void c_ast_builder_visitor::exit_module_declaration_single_item_argument_list_item(
-	c_AST_node_module_declaration *&rule_head_context,
-	c_temporary_reference<c_AST_node_module_declaration_argument> &argument) {
+	c_ast_node_module_declaration *&rule_head_context,
+	c_temporary_reference<c_ast_node_module_declaration_argument> &argument) {
 	if (m_pass == e_ast_builder_pass::k_declarations) {
 		rule_head_context->add_argument(argument.release());
 	} else {
@@ -858,9 +858,9 @@ void c_ast_builder_visitor::exit_module_declaration_single_item_argument_list_it
 }
 
 bool c_ast_builder_visitor::enter_module_declaration_nonempty_argument_list_item(
-	c_AST_node_module_declaration *&rule_head_context,
-	c_AST_node_module_declaration *&list_child,
-	c_temporary_reference<c_AST_node_module_declaration_argument> &argument) {
+	c_ast_node_module_declaration *&rule_head_context,
+	c_ast_node_module_declaration *&list_child,
+	c_temporary_reference<c_ast_node_module_declaration_argument> &argument) {
 	if (m_pass == e_ast_builder_pass::k_declarations) {
 		// Nothing to do
 	} else {
@@ -874,9 +874,9 @@ bool c_ast_builder_visitor::enter_module_declaration_nonempty_argument_list_item
 }
 
 void c_ast_builder_visitor::exit_module_declaration_nonempty_argument_list_item(
-	c_AST_node_module_declaration *&rule_head_context,
-	c_AST_node_module_declaration *&list_child,
-	c_temporary_reference<c_AST_node_module_declaration_argument> &argument) {
+	c_ast_node_module_declaration *&rule_head_context,
+	c_ast_node_module_declaration *&list_child,
+	c_temporary_reference<c_ast_node_module_declaration_argument> &argument) {
 	if (m_pass == e_ast_builder_pass::k_declarations) {
 		rule_head_context->add_argument(argument.release());
 	} else {
@@ -886,16 +886,16 @@ void c_ast_builder_visitor::exit_module_declaration_nonempty_argument_list_item(
 }
 
 void c_ast_builder_visitor::exit_module_declaration_argument(
-	c_temporary_reference<c_AST_node_module_declaration_argument> &rule_head_context,
-	s_value_with_source_location<e_AST_argument_direction> &argument_direction,
-	c_temporary_reference<c_AST_node_value_declaration> &value_declaration) {
+	c_temporary_reference<c_ast_node_module_declaration_argument> &rule_head_context,
+	s_value_with_source_location<e_ast_argument_direction> &argument_direction,
+	c_temporary_reference<c_ast_node_value_declaration> &value_declaration) {
 	if (m_pass == e_ast_builder_pass::k_declarations) {
-		rule_head_context.initialize(new c_AST_node_module_declaration_argument());
+		rule_head_context.initialize(new c_ast_node_module_declaration_argument());
 		rule_head_context->set_source_location(argument_direction.source_location);
 		rule_head_context->set_argument_direction(argument_direction.value);
 		rule_head_context->set_value_declaration(value_declaration.release());
 
-		if (argument_direction.value == e_AST_argument_direction::k_out
+		if (argument_direction.value == e_ast_argument_direction::k_out
 			&& value_declaration->get_initialization_expression()) {
 			m_context.error(
 				e_compiler_error::k_illegal_out_argument,
@@ -909,15 +909,15 @@ void c_ast_builder_visitor::exit_module_declaration_argument(
 }
 
 void c_ast_builder_visitor::exit_argument_qualifier(
-	s_value_with_source_location<e_AST_argument_direction> &rule_head_context,
+	s_value_with_source_location<e_ast_argument_direction> &rule_head_context,
 	const s_token &direction) {
 	switch (direction.token_type) {
 	case e_token_type::k_keyword_in:
-		rule_head_context.value = e_AST_argument_direction::k_in;
+		rule_head_context.value = e_ast_argument_direction::k_in;
 		break;
 
 	case e_token_type::k_keyword_out:
-		rule_head_context.value = e_AST_argument_direction::k_out;
+		rule_head_context.value = e_ast_argument_direction::k_out;
 		break;
 
 	default:
@@ -928,16 +928,16 @@ void c_ast_builder_visitor::exit_argument_qualifier(
 }
 
 bool c_ast_builder_visitor::enter_module_body(
-	c_AST_node_module_declaration *&rule_head_context,
+	c_ast_node_module_declaration *&rule_head_context,
 	const s_token &brace,
-	c_temporary_reference<c_AST_node_scope> &scope) {
+	c_temporary_reference<c_ast_node_scope> &scope) {
 	if (m_pass == e_ast_builder_pass::k_declarations) {
 		return false;
 	} else {
 		wl_assert(m_pass == e_ast_builder_pass::k_definitions);
 
 		// Create the scope and add arguments in advance
-		scope.initialize(new c_AST_node_scope());
+		scope.initialize(new c_ast_node_scope());
 		scope->set_source_location(brace.source_location);
 
 		c_tracked_scope *tracked_scope =
@@ -946,11 +946,11 @@ bool c_ast_builder_visitor::enter_module_body(
 		m_tracked_scopes.push_back(tracked_scope);
 
 		for (size_t argument_index = 0; argument_index < rule_head_context->get_argument_count(); argument_index++) {
-			c_AST_node_module_declaration_argument *argument = rule_head_context->get_argument(argument_index);
+			c_ast_node_module_declaration_argument *argument = rule_head_context->get_argument(argument_index);
 			add_declaration_to_tracked_scope(tracked_scope, argument->get_value_declaration());
 
 			// All input values start initialized
-			if (argument->get_argument_direction() == e_AST_argument_direction::k_in) {
+			if (argument->get_argument_direction() == e_ast_argument_direction::k_in) {
 				m_tracked_scopes.back()->issue_declaration_assignment(argument->get_value_declaration());
 			}
 		}
@@ -960,9 +960,9 @@ bool c_ast_builder_visitor::enter_module_body(
 }
 
 void c_ast_builder_visitor::exit_module_body(
-	c_AST_node_module_declaration *&rule_head_context,
+	c_ast_node_module_declaration *&rule_head_context,
 	const s_token &brace,
-	c_temporary_reference<c_AST_node_scope> &scope) {
+	c_temporary_reference<c_ast_node_scope> &scope) {
 	wl_assert(m_pass == e_ast_builder_pass::k_definitions);
 
 	c_tracked_scope *tracked_scope = m_tracked_scopes.back();
@@ -970,9 +970,9 @@ void c_ast_builder_visitor::exit_module_body(
 
 	// Validate that all output arguments have been assigned
 	for (size_t argument_index = 0; argument_index < rule_head_context->get_argument_count(); argument_index++) {
-		c_AST_node_module_declaration_argument *argument = rule_head_context->get_argument(argument_index);
+		c_ast_node_module_declaration_argument *argument = rule_head_context->get_argument(argument_index);
 
-		if (argument->get_argument_direction() == e_AST_argument_direction::k_out) {
+		if (argument->get_argument_direction() == e_ast_argument_direction::k_out) {
 			switch (m_tracked_scopes.back()->get_declaration_assignment_state(argument->get_value_declaration())) {
 			case e_tracked_event_state::k_did_not_occur:
 				m_context.error(
@@ -1037,10 +1037,10 @@ void c_ast_builder_visitor::exit_module_body(
 }
 
 void c_ast_builder_visitor::exit_qualified_data_type(
-	s_value_with_source_location<c_AST_qualified_data_type> &rule_head_context,
-	s_value_with_source_location<e_AST_data_mutability> &mutability,
-	s_value_with_source_location<c_AST_data_type> &data_type) {
-	rule_head_context.value = c_AST_qualified_data_type(data_type.value, mutability.value);
+	s_value_with_source_location<c_ast_qualified_data_type> &rule_head_context,
+	s_value_with_source_location<e_ast_data_mutability> &mutability,
+	s_value_with_source_location<c_ast_data_type> &data_type) {
+	rule_head_context.value = c_ast_qualified_data_type(data_type.value, mutability.value);
 	rule_head_context.source_location = mutability.source_location.is_valid()
 		? mutability.source_location
 		: data_type.source_location;
@@ -1051,35 +1051,35 @@ void c_ast_builder_visitor::exit_qualified_data_type(
 			rule_head_context.source_location,
 			"Illegal data type '%s'",
 			rule_head_context.value.to_string().c_str());
-		rule_head_context.value = c_AST_qualified_data_type::error();
+		rule_head_context.value = c_ast_qualified_data_type::error();
 	}
 }
 
 void c_ast_builder_visitor::exit_no_qualifier(
-	s_value_with_source_location<e_AST_data_mutability> &rule_head_context) {
-	rule_head_context.value = e_AST_data_mutability::k_variable;
+	s_value_with_source_location<e_ast_data_mutability> &rule_head_context) {
+	rule_head_context.value = e_ast_data_mutability::k_variable;
 	rule_head_context.source_location.clear();
 }
 
 void c_ast_builder_visitor::exit_const_qualifier(
-	s_value_with_source_location<e_AST_data_mutability> &rule_head_context,
+	s_value_with_source_location<e_ast_data_mutability> &rule_head_context,
 	const s_token &const_keyword) {
-	rule_head_context.value = e_AST_data_mutability::k_constant;
+	rule_head_context.value = e_ast_data_mutability::k_constant;
 	rule_head_context.source_location = const_keyword.source_location;
 }
 
 void c_ast_builder_visitor::exit_dependent_const_qualifier(
-	s_value_with_source_location<e_AST_data_mutability> &rule_head_context,
+	s_value_with_source_location<e_ast_data_mutability> &rule_head_context,
 	const s_token &const_keyword) {
-	rule_head_context.value = e_AST_data_mutability::k_dependent_constant;
+	rule_head_context.value = e_ast_data_mutability::k_dependent_constant;
 	rule_head_context.source_location = const_keyword.source_location;
 }
 
 void c_ast_builder_visitor::exit_data_type(
-	s_value_with_source_location<c_AST_data_type> &rule_head_context,
-	s_value_with_source_location<e_AST_primitive_type> &primitive_type,
+	s_value_with_source_location<c_ast_data_type> &rule_head_context,
+	s_value_with_source_location<e_ast_primitive_type> &primitive_type,
 	bool &is_array) {
-	rule_head_context.value = c_AST_data_type(primitive_type.value, is_array);
+	rule_head_context.value = c_ast_data_type(primitive_type.value, is_array);
 	rule_head_context.source_location = primitive_type.source_location;
 	if (!rule_head_context.value.is_legal_type_declaration()) {
 		m_context.error(
@@ -1087,28 +1087,28 @@ void c_ast_builder_visitor::exit_data_type(
 			rule_head_context.source_location,
 			"Illegal data type '%s'",
 			rule_head_context.value.to_string().c_str());
-		rule_head_context.value = c_AST_data_type::error();
+		rule_head_context.value = c_ast_data_type::error();
 	}
 }
 
 void c_ast_builder_visitor::exit_primitive_type(
-	s_value_with_source_location<e_AST_primitive_type> &rule_head_context,
+	s_value_with_source_location<e_ast_primitive_type> &rule_head_context,
 	const s_token &type) {
 	switch (type.token_type) {
 	case e_token_type::k_keyword_void:
-		rule_head_context.value = e_AST_primitive_type::k_void;
+		rule_head_context.value = e_ast_primitive_type::k_void;
 		break;
 
 	case e_token_type::k_keyword_real:
-		rule_head_context.value = e_AST_primitive_type::k_real;
+		rule_head_context.value = e_ast_primitive_type::k_real;
 		break;
 
 	case e_token_type::k_keyword_bool:
-		rule_head_context.value = e_AST_primitive_type::k_bool;
+		rule_head_context.value = e_ast_primitive_type::k_bool;
 		break;
 
 	case e_token_type::k_keyword_string:
-		rule_head_context.value = e_AST_primitive_type::k_string;
+		rule_head_context.value = e_ast_primitive_type::k_string;
 		break;
 
 	default:
@@ -1129,11 +1129,11 @@ void c_ast_builder_visitor::exit_is_array(
 }
 
 bool c_ast_builder_visitor::enter_expression(
-	c_temporary_reference<c_AST_node_expression> &rule_head_context,
-	c_temporary_reference<c_AST_node_expression> &expression) {
+	c_temporary_reference<c_ast_node_expression> &rule_head_context,
+	c_temporary_reference<c_ast_node_expression> &expression) {
 	if (m_pass == e_ast_builder_pass::k_declarations) {
 		// Store off a placeholder expression and don't enter the expression tree during the declaration pass
-		rule_head_context.initialize(new c_AST_node_expression_placeholder());
+		rule_head_context.initialize(new c_ast_node_expression_placeholder());
 		return false;
 	} else {
 		wl_assert(m_pass == e_ast_builder_pass::k_definitions);
@@ -1142,18 +1142,18 @@ bool c_ast_builder_visitor::enter_expression(
 }
 
 void c_ast_builder_visitor::exit_expression(
-	c_temporary_reference<c_AST_node_expression> &rule_head_context,
-	c_temporary_reference<c_AST_node_expression> &expression) {
+	c_temporary_reference<c_ast_node_expression> &rule_head_context,
+	c_temporary_reference<c_ast_node_expression> &expression) {
 	wl_assert(m_pass == e_ast_builder_pass::k_definitions);
 	rule_head_context.initialize(forward_on_definition_pass(expression.release()));
 }
 
 void c_ast_builder_visitor::exit_binary_operator(
-	c_temporary_reference<c_AST_node_expression> &rule_head_context,
-	c_temporary_reference<c_AST_node_expression> &lhs,
+	c_temporary_reference<c_ast_node_expression> &rule_head_context,
+	c_temporary_reference<c_ast_node_expression> &lhs,
 	const s_token &op,
-	c_temporary_reference<c_AST_node_expression> &rhs) {
-	c_AST_node_module_call *module_call_node = new c_AST_node_module_call();
+	c_temporary_reference<c_ast_node_expression> &rhs) {
+	c_ast_node_module_call *module_call_node = new c_ast_node_module_call();
 	rule_head_context.initialize(module_call_node);
 	module_call_node->set_source_location(op.source_location);
 
@@ -1218,16 +1218,16 @@ void c_ast_builder_visitor::exit_binary_operator(
 
 	wl_assert(native_operator != e_native_operator::k_invalid);
 
-	c_AST_node_module_call_argument *lhs_argument_node = new c_AST_node_module_call_argument();
+	c_ast_node_module_call_argument *lhs_argument_node = new c_ast_node_module_call_argument();
 	module_call_node->add_argument(lhs_argument_node);
 	lhs_argument_node->set_source_location(lhs->get_source_location());
-	lhs_argument_node->set_argument_direction(e_AST_argument_direction::k_in);
+	lhs_argument_node->set_argument_direction(e_ast_argument_direction::k_in);
 	lhs_argument_node->set_value_expression(lhs.release());
 
-	c_AST_node_module_call_argument *rhs_argument_node = new c_AST_node_module_call_argument();
+	c_ast_node_module_call_argument *rhs_argument_node = new c_ast_node_module_call_argument();
 	module_call_node->add_argument(rhs_argument_node);
 	rhs_argument_node->set_source_location(rhs->get_source_location());
-	rhs_argument_node->set_argument_direction(e_AST_argument_direction::k_in);
+	rhs_argument_node->set_argument_direction(e_ast_argument_direction::k_in);
 	rhs_argument_node->set_value_expression(rhs.release());
 
 	resolve_native_operator_call(module_call_node, native_operator, op.source_location);
@@ -1235,8 +1235,8 @@ void c_ast_builder_visitor::exit_binary_operator(
 	// Special case: if this is a subscript operation on a reference, swap this node out to be a subscript node. This
 	// allows it to live on the LHS of assignment statements.
 	if (native_operator == e_native_operator::k_subscript
-		&& rhs_argument_node->get_value_expression()->is_type(e_AST_node_type::k_declaration_reference)) {
-		c_AST_node_subscript *subscript_node = new c_AST_node_subscript();
+		&& rhs_argument_node->get_value_expression()->is_type(e_ast_node_type::k_declaration_reference)) {
+		c_ast_node_subscript *subscript_node = new c_ast_node_subscript();
 		subscript_node->set_source_location(module_call_node->get_source_location());
 		subscript_node->set_module_call(module_call_node);
 
@@ -1246,16 +1246,16 @@ void c_ast_builder_visitor::exit_binary_operator(
 }
 
 void c_ast_builder_visitor::exit_forward_expression(
-	c_temporary_reference<c_AST_node_expression> &rule_head_context,
-	c_temporary_reference<c_AST_node_expression> &expression) {
+	c_temporary_reference<c_ast_node_expression> &rule_head_context,
+	c_temporary_reference<c_ast_node_expression> &expression) {
 	rule_head_context.initialize(forward_on_definition_pass(expression.release()));
 }
 
 void c_ast_builder_visitor::exit_unary_operator(
-	c_temporary_reference<c_AST_node_expression> &rule_head_context,
+	c_temporary_reference<c_ast_node_expression> &rule_head_context,
 	const s_token &op,
-	c_temporary_reference<c_AST_node_expression> &rhs) {
-	c_AST_node_module_call *module_call_node = new c_AST_node_module_call();
+	c_temporary_reference<c_ast_node_expression> &rhs) {
+	c_ast_node_module_call *module_call_node = new c_ast_node_module_call();
 	rule_head_context.initialize(module_call_node);
 	module_call_node->set_source_location(op.source_location);
 
@@ -1276,67 +1276,67 @@ void c_ast_builder_visitor::exit_unary_operator(
 
 	wl_assert(native_operator != e_native_operator::k_invalid);
 
-	c_AST_node_module_call_argument *rhs_argument_node = new c_AST_node_module_call_argument();
+	c_ast_node_module_call_argument *rhs_argument_node = new c_ast_node_module_call_argument();
 	module_call_node->add_argument(rhs_argument_node);
 	rhs_argument_node->set_source_location(rhs->get_source_location());
-	rhs_argument_node->set_argument_direction(e_AST_argument_direction::k_in);
+	rhs_argument_node->set_argument_direction(e_ast_argument_direction::k_in);
 	rhs_argument_node->set_value_expression(rhs.release());
 
 	resolve_native_operator_call(module_call_node, native_operator, op.source_location);
 }
 
 bool c_ast_builder_visitor::enter_module_call(
-	c_temporary_reference<c_AST_node_expression> &rule_head_context,
-	c_temporary_reference<c_AST_node_expression> &module,
-	c_AST_node_module_call *&argument_list) {
-	c_AST_node_module_call *module_call_node = new c_AST_node_module_call();
+	c_temporary_reference<c_ast_node_expression> &rule_head_context,
+	c_temporary_reference<c_ast_node_expression> &module,
+	c_ast_node_module_call *&argument_list) {
+	c_ast_node_module_call *module_call_node = new c_ast_node_module_call();
 	rule_head_context.initialize(module_call_node);
 	argument_list = module_call_node;
 	return true;
 }
 
 void c_ast_builder_visitor::exit_module_call(
-	c_temporary_reference<c_AST_node_expression> &rule_head_context,
-	c_temporary_reference<c_AST_node_expression> &module,
-	c_AST_node_module_call *&argument_list) {
-	c_AST_node_module_call *module_call_node = rule_head_context->get_as<c_AST_node_module_call>();
+	c_temporary_reference<c_ast_node_expression> &rule_head_context,
+	c_temporary_reference<c_ast_node_expression> &module,
+	c_ast_node_module_call *&argument_list) {
+	c_ast_node_module_call *module_call_node = rule_head_context->get_as<c_ast_node_module_call>();
 	module_call_node->set_source_location(module->get_source_location());
 
 	// If this is a valid module call, the module argument is a reference to one or more modules.
-	c_wrapped_array<c_AST_node_declaration *> module_reference = try_get_typed_references(
+	c_wrapped_array<c_ast_node_declaration *> module_reference = try_get_typed_references(
 		module.get(),
-		e_AST_node_type::k_module_declaration,
+		e_ast_node_type::k_module_declaration,
 		e_compiler_error::k_not_callable_type,
 		"perform call on",
 		"it is not a callable type");
 
 	if (module_reference.get_count() > 0) {
-		std::vector<c_AST_node_module_declaration *> candidates;
+		std::vector<c_ast_node_module_declaration *> candidates;
 		candidates.reserve(module_reference.get_count());
-		for (c_AST_node_declaration *reference : module_reference) {
-			candidates.push_back(reference->get_as<c_AST_node_module_declaration>());
+		for (c_ast_node_declaration *reference : module_reference) {
+			candidates.push_back(reference->get_as<c_ast_node_module_declaration>());
 		}
 
-		resolve_module_call(module_call_node, c_wrapped_array<c_AST_node_module_declaration *>(candidates));
+		resolve_module_call(module_call_node, c_wrapped_array<c_ast_node_module_declaration *>(candidates));
 	}
 
 	module.release();
 }
 
 void c_ast_builder_visitor::exit_convert(
-	c_temporary_reference<c_AST_node_expression> &rule_head_context,
-	s_value_with_source_location<c_AST_qualified_data_type> &data_type,
-	c_temporary_reference<c_AST_node_expression> &expression) {
-	c_AST_node_convert *convert_node = new c_AST_node_convert();
+	c_temporary_reference<c_ast_node_expression> &rule_head_context,
+	s_value_with_source_location<c_ast_qualified_data_type> &data_type,
+	c_temporary_reference<c_ast_node_expression> &expression) {
+	c_ast_node_convert *convert_node = new c_ast_node_convert();
 	rule_head_context.initialize(convert_node);
 	convert_node->set_source_location(data_type.source_location);
 
 	if (expression->get_data_type().is_error()) {
-		convert_node->set_data_type(c_AST_qualified_data_type::error());
+		convert_node->set_data_type(c_ast_qualified_data_type::error());
 	} else if (is_ast_data_type_assignable(expression->get_data_type(), data_type.value)) {
 		convert_node->set_data_type(data_type.value);
 	} else {
-		convert_node->set_data_type(c_AST_qualified_data_type::error());
+		convert_node->set_data_type(c_ast_qualified_data_type::error());
 		m_context.error(
 			e_compiler_error::k_illegal_type_conversion,
 			data_type.source_location,
@@ -1349,23 +1349,23 @@ void c_ast_builder_visitor::exit_convert(
 }
 
 void c_ast_builder_visitor::exit_access(
-	c_temporary_reference<c_AST_node_expression> &rule_head_context,
-	c_temporary_reference<c_AST_node_expression> &lhs,
+	c_temporary_reference<c_ast_node_expression> &rule_head_context,
+	c_temporary_reference<c_ast_node_expression> &lhs,
 	const s_token &identifier) {
-	c_AST_node_declaration_reference *declaration_reference_node = new c_AST_node_declaration_reference();
+	c_ast_node_declaration_reference *declaration_reference_node = new c_ast_node_declaration_reference();
 	rule_head_context.initialize(declaration_reference_node);
 	declaration_reference_node->set_source_location(identifier.source_location);
 
 	// Only namespace declarations currently support the access operator
-	c_AST_node_declaration_reference *lhs_reference_node = lhs->try_get_as<c_AST_node_declaration_reference>();
+	c_ast_node_declaration_reference *lhs_reference_node = lhs->try_get_as<c_ast_node_declaration_reference>();
 	bool report_error = true;
 	if (lhs_reference_node) {
 		if (!lhs_reference_node->is_valid()) {
 			// If the reference is invalid, don't report errors because we already reported one for the resolve failure
 			report_error = false;
 		} else {
-			c_AST_node_namespace_declaration *namespace_declaration_node =
-				lhs_reference_node->get_references()[0]->try_get_as<c_AST_node_namespace_declaration>();
+			c_ast_node_namespace_declaration *namespace_declaration_node =
+				lhs_reference_node->get_references()[0]->try_get_as<c_ast_node_namespace_declaration>();
 			if (namespace_declaration_node) {
 				report_error = false;
 				c_tracked_scope *tracked_scope =
@@ -1391,9 +1391,9 @@ void c_ast_builder_visitor::exit_access(
 }
 
 void c_ast_builder_visitor::exit_identifier(
-	c_temporary_reference<c_AST_node_expression> &rule_head_context,
+	c_temporary_reference<c_ast_node_expression> &rule_head_context,
 	const s_token &identifier) {
-	c_AST_node_declaration_reference *declaration_reference_node = new c_AST_node_declaration_reference();
+	c_ast_node_declaration_reference *declaration_reference_node = new c_ast_node_declaration_reference();
 	rule_head_context.initialize(declaration_reference_node);
 	declaration_reference_node->set_source_location(identifier.source_location);
 	resolve_identifier(
@@ -1404,9 +1404,9 @@ void c_ast_builder_visitor::exit_identifier(
 }
 
 void c_ast_builder_visitor::exit_literal(
-	c_temporary_reference<c_AST_node_expression> &rule_head_context,
+	c_temporary_reference<c_ast_node_expression> &rule_head_context,
 	const s_token &literal) {
-	c_AST_node_literal *literal_node = new c_AST_node_literal();
+	c_ast_node_literal *literal_node = new c_ast_node_literal();
 	rule_head_context.initialize(literal_node);
 	rule_head_context->set_source_location(literal.source_location);
 
@@ -1429,34 +1429,34 @@ void c_ast_builder_visitor::exit_literal(
 }
 
 bool c_ast_builder_visitor::enter_array(
-	c_temporary_reference<c_AST_node_expression> &rule_head_context,
+	c_temporary_reference<c_ast_node_expression> &rule_head_context,
 	const s_token &brace,
-	c_AST_node_array *&values) {
-	c_AST_node_array *array_node = new c_AST_node_array();
+	c_ast_node_array *&values) {
+	c_ast_node_array *array_node = new c_ast_node_array();
 	rule_head_context.initialize(array_node);
 	values = array_node;
 	return true;
 }
 
 void c_ast_builder_visitor::exit_array(
-	c_temporary_reference<c_AST_node_expression> &rule_head_context,
+	c_temporary_reference<c_ast_node_expression> &rule_head_context,
 	const s_token &brace,
-	c_AST_node_array *&values) {
-	c_AST_node_array *array_node = rule_head_context->get_as<c_AST_node_array>();
+	c_ast_node_array *&values) {
+	c_ast_node_array *array_node = rule_head_context->get_as<c_ast_node_array>();
 	array_node->set_source_location(brace.source_location);
 
 	if (array_node->get_element_count() == 0) {
 		// Array nodes should default to this type when created
 		wl_assert(array_node->get_data_type().is_empty_array());
 	} else {
-		c_AST_qualified_data_type array_element_data_type;
+		c_ast_qualified_data_type array_element_data_type;
 		for (size_t element_index = 0; element_index < array_node->get_element_count(); element_index++) {
-			const c_AST_qualified_data_type &element_data_type =
+			const c_ast_qualified_data_type &element_data_type =
 				array_node->get_element(element_index)->get_data_type();
 
 			if (element_data_type.is_error()) {
 				// We already reported an error previously
-				array_element_data_type = c_AST_qualified_data_type::error();
+				array_element_data_type = c_ast_qualified_data_type::error();
 				break;
 			}
 
@@ -1471,7 +1471,7 @@ void c_ast_builder_visitor::exit_array(
 					"Array element of type '%s' is incompatible previous element of type '%s'",
 					element_data_type.to_string().c_str(),
 					array_element_data_type.to_string().c_str());
-				array_element_data_type = c_AST_qualified_data_type::error();
+				array_element_data_type = c_ast_qualified_data_type::error();
 				break;
 			}
 		}
@@ -1482,66 +1482,66 @@ void c_ast_builder_visitor::exit_array(
 }
 
 bool c_ast_builder_visitor::enter_array_value_list(
-	c_AST_node_array *&rule_head_context,
-	c_AST_node_array *&value_list) {
+	c_ast_node_array *&rule_head_context,
+	c_ast_node_array *&value_list) {
 	value_list = rule_head_context;
 	return true;
 }
 
 void c_ast_builder_visitor::exit_array_single_item_value_list_item(
-	c_AST_node_array *&rule_head_context,
-	c_temporary_reference<c_AST_node_expression> &value) {
+	c_ast_node_array *&rule_head_context,
+	c_temporary_reference<c_ast_node_expression> &value) {
 	rule_head_context->add_element(value.release());
 }
 
 bool c_ast_builder_visitor::enter_array_nonempty_value_list_item(
-	c_AST_node_array *&rule_head_context,
-	c_AST_node_array *&list_child,
-	c_temporary_reference<c_AST_node_expression> &value) {
+	c_ast_node_array *&rule_head_context,
+	c_ast_node_array *&list_child,
+	c_temporary_reference<c_ast_node_expression> &value) {
 	list_child = rule_head_context;
 	return true;
 }
 
 void c_ast_builder_visitor::exit_array_nonempty_value_list_item(
-	c_AST_node_array *&rule_head_context,
-	c_AST_node_array *&list_child,
-	c_temporary_reference<c_AST_node_expression> &value) {
+	c_ast_node_array *&rule_head_context,
+	c_ast_node_array *&list_child,
+	c_temporary_reference<c_ast_node_expression> &value) {
 	rule_head_context->add_element(value.release());
 }
 
 bool c_ast_builder_visitor::enter_module_call_argument_list(
-	c_AST_node_module_call *&rule_head_context,
-	c_AST_node_module_call *&argument_list) {
+	c_ast_node_module_call *&rule_head_context,
+	c_ast_node_module_call *&argument_list) {
 	argument_list = rule_head_context;
 	return true;
 }
 
 void c_ast_builder_visitor::exit_module_call_single_item_argument_list_item(
-	c_AST_node_module_call *&rule_head_context,
-	c_temporary_reference<c_AST_node_module_call_argument> &argument) {
+	c_ast_node_module_call *&rule_head_context,
+	c_temporary_reference<c_ast_node_module_call_argument> &argument) {
 	rule_head_context->add_argument(argument.release());
 }
 
 bool c_ast_builder_visitor::enter_module_call_nonempty_argument_list_item(
-	c_AST_node_module_call *&rule_head_context,
-	c_AST_node_module_call *&list_child,
-	c_temporary_reference<c_AST_node_module_call_argument> &argument) {
+	c_ast_node_module_call *&rule_head_context,
+	c_ast_node_module_call *&list_child,
+	c_temporary_reference<c_ast_node_module_call_argument> &argument) {
 	list_child = rule_head_context;
 	return true;
 }
 
 void c_ast_builder_visitor::exit_module_call_nonempty_argument_list_item(
-	c_AST_node_module_call *&rule_head_context,
-	c_AST_node_module_call *&list_child,
-	c_temporary_reference<c_AST_node_module_call_argument> &argument) {
+	c_ast_node_module_call *&rule_head_context,
+	c_ast_node_module_call *&list_child,
+	c_temporary_reference<c_ast_node_module_call_argument> &argument) {
 	rule_head_context->add_argument(argument.release());
 }
 
 void c_ast_builder_visitor::exit_module_call_unnamed_argument(
-	c_temporary_reference<c_AST_node_module_call_argument> &rule_head_context,
-	s_value_with_source_location<e_AST_argument_direction> &direction,
-	c_temporary_reference<c_AST_node_expression> &expression) {
-	rule_head_context.initialize(new c_AST_node_module_call_argument());
+	c_temporary_reference<c_ast_node_module_call_argument> &rule_head_context,
+	s_value_with_source_location<e_ast_argument_direction> &direction,
+	c_temporary_reference<c_ast_node_expression> &expression) {
+	rule_head_context.initialize(new c_ast_node_module_call_argument());
 	rule_head_context->set_source_location(
 		direction.source_location.is_valid() ? direction.source_location : expression->get_source_location());
 	rule_head_context->set_argument_direction(direction.value);
@@ -1549,11 +1549,11 @@ void c_ast_builder_visitor::exit_module_call_unnamed_argument(
 }
 
 void c_ast_builder_visitor::exit_module_call_named_argument(
-	c_temporary_reference<c_AST_node_module_call_argument> &rule_head_context,
-	s_value_with_source_location<e_AST_argument_direction> &direction,
+	c_temporary_reference<c_ast_node_module_call_argument> &rule_head_context,
+	s_value_with_source_location<e_ast_argument_direction> &direction,
 	const s_token &name,
-	c_temporary_reference<c_AST_node_expression> &expression) {
-	rule_head_context.initialize(new c_AST_node_module_call_argument());
+	c_temporary_reference<c_ast_node_expression> &expression) {
+	rule_head_context.initialize(new c_ast_node_module_call_argument());
 	rule_head_context->set_source_location(
 		direction.source_location.is_valid() ? direction.source_location : name.source_location);
 	rule_head_context->set_argument_direction(direction.value);
@@ -1562,51 +1562,51 @@ void c_ast_builder_visitor::exit_module_call_named_argument(
 }
 
 void c_ast_builder_visitor::exit_in_call_argument_qualifier(
-	s_value_with_source_location<e_AST_argument_direction> &rule_head_context) {
-	rule_head_context.value = e_AST_argument_direction::k_in;
+	s_value_with_source_location<e_ast_argument_direction> &rule_head_context) {
+	rule_head_context.value = e_ast_argument_direction::k_in;
 }
 
 void c_ast_builder_visitor::exit_out_call_argument_qualifier(
-	s_value_with_source_location<e_AST_argument_direction> &rule_head_context,
+	s_value_with_source_location<e_ast_argument_direction> &rule_head_context,
 	const s_token &qualifier) {
 	rule_head_context.source_location = qualifier.source_location;
-	rule_head_context.value = e_AST_argument_direction::k_out;
+	rule_head_context.value = e_ast_argument_direction::k_out;
 }
 
 bool c_ast_builder_visitor::enter_scope(
-	c_temporary_reference<c_AST_node_scope> &rule_head_context,
-	c_AST_node_scope *&statement_list) {
+	c_temporary_reference<c_ast_node_scope> &rule_head_context,
+	c_ast_node_scope *&statement_list) {
 	statement_list = rule_head_context.get();
 	return true;
 }
 
 bool c_ast_builder_visitor::enter_scope_item_list(
-	c_AST_node_scope *&rule_head_context,
-	c_AST_node_scope *&list_child,
-	c_temporary_reference<c_AST_node_scope_item> &scope_item) {
+	c_ast_node_scope *&rule_head_context,
+	c_ast_node_scope *&list_child,
+	c_temporary_reference<c_ast_node_scope_item> &scope_item) {
 	list_child = rule_head_context;
 	return true;
 }
 
 void c_ast_builder_visitor::exit_scope_item_list(
-	c_AST_node_scope *&rule_head_context,
-	c_AST_node_scope *&list_child,
-	c_temporary_reference<c_AST_node_scope_item> &scope_item) {
+	c_ast_node_scope *&rule_head_context,
+	c_ast_node_scope *&list_child,
+	c_temporary_reference<c_ast_node_scope_item> &scope_item) {
 	rule_head_context->add_scope_item(scope_item.release());
 }
 
 void c_ast_builder_visitor::exit_scope_item_expression(
-	c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
-	c_temporary_reference<c_AST_node_expression> &expression) {
-	c_AST_node_expression_statement *expression_statement_node = new c_AST_node_expression_statement();
+	c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
+	c_temporary_reference<c_ast_node_expression> &expression) {
+	c_ast_node_expression_statement *expression_statement_node = new c_ast_node_expression_statement();
 	rule_head_context.initialize(expression_statement_node);
 	expression_statement_node->set_source_location(expression->get_source_location());
 	expression_statement_node->set_expression(expression.release());
 }
 
 void c_ast_builder_visitor::exit_scope_item_value_declaration(
-	c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
-	c_temporary_reference<c_AST_node_value_declaration> &value_declaration) {
+	c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
+	c_temporary_reference<c_ast_node_value_declaration> &value_declaration) {
 	// Start tracking this declaration
 	add_declaration_to_tracked_scope(m_tracked_scopes.back(), value_declaration.get());
 
@@ -1619,28 +1619,28 @@ void c_ast_builder_visitor::exit_scope_item_value_declaration(
 }
 
 void c_ast_builder_visitor::exit_scope_item_assignment(
-	c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
-	c_temporary_reference<c_AST_node_expression> &lhs,
+	c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
+	c_temporary_reference<c_ast_node_expression> &lhs,
 	s_value_with_source_location<e_native_operator> &assignment_type,
-	c_temporary_reference<c_AST_node_expression> &rhs) {
-	c_AST_node_assignment_statement *assignment_statement_node = new c_AST_node_assignment_statement();
+	c_temporary_reference<c_ast_node_expression> &rhs) {
+	c_ast_node_assignment_statement *assignment_statement_node = new c_ast_node_assignment_statement();
 	rule_head_context.initialize(assignment_statement_node);
 
 	// The LHS might be a subscript node
-	c_AST_node_subscript *subscript_node = lhs->try_get_as<c_AST_node_subscript>();
+	c_ast_node_subscript *subscript_node = lhs->try_get_as<c_ast_node_subscript>();
 
 	// Make sure that the LHS points to a value that we can assign to
-	c_wrapped_array<c_AST_node_declaration *> value_reference = try_get_typed_references(
+	c_wrapped_array<c_ast_node_declaration *> value_reference = try_get_typed_references(
 		subscript_node ? subscript_node->get_reference() : lhs.get(),
-		e_AST_node_type::k_value_declaration,
+		e_ast_node_type::k_value_declaration,
 		e_compiler_error::k_invalid_assignment,
 		"assign to",
 		"it is not an assignable type");
 
-	c_AST_node_value_declaration *lhs_value_declaration = nullptr;
+	c_ast_node_value_declaration *lhs_value_declaration = nullptr;
 	if (value_reference.get_count() > 0) {
-		c_AST_node_value_declaration *lhs_value_declaration =
-			value_reference[0]->get_as<c_AST_node_value_declaration>();
+		c_ast_node_value_declaration *lhs_value_declaration =
+			value_reference[0]->get_as<c_ast_node_value_declaration>();
 
 		// Track the assignment of this value declaration
 		m_tracked_scopes.back()->issue_declaration_assignment(lhs_value_declaration);
@@ -1657,12 +1657,12 @@ void c_ast_builder_visitor::exit_scope_item_assignment(
 
 		if (subscript_node) {
 			// We can only do subscript assignments with a constant index
-			c_AST_qualified_data_type index_data_type = subscript_node->get_index_expression()->get_data_type();
+			c_ast_qualified_data_type index_data_type = subscript_node->get_index_expression()->get_data_type();
 			if (!index_data_type.is_error()
-				&& index_data_type.get_data_mutability() != e_AST_data_mutability::k_constant) {
-				c_AST_qualified_data_type const_real_data_type(
-					c_AST_data_type(e_AST_primitive_type::k_real),
-					e_AST_data_mutability::k_constant);
+				&& index_data_type.get_data_mutability() != e_ast_data_mutability::k_constant) {
+				c_ast_qualified_data_type const_real_data_type(
+					c_ast_data_type(e_ast_primitive_type::k_real),
+					e_ast_data_mutability::k_constant);
 				m_context.error(
 					e_compiler_error::k_illegal_variable_subscript_assignment,
 					subscript_node->get_index_expression()->get_source_location(),
@@ -1685,7 +1685,7 @@ void c_ast_builder_visitor::exit_scope_item_assignment(
 			// If this is a subscript operation, we're assigning to an element, not the array itself. The safest way to
 			// grab that element type is to see what the subscript module call would have returned if this expression
 			// were on the RHS. If the subscript call failed to resolve, we'll get an error type back.
-			c_AST_qualified_data_type lhs_data_type = subscript_node
+			c_ast_qualified_data_type lhs_data_type = subscript_node
 				? subscript_node->get_module_call()->get_resolved_module_declaration()->get_return_type()
 				: lhs_value_declaration->get_data_type();
 
@@ -1706,20 +1706,20 @@ void c_ast_builder_visitor::exit_scope_item_assignment(
 		lhs.release();
 	} else {
 		// We convert a statement like "x += y" to the form "x = x + y" by creating an intermediate expression
-		c_AST_node_module_call *module_call_node = new c_AST_node_module_call();
+		c_ast_node_module_call *module_call_node = new c_ast_node_module_call();
 		assignment_statement_node->set_rhs_expression(module_call_node);
 		module_call_node->set_source_location(assignment_type.source_location);
 
-		c_AST_node_module_call_argument *lhs_argument_node = new c_AST_node_module_call_argument();
+		c_ast_node_module_call_argument *lhs_argument_node = new c_ast_node_module_call_argument();
 		module_call_node->add_argument(lhs_argument_node);
 		lhs_argument_node->set_source_location(lhs->get_source_location());
-		lhs_argument_node->set_argument_direction(e_AST_argument_direction::k_in);
+		lhs_argument_node->set_argument_direction(e_ast_argument_direction::k_in);
 		lhs_argument_node->set_value_expression(lhs.release());
 
-		c_AST_node_module_call_argument *rhs_argument_node = new c_AST_node_module_call_argument();
+		c_ast_node_module_call_argument *rhs_argument_node = new c_ast_node_module_call_argument();
 		module_call_node->add_argument(rhs_argument_node);
 		rhs_argument_node->set_source_location(rhs->get_source_location());
-		rhs_argument_node->set_argument_direction(e_AST_argument_direction::k_in);
+		rhs_argument_node->set_argument_direction(e_ast_argument_direction::k_in);
 		rhs_argument_node->set_value_expression(rhs.release());
 
 		resolve_native_operator_call(module_call_node, assignment_type.value, assignment_type.source_location);
@@ -1727,9 +1727,9 @@ void c_ast_builder_visitor::exit_scope_item_assignment(
 }
 
 void c_ast_builder_visitor::exit_scope_item_return_void_statement(
-	c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
+	c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 	const s_token &return_keyword) {
-	c_AST_node_return_statement *return_statement_node = new c_AST_node_return_statement();
+	c_ast_node_return_statement *return_statement_node = new c_ast_node_return_statement();
 	rule_head_context.initialize(return_statement_node);
 	return_statement_node->set_source_location(return_keyword.source_location);
 
@@ -1737,15 +1737,15 @@ void c_ast_builder_visitor::exit_scope_item_return_void_statement(
 	m_tracked_scopes.back()->issue_return_statement();
 
 	validate_current_module_return_type(
-		c_AST_qualified_data_type(c_AST_data_type(e_AST_primitive_type::k_void), e_AST_data_mutability::k_variable),
+		c_ast_qualified_data_type(c_ast_data_type(e_ast_primitive_type::k_void), e_ast_data_mutability::k_variable),
 		return_keyword.source_location);
 }
 
 void c_ast_builder_visitor::exit_scope_item_return_statement(
-	c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
+	c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 	const s_token &return_keyword,
-	c_temporary_reference<c_AST_node_expression> &expression) {
-	c_AST_node_return_statement *return_statement_node = new c_AST_node_return_statement();
+	c_temporary_reference<c_ast_node_expression> &expression) {
+	c_ast_node_return_statement *return_statement_node = new c_ast_node_return_statement();
 	rule_head_context.initialize(return_statement_node);
 	return_statement_node->set_source_location(return_keyword.source_location);
 	return_statement_node->set_expression(expression.release());
@@ -1754,28 +1754,28 @@ void c_ast_builder_visitor::exit_scope_item_return_statement(
 	m_tracked_scopes.back()->issue_return_statement();
 
 	validate_current_module_return_type(
-		c_AST_qualified_data_type(c_AST_data_type(e_AST_primitive_type::k_void), e_AST_data_mutability::k_variable),
+		c_ast_qualified_data_type(c_ast_data_type(e_ast_primitive_type::k_void), e_ast_data_mutability::k_variable),
 		return_keyword.source_location);
 }
 
 void c_ast_builder_visitor::exit_scope_item_if_statement(
-	c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
-	c_temporary_reference<c_AST_node_if_statement> &if_statement) {
+	c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
+	c_temporary_reference<c_ast_node_if_statement> &if_statement) {
 	rule_head_context.initialize(if_statement.release());
 }
 
 bool c_ast_builder_visitor::enter_scope_item_for_loop(
-	c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
+	c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 	const s_token &for_keyword,
-	c_AST_node_for_loop *&iterator,
+	c_ast_node_for_loop *&iterator,
 	const s_token &brace,
-	c_temporary_reference<c_AST_node_scope> &scope) {
-	c_AST_node_for_loop *for_loop_node = new c_AST_node_for_loop();
+	c_temporary_reference<c_ast_node_scope> &scope) {
+	c_ast_node_for_loop *for_loop_node = new c_ast_node_for_loop();
 	rule_head_context.initialize(for_loop_node);
 	for_loop_node->set_source_location(for_keyword.source_location);
 
 	// Initialize the scope here so that the loop value gets pulled in
-	scope.initialize(new c_AST_node_scope());
+	scope.initialize(new c_ast_node_scope());
 	scope->set_source_location(brace.source_location);
 
 	c_tracked_scope *tracked_scope =
@@ -1787,18 +1787,18 @@ bool c_ast_builder_visitor::enter_scope_item_for_loop(
 }
 
 void c_ast_builder_visitor::exit_scope_item_for_loop(
-	c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
+	c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 	const s_token &for_keyword,
-	c_AST_node_for_loop *&iterator,
+	c_ast_node_for_loop *&iterator,
 	const s_token &brace,
-	c_temporary_reference<c_AST_node_scope> &scope) {
-	rule_head_context->get_as<c_AST_node_for_loop>()->set_loop_scope(scope.release());
+	c_temporary_reference<c_ast_node_scope> &scope) {
+	rule_head_context->get_as<c_ast_node_for_loop>()->set_loop_scope(scope.release());
 }
 
 void c_ast_builder_visitor::exit_break_statement(
-	c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
+	c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 	const s_token &break_keyword) {
-	c_AST_node_break_statement *break_statement_node = new c_AST_node_break_statement();
+	c_ast_node_break_statement *break_statement_node = new c_ast_node_break_statement();
 	rule_head_context.initialize(break_statement_node);
 	break_statement_node->set_source_location(break_keyword.source_location);
 
@@ -1814,9 +1814,9 @@ void c_ast_builder_visitor::exit_break_statement(
 }
 
 void c_ast_builder_visitor::exit_continue_statement(
-	c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
+	c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 	const s_token &continue_keyword) {
-	c_AST_node_continue_statement *continue_statement_node = new c_AST_node_continue_statement();
+	c_ast_node_continue_statement *continue_statement_node = new c_ast_node_continue_statement();
 	rule_head_context.initialize(continue_statement_node);
 	continue_statement_node->set_source_location(continue_keyword.source_location);
 
@@ -1832,10 +1832,10 @@ void c_ast_builder_visitor::exit_continue_statement(
 }
 
 bool c_ast_builder_visitor::enter_scope_item_scope(
-	c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
+	c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 	const s_token &brace,
-	c_temporary_reference<c_AST_node_scope> &scope) {
-	scope.initialize(new c_AST_node_scope());
+	c_temporary_reference<c_ast_node_scope> &scope) {
+	scope.initialize(new c_ast_node_scope());
 	scope->set_source_location(brace.source_location);
 
 	c_tracked_scope *tracked_scope =
@@ -1847,9 +1847,9 @@ bool c_ast_builder_visitor::enter_scope_item_scope(
 }
 
 void c_ast_builder_visitor::exit_scope_item_scope(
-	c_temporary_reference<c_AST_node_scope_item> &rule_head_context,
+	c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 	const s_token &brace,
-	c_temporary_reference<c_AST_node_scope> &scope) {
+	c_temporary_reference<c_ast_node_scope> &scope) {
 	c_tracked_scope *tracked_scope = m_tracked_scopes.back();
 	wl_assert(tracked_scope == m_tracked_scopes_from_scope_nodes.find(scope.get())->second.get());
 	m_tracked_scopes.pop_back();
@@ -1862,9 +1862,9 @@ void c_ast_builder_visitor::exit_scope_item_scope(
 }
 
 void c_ast_builder_visitor::exit_if_statement(
-	c_temporary_reference<c_AST_node_if_statement> &rule_head_context,
-	c_temporary_reference<c_AST_node_expression> &expression,
-	c_temporary_reference<c_AST_node_scope> &true_scope) {
+	c_temporary_reference<c_ast_node_if_statement> &rule_head_context,
+	c_temporary_reference<c_ast_node_expression> &expression,
+	c_temporary_reference<c_ast_node_scope> &true_scope) {
 	// Merge the child scope down into the parent scope (we already popped the tracked scope stack)
 	c_tracked_scope *tracked_true_scope = m_tracked_scopes_from_scope_nodes.find(true_scope.get())->second.get();
 	m_tracked_scopes.back()->merge_child_if_statement_scopes(tracked_true_scope, nullptr);
@@ -1875,10 +1875,10 @@ void c_ast_builder_visitor::exit_if_statement(
 }
 
 void c_ast_builder_visitor::exit_if_else_statement(
-	c_temporary_reference<c_AST_node_if_statement> &rule_head_context,
-	c_temporary_reference<c_AST_node_expression> &expression,
-	c_temporary_reference<c_AST_node_scope> &true_scope,
-	c_temporary_reference<c_AST_node_scope> &false_scope) {
+	c_temporary_reference<c_ast_node_if_statement> &rule_head_context,
+	c_temporary_reference<c_ast_node_expression> &expression,
+	c_temporary_reference<c_ast_node_scope> &true_scope,
+	c_temporary_reference<c_ast_node_scope> &false_scope) {
 	// Merge the child scopes down into the parent scope (we already popped the tracked scope stack)
 	c_tracked_scope *tracked_true_scope = m_tracked_scopes_from_scope_nodes.find(true_scope.get())->second.get();
 	c_tracked_scope *tracked_false_scope = m_tracked_scopes_from_scope_nodes.find(false_scope.get())->second.get();
@@ -1892,12 +1892,12 @@ void c_ast_builder_visitor::exit_if_else_statement(
 }
 
 void c_ast_builder_visitor::exit_if_statement_expression(
-	c_temporary_reference<c_AST_node_expression> &rule_head_context,
-	c_temporary_reference<c_AST_node_expression> &expression) {
+	c_temporary_reference<c_ast_node_expression> &rule_head_context,
+	c_temporary_reference<c_ast_node_expression> &expression) {
 	// Expressions must be const-bool
-	c_AST_qualified_data_type const_bool_data_type(
-		c_AST_data_type(e_AST_primitive_type::k_bool),
-		e_AST_data_mutability::k_constant);
+	c_ast_qualified_data_type const_bool_data_type(
+		c_ast_data_type(e_ast_primitive_type::k_bool),
+		e_ast_data_mutability::k_constant);
 	if (!is_ast_data_type_assignable(expression->get_data_type(), const_bool_data_type)) {
 		m_context.error(
 			e_compiler_error::k_invalid_if_statement_data_type,
@@ -1911,10 +1911,10 @@ void c_ast_builder_visitor::exit_if_statement_expression(
 }
 
 bool c_ast_builder_visitor::enter_if_statement_scope(
-	c_temporary_reference<c_AST_node_scope> &rule_head_context,
+	c_temporary_reference<c_ast_node_scope> &rule_head_context,
 	const s_token &brace,
-	c_temporary_reference<c_AST_node_scope> &scope) {
-	scope.initialize(new c_AST_node_scope());
+	c_temporary_reference<c_ast_node_scope> &scope) {
+	scope.initialize(new c_ast_node_scope());
 	scope->set_source_location(brace.source_location);
 
 	c_tracked_scope *tracked_scope =
@@ -1925,9 +1925,9 @@ bool c_ast_builder_visitor::enter_if_statement_scope(
 }
 
 void c_ast_builder_visitor::exit_if_statement_scope(
-	c_temporary_reference<c_AST_node_scope> &rule_head_context,
+	c_temporary_reference<c_ast_node_scope> &rule_head_context,
 	const s_token &brace,
-	c_temporary_reference<c_AST_node_scope> &scope) {
+	c_temporary_reference<c_ast_node_scope> &scope) {
 	rule_head_context.initialize(scope.release());
 
 	// Don't free the tracked scope yet - we'll do that when we exit the if statement
@@ -1935,10 +1935,10 @@ void c_ast_builder_visitor::exit_if_statement_scope(
 }
 
 bool c_ast_builder_visitor::enter_else_if(
-	c_temporary_reference<c_AST_node_scope> &rule_head_context,
-	c_temporary_reference<c_AST_node_if_statement> &if_statement) {
+	c_temporary_reference<c_ast_node_scope> &rule_head_context,
+	c_temporary_reference<c_ast_node_if_statement> &if_statement) {
 	// Convert "if { X } else if { Y }" to "if { X } else { if { Y } }" by wrapping if_statement in an "else" scope
-	rule_head_context.initialize(new c_AST_node_scope());
+	rule_head_context.initialize(new c_ast_node_scope());
 	// This scope doesn't have a source location
 
 	c_tracked_scope *tracked_scope =
@@ -1949,8 +1949,8 @@ bool c_ast_builder_visitor::enter_else_if(
 }
 
 void c_ast_builder_visitor::exit_else_if(
-	c_temporary_reference<c_AST_node_scope> &rule_head_context,
-	c_temporary_reference<c_AST_node_if_statement> &if_statement) {
+	c_temporary_reference<c_ast_node_scope> &rule_head_context,
+	c_temporary_reference<c_ast_node_if_statement> &if_statement) {
 	// Don't free the tracked scope yet - we'll do that when we exit the if statement
 	m_tracked_scopes.pop_back();
 
@@ -1959,9 +1959,9 @@ void c_ast_builder_visitor::exit_else_if(
 }
 
 void c_ast_builder_visitor::exit_for_loop_iterator(
-	c_AST_node_for_loop *&rule_head_context,
-	c_temporary_reference<c_AST_node_value_declaration> &value,
-	c_temporary_reference<c_AST_node_expression> &range) {
+	c_ast_node_for_loop *&rule_head_context,
+	c_temporary_reference<c_ast_node_value_declaration> &value,
+	c_temporary_reference<c_ast_node_expression> &range) {
 	// The grammar disallows initializer expressions on for loop values
 	wl_assert(!value->get_initialization_expression());
 
@@ -2043,15 +2043,15 @@ void c_ast_builder_visitor::exit_assignment(
 	}
 }
 
-void c_ast_builder_visitor::build_tracked_scope(c_AST_node_scope *scope_node, c_tracked_scope *tracked_scope) {
+void c_ast_builder_visitor::build_tracked_scope(c_ast_node_scope *scope_node, c_tracked_scope *tracked_scope) {
 	m_tracked_scopes_from_scope_nodes.insert(std::make_pair(scope_node, tracked_scope));
 
 	for (size_t item_index = 0; item_index < scope_node->get_scope_item_count(); item_index++) {
-		c_AST_node_declaration *declaration_node =
-			scope_node->get_scope_item(item_index)->try_get_as<c_AST_node_declaration>();
+		c_ast_node_declaration *declaration_node =
+			scope_node->get_scope_item(item_index)->try_get_as<c_ast_node_declaration>();
 
-		c_AST_node_namespace_declaration *namespace_declaration_node =
-			declaration_node->try_get_as<c_AST_node_namespace_declaration>();
+		c_ast_node_namespace_declaration *namespace_declaration_node =
+			declaration_node->try_get_as<c_ast_node_namespace_declaration>();
 		if (namespace_declaration_node) {
 			c_tracked_scope *tracked_namespace_scope =
 				new c_tracked_scope(tracked_scope, e_tracked_scope_type::k_namespace, nullptr);
@@ -2064,16 +2064,16 @@ void c_ast_builder_visitor::build_tracked_scope(c_AST_node_scope *scope_node, c_
 
 c_tracked_declaration *c_ast_builder_visitor::add_declaration_to_tracked_scope(
 	c_tracked_scope *tracked_scope,
-	c_AST_node_declaration *declaration) {
+	c_ast_node_declaration *declaration) {
 	// Specifically handle module overloads
-	const c_AST_node_module_declaration *module_declaration = declaration->try_get_as<c_AST_node_module_declaration>();
+	const c_ast_node_module_declaration *module_declaration = declaration->try_get_as<c_ast_node_module_declaration>();
 
 	std::vector<c_tracked_declaration *> lookup_buffer;
 	tracked_scope->lookup_declarations_by_name(declaration->get_name(), lookup_buffer);
 	for (const c_tracked_declaration *tracked_declaration : lookup_buffer) {
 		// This could be a valid overload so check for that case
-		const c_AST_node_module_declaration *existing_module_declaration =
-			tracked_declaration->get_declaration()->try_get_as<c_AST_node_module_declaration>();
+		const c_ast_node_module_declaration *existing_module_declaration =
+			tracked_declaration->get_declaration()->try_get_as<c_ast_node_module_declaration>();
 		if (module_declaration && existing_module_declaration) {
 			if (do_module_overloads_conflict(module_declaration, existing_module_declaration)) {
 				m_context.error(
@@ -2103,7 +2103,7 @@ c_tracked_declaration *c_ast_builder_visitor::add_declaration_to_tracked_scope(
 }
 
 void c_ast_builder_visitor::resolve_identifier(
-	c_AST_node_declaration_reference *reference_node,
+	c_ast_node_declaration_reference *reference_node,
 	c_tracked_scope *tracked_scope,
 	const char *identifier,
 	bool recurse) {
@@ -2121,7 +2121,7 @@ void c_ast_builder_visitor::resolve_identifier(
 	} else if (references.size() > 1) {
 		// If they're all modules, that's allowed because of overloading. Otherwise it's an error.
 		for (const c_tracked_declaration *reference : references) {
-			if (!reference->get_declaration()->is_type(e_AST_node_type::k_module_declaration)) {
+			if (!reference->get_declaration()->is_type(e_ast_node_type::k_module_declaration)) {
 				error = true;
 				m_context.error(
 					e_compiler_error::k_ambiguous_identifier_resolution,
@@ -2141,9 +2141,9 @@ void c_ast_builder_visitor::resolve_identifier(
 }
 
 void c_ast_builder_visitor::resolve_module_call(
-	c_AST_node_module_call *module_call,
-	c_wrapped_array<c_AST_node_module_declaration *> module_candidates) {
-	c_wrapped_array<const c_AST_node_module_declaration *const> const_module_candidates(
+	c_ast_node_module_call *module_call,
+	c_wrapped_array<c_ast_node_module_declaration *> module_candidates) {
+	c_wrapped_array<const c_ast_node_module_declaration *const> const_module_candidates(
 		module_candidates.get_pointer(),
 		module_candidates.get_count());
 	s_module_call_resolution_result result = ::resolve_module_call(module_call, const_module_candidates);
@@ -2222,44 +2222,44 @@ void c_ast_builder_visitor::resolve_module_call(
 	// We've validated that a module was chosen, now make sure all the types are correct. Note that when there is more
 	// than one module candidate, we need to validate type compatibility in order to select a candidate, so we should
 	// never trigger any of those errors in this case.
-	c_AST_node_module_declaration *module_declaration = module_candidates[result.selected_module_index];
-	std::vector<c_AST_node_expression *> argument_expressions;
+	c_ast_node_module_declaration *module_declaration = module_candidates[result.selected_module_index];
+	std::vector<c_ast_node_expression *> argument_expressions;
 	get_argument_expressions(module_declaration, module_call, argument_expressions);
 
 	// First check what we should do with dependent-constant outputs
 	bool any_dependent_constant_inputs_variable = false;
 	bool any_dependent_constant_inputs_dependent_constant = false;
 	for (size_t argument_index = 0; argument_index < module_declaration->get_argument_count(); argument_index++) {
-		const c_AST_node_module_declaration_argument *argument = module_declaration->get_argument(argument_index);
-		if (argument->get_argument_direction() != e_AST_argument_direction::k_in
-			|| argument->get_data_type().get_data_mutability() != e_AST_data_mutability::k_dependent_constant) {
+		const c_ast_node_module_declaration_argument *argument = module_declaration->get_argument(argument_index);
+		if (argument->get_argument_direction() != e_ast_argument_direction::k_in
+			|| argument->get_data_type().get_data_mutability() != e_ast_data_mutability::k_dependent_constant) {
 			continue;
 		}
 
-		c_AST_qualified_data_type data_type = argument_expressions[argument_index]->get_data_type();
-		if (data_type.is_error() || data_type.get_data_mutability() == e_AST_data_mutability::k_variable) {
+		c_ast_qualified_data_type data_type = argument_expressions[argument_index]->get_data_type();
+		if (data_type.is_error() || data_type.get_data_mutability() == e_ast_data_mutability::k_variable) {
 			// If any error types are provided, assume that they are not intended to be constant
 			any_dependent_constant_inputs_variable = true;
-		} else if (data_type.get_data_mutability() == e_AST_data_mutability::k_dependent_constant) {
+		} else if (data_type.get_data_mutability() == e_ast_data_mutability::k_dependent_constant) {
 			any_dependent_constant_inputs_dependent_constant = true;
 		}
 	}
 
-	e_AST_data_mutability dependent_constant_output_mutability;
+	e_ast_data_mutability dependent_constant_output_mutability;
 	if (any_dependent_constant_inputs_variable) {
 		// If any dependent constant inputs were variable, then the outputs must all be variable
-		dependent_constant_output_mutability = e_AST_data_mutability::k_variable;
+		dependent_constant_output_mutability = e_ast_data_mutability::k_variable;
 	} else if (any_dependent_constant_inputs_dependent_constant) {
 		// If any dependent constant inputs were dependent-constants, then the outputs must all be dependent-constants
-		dependent_constant_output_mutability = e_AST_data_mutability::k_dependent_constant;
+		dependent_constant_output_mutability = e_ast_data_mutability::k_dependent_constant;
 	} else {
 		// Otherwise, the outputs are constants
-		dependent_constant_output_mutability = e_AST_data_mutability::k_constant;
+		dependent_constant_output_mutability = e_ast_data_mutability::k_constant;
 	}
 
 	for (size_t argument_index = 0; argument_index < module_declaration->get_argument_count(); argument_index++) {
-		c_AST_node_module_declaration_argument *argument = module_declaration->get_argument(argument_index);
-		c_AST_node_expression *argument_expression = argument_expressions[argument_index];
+		c_ast_node_module_declaration_argument *argument = module_declaration->get_argument(argument_index);
+		c_ast_node_expression *argument_expression = argument_expressions[argument_index];
 
 		resolve_module_call_argument(
 			module_declaration,
@@ -2273,15 +2273,15 @@ void c_ast_builder_visitor::resolve_module_call(
 }
 
 void c_ast_builder_visitor::resolve_module_call_argument(
-	c_AST_node_module_declaration *module_declaration,
-	c_AST_node_module_declaration_argument *argument,
-	c_AST_node_module_call *module_call,
-	c_AST_node_expression *argument_expression,
-	e_AST_data_mutability dependent_constant_output_mutability) {
-	c_AST_qualified_data_type argument_data_type = argument->get_data_type();
-	c_AST_qualified_data_type expression_data_type = argument_expression->get_data_type();
+	c_ast_node_module_declaration *module_declaration,
+	c_ast_node_module_declaration_argument *argument,
+	c_ast_node_module_call *module_call,
+	c_ast_node_expression *argument_expression,
+	e_ast_data_mutability dependent_constant_output_mutability) {
+	c_ast_qualified_data_type argument_data_type = argument->get_data_type();
+	c_ast_qualified_data_type expression_data_type = argument_expression->get_data_type();
 
-	if (argument->get_argument_direction() == e_AST_argument_direction::k_in) {
+	if (argument->get_argument_direction() == e_ast_argument_direction::k_in) {
 		// For inputs, the expression gets assigned to the argument
 		if (!is_ast_data_type_assignable(expression_data_type, argument_data_type)) {
 			m_context.error(
@@ -2294,32 +2294,32 @@ void c_ast_builder_visitor::resolve_module_call_argument(
 				expression_data_type.to_string().c_str());
 		}
 	} else {
-		wl_assert(argument->get_argument_direction() == e_AST_argument_direction::k_out);
+		wl_assert(argument->get_argument_direction() == e_ast_argument_direction::k_out);
 
 		// If the output argument is dependent-constant determine what its true type is based on the inputs
-		if (argument_data_type.get_data_mutability() == e_AST_data_mutability::k_dependent_constant) {
-			argument_data_type = c_AST_qualified_data_type(
+		if (argument_data_type.get_data_mutability() == e_ast_data_mutability::k_dependent_constant) {
+			argument_data_type = c_ast_qualified_data_type(
 				argument_data_type.get_data_type(),
 				dependent_constant_output_mutability);
 		}
 
 		// The argument expression might be a subscript node
-		c_AST_node_subscript *subscript_node = argument_expression->try_get_as<c_AST_node_subscript>();
+		c_ast_node_subscript *subscript_node = argument_expression->try_get_as<c_ast_node_subscript>();
 
 		// An output argument should be a valid value reference or subscript
 		std::string error_action =
 			"initialize module '" + std::string(module_declaration->get_name())
 			+ " out argument '" + argument->get_name() + "' with";
-		c_wrapped_array<c_AST_node_declaration *> value_reference = try_get_typed_references(
+		c_wrapped_array<c_ast_node_declaration *> value_reference = try_get_typed_references(
 			subscript_node ? subscript_node->get_reference() : argument_expression,
-			e_AST_node_type::k_value_declaration,
+			e_ast_node_type::k_value_declaration,
 			e_compiler_error::k_invalid_out_argument,
 			error_action.c_str(),
 			"it is not a valid out argument type");
 
 		if (value_reference.get_count() > 0) {
-			c_AST_node_value_declaration *value_declaration =
-				value_reference[0]->get_as<c_AST_node_value_declaration>();
+			c_ast_node_value_declaration *value_declaration =
+				value_reference[0]->get_as<c_ast_node_value_declaration>();
 
 			// Track the assignment of this value declaration
 			m_tracked_scopes.back()->issue_declaration_assignment(value_declaration);
@@ -2352,12 +2352,12 @@ void c_ast_builder_visitor::resolve_module_call_argument(
 
 			// We can only do subscript assignments with a constant index
 			if (subscript_node) {
-				c_AST_qualified_data_type index_data_type = subscript_node->get_index_expression()->get_data_type();
+				c_ast_qualified_data_type index_data_type = subscript_node->get_index_expression()->get_data_type();
 				if (!index_data_type.is_error()
-					&& index_data_type.get_data_mutability() != e_AST_data_mutability::k_constant) {
-					c_AST_qualified_data_type const_real_data_type(
-						c_AST_data_type(e_AST_primitive_type::k_real),
-						e_AST_data_mutability::k_constant);
+					&& index_data_type.get_data_mutability() != e_ast_data_mutability::k_constant) {
+					c_ast_qualified_data_type const_real_data_type(
+						c_ast_data_type(e_ast_primitive_type::k_real),
+						e_ast_data_mutability::k_constant);
 					m_context.error(
 						e_compiler_error::k_illegal_variable_subscript_assignment,
 						subscript_node->get_index_expression()->get_source_location(),
@@ -2372,11 +2372,11 @@ void c_ast_builder_visitor::resolve_module_call_argument(
 }
 
 void c_ast_builder_visitor::resolve_native_operator_call(
-	c_AST_node_module_call *module_call,
+	c_ast_node_module_call *module_call,
 	e_native_operator native_operator,
 	const s_compiler_source_location &operator_source_location) {
 	// Construct a temporary reference node to hold references to the backing modules for the resolved operator
-	std::unique_ptr<c_AST_node_declaration_reference> operator_reference(new c_AST_node_declaration_reference());
+	std::unique_ptr<c_ast_node_declaration_reference> operator_reference(new c_ast_node_declaration_reference());
 	operator_reference->set_source_location(operator_source_location);
 	resolve_identifier(
 		operator_reference.get(),
@@ -2387,23 +2387,23 @@ void c_ast_builder_visitor::resolve_native_operator_call(
 	// Operators should always resolve successfully
 	wl_assert(operator_reference->is_valid());
 
-	std::vector<c_AST_node_module_declaration *> candidates;
+	std::vector<c_ast_node_module_declaration *> candidates;
 	candidates.reserve(operator_reference->get_references().get_count());
-	for (c_AST_node_declaration *reference : operator_reference->get_references()) {
-		candidates.push_back(reference->get_as<c_AST_node_module_declaration>());
+	for (c_ast_node_declaration *reference : operator_reference->get_references()) {
+		candidates.push_back(reference->get_as<c_ast_node_module_declaration>());
 	}
 
-	resolve_module_call(module_call, c_wrapped_array<c_AST_node_module_declaration *>(candidates));
+	resolve_module_call(module_call, c_wrapped_array<c_ast_node_module_declaration *>(candidates));
 }
 
-c_wrapped_array<c_AST_node_declaration *> c_ast_builder_visitor::try_get_typed_references(
-	const c_AST_node_expression *expression_node,
-	e_AST_node_type reference_type,
+c_wrapped_array<c_ast_node_declaration *> c_ast_builder_visitor::try_get_typed_references(
+	const c_ast_node_expression *expression_node,
+	e_ast_node_type reference_type,
 	e_compiler_error failure_error,
 	const char *error_action,
 	const char *error_reason) {
-	const c_AST_node_declaration_reference *reference_node =
-		expression_node->try_get_as<c_AST_node_declaration_reference>();
+	const c_ast_node_declaration_reference *reference_node =
+		expression_node->try_get_as<c_ast_node_declaration_reference>();
 	if (reference_node) {
 		if (!reference_node->is_valid()) {
 			// If the reference is invalid, don't report errors because we already reported one for the resolve failure
@@ -2436,7 +2436,7 @@ c_wrapped_array<c_AST_node_declaration *> c_ast_builder_visitor::try_get_typed_r
 }
 
 void c_ast_builder_visitor::validate_current_module_return_type(
-	const c_AST_qualified_data_type &data_type,
+	const c_ast_qualified_data_type &data_type,
 	const s_compiler_source_location &source_location) {
 	if (data_type.is_error()) {
 		// Don't report on error types
@@ -2471,16 +2471,16 @@ bool c_ast_builder_visitor::is_loop_in_scope_stack() const {
 	return false;
 }
 
-static const char *get_argument_direction_string(e_AST_argument_direction argument_direction) {
+static const char *get_argument_direction_string(e_ast_argument_direction argument_direction) {
 	switch (argument_direction) {
-	case e_AST_argument_direction::k_invalid:
+	case e_ast_argument_direction::k_invalid:
 		wl_unreachable();
 		break;
 
-	case e_AST_argument_direction::k_in:
+	case e_ast_argument_direction::k_in:
 		return "in";
 
-	case e_AST_argument_direction::k_out:
+	case e_ast_argument_direction::k_out:
 		return "out";
 	}
 

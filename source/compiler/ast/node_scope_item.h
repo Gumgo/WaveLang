@@ -14,10 +14,10 @@ enum class e_ast_visibility {
 	k_default = k_private
 };
 
-class c_AST_node_scope_item : public c_AST_node {
+class c_ast_node_scope_item : public c_ast_node {
 public:
-	AST_NODE_TYPE(c_AST_node_scope_item, k_scope_item);
-	c_AST_node_scope_item(c_ast_node_type type);
+	AST_NODE_TYPE(c_ast_node_scope_item, k_scope_item);
+	c_ast_node_scope_item(c_ast_node_type type);
 
 	e_ast_visibility get_visibility() const;
 	void set_visibility(e_ast_visibility visibility);

@@ -7,7 +7,8 @@
 #include <fstream>
 #include <vector>
 
-// $TODO $COMPILER a lot of this is duplicated with lr_parser.h
+// $TODO a fair amount of this is duplicated with lr_parser.h, though there are enough differences that it's not trivial
+// to deduplicate. We may want to combine the two into a parser library.
 
 class c_lr_symbol {
 public:

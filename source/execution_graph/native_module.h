@@ -328,7 +328,6 @@ enum class e_native_module_optimization_symbol_type {
 
 	k_native_module,
 	k_native_module_end,
-	k_subscript,
 	k_variable,
 	k_constant,
 	k_real_value,
@@ -367,13 +366,6 @@ struct s_native_module_optimization_symbol {
 		zero_type(&result);
 		result.type = e_native_module_optimization_symbol_type::k_native_module;
 		result.data.native_module_uid = native_module_uid;
-		return result;
-	}
-
-	static s_native_module_optimization_symbol build_subscript() {
-		s_native_module_optimization_symbol result;
-		zero_type(&result);
-		result.type = e_native_module_optimization_symbol_type::k_subscript;
 		return result;
 	}
 

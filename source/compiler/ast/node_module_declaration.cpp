@@ -10,81 +10,81 @@ enum class e_module_argument_match_type {
 };
 
 struct s_argument_info {
-	e_AST_argument_direction direction;
-	c_AST_qualified_data_type data_type;	// Invalid if default expression was used
-	c_AST_node_expression *expression;		// Only gets filled out in construct_argument_list
+	e_ast_argument_direction direction;
+	c_ast_qualified_data_type data_type;	// Invalid if default expression was used
+	c_ast_node_expression *expression;		// Only gets filled out in construct_argument_list
 };
 
 static e_module_argument_match_type match_module_arguments(
-	const c_AST_node_module_declaration *module_declaration,
+	const c_ast_node_module_declaration *module_declaration,
 	c_wrapped_array<const s_argument_info> provided_arguments);
 
 static void construct_canonical_argument_list(
-	const c_AST_node_module_declaration *module_declaration,
-	e_AST_data_mutability replace_dependent_constant_with,
+	const c_ast_node_module_declaration *module_declaration,
+	e_ast_data_mutability replace_dependent_constant_with,
 	std::vector<s_argument_info> &canonical_argument_list_out);
 
 static s_module_call_resolution_result construct_argument_list(
-	const c_AST_node_module_declaration *module_declaration,
-	const c_AST_node_module_call *module_call,
+	const c_ast_node_module_declaration *module_declaration,
+	const c_ast_node_module_call *module_call,
 	std::vector<s_argument_info> &argument_list_out);
 
-c_AST_node_module_declaration::c_AST_node_module_declaration()
-	: c_AST_node_declaration(k_ast_node_type) {}
+c_ast_node_module_declaration::c_ast_node_module_declaration()
+	: c_ast_node_declaration(k_ast_node_type) {}
 
-void c_AST_node_module_declaration::add_argument(const c_AST_node_module_declaration_argument *argument) {
+void c_ast_node_module_declaration::add_argument(const c_ast_node_module_declaration_argument *argument) {
 	m_arguments.emplace_back(argument);
 }
 
-size_t c_AST_node_module_declaration::get_argument_count() const {
+size_t c_ast_node_module_declaration::get_argument_count() const {
 	return m_arguments.size();
 }
 
-c_AST_node_module_declaration_argument *c_AST_node_module_declaration::get_argument(size_t index) const {
+c_ast_node_module_declaration_argument *c_ast_node_module_declaration::get_argument(size_t index) const {
 	return m_arguments[index].get();
 }
 
-const c_AST_qualified_data_type &c_AST_node_module_declaration::get_return_type() const {
+const c_ast_qualified_data_type &c_ast_node_module_declaration::get_return_type() const {
 	return m_return_type;
 }
 
-void c_AST_node_module_declaration::set_return_type(const c_AST_qualified_data_type &return_type) {
+void c_ast_node_module_declaration::set_return_type(const c_ast_qualified_data_type &return_type) {
 	m_return_type = return_type;
 }
 
-bool c_AST_node_module_declaration::is_dependent_const() const {
+bool c_ast_node_module_declaration::is_dependent_const() const {
 	for (size_t argument_index = 0; argument_index < m_arguments.size(); argument_index++) {
-		e_AST_data_mutability data_mutability = m_arguments[argument_index]->get_data_type().get_data_mutability();
-		if (data_mutability == e_AST_data_mutability::k_dependent_constant) {
+		e_ast_data_mutability data_mutability = m_arguments[argument_index]->get_data_type().get_data_mutability();
+		if (data_mutability == e_ast_data_mutability::k_dependent_constant) {
 			return true;
 		}
 	}
 
-	return m_return_type.get_data_mutability() == e_AST_data_mutability::k_dependent_constant;
+	return m_return_type.get_data_mutability() == e_ast_data_mutability::k_dependent_constant;
 }
 
-c_AST_node_scope *c_AST_node_module_declaration::get_body_scope() const {
+c_ast_node_scope *c_ast_node_module_declaration::get_body_scope() const {
 	return m_body_scope.get();
 }
 
-void c_AST_node_module_declaration::set_body_scope(c_AST_node_scope *body_scope) {
+void c_ast_node_module_declaration::set_body_scope(c_ast_node_scope *body_scope) {
 	wl_assert(m_native_module_uid == s_native_module_uid::k_invalid);
 	m_body_scope.reset(body_scope);
 }
 
-const s_native_module_uid &c_AST_node_module_declaration::get_native_module_uid() const {
+const s_native_module_uid &c_ast_node_module_declaration::get_native_module_uid() const {
 	return m_native_module_uid;
 }
 
-void c_AST_node_module_declaration::set_native_module_uid(const s_native_module_uid &native_module_uid) {
+void c_ast_node_module_declaration::set_native_module_uid(const s_native_module_uid &native_module_uid) {
 	wl_assert(!m_body_scope);
 	m_native_module_uid = native_module_uid;
 }
 
-c_AST_node *c_AST_node_module_declaration::copy_internal() const {
-	c_AST_node_module_declaration *node_copy = new c_AST_node_module_declaration();
+c_ast_node *c_ast_node_module_declaration::copy_internal() const {
+	c_ast_node_module_declaration *node_copy = new c_ast_node_module_declaration();
 	node_copy->m_arguments.reserve(m_arguments.size());
-	for (const std::unique_ptr<c_AST_node_module_declaration_argument> &argument : m_arguments) {
+	for (const std::unique_ptr<c_ast_node_module_declaration_argument> &argument : m_arguments) {
 		node_copy->m_arguments.emplace_back(argument->copy());
 	}
 	node_copy->m_return_type = m_return_type;
@@ -97,8 +97,8 @@ c_AST_node *c_AST_node_module_declaration::copy_internal() const {
 }
 
 bool do_module_overloads_conflict(
-	const c_AST_node_module_declaration *module_a,
-	const c_AST_node_module_declaration *module_b) {
+	const c_ast_node_module_declaration *module_a,
+	const c_ast_node_module_declaration *module_b) {
 	// Sanity check - if they're overloads, they have the same name
 	wl_assert(strcmp(module_a->get_name(), module_b->get_name()) == 0);
 
@@ -124,13 +124,13 @@ bool do_module_overloads_conflict(
 	// canonical argument lists if the module is dependent-const, as described above.
 	std::vector<s_argument_info> canonical_argument_list;
 
-	static constexpr e_AST_data_mutability k_dependent_constant_replacements[] = {
-		e_AST_data_mutability::k_dependent_constant,
-		e_AST_data_mutability::k_variable,
-		e_AST_data_mutability::k_constant
+	static constexpr e_ast_data_mutability k_dependent_constant_replacements[] = {
+		e_ast_data_mutability::k_dependent_constant,
+		e_ast_data_mutability::k_variable,
+		e_ast_data_mutability::k_constant
 	};
 
-	for (e_AST_data_mutability dependent_constant_replacement : k_dependent_constant_replacements) {
+	for (e_ast_data_mutability dependent_constant_replacement : k_dependent_constant_replacements) {
 		construct_canonical_argument_list(module_a, dependent_constant_replacement, canonical_argument_list);
 		e_module_argument_match_type match_type = match_module_arguments(
 			module_b,
@@ -152,8 +152,8 @@ bool do_module_overloads_conflict(
 }
 
 s_module_call_resolution_result resolve_module_call(
-	const c_AST_node_module_call *module_call,
-	c_wrapped_array<const c_AST_node_module_declaration *const> module_declaration_candidates) {
+	const c_ast_node_module_call *module_call,
+	c_wrapped_array<const c_ast_node_module_declaration *const> module_declaration_candidates) {
 	wl_assert(module_declaration_candidates.get_count() > 0);
 
 	std::vector<s_argument_info> argument_list;
@@ -231,7 +231,7 @@ s_module_call_resolution_result resolve_module_call(
 }
 
 static e_module_argument_match_type match_module_arguments(
-	const c_AST_node_module_declaration *module_declaration,
+	const c_ast_node_module_declaration *module_declaration,
 	c_wrapped_array<const s_argument_info> provided_arguments) {
 	wl_assert(provided_arguments.get_count() == module_declaration->get_argument_count());
 
@@ -240,7 +240,7 @@ static e_module_argument_match_type match_module_arguments(
 	bool any_variable_dependent_constant_arguments = false;
 	e_module_argument_match_type match_type = e_module_argument_match_type::k_exact_match;
 	for (size_t argument_index = 0; argument_index < module_declaration->get_argument_count(); argument_index++) {
-		const c_AST_node_module_declaration_argument *module_argument =
+		const c_ast_node_module_declaration_argument *module_argument =
 			module_declaration->get_argument(argument_index);
 		const s_argument_info &provided_argument = provided_arguments[argument_index];
 
@@ -256,16 +256,16 @@ static e_module_argument_match_type match_module_arguments(
 			break;
 		}
 
-		c_AST_qualified_data_type argument_data_type = module_argument->get_data_type();
-		if (argument_data_type.get_data_mutability() != e_AST_data_mutability::k_dependent_constant) {
+		c_ast_qualified_data_type argument_data_type = module_argument->get_data_type();
+		if (argument_data_type.get_data_mutability() != e_ast_data_mutability::k_dependent_constant) {
 			if (argument_data_type == provided_argument.data_type) {
 				// Exact match
 			} else {
-				if (module_argument->get_argument_direction() == e_AST_argument_direction::k_in
+				if (module_argument->get_argument_direction() == e_ast_argument_direction::k_in
 					&& is_ast_data_type_assignable(provided_argument.data_type, argument_data_type)) {
 					// For inputs, the provided value gets assigned to the argument value
 					match_type = e_module_argument_match_type::k_inexact_match;
-				} else if (module_argument->get_argument_direction() == e_AST_argument_direction::k_out
+				} else if (module_argument->get_argument_direction() == e_ast_argument_direction::k_out
 					&& is_ast_data_type_assignable(argument_data_type, provided_argument.data_type)) {
 					// For outputs, the argument value gets assigned to the provided value
 					match_type = e_module_argument_match_type::k_inexact_match;
@@ -275,19 +275,19 @@ static e_module_argument_match_type match_module_arguments(
 				}
 			}
 		} else {
-			e_AST_data_mutability provided_argument_data_mutability = provided_argument.data_type.get_data_mutability();
+			e_ast_data_mutability provided_argument_data_mutability = provided_argument.data_type.get_data_mutability();
 			any_variable_dependent_constant_arguments |=
-				provided_argument_data_mutability == e_AST_data_mutability::k_variable;
+				provided_argument_data_mutability == e_ast_data_mutability::k_variable;
 			any_constant_dependent_constant_arguments |=
-				provided_argument_data_mutability == e_AST_data_mutability::k_constant;
+				provided_argument_data_mutability == e_ast_data_mutability::k_constant;
 			any_dependent_constant_dependent_constant_arguments |=
-				provided_argument_data_mutability == e_AST_data_mutability::k_dependent_constant;
+				provided_argument_data_mutability == e_ast_data_mutability::k_dependent_constant;
 
-			if (module_argument->get_argument_direction() == e_AST_argument_direction::k_in
+			if (module_argument->get_argument_direction() == e_ast_argument_direction::k_in
 				&& is_ast_data_type_assignable(provided_argument.data_type, argument_data_type)) {
 				// For inputs, the provided value gets assigned to the argument value
 				// This is considered an exact match as long as all dependent-constants have the same mutability
-			} else if (module_argument->get_argument_direction() == e_AST_argument_direction::k_out
+			} else if (module_argument->get_argument_direction() == e_ast_argument_direction::k_out
 				&& is_ast_data_type_assignable(argument_data_type, provided_argument.data_type)) {
 				// For outputs, the argument value gets assigned to the provided value
 				// This is considered an exact match as long as all dependent-constants have the same mutability
@@ -316,19 +316,19 @@ static e_module_argument_match_type match_module_arguments(
 }
 
 static void construct_canonical_argument_list(
-	const c_AST_node_module_declaration *module_declaration,
-	e_AST_data_mutability replace_dependent_constant_with,
+	const c_ast_node_module_declaration *module_declaration,
+	e_ast_data_mutability replace_dependent_constant_with,
 	std::vector<s_argument_info> &canonical_argument_list_out) {
 	canonical_argument_list_out.clear();
 	for (size_t argument_index = 0; argument_index < module_declaration->get_argument_count(); argument_index++) {
-		const c_AST_node_module_declaration_argument *argument = module_declaration->get_argument(argument_index);
+		const c_ast_node_module_declaration_argument *argument = module_declaration->get_argument(argument_index);
 		s_argument_info argument_direction_and_type;
 		argument_direction_and_type.direction = argument->get_argument_direction();
 		argument_direction_and_type.data_type = argument->get_data_type();
 
-		e_AST_data_mutability data_mutability = argument_direction_and_type.data_type.get_data_mutability();
-		if (data_mutability == e_AST_data_mutability::k_dependent_constant) {
-			argument_direction_and_type.data_type = c_AST_qualified_data_type(
+		e_ast_data_mutability data_mutability = argument_direction_and_type.data_type.get_data_mutability();
+		if (data_mutability == e_ast_data_mutability::k_dependent_constant) {
+			argument_direction_and_type.data_type = c_ast_qualified_data_type(
 				argument_direction_and_type.data_type.get_data_type(),
 				replace_dependent_constant_with);
 		}
@@ -338,8 +338,8 @@ static void construct_canonical_argument_list(
 }
 
 static s_module_call_resolution_result construct_argument_list(
-	const c_AST_node_module_declaration *module_declaration,
-	const c_AST_node_module_call *module_call,
+	const c_ast_node_module_declaration *module_declaration,
+	const c_ast_node_module_call *module_call,
 	std::vector<s_argument_info> &argument_list_out) {
 	s_module_call_resolution_result result;
 	result.selected_module_index = static_cast<size_t>(-1); // Unused, there's only one
@@ -351,14 +351,14 @@ static s_module_call_resolution_result construct_argument_list(
 	argument_list_out.clear();
 	argument_list_out.resize(
 		module_declaration->get_argument_count(),
-		{ e_AST_argument_direction::k_invalid, c_AST_qualified_data_type(), nullptr });
+		{ e_ast_argument_direction::k_invalid, c_ast_qualified_data_type(), nullptr });
 
 
 	IF_ASSERTS_ENABLED(bool any_named_arguments = false;)
 		for (size_t call_argument_index = 0;
 			call_argument_index < module_call->get_argument_count();
 			call_argument_index++) {
-		const c_AST_node_module_call_argument *call_argument = module_call->get_argument(call_argument_index);
+		const c_ast_node_module_call_argument *call_argument = module_call->get_argument(call_argument_index);
 
 		size_t matched_argument_index = k_invalid_argument_index;
 		if (call_argument->get_name()) {
@@ -367,7 +367,7 @@ static s_module_call_resolution_result construct_argument_list(
 				for (size_t declaration_argument_index = 0;
 					declaration_argument_index < module_declaration->get_argument_count();
 					declaration_argument_index++) {
-				const c_AST_node_module_declaration_argument *declaration_argument =
+				const c_ast_node_module_declaration_argument *declaration_argument =
 					module_declaration->get_argument(declaration_argument_index);
 
 				if (strcmp(call_argument->get_name(), declaration_argument->get_name()) == 0) {
@@ -394,7 +394,7 @@ static s_module_call_resolution_result construct_argument_list(
 		}
 
 		wl_assert(matched_argument_index != k_invalid_argument_index);
-		if (argument_list_out[matched_argument_index].direction != e_AST_argument_direction::k_invalid) {
+		if (argument_list_out[matched_argument_index].direction != e_ast_argument_direction::k_invalid) {
 			// Argument provided multiple times
 			result.result = e_module_call_resolution_result::k_argument_provided_multiple_times;
 			result.declaration_argument_index = matched_argument_index;
@@ -402,7 +402,7 @@ static s_module_call_resolution_result construct_argument_list(
 			return result;
 		}
 
-		const c_AST_node_module_declaration_argument *declaration_argument =
+		const c_ast_node_module_declaration_argument *declaration_argument =
 			module_declaration->get_argument(matched_argument_index);
 		if (call_argument->get_argument_direction() != declaration_argument->get_argument_direction()) {
 			// Mismatched argument direction
@@ -420,8 +420,8 @@ static s_module_call_resolution_result construct_argument_list(
 	for (size_t declaration_argument_index = 0;
 		declaration_argument_index < module_declaration->get_argument_count();
 		declaration_argument_index++) {
-		if (argument_list_out[declaration_argument_index].direction == e_AST_argument_direction::k_invalid) {
-			c_AST_node_expression *initialization_expression =
+		if (argument_list_out[declaration_argument_index].direction == e_ast_argument_direction::k_invalid) {
+			c_ast_node_expression *initialization_expression =
 				module_declaration->get_argument(declaration_argument_index)->get_initialization_expression();
 			if (initialization_expression) {
 				argument_list_out[declaration_argument_index].expression = initialization_expression;
@@ -440,9 +440,9 @@ static s_module_call_resolution_result construct_argument_list(
 }
 
 void get_argument_expressions(
-	const c_AST_node_module_declaration *module_declaration,
-	const c_AST_node_module_call *module_call,
-	std::vector<c_AST_node_expression *> argument_expressions_out) {
+	const c_ast_node_module_declaration *module_declaration,
+	const c_ast_node_module_call *module_call,
+	std::vector<c_ast_node_expression *> argument_expressions_out) {
 	std::vector<s_argument_info> argument_list;
 	IF_ASSERTS_ENABLED(s_module_call_resolution_result result = ) construct_argument_list(
 		module_declaration,

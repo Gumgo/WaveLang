@@ -295,39 +295,6 @@ void c_lr_parse_tree_visitor::get_child_node_indices(
 	}
 }
 
-c_lr_parse_tree_iterator::c_lr_parse_tree_iterator(const c_lr_parse_tree &parse_tree, size_t node_index)
-	: m_parse_tree(parse_tree)
-	, m_current_node_index(node_index) {}
-
-bool c_lr_parse_tree_iterator::is_valid() const {
-	return m_current_node_index != c_lr_parse_tree::k_invalid_index;
-}
-
-bool c_lr_parse_tree_iterator::has_child() const {
-	return get_node().get_child_index() != c_lr_parse_tree::k_invalid_index;
-}
-
-bool c_lr_parse_tree_iterator::has_sibling() const {
-	return get_node().get_sibling_index() != c_lr_parse_tree::k_invalid_index;
-}
-
-void c_lr_parse_tree_iterator::follow_child() {
-	m_current_node_index = get_node().get_child_index();
-}
-
-void c_lr_parse_tree_iterator::follow_sibling() {
-	m_current_node_index = get_node().get_sibling_index();
-}
-
-size_t c_lr_parse_tree_iterator::get_node_index() const {
-	return m_current_node_index;
-}
-
-const c_lr_parse_tree_node &c_lr_parse_tree_iterator::get_node() const {
-	wl_assert(is_valid());
-	return m_parse_tree.get_node(m_current_node_index);
-}
-
 void c_lr_parser::initialize(
 	uint16 terminal_count,
 	uint16 nonterminal_count,

@@ -4,11 +4,11 @@
 
 #include "compiler/ast/node_scope_item.h"
 
-class c_AST_node_continue_statement : public c_AST_node_scope_item {
+class c_ast_node_continue_statement : public c_ast_node_scope_item {
 public:
-	AST_NODE_TYPE_DESCRIPTION(c_AST_node_continue_statement, k_continue_statement, "continue statement");
-	c_AST_node_continue_statement();
+	AST_NODE_TYPE_DESCRIPTION(c_ast_node_continue_statement, k_continue_statement, "continue statement");
+	c_ast_node_continue_statement();
 
 protected:
-	c_AST_node *copy_internal() const override;
+	c_ast_node *copy_internal() const override;
 };

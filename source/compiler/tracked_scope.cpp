@@ -12,11 +12,11 @@ c_tracked_declaration::~c_tracked_declaration() {
 	}
 }
 
-c_AST_node_declaration *c_tracked_declaration::get_declaration() const {
+c_ast_node_declaration *c_tracked_declaration::get_declaration() const {
 	return m_declaration;
 }
 
-c_tracked_declaration::c_tracked_declaration(c_AST_node_declaration *declaration, c_graph_trimmer *graph_trimmer) {
+c_tracked_declaration::c_tracked_declaration(c_ast_node_declaration *declaration, c_graph_trimmer *graph_trimmer) {
 	m_declaration = declaration;
 	m_graph_trimmer = graph_trimmer;
 	m_next_name_lookup = nullptr;
@@ -56,7 +56,7 @@ e_tracked_scope_type c_tracked_scope::get_scope_type() const {
 	return m_scope_type;
 }
 
-c_tracked_declaration *c_tracked_scope::add_declaration(c_AST_node_declaration *declaration) {
+c_tracked_declaration *c_tracked_scope::add_declaration(c_ast_node_declaration *declaration) {
 	wl_assert(m_tracked_declaration_lookup.find(declaration) == m_tracked_declaration_lookup.end());
 
 	c_tracked_declaration *tracked_declaration = new c_tracked_declaration(declaration, m_graph_trimmer);
@@ -78,7 +78,7 @@ c_tracked_declaration *c_tracked_scope::add_declaration(c_AST_node_declaration *
 	return tracked_declaration;
  }
 
-c_tracked_declaration *c_tracked_scope::get_tracked_declaration(c_AST_node_declaration *declaration) {
+c_tracked_declaration *c_tracked_scope::get_tracked_declaration(c_ast_node_declaration *declaration) {
 	auto iter = m_tracked_declaration_lookup.find(declaration);
 	if (iter == m_tracked_declaration_lookup.end()) {
 		return m_parent ? m_parent->get_tracked_declaration(declaration) : nullptr;
@@ -88,8 +88,8 @@ c_tracked_declaration *c_tracked_scope::get_tracked_declaration(c_AST_node_decla
 }
 
 e_tracked_event_state c_tracked_scope::get_declaration_assignment_state(
-	c_AST_node_declaration *declaration) const {
-	if (!declaration->get_as<c_AST_node_value_declaration>()->is_modifiable()) {
+	c_ast_node_declaration *declaration) const {
+	if (!declaration->get_as<c_ast_node_value_declaration>()->is_modifiable()) {
 		// If this value is unmodifiable, it must have been assigned at initialization (the only case of this currently
 		// is constants declared at global scope).
 		return e_tracked_event_state::k_occurred;
@@ -142,7 +142,7 @@ e_tracked_event_state c_tracked_scope::get_return_state() const {
 	}
 }
 
-void c_tracked_scope::issue_declaration_assignment(c_AST_node_declaration *declaration) {
+void c_tracked_scope::issue_declaration_assignment(c_ast_node_declaration *declaration) {
 	e_tracked_event_state current_state = get_this_scope_declaration_assignment_state(declaration);
 	e_tracked_event_state new_state = update_event_state(current_state);
 
@@ -264,7 +264,7 @@ void c_tracked_scope::merge_optional_child_scope(c_tracked_scope *child_scope) {
 }
 
 e_tracked_event_state c_tracked_scope::get_this_scope_declaration_assignment_state(
-	c_AST_node_declaration *declaration) const {
+	c_ast_node_declaration *declaration) const {
 	auto iter = m_declaration_assignment_states.find(declaration);
 	return iter == m_declaration_assignment_states.end() ? e_tracked_event_state::k_did_not_occur : iter->second;
 }
