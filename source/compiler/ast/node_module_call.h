@@ -14,7 +14,7 @@ public:
 	AST_NODE_TYPE(c_ast_node_module_call, k_module_call);
 	c_ast_node_module_call();
 
-	void add_argument(const c_ast_node_module_call_argument *argument);
+	void add_argument(c_ast_node_module_call_argument *argument);
 	size_t get_argument_count() const;
 	c_ast_node_module_call_argument *get_argument(size_t index) const;
 

@@ -10,7 +10,7 @@ void c_ast_node_array::set_data_type(const c_ast_qualified_data_type &data_type)
 	c_ast_node_expression::set_data_type(data_type);
 }
 
-void c_ast_node_array::add_element(const c_ast_node_expression *element) {
+void c_ast_node_array::add_element(c_ast_node_expression *element) {
 	m_elements.emplace_back(element);
 }
 

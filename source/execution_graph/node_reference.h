@@ -48,6 +48,7 @@ public:
 
 private:
 	friend class c_execution_graph;
+	friend struct std::hash<c_node_reference>;
 
 	static constexpr uint32 k_invalid_node_index = static_cast<uint32>(-1);
 	static constexpr uint32 k_invalid_salt = static_cast<uint32>(-1);
@@ -79,3 +80,11 @@ private:
 #endif // IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
 };
 
+namespace std {
+	template<>
+	struct hash<c_node_reference> {
+		size_t operator()(const c_node_reference &key) const {
+			return hash<uint32>()(key.get_node_index());
+		}
+	};
+}

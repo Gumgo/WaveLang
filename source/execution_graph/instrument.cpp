@@ -6,6 +6,10 @@
 
 static constexpr char k_format_identifier[] = { 'w', 'a', 'v', 'e', 'l', 'a', 'n', 'g' };
 
+void s_delete_execution_graph::operator()(c_execution_graph *execution_graph) {
+	delete execution_graph;
+}
+
 c_instrument_variant::c_instrument_variant() {
 	zero_type(&m_instrument_globals);
 }

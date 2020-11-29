@@ -210,7 +210,7 @@ bool c_task_function_registry::register_task_function(const s_task_function &tas
 	g_task_function_registry_data.task_functions.push_back(task_function);
 	g_task_function_registry_data.task_function_uids_to_indices.insert(std::make_pair(task_function.uid, index));
 
-	g_task_function_registry_data.task_function_mappings[native_module_handle] = task_function.uid;
+	g_task_function_registry_data.task_function_mappings[native_module_handle.get_data()] = task_function.uid;
 
 	return true;
 }

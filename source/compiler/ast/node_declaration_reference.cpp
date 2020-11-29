@@ -31,8 +31,8 @@ void c_ast_node_declaration_reference::add_reference(c_ast_node_declaration *ref
 	}
 }
 
-c_wrapped_array<c_ast_node_declaration *> c_ast_node_declaration_reference::get_references() const {
-	return c_wrapped_array<c_ast_node_declaration *>(m_references);
+c_wrapped_array<c_ast_node_declaration *const> c_ast_node_declaration_reference::get_references() const {
+	return c_wrapped_array<c_ast_node_declaration *const>(m_references);
 }
 
 c_ast_node *c_ast_node_declaration_reference::copy_internal() const {

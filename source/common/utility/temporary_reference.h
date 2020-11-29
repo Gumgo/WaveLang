@@ -12,7 +12,7 @@ public:
 		wl_assert(!m_pointer);
 	}
 
-	UNCOPYABLE();
+	UNCOPYABLE(c_temporary_reference);
 
 	template<typename t_other_type, CONDITION_DECLARATION(std::is_convertible_v<t_other_type *, t_type *>)>
 	explicit c_temporary_reference(t_other_type *pointer)

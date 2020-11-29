@@ -65,7 +65,7 @@ private:
 };
 
 static void build_array_value(
-	const c_execution_graph *execution_graph,
+	const c_execution_graph &execution_graph,
 	c_node_reference array_node_reference,
 	c_native_module_array &array_value_out);
 static bool perform_array_subscript(

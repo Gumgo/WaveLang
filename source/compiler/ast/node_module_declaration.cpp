@@ -132,18 +132,18 @@ bool do_module_overloads_conflict(
 
 	for (e_ast_data_mutability dependent_constant_replacement : k_dependent_constant_replacements) {
 		construct_canonical_argument_list(module_a, dependent_constant_replacement, canonical_argument_list);
-		e_module_argument_match_type match_type = match_module_arguments(
+		e_module_argument_match_type match_type_a_b = match_module_arguments(
 			module_b,
 			c_wrapped_array<const s_argument_info>(canonical_argument_list));
-		if (match_type == e_module_argument_match_type::k_exact_match) {
+		if (match_type_a_b == e_module_argument_match_type::k_exact_match) {
 			return true;
 		}
 
 		construct_canonical_argument_list(module_b, dependent_constant_replacement, canonical_argument_list);
-		e_module_argument_match_type match_type = match_module_arguments(
+		e_module_argument_match_type match_type_b_a = match_module_arguments(
 			module_a,
 			c_wrapped_array<const s_argument_info>(canonical_argument_list));
-		if (match_type == e_module_argument_match_type::k_exact_match) {
+		if (match_type_b_a == e_module_argument_match_type::k_exact_match) {
 			return true;
 		}
 	}

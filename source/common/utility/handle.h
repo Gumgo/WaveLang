@@ -42,6 +42,15 @@ private:
 	t_data m_data;
 };
 
+namespace std {
+	template<typename t_identifier, typename t_data, t_data k_invalid_data>
+	struct hash<c_handle<t_identifier, t_data, k_invalid_data>> {
+		size_t operator()(const c_handle<t_identifier, t_data, k_invalid_data> &key) const {
+			return hash()(key.get_data());
+		}
+	};
+}
+
 // A simple handle iterator which assumes that the handle data represents an index
 template<typename t_handle>
 class c_index_handle_iterator {

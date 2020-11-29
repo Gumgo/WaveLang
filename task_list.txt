@@ -62,10 +62,6 @@
 - MIDI input support ($MIDI)
 	- Add support for more channels
 
-- Improve compiler diagnostics ($DIAGNOSTIC)
-	- Create a diagnostic class to report messages, warnings, and errors
-	- Separate out error reporting from error return values
-
 - Upsampled buffer operations ($UPSAMPLE)
 	- Upsampled types:
 		- real@2x, real@8x, etc.
@@ -89,9 +85,6 @@
 
 - Expand the timing library ($TIMING)
 	- Add edge triggers
-
-- Add JSON library ($JSON)
-	- Functions to read values of various types, e.g. json.read_real_array("file.json", "path/to/value")
 
 - Random functions ($RANDOM)
 	- Function random(static_seed, dynamic_seed) generates a stream of random values from 0-1

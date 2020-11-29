@@ -7,7 +7,7 @@ c_ast_node_module_call::c_ast_node_module_call()
 	set_data_type(c_ast_qualified_data_type::error());
 }
 
-void c_ast_node_module_call::add_argument(const c_ast_node_module_call_argument *argument) {
+void c_ast_node_module_call::add_argument(c_ast_node_module_call_argument *argument) {
 	m_arguments.emplace_back(argument);
 }
 

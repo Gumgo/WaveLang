@@ -124,6 +124,7 @@
     <ClInclude Include="lr_parser.h" />
     <ClInclude Include="optimization_rule_applicator.h" />
     <ClInclude Include="source_file.h" />
+    <ClInclude Include="source_location.h" />
     <ClInclude Include="token.h" />
     <ClInclude Include="tracked_scope.h" />
     <ClInclude Include="try_call_native_module.h" />
@@ -170,6 +171,7 @@
     <ClCompile Include="graph_trimmer.cpp" />
     <ClCompile Include="lr_parser.cpp" />
     <ClCompile Include="optimization_rule_applicator.cpp" />
+    <ClCompile Include="source_file.cpp" />
     <ClCompile Include="token.cpp" />
     <ClCompile Include="tracked_scope.cpp" />
     <ClCompile Include="try_call_native_module.cpp" />

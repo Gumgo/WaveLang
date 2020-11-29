@@ -5,6 +5,7 @@
 
 #include "execution_graph/instrument_constants.h"
 #include "execution_graph/native_module.h"
+#include "execution_graph/native_module_registry.h"
 #include "execution_graph/node_reference.h"
 
 #include <fstream>

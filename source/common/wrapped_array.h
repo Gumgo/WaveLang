@@ -28,17 +28,35 @@ public:
 		: m_pointer(other.get_pointer())
 		, m_count(other.get_count()) {}
 
+	// A const vector will always return const elements, so make sure const t_vector_element == t_element
+	template<
+		typename t_vector_element,
+		CONDITION_DECLARATION(std::is_same_v<std::add_const_t<t_vector_element>, t_element>)>
+	c_wrapped_array(const std::vector<t_vector_element> &vector)
+		: m_pointer(vector.empty() ? nullptr : &vector.front())
+		, m_count(vector.size()) {}
+
+	// To support adding const, make sure t_vector_element == <remove const> t_element
 	template<
 		typename t_vector_element,
 		CONDITION_DECLARATION(std::is_same_v<t_vector_element, std::remove_const_t<t_element>>)>
-	c_wrapped_array(const std::vector<t_vector_element> &vector)
+		c_wrapped_array(std::vector<t_vector_element> &vector)
 		: m_pointer(vector.empty() ? nullptr : &vector.front())
 		, m_count(vector.size()) {}
 
 	template<
 		typename t_vector_element,
-		CONDITION_DECLARATION(std::is_same_v<t_vector_element, std::remove_const_t<t_element>>)>
+		CONDITION_DECLARATION(std::is_same_v<std::add_const_t<t_vector_element>, t_element>)>
 		c_wrapped_array(const std::vector<t_vector_element> &vector, size_t offset, size_t count)
+		: m_pointer(count == 0 ? nullptr : &vector[offset])
+		, m_count(count) {
+		wl_assert(offset + count <= vector.size());
+	}
+
+	template<
+		typename t_vector_element,
+		CONDITION_DECLARATION(std::is_same_v<t_vector_element, std::remove_const_t<t_element>>)>
+		c_wrapped_array(std::vector<t_vector_element> &vector, size_t offset, size_t count)
 		: m_pointer(count == 0 ? nullptr : &vector[offset])
 		, m_count(count) {
 		wl_assert(offset + count <= vector.size());

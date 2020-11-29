@@ -185,7 +185,7 @@ void c_compiler_context::output_to_stream(
 std::string c_compiler_context::get_source_location_string(const s_compiler_source_location &location) const {
 	std::ostringstream stream;
 
-	if (location.source_file_handle.is_valid() >= 0) {
+	if (location.source_file_handle.is_valid()) {
 		std::cout << " in file '" << m_source_files[location.source_file_handle.get_data()]->path << "'";
 		if (location.line >= 0) {
 			std::cout << " (" << location.line;

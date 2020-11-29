@@ -11,6 +11,11 @@
 
 class c_execution_graph;
 
+// Exists because std::unique_ptr doesn't work with incomplete types
+struct s_delete_execution_graph {
+	void operator()(c_execution_graph *execution_graph);
+};
+
 // Used to select the appropriate instrument variant from an instrument
 struct s_instrument_variant_requirements {
 	uint32 sample_rate;
@@ -49,8 +54,8 @@ public:
 
 private:
 	s_instrument_globals m_instrument_globals;
-	std::unique_ptr<c_execution_graph> m_voice_execution_graph;
-	std::unique_ptr<c_execution_graph> m_fx_execution_graph;
+	std::unique_ptr<c_execution_graph, s_delete_execution_graph> m_voice_execution_graph;
+	std::unique_ptr<c_execution_graph, s_delete_execution_graph> m_fx_execution_graph;
 };
 
 // An instrument contains one or more instrument variants. An instrument may contain more than one instrument variant if

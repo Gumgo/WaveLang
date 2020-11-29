@@ -14,7 +14,7 @@ public:
 
 	void set_data_type(const c_ast_qualified_data_type &data_type);
 
-	void add_element(const c_ast_node_expression *element);
+	void add_element(c_ast_node_expression *element);
 	size_t get_element_count() const;
 	c_ast_node_expression *get_element(size_t index) const;
 

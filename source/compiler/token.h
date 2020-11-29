@@ -2,7 +2,7 @@
 
 #include "common/common.h"
 
-#include "compiler/source_file.h"
+#include "compiler/source_location.h"
 
 #include <string_view>
 

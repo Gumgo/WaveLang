@@ -402,7 +402,7 @@ private:
 		e_native_operator native_operator,
 		const s_compiler_source_location &operator_source_location);
 
-	c_wrapped_array<c_ast_node_declaration *> try_get_typed_references(
+	c_wrapped_array<c_ast_node_declaration *const> try_get_typed_references(
 		const c_ast_node_expression *expression_node,
 		e_ast_node_type reference_type,
 		e_compiler_error failure_error,
@@ -1303,7 +1303,7 @@ void c_ast_builder_visitor::exit_module_call(
 	module_call_node->set_source_location(module->get_source_location());
 
 	// If this is a valid module call, the module argument is a reference to one or more modules.
-	c_wrapped_array<c_ast_node_declaration *> module_reference = try_get_typed_references(
+	c_wrapped_array<c_ast_node_declaration *const> module_reference = try_get_typed_references(
 		module.get(),
 		e_ast_node_type::k_module_declaration,
 		e_compiler_error::k_not_callable_type,
@@ -1630,7 +1630,7 @@ void c_ast_builder_visitor::exit_scope_item_assignment(
 	c_ast_node_subscript *subscript_node = lhs->try_get_as<c_ast_node_subscript>();
 
 	// Make sure that the LHS points to a value that we can assign to
-	c_wrapped_array<c_ast_node_declaration *> value_reference = try_get_typed_references(
+	c_wrapped_array<c_ast_node_declaration *const> value_reference = try_get_typed_references(
 		subscript_node ? subscript_node->get_reference() : lhs.get(),
 		e_ast_node_type::k_value_declaration,
 		e_compiler_error::k_invalid_assignment,
@@ -2310,7 +2310,7 @@ void c_ast_builder_visitor::resolve_module_call_argument(
 		std::string error_action =
 			"initialize module '" + std::string(module_declaration->get_name())
 			+ " out argument '" + argument->get_name() + "' with";
-		c_wrapped_array<c_ast_node_declaration *> value_reference = try_get_typed_references(
+		c_wrapped_array<c_ast_node_declaration *const> value_reference = try_get_typed_references(
 			subscript_node ? subscript_node->get_reference() : argument_expression,
 			e_ast_node_type::k_value_declaration,
 			e_compiler_error::k_invalid_out_argument,
@@ -2396,7 +2396,7 @@ void c_ast_builder_visitor::resolve_native_operator_call(
 	resolve_module_call(module_call, c_wrapped_array<c_ast_node_module_declaration *>(candidates));
 }
 
-c_wrapped_array<c_ast_node_declaration *> c_ast_builder_visitor::try_get_typed_references(
+c_wrapped_array<c_ast_node_declaration *const> c_ast_builder_visitor::try_get_typed_references(
 	const c_ast_node_expression *expression_node,
 	e_ast_node_type reference_type,
 	e_compiler_error failure_error,

@@ -18,7 +18,7 @@ public:
 	// We may only reference multiple declarations in the case of overloaded modules, other situations are illegal. When
 	// this node references a value, the data type automatically gets set. Otherwise, the data type is invalid.
 	void add_reference(c_ast_node_declaration *reference);
-	c_wrapped_array<c_ast_node_declaration *> get_references() const;
+	c_wrapped_array<c_ast_node_declaration *const> get_references() const;
 
 protected:
 	c_ast_node *copy_internal() const override;

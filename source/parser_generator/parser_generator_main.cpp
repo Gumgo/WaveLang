@@ -83,7 +83,8 @@ int main(int argc, char **argv) {
 			<< grammar.terminals[conflict.terminal_index].value
 			<< "' and production for nonterminal '"
 			<< grammar.rules[conflict.production_index].nonterminal << "'"
-			<< (function.empty() ? "" : " (" + function + ")");
+			<< (function.empty() ? "" : " (" + function + ")")
+			<< "\n";
 		return -1;
 	} else if (conflict.conflict == e_lr_conflict::k_reduce_reduce) {
 		const std::string function_a = grammar.rules[conflict.production_index_a].function;
@@ -93,10 +94,11 @@ int main(int argc, char **argv) {
 			<< (function_a.empty() ? "" : " (" + function_a + ")")
 			<< " and '"
 			<< grammar.rules[conflict.production_index_b].nonterminal << "'"
-			<< (function_b.empty() ? "" : " (" + function_b + ")");
+			<< (function_b.empty() ? "" : " (" + function_b + ")")
+			<< "\n";
 		return -1;
 	}
 
-	std::cout << "Wrote '" << parser_output_filename_h << "' and '" << parser_output_filename_inl << "'";
+	std::cout << "Wrote '" << parser_output_filename_h << "' and '" << parser_output_filename_inl << "'\n";
 	return 0;
 }

@@ -19,7 +19,7 @@ const s_ast_primitive_type_traits &get_ast_primitive_type_traits(e_ast_primitive
 	return k_primitive_type_traits[enum_index(primitive_type)];
 }
 
-c_ast_data_type::c_ast_data_type(e_ast_primitive_type primitive_type, bool is_array = false) {
+c_ast_data_type::c_ast_data_type(e_ast_primitive_type primitive_type, bool is_array) {
 	if (primitive_type == e_ast_primitive_type::k_error) {
 		// There is only a single "error" type to avoid ambiguity
 		wl_assert(!is_array);

@@ -95,7 +95,7 @@ c_instrument *c_compiler::compile(c_wrapped_array<void *> native_module_library_
 		voice_entry_point,
 		fx_entry_point);
 
-	if (!context.get_error_count() > 0) {
+	if (context.get_error_count() > 0) {
 		return nullptr;
 	}
 

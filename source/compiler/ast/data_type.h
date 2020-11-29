@@ -52,8 +52,8 @@ public:
 	c_ast_data_type() = default;
 	c_ast_data_type(e_ast_primitive_type primitive_type, bool is_array = false);
 
-	static constexpr c_ast_data_type error();
-	static constexpr c_ast_data_type empty_array();
+	static c_ast_data_type error();
+	static c_ast_data_type empty_array();
 
 	bool is_valid() const;
 	bool is_error() const;

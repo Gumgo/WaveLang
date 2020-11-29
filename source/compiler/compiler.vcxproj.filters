@@ -121,6 +121,7 @@
       <Filter>components</Filter>
     </ClInclude>
     <ClInclude Include="optimization_rule_applicator.h" />
+    <ClInclude Include="source_location.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="compiler.cpp" />
@@ -238,6 +239,7 @@
       <Filter>components</Filter>
     </ClCompile>
     <ClCompile Include="optimization_rule_applicator.cpp" />
+    <ClCompile Include="source_file.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="SConscript" />
