@@ -53,6 +53,7 @@ public:
 	static c_native_module_data_type invalid();
 
 	bool is_valid() const;
+	bool is_legal() const;
 
 	e_native_module_primitive_type get_primitive_type() const;
 	const s_native_module_primitive_type_traits &get_primitive_type_traits() const;
@@ -80,6 +81,7 @@ public:
 	static c_native_module_qualified_data_type invalid();
 
 	bool is_valid() const;
+	bool is_legal() const;
 
 	e_native_module_primitive_type get_primitive_type() const;
 	const s_native_module_primitive_type_traits &get_primitive_type_traits() const;

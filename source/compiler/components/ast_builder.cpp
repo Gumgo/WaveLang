@@ -1045,6 +1045,11 @@ void c_ast_builder_visitor::exit_qualified_data_type(
 		? mutability.source_location
 		: data_type.source_location;
 
+	// For convenience, upgrade constant-only types to constants
+	if (data_type.value.get_primitive_type_traits().constant_only) {
+		mutability.value = e_ast_data_mutability::k_constant;
+	}
+
 	if (!rule_head_context.value.is_legal_type_declaration()) {
 		m_context.error(
 			e_compiler_error::k_illegal_data_type,

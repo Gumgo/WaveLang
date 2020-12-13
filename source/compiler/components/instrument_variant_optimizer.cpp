@@ -205,12 +205,7 @@ void c_execution_graph_optimizer::deduplicate_constants() {
 			continue;
 		}
 
-		c_native_module_data_type type = m_execution_graph.get_constant_node_data_type(node_reference);
-		if (type.is_array()) {
-			// Arrays are deduplicated later
-			continue;
-		}
-
+		c_native_module_data_type type = m_execution_graph.get_node_data_type(node_reference);
 		c_node_reference deduplicated_node_reference;
 		switch (type.get_primitive_type()) {
 		case e_native_module_primitive_type::k_real:
@@ -305,16 +300,16 @@ void c_execution_graph_optimizer::deduplicate_arrays_and_native_modules() {
 						m_execution_graph.get_native_module_call_native_module_handle(node_b_reference)) {
 						continue;
 					}
-				} else if (node_type == e_execution_graph_node_type::k_constant) { // $TODO $COMPILER check for k_array
-					wl_assert(m_execution_graph.get_constant_node_data_type(node_a_reference).is_array());
+				} else if (node_type == e_execution_graph_node_type::k_array) {
+					wl_assert(m_execution_graph.get_node_data_type(node_a_reference).is_array());
 
 					// If array types don't match, skip
-					if (m_execution_graph.get_constant_node_data_type(node_a_reference) !=
-						m_execution_graph.get_constant_node_data_type(node_b_reference)) {
+					if (m_execution_graph.get_node_data_type(node_a_reference) !=
+						m_execution_graph.get_node_data_type(node_b_reference)) {
 						continue;
 					}
 
-					wl_assert(m_execution_graph.get_constant_node_data_type(node_b_reference).is_array());
+					wl_assert(m_execution_graph.get_node_data_type(node_b_reference).is_array());
 
 					// If array sizes don't match, skip
 					if (m_execution_graph.get_node_incoming_edge_count(node_a_reference) !=

@@ -888,10 +888,10 @@ bool c_execution_graph_builder::evaluate_ast_node(
 	} else {
 		wl_assert(state == 1);
 
-		c_node_reference array_node_reference = m_execution_graph.add_constant_array_node(
+		c_node_reference array_node_reference = m_execution_graph.add_array_node(
 			native_module_data_type_from_ast_data_type(array->get_data_type().get_element_type().get_data_type()));
 		for (c_node_reference element_node_reference : get_expression_results(array->get_element_count())) {
-			m_execution_graph.add_constant_array_value(array_node_reference, element_node_reference);
+			m_execution_graph.add_array_value(array_node_reference, element_node_reference);
 		}
 
 		pop_and_trim_expression_results(array->get_element_count());
@@ -1196,15 +1196,15 @@ bool c_execution_graph_builder::assign_expression_value(
 		if (m_execution_graph.get_node_outgoing_edge_count(array_node_reference) == 1) {
 			// Optimization: if we're the only thing referencing this array, just swap out a single node rather than
 			// copying the entire array
-			c_node_reference old_element_node_reference = m_execution_graph.set_constant_array_value_at_index(
+			c_node_reference old_element_node_reference = m_execution_graph.set_array_value_at_index(
 				array_node_reference,
 				cast_integer_verify<uint32>(array_index),
 				expression_node_reference);
 			m_graph_trimmer.try_trim_node(old_element_node_reference);
 		} else {
 			// Copy the entire array and redirect the declaration to point at the copy
-			c_node_reference new_array_node_reference = m_execution_graph.add_constant_array_node(
-				m_execution_graph.get_constant_node_data_type(array_node_reference).get_element_type());
+			c_node_reference new_array_node_reference = m_execution_graph.add_array_node(
+				m_execution_graph.get_node_data_type(array_node_reference).get_element_type());
 			for (size_t index = 0; index < array_count; index++) {
 				c_node_reference element_node_reference = (index == array_index)
 					? expression_node_reference
@@ -1212,7 +1212,7 @@ bool c_execution_graph_builder::assign_expression_value(
 						array_node_reference,
 						array_index,
 						0);
-				m_execution_graph.add_constant_array_value(new_array_node_reference, element_node_reference);
+				m_execution_graph.add_array_value(new_array_node_reference, element_node_reference);
 			}
 		}
 	} else {

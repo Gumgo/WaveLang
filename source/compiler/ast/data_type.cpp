@@ -1,13 +1,13 @@
 #include "compiler/ast/data_type.h"
 
 static constexpr const s_ast_primitive_type_traits k_primitive_type_traits[] = {
-	// name				const	array	values
-	{ "<invalid>",		false,	false,	false	},	// k_invalid
-	{ "<error-type>",	true,	true,	true	},	// k_error
-	{ "void",			false,	false,	false	},	// k_void
-	{ "real",			true,	true,	true	},	// k_real
-	{ "bool",			true,	true,	true	},	// k_bool
-	{ "string",			true,	true,	true	}	// k_string
+	// name				const	array	values	only_constant
+	{ "<invalid>",		false,	false,	false,	false	},	// k_invalid
+	{ "<error-type>",	true,	true,	true,	false	},	// k_error
+	{ "void",			false,	false,	false,	false	},	// k_void
+	{ "real",			true,	true,	true,	false	},	// k_real
+	{ "bool",			true,	true,	true,	false	},	// k_bool
+	{ "string",			true,	true,	true,	true	}	// k_string
 };
 STATIC_ASSERT(is_enum_fully_mapped<e_ast_primitive_type>(k_primitive_type_traits));
 
@@ -149,6 +149,10 @@ bool c_ast_qualified_data_type::is_legal_type_declaration() const {
 	if (m_data_mutability == e_ast_data_mutability::k_constant
 		|| m_data_mutability == e_ast_data_mutability::k_dependent_constant) {
 		return primitive_type_traits.allows_const;
+	}
+
+	if (m_data_mutability != e_ast_data_mutability::k_constant) {
+		return !primitive_type_traits.constant_only;
 	}
 
 	return true;

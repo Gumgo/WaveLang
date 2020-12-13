@@ -6,9 +6,6 @@
 // $TODO $PLUGIN error reporting for registration errors. Important when we have plugins - we will want a global error
 // reporting system for that.
 
-// $TODO $COMPILER Simplify task registration - just 1 task per native module. Verify that this is true at registration
-// time, and also warn if a compile-time only module has an associated task
-
 enum class e_task_function_registry_state {
 	k_uninitialized,
 	k_initialized,
@@ -101,6 +98,23 @@ void c_task_function_registry::begin_registration() {
 }
 
 bool c_task_function_registry::end_registration() {
+	for (h_native_module native_module_handle : c_native_module_registry::iterate_native_modules()) {
+		bool always_runs_at_compile_time;
+		bool always_runs_at_compile_time_if_dependent_constants_are_constant;
+		const s_native_module &native_module = c_native_module_registry::get_native_module(native_module_handle);
+		get_native_module_compile_time_properties(
+			native_module,
+			always_runs_at_compile_time,
+			always_runs_at_compile_time_if_dependent_constants_are_constant);
+
+		// If it's possible for the native module not to run at compile-time, make sure it has an associated task
+		// function
+		if (!always_runs_at_compile_time
+			&& get_task_function_mapping(native_module_handle) == s_task_function_uid::k_invalid) {
+			return false;
+		}
+	}
+
 	wl_assert(g_task_function_registry_state == e_task_function_registry_state::k_registering);
 	g_task_function_registry_state = e_task_function_registry_state::k_finalized;
 	return true;
@@ -170,6 +184,10 @@ bool c_task_function_registry::register_task_function(const s_task_function &tas
 	}
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
+	if (!validate_task_function(task_function)) {
+		return false;
+	}
+
 	// $TODO $PLUGIN Check that the library referenced by the UID is registered
 
 	// Check that the library referenced by the UID is registered
@@ -194,6 +212,20 @@ bool c_task_function_registry::register_task_function(const s_task_function &tas
 		return false;
 	}
 
+	bool always_runs_at_compile_time;
+	bool always_runs_at_compile_time_if_dependent_constants_are_constant;
+	const s_native_module &native_module = c_native_module_registry::get_native_module(native_module_handle);
+	get_native_module_compile_time_properties(
+		native_module,
+		always_runs_at_compile_time,
+		always_runs_at_compile_time_if_dependent_constants_are_constant);
+
+	// If the associated native module always runs at compile time, this task function can never run
+	// $TODO $PLUGIN maybe we want a warning instead of an error
+	if (always_runs_at_compile_time) {
+		return false;
+	}
+
 	// Make sure the same native module doesn't map to two task functions
 	if (g_task_function_registry_data.task_function_mappings[native_module_handle.get_data()]
 		!= s_task_function_uid::k_invalid) {
@@ -202,7 +234,6 @@ bool c_task_function_registry::register_task_function(const s_task_function &tas
 
 	// $TODO $PLUGIN validate that the library UID on all tasks matches the library UID on the native module
 #if IS_TRUE(ASSERTS_ENABLED)
-	const s_native_module &native_module = c_native_module_registry::get_native_module(native_module_handle);
 	validate_task_function_mapping(native_module, task_function);
 #endif // IS_TRUE(ASSERTS_ENABLED)
 

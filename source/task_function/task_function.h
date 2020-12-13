@@ -259,7 +259,7 @@ struct s_task_function {
 	uint32 argument_count;
 
 	// List of arguments
-	s_static_array<s_argument, k_max_task_function_arguments> arguments;
+	s_static_array<s_task_function_argument, k_max_task_function_arguments> arguments;
 
 	// Unique identifier of the native module that this task maps to
 	s_native_module_uid native_module_uid;
@@ -267,3 +267,5 @@ struct s_task_function {
 	// Mapping for each native module argument
 	s_static_array<uint32, k_max_native_module_arguments> task_function_argument_indices;
 };
+
+bool validate_task_function(const s_task_function &task_function);

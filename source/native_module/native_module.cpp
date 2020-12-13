@@ -62,6 +62,14 @@ void get_native_module_compile_time_properties(
 }
 
 bool validate_native_module(const s_native_module &native_module) {
+	for (size_t argument_index = 0; argument_index < native_module.argument_count; argument_index++) {
+		const s_native_module_argument &argument = native_module.arguments[argument_index];
+
+		if (!argument.type.is_legal()) {
+			return false;
+		}
+	}
+
 	bool always_runs_at_compile_time;
 	bool always_runs_at_compile_time_if_dependent_constants_are_constant;
 	get_native_module_compile_time_properties(
@@ -97,11 +105,6 @@ bool validate_native_module(const s_native_module &native_module) {
 			return false;
 		}
 	}
-
-	// $TODO $COMPILER we should probably enforce (at AST, native module, and task levels) that string types must always
-	// be const. We can do this generically by checking "constant_only". In scripts, we should auto-upgrade non-const
-	// types to const. Native modules must properly declare all constant_only types as const, otherwise the native
-	// module is invalid.
 
 	return true;
 }

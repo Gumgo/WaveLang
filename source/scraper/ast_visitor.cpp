@@ -525,6 +525,11 @@ void c_ast_visitor::visit_native_module_declaration(clang::FunctionDecl *decl) {
 				<< argument_declaration.name << function_name;
 		}
 
+		if (argument_declaration.type.is_legal()) {
+			m_diag.error(param_decl, "Illegal type '%0' on parameter '%1' of native module '%2'")
+				<< argument_declaration.type.to_string() << argument_declaration.name << function_name;
+		}
+
 		native_module.arguments.push_back(argument_declaration);
 	}
 

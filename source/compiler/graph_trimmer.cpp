@@ -61,6 +61,7 @@ void c_graph_trimmer::try_trim_node(c_node_reference node_reference) {
 		bool has_any_outputs = false;
 		switch (m_execution_graph.get_node_type(node_reference)) {
 		case e_execution_graph_node_type::k_constant:
+		case e_execution_graph_node_type::k_array:
 			has_any_outputs = m_execution_graph.get_node_outgoing_edge_count(node_reference) > 0;
 			break;
 
@@ -99,10 +100,12 @@ void c_graph_trimmer::try_trim_node(c_node_reference node_reference) {
 			bool remove_indexed_inputs = false;
 			switch (m_execution_graph.get_node_type(node_reference)) {
 			case e_execution_graph_node_type::k_constant:
-				if (m_execution_graph.get_constant_node_data_type(node_reference).is_array()) {
-					wl_assert(m_execution_graph.does_node_use_indexed_inputs(node_reference));
-					remove_indexed_inputs = true;
-				}
+				break;
+
+			case e_execution_graph_node_type::k_array:
+				wl_assert(m_execution_graph.get_node_data_type(node_reference).is_array());
+				wl_assert(m_execution_graph.does_node_use_indexed_inputs(node_reference));
+				remove_indexed_inputs = true;
 				break;
 
 			case e_execution_graph_node_type::k_native_module_call:

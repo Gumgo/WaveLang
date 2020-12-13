@@ -23,6 +23,10 @@ bool c_native_module_data_type::is_valid() const {
 	return m_primitive_type != e_native_module_primitive_type::k_invalid;
 }
 
+bool c_native_module_data_type::is_legal() const {
+	return is_valid();
+}
+
 e_native_module_primitive_type c_native_module_data_type::get_primitive_type() const {
 	wl_assert(is_valid());
 	return m_primitive_type;
@@ -81,6 +85,18 @@ c_native_module_qualified_data_type c_native_module_qualified_data_type::invalid
 
 bool c_native_module_qualified_data_type::is_valid() const {
 	return m_data_type.is_valid();
+}
+
+bool c_native_module_qualified_data_type::is_legal() const {
+	if (!m_data_type.is_legal()) {
+		return false;
+	}
+
+	if (get_primitive_type_traits().constant_only) {
+		return m_data_mutability == e_native_module_data_mutability::k_constant;
+	}
+
+	return true;
 }
 
 e_native_module_primitive_type c_native_module_qualified_data_type::get_primitive_type() const {

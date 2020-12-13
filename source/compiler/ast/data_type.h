@@ -26,6 +26,7 @@ struct s_ast_primitive_type_traits {
 	bool allows_const;	// Whether this type can have the const qualifier
 	bool allows_array;	// Whether this type can be an array
 	bool allows_values;	// Whether a value of this type is legal
+	bool constant_only;	// Whether this type must always be constant
 };
 
 enum class e_ast_data_mutability {

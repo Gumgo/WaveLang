@@ -44,6 +44,7 @@ public:
 	static c_task_data_type invalid();
 
 	bool is_valid() const;
+	bool is_legal() const;
 
 	e_task_primitive_type get_primitive_type() const;
 	const s_task_primitive_type_traits &get_primitive_type_traits() const;
@@ -71,6 +72,7 @@ public:
 	static c_task_qualified_data_type invalid();
 
 	bool is_valid() const;
+	bool is_legal() const;
 
 	e_task_primitive_type get_primitive_type() const;
 	const s_task_primitive_type_traits &get_primitive_type_traits() const;

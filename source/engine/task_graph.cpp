@@ -322,11 +322,8 @@ static bool does_native_module_call_input_branch(
 	c_node_reference node_reference,
 	size_t in_arg_index) {
 	wl_assert(execution_graph.get_node_type(node_reference) == e_execution_graph_node_type::k_native_module_call);
-
-	c_node_reference input_node_reference =
-		execution_graph.get_node_incoming_edge_reference(node_reference, in_arg_index);
 	c_node_reference source_node_reference =
-		execution_graph.get_node_incoming_edge_reference(input_node_reference, 0);
+		execution_graph.get_node_indexed_input_incoming_edge_reference(node_reference, in_arg_index, 0);
 
 	if (execution_graph.get_node_type(source_node_reference) == e_execution_graph_node_type::k_constant) {
 		// We don't care if a constant value is branched because constant values don't take up buffers, they are
@@ -468,14 +465,11 @@ bool c_task_graph::setup_task(
 
 		if (argument.argument_direction == e_task_argument_direction::k_in) {
 			// Obtain the source input node
-			c_node_reference input_node_reference =
-				execution_graph.get_node_incoming_edge_reference(node_reference, input_index);
 			c_node_reference source_node_reference =
-				execution_graph.get_node_incoming_edge_reference(input_node_reference, 0);
+				execution_graph.get_node_indexed_input_incoming_edge_reference(node_reference, input_index, 0);
 
 			if (argument.type.get_data_mutability() == e_task_data_mutability::k_constant) {
-				wl_assert(
-					execution_graph.get_node_type(source_node_reference) == e_execution_graph_node_type::k_constant);
+				wl_assert(execution_graph.is_node_constant(source_node_reference));
 			}
 
 			bool is_buffer = false;
@@ -1042,9 +1036,9 @@ void c_task_graph::build_task_successor_lists(
 					uint32 successor_task_index = nodes_to_tasks.at(input_node_reference);
 					wl_assert(successor_task_index != k_invalid_task);
 					add_task_successor(task_index, successor_task_index);
-				} else if (input_node_type == e_execution_graph_node_type::k_constant) {
+				} else if (input_node_type == e_execution_graph_node_type::k_array) {
 					// This output is used as an array input
-					wl_assert(execution_graph.get_constant_node_data_type(input_node_reference).is_array());
+					wl_assert(execution_graph.get_node_data_type(input_node_reference).is_array());
 
 					// Find all native modules which use this array
 					for (size_t array_dest = 0;

@@ -28,8 +28,6 @@ public:
 	c_native_module_string_reference create_constant_reference(const char *value) override;
 
 private:
-	bool is_node_constant(c_node_reference node_reference);
-
 	// Converts the node reference into a c_native_module_value_reference and stores whether the referenced node is constant
 	// in is_constant_out
 	template<typename t_reference>
@@ -169,7 +167,7 @@ bool c_native_module_caller::try_call(bool &did_call_out) {
 
 			// If the input node isn't a constant, we can't call this native module
 			if (argument.data_access == e_native_module_data_access::k_value
-				&& !is_node_constant(source_node_reference)) {
+				&& !execution_graph.is_node_constant(source_node_reference)) {
 				return true;
 			}
 
@@ -474,29 +472,6 @@ bool c_native_module_caller::try_call(bool &did_call_out) {
 	return true;
 }
 
-bool c_native_module_caller::is_node_constant(c_node_reference node_reference) {
-	const c_execution_graph &execution_graph = m_graph_trimmer.get_execution_graph();
-
-	// $TODO $COMPILER check for k_array when we implement that
-	if (execution_graph.get_node_type(node_reference) != e_execution_graph_node_type::k_constant) {
-		return false;
-	}
-
-	if (execution_graph.get_constant_node_data_type(node_reference).is_array()) {
-		for (size_t element_index = 0;
-			element_index < execution_graph.get_node_incoming_edge_count(node_reference);
-			element_index++) {
-			c_node_reference element_node_reference =
-				execution_graph.get_node_indexed_input_incoming_edge_reference(node_reference, element_index, 0);
-			if (execution_graph.get_node_type(element_node_reference) != e_execution_graph_node_type::k_constant) {
-				return false;
-			}
-		}
-	}
-
-	return true;
-}
-
 void c_native_module_caller::message(const char *format, ...) {
 	va_list args;
 	va_start(args, format);
@@ -619,8 +594,7 @@ c_node_reference c_native_module_caller::validate_and_get_node_reference(
 		return c_node_reference();
 	}
 
-	if (should_be_constant
-		&& execution_graph.get_node_type(node_reference) != e_execution_graph_node_type::k_constant) {
+	if (should_be_constant && !execution_graph.is_node_constant(node_reference)) {
 		m_context.error(
 			e_compiler_error::k_invalid_native_module_implementation,
 			m_call_source_location,
@@ -710,9 +684,9 @@ c_node_reference c_native_module_caller::build_constant_array_node(const t_array
 		STATIC_UNREACHABLE();
 	}
 
-	c_node_reference array_node_reference = execution_graph.add_constant_array_node(element_data_type);
+	c_node_reference array_node_reference = execution_graph.add_array_node(element_data_type);
 	for (size_t index = 0; index < array_value.get_array().size(); index++) {
-		execution_graph.add_constant_array_value(
+		execution_graph.add_array_value(
 			array_node_reference,
 			execution_graph.add_constant_node(array_value.get_array()[index]));
 	}
@@ -736,7 +710,7 @@ c_node_reference c_native_module_caller::try_build_reference_array_node(
 		STATIC_UNREACHABLE();
 	}
 
-	c_node_reference array_node_reference = execution_graph.add_constant_array_node(element_data_type);
+	c_node_reference array_node_reference = execution_graph.add_array_node(element_data_type);
 	for (size_t index = 0; index < reference_array_value.get_array().size(); index++) {
 		c_node_reference node_reference =
 			validate_and_get_node_reference(reference_array_value.get_array()[index], should_be_constant);
@@ -745,7 +719,7 @@ c_node_reference c_native_module_caller::try_build_reference_array_node(
 			return c_node_reference();
 		}
 
-		execution_graph.add_constant_array_value(array_node_reference, node_reference);
+		execution_graph.add_array_value(array_node_reference, node_reference);
 	}
 
 	return array_node_reference;

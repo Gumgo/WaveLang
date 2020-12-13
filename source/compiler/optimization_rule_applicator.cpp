@@ -156,7 +156,7 @@ bool c_optimization_rule_applicator::handle_source_value_symbol_match(
 	c_node_reference output_node_reference) {
 	if (symbol.type == e_native_module_optimization_symbol_type::k_variable) {
 		// Match anything except for constants
-		if (m_execution_graph.get_node_type(node_reference) == e_execution_graph_node_type::k_constant) {
+		if (m_execution_graph.is_node_constant(node_reference)) {
 			return false;
 		}
 
@@ -166,7 +166,7 @@ bool c_optimization_rule_applicator::handle_source_value_symbol_match(
 		return true;
 	} else if (symbol.type == e_native_module_optimization_symbol_type::k_constant) {
 		// Match only constants
-		if (m_execution_graph.get_node_type(node_reference) != e_execution_graph_node_type::k_constant) {
+		if (!m_execution_graph.is_node_constant(node_reference)) {
 			return false;
 		}
 
@@ -353,6 +353,7 @@ void c_optimization_rule_applicator::reroute_source_to_target(c_node_reference t
 	}
 
 	case e_execution_graph_node_type::k_constant:
+	case e_execution_graph_node_type::k_array:
 	case e_execution_graph_node_type::k_indexed_output:
 		transfer_outputs(target_root_node_reference, old_output_node);
 		break;
