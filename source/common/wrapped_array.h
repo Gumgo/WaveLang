@@ -33,7 +33,7 @@ public:
 		typename t_vector_element,
 		CONDITION_DECLARATION(std::is_same_v<std::add_const_t<t_vector_element>, t_element>)>
 	c_wrapped_array(const std::vector<t_vector_element> &vector)
-		: m_pointer(vector.empty() ? nullptr : &vector.front())
+		: m_pointer(vector.empty() ? nullptr : vector.data())
 		, m_count(vector.size()) {}
 
 	// To support adding const, make sure t_vector_element == <remove const> t_element
@@ -41,7 +41,7 @@ public:
 		typename t_vector_element,
 		CONDITION_DECLARATION(std::is_same_v<t_vector_element, std::remove_const_t<t_element>>)>
 		c_wrapped_array(std::vector<t_vector_element> &vector)
-		: m_pointer(vector.empty() ? nullptr : &vector.front())
+		: m_pointer(vector.empty() ? nullptr : vector.data())
 		, m_count(vector.size()) {}
 
 	template<

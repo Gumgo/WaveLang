@@ -4,10 +4,6 @@
 
 #include <sstream>
 
-// $TODO move this to a more generic location
-static std::string str_format(const char *format, ...);
-static std::string str_vformat(const char *format, va_list args);
-
 c_compiler_context::c_compiler_context(c_wrapped_array<void *> native_module_library_contexts) {
 	m_native_module_library_contexts = native_module_library_contexts;
 
@@ -197,26 +193,4 @@ std::string c_compiler_context::get_source_location_string(const s_compiler_sour
 	}
 
 	return stream.str();
-}
-
-static std::string str_format(const char *format, ...) {
-	va_list args;
-	va_start(args, format);
-	std::string result = str_vformat(format, args);
-	va_end(args);
-	return result;
-}
-
-static std::string str_vformat(const char *format, va_list args) {
-	int32 required_length = std::vsnprintf(nullptr, 0, format, args);
-
-	// A negative value indicates an encoding error
-	wl_assert(required_length >= 0);
-
-	std::vector<char> buffer(required_length + 1, 0);
-
-	IF_ASSERTS_ENABLED(int32 length_verify = ) std::vsnprintf(&buffer.front(), buffer.size(), format, args);
-	wl_assert(required_length == length_verify);
-
-	return std::string(&buffer.front());
 }

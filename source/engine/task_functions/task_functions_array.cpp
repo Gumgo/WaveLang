@@ -73,7 +73,7 @@ namespace array_task_functions {
 
 					// Dereference the element, masking with 0 if the element is constant and thus only has a 0th value
 					// We use ptrdiff_t for sign extension purposes since it is probably the same size as size_t
-					static_assert(sizeof(size_t) == sizeof(ptrdiff_t), "Need a signed size_t equivalent");
+					STATIC_ASSERT_MSG(sizeof(size_t) == sizeof(ptrdiff_t), "Need a signed size_t equivalent");
 					ptrdiff_t element_is_constant = element->is_constant();
 					ptrdiff_t element_index_mask = ~(-element_is_constant);
 					size_t element_index = i & element_index_mask;
@@ -134,7 +134,7 @@ namespace array_task_functions {
 
 					// Dereference the element, masking with 0 if the element is constant and thus only has a 0th value
 					// We use ptrdiff_t for sign extension purposes since it is probably the same size as size_t
-					static_assert(sizeof(size_t) == sizeof(ptrdiff_t), "Need a signed size_t equivalent");
+					STATIC_ASSERT_MSG(sizeof(size_t) == sizeof(ptrdiff_t), "Need a signed size_t equivalent");
 					ptrdiff_t element_is_constant = element->is_constant();
 					ptrdiff_t element_index_mask = ~(-element_is_constant);
 					size_t element_index = i & element_index_mask;

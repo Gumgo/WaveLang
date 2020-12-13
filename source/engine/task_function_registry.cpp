@@ -6,6 +6,9 @@
 // $TODO $PLUGIN error reporting for registration errors. Important when we have plugins - we will want a global error
 // reporting system for that.
 
+// $TODO $COMPILER Simplify task registration - just 1 task per native module. Verify that this is true at registration
+// time, and also warn if a compile-time only module has an associated task
+
 enum class e_task_function_registry_state {
 	k_uninitialized,
 	k_initialized,
@@ -51,11 +54,11 @@ static constexpr e_task_primitive_type k_native_module_primitive_type_to_task_pr
 	e_task_primitive_type::k_bool,	// e_native_module_primitive_type::k_bool
 	e_task_primitive_type::k_string	// e_native_module_primitive_type::k_string
 };
-static_assert(array_count(k_native_module_primitive_type_to_task_primitive_type_mapping) ==
-	enum_count<e_native_module_primitive_type>(),
-	"Native module primitive type to task primitive type mismatch");
+STATIC_ASSERT(
+	is_enum_fully_mapped<e_native_module_primitive_type>(
+		k_native_module_primitive_type_to_task_primitive_type_mapping));
 
-static e_task_primitive_type convert_native_module_primitive_type_to_task_primitive_type(
+static e_task_primitive_type task_primitive_type_from_native_module_primitive_type(
 	e_native_module_primitive_type native_module_primitive_type) {
 	wl_assert(valid_enum_index(native_module_primitive_type));
 	return k_native_module_primitive_type_to_task_primitive_type_mapping[enum_index(native_module_primitive_type)];
@@ -163,8 +166,7 @@ bool c_task_function_registry::register_task_function(const s_task_function &tas
 	wl_assert(task_function.argument_count <= k_max_task_function_arguments);
 #if IS_TRUE(ASSERTS_ENABLED)
 	for (size_t arg = 0; arg < task_function.argument_count; arg++) {
-		wl_assert(task_function.argument_types[arg].is_valid());
-		wl_assert(task_function.argument_types[arg].is_legal());
+		wl_assert(task_function.arguments[arg].type.is_valid());
 	}
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
@@ -257,28 +259,35 @@ static void validate_task_function_mapping(const s_native_module &native_module,
 		wl_assert(!task_argument_mappings[mapping_index]);
 		task_argument_mappings[mapping_index] = true;
 
-		c_native_module_data_type native_module_type = native_module.arguments[arg].type.get_data_type();
-		c_task_qualified_data_type task_type = task_function.argument_types[mapping_index];
+		const s_native_module_argument &native_module_argument = native_module.arguments[arg];
+		const s_task_function_argument &task_function_argument = task_function.arguments[mapping_index];
+
+		if (native_module_argument.argument_direction == e_native_module_argument_direction::k_in) {
+			wl_assert(task_function_argument.argument_direction == e_task_argument_direction::k_in);
+		} else {
+			wl_assert(native_module_argument.argument_direction == e_native_module_argument_direction::k_out);
+			wl_assert(task_function_argument.argument_direction == e_task_argument_direction::k_out);
+
+			// Task outputs can't be arrays
+			wl_assert(!task_function_argument.type.is_array());
+		}
 
 		// For all qualifier types, the primitive type and whether it's an array must match
-		wl_assert(task_type.get_data_type().get_primitive_type() ==
-			convert_native_module_primitive_type_to_task_primitive_type(native_module_type.get_primitive_type()));
-		wl_assert(task_type.get_data_type().is_array() == native_module_type.is_array());
+		wl_assert(task_function_argument.type.get_primitive_type() ==
+			task_primitive_type_from_native_module_primitive_type(native_module_argument.type.get_primitive_type()));
+		wl_assert(task_function_argument.type.is_array() == native_module_argument.type.is_array());
 
-		e_native_module_qualifier native_module_qualifier = native_module.arguments[arg].type.get_qualifier();
-		e_task_qualifier task_qualifier = task_type.get_qualifier();
-		switch (native_module_qualifier) {
-		case e_native_module_qualifier::k_in:
-			wl_assert(task_qualifier == e_task_qualifier::k_in);
+		switch (native_module_argument.type.get_data_mutability()) {
+		case e_native_module_data_mutability::k_variable:
+			wl_assert(task_function_argument.type.get_data_mutability() == e_task_data_mutability::k_variable);
 			break;
 
-		case e_native_module_qualifier::k_out:
-			wl_assert(task_qualifier == e_task_qualifier::k_out);
-			wl_assert(!native_module_type.is_array());
-			break;
+		case e_native_module_data_mutability::k_constant:
+			// Constants can be mapped to task function buffers - the buffer simply holds a constant value
 
-		case e_native_module_qualifier::k_constant:
-			wl_assert(task_qualifier == e_task_qualifier::k_in || task_qualifier == e_task_qualifier::k_constant);
+		case e_native_module_data_mutability::k_dependent_constant:
+			// Dependent constants can be variable, so the task function type must be a buffer
+			wl_assert(task_function_argument.type.get_data_mutability() == e_task_data_mutability::k_variable);
 			break;
 
 		default:

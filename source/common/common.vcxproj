@@ -78,6 +78,7 @@
     <ClCompile Include="asserts.cpp" />
     <ClCompile Include="math\floating_point.cpp" />
     <ClCompile Include="math\simd.cpp" />
+    <ClCompile Include="string.cpp" />
     <ClCompile Include="threading\condition_variable.cpp" />
     <ClCompile Include="threading\lock_free.cpp" />
     <ClCompile Include="threading\lock_free_pool.cpp" />

@@ -1,8 +1,9 @@
 #include "native_module_registration_inputs.h"
 
-#include "execution_graph/native_module.h"
 #include "execution_graph/native_module_registry.h"
 #include "execution_graph/native_modules/native_module_registration.h"
+
+#include "native_module/native_module.h"
 
 // Generated native module registration
 #define NATIVE_MODULE_REGISTRATION_ENABLED

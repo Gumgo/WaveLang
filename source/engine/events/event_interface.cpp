@@ -13,7 +13,7 @@ static constexpr const char *k_event_level_strings[] = {
 	"CRITICAL: "
 };
 
-static_assert(array_count(k_event_level_strings) == enum_count<e_event_level>(), "Event level strings mismatch");
+STATIC_ASSERT(is_enum_fully_mapped<e_event_level>(k_event_level_strings));
 
 uint8 register_event_data_type_internal(f_build_event_string build_event_string) {
 	wl_assert(g_next_event_data_type_id < array_count(g_event_string_builders));

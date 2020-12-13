@@ -26,8 +26,9 @@
 #define WL_RUNTIME_ONLY "wl_runtime_only."
 #define WL_IN "wl_in."
 #define WL_OUT "wl_out."
-#define WL_IN_CONST "wl_in_const."
 #define WL_OUT_RETURN "wl_out_return."
+#define WL_CONST "wl_const."
+#define WL_DEPENDENT_CONST "wl_dependent_const."
 #define WL_OPTIMIZATION_RULE_PREFIX "wl_optimization_rule:"
 #define WL_TASK_FUNCTION_DECLARATION "wl_task_function_declaration."
 #define WL_SOURCE_PREFIX "wl_source:"
@@ -107,11 +108,14 @@
 // An output parameter
 #define wl_out SCRAPER_ATTRIBUTE(WL_OUT)
 
-// An input parameter which must resolve to a constant at compile-time
-#define wl_in_const SCRAPER_ATTRIBUTE(WL_IN_CONST)
-
 // An output parameter which is used as the return value in script and in optimization rules
 #define wl_out_return SCRAPER_ATTRIBUTE(WL_OUT_RETURN)
+
+// A parameter with constant data mutability
+#define wl_const SCRAPER_ATTRIBUTE(WL_CONST)
+
+// A parameter with dependent-constant data mutability
+#define wl_dependent_const SCRAPER_ATTRIBUTE(WL_DEPENDENT_CONST)
 
 // Defines an optimization rule using the following syntax:
 // x -> y

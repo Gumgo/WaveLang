@@ -81,7 +81,7 @@ int main(int argc, const char **argv) {
 		clang::tooling::CommonOptionsParser common_options_parser(argc, argv, scraper_options_category);
 
 		llvm::ArrayRef<std::string> source_path_list(
-			&common_options_parser.getSourcePathList().front(),
+			common_options_parser.getSourcePathList().data(),
 			common_options_parser.getSourcePathList().size());
 		clang::tooling::ClangTool clang_tool(common_options_parser.getCompilations(), source_path_list);
 

@@ -77,8 +77,8 @@ const c_sample *s_sampler_context::get_sample_or_fail_gracefully(
 				event_interface->submit(EVENT_ERROR << "Failed to load sample '" << c_dstr(sample_name) << "'");
 			} else {
 				event_interface->submit(
-					EVENT_ERROR << "Invalid sample channel '" << channel <<
-					"' for sample '" << c_dstr(sample_name) << "'");
+					EVENT_ERROR << "Invalid sample channel '" << channel
+					<< "' for sample '" << c_dstr(sample_name) << "'");
 			}
 		}
 

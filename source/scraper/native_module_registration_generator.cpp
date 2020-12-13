@@ -12,23 +12,28 @@
 #define NEWLINE_STR "\n"
 
 static constexpr const char *k_bool_strings[] = { "false", "true" };
-static_assert(array_count(k_bool_strings) == 2, "Invalid bool strings");
+STATIC_ASSERT(array_count(k_bool_strings) == 2);
 
 static constexpr const char *k_native_module_primitive_type_enum_strings[] = {
 	"e_native_module_primitive_type::k_real",
 	"e_native_module_primitive_type::k_bool",
 	"e_native_module_primitive_type::k_string"
 };
-static_assert(array_count(k_native_module_primitive_type_enum_strings) == enum_count<e_native_module_primitive_type>(),
-	"Invalid native module primitive type enum strings");
+STATIC_ASSERT(is_enum_fully_mapped<e_native_module_primitive_type>(k_native_module_primitive_type_enum_strings));
 
-static constexpr const char *k_native_module_qualifier_enum_strings[] = {
-	"e_native_module_qualifier::k_in",
-	"e_native_module_qualifier::k_out",
-	"e_native_module_qualifier::k_constant"
+static constexpr const char *k_native_module_data_mutability_enum_strings[] = {
+	"e_native_module_data_mutability::k_variable",
+	"e_native_module_data_mutability::k_constant",
+	"e_native_module_data_mutability::k_dependent_constant"
 };
-static_assert(array_count(k_native_module_qualifier_enum_strings) == enum_count<e_native_module_qualifier>(),
-	"Invalid native module qualifier enum strings");
+STATIC_ASSERT(is_enum_fully_mapped<e_native_module_data_mutability>(k_native_module_data_mutability_enum_strings));
+
+static constexpr const char *k_native_module_argument_direction_enum_strings[] = {
+	"e_native_module_argument_direction::k_in",
+	"e_native_module_argument_direction::k_out"
+};
+STATIC_ASSERT(
+	is_enum_fully_mapped<e_native_module_argument_direction>(k_native_module_argument_direction_enum_strings));
 
 static constexpr const char *k_native_operator_enum_strings[] = {
 	"e_native_operator::k_noop",
@@ -49,25 +54,26 @@ static constexpr const char *k_native_operator_enum_strings[] = {
 	"e_native_operator::k_or",
 	"e_native_operator::k_subscript"
 };
-static_assert(array_count(k_native_operator_enum_strings) == enum_count<e_native_operator>(),
-	"Invalid native operator enum strings");
+STATIC_ASSERT(is_enum_fully_mapped<e_native_operator>(k_native_operator_enum_strings));
 
 static constexpr const char *k_native_module_primitive_type_argument_strings[] = {
 	"real",
 	"bool",
 	"string"
 };
-static_assert(
-	array_count(k_native_module_primitive_type_argument_strings) == enum_count<e_native_module_primitive_type>(),
-	"Invalid native module primitive type argument strings");
+STATIC_ASSERT(is_enum_fully_mapped<e_native_module_primitive_type>(k_native_module_primitive_type_argument_strings));
 
-static constexpr const char *k_native_module_qualifier_argument_strings[] = {
+static constexpr const char *k_native_module_argument_direction_strings[] = {
 	"in",
-	"out",
-	"in"
+	"out"
 };
-static_assert(array_count(k_native_module_qualifier_argument_strings) == enum_count<e_native_module_qualifier>(),
-	"Invalid native module qualifier strings");
+STATIC_ASSERT(is_enum_fully_mapped<e_native_module_argument_direction>(k_native_module_argument_direction_strings));
+
+static constexpr const char *k_native_module_data_access_strings[] = {
+	"value",
+	"reference"
+};
+STATIC_ASSERT(is_enum_fully_mapped<e_native_module_data_access>(k_native_module_data_access_strings));
 
 class c_optimization_rule_builder {
 public:
@@ -131,8 +137,8 @@ bool generate_native_module_registration(
 			continue;
 		}
 
-		out << "static void " << library.name << "_" << native_module.compile_time_call <<
-			"_call_wrapper(const s_native_module_context &context) {" NEWLINE_STR;
+		out << "static void " << library.name << "_" << native_module.compile_time_call
+			<< "_call_wrapper(const s_native_module_context &context) {" NEWLINE_STR;
 		out << TAB_STR << native_module.compile_time_function_call << "(" NEWLINE_STR;
 
 		if (native_module.first_argument_is_context) {
@@ -140,13 +146,14 @@ bool generate_native_module_registration(
 		}
 
 		for (size_t arg = 0; arg < native_module.arguments.size(); arg++) {
+			e_native_module_argument_direction argument_direction = native_module.arguments[arg].argument_direction;
 			c_native_module_qualified_data_type type = native_module.arguments[arg].type;
-			e_native_module_primitive_type primitive_type = type.get_data_type().get_primitive_type();
-			e_native_module_qualifier qualifier = type.get_qualifier();
-			out << TAB2_STR << "(*context.arguments)[" << arg << "].get_" <<
-				k_native_module_primitive_type_argument_strings[enum_index(primitive_type)] <<
-				(type.get_data_type().is_array() ? "_array_" : "_") <<
-				k_native_module_qualifier_argument_strings[enum_index(qualifier)] << "()";
+			e_native_module_data_access data_access = native_module.arguments[arg].data_access;
+			out << TAB2_STR << "(*context.arguments)[" << arg << "].get_"
+				<< k_native_module_primitive_type_argument_strings[enum_index(type.get_primitive_type())] << "_"
+				<< k_native_module_data_access_strings[enum_index(data_access)] << "_"
+				<< (type.is_array() ? "array_" : "")
+				<< k_native_module_argument_direction_strings[enum_index(argument_direction)] << "()";
 
 			if (arg + 1 == native_module.arguments.size()) {
 				out << ");" NEWLINE_STR;
@@ -222,10 +229,10 @@ bool generate_native_module_registration(
 		size_t return_argument_index = k_invalid_native_module_argument_index;
 
 		for (size_t arg = 0; arg < native_module.arguments.size(); arg++) {
-			if (native_module_qualifier_is_input(native_module.arguments[arg].type.get_qualifier())) {
+			if (native_module.arguments[arg].argument_direction == e_native_module_argument_direction::k_in) {
 				in_argument_count++;
 			} else {
-				wl_assert(native_module.arguments[arg].type.get_qualifier() == e_native_module_qualifier::k_out);
+				wl_assert(native_module.arguments[arg].argument_direction == e_native_module_argument_direction::k_out);
 				out_argument_count++;
 
 				if (native_module.arguments[arg].is_return_value) {
@@ -237,8 +244,8 @@ bool generate_native_module_registration(
 		out << TAB_STR "{" NEWLINE_STR;
 		out << TAB2_STR "s_native_module native_module;" NEWLINE_STR;
 		out << TAB2_STR "zero_type(&native_module);" NEWLINE_STR;
-		out << TAB2_STR "native_module.uid = s_native_module_uid::build(" <<
-			id_to_string(library.id) << ", " << id_to_string(native_module.id) << ");" NEWLINE_STR;
+		out << TAB2_STR "native_module.uid = s_native_module_uid::build("
+			<< id_to_string(library.id) << ", " << id_to_string(native_module.id) << ");" NEWLINE_STR;
 
 		out << TAB2_STR "native_module.name.set_verify(\"";
 		if (native_module.native_operator.empty()) {
@@ -253,8 +260,8 @@ bool generate_native_module_registration(
 			}
 
 			if (found_native_operator == e_native_operator::k_invalid) {
-				std::cerr << "Invalid native operator '" << native_module.native_operator <<
-					"' for native module '" << native_module.identifier << "'\n";
+				std::cerr << "Invalid native operator '" << native_module.native_operator
+					<< "' for native module '" << native_module.identifier << "'\n";
 				return false;
 			}
 
@@ -274,21 +281,25 @@ bool generate_native_module_registration(
 
 		for (size_t arg = 0; arg < native_module.arguments.size(); arg++) {
 			const s_native_module_argument_declaration &argument = native_module.arguments[arg];
-			e_native_module_primitive_type primitive_type = argument.type.get_data_type().get_primitive_type();
-			e_native_module_qualifier qualifier = argument.type.get_qualifier();
 			out << TAB2_STR "{" NEWLINE_STR;
 			out << TAB3_STR "s_native_module_argument &arg = native_module.arguments[" << arg << "];" NEWLINE_STR;
 			out << TAB3_STR "arg.name.set_verify(\"" << native_module.arguments[arg].name << "\");" NEWLINE_STR;
-			out << TAB3_STR "arg.type = c_native_module_qualified_data_type(c_native_module_data_type(" <<
-				k_native_module_primitive_type_enum_strings[enum_index(primitive_type)] <<
-				", " << k_bool_strings[argument.type.get_data_type().is_array()] << "), " <<
-				k_native_module_qualifier_enum_strings[enum_index(qualifier)] << ");" NEWLINE_STR;
+			out << TAB3_STR "arg.argument_direction = "
+				<< k_native_module_argument_direction_strings[enum_index(argument.argument_direction)]
+				<< ";" NEWLINE_STR;
+			out << TAB3_STR "arg.type = c_native_module_qualified_data_type(c_native_module_data_type("
+				<< k_native_module_primitive_type_enum_strings[enum_index(argument.type.get_primitive_type())]
+				<< ", " << k_bool_strings[argument.type.is_array()] << "), "
+				<< k_native_module_data_mutability_enum_strings[enum_index(argument.type.get_data_mutability())]
+				<< ");" NEWLINE_STR;
+			out << TAB3_STR "arg.data_access = "
+				<< k_native_module_data_access_strings[enum_index(argument.data_access)] << ";" NEWLINE_STR;
 			out << TAB2_STR "}" NEWLINE_STR;
 		}
 
 		if (!native_module.compile_time_call.empty()) {
-			out << TAB2_STR "native_module.compile_time_call = " <<
-				library.name << "_" << native_module.compile_time_call << "_call_wrapper;" NEWLINE_STR;
+			out << TAB2_STR "native_module.compile_time_call = "
+				<< library.name << "_" << native_module.compile_time_call << "_call_wrapper;" NEWLINE_STR;
 		}
 
 		out << TAB2_STR "result &= c_native_module_registry::register_native_module(native_module);" NEWLINE_STR;
@@ -583,6 +594,6 @@ std::string c_optimization_rule_builder::get_build_identifier_string(
 }
 
 void c_optimization_rule_builder::write_symbol_prefix(std::ofstream &out) const {
-	out << TAB2_STR "rule." << m_pattern_string <<
-		".symbols[" << m_symbol_index << "] = s_native_module_optimization_symbol::";
+	out << TAB2_STR "rule." << m_pattern_string
+		<< ".symbols[" << m_symbol_index << "] = s_native_module_optimization_symbol::";
 }

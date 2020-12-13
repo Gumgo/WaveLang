@@ -213,7 +213,7 @@ bool c_sample::load_file(
 		sample->m_samples.resize(content_samples);
 
 		// Use the resampler to upsample the signal
-		c_wrapped_array<const real32> resampler_input(&padded_samples.front(), padded_samples.size());
+		c_wrapped_array<const real32> resampler_input(padded_samples);
 		for (uint32 sample_index = 0; sample_index < content_samples; sample_index++) {
 			s_static_array<real32, k_interpolation_upsample_factor + 1> upsampled_samples;
 			for (uint32 upsample_index = 0; upsample_index <= k_interpolation_upsample_factor; upsample_index++) {
@@ -234,9 +234,7 @@ bool c_sample::load_file(
 		sample->m_entries.push_back(s_sample_data());
 		s_sample_data &entry = sample->m_entries.back();
 		entry.base_sample_rate_ratio = 1.0f;
-		entry.samples = c_wrapped_array<const s_sample_interpolation_coefficients>(
-			&sample->m_samples.front(),
-			sample->m_samples.size());
+		entry.samples = c_wrapped_array<const s_sample_interpolation_coefficients>(sample->m_samples);
 
 
 		channel_samples_out.push_back(sample);
@@ -291,7 +289,7 @@ c_sample *c_sample::generate_wavetable(c_wrapped_array<const real32> harmonic_we
 	bool loaded_from_cache = read_wavetable_cache(
 		harmonic_weights,
 		phase_shift_enabled,
-		c_wrapped_array<s_sample_interpolation_coefficients>(&sample->m_samples.front(), sample->m_samples.size()));
+		c_wrapped_array<s_sample_interpolation_coefficients>(sample->m_samples));
 	if (!loaded_from_cache) {
 		std::cout << "Generating wavetable\n";
 	}
@@ -400,7 +398,7 @@ c_sample *c_sample::generate_wavetable(c_wrapped_array<const real32> harmonic_we
 		write_wavetable_cache(
 			harmonic_weights,
 			phase_shift_enabled,
-			c_wrapped_array<s_sample_interpolation_coefficients>(&sample->m_samples.front(), sample->m_samples.size()));
+			c_wrapped_array<s_sample_interpolation_coefficients>(sample->m_samples));
 	}
 
 	return sample;
@@ -676,9 +674,9 @@ static bool read_wavetable_cache(
 		if (file_harmonic_weights_count > 0) {
 			std::vector<real32> file_harmonic_weights(file_harmonic_weights_count);
 			size_t harmonic_weights_size = sizeof(file_harmonic_weights[0]) * file_harmonic_weights.size();
-			file.read(reinterpret_cast<char *>(&file_harmonic_weights.front()), harmonic_weights_size);
+			file.read(reinterpret_cast<char *>(file_harmonic_weights.data()), harmonic_weights_size);
 			if (file.fail()
-				|| memcmp(&file_harmonic_weights.front(), harmonic_weights.get_pointer(), harmonic_weights_size) != 0) {
+				|| memcmp(file_harmonic_weights.data(), harmonic_weights.get_pointer(), harmonic_weights_size) != 0) {
 				result = false;
 			}
 		}

@@ -91,9 +91,7 @@ void c_sample_library::update_loaded_samples() {
 			}
 		} else if (request.sample_type == e_sample_type::k_wavetable) {
 			if (request.channel_samples.empty()) {
-				c_wrapped_array<const real32> harmonic_weights(
-					&request.harmonic_weights.front(),
-					request.harmonic_weights.size());
+				c_wrapped_array<const real32> harmonic_weights(request.harmonic_weights);
 				c_sample *sample = c_sample::generate_wavetable(harmonic_weights, request.phase_shift_enabled);
 				if (sample) {
 					request.channel_samples.push_back(sample);

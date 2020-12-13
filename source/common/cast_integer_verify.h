@@ -70,8 +70,8 @@ struct s_cast_integer_verify_internal<t_to, t_from, true, false> {
 
 // Safe integer conversion functions
 template<typename t_to, typename t_from> t_to cast_integer_verify(t_from value) {
-	static_assert(std::is_integral<t_to>::value, "t_to is not an integer");
-	static_assert(std::is_integral<t_from>::value, "t_from is not an integer");
+	STATIC_ASSERT_MSG(std::is_integral<t_to>::value, "t_to is not an integer");
+	STATIC_ASSERT_MSG(std::is_integral<t_from>::value, "t_from is not an integer");
 	static constexpr bool k_to_unsigned = std::is_unsigned<t_to>::value;
 	static constexpr bool k_from_unsigned = std::is_unsigned<t_from>::value;
 

@@ -5,7 +5,7 @@
 // when it is freed we will write a '0'.
 #if IS_TRUE(ASSERTS_ENABLED)
 #define ALLOCATION_VERIFICATION_ENABLED 1
-static_assert(sizeof(s_aligned_lock_free_handle) > sizeof(s_lock_free_handle), "Not enough space for verification");
+STATIC_ASSERT_MSG(sizeof(s_aligned_lock_free_handle) > sizeof(s_lock_free_handle), "Not enough space for verification");
 #else // IS_TRUE(ASSERTS_ENABLED)
 #define ALLOCATION_VERIFICATION_ENABLED 0
 #endif // IS_TRUE(ASSERTS_ENABLED)

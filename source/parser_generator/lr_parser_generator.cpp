@@ -641,9 +641,7 @@ void c_lr_parser_generator::create_production_set(const s_grammar &grammar) {
 		cast_integer_verify<uint16>(grammar.nonterminals.size() + 1));
 
 	for (size_t terminal_index = 0; terminal_index < grammar.terminals.size(); terminal_index++) {
-		static_assert(
-			enum_count<s_grammar::e_associativity>() == enum_count<c_lr_production_set::e_associativity>(),
-			"Associativity mismatch");
+		STATIC_ASSERT(enum_count<s_grammar::e_associativity>() == enum_count<c_lr_production_set::e_associativity>());
 		c_lr_production_set::e_associativity associativity =
 			static_cast<c_lr_production_set::e_associativity>(grammar.terminals[terminal_index].associativity);
 		m_production_set.set_terminal_precedence_and_associativity(
@@ -1046,7 +1044,8 @@ c_lr_item_set c_lr_parser_generator::compute_closure(const c_lr_item_set &item_s
 						symbols_after_pointer_nonterminal.push_back(item->lookahead);
 
 						first_after_pointer_nonterminal = compute_symbol_string_first_set(
-							&symbols_after_pointer_nonterminal.front(), symbols_after_pointer_nonterminal.size());
+							symbols_after_pointer_nonterminal.data(),
+							symbols_after_pointer_nonterminal.size());
 
 						first_after_pointer_nonterminal_computed = true;
 					}

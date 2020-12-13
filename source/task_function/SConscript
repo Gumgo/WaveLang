@@ -1,0 +1,21 @@
+# Task function - data structures defining functions run by the engine
+
+import utils
+
+Import("*")
+
+env = env.Clone()
+
+env.Append(CPPPATH = ["#source"])
+
+sources = utils.enumerate_files(env, ".", utils.SOURCE_EXTENSIONS)
+
+objects = []
+for source in sources:
+	obj = env.StaticObject(source)
+	objects += obj
+
+task_function_library = env.StaticLibrary("task_function", objects)
+
+task_function_installed = env.Install("../bin", task_function_library)
+env.Alias("task_function", task_function_installed)

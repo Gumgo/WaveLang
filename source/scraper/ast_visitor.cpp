@@ -35,7 +35,14 @@ public:
 	bool VisitRecordDecl(clang::RecordDecl *decl);
 
 private:
+	struct s_native_module_argument_type_info {
+		e_native_module_argument_direction argument_direction;
+		c_native_module_data_type data_type;
+		e_native_module_data_access data_access;
+	};
+
 	struct s_task_argument_type {
+		e_task_argument_direction argument_direction;
 		c_task_qualified_data_type data_type;
 	};
 
@@ -51,15 +58,14 @@ private:
 	void visit_task_voice_initializer_declaration(clang::FunctionDecl *decl);
 	void visit_task_function_declaration(clang::FunctionDecl *decl);
 
-	void build_native_module_type_table();
-	c_native_module_qualified_data_type get_native_module_qualified_data_type(clang::QualType type) const;
+	void build_native_module_argument_type_info_table();
+	const s_native_module_argument_type_info *get_native_module_argument_type_info(clang::QualType type) const;
 
 	void build_task_type_table();
 	void add_task_type(
 		const char *type_name,
-		e_task_primitive_type primitive_type,
-		bool is_array,
-		e_task_qualifier qualifier);
+		e_task_argument_direction argument_direction,
+		c_task_qualified_data_type data_type);
 	s_task_argument_type get_task_qualified_data_type(clang::QualType type) const;
 
 	bool parse_optimization_rule(const char *rule, std::vector<std::string> &tokens_out) const;
@@ -87,7 +93,7 @@ private:
 	clang::PrintingPolicy m_printing_policy;
 
 	// Table mapping clang type to native module type
-	std::map<std::string, c_native_module_qualified_data_type> m_native_module_type_table;
+	std::map<std::string, s_native_module_argument_type_info> m_native_module_argument_type_info_table;
 
 	// Table mapping clang type to task type
 	std::map<std::string, s_task_argument_type> m_task_type_table;
@@ -114,7 +120,7 @@ c_ast_visitor::c_ast_visitor(
 		m_compiler_instance.createDiagnostics();
 	}
 
-	build_native_module_type_table();
+	build_native_module_argument_type_info_table();
 	build_task_type_table();
 }
 
@@ -466,40 +472,53 @@ void c_ast_visitor::visit_native_module_declaration(clang::FunctionDecl *decl) {
 
 		s_native_module_argument_declaration argument_declaration;
 		argument_declaration.name = param_decl->getName().str();
-		argument_declaration.type = get_native_module_qualified_data_type(param_decl->getType());
-		argument_declaration.is_return_value = false;
 
-		if (!argument_declaration.type.is_valid()) {
+		const s_native_module_argument_type_info *argument_type_info =
+			get_native_module_argument_type_info(param_decl->getType());
+		if (!argument_type_info) {
 			m_diag.error(param_decl, "Unsupported type %0 for parameter '%1' of native module '%2'")
 				<< param_decl->getType() << argument_declaration.name << function_name;
 			continue;
 		}
 
-		bool in_argument = param_annotations.contains_annotation(WL_IN);
-		bool out_argument = param_annotations.contains_annotation(WL_OUT);
-		bool in_const_argument = param_annotations.contains_annotation(WL_IN_CONST);
-		bool out_return_argument = param_annotations.contains_annotation(WL_OUT_RETURN);
+		argument_declaration.data_access = argument_type_info->data_access;
+		argument_declaration.is_return_value = false;
 
-		// Make sure the parameter markup matches the type
+		bool in_argument_direction = param_annotations.contains_annotation(WL_IN);
+		bool out_argument_direction = param_annotations.contains_annotation(WL_OUT);
+		bool out_return_argument_direction = param_annotations.contains_annotation(WL_OUT_RETURN);
+		bool const_data_mutability = param_annotations.contains_annotation(WL_CONST);
+		bool dependent_const_data_mutability = param_annotations.contains_annotation(WL_DEPENDENT_CONST);
+
+		// Validate argument direction
 		bool param_error = false;
-		if ((in_argument + out_argument + in_const_argument + out_return_argument) != 1) {
+		if ((in_argument_direction + out_argument_direction + out_return_argument_direction) != 1) {
 			param_error = true;
-		} else if (in_argument || in_const_argument) {
-			if (argument_declaration.type.get_qualifier() != e_native_module_qualifier::k_in) {
-				param_error = true;
-			} else if (in_const_argument) {
-				// Convert in to constant
-				argument_declaration.type = c_native_module_qualified_data_type(
-					argument_declaration.type.get_data_type(), e_native_module_qualifier::k_constant);
-			}
-		} else if (out_argument || out_return_argument) {
-			if ((argument_declaration.type.get_qualifier() != e_native_module_qualifier::k_out)
-				|| (out_return_argument && found_out_return_argument)) {
-				param_error = true;
-			} else if (out_return_argument) {
-				argument_declaration.is_return_value = true;
+		} else if (in_argument_direction) {
+			param_error = (argument_type_info->argument_direction != e_native_module_argument_direction::k_in);
+		} else if (out_argument_direction || out_return_argument_direction) {
+			param_error = (argument_type_info->argument_direction != e_native_module_argument_direction::k_out);
+			if (out_return_argument_direction) {
+				if (found_out_return_argument) {
+					param_error = true;
+				} else {
+					argument_declaration.is_return_value = true;
+					found_out_return_argument = true;
+				}
 			}
 		}
+
+		// Determine the data mutability
+		e_native_module_data_mutability data_mutability = e_native_module_data_mutability::k_variable;
+		if ((const_data_mutability + dependent_const_data_mutability) > 1) {
+			param_error = true;
+		} else if (const_data_mutability) {
+			data_mutability = e_native_module_data_mutability::k_constant;
+		} else if (dependent_const_data_mutability) {
+			data_mutability = e_native_module_data_mutability::k_dependent_constant;
+		}
+
+		argument_declaration.type = c_native_module_qualified_data_type(argument_type_info->data_type, data_mutability);
 
 		if (param_error) {
 			m_diag.error(param_decl, "Invalid qualifier(s) on parameter '%0' of native module '%1'")
@@ -597,79 +616,115 @@ void c_ast_visitor::visit_task_function_declaration(clang::FunctionDecl *decl) {
 	m_result->add_task_function(task_function);
 }
 
-void c_ast_visitor::build_native_module_type_table() {
-	wl_assert(m_native_module_type_table.empty());
+void c_ast_visitor::build_native_module_argument_type_info_table() {
+	wl_assert(m_native_module_argument_type_info_table.empty());
 
 	// Map type string to type. A better/more robust way to do this would be to apply markup to base types in C++ so we
 	// could recognize them by their clang::Type, but this is easier.
 
+	struct s_primitive_type_names {
+		const char *scalar_names[enum_count<e_native_module_data_access>()];
+		const char *array_names[enum_count<e_native_module_data_access>()];
+	};
+
+	static constexpr s_primitive_type_names k_cpp_primitive_type_names[] = {
+		{
+			{ "float", "c_native_module_real_reference" },
+			{ "c_native_module_real_array", "c_native_module_real_reference_array" }
+		},
+		{
+			{ "bool", "c_native_module_bool_reference" },
+			{ "c_native_module_bool_array", "c_native_module_bool_reference_array" }
+		},
+		{
+			{ "c_native_module_string", "c_native_module_string_reference" },
+			{ "c_native_module_string_array", "c_native_module_string_reference_array" }
+		}
+	};
+	STATIC_ASSERT(is_enum_fully_mapped<e_native_module_primitive_type>(k_cpp_primitive_type_names));
+
 	for (e_native_module_primitive_type primitive_type : iterate_enum<e_native_module_primitive_type>()) {
-		static constexpr const char *k_cpp_primitive_type_names[] = {
-			"float",
-			"bool",
-			"c_native_module_string"
-		};
-		static_assert(array_count(k_cpp_primitive_type_names) == enum_count<e_native_module_primitive_type>(),
-			"Primitive type name mismatch");
-
-		static constexpr const char *k_cpp_primitive_type_array_names[] = {
-			"c_native_module_real_array",
-			"c_native_module_bool_array",
-			"c_native_module_string_array"
-		};
-		static_assert(array_count(k_cpp_primitive_type_array_names) == enum_count<e_native_module_primitive_type>(),
-			"Primitive type array name mismatch");
-
 		c_native_module_data_type data_type(primitive_type, false);
 		c_native_module_data_type array_data_type(primitive_type, true);
 
-		static constexpr size_t k_buffer_size = 256;
-		char buffer[k_buffer_size];
+		for (e_native_module_data_access data_access : iterate_enum<e_native_module_data_access>()) {
+			static constexpr size_t k_buffer_size = 256;
+			char buffer[k_buffer_size];
 
-		// For each type, recognize the following syntax (for both primitive values and arrays):
-		// type - in
-		// const type & - in
-		// type & - out
 
-		snprintf(buffer, k_buffer_size, "%s", k_cpp_primitive_type_names[enum_index(primitive_type)]);
-		m_native_module_type_table.insert(std::make_pair(
-			buffer, c_native_module_qualified_data_type(data_type, e_native_module_qualifier::k_in)));
+			// For each type, recognize the following syntax (for both primitive values and arrays):
+			// type - in
+			// const type & - in
+			// type & - out
 
-		snprintf(buffer, k_buffer_size, "const %s &", k_cpp_primitive_type_names[enum_index(primitive_type)]);
-		m_native_module_type_table.insert(std::make_pair(
-			buffer, c_native_module_qualified_data_type(data_type, e_native_module_qualifier::k_in)));
+			s_native_module_argument_type_info type_info;
 
-		snprintf(buffer, k_buffer_size, "%s &", k_cpp_primitive_type_names[enum_index(primitive_type)]);
-		m_native_module_type_table.insert(std::make_pair(
-			buffer, c_native_module_qualified_data_type(data_type, e_native_module_qualifier::k_out)));
+			type_info.argument_direction = e_native_module_argument_direction::k_in;
+			type_info.data_type = data_type;
+			type_info.data_access = data_access;
 
-		snprintf(buffer, k_buffer_size, "%s", k_cpp_primitive_type_array_names[enum_index(primitive_type)]);
-		m_native_module_type_table.insert(std::make_pair(
-			buffer, c_native_module_qualified_data_type(array_data_type, e_native_module_qualifier::k_in)));
+			snprintf(
+				buffer,
+				k_buffer_size,
+				"%s",
+				k_cpp_primitive_type_names[enum_index(primitive_type)].scalar_names[enum_index(data_access)]);
+			m_native_module_argument_type_info_table.insert_or_assign(buffer, type_info);
 
-		snprintf(buffer, k_buffer_size, "const %s &", k_cpp_primitive_type_array_names[enum_index(primitive_type)]);
-		m_native_module_type_table.insert(std::make_pair(
-			buffer, c_native_module_qualified_data_type(array_data_type, e_native_module_qualifier::k_in)));
+			snprintf(
+				buffer,
+				k_buffer_size,
+				"const %s &",
+				k_cpp_primitive_type_names[enum_index(primitive_type)].scalar_names[enum_index(data_access)]);
+			m_native_module_argument_type_info_table.insert_or_assign(buffer, type_info);
 
-		snprintf(buffer, k_buffer_size, "%s &", k_cpp_primitive_type_array_names[enum_index(primitive_type)]);
-		m_native_module_type_table.insert(std::make_pair(
-			buffer, c_native_module_qualified_data_type(array_data_type, e_native_module_qualifier::k_out)));
+			type_info.argument_direction = e_native_module_argument_direction::k_out;
+
+			snprintf(
+				buffer,
+				k_buffer_size,
+				"%s &",
+				k_cpp_primitive_type_names[enum_index(primitive_type)].scalar_names[enum_index(data_access)]);
+			m_native_module_argument_type_info_table.insert_or_assign(buffer, type_info);
+
+			type_info.argument_direction = e_native_module_argument_direction::k_in;
+			type_info.data_type = array_data_type;
+
+			snprintf(
+				buffer,
+				k_buffer_size,
+				"%s",
+				k_cpp_primitive_type_names[enum_index(primitive_type)].scalar_names[enum_index(data_access)]);
+			m_native_module_argument_type_info_table.insert_or_assign(buffer, type_info);
+
+			snprintf(
+				buffer,
+				k_buffer_size,
+				"const %s &",
+				k_cpp_primitive_type_names[enum_index(primitive_type)].scalar_names[enum_index(data_access)]);
+			m_native_module_argument_type_info_table.insert_or_assign(buffer, type_info);
+
+			type_info.argument_direction = e_native_module_argument_direction::k_out;
+
+			snprintf(
+				buffer,
+				k_buffer_size,
+				"%s &",
+				k_cpp_primitive_type_names[enum_index(primitive_type)].scalar_names[enum_index(data_access)]);
+			m_native_module_argument_type_info_table.insert_or_assign(buffer, type_info);
+		}
 	}
 }
 
-c_native_module_qualified_data_type c_ast_visitor::get_native_module_qualified_data_type(clang::QualType type) const {
+const c_ast_visitor::s_native_module_argument_type_info *c_ast_visitor::get_native_module_argument_type_info(
+	clang::QualType type) const {
 	const clang::Type *canonical_type = type.getCanonicalType().getTypePtr();
 	std::string type_string = clang::QualType::getAsString(
 		canonical_type,
 		type.getQualifiers(),
 		m_printing_policy);
 
-	auto it = m_native_module_type_table.find(type_string);
-	if (it == m_native_module_type_table.end()) {
-		return c_native_module_qualified_data_type::invalid();
-	} else {
-		return it->second;
-	}
+	auto it = m_native_module_argument_type_info_table.find(type_string);
+	return (it == m_native_module_argument_type_info_table.end()) ? nullptr : &it->second;
 }
 
 void c_ast_visitor::build_task_type_table() {
@@ -681,38 +736,84 @@ void c_ast_visitor::build_task_type_table() {
 	s_task_argument_type type;
 
 	add_task_type(
-		"const c_real_buffer *", e_task_primitive_type::k_real, false, e_task_qualifier::k_in);
+		"const c_real_buffer *",
+		e_task_argument_direction::k_in,
+		c_task_qualified_data_type(
+			c_task_data_type(e_task_primitive_type::k_real, false),
+			e_task_data_mutability::k_variable));
 	add_task_type(
-		"c_real_buffer *", e_task_primitive_type::k_real, false, e_task_qualifier::k_out);
+		"c_real_buffer *",
+		e_task_argument_direction::k_out,
+		c_task_qualified_data_type(
+			c_task_data_type(e_task_primitive_type::k_real, false),
+			e_task_data_mutability::k_variable));
 	add_task_type(
-		"float", e_task_primitive_type::k_real, false, e_task_qualifier::k_constant);
+		"float",
+		e_task_argument_direction::k_in,
+		c_task_qualified_data_type(
+			c_task_data_type(e_task_primitive_type::k_real, false),
+			e_task_data_mutability::k_constant));
 	add_task_type(
-		"c_wrapped_array<const c_real_buffer *const>", e_task_primitive_type::k_real, true, e_task_qualifier::k_in);
+		"c_wrapped_array<const c_real_buffer *const>",
+		e_task_argument_direction::k_in,
+		c_task_qualified_data_type(
+			c_task_data_type(e_task_primitive_type::k_real, true),
+			e_task_data_mutability::k_variable));
 	add_task_type(
-		"c_wrapped_array<const float>", e_task_primitive_type::k_real, true, e_task_qualifier::k_constant);
+		"c_wrapped_array<const float>",
+		e_task_argument_direction::k_in,
+		c_task_qualified_data_type(
+			c_task_data_type(e_task_primitive_type::k_real, true),
+			e_task_data_mutability::k_constant));
 	add_task_type(
-		"const c_bool_buffer *", e_task_primitive_type::k_bool, false, e_task_qualifier::k_in);
+		"const c_bool_buffer *",
+		e_task_argument_direction::k_in,
+		c_task_qualified_data_type(
+			c_task_data_type(e_task_primitive_type::k_bool, false),
+			e_task_data_mutability::k_variable));
 	add_task_type(
-		"c_bool_buffer *", e_task_primitive_type::k_bool, false, e_task_qualifier::k_out);
+		"c_bool_buffer *",
+		e_task_argument_direction::k_out,
+		c_task_qualified_data_type(
+			c_task_data_type(e_task_primitive_type::k_bool, false),
+			e_task_data_mutability::k_variable));
 	add_task_type(
-		"bool", e_task_primitive_type::k_bool, false, e_task_qualifier::k_constant);
+		"bool",
+		e_task_argument_direction::k_in,
+		c_task_qualified_data_type(
+			c_task_data_type(e_task_primitive_type::k_bool, false),
+			e_task_data_mutability::k_constant));
 	add_task_type(
-		"c_wrapped_array<const c_bool_buffer *const>", e_task_primitive_type::k_bool, true, e_task_qualifier::k_in);
+		"c_wrapped_array<const c_bool_buffer *const>",
+		e_task_argument_direction::k_in,
+		c_task_qualified_data_type(
+			c_task_data_type(e_task_primitive_type::k_bool, true),
+			e_task_data_mutability::k_variable));
 	add_task_type(
-		"c_wrapped_array<const bool>", e_task_primitive_type::k_bool, true, e_task_qualifier::k_constant);
+		"c_wrapped_array<const bool>",
+		e_task_argument_direction::k_in,
+		c_task_qualified_data_type(
+			c_task_data_type(e_task_primitive_type::k_bool, true),
+			e_task_data_mutability::k_constant));
 	add_task_type(
-		"const char *", e_task_primitive_type::k_string, false, e_task_qualifier::k_constant);
+		"const char *",
+		e_task_argument_direction::k_in,
+		c_task_qualified_data_type(
+			c_task_data_type(e_task_primitive_type::k_string, false),
+			e_task_data_mutability::k_constant));
 	add_task_type(
-		"c_wrapped_array<const char *const>", e_task_primitive_type::k_string, true, e_task_qualifier::k_constant);
+		"c_wrapped_array<const char *const>",
+		e_task_argument_direction::k_in,
+		c_task_qualified_data_type(
+			c_task_data_type(e_task_primitive_type::k_string, true),
+			e_task_data_mutability::k_constant));
 }
 
 void c_ast_visitor::add_task_type(
 	const char *type_name,
-	e_task_primitive_type primitive_type,
-	bool is_array,
-	e_task_qualifier qualifier) {
-	s_task_argument_type type;
-	type.data_type = c_task_qualified_data_type(c_task_data_type(primitive_type, is_array), qualifier);
+	e_task_argument_direction argument_direction,
+	c_task_qualified_data_type data_type) {
+	s_task_argument_type type = { argument_direction, data_type };
 	m_task_type_table.insert(std::make_pair(type_name, type));
 }
 

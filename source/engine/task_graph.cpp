@@ -2,9 +2,10 @@
 #include "engine/task_function_registry.h"
 #include "engine/task_graph.h"
 
-#include "execution_graph/native_module.h"
 #include "execution_graph/native_module_registry.h"
 #include "execution_graph/execution_graph.h"
+
+#include "native_module/native_module.h"
 
 #define OUTPUT_TASK_GRAPH_BUILD_RESULT 0
 
@@ -31,7 +32,7 @@ static bool does_native_module_call_input_branch(
 bool output_task_graph_build_result(const c_task_graph &task_graph, const char *filename);
 #endif // IS_TRUE(OUTPUT_TASK_GRAPH_BUILD_RESULT)
 
-c_task_buffer_iterator::c_task_buffer_iterator(c_task_function_arguments arguments) {
+c_task_buffer_iterator::c_task_buffer_iterator(c_task_function_runtime_arguments arguments) {
 	m_arguments = arguments;
 	m_argument_index = k_invalid_index;
 	m_array_index = k_invalid_index;
@@ -55,13 +56,13 @@ void c_task_buffer_iterator::next() {
 			m_argument_index = 0;
 			m_array_index = 0;
 		} else {
-			const s_task_function_argument &argument = m_arguments[m_argument_index];
-			if (argument.data.type.get_qualifier() == e_task_qualifier::k_constant) {
+			const s_task_function_runtime_argument &argument = m_arguments[m_argument_index];
+			if (argument.type.get_data_mutability() == e_task_data_mutability::k_constant) {
 				// Always skip constants
 				m_argument_index++;
 				m_array_index = 0;
-			} else if (argument.data.type.get_data_type().is_array()) {
-				size_t current_array_count = argument.data.value.buffer_array.get_count();
+			} else if (argument.type.is_array()) {
+				size_t current_array_count = std::get<c_buffer_array>(argument.value).get_count();
 				m_array_index++;
 				if (m_array_index == current_array_count) {
 					m_argument_index++;
@@ -76,22 +77,23 @@ void c_task_buffer_iterator::next() {
 		if (!is_valid()) {
 			advance = false;
 		} else {
-			const s_task_function_argument &new_argument = m_arguments[m_argument_index];
+			const s_task_function_runtime_argument &new_argument = m_arguments[m_argument_index];
 
 			// Keep skipping past constants
-			advance = new_argument.data.type.get_qualifier() == e_task_qualifier::k_constant;
+			advance = new_argument.type.get_data_mutability() == e_task_data_mutability::k_constant;
 			if (!advance) {
 				c_buffer *buffer = nullptr;
-				if (new_argument.data.type.get_data_type().is_array()) {
-					size_t new_array_count = new_argument.data.value.buffer_array.get_count();
+				if (new_argument.type.is_array()) {
+					c_buffer_array buffer_array = std::get<c_buffer_array>(new_argument.value);
+					size_t new_array_count = buffer_array.get_count();
 					if (new_array_count == 0) {
 						// Skip past 0-sized arrays
 						advance = true;
 					} else {
-						buffer = new_argument.data.value.buffer_array[m_array_index];
+						buffer = buffer_array[m_array_index];
 					}
 				} else {
-					buffer = new_argument.data.value.buffer;
+					buffer = std::get<c_buffer *>(new_argument.value);
 				}
 
 				if (buffer && buffer->is_compile_time_constant()) {
@@ -105,27 +107,24 @@ void c_task_buffer_iterator::next() {
 
 c_buffer *c_task_buffer_iterator::get_buffer() const {
 	wl_assert(is_valid());
-	const s_task_function_argument &argument = m_arguments[m_argument_index];
-	wl_assert(argument.data.type.get_qualifier() != e_task_qualifier::k_constant);
+	const s_task_function_runtime_argument &argument = m_arguments[m_argument_index];
+	wl_assert(argument.type.get_data_mutability() != e_task_data_mutability::k_constant);
+	return argument.type.is_array()
+		? std::get<c_buffer_array>(argument.value)[m_array_index]
+		: std::get<c_buffer *>(argument.value);
+}
 
-	if (argument.data.type.get_data_type().is_array()) {
-		return argument.data.value.buffer_array[m_array_index];
-	} else {
-		return argument.data.value.buffer;
-	}
+e_task_argument_direction c_task_buffer_iterator::get_argument_direction() const {
+	wl_assert(is_valid());
+	const s_task_function_runtime_argument &argument = m_arguments[m_argument_index];
+	return argument.argument_direction;
 }
 
 c_task_qualified_data_type c_task_buffer_iterator::get_buffer_type() const {
 	wl_assert(is_valid());
-	const s_task_function_argument &argument = m_arguments[m_argument_index];
-	wl_assert(argument.data.type.get_qualifier() != e_task_qualifier::k_constant);
-
-	c_task_qualified_data_type result = argument.data.type;
-	if (result.get_data_type().is_array()) {
-		result = c_task_qualified_data_type(result.get_data_type().get_element_type(), result.get_qualifier());
-	}
-
-	return result;
+	const s_task_function_runtime_argument &argument = m_arguments[m_argument_index];
+	wl_assert(argument.type.get_data_mutability() != e_task_data_mutability::k_constant);
+	return argument.type.is_array() ? argument.type.get_element_type() : argument.type;
 }
 
 uint32 c_task_graph::get_task_count() const {
@@ -140,10 +139,10 @@ uint32 c_task_graph::get_task_function_index(uint32 task_index) const {
 	return m_tasks[task_index].task_function_index;
 }
 
-c_task_function_arguments c_task_graph::get_task_arguments(uint32 task_index) const {
+c_task_function_runtime_arguments c_task_graph::get_task_arguments(uint32 task_index) const {
 	const s_task &task = m_tasks[task_index];
 	const s_task_function &task_function = c_task_function_registry::get_task_function(task.task_function_index);
-	return c_task_function_arguments(
+	return c_task_function_runtime_arguments(
 		task_function.argument_count == 0 ? nullptr : &m_task_function_arguments[task.arguments_start],
 		task_function.argument_count);
 }
@@ -441,7 +440,7 @@ bool c_task_graph::setup_task(
 	m_task_function_arguments.resize(old_task_function_arguments_size + task_function.argument_count);
 
 	// Make a wrapped array of the arguments for convenience
-	c_wrapped_array<s_task_function_argument> task_function_arguments(
+	c_wrapped_array<s_task_function_runtime_argument> task_function_arguments(
 		&m_task_function_arguments[old_task_function_arguments_size],
 		task_function.argument_count);
 
@@ -462,57 +461,53 @@ bool c_task_graph::setup_task(
 	for (size_t index = 0; index < input_output_count; index++) {
 		uint32 argument_index = task_function.task_function_argument_indices[index];
 		wl_assert(valid_index(argument_index, task_function.argument_count));
-		s_task_function_argument &argument = task_function_arguments[argument_index];
-		c_task_qualified_data_type argument_type = task_function.argument_types[argument_index];
-		argument.data.type = argument_type;
+		const s_task_function_argument &argument = task_function.arguments[argument_index];
+		s_task_function_runtime_argument &runtime_argument = task_function_arguments[argument_index];
+		runtime_argument.argument_direction = argument.argument_direction;
+		runtime_argument.type = argument.type;
 
-		e_task_primitive_type primitive_type = argument_type.get_data_type().get_primitive_type();
-		bool is_input = argument_type.get_qualifier() != e_task_qualifier::k_out;
-		bool is_array = argument_type.get_data_type().is_array();
-		bool is_constant = argument_type.get_qualifier() == e_task_qualifier::k_constant;
-
-		if (is_input) {
+		if (argument.argument_direction == e_task_argument_direction::k_in) {
 			// Obtain the source input node
 			c_node_reference input_node_reference =
 				execution_graph.get_node_incoming_edge_reference(node_reference, input_index);
 			c_node_reference source_node_reference =
 				execution_graph.get_node_incoming_edge_reference(input_node_reference, 0);
 
-			if (is_constant) {
+			if (argument.type.get_data_mutability() == e_task_data_mutability::k_constant) {
 				wl_assert(
 					execution_graph.get_node_type(source_node_reference) == e_execution_graph_node_type::k_constant);
 			}
 
 			bool is_buffer = false;
-			if (is_constant) {
-				switch (primitive_type) {
+			if (argument.type.get_data_mutability() == e_task_data_mutability::k_constant) {
+				switch (argument.type.get_primitive_type()) {
 				case e_task_primitive_type::k_real:
-					if (is_array) {
-						argument.data.value.real_constant_array =
-							build_real_constant_array(execution_graph, source_node_reference);
+					if (argument.type.is_array()) {
+						runtime_argument.value.emplace<c_real_constant_array>(
+							build_real_constant_array(execution_graph, source_node_reference));
 					} else {
-						argument.data.value.real_constant =
-							execution_graph.get_constant_node_real_value(source_node_reference);
+						runtime_argument.value.emplace<real32>(
+							execution_graph.get_constant_node_real_value(source_node_reference));
 					}
 					break;
 
 				case e_task_primitive_type::k_bool:
-					if (is_array) {
-						argument.data.value.bool_constant_array =
-							build_bool_constant_array(execution_graph, source_node_reference);
+					if (argument.type.is_array()) {
+						runtime_argument.value.emplace<c_bool_constant_array>(
+							build_bool_constant_array(execution_graph, source_node_reference));
 					} else {
-						argument.data.value.bool_constant =
-							execution_graph.get_constant_node_bool_value(source_node_reference);
+						runtime_argument.value.emplace<bool>(
+							execution_graph.get_constant_node_bool_value(source_node_reference));
 					}
 					break;
 
 				case e_task_primitive_type::k_string:
-					if (is_array) {
-						argument.data.value.string_constant_array =
-							build_string_constant_array(execution_graph, source_node_reference);
+					if (argument.type.is_array()) {
+						runtime_argument.value.emplace<c_string_constant_array>(
+							build_string_constant_array(execution_graph, source_node_reference));
 					} else {
-						argument.data.value.string_constant =
-							add_string(execution_graph.get_constant_node_string_value(source_node_reference));
+						runtime_argument.value.emplace<const char *>(
+							add_string(execution_graph.get_constant_node_string_value(source_node_reference)));
 					}
 					break;
 
@@ -520,35 +515,35 @@ bool c_task_graph::setup_task(
 					wl_unreachable();
 				}
 			} else {
-				wl_assert(argument_type.get_data_type().get_primitive_type_traits().is_dynamic);
-				if (is_array) {
-					argument.data.value.buffer_array = add_or_get_buffer_array(
-						execution_graph,
-						source_node_reference,
-						argument_type.get_data_type().get_element_type());
+				wl_assert(!argument.type.get_primitive_type_traits().constant_only);
+				if (argument.type.is_array()) {
+					runtime_argument.value.emplace<c_buffer_array>(
+						add_or_get_buffer_array(
+							execution_graph,
+							source_node_reference,
+							argument.type.get_element_type().get_data_type()));
 				} else {
-					argument.data.value.buffer = add_or_get_buffer(
-						execution_graph,
-						source_node_reference,
-						argument_type.get_data_type());
+					runtime_argument.value.emplace<c_buffer *>(
+						add_or_get_buffer(execution_graph, source_node_reference, argument.type.get_data_type()));
 					is_buffer = true;
 				}
 			}
 
 			// See if we can share this input buffer with an output buffer
-			if (!task_function.arguments_unshared[argument_index]
+			if (!argument.is_unshared
 				&& is_buffer
 				&& !does_native_module_call_input_branch(execution_graph, node_reference, input_index)) {
 				// Determine if this is a non-constant sourced buffer. Note: we can't just check is_constant because we
 				// may have a non-constant buffer that's pointing to constant data. is_constant just means compile-time
 				// constant.
-				const c_buffer &buffer = m_buffers[extract_index_from_pointer(argument.data.value.buffer)];
+				const c_buffer &buffer =
+					m_buffers[extract_index_from_pointer(std::get<c_buffer *>(runtime_argument.value))];
 				if (!buffer.is_constant()) {
 					// This is a buffer that will be filled with dynamic data, and it's only used by the current task
 					// function. This means we might be able to share it with an output buffer.
 					share_candidates.push_back(s_share_candidate());
 					share_candidates.back().node_reference = source_node_reference;
-					share_candidates.back().data_type = argument_type.get_data_type();
+					share_candidates.back().data_type = argument.type.get_data_type();
 				}
 			}
 
@@ -562,21 +557,18 @@ bool c_task_graph::setup_task(
 	for (size_t index = 0; index < input_output_count; index++) {
 		uint32 argument_index = task_function.task_function_argument_indices[index];
 		wl_assert(valid_index(argument_index, task_function.argument_count));
-		s_task_function_argument &argument = task_function_arguments[argument_index];
-		c_task_qualified_data_type argument_type = task_function.argument_types[argument_index];
-		argument.data.type = argument_type;
+		const s_task_function_argument &argument = task_function.arguments[argument_index];
+		s_task_function_runtime_argument &runtime_argument = task_function_arguments[argument_index];
 
-		bool is_output = argument_type.get_qualifier() == e_task_qualifier::k_out;
-
-		if (is_output) {
+		if (argument.argument_direction == e_task_argument_direction::k_out) {
 			// Obtain the output node
 			c_node_reference output_node_reference =
 				execution_graph.get_node_outgoing_edge_reference(node_reference, output_index);
 
-			if (!task_function.arguments_unshared[argument_index]) {
+			if (!argument.is_unshared) {
 				for (size_t share_index = 0; share_index < share_candidates.size(); share_index++) {
 					const s_share_candidate &share_candidate = share_candidates[share_index];
-					if (share_candidate.data_type == argument_type.get_data_type()) {
+					if (share_candidate.data_type == argument.type.get_data_type()) {
 						// Share this argument with the share candidate
 						m_output_nodes_to_shared_input_nodes[output_node_reference] = share_candidate.node_reference;
 
@@ -588,21 +580,19 @@ bool c_task_graph::setup_task(
 			}
 
 			// Outputs can't be arrays or constants
-			wl_assert(!argument_type.get_data_type().is_array());
-			wl_assert(argument_type.get_qualifier() != e_task_qualifier::k_constant);
+			wl_assert(!argument.type.is_array());
+			wl_assert(argument.type.get_data_mutability() != e_task_data_mutability::k_constant);
 
-			argument.data.value.buffer = add_or_get_buffer(
-				execution_graph,
-				output_node_reference,
-				argument_type.get_data_type());
+			runtime_argument.value.emplace<c_buffer *>(
+				add_or_get_buffer(execution_graph, output_node_reference, argument.type.get_data_type()));
 			output_index++;
 		}
 	}
 
 #if IS_TRUE(ASSERTS_ENABLED)
-	for (s_task_function_argument &argument : task_function_arguments) {
+	for (s_task_function_runtime_argument &argument : task_function_arguments) {
 		// Make sure we have filled in all values
-		wl_assert(argument.data.type.is_valid());
+		wl_assert(argument.type.is_valid());
 	}
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
@@ -898,39 +888,38 @@ c_string_constant_array c_task_graph::build_string_constant_array(
 }
 
 void c_task_graph::rebase_arrays() {
-	for (s_task_function_argument &argument : m_task_function_arguments) {
-		if (argument.data.type.get_data_type().is_array()) {
-			if (argument.data.type.get_qualifier() == e_task_qualifier::k_constant) {
+	for (s_task_function_runtime_argument &argument : m_task_function_arguments) {
+		if (argument.type.is_array()) {
+			if (argument.type.get_data_mutability() == e_task_data_mutability::k_constant) {
 				// The start index is currently stored in the pointer - convert this to the final pointer
-				switch (argument.data.type.get_data_type().get_primitive_type()) {
+				switch (argument.type.get_primitive_type()) {
 				case e_task_primitive_type::k_real:
 				{
-					size_t start_index =
-						extract_index_from_pointer(argument.data.value.real_constant_array.get_pointer());
-					argument.data.value.real_constant_array = c_real_constant_array(
-						m_real_constant_arrays.empty() ? nullptr : &m_real_constant_arrays.front() + start_index,
-						argument.data.value.real_constant_array.get_count());
+					c_real_constant_array &constant_array = std::get<c_real_constant_array>(argument.value);
+					size_t start_index = extract_index_from_pointer(constant_array.get_pointer());
+					constant_array = c_real_constant_array(
+						m_real_constant_arrays.data() + start_index,
+						constant_array.get_count());
 					break;
 				}
 
 				case e_task_primitive_type::k_bool:
 				{
-					size_t start_index =
-						extract_index_from_pointer(argument.data.value.bool_constant_array.get_pointer());
-					argument.data.value.bool_constant_array = c_bool_constant_array(
-						reinterpret_cast<bool *>(
-							m_bool_constant_arrays.empty() ? nullptr : &m_bool_constant_arrays.front() + start_index),
-						argument.data.value.bool_constant_array.get_count());
+					c_bool_constant_array &constant_array = std::get<c_bool_constant_array>(argument.value);
+					size_t start_index = extract_index_from_pointer(constant_array.get_pointer());
+					constant_array = c_bool_constant_array(
+						reinterpret_cast<bool *>(m_bool_constant_arrays.data() + start_index),
+						constant_array.get_count());
 					break;
 				}
 
 				case e_task_primitive_type::k_string:
 				{
-					size_t start_index =
-						extract_index_from_pointer(argument.data.value.string_constant_array.get_pointer());
-					argument.data.value.string_constant_array = c_string_constant_array(
-						m_string_constant_arrays.empty() ? nullptr : &m_string_constant_arrays.front() + start_index,
-						argument.data.value.string_constant_array.get_count());
+					c_string_constant_array &constant_array = std::get<c_string_constant_array>(argument.value);
+					size_t start_index = extract_index_from_pointer(constant_array.get_pointer());
+					constant_array = c_string_constant_array(
+						m_string_constant_arrays.data() + start_index,
+						constant_array.get_count());
 					break;
 				}
 
@@ -938,22 +927,21 @@ void c_task_graph::rebase_arrays() {
 					wl_unreachable();
 				}
 			} else {
-				size_t start_index =
-					extract_index_from_pointer(argument.data.value.buffer_array.get_pointer());
-				argument.data.value.buffer_array = c_buffer_array(
-					m_buffer_arrays.empty() ? nullptr : &m_buffer_arrays.front() + start_index,
-					argument.data.value.buffer_array.get_count());
+				c_buffer_array &buffer_array = std::get<c_buffer_array>(argument.value);
+				size_t start_index = extract_index_from_pointer(buffer_array.get_pointer());
+				buffer_array = c_buffer_array(m_buffer_arrays.data() + start_index, buffer_array.get_count());
 			}
 		}
 	}
 }
 
 void c_task_graph::rebase_buffers() {
-	for (s_task_function_argument &argument : m_task_function_arguments) {
-		if (!argument.data.type.get_data_type().is_array()
-			&& argument.data.type.get_qualifier() != e_task_qualifier::k_constant) {
-			size_t buffer_index = extract_index_from_pointer(argument.data.value.buffer);
-			argument.data.value.buffer = &m_buffers[buffer_index];
+	for (s_task_function_runtime_argument &argument : m_task_function_arguments) {
+		if (!argument.type.is_array()
+			&& argument.type.get_data_mutability() != e_task_data_mutability::k_constant) {
+			c_buffer *buffer = std::get<c_buffer *>(argument.value);
+			size_t buffer_index = extract_index_from_pointer(buffer);
+			buffer = &m_buffers[buffer_index];
 		}
 	}
 
@@ -991,12 +979,12 @@ void c_task_graph::rebase_string(const char *&string) {
 }
 
 void c_task_graph::rebase_strings() {
-	for (s_task_function_argument &argument : m_task_function_arguments) {
-		if (argument.data.type.get_data_type().get_primitive_type() == e_task_primitive_type::k_string) {
-			if (argument.data.type.get_data_type().is_array()) {
+	for (s_task_function_runtime_argument &argument : m_task_function_arguments) {
+		if (argument.type.get_primitive_type() == e_task_primitive_type::k_string) {
+			if (argument.type.is_array()) {
 				// We will rebase all string array contents right after this
 			} else {
-				rebase_string(argument.data.value.string_constant);
+				rebase_string(std::get<const char *>(argument.value));
 			}
 		}
 	}
@@ -1454,29 +1442,27 @@ static bool output_task_graph_build_result(const c_task_graph &task_graph, const
 			uid_stream << static_cast<uint32>(task_function.uid.data[b]);
 		}
 
-		out << index << "," <<
-			uid_stream.str() << "," <<
-			task_function.name.get_string();
+		out << index << "," << uid_stream.str() << "," << task_function.name.get_string();
 
-		c_task_function_arguments arguments = task_graph.get_task_arguments(index);
+		c_task_function_runtime_arguments arguments = task_graph.get_task_arguments(index);
 		for (size_t arg = 0; arg < arguments.get_count(); arg++) {
 			out << ",";
-			if (arguments[arg].data.type.get_data_type().is_array()) {
+			if (arguments[arg].type.is_array()) {
 				// $TODO support this case
 				out << "array";
 			} else {
-				if (arguments[arg].data.type.get_qualifier() == e_task_qualifier::k_constant) {
-					switch (arguments[arg].data.type.get_data_type().get_primitive_type()) {
+				if (arguments[arg].type.get_data_mutability() == e_task_data_mutability::k_constant) {
+					switch (arguments[arg].type.get_primitive_type()) {
 					case e_task_primitive_type::k_real:
-						out << arguments[arg].data.value.real_constant;
+						out << arguments[arg].get_real_constant_in();
 						break;
 
 					case e_task_primitive_type::k_bool:
-						out << (arguments[arg].data.value.bool_constant ? "true" : "false");
+						out << (arguments[arg].get_bool_constant_in() ? "true" : "false");
 						break;
 
 					case e_task_primitive_type::k_string:
-						out << arguments[arg].data.value.string_constant;
+						out << arguments[arg].get_string_constant_in();
 						break;
 
 					default:
@@ -1484,7 +1470,7 @@ static bool output_task_graph_build_result(const c_task_graph &task_graph, const
 					}
 				} else {
 					// $TODO can we output something better than a pointer?
-					out << "[0x" << arguments[arg].data.value.buffer << "]";
+					out << "[0x" << std::get<c_buffer *>(arguments[arg].value) << "]";
 				}
 			}
 		}

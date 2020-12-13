@@ -39,9 +39,7 @@ void c_thread::start(const s_thread_definition &thread_definition) {
 		70,
 		80
 	};
-	static_assert(
-		array_count(k_thread_priority_map) == enum_count(e_thread_priority),
-		"Thread priority mapping mismatch");
+	STATIC_ASSERT(is_enum_fully_mapped<e_thread_priority>(k_thread_priority_map));
 
 	sched_param sch_params;
 	sch_params.sched_priority = k_thread_priority_map[enum_index(thread_definition.thread_priority)];

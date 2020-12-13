@@ -4,7 +4,6 @@
     <ClInclude Include="buffer.h" />
     <ClInclude Include="predecessor_resolver.h" />
     <ClInclude Include="runtime_instrument.h" />
-    <ClInclude Include="task_function.h" />
     <ClInclude Include="task_function_registry.h" />
     <ClInclude Include="task_graph.h" />
     <ClInclude Include="thread_pool.h" />
@@ -86,7 +85,6 @@
     <ClInclude Include="voice_interface\voice_interface.h">
       <Filter>voice_interface</Filter>
     </ClInclude>
-    <ClInclude Include="task_data_type.h" />
     <ClInclude Include="buffer_operations\buffer_iterator.h">
       <Filter>buffer_operations</Filter>
     </ClInclude>
@@ -112,7 +110,6 @@
   <ItemGroup>
     <ClCompile Include="predecessor_resolver.cpp" />
     <ClCompile Include="runtime_instrument.cpp" />
-    <ClCompile Include="task_function.cpp" />
     <ClCompile Include="task_function_registry.cpp" />
     <ClCompile Include="task_graph.cpp" />
     <ClCompile Include="thread_pool.cpp" />
@@ -200,7 +197,6 @@
     <ClCompile Include="voice_interface\voice_interface.cpp">
       <Filter>voice_interface</Filter>
     </ClCompile>
-    <ClCompile Include="task_data_type.cpp" />
     <ClCompile Include="resampler\resampler.cpp">
       <Filter>resampler</Filter>
     </ClCompile>

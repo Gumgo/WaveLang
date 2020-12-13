@@ -9,6 +9,10 @@
 // Causes an error if x is used before it has been defined
 #define IS_TRUE(opt, ...) (1 / defined opt##__VA_ARGS__ && opt)
 
+#define STATIC_ASSERT(x) static_assert(x, #x)
+#define STATIC_ASSERT_MSG(x, message) static_assert(x, message)
+#define STATIC_UNREACHABLE() static_assert(false, "Unreachable")
+
 #define SIZEOF_BITS(x) (sizeof(x) * 8)
 
 #define TOKEN_CONCATENATE_HELPER(x, y) x ## y

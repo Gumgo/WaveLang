@@ -88,6 +88,7 @@ enum class e_compiler_error {
 	k_module_call_depth_limit_exceeded,
 	k_array_index_out_of_bounds,
 	k_native_module_error,
+	k_invalid_native_module_implementation,
 
 	k_count
 };

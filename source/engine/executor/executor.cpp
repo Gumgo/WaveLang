@@ -89,7 +89,7 @@ void c_executor::initialize_internal(
 	if (task_function_library_contexts.get_count() > 0) {
 		m_task_function_library_contexts.resize(task_function_library_contexts.get_count());
 		copy_type(
-			&m_task_function_library_contexts.front(),
+			m_task_function_library_contexts.data(),
 			task_function_library_contexts.get_pointer(),
 			task_function_library_contexts.get_count());
 	}

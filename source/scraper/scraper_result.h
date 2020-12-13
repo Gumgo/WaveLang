@@ -2,9 +2,9 @@
 
 #include "common/common.h"
 
-#include "engine/task_data_type.h"
+#include "native_module/native_module.h"
 
-#include "execution_graph/native_module.h"
+#include "task_function/task_data_type.h"
 
 #include <string>
 #include <vector>
@@ -47,7 +47,9 @@ struct s_library_tasks_post_initializer_declaration {
 
 struct s_native_module_argument_declaration {
 	std::string name;
+	e_native_module_argument_direction argument_direction;
 	c_native_module_qualified_data_type type;
+	e_native_module_data_access data_access;
 	bool is_return_value;
 };
 
@@ -70,6 +72,7 @@ struct s_optimization_rule_declaration {
 
 struct s_task_function_argument_declaration {
 	std::string name;
+	e_task_argument_direction argument_direction;
 	c_task_qualified_data_type type;
 	std::string source;
 	bool is_unshared;

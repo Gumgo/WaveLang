@@ -26,11 +26,11 @@ void c_task_memory_manager::initialize(
 	const c_task_graph *voice_task_graph = runtime_instrument->get_voice_task_graph();
 	const c_task_graph *fx_task_graph = runtime_instrument->get_fx_task_graph();
 	const c_task_graph *task_graphs[] = { voice_task_graph, fx_task_graph };
-	static_assert(array_count(task_graphs) == enum_count<e_instrument_stage>(), "Instrument stage mismatch");
+	STATIC_ASSERT(array_count(task_graphs) == enum_count<e_instrument_stage>());
 
 	// Max voices for each stage - fx stage only has 1
 	uint32 max_voices[] = { runtime_instrument->get_instrument_globals().max_voices, 1 };
-	static_assert(array_count(max_voices) == enum_count<e_instrument_stage>(), "Instrument stage mismatch");
+	STATIC_ASSERT(array_count(max_voices) == enum_count<e_instrument_stage>());
 
 	m_voice_graph_task_count = voice_task_graph ? voice_task_graph->get_task_count() : 0;
 

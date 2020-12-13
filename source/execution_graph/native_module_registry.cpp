@@ -8,21 +8,11 @@
 // Strings for native module registry output
 static constexpr const char *k_native_module_no_return_type_string = "void";
 
-static constexpr const char *k_native_module_primitive_type_strings[] = {
-	"real",		// e_native_module_primitive_type::k_real
-	"bool",		// e_native_module_primitive_type::k_bool
-	"string"	// e_native_module_primitive_type::k_string
+static constexpr const char *k_native_module_argument_direction_strings[] = {
+	"in",	// e_native_module_argument_direction::k_in
+	"out"	// e_native_module_argument_direction::k_out
 };
-static_assert(array_count(k_native_module_primitive_type_strings) == enum_count<e_native_module_primitive_type>(),
-	"Native module primitive type string mismatch");
-
-static constexpr const char *k_native_module_qualifier_strings[] = {
-	"in",	// e_native_module_qualifier::k_in
-	"out",	// e_native_module_qualifier::k_out
-	"const"	// e_native_module_qualifier::k_constant
-};
-static_assert(array_count(k_native_module_qualifier_strings) == enum_count<e_native_module_qualifier>(),
-	"Native module qualifier string mismatch");
+STATIC_ASSERT(is_enum_fully_mapped<e_native_module_argument_direction>(k_native_module_argument_direction_strings));
 
 // $TODO $PLUGIN error reporting for registration errors. Important when we have plugins - we will want a global error
 // reporting system for that. Also, don't halt on error, return false instead
@@ -68,10 +58,6 @@ struct s_native_module_registry_data {
 
 static e_native_module_registry_state g_native_module_registry_state = e_native_module_registry_state::k_uninitialized;
 static s_native_module_registry_data g_native_module_registry_data;
-
-static bool do_native_modules_conflict(
-	const s_native_module_internal &native_module_a,
-	const s_native_module_internal &native_module_b);
 
 #if IS_TRUE(ASSERTS_ENABLED)
 static void validate_optimization_rule(const s_native_module_optimization_rule &optimization_rule);
@@ -188,14 +174,18 @@ bool c_native_module_registry::register_native_module(const s_native_module &nat
 	wl_assert(native_module.argument_count <= k_max_native_module_arguments);
 	wl_assert(native_module.argument_count == native_module.in_argument_count + native_module.out_argument_count);
 	wl_assert((native_module.return_argument_index == k_invalid_native_module_argument_index)
-		|| (native_module.arguments[native_module.return_argument_index].type.get_qualifier() ==
-			e_native_module_qualifier::k_out));
+		|| (native_module.arguments[native_module.return_argument_index].argument_direction ==
+			e_native_module_argument_direction::k_out));
 #if IS_TRUE(ASSERTS_ENABLED)
 	for (size_t arg = 0; arg < native_module.argument_count; arg++) {
-		wl_assert(valid_enum_index(native_module.arguments[arg].type.get_qualifier()));
+		wl_assert(valid_enum_index(native_module.arguments[arg].argument_direction));
 		wl_assert(native_module.arguments[arg].type.is_valid());
 	}
 #endif // IS_TRUE(ASSERTS_ENABLED)
+
+	if (!validate_native_module(native_module)) {
+		return false;
+	}
 
 	s_native_module_internal native_module_internal;
 	native_module_internal.native_module = native_module;
@@ -222,15 +212,6 @@ bool c_native_module_registry::register_native_module(const s_native_module &nat
 			g_native_module_registry_data.native_operators[enum_index(native_operator)].native_module_name) {
 			native_module_internal.native_operator = native_operator;
 			break;
-		}
-	}
-
-	// Check that this native module isn't identical to an existing one
-	for (uint32 other_index = 0; other_index < g_native_module_registry_data.native_modules.size(); other_index++) {
-		const s_native_module_internal &other_native_module = g_native_module_registry_data.native_modules[other_index];
-
-		if (do_native_modules_conflict(native_module_internal, other_native_module)) {
-			return false;
 		}
 	}
 
@@ -394,12 +375,8 @@ bool c_native_module_registry::output_registered_native_modules(const char *file
 			} else {
 				wl_assert(native_module.out_argument_count > 0);
 				const s_native_module_argument &argument = native_module.arguments[native_module.return_argument_index];
-				wl_assert(argument.type.get_qualifier() == e_native_module_qualifier::k_out);
-				out << k_native_module_primitive_type_strings[
-					enum_index(argument.type.get_data_type().get_primitive_type())];
-				if (argument.type.get_data_type().is_array()) {
-					out << "[]";
-				}
+				wl_assert(argument.argument_direction == e_native_module_argument_direction::k_out);
+				out << argument.type.to_string();
 			}
 
 			out << " " << native_module.name.get_string() << "(";
@@ -417,12 +394,8 @@ bool c_native_module_registry::output_registered_native_modules(const char *file
 					out << ", ";
 				}
 
-				out << k_native_module_qualifier_strings[enum_index(argument.type.get_qualifier())] << " " <<
-					k_native_module_primitive_type_strings[
-						enum_index(argument.type.get_data_type().get_primitive_type())];
-				if (argument.type.get_data_type().is_array()) {
-					out << "[]";
-				}
+				out << k_native_module_argument_direction_strings[enum_index(argument.argument_direction)]
+					<< " " << argument.type.to_string();
 
 				if (!native_module.arguments[arg].name.is_empty()) {
 					out << " " << native_module.arguments[arg].name.get_string();
@@ -448,67 +421,6 @@ bool c_native_module_registry::output_registered_native_modules(const char *file
 	}
 
 	return true;
-}
-
-static bool do_native_modules_conflict(
-	const s_native_module_internal &native_module_a,
-	const s_native_module_internal &native_module_b) {
-	if (native_module_a.native_operator == e_native_operator::k_invalid
-		&& native_module_b.native_operator == e_native_operator::k_invalid) {
-		// If we're not comparing operators and the libraries don't match, these native modules will never conflict
-		// because the library prefix will prevent conflicts
-		if (native_module_a.native_module.uid.get_library_id() != native_module_b.native_module.uid.get_library_id()) {
-			return false;
-		}
-	}
-
-	if (native_module_a.native_module.name != native_module_b.native_module.name) {
-		return false;
-	}
-
-	// If the arguments match, it's an overload conflict. We currently consider only types when detecting overload
-	// conflicts, because using qualifiers would cause ambiguity. The return value cannot be used to resolve overloads,
-	// so we need to do a bit of work if the first output argument is used as the return value.
-	// $TODO potentially revisit tn 
-
-	size_t argument_count_a =
-		(native_module_a.native_module.return_argument_index == k_invalid_native_module_argument_index)
-		? native_module_a.native_module.argument_count
-		: native_module_a.native_module.argument_count - 1;
-	size_t argument_count_b =
-		(native_module_a.native_module.return_argument_index == k_invalid_native_module_argument_index)
-		? native_module_b.native_module.argument_count
-		: native_module_b.native_module.argument_count - 1;
-
-	if (argument_count_a != argument_count_b) {
-		return false;
-	}
-
-	size_t arg_a_index = 0;
-	size_t arg_b_index = 0;
-
-	bool all_match = true;
-	for (size_t arg = 0; all_match && arg < argument_count_a; arg++) {
-		// Skip the return arguments
-
-		if (arg_a_index == native_module_a.native_module.return_argument_index) {
-			arg_a_index++;
-		}
-
-		if (arg_b_index == native_module_b.native_module.return_argument_index) {
-			arg_b_index++;
-		}
-
-		if (native_module_a.native_module.arguments[arg_a_index].type.get_data_type() !=
-			native_module_b.native_module.arguments[arg_b_index].type.get_data_type()) {
-			all_match = false;
-		}
-
-		arg_a_index++;
-		arg_b_index++;
-	}
-
-	return all_match;
 }
 
 #if IS_TRUE(ASSERTS_ENABLED)

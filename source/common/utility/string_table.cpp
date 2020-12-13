@@ -8,7 +8,7 @@ void c_string_table::clear() {
 
 char *c_string_table::initialize_for_load(size_t size) {
 	m_table.resize(size);
-	return m_table.empty() ? nullptr : &m_table.front();
+	return m_table.empty() ? nullptr : m_table.data();
 }
 
 size_t c_string_table::add_string(const char *str) {
@@ -41,7 +41,7 @@ size_t c_string_table::get_table_size() const {
 }
 
 const char *c_string_table::get_table_pointer() const {
-	return m_table.empty() ? nullptr : &m_table.front();
+	return m_table.empty() ? nullptr : m_table.data();
 }
 
 void c_string_table::swap(c_string_table &other) {

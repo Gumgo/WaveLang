@@ -15,43 +15,50 @@
 static constexpr size_t k_invalid_task_argument_index = static_cast<size_t>(-1);
 
 static constexpr const char *k_bool_strings[] = { "false", "true" };
-static_assert(array_count(k_bool_strings) == 2, "Invalid bool strings");
+STATIC_ASSERT(array_count(k_bool_strings) == 2);
 
 static constexpr const char *k_task_primitive_type_enum_strings[] = {
 	"e_task_primitive_type::k_real",
 	"e_task_primitive_type::k_bool",
 	"e_task_primitive_type::k_string"
 };
-static_assert(array_count(k_task_primitive_type_enum_strings) == enum_count<e_task_primitive_type>(),
-	"Invalid task primitive type enum strings");
+STATIC_ASSERT(is_enum_fully_mapped<e_task_primitive_type>(k_task_primitive_type_enum_strings));
 
-static constexpr const char *k_task_qualifier_enum_strings[] = {
-	"e_task_qualifier::k_in",
-	"e_task_qualifier::k_out",
-	"e_task_qualifier::k_constant"
+static constexpr const char *k_task_data_mutability_enum_strings[] = {
+	"e_task_data_mutability::k_variable",
+	"e_task_data_mutability::k_constant"
 };
-static_assert(array_count(k_task_qualifier_enum_strings) == enum_count<e_task_qualifier>(),
-	"Invalid task qualifier enum strings");
+STATIC_ASSERT(is_enum_fully_mapped<e_task_data_mutability>(k_task_data_mutability_enum_strings));
 
-static constexpr const char *k_task_primitive_type_getter_names[] = {
+static constexpr const char *k_task_argument_direction_enum_strings[] = {
+	"e_task_argument_direction::k_in",
+	"e_task_argument_direction::k_out"
+};
+STATIC_ASSERT(is_enum_fully_mapped<e_task_argument_direction>(k_task_argument_direction_enum_strings));
+
+static constexpr const char *k_task_primitive_type_strings[] = {
 	"real",
 	"bool",
 	"string"
 };
-static_assert(array_count(k_task_primitive_type_getter_names) == enum_count<e_task_primitive_type>(),
-	"Primitive type getter names mismatch");
+STATIC_ASSERT(is_enum_fully_mapped<e_task_primitive_type>(k_task_primitive_type_strings));
 
-static constexpr const char *k_task_qualifier_getter_names[] = {
-	"_in",
-	"_out",
-	"_in" // k_constant still uses "in" for the getter
+static constexpr const char *k_task_data_mutability_strings[] = {
+	"buffer",
+	"constant"
 };
-static_assert(array_count(k_task_qualifier_getter_names) == enum_count<e_task_qualifier>(),
-	"Qualifier getter names mismatch");
+STATIC_ASSERT(is_enum_fully_mapped<e_task_data_mutability>(k_task_data_mutability_strings));
+
+static constexpr const char *k_task_argument_direction_strings[] = {
+	"in",
+	"out"
+};
+STATIC_ASSERT(is_enum_fully_mapped<e_task_argument_direction>(k_task_argument_direction_strings));
 
 struct s_task_argument_mapping {
 	std::string source;
 	size_t source_index;
+	e_task_argument_direction argument_direction;
 	c_task_qualified_data_type type;
 	bool is_unshared;
 };
@@ -119,14 +126,14 @@ bool generate_task_function_registration(
 		const s_library_declaration &library = result->get_library(task_function.library_index);
 
 		if (!task_function.memory_query.empty()) {
-			out << "static size_t " << library.name << "_" << task_function.function << "_" <<
-				task_function.memory_query << "_call_wrapper(const s_task_function_context &context) {" NEWLINE_STR;
+			out << "static size_t " << library.name << "_" << task_function.function << "_"
+				<< task_function.memory_query << "_call_wrapper(const s_task_function_context &context) {" NEWLINE_STR;
 
 			size_t call_index;
 			for (call_index = 0; call_index < result->get_task_memory_query_count(); call_index++) {
 				if (result->get_task_memory_query(call_index).name == task_function.memory_query) {
-					out << TAB_STR "return " <<
-						result->get_task_memory_query(call_index).function_call << "(" NEWLINE_STR;
+					out << TAB_STR "return "
+						<< result->get_task_memory_query(call_index).function_call << "(" NEWLINE_STR;
 					write_task_arguments(out, mapping, mapping.task_memory_query_argument_indices);
 					break;
 				}
@@ -138,8 +145,8 @@ bool generate_task_function_registration(
 		}
 
 		if (!task_function.initializer.empty()) {
-			out << "static void " << library.name << "_" << task_function.function << "_" <<
-				task_function.initializer << "_call_wrapper(const s_task_function_context &context) {" NEWLINE_STR;
+			out << "static void " << library.name << "_" << task_function.function << "_"
+				<< task_function.initializer << "_call_wrapper(const s_task_function_context &context) {" NEWLINE_STR;
 
 			size_t call_index;
 			for (call_index = 0; call_index < result->get_task_initializer_count(); call_index++) {
@@ -156,9 +163,9 @@ bool generate_task_function_registration(
 		}
 
 		if (!task_function.voice_initializer.empty()) {
-			out << "static void " << library.name << "_" << task_function.function << "_" <<
-				task_function.voice_initializer <<
-				"_call_wrapper(const s_task_function_context &context) {" NEWLINE_STR;
+			out << "static void " << library.name << "_" << task_function.function << "_"
+				<< task_function.voice_initializer
+				<< "_call_wrapper(const s_task_function_context &context) {" NEWLINE_STR;
 
 			size_t call_index;
 			for (call_index = 0; call_index < result->get_task_voice_initializer_count(); call_index++) {
@@ -175,8 +182,8 @@ bool generate_task_function_registration(
 		}
 
 		{
-			out << "static void " << library.name << "_" << task_function.function <<
-				"_call_wrapper(const s_task_function_context &context) {" NEWLINE_STR;
+			out << "static void " << library.name << "_" << task_function.function
+				<< "_call_wrapper(const s_task_function_context &context) {" NEWLINE_STR;
 
 			out << TAB_STR << task_function.function_call << "(" NEWLINE_STR;
 			write_task_arguments(out, mapping, mapping.task_function_argument_indices);
@@ -282,46 +289,48 @@ bool generate_task_function_registration(
 		out << TAB_STR "{" NEWLINE_STR;
 		out << TAB2_STR "s_task_function task_function;" NEWLINE_STR;
 		out << TAB2_STR "zero_type(&task_function);" NEWLINE_STR;
-		out << TAB2_STR "task_function.uid = s_task_function_uid::build(" <<
-			id_to_string(library.id) << ", " << id_to_string(task_function.id) << ");" NEWLINE_STR;
+		out << TAB2_STR "task_function.uid = s_task_function_uid::build("
+			<< id_to_string(library.id) << ", " << id_to_string(task_function.id) << ");" NEWLINE_STR;
 		out << TAB2_STR "task_function.name.set_verify(\"" << task_function.name << "\");" NEWLINE_STR;
 
 		if (!task_function.memory_query.empty()) {
-			out << TAB2_STR "task_function.memory_query = " << library.name << "_" <<
-				task_function.function << "_" << task_function.memory_query << "_call_wrapper;" NEWLINE_STR;
+			out << TAB2_STR "task_function.memory_query = " << library.name << "_"
+				<< task_function.function << "_" << task_function.memory_query << "_call_wrapper;" NEWLINE_STR;
 		}
 
 		if (!task_function.initializer.empty()) {
-			out << TAB2_STR "task_function.initializer = " << library.name << "_" <<
-				task_function.function << "_" << task_function.initializer << "_call_wrapper;" NEWLINE_STR;
+			out << TAB2_STR "task_function.initializer = " << library.name << "_"
+				<< task_function.function << "_" << task_function.initializer << "_call_wrapper;" NEWLINE_STR;
 		}
 
 		if (!task_function.voice_initializer.empty()) {
-			out << TAB2_STR "task_function.voice_initializer = " << library.name << "_" <<
-				task_function.function << "_" << task_function.voice_initializer << "_call_wrapper;" NEWLINE_STR;
+			out << TAB2_STR "task_function.voice_initializer = " << library.name << "_"
+				<< task_function.function << "_" << task_function.voice_initializer << "_call_wrapper;" NEWLINE_STR;
 		}
 
-		out << TAB2_STR "task_function.function = " << library.name << "_" <<
-			task_function.function << "_call_wrapper;" NEWLINE_STR;
+		out << TAB2_STR "task_function.function = " << library.name << "_"
+			<< task_function.function << "_call_wrapper;" NEWLINE_STR;
 
-		out << TAB2_STR "task_function.argument_count = " <<
-			task_mapping.task_arguments.size() << ";" NEWLINE_STR;
+		out << TAB2_STR "task_function.argument_count = " << task_mapping.task_arguments.size() << ";" NEWLINE_STR;
 
 		for (size_t arg = 0; arg < task_mapping.task_arguments.size(); arg++) {
 			const s_task_argument_mapping &argument_mapping = task_mapping.task_arguments[arg];
-			e_task_primitive_type primitive_type = argument_mapping.type.get_data_type().get_primitive_type();
-			e_task_qualifier qualifier = argument_mapping.type.get_qualifier();
-			out << TAB2_STR "task_function.argument_types[" << arg <<
-				"] = c_task_qualified_data_type(c_task_data_type(" <<
-				k_task_primitive_type_enum_strings[enum_index(primitive_type)] <<
-				", " << k_bool_strings[argument_mapping.type.get_data_type().is_array()] << "), " <<
-				k_task_qualifier_enum_strings[enum_index(qualifier)] << ");" NEWLINE_STR;
-			out << TAB2_STR "task_function.arguments_unshared[" << arg <<
-				"] = " << (argument_mapping.is_unshared ? "true" : "false") << ";" NEWLINE_STR;
+			e_task_argument_direction argument_direction = argument_mapping.argument_direction;
+			e_task_primitive_type primitive_type = argument_mapping.type.get_primitive_type();
+			e_task_data_mutability data_mutability = argument_mapping.type.get_data_mutability();
+			out << TAB2_STR "task_function.arguments[" << arg << "] = {" NEWLINE_STR;
+			out << TAB3_STR << k_task_argument_direction_enum_strings[enum_index(argument_direction)]
+				<< "," NEWLINE_STR;
+			out << TAB3_STR "c_task_qualified_data_type(c_task_data_type("
+				<< k_task_primitive_type_enum_strings[enum_index(primitive_type)]
+				<< ", " << k_bool_strings[argument_mapping.type.is_array()] << "), "
+				<< k_task_data_mutability_enum_strings[enum_index(data_mutability)] << ")," NEWLINE_STR;
+			out << TAB3_STR << k_bool_strings[argument_mapping.is_unshared] << NEWLINE_STR;
+			out << TAB2_STR << "};" NEWLINE_STR;
 		}
 
-		out << TAB2_STR "task_function.native_module_uid = s_native_module_uid::build(" <<
-			id_to_string(library.id) << ", " << id_to_string(native_module.id) << ");" NEWLINE_STR;
+		out << TAB2_STR "task_function.native_module_uid = s_native_module_uid::build("
+			<< id_to_string(library.id) << ", " << id_to_string(native_module.id) << ");" NEWLINE_STR;
 
 		std::vector<size_t> native_module_task_function_argument_indices(
 			native_module.arguments.size(),
@@ -380,8 +389,8 @@ static bool generate_task_function_mapping(
 	}
 
 	if (!native_module) {
-		std::cerr << "Failed to find source native module '" << task_function.native_module_source <<
-			"' for task function '" << task_function.name << "'\n";
+		std::cerr << "Failed to find source native module '" << task_function.native_module_source
+			<< "' for task function '" << task_function.name << "'\n";
 		return false;
 	}
 
@@ -399,8 +408,8 @@ static bool generate_task_function_mapping(
 		}
 
 		if (!task_memory_query) {
-			std::cerr << "Failed to find task memory query '" << task_function.memory_query <<
-				"' for task function '" << task_function.memory_query << "'\n";
+			std::cerr << "Failed to find task memory query '" << task_function.memory_query
+				<< "' for task function '" << task_function.memory_query << "'\n";
 			return false;
 		}
 	}
@@ -414,8 +423,8 @@ static bool generate_task_function_mapping(
 		}
 
 		if (!task_initializer) {
-			std::cerr << "Failed to find task initializer '" << task_function.initializer <<
-				"' for task function '" << task_function.initializer << "'\n";
+			std::cerr << "Failed to find task initializer '" << task_function.initializer
+				<< "' for task function '" << task_function.initializer << "'\n";
 			return false;
 		}
 	}
@@ -429,8 +438,8 @@ static bool generate_task_function_mapping(
 		}
 
 		if (!task_voice_initializer) {
-			std::cerr << "Failed to find task voice initializer '" << task_function.voice_initializer <<
-				"' for task function '" << task_function.voice_initializer << "'\n";
+			std::cerr << "Failed to find task voice initializer '" << task_function.voice_initializer
+				<< "' for task function '" << task_function.voice_initializer << "'\n";
 			return false;
 		}
 	}
@@ -513,9 +522,10 @@ static bool map_native_module_arguments_to_task_arguments(
 			wl_assert(!argument_mapping.source.empty());
 
 			if (argument.source == argument_mapping.source) {
-				if (argument.type != argument_mapping.type) {
-					std::cerr << "Argument '" << argument.name << "' of " << function_type << " '" << function_name <<
-						"' doesn't match existing task argument\n";
+				if (argument.argument_direction != argument_mapping.argument_direction
+					|| argument.type != argument_mapping.type) {
+					std::cerr << "Argument '" << argument.name << "' of " << function_type << " '" << function_name
+						<< "' doesn't match existing task argument\n";
 					return false;
 				}
 
@@ -545,6 +555,7 @@ static bool map_native_module_arguments_to_task_arguments(
 				argument_mapping.source_index = k_invalid_native_module_argument_index;
 			}
 
+			argument_mapping.argument_direction = argument.argument_direction;
 			argument_mapping.type = argument.type;
 			argument_mapping.is_unshared = false;
 
@@ -561,9 +572,9 @@ static bool map_native_module_arguments_to_task_arguments(
 		// Make sure the source native module arguments haven't already been referenced by this function
 		if (!argument_mapping.source.empty()) {
 			if (native_module_argument_usage[argument_mapping.source_index]) {
-				std::cerr << "Native module '" << native_module.identifier << "' argument '" <<
-					argument_mapping.source << "' cannot be referenced by multiple " <<
-					function_type << " arguments in '" << function_name << "'\n";
+				std::cerr << "Native module '" << native_module.identifier << "' argument '"
+					<< argument_mapping.source << "' cannot be referenced by multiple "
+					<< function_type << " arguments in '" << function_name << "'\n";
 			} else {
 				native_module_argument_usage[argument_mapping.source_index] = true;
 			}
@@ -597,44 +608,62 @@ static bool is_task_argument_compatible_with_native_module_argument(
 		e_task_primitive_type::k_bool,	// e_native_module_primitive_type::k_bool
 		e_task_primitive_type::k_string	// e_native_module_primitive_type::k_string
 	};
-	static_assert(array_count(k_task_primitive_types_from_native_module_primitive_types) ==
-		enum_count<e_native_module_primitive_type>(),
-		"Native module/task primitive type mismatch");
+	STATIC_ASSERT(
+		is_enum_fully_mapped<e_native_module_primitive_type>(
+			k_task_primitive_types_from_native_module_primitive_types));
 
-	// Check to see if the types themselves are compatible
-	e_native_module_primitive_type primitive_type = native_module_argument.type.get_data_type().get_primitive_type();
-	c_task_data_type task_data_type_from_native_module_data_type = c_task_data_type(
-		k_task_primitive_types_from_native_module_primitive_types[enum_index(primitive_type)],
-		native_module_argument.type.get_data_type().is_array());
-	if (task_data_type_from_native_module_data_type != task_argument.type.get_data_type()) {
-		std::cerr << "Native module '" << native_module_name << "' argument '" << native_module_argument.name <<
-			"' type is incompatible with task '" << task_function_name << "' argument '" << task_argument.name <<
-			"' type\n";
+	// Make sure argument direction matches
+	bool argument_direction_matches;
+	if (native_module_argument.argument_direction == e_native_module_argument_direction::k_in) {
+		argument_direction_matches = (task_argument.argument_direction == e_task_argument_direction::k_in);
+	} else {
+		wl_assert(native_module_argument.argument_direction == e_native_module_argument_direction::k_out);
+		argument_direction_matches = (task_argument.argument_direction == e_task_argument_direction::k_out);
+	}
+
+	if (!argument_direction_matches) {
+		std::cerr << "Native module '" << native_module_name << "' argument '" << native_module_argument.name
+			<< "' direction is incompatible with task '" << task_function_name << "' argument '" << task_argument.name
+			<< "' direction\n";
 		return false;
 	}
 
-	// Check whether qualifiers are compatible
-	e_native_module_qualifier native_module_qualifier = native_module_argument.type.get_qualifier();
-	e_task_qualifier task_qualifier = task_argument.type.get_qualifier();
+	// Check to see if the types themselves are compatible
+	e_native_module_primitive_type primitive_type = native_module_argument.type.get_primitive_type();
+	c_task_data_type task_data_type_from_native_module_data_type = c_task_data_type(
+		k_task_primitive_types_from_native_module_primitive_types[enum_index(primitive_type)],
+		native_module_argument.type.is_array());
+	if (task_data_type_from_native_module_data_type != task_argument.type.get_data_type()) {
+		std::cerr << "Native module '" << native_module_name << "' argument '" << native_module_argument.name
+			<< "' type is incompatible with task '" << task_function_name << "' argument '" << task_argument.name
+			<< "' type\n";
+		return false;
+	}
+
+	// Check whether data mutabilities are compatible
+	e_native_module_data_mutability native_module_data_mutability = native_module_argument.type.get_data_mutability();
+	e_task_data_mutability task_data_mutability = task_argument.type.get_data_mutability();
 	bool compatible = false;
-	switch (native_module_qualifier) {
-	case e_native_module_qualifier::k_in:
-		compatible = (task_qualifier == e_task_qualifier::k_in);
+	switch (native_module_data_mutability) {
+	case e_native_module_data_mutability::k_variable:
+		compatible = (task_data_mutability == e_task_data_mutability::k_variable);
 		break;
 
-	case e_native_module_qualifier::k_out:
-		compatible = (task_qualifier == e_task_qualifier::k_out);
+	case e_native_module_data_mutability::k_constant:
+		// Native module constants can be mapped to either task constants or task buffers
+		compatible = true;
 		break;
 
-	case e_native_module_qualifier::k_constant:
-		compatible = (task_qualifier == e_task_qualifier::k_in) || (task_qualifier == e_task_qualifier::k_constant);
+	case e_native_module_data_mutability::k_dependent_constant:
+		// Dependent-constants will never be constant if they make it to task functions
+		compatible = (task_data_mutability == e_task_data_mutability::k_variable);
 		break;
 	}
 
 	if (!compatible) {
-		std::cerr << "Native module '" << native_module_name << "' argument '" << native_module_argument.name <<
-			"' qualifier is incompatible with task '" << task_function_name << "' argument '" << task_argument.name <<
-			"' qualifier\n";
+		std::cerr << "Native module '" << native_module_name << "' argument '" << native_module_argument.name
+			<< "' data mutability is incompatible with task '" << task_function_name << "' argument '"
+			<< task_argument.name << "' data mutability\n";
 		return false;
 	}
 
@@ -651,22 +680,18 @@ static void write_task_arguments(
 	for (size_t arg = 0; arg < argument_indices.size(); arg++) {
 		size_t task_argument_index = argument_indices[arg];
 		const s_task_argument_mapping &argument_mapping = mapping.task_arguments[task_argument_index];
-		e_task_primitive_type primitive_type = argument_mapping.type.get_data_type().get_primitive_type();
+		e_task_primitive_type primitive_type = argument_mapping.type.get_primitive_type();
 
-		out << TAB2_STR "context.arguments[" << task_argument_index << "].get_" <<
-			k_task_primitive_type_getter_names[enum_index(primitive_type)];
+		out << TAB2_STR "context.arguments[" << task_argument_index << "].get_"
+			<< k_task_primitive_type_strings[enum_index(primitive_type)];
 
-		if (argument_mapping.type.get_qualifier() == e_task_qualifier::k_constant) {
-			out << "_constant";
-		} else {
-			out << "_buffer";
-		}
+		out << "_" << k_task_data_mutability_strings[enum_index(argument_mapping.type.get_data_mutability())];
 
-		if (argument_mapping.type.get_data_type().is_array()) {
+		if (argument_mapping.type.is_array()) {
 			out << "_array";
 		}
 
-		out << k_task_qualifier_getter_names[enum_index(argument_mapping.type.get_qualifier())];
+		out << "_" << k_task_argument_direction_strings[enum_index(argument_mapping.argument_direction)];
 
 		out << "()" << ((arg + 1 == argument_indices.size()) ? ");" : ",") << NEWLINE_STR;
 	}

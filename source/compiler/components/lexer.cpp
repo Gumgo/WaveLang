@@ -251,7 +251,7 @@ bool c_lexer::process(c_compiler_context &context, h_compiler_source_file source
 	bool result = true;
 	s_compiler_source_file &source_file = context.get_source_file(source_file_handle);
 	c_lexer_location location(
-		std::string_view(source_file.source.empty() ? nullptr : &source_file.source.front(), source_file.source.size()),
+		std::string_view(source_file.source.data(), source_file.source.size()),
 		source_file_handle);
 
 	size_t invalid_token_count = 0;

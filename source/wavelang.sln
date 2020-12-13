@@ -23,6 +23,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "unit_tests", "unit_tests\un
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "parser_generator", "parser_generator\parser_generator.vcxproj", "{56BF9147-8AE9-43E8-A5E0-00E2898F32B7}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "native_module", "native_module\native_module.vcxproj", "{1759D96C-FD5A-48BC-8CA0-086A91A53602}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "task_function", "task_function\task_function.vcxproj", "{02D68D40-F93C-44EC-9A39-CE35B8D23E91}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		debug|x64 = debug|x64
@@ -123,6 +127,24 @@ Global
 		{56BF9147-8AE9-43E8-A5E0-00E2898F32B7}.release|x64.ActiveCfg = release|x64
 		{56BF9147-8AE9-43E8-A5E0-00E2898F32B7}.release|x64.Build.0 = release|x64
 		{56BF9147-8AE9-43E8-A5E0-00E2898F32B7}.release|x86.ActiveCfg = release|x64
+		{1759D96C-FD5A-48BC-8CA0-086A91A53602}.debug|x64.ActiveCfg = Debug|x64
+		{1759D96C-FD5A-48BC-8CA0-086A91A53602}.debug|x64.Build.0 = Debug|x64
+		{1759D96C-FD5A-48BC-8CA0-086A91A53602}.debug|x86.ActiveCfg = Debug|x64
+		{1759D96C-FD5A-48BC-8CA0-086A91A53602}.development|x64.ActiveCfg = Debug|x64
+		{1759D96C-FD5A-48BC-8CA0-086A91A53602}.development|x64.Build.0 = Debug|x64
+		{1759D96C-FD5A-48BC-8CA0-086A91A53602}.development|x86.ActiveCfg = development|x64
+		{1759D96C-FD5A-48BC-8CA0-086A91A53602}.release|x64.ActiveCfg = Release|x64
+		{1759D96C-FD5A-48BC-8CA0-086A91A53602}.release|x64.Build.0 = Release|x64
+		{1759D96C-FD5A-48BC-8CA0-086A91A53602}.release|x86.ActiveCfg = Release|x64
+		{02D68D40-F93C-44EC-9A39-CE35B8D23E91}.debug|x64.ActiveCfg = Debug|x64
+		{02D68D40-F93C-44EC-9A39-CE35B8D23E91}.debug|x64.Build.0 = Debug|x64
+		{02D68D40-F93C-44EC-9A39-CE35B8D23E91}.debug|x86.ActiveCfg = Debug|x64
+		{02D68D40-F93C-44EC-9A39-CE35B8D23E91}.development|x64.ActiveCfg = Debug|x64
+		{02D68D40-F93C-44EC-9A39-CE35B8D23E91}.development|x64.Build.0 = Debug|x64
+		{02D68D40-F93C-44EC-9A39-CE35B8D23E91}.development|x86.ActiveCfg = development|x64
+		{02D68D40-F93C-44EC-9A39-CE35B8D23E91}.release|x64.ActiveCfg = Release|x64
+		{02D68D40-F93C-44EC-9A39-CE35B8D23E91}.release|x64.Build.0 = Release|x64
+		{02D68D40-F93C-44EC-9A39-CE35B8D23E91}.release|x86.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

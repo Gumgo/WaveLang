@@ -37,13 +37,13 @@ struct alignas(16) s_thread_parameter_block {
 
 	template<typename t_memory>
 	t_memory *get_memory_typed() {
-		static_assert(sizeof(t_memory) <= sizeof(memory), "Parameter block too small");
+		STATIC_ASSERT(sizeof(t_memory) <= sizeof(memory));
 		return reinterpret_cast<t_memory *>(memory);
 	}
 
 	template<typename t_memory>
 	const t_memory *get_memory_typed() const {
-		static_assert(sizeof(t_memory) <= sizeof(memory), "Parameter block too small");
+		STATIC_ASSERT(sizeof(t_memory) <= sizeof(memory));
 		return reinterpret_cast<const t_memory *>(memory);
 	}
 };

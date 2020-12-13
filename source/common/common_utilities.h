@@ -136,7 +136,7 @@ bool test_bit(t_storage storage, t_bit bit) {
 
 template<typename t_to, typename t_from>
 t_to reinterpret_bits(t_from from) {
-	static_assert(sizeof(t_to) == sizeof(t_from), "Can't reinterpret_bits for types of different sizes");
+	STATIC_ASSERT_MSG(sizeof(t_to) == sizeof(t_from), "Can't reinterpret_bits for types of different sizes");
 
 	// This SHOULD get optimized...
 	t_to to;

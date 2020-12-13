@@ -393,13 +393,12 @@ static c_ast_node_module_declaration *create_module_declaration_for_native_modul
 			new c_ast_node_module_declaration_argument();
 
 		e_ast_argument_direction argument_direction = e_ast_argument_direction::k_invalid;
-		switch (argument.type.get_qualifier()) {
-		case e_native_module_qualifier::k_in:
-		case e_native_module_qualifier::k_constant:
+		switch (argument.argument_direction) {
+		case e_native_module_argument_direction::k_in:
 			argument_direction = e_ast_argument_direction::k_in;
 			break;
 
-		case e_native_module_qualifier::k_out:
+		case e_native_module_argument_direction::k_out:
 			argument_direction = e_ast_argument_direction::k_out;
 			break;
 
@@ -435,7 +434,7 @@ static c_ast_qualified_data_type ast_data_type_from_native_module_data_type(
 	c_native_module_qualified_data_type native_module_data_type,
 	bool is_runtime_only) {
 	e_ast_primitive_type ast_primitive_type = e_ast_primitive_type::k_invalid;
-	switch (native_module_data_type.get_data_type().get_primitive_type()) {
+	switch (native_module_data_type.get_primitive_type()) {
 	case e_native_module_primitive_type::k_real:
 		ast_primitive_type = e_ast_primitive_type::k_real;
 		break;
@@ -453,23 +452,17 @@ static c_ast_qualified_data_type ast_data_type_from_native_module_data_type(
 	}
 
 	e_ast_data_mutability ast_data_mutability = e_ast_data_mutability::k_invalid;
-	switch (native_module_data_type.get_qualifier()) {
-	case e_native_module_qualifier::k_in:
+	switch (native_module_data_type.get_data_mutability()) {
+	case e_native_module_data_mutability::k_variable:
 		ast_data_mutability = e_ast_data_mutability::k_variable;
 		break;
 
-	case e_native_module_qualifier::k_out:
-		// If this module has a compile-time call, it means that providing constants for all inputs will cause all
-		// outputs to be constant as well, so the output type is dependent-constant.
-		// $TODO $COMPILER I think the definition of constant arrays may be wrong here, we should revisit this. The
-		// problem is that non-runtime-only modules can still accept non-constant arrays.
-		ast_data_mutability = is_runtime_only
-			? e_ast_data_mutability::k_variable
-			: e_ast_data_mutability::k_dependent_constant;
+	case e_native_module_data_mutability::k_constant:
+		ast_data_mutability = e_ast_data_mutability::k_constant;
 		break;
 
-	case e_native_module_qualifier::k_constant:
-		ast_data_mutability = e_ast_data_mutability::k_constant;
+	case e_native_module_data_mutability::k_dependent_constant:
+		ast_data_mutability = e_ast_data_mutability::k_dependent_constant;
 		break;
 
 	default:
@@ -477,6 +470,6 @@ static c_ast_qualified_data_type ast_data_type_from_native_module_data_type(
 	}
 
 	return c_ast_qualified_data_type(
-		c_ast_data_type(ast_primitive_type, native_module_data_type.get_data_type().is_array()),
+		c_ast_data_type(ast_primitive_type, native_module_data_type.is_array()),
 		ast_data_mutability);
 }

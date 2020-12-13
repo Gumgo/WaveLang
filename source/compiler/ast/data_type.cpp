@@ -9,7 +9,7 @@ static constexpr const s_ast_primitive_type_traits k_primitive_type_traits[] = {
 	{ "bool",			true,	true,	true	},	// k_bool
 	{ "string",			true,	true,	true	}	// k_string
 };
-static_assert(array_count(k_primitive_type_traits) == enum_count<e_ast_primitive_type>());
+STATIC_ASSERT(is_enum_fully_mapped<e_ast_primitive_type>(k_primitive_type_traits));
 
 // Note: for k_error, the traits indicate that everything is allowed. This is so that error types pass easily though
 // test to avoid display of further errors (we only want to display an error once when an invalid type is detected, we

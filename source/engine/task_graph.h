@@ -3,10 +3,10 @@
 #include "common/common.h"
 #include "common/utility/string_table.h"
 
-#include "engine/task_function.h"
-
 #include "execution_graph/instrument_stage.h"
 #include "execution_graph/node_reference.h"
+
+#include "task_function/task_function.h"
 
 #include <map>
 #include <vector>
@@ -19,16 +19,17 @@ using c_task_graph_task_array = c_wrapped_array<const uint32>;
 // Iterates through all non-constant buffers associated with a task
 class c_task_buffer_iterator {
 public:
-	c_task_buffer_iterator(c_task_function_arguments arguments);
+	c_task_buffer_iterator(c_task_function_runtime_arguments arguments);
 	bool is_valid() const;
 	void next();
 	c_buffer *get_buffer() const;
+	e_task_argument_direction get_argument_direction() const;
 	c_task_qualified_data_type get_buffer_type() const;
 
 protected:
 	static constexpr size_t k_invalid_index = static_cast<size_t>(-1);
 
-	c_task_function_arguments m_arguments;
+	c_task_function_runtime_arguments m_arguments;
 	size_t m_argument_index;
 	size_t m_array_index;
 };
@@ -49,7 +50,7 @@ public:
 	uint32 get_max_task_concurrency() const;
 
 	uint32 get_task_function_index(uint32 task_index) const;
-	c_task_function_arguments get_task_arguments(uint32 task_index) const;
+	c_task_function_runtime_arguments get_task_arguments(uint32 task_index) const;
 
 	size_t get_task_predecessor_count(uint32 task_index) const;
 	c_task_graph_task_array get_task_successors(uint32 task_index) const;
@@ -145,7 +146,7 @@ private:
 	uint32 estimate_max_concurrency(uint32 node_count, const std::vector<bool> &concurrency_matrix) const;
 
 	std::vector<s_task> m_tasks;
-	std::vector<s_task_function_argument> m_task_function_arguments;
+	std::vector<s_task_function_runtime_argument> m_task_function_arguments;
 
 	// List of all buffers
 	std::vector<c_buffer> m_buffers;
@@ -172,8 +173,8 @@ private:
 	std::vector<const char *> m_string_constant_arrays;
 
 	// Make sure we can use char in place of bool for our constant array backing storage
-	static_assert(sizeof(bool) == sizeof(char), "Size mismatch between char and bool");
-	static_assert(alignof(bool) == alignof(char), "Alignment mismatch between char and bool");
+	STATIC_ASSERT(sizeof(bool) == sizeof(char));
+	STATIC_ASSERT(alignof(bool) == alignof(char));
 
 	// Stores string constants in an efficient way
 	c_string_table m_string_table;

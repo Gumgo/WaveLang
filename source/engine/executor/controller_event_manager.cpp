@@ -20,7 +20,7 @@ void c_controller_event_manager::shutdown() {
 }
 
 c_wrapped_array<s_timestamped_controller_event> c_controller_event_manager::get_writable_controller_events() {
-	return c_wrapped_array<s_timestamped_controller_event>(&m_controller_events.front(), m_controller_events.size());
+	return c_wrapped_array<s_timestamped_controller_event>(m_controller_events);
 }
 
 void c_controller_event_manager::process_controller_events(size_t controller_event_count) {
@@ -64,8 +64,8 @@ void c_controller_event_manager::process_controller_events(size_t controller_eve
 	};
 
 	merge_sort(
-		c_wrapped_array<s_timestamped_controller_event>(&m_controller_events.front(), controller_event_count),
-		c_wrapped_array<s_timestamped_controller_event>(&m_sort_scratch_buffer.front(), controller_event_count),
+		c_wrapped_array<s_timestamped_controller_event>(m_controller_events.data(), controller_event_count),
+		c_wrapped_array<s_timestamped_controller_event>(m_sort_scratch_buffer.data(), controller_event_count),
 		s_controller_event_comparator());
 
 	// Form groups of note events
@@ -82,7 +82,8 @@ void c_controller_event_manager::process_controller_events(size_t controller_eve
 		if (controller_event.controller_event.event_type == e_controller_event_type::k_note_on
 			|| controller_event.controller_event.event_type == e_controller_event_type::k_note_off) {
 			m_note_events = c_wrapped_array<const s_timestamped_controller_event>(
-				&m_controller_events.front(), m_note_events.get_count() + 1);
+				m_controller_events.data(),
+				m_note_events.get_count() + 1);
 		} else {
 			wl_assert(controller_event.controller_event.event_type == e_controller_event_type::k_parameter_change);
 

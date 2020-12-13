@@ -133,7 +133,7 @@ static bool load_wav(const char *filename, s_loaded_sample &loaded_sample_out) {
 	}
 
 	std::vector<uint8> raw_data(data_subchunk.subchunk_2_size);
-	file.read(reinterpret_cast<char *>(&raw_data.front()), raw_data.size());
+	file.read(reinterpret_cast<char *>(raw_data.data()), raw_data.size());
 	if (file.fail()) {
 		return false;
 	}
@@ -165,7 +165,7 @@ static bool load_wav(const char *filename, s_loaded_sample &loaded_sample_out) {
 			for (uint32 channel = 0; channel < fmt_subchunk.num_channels; channel++) {
 				size_t index = frame * fmt_subchunk.num_channels + channel;
 				// map [-32768,32767] to [-1,1]
-				int16 integer_value = reinterpret_cast<const int16 *>(&raw_data.front())[index];
+				int16 integer_value = reinterpret_cast<const int16 *>(raw_data.data())[index];
 				real32 value = (static_cast<real32>(integer_value) + 0.5f) * (1.0f / 32767.5f);
 				loaded_sample_out.samples[channel * frames + frame] = value;
 			}

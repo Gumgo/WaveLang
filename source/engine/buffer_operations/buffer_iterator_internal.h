@@ -59,7 +59,7 @@ namespace buffer_iterator_internal {
 			size_t count,
 			bool all_constant,
 			t_iterators &&iterators) {
-		static_assert(std::tuple_size_v<std::remove_reference_t<t_iterators>> > 0, "No iterators provided");
+		STATIC_ASSERT_MSG(std::tuple_size_v<std::remove_reference_t<t_iterators>> > 0, "No iterators provided");
 
 		// Determine whether we'll have trailing unaligned samples at the end
 		constexpr bool k_has_last_iteration_function = !std::is_same_v<t_last_iteration_function, std::nullptr_t>;
@@ -220,7 +220,7 @@ namespace buffer_iterator_internal {
 				std::make_tuple(),
 				std::get<k_buffers_sequence>(std::move(args))...);
 		} else {
-			static_assert(sizeof...(k_function_sequence) == 2, "Unexpected number of functions provided");
+			STATIC_ASSERT_MSG(sizeof...(k_function_sequence) == 2, "Unexpected number of functions provided");
 			// Note: it's safe to call std::move twice on args because it only "moves" the provided indices
 			return iterate_buffers_internal<k_stride, k_cico>(
 				std::get<k_function_sequence>(std::move(args))...,
@@ -247,9 +247,10 @@ namespace buffer_iterator_internal {
 
 		// All but the last argument or the last two arguments should be buffers
 		constexpr size_t k_args_count = std::tuple_size<decltype(k_args_are_buffers)>::value;
-		static_assert(k_args_count >= 1 && !std::get<k_args_count - 1>(k_args_are_buffers), "No function provided");
+		STATIC_ASSERT_MSG(k_args_count >= 1 && !std::get<k_args_count - 1>(k_args_are_buffers), "No function provided");
 
-		constexpr bool k_has_last_iteration_function = k_args_count >= 2 && !std::get<k_args_count - 2>(k_args_are_buffers);
+		constexpr bool k_has_last_iteration_function =
+			k_args_count >= 2 && !std::get<k_args_count - 2>(k_args_are_buffers);
 		constexpr size_t k_function_count = k_has_last_iteration_function ? 2 : 1;
 
 		if constexpr (k_function_count == 1) {
@@ -259,7 +260,7 @@ namespace buffer_iterator_internal {
 				std::make_index_sequence<k_args_count - 1>(),
 				std::forward_as_tuple(std::forward<t_args>(args)...));
 		} else {
-			static_assert(k_function_count == 2, "Unexpected number of functions provided");
+			STATIC_ASSERT_MSG(k_function_count == 2, "Unexpected number of functions provided");
 			return move_buffers_to_end_2<k_stride, k_cico>(
 				count,
 				std::index_sequence<k_args_count - 2, k_args_count - 1>(),

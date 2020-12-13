@@ -235,8 +235,8 @@ void c_visitor_class_generator::output_instantiate_or_deinstantiate_contexts(
 			// it will have already gotten [de]instantiated when we instantiate children
 			const char *emplace_type = enter ? argument.context_type.c_str() : "s_no_context_value";
 			file << "\t\tif (is_root_node) {\n";
-			file << "\t\t\tm_node_contexts[node_index].emplace<" <<
-				emplace_type << ">(construct_context<" << emplace_type << ">());\n";
+			file << "\t\t\tm_node_contexts[node_index].emplace<"
+				<< emplace_type << ">(construct_context<" << emplace_type << ">());\n";
 			file << "\t\t}\n";
 			break;
 		}

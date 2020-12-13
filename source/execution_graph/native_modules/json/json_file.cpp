@@ -24,7 +24,7 @@ s_json_result c_json_file::load(const char *filename) {
 	file_buffer.back() = '\0';
 
 	s_buffer_with_offset buffer_with_offset;
-	buffer_with_offset.buffer = &file_buffer.front();
+	buffer_with_offset.buffer = file_buffer.data();
 	buffer_with_offset.offset = 0;
 	buffer_with_offset.initialize_file_offset();
 

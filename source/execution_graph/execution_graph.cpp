@@ -14,6 +14,17 @@
 #define SALT_ARG(salt)
 #endif // IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
 
+struct s_native_module_data_type_format {
+	union {
+		uint32 data;
+
+		struct {
+			uint16 primitive_type;
+			uint16 is_array;
+		};
+	};
+};
+
 static std::string format_real_for_graph_output(real32 value) {
 	std::string str = std::to_string(value);
 
@@ -35,6 +46,33 @@ static std::string format_real_for_graph_output(real32 value) {
 
 static e_instrument_result invalid_graph_or_read_failure(const std::ifstream &in) {
 	return in.eof() ? e_instrument_result::k_invalid_graph : e_instrument_result::k_failed_to_read;
+}
+
+static uint32 write_data_type(const c_native_module_data_type &data_type) {
+	wl_assert(data_type.is_valid()); // Invalid type is only used as a sentinel in a few spots, should never write it
+	s_native_module_data_type_format format;
+	format.primitive_type = static_cast<uint16>(data_type.get_primitive_type());
+	format.is_array = static_cast<uint16>(data_type.is_array());
+	return format.data;
+}
+
+static bool read_data_type(uint32 data, c_native_module_data_type &data_type_out) {
+	s_native_module_data_type_format format;
+	format.data = data;
+
+	if (!valid_index(format.primitive_type, enum_count<e_native_module_primitive_type>())) {
+		return false;
+	}
+
+	// This is checking for out-of-range flags
+	if (format.is_array >= 2) {
+		return false;
+	}
+
+	data_type_out = c_native_module_data_type(
+		static_cast<e_native_module_primitive_type>(format.primitive_type),
+		(format.is_array != 0));
+	return true;
 }
 
 c_execution_graph::c_execution_graph() {}
@@ -74,7 +112,7 @@ e_instrument_result c_execution_graph::save(std::ofstream &out) const {
 		switch (node.type) {
 		case e_execution_graph_node_type::k_constant:
 		{
-			writer.write(node.node_data.constant.type.write());
+			writer.write(write_data_type(node.node_data.constant.type));
 			if (node.node_data.constant.type.is_array()) {
 				// No additional data
 			} else {
@@ -205,7 +243,7 @@ e_instrument_result c_execution_graph::load(std::ifstream &in) {
 				return invalid_graph_or_read_failure(in);
 			}
 
-			if (!node.node_data.constant.type.read(type_data)) {
+			if (!read_data_type(type_data, node.node_data.constant.type)) {
 				return e_instrument_result::k_invalid_graph;
 			}
 
@@ -580,9 +618,8 @@ void c_execution_graph::add_constant_array_value(
 	// Will assert if this is not an array type
 	c_native_module_data_type element_type = constant_array_node.node_data.constant.type.get_element_type();
 
-	c_native_module_data_type value_node_type;
-	bool obtained_type = get_type_from_node(value_node_reference, value_node_type);
-	wl_assert(obtained_type);
+	c_native_module_data_type value_node_type = get_node_data_type(value_node_reference);
+	wl_assert(value_node_type.is_valid());
 	wl_assert(element_type == value_node_type);
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
@@ -605,9 +642,8 @@ c_node_reference c_execution_graph::set_constant_array_value_at_index(
 	// Will assert if this is not an array type
 	c_native_module_data_type element_type = constant_array_node.node_data.constant.type.get_element_type();
 
-	c_native_module_data_type value_node_type;
-	bool obtained_type = get_type_from_node(value_node_reference, value_node_type);
-	wl_assert(obtained_type);
+	c_native_module_data_type value_node_type = get_node_data_type(value_node_reference);
+	wl_assert(value_node_type.is_valid());
 	wl_assert(element_type == value_node_type);
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
@@ -635,11 +671,11 @@ c_node_reference c_execution_graph::add_native_module_call_node(h_native_module 
 		s_native_module_argument argument = native_module.arguments[arg];
 		c_node_reference argument_node_reference = allocate_node();
 		s_node &argument_node = get_node(argument_node_reference);
-		if (native_module_qualifier_is_input(argument.type.get_qualifier())) {
+		if (argument.argument_direction == e_native_module_argument_direction::k_in) {
 			argument_node.type = e_execution_graph_node_type::k_indexed_input;
 			add_edge_internal(argument_node_reference, node_reference);
 		} else {
-			wl_assert(argument.type.get_qualifier() == e_native_module_qualifier::k_out);
+			wl_assert(argument.argument_direction == e_native_module_argument_direction::k_out);
 			argument_node.type = e_execution_graph_node_type::k_indexed_output;
 			add_edge_internal(node_reference, argument_node_reference);
 		}
@@ -859,6 +895,10 @@ bool c_execution_graph::validate_node(c_node_reference node_reference) const {
 
 	case e_execution_graph_node_type::k_native_module_call:
 	{
+		// $TODO $COMPILER use get_native_module_compile_time_properties() to could validate whether this native module
+		// is allowed to be in the graph. It isn't allowed if "always_runs_at_compile_time_out" is true or if
+		// "always_runs_at_compile_time_if_dependent_constants_are_constant_out" is true and all dependent constants
+		// inputs are constant. We probably need to do this very last, after all edges and nodes have been validated.
 		if (!valid_index(node.node_data.native_module_call.native_module_handle.get_data(), 
 			c_native_module_registry::get_native_module_count())) {
 			return false;
@@ -961,14 +1001,9 @@ bool c_execution_graph::validate_edge(c_node_reference from_reference, c_node_re
 	}
 
 	if (check_type) {
-		c_native_module_data_type from_type;
-		c_native_module_data_type to_type;
-		if (!get_type_from_node(from_reference, from_type)
-			|| !get_type_from_node(to_reference, to_type)) {
-			return false;
-		}
-
-		if (from_type != to_type) {
+		c_native_module_data_type from_type = get_node_data_type(from_reference);
+		c_native_module_data_type to_type = get_node_data_type(to_reference);
+		if (!from_type.is_valid() || !to_type.is_valid() || from_type != to_type) {
 			return false;
 		}
 	}
@@ -992,15 +1027,15 @@ bool c_execution_graph::validate_constants() const {
 		size_t input = 0;
 		for (size_t arg = 0; arg < native_module.argument_count; arg++) {
 			s_native_module_argument argument = native_module.arguments[arg];
-			if (argument.type.get_qualifier() == e_native_module_qualifier::k_in) {
-				input++;
-			} else if (argument.type.get_qualifier() == e_native_module_qualifier::k_constant) {
-				// Validate that this input is constant
-				c_node_reference input_node_reference = get_node_incoming_edge_reference(node_reference, input);
-				c_node_reference constant_node_reference = get_node_incoming_edge_reference(input_node_reference, 0);
+			if (argument.argument_direction == e_native_module_argument_direction::k_in) {
+				if (argument.type.get_data_mutability() == e_native_module_data_mutability::k_constant) {
+					// Validate that this input is constant
+					c_node_reference constant_node_reference =
+						get_node_indexed_input_incoming_edge_reference(node_reference, input, 0);
 
-				if (get_node_type(constant_node_reference) != e_execution_graph_node_type::k_constant) {
-					return false;
+					if (get_node_type(constant_node_reference) != e_execution_graph_node_type::k_constant) {
+						return false;
+					}
 				}
 
 				input++;
@@ -1035,121 +1070,6 @@ bool c_execution_graph::validate_string_table() const {
 	}
 
 	return true;
-}
-
-bool c_execution_graph::get_type_from_node(c_node_reference node_reference, c_native_module_data_type &type_out) const {
-	const s_node &node = get_node(node_reference);
-
-	switch (node.type) {
-	case e_execution_graph_node_type::k_constant:
-		type_out = node.node_data.constant.type;
-		return true;
-
-	case e_execution_graph_node_type::k_native_module_call:
-		wl_vhalt("We shouldn't be checking types for this node, but instead for its argument nodes");
-		return false;
-
-	case e_execution_graph_node_type::k_indexed_input:
-	{
-		// Find the index of this input
-		if (node.outgoing_edge_references.size() != 1) {
-			return false;
-		}
-
-		c_node_reference dest_node_reference = node.outgoing_edge_references[0];
-		if (!valid_index(dest_node_reference.get_node_index(), m_nodes.size())) {
-			return false;
-		}
-
-		if (!validate_node(dest_node_reference)) {
-			return false;
-		}
-
-		const s_node &dest_node = get_node(dest_node_reference);
-
-		if (dest_node.type == e_execution_graph_node_type::k_constant) {
-			// Since we've validated the node, we know this must be an array type if it's a constant. Otherwise, it
-			// should not have an indexed input.
-			type_out = dest_node.node_data.constant.type.get_element_type();
-			return true;
-		} else if (dest_node.type == e_execution_graph_node_type::k_native_module_call) {
-			const s_native_module &native_module = c_native_module_registry::get_native_module(
-				dest_node.node_data.native_module_call.native_module_handle);
-
-			size_t input = 0;
-			for (size_t arg = 0; arg < native_module.argument_count; arg++) {
-				if (native_module_qualifier_is_input(native_module.arguments[arg].type.get_qualifier())) {
-					if (dest_node.incoming_edge_references[input] == node_reference) {
-						// We've found the matching argument - return its type
-						type_out = native_module.arguments[arg].type.get_data_type();
-						return true;
-					}
-					input++;
-				}
-			}
-		}
-
-		return false;
-	}
-
-	case e_execution_graph_node_type::k_indexed_output:
-	{
-		// Find the index of this output
-		if (node.incoming_edge_references.size() != 1) {
-			return false;
-		}
-
-		c_node_reference dest_node_reference = node.incoming_edge_references[0];
-		if (!valid_index(dest_node_reference.get_node_index(), m_nodes.size())) {
-			return false;
-		}
-
-		if (!validate_node(dest_node_reference)) {
-			return false;
-		}
-
-		const s_node &dest_node = get_node(dest_node_reference);
-
-		if (dest_node.type == e_execution_graph_node_type::k_native_module_call) {
-			const s_native_module &native_module = c_native_module_registry::get_native_module(
-				dest_node.node_data.native_module_call.native_module_handle);
-
-			size_t output = 0;
-			for (size_t arg = 0; arg < native_module.argument_count; arg++) {
-				if (native_module.arguments[arg].type.get_qualifier() == e_native_module_qualifier::k_out) {
-					if (dest_node.outgoing_edge_references[output] == node_reference) {
-						// We've found the matching argument - return its type
-						type_out = native_module.arguments[arg].type.get_data_type();
-						return true;
-					}
-					output++;
-				}
-			}
-		}
-
-		return false;
-	}
-
-	case e_execution_graph_node_type::k_input:
-		type_out = c_native_module_data_type(e_native_module_primitive_type::k_real);
-		return true;
-
-	case e_execution_graph_node_type::k_output:
-		if (node.node_data.output.output_index == k_remain_active_output_index) {
-			type_out = c_native_module_data_type(e_native_module_primitive_type::k_bool);
-		} else {
-			type_out = c_native_module_data_type(e_native_module_primitive_type::k_real);
-		}
-		return true;
-
-	case e_execution_graph_node_type::k_temporary_reference:
-		wl_vhalt("Temporary reference nodes don't have a type, they just exist to prevent other nodes from deletion");
-		return false;
-
-	default:
-		// Unknown type
-		return false;
-	}
 }
 
 bool c_execution_graph::visit_node_for_cycle_detection(
@@ -1229,6 +1149,115 @@ c_node_reference c_execution_graph::nodes_next(c_node_reference node_reference) 
 
 e_execution_graph_node_type c_execution_graph::get_node_type(c_node_reference node_reference) const {
 	return get_node(node_reference).type;
+}
+
+c_native_module_data_type c_execution_graph::get_node_data_type(c_node_reference node_reference) const {
+	const s_node &node = get_node(node_reference);
+
+	switch (node.type) {
+	case e_execution_graph_node_type::k_constant:
+		return node.node_data.constant.type;
+
+	case e_execution_graph_node_type::k_native_module_call:
+		wl_vhalt("We shouldn't be checking types for this node, but instead for its argument nodes");
+		return c_native_module_data_type::invalid();
+
+	case e_execution_graph_node_type::k_indexed_input:
+	{
+		// Find the index of this input
+		if (node.outgoing_edge_references.size() != 1) {
+			return c_native_module_data_type::invalid();
+		}
+
+		c_node_reference dest_node_reference = node.outgoing_edge_references[0];
+		if (!valid_index(dest_node_reference.get_node_index(), m_nodes.size())) {
+			return c_native_module_data_type::invalid();
+		}
+
+		if (!validate_node(dest_node_reference)) {
+			return c_native_module_data_type::invalid();
+		}
+
+		const s_node &dest_node = get_node(dest_node_reference);
+
+		if (dest_node.type == e_execution_graph_node_type::k_constant) {
+			// Since we've validated the node, we know this must be an array type if it's a constant. Otherwise, it
+			// should not have an indexed input.
+			return dest_node.node_data.constant.type.get_element_type();
+		} else if (dest_node.type == e_execution_graph_node_type::k_native_module_call) {
+			const s_native_module &native_module = c_native_module_registry::get_native_module(
+				dest_node.node_data.native_module_call.native_module_handle);
+
+			size_t input = 0;
+			for (size_t arg = 0; arg < native_module.argument_count; arg++) {
+				if (native_module.arguments[arg].argument_direction == e_native_module_argument_direction::k_in) {
+					if (dest_node.incoming_edge_references[input] == node_reference) {
+						// We've found the matching argument - return its type
+						return native_module.arguments[arg].type.get_data_type();
+					}
+					input++;
+				}
+			}
+		}
+
+		return c_native_module_data_type::invalid();
+	}
+
+	case e_execution_graph_node_type::k_indexed_output:
+	{
+		// Find the index of this output
+		if (node.incoming_edge_references.size() != 1) {
+			return c_native_module_data_type::invalid();
+		}
+
+		c_node_reference dest_node_reference = node.incoming_edge_references[0];
+		if (!valid_index(dest_node_reference.get_node_index(), m_nodes.size())) {
+			return c_native_module_data_type::invalid();
+		}
+
+		if (!validate_node(dest_node_reference)) {
+			return c_native_module_data_type::invalid();
+		}
+
+		const s_node &dest_node = get_node(dest_node_reference);
+
+		if (dest_node.type == e_execution_graph_node_type::k_native_module_call) {
+			const s_native_module &native_module = c_native_module_registry::get_native_module(
+				dest_node.node_data.native_module_call.native_module_handle);
+
+			size_t output = 0;
+			for (size_t arg = 0; arg < native_module.argument_count; arg++) {
+				if (native_module.arguments[arg].argument_direction == e_native_module_argument_direction::k_out) {
+					if (dest_node.outgoing_edge_references[output] == node_reference) {
+						// We've found the matching argument - return its type
+						return native_module.arguments[arg].type.get_data_type();
+					}
+					output++;
+				}
+			}
+		}
+
+		return c_native_module_data_type::invalid();
+	}
+
+	case e_execution_graph_node_type::k_input:
+		return c_native_module_data_type(e_native_module_primitive_type::k_real);
+
+	case e_execution_graph_node_type::k_output:
+		if (node.node_data.output.output_index == k_remain_active_output_index) {
+			return c_native_module_data_type(e_native_module_primitive_type::k_bool);
+		} else {
+			return c_native_module_data_type(e_native_module_primitive_type::k_real);
+		}
+
+	case e_execution_graph_node_type::k_temporary_reference:
+		wl_vhalt("Temporary reference nodes don't have a type, they just exist to prevent other nodes from deletion");
+		return c_native_module_data_type::invalid();
+
+	default:
+		// Unknown type
+		return c_native_module_data_type::invalid();
+	}
 }
 
 c_native_module_data_type c_execution_graph::get_constant_node_data_type(c_node_reference node_reference) const {

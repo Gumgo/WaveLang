@@ -39,7 +39,7 @@ if str(platform) == "win32":
 env.Append(CPPPATH = ["#source", rapidxml_include_dir])
 
 sources = utils.enumerate_files(env, ".", utils.SOURCE_EXTENSIONS)
-static_libraries = ["common", "driver", "engine", "execution_graph"]
+static_libraries = ["common", "driver", "engine", "execution_graph", "native_module", "task_function"]
 env.Append(
 	LIBS = static_libraries + [portaudio_lib_name, rtmidi_lib_name],
 	LIBPATH = ["../bin", portaudio_lib_dir, rtmidi_lib_dir])

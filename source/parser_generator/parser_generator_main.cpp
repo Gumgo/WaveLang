@@ -46,7 +46,7 @@ int main(int argc, char **argv) {
 	source.push_back('\0');
 
 	std::vector<s_grammar_token> tokens;
-	c_grammar_lexer lexer(&source.front());
+	c_grammar_lexer lexer(source.data());
 	while (true) {
 		s_grammar_token next_token = lexer.get_next_token();
 		if (next_token.token_type == e_grammar_token_type::k_invalid) {
@@ -61,10 +61,7 @@ int main(int argc, char **argv) {
 	}
 
 	s_grammar grammar;
-	c_grammar_parser parser(
-		&source.front(),
-		c_wrapped_array<const s_grammar_token>(&tokens.front(), tokens.size()),
-		&grammar);
+	c_grammar_parser parser(source.data(), c_wrapped_array<const s_grammar_token>(tokens), &grammar);
 	if (!parser.parse()) {
 		const s_grammar_token &error_token = parser.get_error_token();
 		std::cerr << "Parser error: " << parser.get_error_message()

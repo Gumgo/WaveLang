@@ -7,7 +7,7 @@
 #include "compiler/ast/node_module_declaration_argument.h"
 #include "compiler/ast/node_scope.h"
 
-#include "execution_graph/native_module.h"
+#include "native_module/native_module.h"
 
 #include <memory>
 #include <vector>

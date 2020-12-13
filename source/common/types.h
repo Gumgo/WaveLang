@@ -14,16 +14,16 @@ using uint64 = unsigned long long;
 using real32 = float;
 using real64 = double;
 
-static_assert(sizeof(int8) == 1, "Incorrect primitive type size");
-static_assert(sizeof(uint8) == 1, "Incorrect primitive type size");
-static_assert(sizeof(int16) == 2, "Incorrect primitive type size");
-static_assert(sizeof(uint16) == 2, "Incorrect primitive type size");
-static_assert(sizeof(int32) == 4, "Incorrect primitive type size");
-static_assert(sizeof(uint32) == 4, "Incorrect primitive type size");
-static_assert(sizeof(int64) == 8, "Incorrect primitive type size");
-static_assert(sizeof(uint64) == 8, "Incorrect primitive type size");
-static_assert(sizeof(real32) == 4, "Incorrect primitive type size");
-static_assert(sizeof(real64) == 8, "Incorrect primitive type size");
+STATIC_ASSERT(sizeof(int8) == 1);
+STATIC_ASSERT(sizeof(uint8) == 1);
+STATIC_ASSERT(sizeof(int16) == 2);
+STATIC_ASSERT(sizeof(uint16) == 2);
+STATIC_ASSERT(sizeof(int32) == 4);
+STATIC_ASSERT(sizeof(uint32) == 4);
+STATIC_ASSERT(sizeof(int64) == 8);
+STATIC_ASSERT(sizeof(uint64) == 8);
+STATIC_ASSERT(sizeof(real32) == 4);
+STATIC_ASSERT(sizeof(real64) == 8);
 
 template<size_t k_size, bool k_is_unsigned> struct s_integer_type {};
 template<> struct s_integer_type<1, true> { using type = uint8; };

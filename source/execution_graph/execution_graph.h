@@ -4,9 +4,10 @@
 #include "common/utility/string_table.h"
 
 #include "execution_graph/instrument_constants.h"
-#include "execution_graph/native_module.h"
 #include "execution_graph/native_module_registry.h"
 #include "execution_graph/node_reference.h"
+
+#include "native_module/native_module.h"
 
 #include <fstream>
 #include <vector>
@@ -87,6 +88,7 @@ public:
 	c_node_reference nodes_next(c_node_reference node_reference) const;
 
 	e_execution_graph_node_type get_node_type(c_node_reference node_reference) const;
+	c_native_module_data_type get_node_data_type(c_node_reference node_reference) const;
 	c_native_module_data_type get_constant_node_data_type(c_node_reference node_reference) const;
 	real32 get_constant_node_real_value(c_node_reference node_reference) const;
 	bool get_constant_node_bool_value(c_node_reference node_reference) const;
@@ -175,7 +177,6 @@ private:
 	bool validate_edge(c_node_reference from_reference, c_node_reference to_reference) const;
 	bool validate_constants() const;
 	bool validate_string_table() const;
-	bool get_type_from_node(c_node_reference node_reference, c_native_module_data_type &type_out) const;
 
 	bool visit_node_for_cycle_detection(
 		c_node_reference node_reference,

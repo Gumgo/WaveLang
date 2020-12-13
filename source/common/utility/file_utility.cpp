@@ -212,7 +212,7 @@ e_read_full_file_result read_full_file(const char *path, std::vector<char> &file
 	size_t file_size = cast_integer_verify<size_t>(file_size_uint64);
 	file_contents_out.resize(file_size);
 	if (file_size > 0) {
-		file.read(&file_contents_out.front(), file_size);
+		file.read(file_contents_out.data(), file_size);
 	}
 
 	return file.fail()

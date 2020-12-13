@@ -49,8 +49,7 @@ void c_thread::start(const s_thread_definition &thread_definition) {
 		THREAD_PRIORITY_ABOVE_NORMAL,
 		THREAD_PRIORITY_HIGHEST
 	};
-	static_assert(array_count(k_thread_priority_map) == enum_count<e_thread_priority>(),
-		"Thread priority mapping mismatch");
+	STATIC_ASSERT(is_enum_fully_mapped< e_thread_priority>(k_thread_priority_map));
 
 	if (!SetThreadPriority(m_thread_handle, k_thread_priority_map[enum_index(thread_definition.thread_priority)])) {
 		wl_vhalt("Failed to set thread priority");

@@ -191,6 +191,7 @@
     <ClCompile Include="math\simd.cpp">
       <Filter>math</Filter>
     </ClCompile>
+    <ClCompile Include="string.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="threading">

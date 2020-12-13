@@ -1,12 +1,12 @@
 #include "engine/executor/buffer_allocator.h"
 
-static_assert(CACHE_LINE_SIZE >= k_simd_alignment, "Cache line too small for SSE");
+STATIC_ASSERT_MSG(CACHE_LINE_SIZE >= k_simd_alignment, "Cache line too small for SSE");
 
 static constexpr size_t k_bits_per_buffer_element[] = {
 	32,	// e_buffer_type::k_real
 	1	// e_buffer_type::k_bool
 };
-static_assert(array_count(k_bits_per_buffer_element) == enum_count<e_buffer_type>(), "Buffer type bits mismatch");
+STATIC_ASSERT(is_enum_fully_mapped<e_buffer_type>(k_bits_per_buffer_element));
 
 c_buffer_allocator::c_buffer_allocator() {}
 

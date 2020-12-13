@@ -4,7 +4,7 @@
 #include "common/math/math.h"
 #include "common/threading/lock_free.h"
 
-#include "engine/task_data_type.h"
+#include "task_function/task_data_type.h"
 
 enum class e_buffer_data_state {
 	k_dynamic,					// The buffer contains dynamic data
@@ -45,7 +45,7 @@ public:
 	static c_buffer construct(c_task_data_type data_type) {
 		wl_assert(data_type.is_valid());
 		wl_assert(!data_type.is_array());
-		wl_assert(data_type.get_primitive_type_traits().is_dynamic);
+		wl_assert(!data_type.get_primitive_type_traits().constant_only);
 		c_buffer buffer(data_type);
 		return buffer;
 	}

@@ -392,7 +392,7 @@ void c_buffer_manager::mix_channel_buffers_to_output_buffer(
 	c_wrapped_array<uint8> output_buffer) {
 	convert_and_interleave_to_output_buffer(
 		m_chunk_size,
-		c_wrapped_array<c_buffer>(&m_channel_mix_buffers.front(), m_channel_mix_buffers.size()),
+		c_wrapped_array<c_buffer>(m_channel_mix_buffers),
 		sample_format,
 		output_buffer);
 
@@ -497,7 +497,7 @@ void c_buffer_manager::initialize_buffer_allocator(
 		s_buffer_pool_description desc;
 
 		wl_assert(!info.type.is_array());
-		wl_assert(info.type.get_primitive_type_traits().is_dynamic);
+		wl_assert(!info.type.get_primitive_type_traits().constant_only);
 		switch (info.type.get_primitive_type()) {
 		case e_task_primitive_type::k_real:
 			desc.type = e_buffer_type::k_real;
@@ -521,8 +521,8 @@ void c_buffer_manager::initialize_buffer_allocator(
 	}
 
 	s_buffer_allocator_settings buffer_allocator_settings;
-	buffer_allocator_settings.buffer_pool_descriptions = c_wrapped_array<const s_buffer_pool_description>(
-		&buffer_pool_descriptions.front(), buffer_pool_descriptions.size());
+	buffer_allocator_settings.buffer_pool_descriptions =
+		c_wrapped_array<const s_buffer_pool_description>(buffer_pool_descriptions);
 
 	m_buffer_allocator.initialize(buffer_allocator_settings);
 }
@@ -564,7 +564,7 @@ void c_buffer_manager::initialize_task_buffer_contexts(
 		m_task_buffers_to_allocate[enum_index(instrument_stage)].resize(task_graph->get_task_count());
 
 		for (uint32 task_index = 0; task_index < task_graph->get_task_count(); task_index++) {
-			c_task_function_arguments arguments = task_graph->get_task_arguments(task_index);
+			c_task_function_runtime_arguments arguments = task_graph->get_task_arguments(task_index);
 
 			for (c_task_buffer_iterator it(arguments); it.is_valid(); it.next()) {
 				wl_assert(!it.get_buffer()->is_compile_time_constant());
@@ -574,9 +574,7 @@ void c_buffer_manager::initialize_task_buffer_contexts(
 				m_task_buffer_contexts[enum_index(instrument_stage)][buffer_index].initial_usages++;
 				m_task_buffers_to_decrement[enum_index(instrument_stage)][task_index].push_back(buffer_index);
 
-				e_task_qualifier qualifier = it.get_buffer_type().get_qualifier();
-				wl_assert(qualifier != e_task_qualifier::k_constant);
-				if (qualifier == e_task_qualifier::k_out) {
+				if (it.get_argument_direction() == e_task_argument_direction::k_out) {
 					std::vector<size_t> &buffers_to_allocate =
 						m_task_buffers_to_allocate[enum_index(instrument_stage)][task_index];
 
@@ -584,7 +582,7 @@ void c_buffer_manager::initialize_task_buffer_contexts(
 					bool is_shared = false;
 					for (c_task_buffer_iterator it_inner(arguments); it_inner.is_valid(); it_inner.next()) {
 						if (it_inner.get_buffer() == it.get_buffer()
-							&& it_inner.get_buffer_type().get_qualifier() == e_task_qualifier::k_in) {
+							&& it_inner.get_argument_direction() == e_task_argument_direction::k_in) {
 							is_shared = true;
 							break;
 						}
@@ -650,8 +648,8 @@ void c_buffer_manager::mix_to_channel_buffers(std::vector<c_buffer> &source_buff
 		// Mix the source buffers into the channel buffers and free the source buffers
 		mix_output_buffers_to_channel_buffers(
 			m_chunk_size,
-			c_wrapped_array<c_buffer>(&source_buffers.front(), source_buffers.size()),
-			c_wrapped_array<c_buffer>(&m_channel_mix_buffers.front(), m_channel_mix_buffers.size()));
+			c_wrapped_array<c_buffer>(source_buffers),
+			c_wrapped_array<c_buffer>(m_channel_mix_buffers));
 
 		// Free the source buffers
 		for (uint32 index = 0; index < source_buffers.size(); index++) {

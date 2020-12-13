@@ -3,7 +3,7 @@
 #include "common/common.h"
 #include "common/scraper_attributes.h"
 
-#include "execution_graph/native_module.h"
+#include "native_module/native_module.h"
 
 const uint32 k_filter_library_id = 5;
 

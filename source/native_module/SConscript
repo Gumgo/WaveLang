@@ -1,0 +1,21 @@
+# Native module - data structures defining modules implemented in native code
+
+import utils
+
+Import("*")
+
+env = env.Clone()
+
+env.Append(CPPPATH = ["#source"])
+
+sources = utils.enumerate_files(env, ".", utils.SOURCE_EXTENSIONS)
+
+objects = []
+for source in sources:
+	obj = env.StaticObject(source)
+	objects += obj
+
+native_module_library = env.StaticLibrary("native_module", objects)
+
+native_module_installed = env.Install("../bin", native_module_library)
+env.Alias("native_module", native_module_installed)

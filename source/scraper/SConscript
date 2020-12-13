@@ -58,17 +58,7 @@ env.Append(CPPPATH = ["#source", llvm_include_dir])
 
 sources = utils.enumerate_files(env, ".", utils.SOURCE_EXTENSIONS)
 
-# $TODO fix this because the object files aren't in the variant directory
-# $HACK: the scraper relies on these two files. Several somewhat better options are:
-# (1) Make the header files inlined so we don't have to include additional sources (still a bit hackish)
-# (2) Split these files off into their own separate libraries (seems like overkill)
-# (3) Implement simple mirror versions of the necessary enums/classes in scraper (bad due to code duplication)
-sources += [
-	"#source/engine/task_data_type.cpp",
-	"#source/execution_graph/native_module.cpp"
-]
-
-static_libraries = ["common"]
+static_libraries = ["common", "native_module", "task_function"]
 env.Append(LIBS = static_libraries + llvm_lib_names, LIBPATH = ["../bin", llvm_lib_dir])
 
 objects = []

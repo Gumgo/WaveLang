@@ -50,6 +50,9 @@ private:
 	friend class c_execution_graph;
 	friend struct std::hash<c_node_reference>;
 
+	template<typename t_argument_reference>
+	friend c_node_reference node_reference_from_argument_reference(t_argument_reference argument_reference);
+
 	static constexpr uint32 k_invalid_node_index = static_cast<uint32>(-1);
 	static constexpr uint32 k_invalid_salt = static_cast<uint32>(-1);
 

@@ -3,12 +3,7 @@
   <ItemGroup>
     <ClCompile Include="execution_graph.cpp" />
     <ClCompile Include="instrument.cpp" />
-    <ClCompile Include="native_module.cpp" />
-    <ClCompile Include="native_module_compile_time_types.cpp" />
     <ClCompile Include="native_module_registry.cpp" />
-    <ClCompile Include="diagnostic\diagnostic.cpp">
-      <Filter>diagnostic</Filter>
-    </ClCompile>
     <ClCompile Include="native_modules\native_modules_core.cpp">
       <Filter>native_modules</Filter>
     </ClCompile>
@@ -39,9 +34,6 @@
     <ClCompile Include="native_modules\native_modules_controller.cpp">
       <Filter>native_modules</Filter>
     </ClCompile>
-    <ClCompile Include="node_interface\node_interface.cpp">
-      <Filter>node_interface</Filter>
-    </ClCompile>
     <ClCompile Include="native_modules\native_modules_json.cpp">
       <Filter>native_modules</Filter>
     </ClCompile>
@@ -58,13 +50,8 @@
     <ClInclude Include="instrument_constants.h" />
     <ClInclude Include="instrument_globals.h" />
     <ClInclude Include="instrument_stage.h" />
-    <ClInclude Include="native_module.h" />
-    <ClInclude Include="native_module_compile_time_types.h" />
     <ClInclude Include="native_module_registry.h" />
     <ClInclude Include="node_reference.h" />
-    <ClInclude Include="diagnostic\diagnostic.h">
-      <Filter>diagnostic</Filter>
-    </ClInclude>
     <ClInclude Include="native_modules\native_modules_core.h">
       <Filter>native_modules</Filter>
     </ClInclude>
@@ -95,9 +82,6 @@
     <ClInclude Include="native_modules\native_modules_controller.h">
       <Filter>native_modules</Filter>
     </ClInclude>
-    <ClInclude Include="node_interface\node_interface.h">
-      <Filter>node_interface</Filter>
-    </ClInclude>
     <ClInclude Include="native_modules\native_modules_json.h">
       <Filter>native_modules</Filter>
     </ClInclude>
@@ -112,14 +96,8 @@
     <None Include="SConscript" />
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="diagnostic">
-      <UniqueIdentifier>{8fa7314e-6ab3-49a3-a901-6762a6677008}</UniqueIdentifier>
-    </Filter>
     <Filter Include="native_modules">
       <UniqueIdentifier>{a5ad8846-c8fd-4c02-8068-ebb2bf50137c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="node_interface">
-      <UniqueIdentifier>{26378491-e7c0-4298-8614-578c3914334e}</UniqueIdentifier>
     </Filter>
     <Filter Include="native_modules\json">
       <UniqueIdentifier>{0228d4a3-ebdf-4c6b-8f1f-b928aa49a025}</UniqueIdentifier>

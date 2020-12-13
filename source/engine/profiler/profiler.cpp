@@ -41,22 +41,22 @@ bool output_profiler_report(const char *filename, const s_profiler_report &repor
 	}
 
 	out << "Execution\n";
-	out << "Total avg,Total min,Total max\n" <<
-		nanoseconds_to_milliseconds(report.execution_total_time.average_time) << "," <<
-		nanoseconds_to_milliseconds(report.execution_total_time.min_time) << "," <<
-		nanoseconds_to_milliseconds(report.execution_total_time.max_time) << "\n";
-	out << "Voice avg,Voice min,Voice max\n" <<
-		nanoseconds_to_milliseconds(report.voice_time.average_time) << "," <<
-		nanoseconds_to_milliseconds(report.voice_time.min_time) << "," <<
-		nanoseconds_to_milliseconds(report.voice_time.max_time) << "\n";
-	out << "FX avg,FX min,FX max\n" <<
-		nanoseconds_to_milliseconds(report.fx_time.average_time) << "," <<
-		nanoseconds_to_milliseconds(report.fx_time.min_time) << "," <<
-		nanoseconds_to_milliseconds(report.fx_time.max_time) << "\n";
-	out << "Overhead avg,Overhead min,Overhead max\n" <<
-		nanoseconds_to_milliseconds(report.execution_overhead_time.average_time) << "," <<
-		nanoseconds_to_milliseconds(report.execution_overhead_time.min_time) << "," <<
-		nanoseconds_to_milliseconds(report.execution_overhead_time.max_time) << "\n";
+	out << "Total avg,Total min,Total max\n"
+		<< nanoseconds_to_milliseconds(report.execution_total_time.average_time) << ","
+		<< nanoseconds_to_milliseconds(report.execution_total_time.min_time) << ","
+		<< nanoseconds_to_milliseconds(report.execution_total_time.max_time) << "\n";
+	out << "Voice avg,Voice min,Voice max\n"
+		<< nanoseconds_to_milliseconds(report.voice_time.average_time) << ","
+		<< nanoseconds_to_milliseconds(report.voice_time.min_time) << ","
+		<< nanoseconds_to_milliseconds(report.voice_time.max_time) << "\n";
+	out << "FX avg,FX min,FX max\n"
+		<< nanoseconds_to_milliseconds(report.fx_time.average_time) << ","
+		<< nanoseconds_to_milliseconds(report.fx_time.min_time) << ","
+		<< nanoseconds_to_milliseconds(report.fx_time.max_time) << "\n";
+	out << "Overhead avg,Overhead min,Overhead max\n"
+		<< nanoseconds_to_milliseconds(report.execution_overhead_time.average_time) << ","
+		<< nanoseconds_to_milliseconds(report.execution_overhead_time.min_time) << ","
+		<< nanoseconds_to_milliseconds(report.execution_overhead_time.max_time) << "\n";
 
 	out << "\n";
 
@@ -82,18 +82,18 @@ bool output_profiler_report(const char *filename, const s_profiler_report &repor
 				uid_stream << static_cast<uint32>(task_function.uid.data[b]);
 			}
 
-			out << task_index << "," <<
-				uid_stream.str() << "," <<
-				task_function.name.get_string() << "," <<
-				nanoseconds_to_milliseconds(task.task_total_time.average_time) << "," <<
-				nanoseconds_to_milliseconds(task.task_total_time.min_time) << "," <<
-				nanoseconds_to_milliseconds(task.task_total_time.max_time) << "," <<
-				nanoseconds_to_milliseconds(task.task_function_time.average_time) << "," <<
-				nanoseconds_to_milliseconds(task.task_function_time.min_time) << "," <<
-				nanoseconds_to_milliseconds(task.task_function_time.max_time) << "," <<
-				nanoseconds_to_milliseconds(task.task_overhead_time.average_time) << "," <<
-				nanoseconds_to_milliseconds(task.task_overhead_time.min_time) << "," <<
-				nanoseconds_to_milliseconds(task.task_overhead_time.max_time) << "\n";
+			out << task_index << ","
+				<< uid_stream.str() << ","
+				<< task_function.name.get_string() << ","
+				<< nanoseconds_to_milliseconds(task.task_total_time.average_time) << ","
+				<< nanoseconds_to_milliseconds(task.task_total_time.min_time) << ","
+				<< nanoseconds_to_milliseconds(task.task_total_time.max_time) << ","
+				<< nanoseconds_to_milliseconds(task.task_function_time.average_time) << ","
+				<< nanoseconds_to_milliseconds(task.task_function_time.min_time) << ","
+				<< nanoseconds_to_milliseconds(task.task_function_time.max_time) << ","
+				<< nanoseconds_to_milliseconds(task.task_overhead_time.average_time) << ","
+				<< nanoseconds_to_milliseconds(task.task_overhead_time.min_time) << ","
+				<< nanoseconds_to_milliseconds(task.task_overhead_time.max_time) << "\n";
 		}
 
 		out << "\n";

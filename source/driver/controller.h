@@ -12,27 +12,26 @@ enum class e_controller_event_type {
 
 struct s_controller_event {
 	static constexpr size_t k_max_controller_event_data_size = 12;
-	static_assert(k_max_controller_event_data_size % sizeof(uint32) == 0,
-		"Max event data size not a multiple of 4");
+	STATIC_ASSERT(k_max_controller_event_data_size % sizeof(uint32) == 0);
 
 	e_controller_event_type event_type;
 	s_static_array<uint32, k_max_controller_event_data_size / sizeof(uint32)> event_data;
 
 	template<typename t_data> void set_data(const t_data *data) {
-		static_assert(sizeof(t_data) <= sizeof(event_data), "Event data too big");
-		static_assert(alignof(t_data) <= alignof(uint32), "Event data alignment too big");
+		STATIC_ASSERT(sizeof(t_data) <= sizeof(event_data));
+		STATIC_ASSERT(alignof(t_data) <= alignof(uint32));
 		memcpy(event_data, data, sizeof(t_data));
 	}
 
 	template<typename t_data> const t_data *get_data() const {
-		static_assert(sizeof(t_data) <= sizeof(event_data), "Event data too big");
-		static_assert(alignof(t_data) <= alignof(uint32), "Event data alignment too big");
+		STATIC_ASSERT(sizeof(t_data) <= sizeof(event_data));
+		STATIC_ASSERT(alignof(t_data) <= alignof(uint32));
 		return reinterpret_cast<const t_data *>(event_data.get_elements());
 	}
 
 	template<typename t_data> t_data *get_data() {
-		static_assert(sizeof(t_data) <= sizeof(event_data), "Event data too big");
-		static_assert(alignof(t_data) <= alignof(uint32), "Event data alignment too big");
+		STATIC_ASSERT(sizeof(t_data) <= sizeof(event_data));
+		STATIC_ASSERT(alignof(t_data) <= alignof(uint32));
 		return reinterpret_cast<t_data *>(event_data.get_elements());
 	}
 };

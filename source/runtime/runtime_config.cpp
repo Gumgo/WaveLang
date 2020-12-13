@@ -13,8 +13,7 @@ static constexpr const char *k_sample_format_xml_strings[] = {
 	"float32"
 };
 
-static_assert(array_count(k_sample_format_xml_strings) == enum_count<e_sample_format>(),
-	"Sample format strings mismatch");
+STATIC_ASSERT(is_enum_fully_mapped<e_sample_format>(k_sample_format_xml_strings));
 
 static constexpr const char *k_bool_xml_strings[] = {
 	"false",
@@ -362,7 +361,7 @@ e_runtime_config_result c_runtime_config::read_settings(
 			file.seekg(0);
 
 			file_contents.resize(static_cast<size_t>(file_size) + 1);
-			file.read(&file_contents.front(), file_size);
+			file.read(file_contents.data(), file_size);
 			file_contents.back() = '\0';
 
 			if (file.fail()) {

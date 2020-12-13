@@ -83,10 +83,8 @@
     <AdditionalOptions>/std:c++latest</AdditionalOptions>
   </PropertyGroup>
   <ItemGroup>
-    <ClCompile Include="diagnostic\diagnostic.cpp" />
     <ClCompile Include="execution_graph.cpp" />
     <ClCompile Include="instrument.cpp" />
-    <ClCompile Include="native_module.cpp" />
     <ClCompile Include="native_modules\json\json_file.cpp" />
     <ClCompile Include="native_modules\json\json_file_manager.cpp" />
     <ClCompile Include="native_modules\native_modules_array.cpp" />
@@ -100,18 +98,14 @@
     <ClCompile Include="native_modules\native_modules_stream.cpp" />
     <ClCompile Include="native_modules\native_modules_time.cpp" />
     <ClCompile Include="native_modules\native_module_registration.cpp" />
-    <ClCompile Include="native_module_compile_time_types.cpp" />
     <ClCompile Include="native_module_registry.cpp" />
-    <ClCompile Include="node_interface\node_interface.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="diagnostic\diagnostic.h" />
     <ClInclude Include="execution_graph.h" />
     <ClInclude Include="instrument.h" />
     <ClInclude Include="instrument_constants.h" />
     <ClInclude Include="instrument_globals.h" />
     <ClInclude Include="instrument_stage.h" />
-    <ClInclude Include="native_module.h" />
     <ClInclude Include="native_modules\json\json_file.h" />
     <ClInclude Include="native_modules\json\json_file_manager.h" />
     <ClInclude Include="native_modules\native_modules_array.h" />
@@ -125,9 +119,7 @@
     <ClInclude Include="native_modules\native_modules_stream.h" />
     <ClInclude Include="native_modules\native_modules_time.h" />
     <ClInclude Include="native_modules\native_module_registration.h" />
-    <ClInclude Include="native_module_compile_time_types.h" />
     <ClInclude Include="native_module_registry.h" />
-    <ClInclude Include="node_interface\node_interface.h" />
     <ClInclude Include="node_reference.h" />
   </ItemGroup>
   <ItemGroup>

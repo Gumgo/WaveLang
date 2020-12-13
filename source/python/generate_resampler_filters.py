@@ -65,12 +65,12 @@ with open("resampler_filters.inl", "w") as file:
 
 	# Make sure the resampler filter enum matches what we're generating here
 	file.write(
-		"static_assert(enum_count<{}>() == {}, \"Resampler filter enum length mismatch\");\n".format(
+		"STATIC_ASSERT_MSG(enum_count<{}>() == {}, \"Resampler filter enum length mismatch\");\n".format(
 			resampler_filter_enum_name,
 			len(filters)))
 	for index, (name, params) in enumerate(all_filter_params):
 		file.write(
-			"static_assert(enum_index({}::k_{}) == {}, \"Resampler filter enum mismatch\");\n".format(
+			"STATIC_ASSERT_MSG(enum_index({}::k_{}) == {}, \"Resampler filter enum mismatch\");\n".format(
 				resampler_filter_enum_name,
 				name,
 				index))

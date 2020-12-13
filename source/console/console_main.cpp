@@ -60,12 +60,12 @@ static bool process_next_command() {
 		} else {
 			// Dynamic buffer for long strings
 			std::vector<char> buffer(length + 1);
-			if (!read_platform(length, &buffer.front())) {
+			if (!read_platform(length, buffer.data())) {
 				return true;
 			}
 
 			buffer[length] = '\0';
-			print_platform(&buffer.front());
+			print_platform(buffer.data());
 		}
 
 		break;

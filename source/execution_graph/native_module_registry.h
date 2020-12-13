@@ -3,7 +3,7 @@
 #include "common/common.h"
 #include "common/utility/handle.h"
 
-#include "execution_graph/native_module.h"
+#include "native_module/native_module.h"
 
 struct s_native_module_library_handle_identifier {};
 using h_native_module_library = c_handle<s_native_module_library_handle_identifier, uint32>;

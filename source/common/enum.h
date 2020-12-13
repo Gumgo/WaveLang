@@ -82,7 +82,7 @@ c_enum_iterator<t_enum> iterate_enum() {
 
 template<size_t k_count>
 struct s_enum_flags_underlying_type {
-	static_assert(k_count <= 64, "Too many enum values to support s_enum_flags");
+	STATIC_ASSERT_MSG(k_count <= 64, "Too many enum values to support s_enum_flags");
 	// Optimization: we could avoid some template recursion by snapping to the previous power of 2
 	using t_underlying_type = typename s_enum_flags_underlying_type<k_count - 1>::t_underlying_type;
 };
@@ -142,4 +142,9 @@ struct s_enum_flags {
 template<typename t_enum>
 constexpr s_enum_flags<t_enum> enum_flag(t_enum value) {
 	return { 1 << static_cast<typename s_enum_flags<t_enum>::t_underlying_type>(value) };
+}
+
+template<typename t_enum, typename t_element, size_t k_count>
+constexpr bool is_enum_fully_mapped(const t_element(&)[k_count]) {
+	return enum_count<t_enum>() == k_count;
 }
