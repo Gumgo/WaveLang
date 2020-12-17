@@ -1,7 +1,8 @@
-#include "engine/task_function.h"
 #include "engine/task_function_registry.h"
 #include "engine/task_graph.h"
 #include "engine/executor/task_memory_manager.h"
+
+#include "task_function/task_function.h"
 
 // Since we initially store offsets when computing memory requirements, this value cast to a pointer represents null
 static constexpr size_t k_invalid_memory_pointer = static_cast<size_t>(-1);

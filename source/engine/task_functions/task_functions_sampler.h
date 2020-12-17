@@ -3,9 +3,9 @@
 #include "common/common.h"
 #include "common/scraper_attributes.h"
 
-#include "engine/task_function.h"
-
 #include "execution_graph/native_modules/native_modules_sampler.h"
+
+#include "task_function/task_function.h"
 
 namespace sampler_task_functions wl_library(k_sampler_library_id, "sampler", 0) {
 

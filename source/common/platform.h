@@ -45,7 +45,19 @@
 	#error Unknown platform
 #endif // platform
 
-#if defined(_MSC_VER)
+#if defined(__clang__)
+	// Detect Clang first - Clang defines _MSC_VER and __GNUC__ "for compatibility reasons" but it makes compiler
+	// detection more annoying
+	#undef COMPILER_CLANG
+	#define COMPILER_CLANG 1
+	#if defined(__i386) || defined(__x86_64__)
+		#undef ARCHITECTURE_X86_64
+		#define ARCHITECTURE_X86_64 1
+	#elif defined(__ARM_ARCH)
+		#undef ARCHITECTURE_ARM
+		#define ARCHITECTURE_ARM 1
+	#endif // ARCHITECTURE
+#elif defined(_MSC_VER)
 	#undef COMPILER_MSVC
 	#define COMPILER_MSVC 1
 	#if defined(_M_IX86) || defined(_M_X64)
@@ -62,16 +74,6 @@
 		#undef ARCHITECTURE_X86_64
 		#define ARCHITECTURE_X86_64 1
 	#elif defined(__arm__)
-		#undef ARCHITECTURE_ARM
-		#define ARCHITECTURE_ARM 1
-	#endif // ARCHITECTURE
-#elif defined(__clang__)
-	#undef COMPILER_CLANG
-	#define COMPILER_CLANG 1
-	#if defined(__i386) || defined(__x86_64__)
-		#undef ARCHITECTURE_X86_64
-		#define ARCHITECTURE_X86_64 1
-	#elif defined(__ARM_ARCH)
 		#undef ARCHITECTURE_ARM
 		#define ARCHITECTURE_ARM 1
 	#endif // ARCHITECTURE

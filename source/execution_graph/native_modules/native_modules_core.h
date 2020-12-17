@@ -22,8 +22,8 @@ namespace core_native_modules wl_library(k_core_library_id, "core", 0) {
 	wl_native_module(0x243fcbca, "noop$string")
 	wl_operator(e_native_operator::k_noop)
 	void noop_string(
-		wl_in wl_dependent_const const c_native_module_string &a,
-		wl_out_return wl_dependent_const c_native_module_string &result);
+		wl_in wl_const const c_native_module_string &a,
+		wl_out_return wl_const c_native_module_string &result);
 
 	wl_native_module(0x3daee7de, "negation")
 	wl_operator(e_native_operator::k_negation)

@@ -133,9 +133,11 @@ projects = [
 	"driver",
 	"engine",
 	"execution_graph",
+	"native_module",
 	"parser_generator",
 	"runtime",
 	"scraper",
+	"task_function",
 	"unit_tests"
 ]
 

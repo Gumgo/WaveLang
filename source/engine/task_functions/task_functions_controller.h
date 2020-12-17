@@ -3,9 +3,9 @@
 #include "common/common.h"
 #include "common/scraper_attributes.h"
 
-#include "engine/task_function.h"
-
 #include "execution_graph/native_modules/native_modules_controller.h"
+
+#include "task_function/task_function.h"
 
 namespace controller_task_functions wl_library(k_controller_library_id, "controller", 0) {
 

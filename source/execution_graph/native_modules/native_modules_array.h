@@ -90,7 +90,7 @@ namespace array_native_modules wl_library(k_array_library_id, "array", 0) {
 
 	wl_native_module(0xa49c681c, "count$string")
 	void count_string(
-		wl_in const c_native_module_string_reference_array &a,
+		wl_in wl_const const c_native_module_string_reference_array &a,
 		wl_out_return wl_const real32 &result);
 
 	wl_native_module(0x2a92132b, "combine$string")

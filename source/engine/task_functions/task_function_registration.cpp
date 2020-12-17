@@ -1,10 +1,11 @@
 #include "task_function_registration_inputs.h"
 
-#include "engine/task_function.h"
 #include "engine/task_function_registry.h"
 #include "engine/task_functions/task_function_registration.h"
 
 #include "execution_graph/native_modules/native_module_registration.h"
+
+#include "task_function/task_function.h"
 
 // Generated native module registration
 #define TASK_FUNCTION_REGISTRATION_ENABLED

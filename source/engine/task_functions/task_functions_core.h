@@ -3,9 +3,9 @@
 #include "common/common.h"
 #include "common/scraper_attributes.h"
 
-#include "engine/task_function.h"
-
 #include "execution_graph/native_modules/native_modules_core.h"
+
+#include "task_function/task_function.h"
 
 namespace core_task_functions wl_library(k_core_library_id, "core", 0) {
 

@@ -525,7 +525,7 @@ void c_ast_visitor::visit_native_module_declaration(clang::FunctionDecl *decl) {
 				<< argument_declaration.name << function_name;
 		}
 
-		if (argument_declaration.type.is_legal()) {
+		if (!argument_declaration.type.is_legal()) {
 			m_diag.error(param_decl, "Illegal type '%0' on parameter '%1' of native module '%2'")
 				<< argument_declaration.type.to_string() << argument_declaration.name << function_name;
 		}
@@ -634,16 +634,34 @@ void c_ast_visitor::build_native_module_argument_type_info_table() {
 
 	static constexpr s_primitive_type_names k_cpp_primitive_type_names[] = {
 		{
-			{ "float", "c_native_module_real_reference" },
-			{ "c_native_module_real_array", "c_native_module_real_reference_array" }
+			{
+				"float",
+				"c_native_module_value_reference<s_native_module_real_reference_identifier>"
+			},
+			{
+				"c_native_module_real_array",
+				"c_native_module_real_reference_array"
+			}
 		},
 		{
-			{ "bool", "c_native_module_bool_reference" },
-			{ "c_native_module_bool_array", "c_native_module_bool_reference_array" }
+			{
+				"bool",
+				"c_native_module_value_reference<s_native_module_bool_reference_identifier>"
+			},
+			{
+				"c_native_module_bool_array",
+				"c_native_module_bool_reference_array"
+			}
 		},
 		{
-			{ "c_native_module_string", "c_native_module_string_reference" },
-			{ "c_native_module_string_array", "c_native_module_string_reference_array" }
+			{
+				"c_native_module_string",
+				"c_native_module_value_reference<s_native_module_string_reference_identifier>"
+			},
+			{
+				"c_native_module_string_array",
+				"c_native_module_string_reference_array"
+			}
 		}
 	};
 	STATIC_ASSERT(is_enum_fully_mapped<e_native_module_primitive_type>(k_cpp_primitive_type_names));
@@ -698,14 +716,14 @@ void c_ast_visitor::build_native_module_argument_type_info_table() {
 				buffer,
 				k_buffer_size,
 				"%s",
-				k_cpp_primitive_type_names[enum_index(primitive_type)].scalar_names[enum_index(data_access)]);
+				k_cpp_primitive_type_names[enum_index(primitive_type)].array_names[enum_index(data_access)]);
 			m_native_module_argument_type_info_table.insert_or_assign(buffer, type_info);
 
 			snprintf(
 				buffer,
 				k_buffer_size,
 				"const %s &",
-				k_cpp_primitive_type_names[enum_index(primitive_type)].scalar_names[enum_index(data_access)]);
+				k_cpp_primitive_type_names[enum_index(primitive_type)].array_names[enum_index(data_access)]);
 			m_native_module_argument_type_info_table.insert_or_assign(buffer, type_info);
 
 			type_info.argument_direction = e_native_module_argument_direction::k_out;
@@ -714,7 +732,7 @@ void c_ast_visitor::build_native_module_argument_type_info_table() {
 				buffer,
 				k_buffer_size,
 				"%s &",
-				k_cpp_primitive_type_names[enum_index(primitive_type)].scalar_names[enum_index(data_access)]);
+				k_cpp_primitive_type_names[enum_index(primitive_type)].array_names[enum_index(data_access)]);
 			m_native_module_argument_type_info_table.insert_or_assign(buffer, type_info);
 		}
 	}

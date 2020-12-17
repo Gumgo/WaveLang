@@ -116,3 +116,4 @@
 
 - Code style updates
 	- SFINAE helper macros
+	- Switch "new" to "make_unique" where relevant
