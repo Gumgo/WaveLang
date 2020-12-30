@@ -2,7 +2,7 @@
 #include "engine/buffer_operations/buffer_iterator.h"
 #include "engine/controller_interface/controller_interface.h"
 #include "engine/events/event_interface.h"
-#include "engine/task_functions/task_functions_controller.h"
+#include "engine/task_function_registration.h"
 #include "engine/voice_interface/voice_interface.h"
 
 #include <algorithm>
@@ -19,11 +19,15 @@ struct s_get_note_release_duration_context {
 
 namespace controller_task_functions {
 
-	void get_note_id(const s_task_function_context &context, c_real_buffer *result) {
+	void get_note_id(
+		const s_task_function_context &context,
+		wl_task_argument(c_real_buffer *, result)) {
 		result->assign_constant(static_cast<real32>(context.voice_interface->get_note_id()));
 	}
 
-	void get_note_velocity(const s_task_function_context &context, c_real_buffer *result) {
+	void get_note_velocity(
+		const s_task_function_context &context,
+		wl_task_argument(c_real_buffer *, result)) {
 		result->assign_constant(context.voice_interface->get_note_velocity());
 	}
 
@@ -35,7 +39,9 @@ namespace controller_task_functions {
 		static_cast<s_get_note_press_duration_context *>(context.task_memory)->current_sample = 0;
 	}
 
-	void get_note_press_duration(const s_task_function_context &context, c_real_buffer *result) {
+	void get_note_press_duration(
+		const s_task_function_context &context,
+		wl_task_argument(c_real_buffer *, result)) {
 		s_get_note_press_duration_context *get_note_press_duration_context =
 			static_cast<s_get_note_press_duration_context *>(context.task_memory);
 		real64 inv_sample_rate = 1.0 / static_cast<real64>(context.sample_rate);
@@ -60,7 +66,9 @@ namespace controller_task_functions {
 		get_note_release_duration_context->current_sample = 0;
 	}
 
-	void get_note_release_duration(const s_task_function_context &context, c_real_buffer *result) {
+	void get_note_release_duration(
+		const s_task_function_context &context,
+		wl_task_argument(c_real_buffer *, result)) {
 		s_get_note_release_duration_context *get_note_release_duration_context =
 			static_cast<s_get_note_release_duration_context *>(context.task_memory);
 		int32 note_release_sample = context.voice_interface->get_note_release_sample();
@@ -85,20 +93,25 @@ namespace controller_task_functions {
 		}
 	}
 
-	void get_parameter_value_initializer(const s_task_function_context &context, real32 parameter_id) {
+	void get_parameter_value_initializer(
+		const s_task_function_context &context,
+		wl_task_argument(real32, parameter_id)) {
 		// Perform error check only once
-		if (parameter_id < 0.0f || parameter_id != std::floor(parameter_id)) {
-			context.event_interface->submit(EVENT_ERROR << "Invalid controller parameter ID '" << parameter_id << "'");
+		if (*parameter_id < 0.0f || *parameter_id != std::floor(*parameter_id)) {
+			context.event_interface->submit(EVENT_ERROR << "Invalid controller parameter ID '" << *parameter_id << "'");
 		}
 	}
 
-	void get_parameter_value(const s_task_function_context &context, real32 parameter_id, c_real_buffer *result) {
-		if (parameter_id < 0.0f || parameter_id != std::floor(parameter_id)) {
+	void get_parameter_value(
+		const s_task_function_context &context,
+		wl_task_argument(real32, parameter_id),
+		wl_task_argument(c_real_buffer *, result)) {
+		if (*parameter_id < 0.0f || *parameter_id != std::floor(*parameter_id)) {
 			result->assign_constant(0.0f);
 			return;
 		}
 
-		uint32 integer_parameter_id = static_cast<uint32>(parameter_id);
+		uint32 integer_parameter_id = static_cast<uint32>(*parameter_id);
 		real32 previous_value = 0.0f;
 		c_wrapped_array<const s_timestamped_controller_event> parameter_change_events =
 			context.controller_interface->get_parameter_change_events(integer_parameter_id, previous_value);
@@ -134,4 +147,30 @@ namespace controller_task_functions {
 			result->set_is_constant(false);
 		}
 	}
+
+	static constexpr uint32 k_controller_library_id = 7;
+	wl_task_function_library(k_controller_library_id, "controller", 0);
+
+	wl_task_function(0xbeaf383d, "get_note_id", "get_note_id")
+		.set_function<get_note_id>();
+
+	wl_task_function(0x8b9d039b, "get_note_velocity", "get_note_velocity")
+		.set_function<get_note_velocity>();
+
+	wl_task_function(0x05b9e818, "get_note_press_duration", "get_note_press_duration")
+		.set_function<get_note_press_duration>()
+		.set_memory_query<get_note_press_duration_memory_query>()
+		.set_initializer<get_note_press_duration_voice_initializer>();
+
+	wl_task_function(0xa370e402, "get_note_release_duration", "get_note_release_duration")
+		.set_function<get_note_release_duration>()
+		.set_memory_query<get_note_release_duration_memory_query>()
+		.set_initializer<get_note_release_duration_voice_initializer>();
+
+	wl_task_function(0x6badd8e8, "get_parameter_value", "get_parameter_value")
+		.set_function<get_parameter_value>()
+		.set_initializer<get_parameter_value_initializer>();
+
+	wl_end_active_library_task_function_registration();
+
 }

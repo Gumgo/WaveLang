@@ -1,13 +1,13 @@
 #include "engine/buffer.h"
 #include "engine/buffer_operations/buffer_iterator.h"
-#include "engine/task_functions/task_functions_core.h"
+#include "engine/task_function_registration.h"
 
 namespace core_task_functions {
 
 	void negation(
 		const s_task_function_context &context,
-		const c_real_buffer *a,
-		c_real_buffer *result) {
+		wl_task_argument(const c_real_buffer *, a),
+		wl_task_argument(c_real_buffer *, result)) {
 		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, result,
 			[](size_t i, const real32xN &a, real32xN &result) {
 				result = -a;
@@ -16,9 +16,9 @@ namespace core_task_functions {
 
 	void addition(
 		const s_task_function_context &context,
-		const c_real_buffer *a,
-		const c_real_buffer *b,
-		c_real_buffer *result) {
+		wl_task_argument(const c_real_buffer *, a),
+		wl_task_argument(const c_real_buffer *, b),
+		wl_task_argument(c_real_buffer *, result)) {
 		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
 			[](size_t i, const real32xN &a, const real32xN &b, real32xN &result) {
 				result = a + b;
@@ -27,9 +27,9 @@ namespace core_task_functions {
 
 	void subtraction(
 		const s_task_function_context &context,
-		const c_real_buffer *a,
-		const c_real_buffer *b,
-		c_real_buffer *result) {
+		wl_task_argument(const c_real_buffer *, a),
+		wl_task_argument(const c_real_buffer *, b),
+		wl_task_argument(c_real_buffer *, result)) {
 		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
 			[](size_t i, const real32xN &a, const real32xN &b, real32xN &result) {
 				result = a - b;
@@ -38,9 +38,9 @@ namespace core_task_functions {
 
 	void multiplication(
 		const s_task_function_context &context,
-		const c_real_buffer *a,
-		const c_real_buffer *b,
-		c_real_buffer *result) {
+		wl_task_argument(const c_real_buffer *, a),
+		wl_task_argument(const c_real_buffer *, b),
+		wl_task_argument(c_real_buffer *, result)) {
 		// Detect multiply by zero, since it's a common case
 		if ((a->is_constant() && a->get_constant() == 0.0f) || (b->is_constant() && b->get_constant() == 0.0f)) {
 			result->assign_constant(0.0f);
@@ -55,9 +55,9 @@ namespace core_task_functions {
 
 	void division(
 		const s_task_function_context &context,
-		const c_real_buffer *a,
-		const c_real_buffer *b,
-		c_real_buffer *result) {
+		wl_task_argument(const c_real_buffer *, a),
+		wl_task_argument(const c_real_buffer *, b),
+		wl_task_argument(c_real_buffer *, result)) {
 		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
 			[](size_t i, const real32xN &a, const real32xN &b, real32xN &result) {
 				result = a / b;
@@ -66,9 +66,9 @@ namespace core_task_functions {
 
 	void modulo(
 		const s_task_function_context &context,
-		const c_real_buffer *a,
-		const c_real_buffer *b,
-		c_real_buffer *result) {
+		wl_task_argument(const c_real_buffer *, a),
+		wl_task_argument(const c_real_buffer *, b),
+		wl_task_argument(c_real_buffer *, result)) {
 		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
 			[](size_t i, const real32xN &a, const real32xN &b, real32xN &result) {
 				result = a % b;
@@ -77,8 +77,8 @@ namespace core_task_functions {
 
 	void not_(
 		const s_task_function_context &context,
-		const c_bool_buffer *a,
-		c_bool_buffer *result) {
+		wl_task_argument(const c_bool_buffer *, a),
+		wl_task_argument(c_bool_buffer *, result)) {
 		iterate_buffers<k_simd_size_bits, true>(context.buffer_size, a, result,
 			[](size_t i, const int32xN &a, int32xN &result) {
 				result = ~a;
@@ -87,9 +87,9 @@ namespace core_task_functions {
 
 	void equal_real(
 		const s_task_function_context &context,
-		const c_real_buffer *a,
-		const c_real_buffer *b,
-		c_bool_buffer *result) {
+		wl_task_argument(const c_real_buffer *, a),
+		wl_task_argument(const c_real_buffer *, b),
+		wl_task_argument(c_bool_buffer *, result)) {
 		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
 			[](size_t i, const real32xN &a, const real32xN &b, int32xN &result) {
 				result = a == b;
@@ -98,9 +98,9 @@ namespace core_task_functions {
 
 	void not_equal_real(
 		const s_task_function_context &context,
-		const c_real_buffer *a,
-		const c_real_buffer *b,
-		c_bool_buffer *result) {
+		wl_task_argument(const c_real_buffer *, a),
+		wl_task_argument(const c_real_buffer *, b),
+		wl_task_argument(c_bool_buffer *, result)) {
 		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
 			[](size_t i, const real32xN &a, const real32xN &b, int32xN &result) {
 				result = a != b;
@@ -109,9 +109,9 @@ namespace core_task_functions {
 
 	void equal_bool(
 		const s_task_function_context &context,
-		const c_bool_buffer *a,
-		const c_bool_buffer *b,
-		c_bool_buffer *result) {
+		wl_task_argument(const c_bool_buffer *, a),
+		wl_task_argument(const c_bool_buffer *, b),
+		wl_task_argument(c_bool_buffer *, result)) {
 		iterate_buffers<k_simd_size_bits, true>(context.buffer_size, a, b, result,
 			[](size_t i, const int32xN &a, const int32xN &b, int32xN &result) {
 				result = ~(a ^ b);
@@ -120,9 +120,9 @@ namespace core_task_functions {
 
 	void not_equal_bool(
 		const s_task_function_context &context,
-		const c_bool_buffer *a,
-		const c_bool_buffer *b,
-		c_bool_buffer *result) {
+		wl_task_argument(const c_bool_buffer *, a),
+		wl_task_argument(const c_bool_buffer *, b),
+		wl_task_argument(c_bool_buffer *, result)) {
 		iterate_buffers<k_simd_size_bits, true>(context.buffer_size, a, b, result,
 			[](size_t i, const int32xN &a, const int32xN &b, int32xN &result) {
 				result = a ^ b;
@@ -131,9 +131,9 @@ namespace core_task_functions {
 
 	void greater(
 		const s_task_function_context &context,
-		const c_real_buffer *a,
-		const c_real_buffer *b,
-		c_bool_buffer *result) {
+		wl_task_argument(const c_real_buffer *, a),
+		wl_task_argument(const c_real_buffer *, b),
+		wl_task_argument(c_bool_buffer *, result)) {
 		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
 			[](size_t i, const real32xN &a, const real32xN &b, int32xN &result) {
 				result = a > b;
@@ -142,9 +142,9 @@ namespace core_task_functions {
 
 	void less(
 		const s_task_function_context &context,
-		const c_real_buffer *a,
-		const c_real_buffer *b,
-		c_bool_buffer *result) {
+		wl_task_argument(const c_real_buffer *, a),
+		wl_task_argument(const c_real_buffer *, b),
+		wl_task_argument(c_bool_buffer *, result)) {
 		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
 			[](size_t i, const real32xN &a, const real32xN &b, int32xN &result) {
 				result = a < b;
@@ -153,9 +153,9 @@ namespace core_task_functions {
 
 	void greater_equal(
 		const s_task_function_context &context,
-		const c_real_buffer *a,
-		const c_real_buffer *b,
-		c_bool_buffer *result) {
+		wl_task_argument(const c_real_buffer *, a),
+		wl_task_argument(const c_real_buffer *, b),
+		wl_task_argument(c_bool_buffer *, result)) {
 		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
 			[](size_t i, const real32xN &a, const real32xN &b, int32xN &result) {
 				result = a >= b;
@@ -164,9 +164,9 @@ namespace core_task_functions {
 
 	void less_equal(
 		const s_task_function_context &context,
-		const c_real_buffer *a,
-		const c_real_buffer *b,
-		c_bool_buffer *result) {
+		wl_task_argument(const c_real_buffer *, a),
+		wl_task_argument(const c_real_buffer *, b),
+		wl_task_argument(c_bool_buffer *, result)) {
 		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
 			[](size_t i, const real32xN &a, const real32xN &b, int32xN &result) {
 				result = a <= b;
@@ -175,9 +175,9 @@ namespace core_task_functions {
 
 	void and_(
 		const s_task_function_context &context,
-		const c_bool_buffer *a,
-		const c_bool_buffer *b,
-		c_bool_buffer *result) {
+		wl_task_argument(const c_bool_buffer *, a),
+		wl_task_argument(const c_bool_buffer *, b),
+		wl_task_argument(c_bool_buffer *, result)) {
 		iterate_buffers<k_simd_size_bits, true>(context.buffer_size, a, b, result,
 			[](size_t i, const int32xN &a, const int32xN &b, int32xN &result) {
 				result = a & b;
@@ -186,9 +186,9 @@ namespace core_task_functions {
 
 	void or_(
 		const s_task_function_context &context,
-		const c_bool_buffer *a,
-		const c_bool_buffer *b,
-		c_bool_buffer *result) {
+		wl_task_argument(const c_bool_buffer *, a),
+		wl_task_argument(const c_bool_buffer *, b),
+		wl_task_argument(c_bool_buffer *, result)) {
 		iterate_buffers<k_simd_size_bits, true>(context.buffer_size, a, b, result,
 			[](size_t i, const int32xN &a, const int32xN &b, int32xN &result) {
 				result = a | b;
@@ -197,10 +197,10 @@ namespace core_task_functions {
 
 	void select_real(
 		const s_task_function_context &context,
-		const c_bool_buffer *condition,
-		const c_real_buffer *true_value,
-		const c_real_buffer *false_value,
-		c_real_buffer *result) {
+		wl_task_argument(const c_bool_buffer *, condition),
+		wl_task_argument(const c_real_buffer *, true_value),
+		wl_task_argument(const c_real_buffer *, false_value),
+		wl_task_argument(c_real_buffer *, result)) {
 		// Optimize case where the condition is constant
 		if (condition->is_constant()) {
 			const c_real_buffer *value = condition->get_constant() ? true_value : false_value;
@@ -227,10 +227,10 @@ namespace core_task_functions {
 
 	void select_bool(
 		const s_task_function_context &context,
-		wl_source("condition") const c_bool_buffer *condition,
-		wl_source("true_value") const c_bool_buffer *true_value,
-		wl_source("false_value") const c_bool_buffer *false_value,
-		wl_source("result") c_bool_buffer *result) {
+		wl_task_argument(const c_bool_buffer *, condition),
+		wl_task_argument(const c_bool_buffer *, true_value),
+		wl_task_argument(const c_bool_buffer *, false_value),
+		wl_task_argument(c_bool_buffer *, result)) {
 		// Optimize case where the condition is constant
 		if (condition->is_constant()) {
 			const c_bool_buffer *value = condition->get_constant() ? true_value : false_value;
@@ -255,5 +255,68 @@ namespace core_task_functions {
 				});
 		}
 	}
+
+
+	static constexpr uint32 k_core_library_id = 0;
+	wl_task_function_library(k_core_library_id, "core", 0);
+
+	wl_task_function(0x54ae3577, "negation", "negation")
+		.set_function<negation>();
+
+	wl_task_function(0xc9171617, "addition", "addition")
+		.set_function<addition>();
+
+	wl_task_function(0x1f1d8e92, "subtraction", "subtraction")
+		.set_function<subtraction>();
+
+	wl_task_function(0xb81d2e65, "multiplication", "multiplication")
+		.set_function<multiplication>();
+
+	wl_task_function(0x1bce0fd6, "division", "division")
+		.set_function<division>();
+
+	wl_task_function(0xaa104145, "modulo", "modulo")
+		.set_function<modulo>();
+
+	wl_task_function(0x796d904f, "not", "not")
+		.set_function<not_>();
+
+	wl_task_function(0xb81092bf, "equal_real", "equal$real")
+		.set_function<equal_real>();
+
+	wl_task_function(0x09b92133, "not_equal_real", "not_equal$real")
+		.set_function<not_equal_real>();
+
+	wl_task_function(0xfdb20dfa, "equal_bool", "equal$bool")
+		.set_function<equal_bool>();
+
+	wl_task_function(0xd0f31354, "not_equal_bool", "not_equal$bool")
+		.set_function<not_equal_bool>();
+
+	wl_task_function(0x80b0f714, "greater", "greater")
+		.set_function<greater>();
+
+	wl_task_function(0xd51c2202, "less", "less")
+		.set_function<less>();
+
+	wl_task_function(0xabd7961b, "greater_equal", "greater_equal")
+		.set_function<greater_equal>();
+
+	wl_task_function(0xbe4a3f1c, "less_equal", "less_equal")
+		.set_function<less_equal>();
+
+	wl_task_function(0xa63e91eb, "and", "and")
+		.set_function<and_>();
+
+	wl_task_function(0x0655ac08, "or", "or")
+		.set_function<or_>();
+
+	wl_task_function(0x716c993c, "select_real", "select$real")
+		.set_function<select_real>();
+
+	wl_task_function(0xd5383677, "select_bool", "select$bool")
+		.set_function<select_bool>();
+
+	wl_end_active_library_task_function_registration();
 
 }

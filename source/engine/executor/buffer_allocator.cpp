@@ -84,7 +84,7 @@ const s_buffer_pool_description &c_buffer_allocator::get_buffer_pool_description
 void *c_buffer_allocator::allocate_buffer_memory(uint32 pool_index) {
 	s_buffer_pool &pool = m_buffer_pools[pool_index];
 	uint32 buffer_handle = pool.buffer_pool.allocate();
-	wl_vassert(buffer_handle != k_lock_free_invalid_handle, "Out of buffers");
+	wl_assertf(buffer_handle != k_lock_free_invalid_handle, "Out of buffers");
 	s_buffer_memory_header *header = m_buffer_memory_pointers.get_array()[pool.first_buffer_handle + buffer_handle];
 	return header + 1; // Buffer memory is directly after the header
 }

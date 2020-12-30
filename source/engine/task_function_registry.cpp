@@ -1,10 +1,9 @@
+#include "common/utility/reporting.h"
+
 #include "engine/task_function_registry.h"
 
 #include <vector>
 #include <unordered_map>
-
-// $TODO $PLUGIN error reporting for registration errors. Important when we have plugins - we will want a global error
-// reporting system for that.
 
 enum class e_task_function_registry_state {
 	k_uninitialized,
@@ -43,8 +42,7 @@ struct s_task_function_registry_data {
 static e_task_function_registry_state g_task_function_registry_state = e_task_function_registry_state::k_uninitialized;
 static s_task_function_registry_data g_task_function_registry_data;
 
-#if IS_TRUE(ASSERTS_ENABLED)
-static void validate_task_function_mapping(const s_native_module &native_module, const s_task_function &task_function);
+static bool validate_task_function_mapping(const s_native_module &native_module, const s_task_function &task_function);
 
 static constexpr e_task_primitive_type k_native_module_primitive_type_to_task_primitive_type_mapping[] = {
 	e_task_primitive_type::k_real,	// e_native_module_primitive_type::k_real
@@ -60,7 +58,6 @@ static e_task_primitive_type task_primitive_type_from_native_module_primitive_ty
 	wl_assert(valid_enum_index(native_module_primitive_type));
 	return k_native_module_primitive_type_to_task_primitive_type_mapping[enum_index(native_module_primitive_type)];
 }
-#endif // IS_TRUE(ASSERTS_ENABLED)
 
 void c_task_function_registry::initialize() {
 	wl_assert(g_task_function_registry_state == e_task_function_registry_state::k_uninitialized);
@@ -91,7 +88,7 @@ void c_task_function_registry::begin_registration() {
 	uint32 native_module_count = c_native_module_registry::get_native_module_count();
 	g_task_function_registry_data.task_function_mappings.resize(native_module_count);
 	for (uint32 index = 0; index < native_module_count; index++) {
-		g_task_function_registry_data.task_function_mappings[index] = s_task_function_uid::k_invalid;
+		g_task_function_registry_data.task_function_mappings[index] = s_task_function_uid::invalid();
 	}
 
 	g_task_function_registry_state = e_task_function_registry_state::k_registering;
@@ -110,7 +107,12 @@ bool c_task_function_registry::end_registration() {
 		// If it's possible for the native module not to run at compile-time, make sure it has an associated task
 		// function
 		if (!always_runs_at_compile_time
-			&& get_task_function_mapping(native_module_handle) == s_task_function_uid::k_invalid) {
+			&& !get_task_function_mapping(native_module_handle).is_valid()) {
+			report_error(
+				"Native module 0x%04x ('%s') doesn't always run at compile-time "
+				"but is not mapped to any task function for runtime evaluation",
+				native_module.uid.get_module_id(),
+				native_module.name.get_string());
 			return false;
 		}
 	}
@@ -126,11 +128,19 @@ bool c_task_function_registry::register_task_function_library(const s_task_funct
 	// Make sure there isn't already a library registered with this ID
 	auto it = g_task_function_registry_data.task_function_library_ids_to_indices.find(library.id);
 	if (it != g_task_function_registry_data.task_function_library_ids_to_indices.end()) {
+		report_error(
+			"Failed to register conflicting task function library 0x%04x ('%s')",
+			library.id,
+			library.name.get_string());
 		return false;
 	}
 
 	// Validate that there is a matching native module library
 	if (!c_native_module_registry::is_native_module_library_registered(library.id)) {
+		report_error(
+			"No matching native module library registered for task function library 0x%04x ('%s')",
+			library.id,
+			library.name.get_string());
 		return false;
 	}
 
@@ -139,7 +149,23 @@ bool c_task_function_registry::register_task_function_library(const s_task_funct
 		c_native_module_registry::get_native_module_library_handle(library.id);
 	const s_native_module_library &native_module_library =
 		c_native_module_registry::get_native_module_library(native_module_library_handle);
-	if (library.name != native_module_library.name || library.version != native_module_library.version) {
+	if (library.version != native_module_library.version) {
+		report_error(
+			"Task function library 0x%04x ('%s') version does not match native module library version (%d vs. %d)",
+			library.id,
+			library.name.get_string(),
+			library.version,
+			native_module_library.version);
+		return false;
+	}
+
+	if (library.name != native_module_library.name) {
+		report_error(
+			"Task function library 0x%04x ('%s') name does not match native module library name ('%s' vs. '%s')",
+			library.id,
+			library.name.get_string(),
+			library.name.get_string(),
+			native_module_library.name.get_string());
 		return false;
 	}
 
@@ -185,6 +211,9 @@ bool c_task_function_registry::register_task_function(const s_task_function &tas
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
 	if (!validate_task_function(task_function)) {
+		report_error(
+			"Failed to register task function 0x%04x because it contains errors",
+			task_function.uid.get_task_function_id());
 		return false;
 	}
 
@@ -195,6 +224,10 @@ bool c_task_function_registry::register_task_function(const s_task_function &tas
 		auto it = g_task_function_registry_data.task_function_library_ids_to_indices.find(
 			task_function.uid.get_library_id());
 		if (it == g_task_function_registry_data.task_function_library_ids_to_indices.end()) {
+			report_error(
+				"Task function library 0x%04x referenced by task function 0x%04x was not registered",
+				task_function.uid.get_library_id(),
+				task_function.uid.get_task_function_id());
 			return false;
 		}
 	}
@@ -202,6 +235,7 @@ bool c_task_function_registry::register_task_function(const s_task_function &tas
 	// Check that the UID isn't already in use
 	if (g_task_function_registry_data.task_function_uids_to_indices.find(task_function.uid) !=
 		g_task_function_registry_data.task_function_uids_to_indices.end()) {
+		report_error("Failed to register conflicting task function 0x%04x", task_function.uid.get_task_function_id());
 		return false;
 	}
 
@@ -209,6 +243,9 @@ bool c_task_function_registry::register_task_function(const s_task_function &tas
 	h_native_module native_module_handle =
 		c_native_module_registry::get_native_module_handle(task_function.native_module_uid);
 	if (!native_module_handle.is_valid()) {
+		report_error(
+			"No matching native module registered for task function 0x%04x",
+			task_function.uid.get_task_function_id());
 		return false;
 	}
 
@@ -223,19 +260,30 @@ bool c_task_function_registry::register_task_function(const s_task_function &tas
 	// If the associated native module always runs at compile time, this task function can never run
 	// $TODO $PLUGIN maybe we want a warning instead of an error
 	if (always_runs_at_compile_time) {
+		report_error(
+			"Task function 0x%04x is associated with native module 0x%04x ('%s') which always runs at compile-time "
+			"so the task function will never run",
+			task_function.uid.get_task_function_id(),
+			native_module.uid.get_module_id(),
+			native_module.name.get_string());
 		return false;
 	}
 
 	// Make sure the same native module doesn't map to two task functions
-	if (g_task_function_registry_data.task_function_mappings[native_module_handle.get_data()]
-		!= s_task_function_uid::k_invalid) {
+	if (g_task_function_registry_data.task_function_mappings[native_module_handle.get_data()].is_valid()) {
+		report_error(
+			"Failed to register task function 0x%04x because the associated native module 0x%04x ('%s') "
+			"is already mapped to another task function",
+			task_function.uid.get_task_function_id(),
+			native_module.uid.get_module_id(),
+			native_module.name.get_string());
 		return false;
 	}
 
 	// $TODO $PLUGIN validate that the library UID on all tasks matches the library UID on the native module
-#if IS_TRUE(ASSERTS_ENABLED)
-	validate_task_function_mapping(native_module, task_function);
-#endif // IS_TRUE(ASSERTS_ENABLED)
+	if (!validate_task_function_mapping(native_module, task_function)) {
+		return false;
+	}
 
 	uint32 index = cast_integer_verify<uint32>(g_task_function_registry_data.task_functions.size());
 
@@ -271,63 +319,146 @@ s_task_function_uid c_task_function_registry::get_task_function_mapping(h_native
 	return g_task_function_registry_data.task_function_mappings[native_module_handle.get_data()];
 }
 
-#if IS_TRUE(ASSERTS_ENABLED)
-static void validate_task_function_mapping(const s_native_module &native_module, const s_task_function &task_function) {
+static bool validate_task_function_mapping(const s_native_module &native_module, const s_task_function &task_function) {
 	// Keep track of whether each task argument has been mapped to
 	s_static_array<bool, k_max_task_function_arguments> task_argument_mappings;
 	zero_type(&task_argument_mappings);
 
 	// Ensure that all indices are valid and that all mapping types match
 	for (size_t arg = 0; arg < native_module.argument_count; arg++) {
+		const s_native_module_argument &native_module_argument = native_module.arguments[arg];
+
 		// Make sure we're mapping to a valid task argument index
 		uint32 mapping_index = task_function.task_function_argument_indices[arg];
 		if (mapping_index == k_invalid_task_argument_index) {
 			// This native module argument wasn't used by the task function.
+			if (native_module_argument.argument_direction == e_native_module_argument_direction::k_out) {
+				// Output arguments must always be mapped
+				report_error(
+					"Native module 0x%04x ('%s') out argument '%s' is not mapped to task function 0x%04x",
+					native_module.uid.get_module_id(),
+					native_module.name.get_string(),
+					native_module_argument.name.get_string(),
+					task_function.uid.get_task_function_id());
+				return false;
+			}
+
 			continue;
 		}
 
-		wl_assert(valid_index(mapping_index, task_function.argument_count));
-		wl_assert(!task_argument_mappings[mapping_index]);
+		if (!valid_index(mapping_index, task_function.argument_count)) {
+			report_error(
+				"Native module 0x%04x ('%s') argument '%s' does not map to a valid argument of task function 0x%04x",
+				native_module.uid.get_module_id(),
+				native_module.name.get_string(),
+				native_module_argument.name.get_string(),
+				task_function.uid.get_task_function_id());
+			return false;
+		}
+
+		if (task_argument_mappings[mapping_index]) {
+			report_error(
+				"Native module 0x%04x ('%s') argument '%s' maps to task function 0x%04x argument %u "
+				"which is mapped to by another native module argument",
+				native_module.uid.get_module_id(),
+				native_module.name.get_string(),
+				native_module_argument.name.get_string(),
+				task_function.uid.get_task_function_id(),
+				mapping_index);
+			return false;
+		}
+
 		task_argument_mappings[mapping_index] = true;
 
-		const s_native_module_argument &native_module_argument = native_module.arguments[arg];
 		const s_task_function_argument &task_function_argument = task_function.arguments[mapping_index];
 
 		if (native_module_argument.argument_direction == e_native_module_argument_direction::k_in) {
-			wl_assert(task_function_argument.argument_direction == e_task_argument_direction::k_in);
+			if (task_function_argument.argument_direction != e_task_argument_direction::k_in) {
+				report_error(
+					"Native module 0x%04x ('%s') in argument '%s' "
+					"does not map to an in argument of task function 0x%04x",
+					native_module.uid.get_module_id(),
+					native_module.name.get_string(),
+					native_module_argument.name.get_string(),
+					task_function.uid.get_task_function_id());
+				return false;
+			}
 		} else {
 			wl_assert(native_module_argument.argument_direction == e_native_module_argument_direction::k_out);
-			wl_assert(task_function_argument.argument_direction == e_task_argument_direction::k_out);
+			if (task_function_argument.argument_direction != e_task_argument_direction::k_out) {
+				report_error(
+					"Native module 0x%04x ('%s') out argument '%s' "
+					"does not map to an out argument of task function 0x%04x",
+					native_module.uid.get_module_id(),
+					native_module.name.get_string(),
+					native_module_argument.name.get_string(),
+					task_function.uid.get_task_function_id());
+				return false;
+			}
 
 			// Task outputs can't be arrays
-			wl_assert(!task_function_argument.type.is_array());
+			if (task_function_argument.type.is_array()) {
+				report_error(
+					"Task function 0x%04x contains an out argument of an array type which is illegal",
+					task_function.uid.get_task_function_id());
+				return false;
+			}
 		}
 
 		// For all qualifier types, the primitive type and whether it's an array must match
-		wl_assert(task_function_argument.type.get_primitive_type() ==
-			task_primitive_type_from_native_module_primitive_type(native_module_argument.type.get_primitive_type()));
-		wl_assert(task_function_argument.type.is_array() == native_module_argument.type.is_array());
+		e_task_primitive_type expected_primitive_type =
+			task_primitive_type_from_native_module_primitive_type(native_module_argument.type.get_primitive_type());
+		bool type_mapping_valid =
+			task_function_argument.type.get_primitive_type() == expected_primitive_type
+			&& task_function_argument.type.is_array() == native_module_argument.type.is_array();
 
-		switch (native_module_argument.type.get_data_mutability()) {
-		case e_native_module_data_mutability::k_variable:
-			wl_assert(task_function_argument.type.get_data_mutability() == e_task_data_mutability::k_variable);
-			break;
+		if (type_mapping_valid) {
+			switch (native_module_argument.type.get_data_mutability()) {
+			case e_native_module_data_mutability::k_variable:
+				type_mapping_valid =
+					task_function_argument.type.get_data_mutability() == e_task_data_mutability::k_variable;
+				break;
 
-		case e_native_module_data_mutability::k_constant:
-			// Constants can be mapped to task function buffers - the buffer simply holds a constant value
+			case e_native_module_data_mutability::k_constant:
+				// Constants can be mapped to task function buffers - the buffer simply holds a constant value
 
-		case e_native_module_data_mutability::k_dependent_constant:
-			// Dependent constants can be variable, so the task function type must be a buffer
-			wl_assert(task_function_argument.type.get_data_mutability() == e_task_data_mutability::k_variable);
-			break;
+			case e_native_module_data_mutability::k_dependent_constant:
+				// Dependent constants can be variable, so the task function type must be a buffer
+				type_mapping_valid =
+					task_function_argument.type.get_data_mutability() == e_task_data_mutability::k_variable;
+				break;
 
-		default:
-			wl_unreachable();
+			default:
+				wl_unreachable();
+			}
+		}
+
+		if (!type_mapping_valid) {
+			report_error(
+				"Native module 0x%04x ('%s') argument '%s' maps to task function 0x%04x argument %u "
+				"with an incompatible type ('%s' vs. '%s')",
+				native_module.uid.get_module_id(),
+				native_module.name.get_string(),
+				native_module_argument.name.get_string(),
+				task_function.uid.get_task_function_id(),
+				mapping_index,
+				native_module_argument.type.to_string().c_str(),
+				task_function_argument.type.to_string().c_str());
+			return false;
 		}
 	}
 
 	for (size_t task_arg = 0; task_arg < task_function.argument_count; task_arg++) {
-		wl_assert(task_argument_mappings[task_arg]);
+		if (!task_argument_mappings[task_arg]) {
+			report_error(
+				"Task function 0x%04x argument %llu has no mapping from native module 0x%04x ('%s')",
+				task_function.uid.get_task_function_id(),
+				task_arg,
+				native_module.uid.get_module_id(),
+				native_module.name.get_string());
+			return false;
+		}
 	}
+
+	return true;
 }
-#endif // IS_TRUE(ASSERTS_ENABLED)

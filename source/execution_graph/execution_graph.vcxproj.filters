@@ -25,9 +25,6 @@
     <ClCompile Include="native_modules\native_modules_time.cpp">
       <Filter>native_modules</Filter>
     </ClCompile>
-    <ClCompile Include="native_modules\native_module_registration.cpp">
-      <Filter>native_modules</Filter>
-    </ClCompile>
     <ClCompile Include="native_modules\native_modules_array.cpp">
       <Filter>native_modules</Filter>
     </ClCompile>
@@ -43,6 +40,7 @@
     <ClCompile Include="native_modules\json\json_file_manager.cpp">
       <Filter>native_modules\json</Filter>
     </ClCompile>
+    <ClCompile Include="native_module_registration.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="execution_graph.h" />
@@ -52,45 +50,13 @@
     <ClInclude Include="instrument_stage.h" />
     <ClInclude Include="native_module_registry.h" />
     <ClInclude Include="node_reference.h" />
-    <ClInclude Include="native_modules\native_modules_core.h">
-      <Filter>native_modules</Filter>
-    </ClInclude>
-    <ClInclude Include="native_modules\native_modules_delay.h">
-      <Filter>native_modules</Filter>
-    </ClInclude>
-    <ClInclude Include="native_modules\native_modules_filter.h">
-      <Filter>native_modules</Filter>
-    </ClInclude>
-    <ClInclude Include="native_modules\native_modules_math.h">
-      <Filter>native_modules</Filter>
-    </ClInclude>
-    <ClInclude Include="native_modules\native_modules_sampler.h">
-      <Filter>native_modules</Filter>
-    </ClInclude>
-    <ClInclude Include="native_modules\native_modules_stream.h">
-      <Filter>native_modules</Filter>
-    </ClInclude>
-    <ClInclude Include="native_modules\native_modules_time.h">
-      <Filter>native_modules</Filter>
-    </ClInclude>
-    <ClInclude Include="native_modules\native_module_registration.h">
-      <Filter>native_modules</Filter>
-    </ClInclude>
-    <ClInclude Include="native_modules\native_modules_array.h">
-      <Filter>native_modules</Filter>
-    </ClInclude>
-    <ClInclude Include="native_modules\native_modules_controller.h">
-      <Filter>native_modules</Filter>
-    </ClInclude>
-    <ClInclude Include="native_modules\native_modules_json.h">
-      <Filter>native_modules</Filter>
-    </ClInclude>
     <ClInclude Include="native_modules\json\json_file.h">
       <Filter>native_modules\json</Filter>
     </ClInclude>
     <ClInclude Include="native_modules\json\json_file_manager.h">
       <Filter>native_modules\json</Filter>
     </ClInclude>
+    <ClInclude Include="native_module_registration.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="SConscript" />

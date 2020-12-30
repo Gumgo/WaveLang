@@ -1,42 +1,10 @@
 #pragma once
 
+#include "common/utility/tuple.h"
+
 #include "engine/buffer_operations/buffer_iterator_types.h"
 
-#include <tuple>
-
 namespace buffer_iterator_internal {
-	// There seems to be a bug with MSVC's implementation of std::apply() (an issue with _C_invoke overloads) so here's
-	// a replacement:
-
-	template<typename t_function, typename t_tuple, size_t... k_indices>
-	decltype(auto) std_apply_internal(t_function &&function, t_tuple &&tuple, std::index_sequence<k_indices...>) {
-		return function(std::get<k_indices>(std::forward<t_tuple>(tuple))...);
-	}
-
-	template<typename t_function, typename t_tuple>
-	decltype(auto) std_apply(t_function &&function, t_tuple &&tuple) {
-		return std_apply_internal(
-			std::forward<t_function>(function),
-			std::forward<t_tuple>(tuple),
-			std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<t_tuple>>>());
-	}
-
-	// Calls the provided function on each element of the tuple
-	template<typename t_tuple, typename t_function>
-	void tuple_for_each(t_tuple &&tuple, t_function &&function) {
-		std_apply(
-			[&](auto &&... x) { int32 swallow[] = { (function(x), 0)..., 0 }; (void) swallow; },
-			std::forward<t_tuple>(tuple));
-	}
-
-	// Calls the provided function on each element of the tuple and returns a tuple containing the returned values
-	template<typename t_tuple, typename t_function>
-	decltype(auto) tuple_apply(t_tuple &&tuple, t_function &&function) {
-		return std_apply(
-			// We need to be explicit about our tuple type or we will lose references
-			[&](auto &&... x) { return std::tuple<decltype(function(x))...>(function(x)...); },
-			std::forward<t_tuple>(tuple));
-	}
 
 	template<typename t_iterators>
 	decltype(auto) get_iterands(t_iterators &&iterators) {

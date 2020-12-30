@@ -13,6 +13,10 @@
 #define STATIC_ASSERT_MSG(x, message) static_assert(x, message)
 #define STATIC_UNREACHABLE() static_assert(false, "Unreachable")
 
+// This function is not marked constexpr so it will fail if evaluated inside of a constexpr function
+inline bool constexpr_error(bool x) { return x; }
+#define CONSTEXPR_ERROR() constexpr_error(false)
+
 #define SIZEOF_BITS(x) (sizeof(x) * 8)
 
 #define TOKEN_CONCATENATE_HELPER(x, y) x ## y

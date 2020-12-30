@@ -52,24 +52,24 @@ void c_thread::start(const s_thread_definition &thread_definition) {
 	STATIC_ASSERT(is_enum_fully_mapped< e_thread_priority>(k_thread_priority_map));
 
 	if (!SetThreadPriority(m_thread_handle, k_thread_priority_map[enum_index(thread_definition.thread_priority)])) {
-		wl_vhalt("Failed to set thread priority");
+		wl_haltf("Failed to set thread priority");
 	}
 
 	if (thread_definition.processor != -1
 		&& SetThreadIdealProcessor(m_thread_handle, static_cast<DWORD>(thread_definition.processor)) < 0) {
-		wl_vhalt("Failed to set ideal processor");
+		wl_haltf("Failed to set ideal processor");
 	}
 
 	// Start the thread - should return 1 because the thread previously had a suspend count of 1
 	if (ResumeThread(m_thread_handle) != 1) {
-		wl_vhalt("Failed to start thread");
+		wl_haltf("Failed to start thread");
 	}
 }
 
 void c_thread::join() {
 	wl_assert(is_running());
 	if (WaitForSingleObject(m_thread_handle, INFINITE) != WAIT_OBJECT_0) {
-		wl_vhalt("Failed to join thread");
+		wl_haltf("Failed to join thread");
 	}
 	CloseHandle(m_thread_handle);
 	m_thread_handle = nullptr;

@@ -22,12 +22,13 @@ using f_library_compiler_initializer = void *(*)();
 using f_library_compiler_deinitializer = void (*)(void *library_context);
 
 struct s_native_module_library {
-	uint32 id;
-	c_static_string<k_max_native_module_library_name_length> name;
-	uint32 version;
+	uint32 id = 0;
+	c_static_string<k_max_native_module_library_name_length> name =
+		c_static_string<k_max_native_module_library_name_length>::construct_empty();
+	uint32 version = 0;
 
-	f_library_compiler_initializer compiler_initializer;
-	f_library_compiler_deinitializer compiler_deinitializer;
+	f_library_compiler_initializer compiler_initializer = nullptr;
+	f_library_compiler_deinitializer compiler_deinitializer = nullptr;
 };
 
 // Unique identifier for each native module
@@ -44,30 +45,39 @@ struct s_native_module_uid {
 		};
 	};
 
-	bool operator==(const s_native_module_uid &other) const {
+	constexpr s_native_module_uid()
+		: data_uint64(0xffffffffffffffffull) {}
+
+	constexpr bool operator==(const s_native_module_uid &other) const {
 		return data_uint64 == other.data_uint64;
 	}
 
-	bool operator!=(const s_native_module_uid &other) const {
+	constexpr bool operator!=(const s_native_module_uid &other) const {
 		return data_uint64 != other.data_uint64;
 	}
 
-	uint32 get_library_id() const {
+	constexpr uint32 get_library_id() const {
 		return big_to_native_endian(library_id);
 	}
 
-	uint32 get_module_id() const {
+	constexpr uint32 get_module_id() const {
 		return big_to_native_endian(module_id);
 	}
 
-	static s_native_module_uid build(uint32 library_id, uint32 module_id) {
+	constexpr bool is_valid() const {
+		return *this != invalid();
+	}
+
+	static constexpr s_native_module_uid build(uint32 library_id, uint32 module_id) {
 		s_native_module_uid result;
 		result.library_id = native_to_big_endian(library_id);
 		result.module_id = native_to_big_endian(module_id);
 		return result;
 	}
 
-	static const s_native_module_uid k_invalid;
+	static constexpr s_native_module_uid invalid() {
+		return {};
+	}
 };
 
 // Fixed list of operators which are to be associated with native modules
@@ -319,39 +329,41 @@ struct s_native_module_context {
 
 	void *library_context;
 
-	c_native_module_compile_time_argument_list *arguments;
+	c_native_module_compile_time_argument_list arguments;
 };
 
 using f_native_module_compile_time_call = void (*)(const s_native_module_context &context);
 
 struct s_native_module_argument {
-	c_static_string<k_max_native_module_argument_name_length> name;
-	e_native_module_argument_direction argument_direction;
-	c_native_module_qualified_data_type type;
-	e_native_module_data_access data_access;
+	c_static_string<k_max_native_module_argument_name_length> name =
+		c_static_string< k_max_native_module_argument_name_length>::construct_empty();
+	e_native_module_argument_direction argument_direction = e_native_module_argument_direction::k_invalid;
+	c_native_module_qualified_data_type type = c_native_module_qualified_data_type::invalid();
+	e_native_module_data_access data_access = e_native_module_data_access::k_invalid;
 };
 
 struct s_native_module {
 	// Unique identifier for this native module
-	s_native_module_uid uid;
+	s_native_module_uid uid = s_native_module_uid::invalid();
 
 	// Name of the native module
-	c_static_string<k_max_native_module_name_length> name;
+	c_static_string<k_max_native_module_name_length> name =
+		c_static_string< k_max_native_module_name_length>::construct_empty();
 	
 	// Number of arguments
-	size_t argument_count;
-	size_t in_argument_count;
-	size_t out_argument_count;
+	size_t argument_count = 0;
+	size_t in_argument_count = 0;
+	size_t out_argument_count = 0;
 
 	// Index of the argument representing the return value when called from script, or
 	// k_invalid_native_module_argument_index
-	size_t return_argument_index;
+	size_t return_argument_index = k_invalid_native_module_argument_index;
 
 	// List of arguments
-	s_static_array<s_native_module_argument, k_max_native_module_arguments> arguments;
+	s_static_array<s_native_module_argument, k_max_native_module_arguments> arguments{};
 
 	// Function to resolve the module at compile time if all inputs are constant, or null if this is not possible
-	f_native_module_compile_time_call compile_time_call;
+	f_native_module_compile_time_call compile_time_call = nullptr;
 };
 
 void get_native_module_compile_time_properties(
@@ -385,14 +397,18 @@ static constexpr size_t k_max_native_module_optimization_pattern_length = 16;
 struct s_native_module_optimization_symbol {
 	static constexpr uint32 k_max_matched_symbols = 4;
 
-	e_native_module_optimization_symbol_type type;
-	union {
+	union u_data {
+		u_data() {}
+
 		s_native_module_uid native_module_uid;
 		uint32 index; // Symbol index if an variable or constant
 		real32 real_value;
 		bool bool_value;
 		// Currently no string value (likely will never be needed because all strings are compile-time resolved)
-	} data;
+	};
+
+	e_native_module_optimization_symbol_type type;
+	u_data data;
 
 	static s_native_module_optimization_symbol invalid() {
 		s_native_module_optimization_symbol result;

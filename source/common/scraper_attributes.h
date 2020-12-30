@@ -1,6 +1,10 @@
 #pragma once
 
+#if 0
+
 #include "common/macros.h"
+
+// nocheckin Remove this file
 
 #ifdef SCRAPER_ENABLED
 #define SCRAPER_ATTRIBUTE(x) __attribute__((annotate(x)))
@@ -164,3 +168,5 @@
 // Associates the provided task voice initializer function with the task function being declared
 #define wl_task_voice_initializer_function(func) SCRAPER_ATTRIBUTE(WL_TASK_VOICE_INITIALIZER_FUNCTION_PREFIX func)
 
+
+#endif

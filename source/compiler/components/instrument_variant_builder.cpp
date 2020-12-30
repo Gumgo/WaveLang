@@ -1031,7 +1031,7 @@ bool c_execution_graph_builder::evaluate_ast_node(
 			m_graph_trimmer.remove_temporary_reference(subscript_index_node_reference);
 		}
 
-		if (module_declaration->get_native_module_uid() != s_native_module_uid::k_invalid) {
+		if (module_declaration->get_native_module_uid().is_valid()) {
 			// Call the native module which will fill in the tracked declarations in the module scope
 			issue_native_module_call(module_declaration, module_call);
 		} else {
@@ -1226,7 +1226,7 @@ bool c_execution_graph_builder::assign_expression_value(
 bool c_execution_graph_builder::issue_native_module_call(
 	c_ast_node_module_declaration *native_module_declaration,
 	c_ast_node_module_call *native_module_call) {
-	wl_assert(native_module_declaration->get_native_module_uid() != s_native_module_uid::k_invalid);
+	wl_assert(native_module_declaration->get_native_module_uid().is_valid());
 	h_native_module native_module_handle =
 		c_native_module_registry::get_native_module_handle(native_module_declaration->get_native_module_uid());
 	const s_native_module &native_module =

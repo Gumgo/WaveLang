@@ -1,17 +1,25 @@
 #include "execution_graph/instrument_globals.h"
-#include "execution_graph/native_modules/native_modules_stream.h"
+#include "execution_graph/native_module_registration.h"
 
 namespace stream_native_modules {
 
-	void get_sample_rate(const s_native_module_context &context, real32 &result) {
+	void get_sample_rate(
+		const s_native_module_context &context,
+		wl_argument(return out const real, result)) {
 		if (context.instrument_globals->sample_rate == 0) {
 			context.diagnostic_interface->error(
-				"Sample rate is only available in targeted builds; "
-				"it can be specified using the #sample_rate synth global");
-			result = 0.0f;
+				"Sample rate is only queryable if the instrument global '#sample_rate' is provided");
+			*result = 0.0f;
 		} else {
-			result = static_cast<real32>(context.instrument_globals->sample_rate);
+			*result = static_cast<real32>(context.instrument_globals->sample_rate);
 		}
 	}
 
+	static constexpr uint32 k_stream_library_id = 8;
+	wl_native_module_library(k_stream_library_id, "stream", 0);
+
+	wl_native_module(0x2e1c0616, "get_sample_rate")
+		.set_compile_time_call<get_sample_rate>();
+
+	wl_end_active_library_native_module_registration();
 }

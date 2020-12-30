@@ -91,6 +91,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="native_module.h" />
+    <ClInclude Include="native_module_binding.h" />
     <ClInclude Include="native_module_compile_time_types.h" />
     <ClInclude Include="native_module_data_type.h" />
   </ItemGroup>

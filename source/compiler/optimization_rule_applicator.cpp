@@ -67,7 +67,7 @@ bool c_optimization_rule_applicator::try_to_match_source_pattern() {
 		switch (symbol.type) {
 		case e_native_module_optimization_symbol_type::k_native_module:
 		{
-			wl_assert(symbol.data.native_module_uid != s_native_module_uid::k_invalid);
+			wl_assert(symbol.data.native_module_uid.is_valid());
 			h_native_module native_module_handle =
 				c_native_module_registry::get_native_module_handle(symbol.data.native_module_uid);
 
@@ -81,7 +81,7 @@ bool c_optimization_rule_applicator::try_to_match_source_pattern() {
 			} else {
 				// Try to advance to the next input
 				s_match_state &current_state = m_match_state_stack.top();
-				wl_vassert(has_more_inputs(current_state), "Rule inputs don't match native module definition");
+				wl_assertf(has_more_inputs(current_state), "Rule inputs don't match native module definition");
 
 				s_match_state new_state;
 				new_state.current_node_output_reference = c_node_reference();
@@ -118,7 +118,7 @@ bool c_optimization_rule_applicator::try_to_match_source_pattern() {
 			// Try to advance to the next input
 			wl_assert(!m_match_state_stack.empty());
 			s_match_state &current_state = m_match_state_stack.top();
-			wl_vassert(has_more_inputs(current_state), "Rule inputs don't match native module definition");
+			wl_assertf(has_more_inputs(current_state), "Rule inputs don't match native module definition");
 
 			c_node_reference new_output_node_reference = c_node_reference();
 			c_node_reference new_node_reference = follow_next_input(current_state, new_output_node_reference);

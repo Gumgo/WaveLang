@@ -339,8 +339,7 @@ bool c_native_module_caller::try_call(bool &did_call_out) {
 		c_native_module_registry::get_native_module_library_handle(native_module.uid.get_library_id());
 	native_module_context.library_context = m_context.get_native_module_library_context(library_handle);
 
-	c_native_module_compile_time_argument_list argument_list(compile_time_arguments);
-	native_module_context.arguments = &argument_list;
+	native_module_context.arguments = c_native_module_compile_time_argument_list(compile_time_arguments);
 
 	native_module.compile_time_call(native_module_context);
 	if (m_error_issued) {

@@ -1,3 +1,5 @@
+#include "common/utility/reporting.h"
+
 #include "execution_graph/native_module_registry.h"
 
 #include <algorithm>
@@ -14,9 +16,6 @@ static constexpr const char *k_native_module_argument_direction_strings[] = {
 };
 STATIC_ASSERT(is_enum_fully_mapped<e_native_module_argument_direction>(k_native_module_argument_direction_strings));
 
-// $TODO $PLUGIN error reporting for registration errors. Important when we have plugins - we will want a global error
-// reporting system for that. Also, don't halt on error, return false instead
-
 enum class e_native_module_registry_state {
 	k_uninitialized,
 	k_initialized,
@@ -29,10 +28,6 @@ enum class e_native_module_registry_state {
 struct s_native_module_internal {
 	s_native_module native_module;
 	e_native_operator native_operator;
-};
-
-struct s_native_operator {
-	c_static_string<k_max_native_module_name_length> native_module_name;
 };
 
 namespace std {
@@ -50,27 +45,16 @@ struct s_native_module_registry_data {
 
 	std::vector<s_native_module_internal> native_modules;
 	std::unordered_map<s_native_module_uid, uint32> native_module_uids_to_indices;
-	s_static_array<s_native_operator, enum_count<e_native_operator>()> native_operators;
-
-	bool optimizations_enabled;
 	std::vector<s_native_module_optimization_rule> optimization_rules;
 };
 
 static e_native_module_registry_state g_native_module_registry_state = e_native_module_registry_state::k_uninitialized;
 static s_native_module_registry_data g_native_module_registry_data;
 
-#if IS_TRUE(ASSERTS_ENABLED)
-static void validate_optimization_rule(const s_native_module_optimization_rule &optimization_rule);
-#else // IS_TRUE(ASSERTS_ENABLED)
-static void validate_optimization_rule(const s_native_module_optimization_rule &optimization_rule) {}
-#endif // IS_TRUE(ASSERTS_ENABLED)
+static bool validate_optimization_rule(const s_native_module_optimization_rule &optimization_rule);
 
 void c_native_module_registry::initialize() {
 	wl_assert(g_native_module_registry_state == e_native_module_registry_state::k_uninitialized);
-
-	zero_type(&g_native_module_registry_data.native_operators);
-	g_native_module_registry_data.optimizations_enabled = false;
-
 	g_native_module_registry_state = e_native_module_registry_state::k_initialized;
 }
 
@@ -88,38 +72,13 @@ void c_native_module_registry::shutdown() {
 	g_native_module_registry_state = e_native_module_registry_state::k_uninitialized;
 }
 
-void c_native_module_registry::begin_registration(bool optimizations_enabled) {
+void c_native_module_registry::begin_registration() {
 	wl_assert(g_native_module_registry_state == e_native_module_registry_state::k_initialized);
 	g_native_module_registry_state = e_native_module_registry_state::k_registering;
-
-	g_native_module_registry_data.optimizations_enabled = optimizations_enabled;
 }
 
 bool c_native_module_registry::end_registration() {
 	wl_assert(g_native_module_registry_state == e_native_module_registry_state::k_registering);
-
-	// Make sure all the native operators are set and point to existing native modules. Don't bother checking arguments
-	// here though, errors will show up as argument mismatches during compilation.
-	for (e_native_operator native_operator : iterate_enum<e_native_operator>()) {
-		const s_native_operator &native_operator_data =
-			g_native_module_registry_data.native_operators[enum_index(native_operator)];
-		if (native_operator_data.native_module_name.is_empty()) {
-			return false;
-		}
-
-		bool found = false;
-		for (const s_native_module_internal &native_module : g_native_module_registry_data.native_modules) {
-			if (native_module.native_module.name == native_operator_data.native_module_name) {
-				found = true;
-				break;
-			}
-		}
-
-		if (!found) {
-			return false;
-		}
-	}
-
 	g_native_module_registry_state = e_native_module_registry_state::k_finalized;
 	return true;
 }
@@ -130,6 +89,10 @@ bool c_native_module_registry::register_native_module_library(const s_native_mod
 	// Make sure there isn't already a library registered with this ID
 	auto it = g_native_module_registry_data.native_module_library_ids_to_indices.find(library.id);
 	if (it != g_native_module_registry_data.native_module_library_ids_to_indices.end()) {
+		report_error(
+			"Failed to register conflicting native module library 0x%04x ('%s')",
+			library.id,
+			library.name.get_string());
 		return false;
 	}
 
@@ -184,6 +147,10 @@ bool c_native_module_registry::register_native_module(const s_native_module &nat
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
 	if (!validate_native_module(native_module)) {
+		report_error(
+			"Failed to register native module 0x%04x ('%s') because it contains errors",
+			native_module.uid.get_module_id(),
+			native_module.name.get_string());
 		return false;
 	}
 
@@ -195,6 +162,11 @@ bool c_native_module_registry::register_native_module(const s_native_module &nat
 		auto it = g_native_module_registry_data.native_module_library_ids_to_indices.find(
 			native_module.uid.get_library_id());
 		if (it == g_native_module_registry_data.native_module_library_ids_to_indices.end()) {
+			report_error(
+				"Native module library 0x%04x referenced by native module 0x%04x ('%s') was not registered",
+				native_module.uid.get_library_id(),
+				native_module.uid.get_module_id(),
+				native_module.name.get_string());
 			return false;
 		}
 	}
@@ -202,14 +174,17 @@ bool c_native_module_registry::register_native_module(const s_native_module &nat
 	// Check that the UID isn't already in use
 	if (g_native_module_registry_data.native_module_uids_to_indices.find(native_module.uid) !=
 		g_native_module_registry_data.native_module_uids_to_indices.end()) {
+		report_error(
+			"Failed to register conflicting native module 0x%04x ('%s')",
+			native_module.uid.get_module_id(),
+			native_module.name.get_string());
 		return false;
 	}
 
 	// Determine whether this native module is a native operator
 	native_module_internal.native_operator = e_native_operator::k_invalid;
 	for (e_native_operator native_operator : iterate_enum<e_native_operator>()) {
-		if (native_module.name ==
-			g_native_module_registry_data.native_operators[enum_index(native_operator)].native_module_name) {
+		if (native_module.name == get_native_operator_native_module_name(native_operator)) {
 			native_module_internal.native_operator = native_operator;
 			break;
 		}
@@ -224,20 +199,6 @@ bool c_native_module_registry::register_native_module(const s_native_module &nat
 	return true;
 }
 
-void c_native_module_registry::register_native_operator(
-	e_native_operator native_operator,
-	const char *native_module_name) {
-	wl_assert(g_native_module_registry_state == e_native_module_registry_state::k_registering);
-
-	wl_vassert(g_native_module_registry_data.native_modules.empty(),
-		"Native operators must be registered before native modules");
-
-	wl_assert(valid_enum_index(native_operator));
-	wl_assert(strlen(native_module_name) <= k_max_native_module_name_length - 1);
-	g_native_module_registry_data.native_operators[enum_index(native_operator)].native_module_name.set_verify(
-		native_module_name);
-}
-
 e_native_operator c_native_module_registry::get_native_module_operator(s_native_module_uid native_module_uid) {
 	h_native_module native_module_handle = get_native_module_handle(native_module_uid);
 	wl_assert(native_module_handle.is_valid());
@@ -246,15 +207,13 @@ e_native_operator c_native_module_registry::get_native_module_operator(s_native_
 
 bool c_native_module_registry::register_optimization_rule(const s_native_module_optimization_rule &optimization_rule) {
 	wl_assert(g_native_module_registry_state == e_native_module_registry_state::k_registering);
-
-	if (g_native_module_registry_data.optimizations_enabled) {
-		validate_optimization_rule(optimization_rule);
-		g_native_module_registry_data.optimization_rules.push_back(optimization_rule);
-		return true; // $TODO $PLUGIN
-	} else {
-		// Just ignore it. In the runtime, we don't need to store optimizations.
-		return true;
+	if (!validate_optimization_rule(optimization_rule)) {
+		report_error("Failed to register optimization rule because it contains errors");
+		return false;
 	}
+
+	g_native_module_registry_data.optimization_rules.push_back(optimization_rule);
+	return true;
 }
 
 uint32 c_native_module_registry::get_native_module_count() {
@@ -277,11 +236,6 @@ h_native_module c_native_module_registry::get_native_module_handle(s_native_modu
 const s_native_module &c_native_module_registry::get_native_module(h_native_module handle) {
 	wl_assert(valid_index(handle.get_data(), get_native_module_count()));
 	return g_native_module_registry_data.native_modules[handle.get_data()].native_module;
-}
-
-const char *c_native_module_registry::get_native_module_for_native_operator(e_native_operator native_operator) {
-	wl_assert(valid_enum_index(native_operator));
-	return g_native_module_registry_data.native_operators[enum_index(native_operator)].native_module_name.get_string();
 }
 
 uint32 c_native_module_registry::get_optimization_rule_count() {
@@ -423,8 +377,7 @@ bool c_native_module_registry::output_registered_native_modules(const char *file
 	return true;
 }
 
-#if IS_TRUE(ASSERTS_ENABLED)
-static void validate_optimization_rule(const s_native_module_optimization_rule &optimization_rule) {
+static bool validate_optimization_rule(const s_native_module_optimization_rule &optimization_rule) {
 	// $TODO $PLUGIN validation
+	return true;
 }
-#endif // IS_TRUE(ASSERTS_ENABLED)

@@ -19,7 +19,7 @@ void c_sample_library::initialize(const char *root_path) {
 }
 
 void c_sample_library::clear_requested_samples() {
-	wl_vassert(m_previous_requested_samples.empty(), "Call update_loaded_samples() before clearing");
+	wl_assertf(m_previous_requested_samples.empty(), "Call update_loaded_samples() before clearing");
 	m_previous_requested_samples.swap(m_requested_samples);
 }
 

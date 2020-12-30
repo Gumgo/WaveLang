@@ -17,7 +17,7 @@ public:
 	static void initialize();
 	static void shutdown();
 
-	static void begin_registration(bool optimizations_enabled);
+	static void begin_registration();
 	static bool end_registration();
 
 	// Registers a library which native modules are grouped under
@@ -33,9 +33,7 @@ public:
 	// Registers a native module - returns whether successful
 	static bool register_native_module(const s_native_module &native_module);
 
-	// Registers a native operator by associating it with the name of a native module. We use the name and not UID
-	// because the operator can be overloaded.
-	static void register_native_operator(e_native_operator native_operator, const char *native_module_name);
+	// If a native module is registered using a native operator name, it is automatically associated with that operator
 	static e_native_operator get_native_module_operator(s_native_module_uid native_module_uid);
 
 	// Registers an optimization rule
@@ -45,7 +43,6 @@ public:
 	static c_index_handle_iterator<h_native_module> iterate_native_modules();
 	static h_native_module get_native_module_handle(s_native_module_uid native_module_uid);
 	static const s_native_module &get_native_module(h_native_module handle);
-	static const char *get_native_module_for_native_operator(e_native_operator native_operator);
 
 	static uint32 get_optimization_rule_count();
 	static const s_native_module_optimization_rule &get_optimization_rule(uint32 index);

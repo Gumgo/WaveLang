@@ -68,7 +68,7 @@ c_ast_node_scope *c_ast_node_module_declaration::get_body_scope() const {
 }
 
 void c_ast_node_module_declaration::set_body_scope(c_ast_node_scope *body_scope) {
-	wl_assert(m_native_module_uid == s_native_module_uid::k_invalid);
+	wl_assert(!m_native_module_uid.is_valid());
 	m_body_scope.reset(body_scope);
 }
 

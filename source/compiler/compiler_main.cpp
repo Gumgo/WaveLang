@@ -7,8 +7,8 @@
 
 #include "execution_graph/execution_graph.h"
 #include "execution_graph/instrument.h"
+#include "execution_graph/native_module_registration.h"
 #include "execution_graph/native_module_registry.h"
-#include "execution_graph/native_modules/native_module_registration.h"
 
 #include <iostream>
 
@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
 	initialize_floating_point_behavior();
 
 	c_native_module_registry::initialize();
-	register_native_modules(true);
+	register_native_modules();
 
 	std::vector<void *> library_contexts(c_native_module_registry::get_native_module_library_count(), nullptr);
 	for (h_native_module_library library_handle : c_native_module_registry::iterate_native_module_libraries()) {

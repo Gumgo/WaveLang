@@ -1,7 +1,5 @@
 #include "native_module/native_module.h"
 
-const s_native_module_uid s_native_module_uid::k_invalid = s_native_module_uid::build(0xffffffff, 0xffffffff);
-
 static constexpr const char *k_native_operator_names[] = {
 	"operator_u+",
 	"operator_u-",

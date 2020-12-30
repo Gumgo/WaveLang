@@ -51,30 +51,39 @@ struct s_task_function_uid {
 		};
 	};
 
-	bool operator==(const s_task_function_uid &other) const {
+	constexpr s_task_function_uid()
+		: data_uint64(0xffffffffffffffffull) {}
+
+	constexpr bool operator==(const s_task_function_uid &other) const {
 		return data_uint64 == other.data_uint64;
 	}
 
-	bool operator!=(const s_task_function_uid &other) const {
+	constexpr bool operator!=(const s_task_function_uid &other) const {
 		return data_uint64 != other.data_uint64;
 	}
 
-	uint32 get_library_id() const {
+	constexpr uint32 get_library_id() const {
 		return big_to_native_endian(library_id);
 	}
 
-	uint32 get_task_function_id() const {
+	constexpr uint32 get_task_function_id() const {
 		return big_to_native_endian(task_function_id);
 	}
 
-	static s_task_function_uid build(uint32 library_id, uint32 task_function_id) {
+	constexpr bool is_valid() const {
+		return *this != invalid();
+	}
+
+	static constexpr s_task_function_uid build(uint32 library_id, uint32 task_function_id) {
 		s_task_function_uid result;
 		result.library_id = native_to_big_endian(library_id);
 		result.task_function_id = native_to_big_endian(task_function_id);
 		return result;
 	}
 
-	static const s_task_function_uid k_invalid;
+	static constexpr s_task_function_uid invalid() {
+		return {};
+	}
 };
 
 // Array types
@@ -240,8 +249,8 @@ struct s_task_function {
 	// Unique identifier for this task function
 	s_task_function_uid uid;
 
-	// Name of the task function
-	c_static_string<k_max_task_function_name_length> name;
+	// Function to execute
+	f_task_function function;
 
 	// Memory query function, or null
 	f_task_memory_query memory_query;
@@ -251,9 +260,6 @@ struct s_task_function {
 
 	// Function for initializing task memory when a voice becomes active
 	f_task_voice_initializer voice_initializer;
-
-	// Function to execute
-	f_task_function function;
 
 	// Number of arguments
 	uint32 argument_count;

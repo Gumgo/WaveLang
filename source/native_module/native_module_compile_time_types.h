@@ -2,6 +2,8 @@
 
 #include "common/common.h"
 
+#include "native_module/native_module_data_type.h"
+
 #include <string>
 #include <vector>
 

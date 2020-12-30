@@ -1,4 +1,4 @@
-#include "execution_graph/native_modules/native_modules_array.h"
+#include "execution_graph/native_module_registration.h"
 
 #include <algorithm>
 #include <cmath>
@@ -61,113 +61,180 @@ namespace array_native_modules {
 
 	void subscript_real(
 		const s_native_module_context &context,
-		const c_native_module_real_reference_array &a,
-		real32 b,
-		c_native_module_real_reference &result) {
-		if (!array_subscript(context, a.get_array(), b, result)) {
-			result = context.reference_interface->create_constant_reference(0.0f);
+		wl_argument(in ref const? real[], a),
+		wl_argument(in const? real, b),
+		wl_argument(return out ref const? real, result)) {
+		if (!array_subscript(context, a->get_array(), *b, *result)) {
+			*result = context.reference_interface->create_constant_reference(0.0f);
 		}
 	}
 
-	void count_real(const c_native_module_real_reference_array &a, real32 &result) {
-		result = static_cast<real32>(a.get_array().size());
+	void count_real(
+		wl_argument(in ref real[], a),
+		wl_argument(return out const real, result)) {
+		*result = static_cast<real32>(a->get_array().size());
 	}
 
 	void combine_real(
-		const c_native_module_real_reference_array &a,
-		const c_native_module_real_reference_array &b,
-		c_native_module_real_reference_array &result) {
-		result.get_array() = array_combine(a.get_array(), b.get_array());
+		wl_argument(in ref const? real[], a),
+		wl_argument(in ref const? real[], b),
+		wl_argument(return out ref const? real[], result)) {
+		result->get_array() = array_combine(a->get_array(), b->get_array());
 	}
 
 	void repeat_real(
 		const s_native_module_context &context,
-		const c_native_module_real_reference_array &a,
-		real32 b,
-		c_native_module_real_reference_array &result) {
-		result.get_array() = array_repeat(context, a.get_array(), b);
+		wl_argument(in ref const? real[], a),
+		wl_argument(in const real, b),
+		wl_argument(return out ref const? real[], result)) {
+		result->get_array() = array_repeat(context, a->get_array(), *b);
 	}
 
 	void repeat_rev_real(
 		const s_native_module_context &context,
-		real32 a,
-		const c_native_module_real_reference_array &b,
-		c_native_module_real_reference_array &result) {
-		result.get_array() = array_repeat(context, b.get_array(), a);
+		wl_argument(in const real, a),
+		wl_argument(in ref const? real[], b),
+		wl_argument(return out ref const? real[], result)) {
+		result->get_array() = array_repeat(context, b->get_array(), *a);
 	}
 
 	void subscript_bool(
 		const s_native_module_context &context,
-		const c_native_module_bool_reference_array &a,
-		real32 b,
-		c_native_module_bool_reference &result) {
-		if (!array_subscript(context, a.get_array(), b, result)) {
-			result = context.reference_interface->create_constant_reference(false);
+		wl_argument(in ref const? bool[], a),
+		wl_argument(in const? bool, b),
+		wl_argument(return out ref const? bool, result)) {
+		if (!array_subscript(context, a->get_array(), *b, *result)) {
+			*result = context.reference_interface->create_constant_reference(false);
 		}
 	}
 
-	void count_bool(const c_native_module_bool_reference_array &a, real32 &result) {
-		result = static_cast<real32>(a.get_array().size());
+	void count_bool(
+		wl_argument(in ref bool[], a),
+		wl_argument(return out const real, result)) {
+		*result = static_cast<real32>(a->get_array().size());
 	}
 
 	void combine_bool(
-		const c_native_module_bool_reference_array &a,
-		const c_native_module_bool_reference_array &b,
-		c_native_module_bool_reference_array &result) {
-		result.get_array() = array_combine(a.get_array(), b.get_array());
+		wl_argument(in ref const? bool[], a),
+		wl_argument(in ref const? bool[], b),
+		wl_argument(return out ref const? bool[], result)) {
+		result->get_array() = array_combine(a->get_array(), b->get_array());
 	}
 
 	void repeat_bool(
 		const s_native_module_context &context,
-		const c_native_module_bool_reference_array &a,
-		real32 b,
-		c_native_module_bool_reference_array &result) {
-		result.get_array() = array_repeat(context, a.get_array(), b);
+		wl_argument(in ref const? bool[], a),
+		wl_argument(in const real, b),
+		wl_argument(return out ref const? bool[], result)) {
+		result->get_array() = array_repeat(context, a->get_array(), *b);
 	}
 
 	void repeat_rev_bool(
 		const s_native_module_context &context,
-		real32 a,
-		const c_native_module_bool_reference_array &b,
-		c_native_module_bool_reference_array &result) {
-		result.get_array() = array_repeat(context, b.get_array(), a);
+		wl_argument(in const real, a),
+		wl_argument(in ref const? bool[], b),
+		wl_argument(return out ref const? bool[], result)) {
+		result->get_array() = array_repeat(context, b->get_array(), *a);
 	}
 
 	void subscript_string(
 		const s_native_module_context &context,
-		const c_native_module_string_reference_array &a,
-		real32 b,
-		c_native_module_string_reference &result) {
-		if (!array_subscript(context, a.get_array(), b, result)) {
-			result = context.reference_interface->create_constant_reference("");
+		wl_argument(in ref const string[], a),
+		wl_argument(in const real, b),
+		wl_argument(return out ref const string, result)) {
+		if (!array_subscript(context, a->get_array(), *b, *result)) {
+			*result = context.reference_interface->create_constant_reference("");
 		}
 	}
 
-	void count_string(const c_native_module_string_reference_array &a, real32 &result) {
-		result = static_cast<real32>(a.get_array().size());
+	void count_string(
+		wl_argument(in ref const string[], a),
+		wl_argument(return out const real, result)) {
+		*result = static_cast<real32>(a->get_array().size());
 	}
 
 	void combine_string(
-		const c_native_module_string_reference_array &a,
-		const c_native_module_string_reference_array &b,
-		c_native_module_string_reference_array &result) {
-		result.get_array() = array_combine(a.get_array(), b.get_array());
+		wl_argument(in ref const string[], a),
+		wl_argument(in ref const string[], b),
+		wl_argument(return out ref const string[], result)) {
+		result->get_array() = array_combine(a->get_array(), b->get_array());
 	}
 
 	void repeat_string(
 		const s_native_module_context &context,
-		const c_native_module_string_reference_array &a,
-		real32 b,
-		c_native_module_string_reference_array &result) {
-		result.get_array() = array_repeat(context, a.get_array(), b);
+		wl_argument(in ref const string[], a),
+		wl_argument(in const real, b),
+		wl_argument(return out ref const string[], result)) {
+		result->get_array() = array_repeat(context, a->get_array(), *b);
 	}
 
 	void repeat_rev_string(
 		const s_native_module_context &context,
-		real32 a,
-		const c_native_module_string_reference_array &b,
-		c_native_module_string_reference_array &result) {
-		result.get_array() = array_repeat(context, b.get_array(), a);
+		wl_argument(in const real, a),
+		wl_argument(in ref const string[], b),
+		wl_argument(return out ref const string[], result)) {
+		result->get_array() = array_repeat(context, b->get_array(), *a);
 	}
+
+	static constexpr uint32 k_array_library_id = 1;
+	wl_native_module_library(k_array_library_id, "array", 0);
+
+	wl_native_module(0x11630660, "subscript$real")
+		.set_native_operator(e_native_operator::k_subscript)
+		.set_compile_time_call<subscript_real>();
+
+	wl_native_module(0x341f28ba, "count$real")
+		.set_compile_time_call<count_real>();
+
+	wl_native_module(0x2ef98fa2, "combine$real")
+		.set_native_operator(e_native_operator::k_addition)
+		.set_compile_time_call<combine_real>();
+
+	wl_native_module(0x00731053, "repeat$real")
+		.set_native_operator(e_native_operator::k_multiplication)
+		.set_compile_time_call<repeat_real>();
+
+	wl_native_module(0xb789d511, "repeat_rev$real")
+		.set_native_operator(e_native_operator::k_multiplication)
+		.set_compile_time_call<repeat_rev_real>();
+
+	wl_native_module(0xf846b84e, "subscript$bool")
+		.set_native_operator(e_native_operator::k_subscript)
+		.set_compile_time_call<subscript_bool>();
+
+	wl_native_module(0x18543554, "count$bool")
+		.set_compile_time_call<count_bool>();
+
+	wl_native_module(0x87e6d8fb, "combine$bool")
+		.set_native_operator(e_native_operator::k_addition)
+		.set_compile_time_call<combine_bool>();
+
+	wl_native_module(0x7a6d4345, "repeat$bool")
+		.set_native_operator(e_native_operator::k_multiplication)
+		.set_compile_time_call<repeat_bool>();
+
+	wl_native_module(0x0dd0f9b6, "repeat_rev$bool")
+		.set_native_operator(e_native_operator::k_multiplication)
+		.set_compile_time_call<repeat_rev_bool>();
+
+	wl_native_module(0xf1c6de7f, "subscript$string")
+		.set_compile_time_call<subscript_string>();
+
+	wl_native_module(0xa49c681c, "count$string")
+		.set_compile_time_call<count_string>();
+
+	wl_native_module(0x2a92132b, "combine$string")
+		.set_native_operator(e_native_operator::k_addition)
+		.set_compile_time_call<combine_string>();
+
+	wl_native_module(0xfd5d5305, "repeat$string")
+		.set_native_operator(e_native_operator::k_multiplication)
+		.set_compile_time_call<repeat_string>();
+
+	wl_native_module(0xfcd4a1d5, "repeat_rev$string")
+		.set_native_operator(e_native_operator::k_multiplication)
+		.set_compile_time_call<repeat_rev_string>();
+
+	wl_end_active_library_native_module_registration();
 
 }

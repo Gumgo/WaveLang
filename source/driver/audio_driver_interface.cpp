@@ -185,7 +185,7 @@ s_audio_driver_result c_audio_driver_interface::start_stream(const s_audio_drive
 
 		// Clean up the stream
 		if (Pa_CloseStream(m_stream) != paNoError) {
-			wl_vhalt("Failed to close stream");
+			wl_haltf("Failed to close stream");
 		}
 
 		m_stream = nullptr;
@@ -204,11 +204,11 @@ void c_audio_driver_interface::stop_stream() {
 	}
 
 	if (Pa_StopStream(m_stream) != paNoError) {
-		wl_vhalt("Failed to stop stream");
+		wl_haltf("Failed to stop stream");
 	}
 
 	if (Pa_CloseStream(m_stream) != paNoError) {
-		wl_vhalt("Failed to close stream");
+		wl_haltf("Failed to close stream");
 	}
 
 	m_stream = nullptr;

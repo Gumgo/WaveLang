@@ -81,7 +81,7 @@ inline real32x4 real32x4::sum_elements() const {
 }
 
 inline real32 real32x4::first_element() const {
-	wl_vhalt("Not implemented"); // $TODO
+	wl_haltf("Not implemented"); // $TODO
 	return 0.0f;
 }
 

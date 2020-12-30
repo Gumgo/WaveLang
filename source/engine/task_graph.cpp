@@ -7,7 +7,7 @@
 
 #include "native_module/native_module.h"
 
-#define OUTPUT_TASK_GRAPH_BUILD_RESULT 0
+#define OUTPUT_TASK_GRAPH_BUILD_RESULT 1 // nocheckin Make sure this compiles, then set to 0
 
 #if IS_TRUE(OUTPUT_TASK_GRAPH_BUILD_RESULT)
 #include <fstream>
@@ -419,7 +419,7 @@ bool c_task_graph::setup_task(
 	wl_assert(execution_graph.get_node_type(node_reference) == e_execution_graph_node_type::k_native_module_call);
 	h_native_module native_module_handle = execution_graph.get_native_module_call_native_module_handle(node_reference);
 	s_task_function_uid task_function_uid = c_task_function_registry::get_task_function_mapping(native_module_handle);
-	if (task_function_uid == s_task_function_uid::k_invalid) {
+	if (!task_function_uid.is_valid()) {
 		// No valid task function mapping for the native module
 		return false;
 	}
@@ -1429,6 +1429,9 @@ static bool output_task_graph_build_result(const c_task_graph &task_graph, const
 	for (uint32 index = 0; index < task_graph.get_task_count(); index++) {
 		uint32 task_function_index = task_graph.get_task_function_index(index);
 		const s_task_function &task_function = c_task_function_registry::get_task_function(task_function_index);
+		h_native_module native_module_handle =
+			c_native_module_registry::get_native_module_handle(task_function.native_module_uid);
+		const s_native_module &native_module = c_native_module_registry::get_native_module(native_module_handle);
 
 		std::stringstream uid_stream;
 		uid_stream << "0x" << std::setfill('0') << std::setw(2) << std::hex;
@@ -1436,7 +1439,7 @@ static bool output_task_graph_build_result(const c_task_graph &task_graph, const
 			uid_stream << static_cast<uint32>(task_function.uid.data[b]);
 		}
 
-		out << index << "," << uid_stream.str() << "," << task_function.name.get_string();
+		out << index << "," << uid_stream.str() << "," << native_module.name.get_string();
 
 		c_task_function_runtime_arguments arguments = task_graph.get_task_arguments(index);
 		for (size_t arg = 0; arg < arguments.get_count(); arg++) {

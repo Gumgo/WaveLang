@@ -5,13 +5,13 @@
 #include "common/threading/thread.h"
 
 #include "engine/events/event_data_types.h"
+#include "engine/task_function_registration.h"
 #include "engine/task_function_registry.h"
-#include "engine/task_functions/task_function_registration.h"
 
 #include "execution_graph/execution_graph.h"
 #include "execution_graph/instrument.h"
+#include "execution_graph/native_module_registration.h"
 #include "execution_graph/native_module_registry.h"
-#include "execution_graph/native_modules/native_module_registration.h"
 
 #include "runtime/runtime_config.h"
 #include "runtime/runtime_context.h"
@@ -103,7 +103,7 @@ int c_command_line_interface::main_function() {
 	c_native_module_registry::initialize();
 	c_task_function_registry::initialize();
 
-	register_native_modules(false);
+	register_native_modules();
 	register_task_functions();
 
 	m_task_function_library_contexts.resize(c_task_function_registry::get_task_function_library_count(), nullptr);

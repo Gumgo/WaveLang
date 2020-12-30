@@ -75,6 +75,9 @@ bool output_profiler_report(const char *filename, const s_profiler_report &repor
 
 			const s_task_function &task_function =
 				c_task_function_registry::get_task_function(task.task_function_index);
+			h_native_module native_module_handle =
+				c_native_module_registry::get_native_module_handle(task_function.native_module_uid);
+			const s_native_module &native_module = c_native_module_registry::get_native_module(native_module_handle);
 
 			std::stringstream uid_stream;
 			uid_stream << "0x" << std::setfill('0') << std::setw(2) << std::hex;
@@ -84,7 +87,7 @@ bool output_profiler_report(const char *filename, const s_profiler_report &repor
 
 			out << task_index << ","
 				<< uid_stream.str() << ","
-				<< task_function.name.get_string() << ","
+				<< native_module.name.get_string() << ","
 				<< nanoseconds_to_milliseconds(task.task_total_time.average_time) << ","
 				<< nanoseconds_to_milliseconds(task.task_total_time.min_time) << ","
 				<< nanoseconds_to_milliseconds(task.task_total_time.max_time) << ","

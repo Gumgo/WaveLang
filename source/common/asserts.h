@@ -19,7 +19,7 @@
 	}													\
 )
 
-#define wl_vassert(expression, message) MACRO_BLOCK(	\
+#define wl_assertf(expression, message) MACRO_BLOCK(	\
 	if (!(expression)) {								\
 		handle_assert(message, __FILE__, __LINE__);		\
 	}													\
@@ -27,20 +27,19 @@
 
 #define wl_halt() wl_assert("halt")
 
-#define wl_vhalt(message) wl_vassert(false, message)
+#define wl_haltf(message) wl_assertf(false, message)
 
-#define wl_unreachable() wl_vhalt("unreachable")
+#define wl_unreachable() wl_haltf("unreachable")
 
 void handle_assert(const char *message, const char *file, int32 line);
 
 #else // IS_TRUE(ASSERTS_ENABLED)
 
-// $TODO change vassert to assertf and vhalt to haltf
 #define IF_ASSERTS_ENABLED(x)
 #define wl_assert(expression)			NOOP
-#define wl_vassert(expression, message)	NOOP
+#define wl_assertf(expression, message)	NOOP
 #define wl_halt()						NOOP
-#define wl_vhalt(message)				NOOP
+#define wl_haltf(message)				NOOP
 #define wl_unreachable()				NOOP
 
 #endif // IS_TRUE(ASSERTS_ENABLED)

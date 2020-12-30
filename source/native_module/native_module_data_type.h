@@ -2,6 +2,8 @@
 
 #include "common/common.h"
 
+// $TODO constexpr all this as well as AST and task data types
+
 enum class e_native_module_primitive_type {
 	k_invalid = -1,
 

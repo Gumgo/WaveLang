@@ -77,59 +77,59 @@ public:
 		return c_wrapped_array<t_element>(arr, k_count);
 	}
 
-	size_t get_count() const {
+	constexpr size_t get_count() const {
 		return m_count;
 	}
 
-	t_element *get_pointer() {
+	constexpr t_element *get_pointer() {
 		return m_pointer;
 	}
 
-	const t_element *get_pointer() const {
+	constexpr const t_element *get_pointer() const {
 		return m_pointer;
 	}
 
-	c_wrapped_array<t_element> get_range(size_t index, size_t count) {
+	constexpr c_wrapped_array<t_element> get_range(size_t index, size_t count) {
 		wl_assert(count == 0 || valid_index(index, m_count));
 		wl_assert(index + count <= m_count);
 		return c_wrapped_array<t_element>(m_pointer + index, count);
 	}
 
-	c_wrapped_array<const t_element> get_range(size_t index, size_t count) const {
+	constexpr c_wrapped_array<const t_element> get_range(size_t index, size_t count) const {
 		wl_assert(count == 0 || valid_index(index, m_count));
 		wl_assert(index + count <= m_count);
 		return c_wrapped_array<const t_element>(m_pointer + index, count);
 	}
 
-	t_element &operator[](size_t index) {
+	constexpr t_element &operator[](size_t index) {
 		wl_assert(valid_index(index, m_count));
 		return m_pointer[index];
 	}
 
-	const t_element &operator[](size_t index) const {
+	constexpr const t_element &operator[](size_t index) const {
 		wl_assert(valid_index(index, m_count));
 		return m_pointer[index];
 	}
 
-	operator c_wrapped_array<const t_element>() const {
+	constexpr operator c_wrapped_array<const t_element>() const {
 		return c_wrapped_array<const t_element>(m_pointer, m_count);
 	}
 
 	// For loop iteration syntax
 
-	t_element *begin() {
+	constexpr t_element *begin() {
 		return m_pointer;
 	}
 
-	const t_element *begin() const {
+	constexpr const t_element *begin() const {
 		return m_pointer;
 	}
 
-	t_element *end() {
+	constexpr t_element *end() {
 		return m_pointer + m_count;
 	}
 
-	const t_element *end() const {
+	constexpr const t_element *end() const {
 		return m_pointer + m_count;
 	}
 

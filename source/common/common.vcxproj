@@ -56,6 +56,7 @@
     <ClInclude Include="utility\aligned_allocator.h" />
     <ClInclude Include="utility\endian.h" />
     <ClInclude Include="utility\file_utility.h" />
+    <ClInclude Include="utility\function_type_info.h" />
     <ClInclude Include="utility\graphviz_generator.h" />
     <ClInclude Include="utility\handle.h" />
     <ClInclude Include="utility\hash_table.h" />
@@ -63,10 +64,13 @@
     <ClInclude Include="utility\merge_sort.h" />
     <ClInclude Include="utility\pod.h" />
     <ClInclude Include="utility\radix_sort.h" />
+    <ClInclude Include="utility\reporting.h" />
     <ClInclude Include="utility\sha1\SHA1.h" />
     <ClInclude Include="utility\stopwatch.h" />
     <ClInclude Include="utility\string_table.h" />
+    <ClInclude Include="utility\template_string.h" />
     <ClInclude Include="utility\temporary_reference.h" />
+    <ClInclude Include="utility\tuple.h" />
     <ClInclude Include="wrapped_array.h" />
   </ItemGroup>
   <ItemGroup>
@@ -89,6 +93,7 @@
     <ClCompile Include="utility\file_utility.cpp" />
     <ClCompile Include="utility\graphviz_generator.cpp" />
     <ClCompile Include="utility\linked_array.cpp" />
+    <ClCompile Include="utility\reporting.cpp" />
     <ClCompile Include="utility\sha1\SHA1.cpp" />
     <ClCompile Include="utility\stopwatch.cpp" />
     <ClCompile Include="utility\string_table.cpp" />

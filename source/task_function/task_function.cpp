@@ -1,7 +1,5 @@
 #include "task_function/task_function.h"
 
-const s_task_function_uid s_task_function_uid::k_invalid = s_task_function_uid::build(0xffffffff, 0xffffffff);
-
 bool validate_task_function(const s_task_function &task_function) {
 	for (size_t argument_index = 0; argument_index < task_function.argument_count; argument_index++) {
 		const s_task_function_argument &argument = task_function.arguments[argument_index];

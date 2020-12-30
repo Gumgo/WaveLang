@@ -596,7 +596,7 @@ c_node_reference c_execution_graph::node_reference_from_index(uint32 node_index)
 c_execution_graph::s_node &c_execution_graph::get_node(c_node_reference node_reference) {
 	s_node &result = m_nodes[node_reference.get_node_index()];
 #if IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
-	wl_vassert(result.salt == node_reference.get_salt(), "Salt mismatch");
+	wl_assertf(result.salt == node_reference.get_salt(), "Salt mismatch");
 #endif // IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
 	return result;
 }
@@ -604,7 +604,7 @@ c_execution_graph::s_node &c_execution_graph::get_node(c_node_reference node_ref
 const c_execution_graph::s_node &c_execution_graph::get_node(c_node_reference node_reference) const {
 	const s_node &result = m_nodes[node_reference.get_node_index()];
 #if IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
-	wl_vassert(result.salt == node_reference.get_salt(), "Salt mismatch");
+	wl_assertf(result.salt == node_reference.get_salt(), "Salt mismatch");
 #endif // IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
 	return result;
 }
@@ -1224,7 +1224,7 @@ c_native_module_data_type c_execution_graph::get_node_data_type(c_node_reference
 		return node.array_node_data().type;
 
 	case e_execution_graph_node_type::k_native_module_call:
-		wl_vhalt("We shouldn't be checking types for this node, but instead for its argument nodes");
+		wl_haltf("We shouldn't be checking types for this node, but instead for its argument nodes");
 		return c_native_module_data_type::invalid();
 
 	case e_execution_graph_node_type::k_indexed_input:
@@ -1306,7 +1306,7 @@ c_native_module_data_type c_execution_graph::get_node_data_type(c_node_reference
 		}
 
 	case e_execution_graph_node_type::k_temporary_reference:
-		wl_vhalt("Temporary reference nodes don't have a type, they just exist to prevent other nodes from deletion");
+		wl_haltf("Temporary reference nodes don't have a type, they just exist to prevent other nodes from deletion");
 		return c_native_module_data_type::invalid();
 
 	default:

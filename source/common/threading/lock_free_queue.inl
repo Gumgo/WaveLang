@@ -9,7 +9,7 @@ void c_lock_free_queue<t_element>::initialize(
 	c_lock_free_handle_array queue_memory,
 	c_lock_free_handle_array free_list_memory) {
 	// Make sure sizes match up - we need at least 1 element for the dummy node which is unusable
-	wl_vassert(element_memory.get_count() > 0, "Lock free queue requires 1 additional node");
+	wl_assertf(element_memory.get_count() > 0, "Lock free queue requires 1 additional node");
 	wl_assert(element_memory.get_count() == queue_memory.get_count());
 	wl_assert(queue_memory.get_count() == free_list_memory.get_count());
 

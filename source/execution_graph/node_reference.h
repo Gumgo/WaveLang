@@ -29,7 +29,7 @@ public:
 	bool operator==(const c_node_reference &other) const {
 		bool result = m_node_index == other.m_node_index;
 #if IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
-		wl_vassert(!result || m_salt == other.m_salt, "Salt mismatch");
+		wl_assertf(!result || m_salt == other.m_salt, "Salt mismatch");
 #endif // IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
 		return result;
 	}
@@ -41,7 +41,7 @@ public:
 	// For use in sets:
 	bool operator<(const c_node_reference &other) const {
 #if IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
-		wl_vassert(m_node_index != other.m_node_index || m_salt == other.m_salt, "Salt mismatch");
+		wl_assertf(m_node_index != other.m_node_index || m_salt == other.m_salt, "Salt mismatch");
 #endif // IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
 		return m_node_index < other.m_node_index;
 	}

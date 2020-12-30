@@ -75,7 +75,7 @@ uint32 c_lock_free_pool::allocate() {
 		// Offset by the non-aligned size - there is some extra space behind the handle which we can use
 		uint8 *verification_ptr = handle_ptr + sizeof(s_lock_free_handle);
 		// Verify that this node was previously free, and mark it as used
-		wl_vassert(*verification_ptr == 0, "Attempted to allocate an already-allocated node");
+		wl_assertf(*verification_ptr == 0, "Attempted to allocate an already-allocated node");
 		*verification_ptr = 1;
 	}
 #endif // IS_TRUE(ALLOCATION_VERIFICATION_ENABLED)
@@ -92,7 +92,7 @@ void c_lock_free_pool::free(uint32 handle) {
 	// Offset by the non-aligned size - there is some extra space behind the handle which we can use
 	uint8 *verification_ptr = handle_ptr + sizeof(s_lock_free_handle);
 	// Verify that this node was previously used, and mark it as free
-	wl_vassert(*verification_ptr == 1, "Attempted to free an already-free node");
+	wl_assertf(*verification_ptr == 1, "Attempted to free an already-free node");
 	*verification_ptr = 0;
 #endif // IS_TRUE(ALLOCATION_VERIFICATION_ENABLED)
 

@@ -1,6 +1,6 @@
 #include "engine/buffer.h"
 #include "engine/buffer_operations/buffer_iterator.h"
-#include "engine/task_functions/task_functions_sampler.h"
+#include "engine/task_function_registration.h"
 #include "engine/task_functions/sampler/fetch_sample.h"
 #include "engine/task_functions/sampler/sample.h"
 #include "engine/task_functions/sampler/sample_library.h"
@@ -180,8 +180,8 @@ namespace sampler_task_functions {
 
 	void sampler_initializer(
 		const s_task_function_context &context,
-		const char *name,
-		real32 channel) {
+		wl_task_argument(const char *, name),
+		wl_task_argument(real32, channel)) {
 		c_sample_library *sample_library = static_cast<c_sample_library *>(context.library_context);
 		s_sampler_context *sampler_context = static_cast<s_sampler_context *>(context.task_memory);
 		sampler_context->initialize_file(
@@ -200,19 +200,19 @@ namespace sampler_task_functions {
 
 	void sampler(
 		const s_task_function_context &context,
-		const char *name,
-		const c_real_buffer *speed,
-		c_real_buffer *result) {
+		wl_task_argument(const char *, name),
+		wl_task_argument(const c_real_buffer *, speed),
+		wl_task_argument(c_real_buffer *, result)) {
 		c_sample_library *sample_library = static_cast<c_sample_library *>(context.library_context);
 		run_sampler(sample_library, context, name, speed, result);
 	}
 
 	void sampler_loop_initializer(
 		const s_task_function_context &context,
-		const char *name,
-		real32 channel,
-		bool bidi,
-		const c_real_buffer *phase) {
+		wl_task_argument(const char *, name),
+		wl_task_argument(real32, channel),
+		wl_task_argument(bool, bidi),
+		wl_task_argument(const c_real_buffer *, phase)) {
 		c_sample_library *sample_library = static_cast<c_sample_library *>(context.library_context);
 		s_sampler_context *sampler_context = static_cast<s_sampler_context *>(context.task_memory);
 		bool phase_shift_enabled = !phase->is_constant() || (clamp(phase->get_constant(), 0.0f, 1.0f) != 0.0f);
@@ -228,10 +228,10 @@ namespace sampler_task_functions {
 
 	void sampler_loop(
 		const s_task_function_context &context,
-		const char *name,
-		const c_real_buffer *speed,
-		const c_real_buffer *phase,
-		c_real_buffer *result) {
+		wl_task_argument(const char *, name),
+		wl_task_argument(const c_real_buffer *, speed),
+		wl_task_argument(const c_real_buffer *, phase),
+		wl_task_argument(c_real_buffer *, result)) {
 		c_sample_library *sample_library = static_cast<c_sample_library *>(context.library_context);
 		s_sampler_context *sampler_context = static_cast<s_sampler_context *>(context.task_memory);
 		const c_sample *sample = sample_library->get_sample(
@@ -242,25 +242,52 @@ namespace sampler_task_functions {
 
 	void sampler_wavetable_initializer(
 		const s_task_function_context &context,
-		c_real_constant_array harmonic_weights,
-		const c_real_buffer *phase) {
+		wl_task_argument(c_real_constant_array, harmonic_weights),
+		wl_task_argument(const c_real_buffer *, phase)) {
 		c_sample_library *sample_library = static_cast<c_sample_library *>(context.library_context);
 		s_sampler_context *sampler_context = static_cast<s_sampler_context *>(context.task_memory);
 		bool phase_shift_enabled = !phase->is_constant() || (clamp(phase->get_constant(), 0.0f, 1.0f) != 0.0f);
 		sampler_context->initialize_wavetable(
 			context.event_interface,
 			sample_library,
-			harmonic_weights,
+			*harmonic_weights,
 			phase_shift_enabled);
 	}
 
 	void sampler_wavetable(
 		const s_task_function_context &context,
-		const c_real_buffer *frequency,
-		const c_real_buffer *phase,
-		c_real_buffer *result) {
+		wl_task_argument(const c_real_buffer *, frequency),
+		wl_task_argument(const c_real_buffer *, phase),
+		wl_task_argument(c_real_buffer *, result)) {
 		c_sample_library *sample_library = static_cast<c_sample_library *>(context.library_context);
 		run_sampler_loop<true>(sample_library, context, "<generated_wavetable>", frequency, phase, result);
 	}
+
+	static constexpr uint32 k_sampler_library_id = 3;
+	wl_task_function_library(k_sampler_library_id, "sampler", 0)
+		.set_engine_initializer(sampler_library_engine_initializer)
+		.set_engine_deinitializer(sampler_library_engine_deinitializer)
+		.set_tasks_pre_initializer(sampler_library_tasks_pre_initializer)
+		.set_tasks_post_initializer(sampler_library_tasks_post_initializer);
+
+	wl_task_function(0x8cd13477, "sampler", "sampler")
+		.set_function<sampler>()
+		.set_memory_query<sampler_memory_query>()
+		.set_initializer<sampler_initializer>()
+		.set_voice_initializer<sampler_voice_initializer>();
+
+	wl_task_function(0xdf906f59, "sampler_loop", "sampler_loop")
+		.set_function<sampler_loop>()
+		.set_memory_query<sampler_memory_query>()
+		.set_initializer<sampler_loop_initializer>()
+		.set_voice_initializer<sampler_voice_initializer>();
+
+	wl_task_function(0x7429e1e3, "sampler_wavetable", "sampler_wavetable")
+		.set_function<sampler_wavetable>()
+		.set_memory_query<sampler_memory_query>()
+		.set_initializer<sampler_wavetable_initializer>()
+		.set_voice_initializer<sampler_voice_initializer>();
+
+	wl_end_active_library_task_function_registration();
 
 }

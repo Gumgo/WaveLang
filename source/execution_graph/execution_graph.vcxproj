@@ -97,7 +97,7 @@
     <ClCompile Include="native_modules\native_modules_sampler.cpp" />
     <ClCompile Include="native_modules\native_modules_stream.cpp" />
     <ClCompile Include="native_modules\native_modules_time.cpp" />
-    <ClCompile Include="native_modules\native_module_registration.cpp" />
+    <ClCompile Include="native_module_registration.cpp" />
     <ClCompile Include="native_module_registry.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -108,17 +108,7 @@
     <ClInclude Include="instrument_stage.h" />
     <ClInclude Include="native_modules\json\json_file.h" />
     <ClInclude Include="native_modules\json\json_file_manager.h" />
-    <ClInclude Include="native_modules\native_modules_array.h" />
-    <ClInclude Include="native_modules\native_modules_controller.h" />
-    <ClInclude Include="native_modules\native_modules_core.h" />
-    <ClInclude Include="native_modules\native_modules_delay.h" />
-    <ClInclude Include="native_modules\native_modules_filter.h" />
-    <ClInclude Include="native_modules\native_modules_json.h" />
-    <ClInclude Include="native_modules\native_modules_math.h" />
-    <ClInclude Include="native_modules\native_modules_sampler.h" />
-    <ClInclude Include="native_modules\native_modules_stream.h" />
-    <ClInclude Include="native_modules\native_modules_time.h" />
-    <ClInclude Include="native_modules\native_module_registration.h" />
+    <ClInclude Include="native_module_registration.h" />
     <ClInclude Include="native_module_registry.h" />
     <ClInclude Include="node_reference.h" />
   </ItemGroup>

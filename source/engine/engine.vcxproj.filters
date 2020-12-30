@@ -46,36 +46,6 @@
     <ClInclude Include="profiler\profiler.h">
       <Filter>profiler</Filter>
     </ClInclude>
-    <ClInclude Include="task_functions\task_functions_controller.h">
-      <Filter>task_functions</Filter>
-    </ClInclude>
-    <ClInclude Include="task_functions\task_functions_core.h">
-      <Filter>task_functions</Filter>
-    </ClInclude>
-    <ClInclude Include="task_functions\task_functions_delay.h">
-      <Filter>task_functions</Filter>
-    </ClInclude>
-    <ClInclude Include="task_functions\task_functions_filter.h">
-      <Filter>task_functions</Filter>
-    </ClInclude>
-    <ClInclude Include="task_functions\task_functions_math.h">
-      <Filter>task_functions</Filter>
-    </ClInclude>
-    <ClInclude Include="task_functions\task_functions_sampler.h">
-      <Filter>task_functions</Filter>
-    </ClInclude>
-    <ClInclude Include="task_functions\task_functions_stream.h">
-      <Filter>task_functions</Filter>
-    </ClInclude>
-    <ClInclude Include="task_functions\task_functions_time.h">
-      <Filter>task_functions</Filter>
-    </ClInclude>
-    <ClInclude Include="task_functions\task_function_registration.h">
-      <Filter>task_functions</Filter>
-    </ClInclude>
-    <ClInclude Include="task_functions\task_functions_array.h">
-      <Filter>task_functions</Filter>
-    </ClInclude>
     <ClInclude Include="task_functions\sampler\fetch_sample.h">
       <Filter>task_functions\sampler</Filter>
     </ClInclude>
@@ -106,6 +76,7 @@
     <ClInclude Include="task_functions\sampler\sample_loader.h">
       <Filter>task_functions\sampler</Filter>
     </ClInclude>
+    <ClInclude Include="task_function_registration.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="predecessor_resolver.cpp" />
@@ -182,9 +153,6 @@
     <ClCompile Include="task_functions\task_functions_time.cpp">
       <Filter>task_functions</Filter>
     </ClCompile>
-    <ClCompile Include="task_functions\task_function_registration.cpp">
-      <Filter>task_functions</Filter>
-    </ClCompile>
     <ClCompile Include="task_functions\task_functions_array.cpp">
       <Filter>task_functions</Filter>
     </ClCompile>
@@ -209,6 +177,7 @@
     <ClCompile Include="task_functions\sampler\sample.cpp">
       <Filter>task_functions\sampler</Filter>
     </ClCompile>
+    <ClCompile Include="task_function_registration.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="SConscript" />

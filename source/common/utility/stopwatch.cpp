@@ -16,7 +16,7 @@ void c_stopwatch::initialize() {
 }
 
 void c_stopwatch::reset() {
-	wl_vassert(m_frequency > 0, "Not initialized");
+	wl_assertf(m_frequency > 0, "Not initialized");
 	LARGE_INTEGER time;
 	QueryPerformanceCounter(&time);
 	m_start_time = time.QuadPart;
@@ -33,7 +33,7 @@ int64 c_stopwatch::query_ms() {
 }
 
 int64 c_stopwatch::query_internal() {
-	wl_vassert(m_frequency > 0, "Not initialized");
+	wl_assertf(m_frequency > 0, "Not initialized");
 	LARGE_INTEGER time;
 	QueryPerformanceCounter(&time);
 	return time.QuadPart - m_start_time;

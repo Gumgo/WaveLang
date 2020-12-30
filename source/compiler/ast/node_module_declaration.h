@@ -42,7 +42,7 @@ private:
 	std::vector<std::unique_ptr<c_ast_node_module_declaration_argument>> m_arguments;
 	c_ast_qualified_data_type m_return_type;
 	std::unique_ptr<c_ast_node_scope> m_body_scope;
-	s_native_module_uid m_native_module_uid = s_native_module_uid::k_invalid;
+	s_native_module_uid m_native_module_uid = s_native_module_uid::invalid();
 };
 
 enum class e_module_call_resolution_result {

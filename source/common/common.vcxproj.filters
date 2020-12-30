@@ -134,6 +134,18 @@
     <ClInclude Include="utility\temporary_reference.h">
       <Filter>utility</Filter>
     </ClInclude>
+    <ClInclude Include="utility\tuple.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="utility\template_string.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="utility\function_type_info.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="utility\reporting.h">
+      <Filter>utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="SConscript" />
@@ -192,6 +204,9 @@
       <Filter>math</Filter>
     </ClCompile>
     <ClCompile Include="string.cpp" />
+    <ClCompile Include="utility\reporting.cpp">
+      <Filter>utility</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="threading">

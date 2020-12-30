@@ -1,6 +1,6 @@
 #include "engine/buffer.h"
 #include "engine/buffer_operations/buffer_iterator.h"
-#include "engine/task_functions/task_functions_filter.h"
+#include "engine/task_function_registration.h"
 
 namespace filter_task_functions {
 
@@ -20,13 +20,13 @@ namespace filter_task_functions {
 
 	void biquad(
 		const s_task_function_context &context,
-		const c_real_buffer *a1,
-		const c_real_buffer *a2,
-		const c_real_buffer *b0,
-		const c_real_buffer *b1,
-		const c_real_buffer *b2,
-		const c_real_buffer *signal,
-		c_real_buffer *result) {
+		wl_task_argument(const c_real_buffer *, a1),
+		wl_task_argument(const c_real_buffer *, a2),
+		wl_task_argument(const c_real_buffer *, b0),
+		wl_task_argument(const c_real_buffer *, b1),
+		wl_task_argument(const c_real_buffer *, b2),
+		wl_task_argument(const c_real_buffer *, signal),
+		wl_task_argument(c_real_buffer *, result)) {
 		s_biquad_context *biquad_context = static_cast<s_biquad_context *>(context.task_memory);
 		real32 x1 = biquad_context->x1;
 		real32 x2 = biquad_context->x2;
@@ -55,4 +55,15 @@ namespace filter_task_functions {
 			});
 	}
 
+	static constexpr uint32 k_filter_library_id = 5;
+	wl_task_function_library(k_filter_library_id, "filter", 0);
+
+	// $TODO rename this to iir or sos, change the parameter to an array of N biquad filters
+	// Fix the order - should be b0 b1 b2 a1 a2
+	wl_task_function(0xe6fc480d, "biquad", "biquad")
+		.set_function<biquad>()
+		.set_memory_query<biquad_memory_query>()
+		.set_voice_initializer<biquad_voice_initializer>();
+
+	wl_end_active_library_task_function_registration();
 }

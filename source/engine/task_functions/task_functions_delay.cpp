@@ -1,7 +1,7 @@
 #include "engine/buffer.h"
 #include "engine/buffer_operations/buffer_iterator.h"
 #include "engine/events/event_interface.h"
-#include "engine/task_functions/task_functions_delay.h"
+#include "engine/task_function_registration.h"
 
 #include <algorithm>
 #include <cmath>
@@ -113,7 +113,9 @@ static void circular_buffer_push_constant(
 
 namespace delay_task_functions {
 
-	size_t delay_memory_query(const s_task_function_context &context, real32 duration) {
+	size_t delay_memory_query(
+		const s_task_function_context &context,
+		wl_task_argument(real32, duration)) {
 		if (std::isnan(duration) || std::isinf(duration)) {
 			duration = 0.0f;
 		}
@@ -125,7 +127,9 @@ namespace delay_task_functions {
 		return sizeof(s_delay_context) + (delay_samples * sizeof(real32));
 	}
 
-	void delay_initializer(const s_task_function_context &context, real32 duration) {
+	void delay_initializer(
+		const s_task_function_context &context,
+		wl_task_argument(real32, duration)) {
 		if (std::isnan(duration) || std::isinf(duration)) {
 			context.event_interface->submit(EVENT_WARNING << "Invalid delay duration, defaulting to 0");
 			duration = 0.0f;
@@ -154,7 +158,10 @@ namespace delay_task_functions {
 		zero_type(delay_buffer, delay_context->delay_samples);
 	}
 
-	void delay(const s_task_function_context &context, const c_real_buffer *signal, c_real_buffer *result) {
+	void delay(
+		const s_task_function_context &context,
+		wl_task_argument(const c_real_buffer *, signal),
+		wl_task_argument(c_real_buffer *, result)) {
 		s_delay_context *delay_context = static_cast<s_delay_context *>(context.task_memory);
 
 		real32 *delay_buffer = get_delay_buffer(delay_context);
@@ -243,9 +250,9 @@ namespace delay_task_functions {
 
 	void memory_real(
 		const s_task_function_context &context,
-		const c_real_buffer *value,
-		const c_bool_buffer *write,
-		c_real_buffer *result) {
+		wl_task_argument(const c_real_buffer *, value),
+		wl_task_argument(const c_bool_buffer *, write),
+		wl_task_argument(c_real_buffer *, result)) {
 		s_memory_real_context *memory_context = static_cast<s_memory_real_context *>(context.task_memory);
 
 		// Put this value on the stack to avoid memory reads each iteration
@@ -303,9 +310,9 @@ namespace delay_task_functions {
 
 	void memory_bool(
 		const s_task_function_context &context,
-		const c_bool_buffer *value,
-		const c_bool_buffer *write,
-		c_bool_buffer *result) {
+		wl_task_argument(const c_bool_buffer *, value),
+		wl_task_argument(const c_bool_buffer *, write),
+		wl_task_argument(c_bool_buffer *, result)) {
 		s_memory_bool_context *memory_context = static_cast<s_memory_bool_context *>(context.task_memory);
 
 		// Put this value on the stack to avoid memory reads each iteration
@@ -361,5 +368,26 @@ namespace delay_task_functions {
 
 		memory_context->m_value = memory_value;
 	}
+
+	static constexpr uint32 k_delay_library_id = 4;
+	wl_task_function_library(k_delay_library_id, "delay", 0);
+
+	wl_task_function(0xbd8b8e85, "delay", "delay")
+		.set_function<delay>()
+		.set_memory_query<delay_memory_query>()
+		.set_initializer<delay_initializer>()
+		.set_voice_initializer<delay_voice_initializer>();
+
+	wl_task_function(0xbe5eb8bd, "memory_real", "memory$real")
+		.set_function<memory_real>()
+		.set_memory_query<memory_real_memory_query>()
+		.set_voice_initializer<memory_real_voice_initializer>();
+
+	wl_task_function(0x1fbebc67, "memory_bool", "memory$bool")
+		.set_function<memory_bool>()
+		.set_memory_query<memory_bool_memory_query>()
+		.set_voice_initializer<memory_bool_voice_initializer>();
+
+	wl_end_active_library_task_function_registration();
 
 }

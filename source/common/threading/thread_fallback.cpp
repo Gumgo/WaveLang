@@ -45,7 +45,7 @@ void c_thread::start(const s_thread_definition &thread_definition) {
 	sch_params.sched_priority = k_thread_priority_map[enum_index(thread_definition.thread_priority)];
 	int policy = SCHED_FIFO;
 	if (pthread_setschedparam(m_thread.native_handle(), policy, &sch_params)) {
-		wl_vhalt("Failed to set thread priority");
+		wl_haltf("Failed to set thread priority");
 	}*/
 #endif // IS_TRUE(PLATFORM_LINUX)
 

@@ -89,7 +89,7 @@ void convert_and_interleave_to_output_buffer(
 	// $TODO other formats should dither
 
 	default:
-		wl_vhalt("Unsupported format");
+		wl_haltf("Unsupported format");
 	}
 }
 
@@ -107,6 +107,6 @@ void zero_output_buffers(
 	}
 
 	default:
-		wl_vhalt("Unsupported format");
+		wl_haltf("Unsupported format");
 	}
 }
