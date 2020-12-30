@@ -1,7 +1,6 @@
 #pragma once
 
 #include "common/common.h"
-#include "common/scraper_attributes.h"
 
 #include "native_module/native_module_compile_time_types.h"
 #include "native_module/native_module_data_type.h"

@@ -244,7 +244,15 @@ namespace native_module_binding {
 			return value;
 		}
 
-		std::remove_pointer_t<std::remove_reference_t<t_native_type>> *operator->() const {
+		std::remove_pointer_t<std::remove_reference_t<t_native_type>> *operator->() {
+			if constexpr (std::is_pointer_v<t_native_type>) {
+				return value;
+			} else {
+				return &value;
+			}
+		}
+
+		const std::remove_pointer_t<std::remove_reference_t<t_native_type>> *operator->() const {
 			if constexpr (std::is_pointer_v<t_native_type>) {
 				return value;
 			} else {
@@ -289,9 +297,10 @@ namespace native_module_binding {
 
 	// k_argument_index_map: not all task function calls necessarily use all arguments (e.g. the memory query). This
 	// structure maps the function call arguments to the arguments defined in s_task_function
-	template<auto k_function, const s_argument_index_map *k_argument_index_map = nullptr>
-	void native_module_call_wrapper(const s_native_module_context &context) {
-		using t_info = s_native_module_type_info<decltype(k_function), void>;
+	template<auto k_function, typename t_return_type, const s_argument_index_map *k_argument_index_map = nullptr>
+	t_return_type native_module_call_wrapper(const s_native_module_context &context) {
+		using t_function_pointer = std::remove_reference_t<decltype(k_function)> *;
+		using t_info = s_native_module_type_info<t_function_pointer, t_return_type>;
 
 		// Call the correct s_native_module_context function for each argument and store the results as a tuple
 		static constexpr auto k_argument_indices =
@@ -305,22 +314,26 @@ namespace native_module_binding {
 				// t_argument is of type s_native_module_bound_argument. Grab the type mapping.
 				using t_argument = std::tuple_element_t<k_argument_index, typename t_info::t_script_argument_types>;
 				using t_type_mapping = typename t_argument::t_type_mapping;
-				size_t mapped_argument_index = k_argument_index_map
-					? (*k_argument_index_map)[k_argument_index]
-					: k_argument_index;
+				size_t mapped_argument_index;
+				if constexpr (k_argument_index_map) {
+					mapped_argument_index = (*k_argument_index_map)[k_argument_index];
+				} else {
+					mapped_argument_index = k_argument_index;
+				}
 				return t_argument{ t_type_mapping::get_argument(context, mapped_argument_index) };
 			});
 
 		if constexpr (t_info::k_first_argument_is_context) {
-			std::apply(k_function, std::tuple_cat(std::make_tuple(context), script_argument_values));
+			return std::apply(k_function, std::tuple_cat(std::make_tuple(context), script_argument_values));
 		} else {
-			std::apply(k_function, script_argument_values);
+			return std::apply(k_function, script_argument_values);
 		}
 	}
 
-	template<typename t_function>
+	template<typename t_function, typename t_return_type>
 	void populate_native_module_arguments(s_native_module &native_module) {
-		using t_info = s_native_module_type_info<t_function, void>;
+		using t_function_pointer = std::remove_reference_t<t_function> *;
+		using t_info = s_native_module_type_info<t_function_pointer, t_return_type>;
 
 		static constexpr auto k_argument_indices =
 			build_argument_indices(std::make_index_sequence<t_info::k_script_argument_count>());

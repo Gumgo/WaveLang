@@ -41,7 +41,6 @@
     <ClInclude Include="math\utilities.h" />
     <ClInclude Include="platform.h" />
     <ClInclude Include="platform_macros.h" />
-    <ClInclude Include="scraper_attributes.h" />
     <ClInclude Include="static_array.h" />
     <ClInclude Include="string.h" />
     <ClInclude Include="threading\atomics.h" />

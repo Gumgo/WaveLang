@@ -110,6 +110,7 @@ template<typename t_value> void register_event_data_type() {
 	s_event_data_type_definition<t_value>::id = id;
 }
 
+// $TODO remove all this complexity and just change it to use a format string
 class c_event_interface {
 public:
 	// Pass null to disable events

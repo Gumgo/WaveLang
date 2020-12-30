@@ -57,7 +57,7 @@ namespace array_task_functions {
 				}
 			}
 		} else {
-			iterate_buffers<1, false>(context.buffer_size, index, result,
+			iterate_buffers<1, false>(context.buffer_size, *index, *result,
 				[&a, &array_count](size_t i, real32 index, real32 &result) {
 					// This is written using masks to avoid branching
 					// Note: could SIMD-optimize part of this using gather
@@ -119,7 +119,7 @@ namespace array_task_functions {
 				}
 			}
 		} else {
-			iterate_buffers<1, false>(context.buffer_size, index, result,
+			iterate_buffers<1, false>(context.buffer_size, *index, *result,
 				[&a, &array_count](size_t i, real32 index, bool &result) {
 					// This is written using masks to avoid branching
 					uint32 array_index = get_index_or_invalid(array_count, index);
@@ -148,12 +148,13 @@ namespace array_task_functions {
 		}
 	}
 
+	static constexpr uint32 k_array_library_id = 1;
 	wl_task_function_library(k_array_library_id, "array", 0);
 
-	wl_task_function(0xc02d173d, "subscript_real", "subscript$real")
+	wl_task_function(0xc02d173d, "subscript$real")
 		.set_function<subscript_real>();
 
-	wl_task_function(0x91b5380b, "subscript_bool", "subscript$bool")
+	wl_task_function(0x91b5380b, "subscript$bool")
 		.set_function<subscript_bool>();
 
 	wl_end_active_library_task_function_registration();

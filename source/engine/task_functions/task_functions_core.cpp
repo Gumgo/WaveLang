@@ -8,7 +8,7 @@ namespace core_task_functions {
 		const s_task_function_context &context,
 		wl_task_argument(const c_real_buffer *, a),
 		wl_task_argument(c_real_buffer *, result)) {
-		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, result,
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, *a, *result,
 			[](size_t i, const real32xN &a, real32xN &result) {
 				result = -a;
 			});
@@ -19,7 +19,7 @@ namespace core_task_functions {
 		wl_task_argument(const c_real_buffer *, a),
 		wl_task_argument(const c_real_buffer *, b),
 		wl_task_argument(c_real_buffer *, result)) {
-		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, *a, *b, *result,
 			[](size_t i, const real32xN &a, const real32xN &b, real32xN &result) {
 				result = a + b;
 			});
@@ -30,7 +30,7 @@ namespace core_task_functions {
 		wl_task_argument(const c_real_buffer *, a),
 		wl_task_argument(const c_real_buffer *, b),
 		wl_task_argument(c_real_buffer *, result)) {
-		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, *a, *b, *result,
 			[](size_t i, const real32xN &a, const real32xN &b, real32xN &result) {
 				result = a - b;
 			});
@@ -47,7 +47,7 @@ namespace core_task_functions {
 			return;
 		}
 
-		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, *a, *b, *result,
 			[](size_t i, const real32xN &a, const real32xN &b, real32xN &result) {
 				result = a * b;
 			});
@@ -58,7 +58,7 @@ namespace core_task_functions {
 		wl_task_argument(const c_real_buffer *, a),
 		wl_task_argument(const c_real_buffer *, b),
 		wl_task_argument(c_real_buffer *, result)) {
-		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, *a, *b, *result,
 			[](size_t i, const real32xN &a, const real32xN &b, real32xN &result) {
 				result = a / b;
 			});
@@ -69,7 +69,7 @@ namespace core_task_functions {
 		wl_task_argument(const c_real_buffer *, a),
 		wl_task_argument(const c_real_buffer *, b),
 		wl_task_argument(c_real_buffer *, result)) {
-		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, *a, *b, *result,
 			[](size_t i, const real32xN &a, const real32xN &b, real32xN &result) {
 				result = a % b;
 			});
@@ -79,7 +79,7 @@ namespace core_task_functions {
 		const s_task_function_context &context,
 		wl_task_argument(const c_bool_buffer *, a),
 		wl_task_argument(c_bool_buffer *, result)) {
-		iterate_buffers<k_simd_size_bits, true>(context.buffer_size, a, result,
+		iterate_buffers<k_simd_size_bits, true>(context.buffer_size, *a, *result,
 			[](size_t i, const int32xN &a, int32xN &result) {
 				result = ~a;
 			});
@@ -90,7 +90,7 @@ namespace core_task_functions {
 		wl_task_argument(const c_real_buffer *, a),
 		wl_task_argument(const c_real_buffer *, b),
 		wl_task_argument(c_bool_buffer *, result)) {
-		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, *a, *b, *result,
 			[](size_t i, const real32xN &a, const real32xN &b, int32xN &result) {
 				result = a == b;
 			});
@@ -101,7 +101,7 @@ namespace core_task_functions {
 		wl_task_argument(const c_real_buffer *, a),
 		wl_task_argument(const c_real_buffer *, b),
 		wl_task_argument(c_bool_buffer *, result)) {
-		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, *a, *b, *result,
 			[](size_t i, const real32xN &a, const real32xN &b, int32xN &result) {
 				result = a != b;
 			});
@@ -112,7 +112,7 @@ namespace core_task_functions {
 		wl_task_argument(const c_bool_buffer *, a),
 		wl_task_argument(const c_bool_buffer *, b),
 		wl_task_argument(c_bool_buffer *, result)) {
-		iterate_buffers<k_simd_size_bits, true>(context.buffer_size, a, b, result,
+		iterate_buffers<k_simd_size_bits, true>(context.buffer_size, *a, *b, *result,
 			[](size_t i, const int32xN &a, const int32xN &b, int32xN &result) {
 				result = ~(a ^ b);
 			});
@@ -123,7 +123,7 @@ namespace core_task_functions {
 		wl_task_argument(const c_bool_buffer *, a),
 		wl_task_argument(const c_bool_buffer *, b),
 		wl_task_argument(c_bool_buffer *, result)) {
-		iterate_buffers<k_simd_size_bits, true>(context.buffer_size, a, b, result,
+		iterate_buffers<k_simd_size_bits, true>(context.buffer_size, *a, *b, *result,
 			[](size_t i, const int32xN &a, const int32xN &b, int32xN &result) {
 				result = a ^ b;
 			});
@@ -134,7 +134,7 @@ namespace core_task_functions {
 		wl_task_argument(const c_real_buffer *, a),
 		wl_task_argument(const c_real_buffer *, b),
 		wl_task_argument(c_bool_buffer *, result)) {
-		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, *a, *b, *result,
 			[](size_t i, const real32xN &a, const real32xN &b, int32xN &result) {
 				result = a > b;
 			});
@@ -145,7 +145,7 @@ namespace core_task_functions {
 		wl_task_argument(const c_real_buffer *, a),
 		wl_task_argument(const c_real_buffer *, b),
 		wl_task_argument(c_bool_buffer *, result)) {
-		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, *a, *b, *result,
 			[](size_t i, const real32xN &a, const real32xN &b, int32xN &result) {
 				result = a < b;
 			});
@@ -156,7 +156,7 @@ namespace core_task_functions {
 		wl_task_argument(const c_real_buffer *, a),
 		wl_task_argument(const c_real_buffer *, b),
 		wl_task_argument(c_bool_buffer *, result)) {
-		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, *a, *b, *result,
 			[](size_t i, const real32xN &a, const real32xN &b, int32xN &result) {
 				result = a >= b;
 			});
@@ -167,7 +167,7 @@ namespace core_task_functions {
 		wl_task_argument(const c_real_buffer *, a),
 		wl_task_argument(const c_real_buffer *, b),
 		wl_task_argument(c_bool_buffer *, result)) {
-		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, a, b, result,
+		iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, *a, *b, *result,
 			[](size_t i, const real32xN &a, const real32xN &b, int32xN &result) {
 				result = a <= b;
 			});
@@ -178,7 +178,7 @@ namespace core_task_functions {
 		wl_task_argument(const c_bool_buffer *, a),
 		wl_task_argument(const c_bool_buffer *, b),
 		wl_task_argument(c_bool_buffer *, result)) {
-		iterate_buffers<k_simd_size_bits, true>(context.buffer_size, a, b, result,
+		iterate_buffers<k_simd_size_bits, true>(context.buffer_size, *a, *b, *result,
 			[](size_t i, const int32xN &a, const int32xN &b, int32xN &result) {
 				result = a & b;
 			});
@@ -189,7 +189,7 @@ namespace core_task_functions {
 		wl_task_argument(const c_bool_buffer *, a),
 		wl_task_argument(const c_bool_buffer *, b),
 		wl_task_argument(c_bool_buffer *, result)) {
-		iterate_buffers<k_simd_size_bits, true>(context.buffer_size, a, b, result,
+		iterate_buffers<k_simd_size_bits, true>(context.buffer_size, *a, *b, *result,
 			[](size_t i, const int32xN &a, const int32xN &b, int32xN &result) {
 				result = a | b;
 			});
@@ -211,7 +211,7 @@ namespace core_task_functions {
 				result->set_is_constant(false);
 			}
 		} else {
-			iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, condition, true_value, false_value, result,
+			iterate_buffers<k_simd_32_lanes, true>(context.buffer_size, *condition, *true_value, *false_value, *result,
 				[](
 					size_t i,
 					const int32xN &condition,
@@ -244,7 +244,7 @@ namespace core_task_functions {
 				result->set_is_constant(false);
 			}
 		} else {
-			iterate_buffers<k_simd_size_bits, true>(context.buffer_size, condition, true_value, false_value, result,
+			iterate_buffers<k_simd_size_bits, true>(context.buffer_size, *condition, *true_value, *false_value, *result,
 				[](
 					size_t i,
 					const int32xN &condition,
@@ -260,61 +260,61 @@ namespace core_task_functions {
 	static constexpr uint32 k_core_library_id = 0;
 	wl_task_function_library(k_core_library_id, "core", 0);
 
-	wl_task_function(0x54ae3577, "negation", "negation")
+	wl_task_function(0x54ae3577, "negation")
 		.set_function<negation>();
 
-	wl_task_function(0xc9171617, "addition", "addition")
+	wl_task_function(0xc9171617, "addition")
 		.set_function<addition>();
 
-	wl_task_function(0x1f1d8e92, "subtraction", "subtraction")
+	wl_task_function(0x1f1d8e92, "subtraction")
 		.set_function<subtraction>();
 
-	wl_task_function(0xb81d2e65, "multiplication", "multiplication")
+	wl_task_function(0xb81d2e65, "multiplication")
 		.set_function<multiplication>();
 
-	wl_task_function(0x1bce0fd6, "division", "division")
+	wl_task_function(0x1bce0fd6, "division")
 		.set_function<division>();
 
-	wl_task_function(0xaa104145, "modulo", "modulo")
+	wl_task_function(0xaa104145, "modulo")
 		.set_function<modulo>();
 
-	wl_task_function(0x796d904f, "not", "not")
+	wl_task_function(0x796d904f, "not")
 		.set_function<not_>();
 
-	wl_task_function(0xb81092bf, "equal_real", "equal$real")
+	wl_task_function(0xb81092bf, "equal$real")
 		.set_function<equal_real>();
 
-	wl_task_function(0x09b92133, "not_equal_real", "not_equal$real")
+	wl_task_function(0x09b92133, "not_equal$real")
 		.set_function<not_equal_real>();
 
-	wl_task_function(0xfdb20dfa, "equal_bool", "equal$bool")
+	wl_task_function(0xfdb20dfa, "equal$bool")
 		.set_function<equal_bool>();
 
-	wl_task_function(0xd0f31354, "not_equal_bool", "not_equal$bool")
+	wl_task_function(0xd0f31354, "not_equal$bool")
 		.set_function<not_equal_bool>();
 
-	wl_task_function(0x80b0f714, "greater", "greater")
+	wl_task_function(0x80b0f714, "greater")
 		.set_function<greater>();
 
-	wl_task_function(0xd51c2202, "less", "less")
+	wl_task_function(0xd51c2202, "less")
 		.set_function<less>();
 
-	wl_task_function(0xabd7961b, "greater_equal", "greater_equal")
+	wl_task_function(0xabd7961b, "greater_equal")
 		.set_function<greater_equal>();
 
-	wl_task_function(0xbe4a3f1c, "less_equal", "less_equal")
+	wl_task_function(0xbe4a3f1c, "less_equal")
 		.set_function<less_equal>();
 
-	wl_task_function(0xa63e91eb, "and", "and")
+	wl_task_function(0xa63e91eb, "and")
 		.set_function<and_>();
 
-	wl_task_function(0x0655ac08, "or", "or")
+	wl_task_function(0x0655ac08, "or")
 		.set_function<or_>();
 
-	wl_task_function(0x716c993c, "select_real", "select$real")
+	wl_task_function(0x716c993c, "select$real")
 		.set_function<select_real>();
 
-	wl_task_function(0xd5383677, "select_bool", "select$bool")
+	wl_task_function(0xd5383677, "select$bool")
 		.set_function<select_bool>();
 
 	wl_end_active_library_task_function_registration();

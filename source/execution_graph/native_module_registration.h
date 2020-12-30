@@ -6,6 +6,24 @@
 
 #include <unordered_map>
 
+class c_native_module_registration_utilities {
+public:
+	static void validate_argument_names(const s_native_module &native_module);
+
+	static void map_arguments(
+		const s_native_module &source_native_module,
+		const s_native_module &mapped_native_module,
+		native_module_binding::s_argument_index_map &argument_index_map);
+
+	static void get_name_from_identifier(
+		const char *identifier,
+		c_static_string<k_max_native_module_name_length> &name_out);
+
+	static std::unordered_map<std::string_view, s_native_module_uid> build_native_module_identifier_map(
+		uint32 library_id,
+		uint32 library_version);
+};
+
 struct s_native_module_registration_entry;
 struct s_native_module_optimization_rule_registration_entry;
 
@@ -61,10 +79,10 @@ struct s_native_module_registration_entry {
 	// two overloaded modules named "my_module", the identifiers "my_module$real" and "my_module$bool" could be used.
 	const char *identifier; // Points to a static allocation
 
-	// native_module_binding::s_argument_index_map get_latency_argument_index_map; $TODO $LATENCY
-
 	s_native_module_registration_entry *next = nullptr;
 
+	// $TODO $LATENCY add native_module_binding::s_argument_index_map k_get_latency_argument_index_map template param -
+	// see task_function_registration.h for details
 	template<s_native_module_registration_entry *k_entry>
 	class c_builder {
 	public:
@@ -93,8 +111,8 @@ struct s_native_module_registration_entry {
 		template<auto k_function>
 		c_builder &set_compile_time_call() {
 			k_entry->native_module.compile_time_call =
-				native_module_binding::native_module_call_wrapper<k_function>;
-			native_module_binding::populate_native_module_arguments<decltype(k_function)>(k_entry->native_module);
+				native_module_binding::native_module_call_wrapper<k_function, void>;
+			native_module_binding::populate_native_module_arguments<decltype(k_function), void>(k_entry->native_module);
 			c_native_module_registration_utilities::validate_argument_names(k_entry->native_module);
 			k_entry->arguments_initialized = true;
 			return *this;
@@ -103,7 +121,7 @@ struct s_native_module_registration_entry {
 		// Sets the call signature of the native module
 		template<typename t_function>
 		c_builder &set_call_signature() {
-			native_module_binding::populate_native_module_arguments<t_function>(k_entry->native_module);
+			native_module_binding::populate_native_module_arguments<t_function, void>(k_entry->native_module);
 			return *this;
 		}
 
@@ -113,15 +131,18 @@ struct s_native_module_registration_entry {
 		//c_builder &set_get_latency() {
 		//	wl_assert(k_entry->arguments_initialized);
 		//	k_entry->get_latency =
-		//		native_module_binding::native_module_call_wrapper<k_function, &k_entry->get_latency_argument_index_map>;
+		//		native_module_binding::native_module_call_wrapper<
+		//			k_function,
+		//			uint32,
+		//			k_get_latency_argument_index_map>;
 		//
 		//	s_native_module native_module;
-		//	native_module_binding::populate_native_module_arguments<decltype(k_function)>(native_module);
+		//	native_module_binding::populate_native_module_arguments<decltype(k_function), uint32>(native_module);
 		//	c_native_module_registration_utilities::validate_argument_names(native_module);
 		//	c_native_module_registration_utilities::map_arguments(
 		//		k_entry->native_module,
 		//		native_module,
-		//		k_entry->get_latency_argument_index_map);
+		//		*k_get_latency_argument_index_map);
 		//
 		//	return *this;
 		//}
@@ -147,24 +168,6 @@ struct s_native_module_optimization_rule_registration_entry {
 			k_entry->optimization_rule_string = optimization_rule_string;
 		}
 	};
-};
-
-class c_native_module_registration_utilities {
-public:
-	static void validate_argument_names(const s_native_module &native_module);
-
-	static void map_arguments(
-		const s_native_module &source_native_module,
-		const s_native_module &mapped_native_module,
-		native_module_binding::s_argument_index_map &argument_index_map);
-
-	static void get_name_from_identifier(
-		const char *identifier,
-		c_static_string<k_max_native_module_name_length> &name_out);
-
-	static std::unordered_map<std::string_view, s_native_module_uid> build_native_module_identifier_map(
-		uint32 library_id,
-		uint32 library_version);
 };
 
 #define NM_REG_ENTRY TOKEN_CONCATENATE(s_registration_entry_, __LINE__)

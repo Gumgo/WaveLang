@@ -270,19 +270,19 @@ namespace sampler_task_functions {
 		.set_tasks_pre_initializer(sampler_library_tasks_pre_initializer)
 		.set_tasks_post_initializer(sampler_library_tasks_post_initializer);
 
-	wl_task_function(0x8cd13477, "sampler", "sampler")
+	wl_task_function(0x8cd13477, "sampler")
 		.set_function<sampler>()
 		.set_memory_query<sampler_memory_query>()
 		.set_initializer<sampler_initializer>()
 		.set_voice_initializer<sampler_voice_initializer>();
 
-	wl_task_function(0xdf906f59, "sampler_loop", "sampler_loop")
+	wl_task_function(0xdf906f59, "sampler_loop")
 		.set_function<sampler_loop>()
 		.set_memory_query<sampler_memory_query>()
 		.set_initializer<sampler_loop_initializer>()
 		.set_voice_initializer<sampler_voice_initializer>();
 
-	wl_task_function(0x7429e1e3, "sampler_wavetable", "sampler_wavetable")
+	wl_task_function(0x7429e1e3, "sampler_wavetable")
 		.set_function<sampler_wavetable>()
 		.set_memory_query<sampler_memory_query>()
 		.set_initializer<sampler_wavetable_initializer>()

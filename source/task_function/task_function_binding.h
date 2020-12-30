@@ -14,7 +14,7 @@ namespace task_function_binding {
 	template<typename t_native_type>
 	struct s_task_function_native_type_mapping {
 		// The default implementation is invalid, we specialize for each supported type
-		STATIC_ASSERT_MSG(!std::is_same_v<t_native_type, t_native_type>, "Unsupported task function type");
+		STATIC_ASSERT_MSG((!std::is_same_v<t_native_type, t_native_type>), "Unsupported task function type");
 	};
 
 #define TYPE_MAPPING(																						\
@@ -56,9 +56,9 @@ namespace task_function_binding {
 
 #undef TYPE_MAPPING
 
-	template<typename t_native_type, typename t_name, bool k_is_unshared>
+	template<typename t_native_type_param, typename t_name, bool k_is_unshared>
 		struct s_task_function_bound_argument {
-		using t_native_type = t_native_type;
+		using t_native_type = t_native_type_param;
 		using t_type_mapping = s_task_function_native_type_mapping<t_native_type>;
 		static constexpr e_task_argument_direction k_argument_direction = t_type_mapping::k_argument_direction;
 		static constexpr e_task_primitive_type k_primitive_type = t_type_mapping::k_primitive_type;
@@ -73,7 +73,15 @@ namespace task_function_binding {
 			return value;
 		}
 
-		std::remove_pointer_t<std::remove_reference_t<t_native_type>> *operator->() const {
+		std::remove_pointer_t<std::remove_reference_t<t_native_type>> *operator->() {
+			if constexpr (std::is_pointer_v<t_native_type>) {
+				return value;
+			} else {
+				return &value;
+			}
+		}
+
+		const std::remove_pointer_t<std::remove_reference_t<t_native_type>> *operator->() const {
 			if constexpr (std::is_pointer_v<t_native_type>) {
 				return value;
 			} else {
@@ -82,7 +90,7 @@ namespace task_function_binding {
 		}
 
 		operator t_native_type() const {
-			return t_value;
+			return value;
 		}
 	};
 
@@ -119,9 +127,10 @@ namespace task_function_binding {
 
 	// k_argument_index_map: not all task function calls necessarily use all arguments (e.g. the memory query). This
 	// structure maps the function call arguments to the arguments defined in s_task_function
-	template<auto k_function, const s_argument_index_map *k_argument_index_map = nullptr>
-	void task_function_call_wrapper(const s_task_function_context &context) {
-		using t_info = s_task_function_type_info<decltype(k_function), void>;
+	template<auto k_function, typename t_return_type, const s_argument_index_map *k_argument_index_map = nullptr>
+	t_return_type task_function_call_wrapper(const s_task_function_context &context) {
+		using t_function_pointer = std::remove_reference_t<decltype(k_function)> *;
+		using t_info = s_task_function_type_info<t_function_pointer, t_return_type>;
 		static constexpr auto k_argument_indices =
 			build_argument_indices(std::make_index_sequence<t_info::k_script_argument_count>());
 
@@ -135,24 +144,28 @@ namespace task_function_binding {
 				// t_argument is of type s_task_function_bound_argument. Grab the type mapping.
 				using t_argument = std::tuple_element_t<k_argument_index, typename t_info::t_script_argument_types>;
 				using t_type_mapping = typename t_argument::t_type_mapping;
-				size_t mapped_argument_index = k_argument_index_map
-					? (*k_argument_index_map)[k_argument_index]
-					: k_argument_index;
+				size_t mapped_argument_index;
+				if constexpr (k_argument_index_map) {
+					mapped_argument_index = (*k_argument_index_map)[k_argument_index];
+				} else {
+					mapped_argument_index = k_argument_index;
+				}
 				return t_argument{ t_type_mapping::get_argument(context, mapped_argument_index) };
 			});
 
 		if constexpr (t_info::k_first_argument_is_context) {
-			std::apply(k_function, std::tuple_cat(std::make_tuple(context), script_argument_values));
+			return std::apply(k_function, std::tuple_cat(std::make_tuple(context), script_argument_values));
 		} else {
-			std::apply(k_function, script_argument_values);
+			return std::apply(k_function, script_argument_values);
 		}
 	}
 
-	template<typename t_function>
+	template<typename t_function, typename t_return_type>
 	void populate_task_function_arguments(
 		s_task_function &task_function,
 		s_task_function_argument_names &argument_names) {
-		using t_info = s_task_function_type_info<t_function, void>;
+		using t_function_pointer = std::remove_reference_t<t_function> *;
+		using t_info = s_task_function_type_info<t_function_pointer, t_return_type>;
 
 		static constexpr auto k_argument_indices =
 			build_argument_indices(std::make_index_sequence<t_info::k_script_argument_count>());
@@ -167,7 +180,6 @@ namespace task_function_binding {
 				using t_argument = std::tuple_element_t<k_argument_index, typename t_info::t_script_argument_types>;
 
 				s_task_function_argument &argument = task_function.arguments[k_argument_index];
-				argument.name.set_verify(t_argument::k_name);
 				argument.argument_direction = t_argument::k_argument_direction;
 				argument.type = c_task_qualified_data_type(
 					c_task_data_type(t_argument::k_primitive_type, t_argument::k_is_array),

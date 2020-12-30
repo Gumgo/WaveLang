@@ -32,7 +32,7 @@ namespace filter_task_functions {
 		real32 x2 = biquad_context->x2;
 		real32 y1 = biquad_context->y1;
 		real32 y2 = biquad_context->y2;
-		iterate_buffers<1, false>(context.buffer_size, b0, b1, b2, a1, a2, signal, result,
+		iterate_buffers<1, false>(context.buffer_size, *b0, *b1, *b2, *a1, *a2, *signal, *result,
 			[&x1, &x2, &y1, &y2](
 				size_t i,
 				real32 b0,
@@ -60,7 +60,7 @@ namespace filter_task_functions {
 
 	// $TODO rename this to iir or sos, change the parameter to an array of N biquad filters
 	// Fix the order - should be b0 b1 b2 a1 a2
-	wl_task_function(0xe6fc480d, "biquad", "biquad")
+	wl_task_function(0xe6fc480d, "biquad")
 		.set_function<biquad>()
 		.set_memory_query<biquad_memory_query>()
 		.set_voice_initializer<biquad_voice_initializer>();

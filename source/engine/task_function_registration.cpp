@@ -14,21 +14,6 @@ static bool map_task_function_arguments(
 	const std::unordered_map<std::string_view, s_native_module_uid> &native_module_identifier_map,
 	s_task_function_registration_entry *task_function_entry);
 
-s_task_function_library_registration_entry *&s_task_function_library_registration_entry::registration_list() {
-	static s_task_function_library_registration_entry *s_value = nullptr;
-	return s_value;
-}
-
-s_task_function_library_registration_entry *&s_task_function_library_registration_entry::active_library() {
-	static s_task_function_library_registration_entry *s_value = nullptr;
-	return s_value;
-}
-
-void s_task_function_library_registration_entry::end_active_library_task_function_registration() {
-	wl_assert(active_library());
-	active_library() = nullptr;
-}
-
 void c_task_function_registration_utilities::validate_argument_names(
 	size_t argument_count,
 	const task_function_binding::s_task_function_argument_names &argument_names) {
@@ -75,6 +60,21 @@ void c_task_function_registration_utilities::map_arguments(
 		// Argument not found
 		wl_assert(argument_index_map[mapped_argument_index] != k_invalid_task_argument_index);
 	}
+}
+
+s_task_function_library_registration_entry *&s_task_function_library_registration_entry::registration_list() {
+	static s_task_function_library_registration_entry *s_value = nullptr;
+	return s_value;
+}
+
+s_task_function_library_registration_entry *&s_task_function_library_registration_entry::active_library() {
+	static s_task_function_library_registration_entry *s_value = nullptr;
+	return s_value;
+}
+
+void s_task_function_library_registration_entry::end_active_library_task_function_registration() {
+	wl_assert(active_library());
+	active_library() = nullptr;
 }
 
 bool register_task_functions() {
@@ -147,7 +147,7 @@ static bool map_task_function_arguments(
 	auto iter = native_module_identifier_map.find(task_function_entry->native_module_identifier);
 	if (iter == native_module_identifier_map.end()) {
 		report_error(
-			"Failed to map arguments for task function 0x%04x (library 0x%04x): native module '%s' was not found",
+			"Failed to map arguments for task function 0x%04x (library '%s'): native module '%s' was not found",
 			task_function_entry->task_function.uid.get_task_function_id(),
 			get_task_function_library_name(task_function_entry->task_function.uid.get_library_id()),
 			task_function_entry->native_module_identifier);
@@ -163,7 +163,7 @@ static bool map_task_function_arguments(
 	}
 
 	// Each native module argument should map to at most one task function argument
-	for (size_t task_function_argument_index = 0;
+	for (uint32 task_function_argument_index = 0;
 		task_function_argument_index < task_function_entry->task_function.argument_count;
 		task_function_argument_index++) {
 		const char *task_function_argument_name =

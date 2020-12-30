@@ -14,7 +14,7 @@ static bool array_subscript(
 		context.diagnostic_interface->error(
 			"Array index '%f' is out of bounds for array of size '%llu'",
 			array_index_real,
-			array_count);
+			array.size());
 		return false;
 	}
 
@@ -48,7 +48,7 @@ static std::vector<t_element> array_repeat(
 	// Floor the value automatically in the cast
 	int32 repeat_count_signed = std::max(0, static_cast<int32>(real_repeat_count));
 	size_t repeat_count = cast_integer_verify<size_t>(repeat_count_signed);
-	std::vector<c_node_reference> result;
+	std::vector<t_element> result;
 	result.resize(arr.size() * repeat_count);
 	for (size_t rep = 0; rep < repeat_count; rep++) {
 		std::copy(arr.begin(), arr.end(), result.begin() + (rep * arr.size()));

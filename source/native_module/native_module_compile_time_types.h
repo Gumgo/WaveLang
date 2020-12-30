@@ -43,8 +43,16 @@ public:
 	using t_opaque_data = uint32;
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
+	c_native_module_value_reference()
+		: m_opaque_data(static_cast<t_opaque_data>(-1)) {}
+
 	c_native_module_value_reference(t_opaque_data opaque_data)
 		: m_opaque_data(opaque_data) {}
+
+	c_native_module_value_reference(const c_native_module_value_reference &) = default;
+	c_native_module_value_reference(c_native_module_value_reference &&) = default;
+	c_native_module_value_reference &operator=(const c_native_module_value_reference &) = default;
+	c_native_module_value_reference &operator=(c_native_module_value_reference &&) = default;
 
 	t_opaque_data get_opaque_data() const {
 		return m_opaque_data;

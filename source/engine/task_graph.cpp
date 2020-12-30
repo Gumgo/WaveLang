@@ -7,7 +7,7 @@
 
 #include "native_module/native_module.h"
 
-#define OUTPUT_TASK_GRAPH_BUILD_RESULT 1 // nocheckin Make sure this compiles, then set to 0
+#define OUTPUT_TASK_GRAPH_BUILD_RESULT 0
 
 #if IS_TRUE(OUTPUT_TASK_GRAPH_BUILD_RESULT)
 #include <fstream>

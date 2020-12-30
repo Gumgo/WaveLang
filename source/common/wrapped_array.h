@@ -9,6 +9,7 @@
 
 // Wrapped arrays can safely be zero_type'd
 
+// $TODO rename to c_array_view
 template<typename t_element>
 class c_wrapped_array {
 public:
@@ -81,32 +82,17 @@ public:
 		return m_count;
 	}
 
-	constexpr t_element *get_pointer() {
+	constexpr t_element *get_pointer() const {
 		return m_pointer;
 	}
 
-	constexpr const t_element *get_pointer() const {
-		return m_pointer;
-	}
-
-	constexpr c_wrapped_array<t_element> get_range(size_t index, size_t count) {
+	constexpr c_wrapped_array<t_element> get_range(size_t index, size_t count) const {
 		wl_assert(count == 0 || valid_index(index, m_count));
 		wl_assert(index + count <= m_count);
 		return c_wrapped_array<t_element>(m_pointer + index, count);
 	}
 
-	constexpr c_wrapped_array<const t_element> get_range(size_t index, size_t count) const {
-		wl_assert(count == 0 || valid_index(index, m_count));
-		wl_assert(index + count <= m_count);
-		return c_wrapped_array<const t_element>(m_pointer + index, count);
-	}
-
-	constexpr t_element &operator[](size_t index) {
-		wl_assert(valid_index(index, m_count));
-		return m_pointer[index];
-	}
-
-	constexpr const t_element &operator[](size_t index) const {
+	constexpr t_element &operator[](size_t index) const {
 		wl_assert(valid_index(index, m_count));
 		return m_pointer[index];
 	}
@@ -117,19 +103,11 @@ public:
 
 	// For loop iteration syntax
 
-	constexpr t_element *begin() {
+	constexpr t_element *begin() const {
 		return m_pointer;
 	}
 
-	constexpr const t_element *begin() const {
-		return m_pointer;
-	}
-
-	constexpr t_element *end() {
-		return m_pointer + m_count;
-	}
-
-	constexpr const t_element *end() const {
+	constexpr t_element *end() const {
 		return m_pointer + m_count;
 	}
 
@@ -137,4 +115,3 @@ private:
 	t_element *m_pointer = nullptr;
 	size_t m_count = 0;
 };
-

@@ -57,7 +57,7 @@ private:
 	};
 
 	struct s_identifier {
-		size_t index;
+		uint32 index;
 		bool is_constant;
 	};
 
@@ -81,21 +81,6 @@ private:
 	uint32 m_constant_count = 0;
 	uint32 m_variable_count = 0;
 };
-
-s_native_module_library_registration_entry *&s_native_module_library_registration_entry::registration_list() {
-	static s_native_module_library_registration_entry *s_value = nullptr;
-	return s_value;
-}
-
-s_native_module_library_registration_entry *&s_native_module_library_registration_entry::active_library() {
-	static s_native_module_library_registration_entry *s_value = nullptr;
-	return s_value;
-}
-
-void s_native_module_library_registration_entry::end_active_library_native_module_registration() {
-	wl_assert(active_library());
-	active_library() = nullptr;
-}
 
 void c_native_module_registration_utilities::validate_argument_names(const s_native_module &native_module) {
 #if IS_TRUE(ASSERTS_ENABLED)
@@ -160,6 +145,21 @@ void c_native_module_registration_utilities::get_name_from_identifier(
 	}
 
 	wl_halt(); // Name is too long
+}
+
+s_native_module_library_registration_entry *&s_native_module_library_registration_entry::registration_list() {
+	static s_native_module_library_registration_entry *s_value = nullptr;
+	return s_value;
+}
+
+s_native_module_library_registration_entry *&s_native_module_library_registration_entry::active_library() {
+	static s_native_module_library_registration_entry *s_value = nullptr;
+	return s_value;
+}
+
+void s_native_module_library_registration_entry::end_active_library_native_module_registration() {
+	wl_assert(active_library());
+	active_library() = nullptr;
 }
 
 std::unordered_map<std::string_view, s_native_module_uid>

@@ -116,12 +116,14 @@ namespace delay_task_functions {
 	size_t delay_memory_query(
 		const s_task_function_context &context,
 		wl_task_argument(real32, duration)) {
+		uint32 delay_samples;
 		if (std::isnan(duration) || std::isinf(duration)) {
-			duration = 0.0f;
+			delay_samples = 0;
+		} else {
+			delay_samples = static_cast<uint32>(
+				std::max(0.0f, std::round(static_cast<real32>(context.sample_rate) * duration)));
 		}
 
-		uint32 delay_samples = static_cast<uint32>(
-			std::max(0.0f, std::round(static_cast<real32>(context.sample_rate) * duration)));
 
 		// Allocate the size of the context plus the delay buffer
 		return sizeof(s_delay_context) + (delay_samples * sizeof(real32));
@@ -130,15 +132,16 @@ namespace delay_task_functions {
 	void delay_initializer(
 		const s_task_function_context &context,
 		wl_task_argument(real32, duration)) {
-		if (std::isnan(duration) || std::isinf(duration)) {
-			context.event_interface->submit(EVENT_WARNING << "Invalid delay duration, defaulting to 0");
-			duration = 0.0f;
-		}
-
 		s_delay_context *delay_context = static_cast<s_delay_context *>(context.task_memory);
 
-		delay_context->delay_samples = static_cast<uint32>(
-			std::max(0.0f, roundf(static_cast<real32>(context.sample_rate) * duration)));
+		if (std::isnan(duration) || std::isinf(duration)) {
+			context.event_interface->submit(EVENT_WARNING << "Invalid delay duration, defaulting to 0");
+			delay_context->delay_samples = 0;
+		} else {
+			delay_context->delay_samples = static_cast<uint32>(
+				std::max(0.0f, std::round(static_cast<real32>(context.sample_rate) * duration)));
+		}
+
 		delay_context->delay_buffer_head_index = 0;
 		delay_context->is_constant = true;
 
@@ -372,18 +375,18 @@ namespace delay_task_functions {
 	static constexpr uint32 k_delay_library_id = 4;
 	wl_task_function_library(k_delay_library_id, "delay", 0);
 
-	wl_task_function(0xbd8b8e85, "delay", "delay")
+	wl_task_function(0xbd8b8e85, "delay")
 		.set_function<delay>()
 		.set_memory_query<delay_memory_query>()
 		.set_initializer<delay_initializer>()
 		.set_voice_initializer<delay_voice_initializer>();
 
-	wl_task_function(0xbe5eb8bd, "memory_real", "memory$real")
+	wl_task_function(0xbe5eb8bd, "memory$real")
 		.set_function<memory_real>()
 		.set_memory_query<memory_real_memory_query>()
 		.set_voice_initializer<memory_real_voice_initializer>();
 
-	wl_task_function(0x1fbebc67, "memory_bool", "memory$bool")
+	wl_task_function(0x1fbebc67, "memory$bool")
 		.set_function<memory_bool>()
 		.set_memory_query<memory_bool_memory_query>()
 		.set_voice_initializer<memory_bool_voice_initializer>();

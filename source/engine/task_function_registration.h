@@ -4,6 +4,20 @@
 
 #include "task_function/task_function_binding.h"
 
+class c_task_function_registration_utilities {
+public:
+	static void validate_argument_names(
+		size_t argument_count,
+		const task_function_binding::s_task_function_argument_names &argument_names);
+
+	static void map_arguments(
+		const s_task_function &source_task_function,
+		const task_function_binding::s_task_function_argument_names &source_argument_names,
+		const s_task_function &mapped_task_function,
+		const task_function_binding::s_task_function_argument_names &mapped_argument_names,
+		task_function_binding::s_argument_index_map &argument_index_map);
+};
+
 struct s_task_function_registration_entry;
 
 struct s_task_function_library_registration_entry {
@@ -71,13 +85,16 @@ struct s_task_function_registration_entry {
 	const char *native_module_identifier; // Points to a static allocation
 
 	task_function_binding::s_task_function_argument_names argument_names;
-	task_function_binding::s_argument_index_map memory_query_argument_indices;
-	task_function_binding::s_argument_index_map initializer_argument_indices;
-	task_function_binding::s_argument_index_map voice_initializer_argument_indices;
 
 	s_task_function_registration_entry *next = nullptr;
 
-	template<s_task_function_registration_entry *k_entry>
+	// Unfortunately we can't pass &k_entry->(member) as a template argument so we have to pass in each static storage
+	// object individually
+	template<
+		s_task_function_registration_entry *k_entry,
+		task_function_binding::s_argument_index_map *k_memory_query_argument_indices,
+		task_function_binding::s_argument_index_map *k_initializer_argument_indices,
+		task_function_binding::s_argument_index_map *k_voice_initializer_argument_indices>
 	class c_builder {
 	public:
 		c_builder(uint32 id, const char *identifier) {
@@ -90,18 +107,20 @@ struct s_task_function_registration_entry {
 			active_library->task_functions = k_entry;
 
 			k_entry->task_function.uid = s_task_function_uid::build(active_library->library.id, id);
-			k_entry->identifier.set_verify(identifier);
+			k_entry->native_module_identifier = identifier;
 		}
 
 		// Sets the function to be called at runtime
 		template<auto k_function>
 		c_builder &set_function() {
 			k_entry->task_function.function =
-				task_function_binding::task_function_call_wrapper<k_function>;
-			task_function_binding::populate_task_function_arguments<decltype(k_function)>(
+				task_function_binding::task_function_call_wrapper<k_function, void>;
+			task_function_binding::populate_task_function_arguments<decltype(k_function), void>(
 				k_entry->task_function,
 				k_entry->argument_names);
-			c_task_function_registration_utilities::validate_argument_names(k_entry->argument_names);
+			c_task_function_registration_utilities::validate_argument_names(
+				k_entry->task_function.argument_count,
+				k_entry->argument_names);
 			k_entry->arguments_initialized = true;
 			return *this;
 		}
@@ -111,19 +130,24 @@ struct s_task_function_registration_entry {
 		c_builder &set_memory_query() {
 			wl_assert(k_entry->arguments_initialized);
 			k_entry->task_function.memory_query =
-				task_function_binding::task_function_call_wrapper<k_function, &k_entry->memory_query_argument_indices>;
+				task_function_binding::task_function_call_wrapper<
+				k_function,
+				size_t,
+				k_memory_query_argument_indices>;
 
 			s_task_function task_function;
 			task_function_binding::s_task_function_argument_names argument_names;
-			task_function_binding::populate_task_function_arguments<decltype(k_function)>(
+			task_function_binding::populate_task_function_arguments<decltype(k_function), size_t>(
 				task_function,
 				argument_names);
-			c_task_function_registration_utilities::validate_argument_names(argument_names);
+			c_task_function_registration_utilities::validate_argument_names(
+				task_function.argument_count,
+				argument_names);
 			c_task_function_registration_utilities::map_arguments(
 				k_entry->task_function,
 				k_entry->argument_names,
 				task_function, argument_names,
-				k_entry->memory_query_argument_indices);
+				*k_memory_query_argument_indices);
 
 			return *this;
 		}
@@ -133,19 +157,24 @@ struct s_task_function_registration_entry {
 		c_builder &set_initializer() {
 			wl_assert(k_entry->arguments_initialized);
 			k_entry->task_function.initializer =
-				task_function_binding::task_function_call_wrapper<k_function, &k_entry->initializer_argument_indices>;
+				task_function_binding::task_function_call_wrapper<
+				k_function,
+				void,
+				k_initializer_argument_indices>;
 
 			s_task_function task_function;
 			task_function_binding::s_task_function_argument_names argument_names;
-			task_function_binding::populate_task_function_arguments<decltype(k_function)>(
+			task_function_binding::populate_task_function_arguments<decltype(k_function), void>(
 				task_function,
 				argument_names);
-			c_task_function_registration_utilities::validate_argument_names(argument_names);
+			c_task_function_registration_utilities::validate_argument_names(
+				task_function.argument_count,
+				argument_names);
 			c_task_function_registration_utilities::map_arguments(
 				k_entry->task_function,
 				k_entry->argument_names,
 				task_function, argument_names,
-				k_entry->initializer_argument_indices);
+				*k_initializer_argument_indices);
 
 			return *this;
 		}
@@ -156,41 +185,34 @@ struct s_task_function_registration_entry {
 			wl_assert(k_entry->arguments_initialized);
 			k_entry->task_function.voice_initializer = task_function_binding::task_function_call_wrapper<
 				k_function,
-				&k_entry->voice_initializer_argument_indices>;
+				void,
+				k_voice_initializer_argument_indices>;
 
 			s_task_function task_function;
 			task_function_binding::s_task_function_argument_names argument_names;
-			task_function_binding::populate_task_function_arguments<decltype(k_function)>(
+			task_function_binding::populate_task_function_arguments<decltype(k_function), void>(
 				task_function,
 				argument_names);
-			c_task_function_registration_utilities::validate_argument_names(argument_names);
+			c_task_function_registration_utilities::validate_argument_names(
+				task_function.argument_count,
+				argument_names);
 			c_task_function_registration_utilities::map_arguments(
 				k_entry->task_function,
 				k_entry->argument_names,
 				task_function, argument_names,
-				k_entry->voice_initializer_argument_indices);
+				*k_voice_initializer_argument_indices);
 
 			return *this;
 		}
 	};
 };
 
-class c_task_function_registration_utilities {
-public:
-	static void validate_argument_names(
-		size_t argument_count,
-		const task_function_binding::s_task_function_argument_names &argument_names);
-
-	static void map_arguments(
-		const s_task_function &source_task_function,
-		const task_function_binding::s_task_function_argument_names &source_argument_names,
-		const s_task_function &mapped_task_function,
-		const task_function_binding::s_task_function_argument_names &mapped_argument_names,
-		task_function_binding::s_argument_index_map &argument_index_map);
-};
-
 #define TF_REG_ENTRY TOKEN_CONCATENATE(s_registration_entry_, __LINE__)
 #define TF_REG_ENTRY_BUILDER TOKEN_CONCATENATE(s_registration_entry_builder_, __LINE__)
+#define TF_REG_ENTRY_INDICES(name)						\
+	TOKEN_CONCATENATE(s_registration_entry_builder_,	\
+		TOKEN_CONCATENATE(name,							\
+			TOKEN_CONCATENATE(_, __LINE__)))
 
 // Registration API:
 
@@ -211,7 +233,18 @@ public:
 // "identifier" is the identifier of a native module in the same library which should map to this task function
 #define wl_task_function(id, identifier)														\
 	static s_task_function_registration_entry TF_REG_ENTRY;										\
-	static s_task_function_registration_entry::c_builder<&TF_REG_ENTRY> TF_REG_ENTRY_BUILDER =	\
-		s_task_function_registration_entry::c_builder<&TF_REG_ENTRY>(id, identifier)
+	static task_function_binding::s_argument_index_map TF_REG_ENTRY_INDICES(memory_query);		\
+	static task_function_binding::s_argument_index_map TF_REG_ENTRY_INDICES(initializer);		\
+	static task_function_binding::s_argument_index_map TF_REG_ENTRY_INDICES(voice_initializer);	\
+	static s_task_function_registration_entry::c_builder<										\
+		&TF_REG_ENTRY,																			\
+		&TF_REG_ENTRY_INDICES(memory_query),													\
+		&TF_REG_ENTRY_INDICES(initializer),														\
+		&TF_REG_ENTRY_INDICES(voice_initializer)> TF_REG_ENTRY_BUILDER =						\
+		s_task_function_registration_entry::c_builder<											\
+			&TF_REG_ENTRY,																		\
+			&TF_REG_ENTRY_INDICES(memory_query),												\
+			&TF_REG_ENTRY_INDICES(initializer),													\
+			&TF_REG_ENTRY_INDICES(voice_initializer)>(id, identifier)
 
 bool register_task_functions();

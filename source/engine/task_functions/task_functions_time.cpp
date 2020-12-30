@@ -60,7 +60,7 @@ namespace time_task_functions {
 	static constexpr uint32 k_time_library_id = 6;
 	wl_task_function_library(k_time_library_id, "time", 0);
 
-	wl_task_function(0xee27c86e, "period_out", "period")
+	wl_task_function(0xee27c86e, "period")
 		.set_function<period>()
 		.set_memory_query<period_memory_query>()
 		.set_initializer<period_initializer>()
