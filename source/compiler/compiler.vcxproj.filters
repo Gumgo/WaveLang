@@ -3,9 +3,6 @@
   <ItemGroup>
     <ClInclude Include="compiler.h" />
     <ClInclude Include="lr_parser.h" />
-    <ClInclude Include="getopt\getopt.h">
-      <Filter>getopt</Filter>
-    </ClInclude>
     <ClInclude Include="token.h" />
     <ClInclude Include="compiler_context.h" />
     <ClInclude Include="source_file.h" />
@@ -127,9 +124,6 @@
     <ClCompile Include="compiler.cpp" />
     <ClCompile Include="compiler_main.cpp" />
     <ClCompile Include="lr_parser.cpp" />
-    <ClCompile Include="getopt\getopt.c">
-      <Filter>getopt</Filter>
-    </ClCompile>
     <ClCompile Include="compiler_context.cpp" />
     <ClCompile Include="wavelang_grammar.cpp" />
     <ClCompile Include="token.cpp" />
@@ -245,9 +239,6 @@
     <None Include="SConscript" />
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="getopt">
-      <UniqueIdentifier>{ac4eb251-0933-4901-a463-84302e3f7dd8}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ast">
       <UniqueIdentifier>{2217f3da-2d0d-49f4-ace8-e0bd8cf95f4e}</UniqueIdentifier>
     </Filter>

@@ -1,7 +1,6 @@
 #include "common/utility/file_utility.h"
 
 #include "compiler/compiler.h"
-#include "compiler/compiler_context.h"
 #include "compiler/components/ast_builder.h"
 #include "compiler/components/entry_point_extractor.h"
 #include "compiler/components/importer.h"
@@ -18,10 +17,9 @@
 
 static bool read_source_file(c_compiler_context &context, h_compiler_source_file source_file_handle);
 
-c_instrument *c_compiler::compile(c_wrapped_array<void *> native_module_library_contexts, const char *source_filename) {
+c_instrument *c_compiler::compile(c_compiler_context &context, const char *source_filename) {
 	wl_assert(source_filename);
-
-	c_compiler_context context(native_module_library_contexts);
+	wl_assert(context.get_source_file_count() == 0);
 
 	// Add the initial source
 	bool was_added;

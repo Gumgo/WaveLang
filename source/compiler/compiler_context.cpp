@@ -6,9 +6,6 @@
 
 c_compiler_context::c_compiler_context(c_wrapped_array<void *> native_module_library_contexts) {
 	m_native_module_library_contexts = native_module_library_contexts;
-
-	m_warning_count = 0;
-	m_error_count = 0;
 }
 
 void c_compiler_context::message(
@@ -25,7 +22,12 @@ void c_compiler_context::vmessage(
 	const s_compiler_source_location &location,
 	const char *format,
 	va_list args) {
-	output_to_stream(std::cout, "Message", -1, location, format, args);
+	s_compiler_message message_entry = {
+		str_vformat(format, args)
+	};
+
+	output_to_stream(std::cout, "Message", -1, location, message_entry.message.c_str());
+	m_messages.emplace_back(message_entry);
 }
 
 void c_compiler_context::message(
@@ -59,8 +61,13 @@ void c_compiler_context::vwarning(
 	const s_compiler_source_location &location,
 	const char *format,
 	va_list args) {
-	output_to_stream(std::cerr, "Warning", enum_index(warning), location, format, args);
-	m_warning_count++;
+	s_compiler_warning warning_entry = {
+		warning,
+		str_vformat(format, args)
+	};
+
+	output_to_stream(std::cerr, "Warning", enum_index(warning), location, warning_entry.message.c_str());
+	m_warnings.emplace_back(warning_entry);
 }
 
 void c_compiler_context::warning(
@@ -96,8 +103,13 @@ void c_compiler_context::verror(
 	const s_compiler_source_location &location,
 	const char *format,
 	va_list args) {
-	output_to_stream(std::cerr, "Error", enum_index(error), location, format, args);
-	m_error_count++;
+	s_compiler_error error_entry = {
+		error,
+		str_vformat(format, args)
+	};
+
+	output_to_stream(std::cerr, "Error", enum_index(error), location, error_entry.message.c_str());
+	m_errors.emplace_back(error_entry);
 }
 
 void c_compiler_context::error(
@@ -117,12 +129,28 @@ void c_compiler_context::verror(
 	verror(error, s_compiler_source_location(), format, args);
 }
 
+size_t c_compiler_context::get_message_count() const {
+	return m_messages.size();
+}
+
+const s_compiler_message &c_compiler_context::get_message(size_t index) const {
+	return m_messages[index];
+}
+
 size_t c_compiler_context::get_warning_count() const {
-	return m_warning_count;
+	return m_warnings.size();
+}
+
+const s_compiler_warning &c_compiler_context::get_warning(size_t index) const {
+	return m_warnings[index];
 }
 
 size_t c_compiler_context::get_error_count() const {
-	return m_error_count;
+	return m_errors.size();
+}
+
+const s_compiler_error &c_compiler_context::get_error(size_t index) const {
+	return m_errors[index];
 }
 
 size_t c_compiler_context::get_source_file_count() const {
@@ -169,13 +197,12 @@ void c_compiler_context::output_to_stream(
 	const char *prefix,
 	int32 code,
 	const s_compiler_source_location &location,
-	const char *format,
-	va_list args) const {
+	const char *message) const {
 	stream << prefix;
 	if (code >= 0) {
 		stream << " (code " << code << ")";
 	}
-	stream << get_source_location_string(location) << ": " << str_format(format, args) << "\n";
+	stream << get_source_location_string(location) << ": " << message << "\n";
 }
 
 std::string c_compiler_context::get_source_location_string(const s_compiler_source_location &location) const {

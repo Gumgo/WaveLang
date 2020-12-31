@@ -120,11 +120,11 @@ e_native_module_data_mutability c_native_module_qualified_data_type::get_data_mu
 }
 
 c_native_module_qualified_data_type c_native_module_qualified_data_type::get_element_type() const {
-	c_native_module_qualified_data_type(m_data_type.get_element_type(), m_data_mutability);
+	return c_native_module_qualified_data_type(m_data_type.get_element_type(), m_data_mutability);
 }
 
 c_native_module_qualified_data_type c_native_module_qualified_data_type::get_array_type() const {
-	c_native_module_qualified_data_type(m_data_type.get_array_type(), m_data_mutability);
+	return c_native_module_qualified_data_type(m_data_type.get_array_type(), m_data_mutability);
 }
 
 bool c_native_module_qualified_data_type::operator==(const c_native_module_qualified_data_type &other) const {

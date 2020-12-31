@@ -16,7 +16,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
-    <ProjectGuid>{32DD3AAC-2291-4FC3-9615-E59DADA3DC61}</ProjectGuid>
+    <ProjectGuid>{07e3b736-c300-411a-b162-a838678b93a2}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -51,49 +51,47 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='debug|x64'">
-    <NMakeOutput>unit_tests.exe</NMakeOutput>
+    <NMakeOutput>compiler_app.exe</NMakeOutput>
     <NMakePreprocessorDefinitions>_DEBUG;__AVX__;__AVX2__;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
-    <NMakeBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons config=$(Configuration) $(ProjectName)_app</NMakeBuildCommandLine>
-    <NMakeReBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)_app &amp;&amp; SCons config=$(Configuration) $(ProjectName)_app</NMakeReBuildCommandLine>
-    <NMakeCleanCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)_app</NMakeCleanCommandLine>
+    <NMakeBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeBuildCommandLine>
+    <NMakeReBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName) &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeReBuildCommandLine>
+    <NMakeCleanCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)</NMakeCleanCommandLine>
     <IntDir>$(SolutionDir)..\build\win32\$(Configuration)\msvc</IntDir>
-    <IncludePath>$(SolutionDir);C:\Programming\googletest\googletest\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
     <AdditionalOptions>/std:c++latest</AdditionalOptions>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='development|x64'">
-    <NMakeOutput>unit_tests.exe</NMakeOutput>
+    <NMakeOutput>compiler_app.exe</NMakeOutput>
     <NMakePreprocessorDefinitions>_DEBUG;__AVX__;__AVX2__;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
     <NMakeBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons config=$(Configuration) $(ProjectName)_app</NMakeBuildCommandLine>
     <NMakeReBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)_app &amp;&amp; SCons config=$(Configuration) $(ProjectName)_app</NMakeReBuildCommandLine>
     <NMakeCleanCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)_app</NMakeCleanCommandLine>
     <IntDir>$(SolutionDir)..\build\win32\$(Configuration)\msvc</IntDir>
-    <IncludePath>$(SolutionDir);C:\Programming\googletest\googletest\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
     <AdditionalOptions>/std:c++latest</AdditionalOptions>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='release|x64'">
-    <NMakeOutput>unit_tests.exe</NMakeOutput>
+    <NMakeOutput>compiler_app.exe</NMakeOutput>
     <NMakePreprocessorDefinitions>NDEBUG;__AVX__;__AVX2__;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
     <NMakeBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons config=$(Configuration) $(ProjectName)_app</NMakeBuildCommandLine>
     <NMakeReBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)_app &amp;&amp; SCons config=$(Configuration) $(ProjectName)_app</NMakeReBuildCommandLine>
     <NMakeCleanCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)_app</NMakeCleanCommandLine>
     <IntDir>$(SolutionDir)..\build\win32\$(Configuration)\msvc</IntDir>
-    <IncludePath>$(SolutionDir);C:\Programming\googletest\googletest\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
     <AdditionalOptions>/std:c++latest</AdditionalOptions>
   </PropertyGroup>
-  <ItemDefinitionGroup>
-  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="compiler_main.cpp" />
+    <ClCompile Include="getopt\getopt.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="getopt\getopt.h" />
+  </ItemGroup>
   <ItemGroup>
     <None Include="SConscript" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="..\natvis\project.natvis" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="buffer_tests.cpp" />
-    <ClCompile Include="compiler_tests.cpp" />
-    <ClCompile Include="json_tests.cpp" />
-    <ClCompile Include="math_tests.cpp" />
-    <ClCompile Include="unit_tests_main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

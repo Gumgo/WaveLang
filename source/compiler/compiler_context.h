@@ -15,6 +15,8 @@ enum class e_compiler_warning {
 };
 
 enum class e_compiler_error {
+	k_invalid = -1,
+
 	// File errors
 	k_failed_to_find_file,
 	k_failed_to_open_file,
@@ -93,6 +95,20 @@ enum class e_compiler_error {
 	k_count
 };
 
+struct s_compiler_message {
+	std::string message;
+};
+
+struct s_compiler_warning {
+	e_compiler_warning warning;
+	std::string message;
+};
+
+struct s_compiler_error {
+	e_compiler_error error;
+	std::string message;
+};
+
 class c_compiler_context {
 public:
 	c_compiler_context(c_wrapped_array<void *> native_module_library_contexts);
@@ -114,7 +130,8 @@ public:
 	void warning(
 		e_compiler_warning warning,
 		const s_compiler_source_location &location,
-		const char *format, ...);
+		const char *format,
+		...);
 	void vwarning(
 		e_compiler_warning warning,
 		const s_compiler_source_location &location,
@@ -146,8 +163,14 @@ public:
 		const char *format,
 		va_list args);
 
+	size_t get_message_count() const;
+	const s_compiler_message &get_message(size_t index) const;
+
 	size_t get_warning_count() const;
+	const s_compiler_warning &get_warning(size_t index) const;
+
 	size_t get_error_count() const;
+	const s_compiler_error &get_error(size_t index) const;
 
 	size_t get_source_file_count() const;
 	s_compiler_source_file &get_source_file(h_compiler_source_file handle);
@@ -162,8 +185,7 @@ private:
 		const char *prefix,
 		int32 code,
 		const s_compiler_source_location &location,
-		const char *format,
-		va_list args) const;
+		const char *message) const;
 	std::string get_source_location_string(const s_compiler_source_location &location) const;
 
 	c_wrapped_array<void *> m_native_module_library_contexts;
@@ -171,6 +193,7 @@ private:
 	// We use unique_ptr to make sure that existing source file references remain valid when a new source file is added
 	std::vector<std::unique_ptr<s_compiler_source_file>> m_source_files;
 
-	size_t m_warning_count;
-	size_t m_error_count;
+	std::vector<s_compiler_message> m_messages;
+	std::vector<s_compiler_warning> m_warnings;
+	std::vector<s_compiler_error> m_errors;
 };

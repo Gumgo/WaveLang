@@ -1,0 +1,34 @@
+# Compiler app - standalone compiler executable
+
+import utils
+
+Import("*")
+
+env = env.Clone()
+
+if compiler == "cl":
+	# Suppress a warning caused by getopt
+	env.Append(CCFLAGS = ["/wd4996"])
+
+if str(platform) == "win32":
+	env.Append(LIBS = ["shlwapi.lib"])
+
+env.Append(CPPPATH = ["#source"])
+
+sources = utils.enumerate_files(env, ".", utils.SOURCE_EXTENSIONS)
+static_libraries = ["common", "compiler", "execution_graph", "native_module"]
+env.Append(LIBS = static_libraries, LIBPATH = ["../bin"])
+
+objects = []
+for source in sources:
+	obj = env.StaticObject(source)
+	objects += obj
+
+compiler_app_program = env.Program("compiler_app", objects)
+
+compiler_app_installed = env.Install("../bin", compiler_app_program)
+env.Alias("compiler_app", compiler_app_installed)
+
+# Install to app directory
+compiler_app_app = env.Install("#app", compiler_app_installed)
+env.Alias("compiler_app_app", compiler_app_app) # $TODO better name?

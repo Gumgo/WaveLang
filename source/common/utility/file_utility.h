@@ -18,7 +18,7 @@ std::string canonicalize_path(const char *path);
 std::string get_path_directory(const char *path);
 bool is_path_relative(const char *path);
 bool get_file_last_modified_timestamp(const char *path, uint64 &timestamp_out);
-void create_directory(const char *path);
+void create_directory(const char *path); // $TODO use std::filesystem instead
 
 enum class e_read_full_file_result {
 	k_success,

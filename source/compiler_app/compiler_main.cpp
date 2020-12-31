@@ -3,7 +3,8 @@
 #include "common/utility/graphviz_generator.h"
 
 #include "compiler/compiler.h"
-#include "compiler/getopt/getopt.h"
+
+#include "compiler_app/getopt/getopt.h"
 
 #include "execution_graph/execution_graph.h"
 #include "execution_graph/instrument.h"
@@ -89,8 +90,8 @@ int main(int argc, char **argv) {
 	// Compile each input file
 	for (int32 arg = first_file_argument_index; arg < argc; arg++) {
 		std::cout << "Compiling '" << argv[arg] << "'\n";
-		std::unique_ptr<c_instrument> instrument(
-			c_compiler::compile(c_wrapped_array<void *>(library_contexts), argv[arg]));
+		c_compiler_context context = c_compiler_context(c_wrapped_array<void *>(library_contexts));
+		std::unique_ptr<c_instrument> instrument(c_compiler::compile(context, argv[arg]));
 
 		if (instrument) {
 			std::string fname_no_ext = argv[arg];

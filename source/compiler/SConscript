@@ -6,29 +6,16 @@ Import("*")
 
 env = env.Clone()
 
-if compiler == "cl":
-	# Suppress a warning caused by getopt
-	env.Append(CCFLAGS = ["/wd4996"])
-
-if str(platform) == "win32":
-	env.Append(LIBS = ["shlwapi.lib"])
-
 env.Append(CPPPATH = ["#source"])
 
 sources = utils.enumerate_files(env, ".", utils.SOURCE_EXTENSIONS)
-static_libraries = ["common", "execution_graph", "native_module"]
-env.Append(LIBS = static_libraries, LIBPATH = ["../bin"])
 
 objects = []
 for source in sources:
 	obj = env.StaticObject(source)
 	objects += obj
 
-compiler_program = env.Program("compiler", objects)
+compiler_library = env.StaticLibrary("compiler", objects)
 
-compiler_installed = env.Install("../bin", [compiler_program])
-env.Alias("compiler", [compiler_installed])
-
-# Install to app directory
-compiler_app = env.Install("#app", compiler_installed)
-env.Alias("compiler_app", compiler_app)
+compiler_installed = env.Install("../bin", compiler_library)
+env.Alias("compiler", compiler_installed)

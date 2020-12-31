@@ -120,11 +120,11 @@ e_task_data_mutability c_task_qualified_data_type::get_data_mutability() const {
 }
 
 c_task_qualified_data_type c_task_qualified_data_type::get_element_type() const {
-	c_task_qualified_data_type(m_data_type.get_element_type(), m_data_mutability);
+	return c_task_qualified_data_type(m_data_type.get_element_type(), m_data_mutability);
 }
 
 c_task_qualified_data_type c_task_qualified_data_type::get_array_type() const {
-	c_task_qualified_data_type(m_data_type.get_array_type(), m_data_mutability);
+	return c_task_qualified_data_type(m_data_type.get_array_type(), m_data_mutability);
 }
 
 bool c_task_qualified_data_type::operator==(const c_task_qualified_data_type &other) const {

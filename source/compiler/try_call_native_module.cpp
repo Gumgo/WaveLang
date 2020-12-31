@@ -96,7 +96,7 @@ template<typename t_argument_reference>
 static t_argument_reference argument_reference_from_node_reference(c_node_reference node_reference) {
 #if IS_TRUE(ASSERTS_ENABLED)
 	return t_argument_reference(
-		static_cast<uint64>(node_reference.get_node_index() | (static_cast<uint64>(node_reference.get_salt()) << 32));
+		static_cast<uint64>(node_reference.get_node_index() | (static_cast<uint64>(node_reference.get_salt()) << 32)));
 #else // IS_TRUE(ASSERTS_ENABLED)
 	return t_argument_reference(node_reference.get_node_index());
 #endif // IS_TRUE(ASSERTS_ENABLED)
@@ -228,7 +228,7 @@ bool c_native_module_caller::try_call(bool &did_call_out) {
 						build_constant_array_value(source_node_reference, string_array);
 					} else {
 						compile_time_argument.value.emplace<c_native_module_string>().get_string() =
-							execution_graph.get_constant_node_real_value(source_node_reference);
+							execution_graph.get_constant_node_string_value(source_node_reference);
 					}
 				} else {
 					if (argument.type.is_array()) {

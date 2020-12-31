@@ -119,7 +119,6 @@
     <ClInclude Include="components\instrument_globals_parser.h" />
     <ClInclude Include="components\lexer.h" />
     <ClInclude Include="components\parser.h" />
-    <ClInclude Include="getopt\getopt.h" />
     <ClInclude Include="graph_trimmer.h" />
     <ClInclude Include="lr_parser.h" />
     <ClInclude Include="optimization_rule_applicator.h" />
@@ -167,7 +166,6 @@
     <ClCompile Include="components\instrument_globals_parser.cpp" />
     <ClCompile Include="components\lexer.cpp" />
     <ClCompile Include="components\parser.cpp" />
-    <ClCompile Include="getopt\getopt.c" />
     <ClCompile Include="graph_trimmer.cpp" />
     <ClCompile Include="lr_parser.cpp" />
     <ClCompile Include="optimization_rule_applicator.cpp" />

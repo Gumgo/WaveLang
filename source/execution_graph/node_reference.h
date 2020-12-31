@@ -53,6 +53,9 @@ private:
 	template<typename t_argument_reference>
 	friend c_node_reference node_reference_from_argument_reference(t_argument_reference argument_reference);
 
+	template<typename t_argument_reference>
+	friend t_argument_reference argument_reference_from_node_reference(c_node_reference node_reference);
+
 	static constexpr uint32 k_invalid_node_index = static_cast<uint32>(-1);
 	static constexpr uint32 k_invalid_salt = static_cast<uint32>(-1);
 
