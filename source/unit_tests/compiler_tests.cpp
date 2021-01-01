@@ -70,7 +70,7 @@ static constexpr const char *k_compiler_error_strings[] = {
 
 STATIC_ASSERT(is_enum_fully_mapped<e_compiler_error>(k_compiler_error_strings));
 
-static constexpr const char *k_compiler_tests_directory = "compiler_tests";
+static constexpr const char *k_compiler_tests_directory = "generated_compiler_tests";
 static constexpr const char *k_test_extension = ".wl";
 
 static std::string_view get_next_token(std::string_view &line) {
@@ -109,7 +109,10 @@ static void run_compiler_test(const char *test_definition_filename) {
 	ASSERT_TRUE(std::filesystem::create_directory(k_compiler_tests_directory));
 
 	std::vector<std::tuple<std::string, e_compiler_error>> tests;
+	std::vector<std::tuple<std::string, std::string>> templates;
+
 	std::ofstream output_file;
+	bool is_template = false;
 	std::string line;
 	while (std::getline(file, line)) {
 		if (line.starts_with("###")) {
@@ -139,11 +142,28 @@ static void run_compiler_test(const char *test_definition_filename) {
 					output_file.close();
 				}
 
+				is_template = false;
+
 				output_file.open(std::filesystem::path(k_compiler_tests_directory) / path);
 				ASSERT_TRUE(output_file.is_open());
+			} else if (command == "TEMPLATE") {
+				std::string_view template_name = get_next_token(line_remaining);
+				ASSERT_TRUE(!template_name.empty());
+				// The rest of the line can be a comment
+
+				// Create the template
+				if (output_file.is_open()) {
+					output_file.close();
+				}
+
+				is_template = true;
+
+				templates.emplace_back(std::make_tuple(template_name, std::string()));
 			} else if (command == "TEST") {
 				std::string_view test_name = get_next_token(line_remaining);
+				ASSERT_TRUE(!test_name.empty());
 				std::string_view expected_result_string = get_next_token(line_remaining);
+				ASSERT_TRUE(!expected_result_string.empty());
 				// The rest of the line can be a comment
 
 				e_compiler_error expected_result = e_compiler_error::k_invalid;
@@ -157,8 +177,8 @@ static void run_compiler_test(const char *test_definition_filename) {
 						}
 					}
 
-					ASSERT_NE(expected_result, e_compiler_error::k_invalid);
-					ASSERT_TRUE(output_file.is_open());
+					ASSERT_NE(expected_result, e_compiler_error::k_invalid)
+						<< "(compiler error '" << expected_result_string << "' not found)";
 				}
 
 				tests.push_back(std::make_tuple(std::string(test_name), expected_result));
@@ -168,18 +188,39 @@ static void run_compiler_test(const char *test_definition_filename) {
 					output_file.close();
 				}
 
+				is_template = false;
+
 				output_file.open(
 					std::filesystem::path(k_compiler_tests_directory) / (std::string(test_name) + k_test_extension));
+				ASSERT_TRUE(output_file.is_open());
 			} else {
 				FAIL();
 			}
-
-			if (output_file.is_open()) {
-				output_file.close();
-			}
 		} else if (output_file.is_open()) {
-			output_file << line << std::endl;
-			ASSERT_FALSE(output_file.fail());
+			if (line.starts_with("##")) {
+				std::string_view line_remaining = line;
+
+				get_next_token(line_remaining); // Skip ##
+				std::string_view template_name = get_next_token(line_remaining);
+
+				// Paste the template
+				bool found = false;
+				for (const std::tuple<std::string, std::string> &template_ : templates) {
+					if (std::get<0>(template_) == template_name) {
+						output_file << std::get<1>(template_);
+						found = true;
+						break;
+					}
+				}
+
+				ASSERT_TRUE(found) << "(template '" << template_name << "' not found)";
+			} else {
+				output_file << line << std::endl;
+				ASSERT_FALSE(output_file.fail());
+			}
+		} else if (is_template) {
+			std::get<1>(templates.back()) += line;
+			std::get<1>(templates.back()).push_back('\n');
 		} else {
 			// No file open yet, only allow empty lines
 			ASSERT_TRUE(line.empty());
@@ -263,6 +304,46 @@ static void run_compiler_test(const char *test_definition_filename) {
 	}
 }
 
-TEST(Compiler, Thing) {
+TEST(Compiler, Array) {
+	run_compiler_test("compiler_tests/array.txt");
+}
 
+TEST(Compiler, ControlFlow) {
+	run_compiler_test("compiler_tests/control_flow.txt");
+}
+
+TEST(Compiler, EntryPoint) {
+	run_compiler_test("compiler_tests/entry_point.txt");
+}
+
+TEST(Compiler, Expression) {
+	run_compiler_test("compiler_tests/expression.txt");
+}
+
+TEST(Compiler, GlobalScopeConstant) {
+	run_compiler_test("compiler_tests/global_scope_constant.txt");
+}
+
+TEST(Compiler, Import) {
+	run_compiler_test("compiler_tests/import.txt");
+}
+
+TEST(Compiler, InstrumentGlobal) {
+	run_compiler_test("compiler_tests/instrument_global.txt");
+}
+
+TEST(Compiler, Lexer) {
+	run_compiler_test("compiler_tests/lexer.txt");
+}
+
+TEST(Compiler, Module) {
+	run_compiler_test("compiler_tests/module.txt");
+}
+
+TEST(Compiler, Parser) {
+	run_compiler_test("compiler_tests/parser.txt");
+}
+
+TEST(Compiler, Types) {
+	run_compiler_test("compiler_tests/types.txt");
 }

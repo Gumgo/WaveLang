@@ -129,6 +129,7 @@ Export("env", "platform", "configuration", "compiler", "build_options")
 projects = [
 	"common",
 	"compiler",
+	"compiler_app",
 	"console",
 	"driver",
 	"engine",

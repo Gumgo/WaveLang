@@ -95,6 +95,19 @@
     <ClCompile Include="math_tests.cpp" />
     <ClCompile Include="unit_tests_main.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="compiler_tests\array.txt" />
+    <Text Include="compiler_tests\control_flow.txt" />
+    <Text Include="compiler_tests\entry_point.txt" />
+    <Text Include="compiler_tests\expression.txt" />
+    <Text Include="compiler_tests\global_scope_constant.txt" />
+    <Text Include="compiler_tests\import.txt" />
+    <Text Include="compiler_tests\instrument_global.txt" />
+    <Text Include="compiler_tests\lexer.txt" />
+    <Text Include="compiler_tests\module.txt" />
+    <Text Include="compiler_tests\parser.txt" />
+    <Text Include="compiler_tests\types.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

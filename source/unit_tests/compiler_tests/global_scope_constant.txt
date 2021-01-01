@@ -1,0 +1,79 @@
+### TEMPLATE template
+bool voice_main(out real mono) {
+	mono = 0;
+	return false;
+}
+
+### TEMPLATE template_f
+bool voice_main(out real mono) {
+	f();
+	mono = 0;
+	return false;
+}
+
+### TEST global_scope_constants success
+import core;
+
+## template_f
+
+const real a = 0;
+const bool b = false;
+const string c = "hello";
+
+void f() {
+	core.assert(a == 0);
+	core.assert(!b);
+	core.assert(c == "hello");
+}
+
+### TEST mutable_global_scope_value k_illegal_global_scope_value_data_type
+## template
+
+real a = 0;
+
+### TEST dependent_constant_global_scope_value k_illegal_global_scope_value_data_type
+## template
+
+const? real a = 0;
+
+### TEST uninitialized_global_scope_value k_missing_global_scope_value_initializer
+## template
+
+const real x;
+
+### TEST self_referential_constant k_self_referential_constant
+## template
+
+real get_x() {
+	return x;
+}
+
+const real x = y;
+const real y = get_x();
+
+### TEST global_scope_constant_assignment k_invalid_assignment
+## template
+
+const real x = 5;
+
+void f() {
+	x = 10;
+}
+
+### TEST global_scope_constant_initialization_order success
+import core;
+
+## template_f
+
+const real x = y + 1;
+const real y = g()
+
+const real g() {
+	return z + 2;
+}
+
+const real z = 10;
+
+void f() {
+	core.assert(x == 13);
+}

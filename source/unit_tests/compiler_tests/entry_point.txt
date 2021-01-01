@@ -1,0 +1,86 @@
+### TEST voice_only success
+bool voice_main(out real mono) {
+	mono = 0;
+	return false;
+}
+
+### TEST fx_only success
+bool fx_main(out real mono) {
+	mono = 0;
+	return false;
+}
+
+### TEST voice_and_fx success
+bool voice_main(out real mono) {
+	mono = 0;
+	return false;
+}
+
+bool fx_main(in real voices, out real mono) {
+	mono = voices;
+	return false;
+}
+
+### TEST voice_stereo_fx_mono success
+bool voice_main(out real left, out real right) {
+	left = 0;
+	right = 0;
+	return false;
+}
+
+bool fx_main(in real voices_left, in real voices_right, out real mono) {
+	mono = voices_left + voices_right;
+	return false;
+}
+
+### TEST voice_mono_fx_stereo success
+bool voice_main(out real mono) {
+	mono = 0;
+	return false;
+}
+
+bool fx_main(in real voices_mono, out real left, out real right) {
+	left = voices_mono;
+	right = voices_mono;
+	return false;
+}
+
+### TEST ambiguous_entry_point k_ambiguous_entry_point
+bool voice_main(out real mono) {
+	mono = 0;
+	return false;
+}
+
+bool voice_main(out real left, out real right) {
+	left = 0;
+	right = 0;
+	return false;
+}
+
+### TEST invalid_entry_point_return_type k_invalid_entry_point
+real voice_main(out real mono) {
+	mono = 0;
+	return 0;
+}
+
+### TEST invalid_entry_point_argument_type k_invalid_entry_point
+bool voice_main(out bool mono) {
+	mono = 0;
+	return false;
+}
+
+### TEST invalid_entry_point_argument_direction k_invalid_entry_point
+bool voice_main(in real mono) {
+	return false;
+}
+
+### TEST mismatched_entry_point_arguments k_invalid_entry_point
+bool voice_main(out real mono) {
+	mono = 0;
+	return false;
+}
+
+bool fx_main(in real voices_left, in real voices_right, out real mono) {
+	mono = voices_left + voices_right;
+	return false;
+}

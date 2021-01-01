@@ -1,0 +1,91 @@
+### TEMPLATE template
+bool voice_main(out real mono) {
+	mono = 0;
+	return true;
+}
+
+### TEMPLATE template_f
+bool voice_main(out real mono) {
+	f();
+	mono = 0;
+	return false;
+}
+
+### FILE self_ref.wl This is used to test self-referential imports
+import self_ref;
+
+### FILE math.wl This conflicts with a native module library
+import core;
+
+real abs(in real x) {
+	core.assert(false);
+}
+
+### FILE root_import.wl
+
+const real root_value = 0;
+
+const real root_module() {
+	return root_value;
+}
+
+### FILE folder/child_import.wl
+
+const real child_value = 1;
+
+const real child_module() {
+	return child_value;
+}
+
+### TEST import_does_not_exist k_failed_to_resolve_import
+import does_not_exist;
+
+## template
+
+### TEST self_referential_import k_self_referential_import
+import self_ref;
+
+## template
+
+### TEST import_native_library success
+@import core;
+
+## template_f
+
+void f() { core.abs(0); }
+
+### TEST prefer_file_over_native_import k_native_module_error
+import core;
+
+## template_f
+
+void f() { core.abs(0); }
+
+### TEST import_as success
+@import core;
+import root_import;
+import folder.child_import;
+import root_import as ri;
+import child_import as ci;
+import root_import as a.b.c;
+import child_import as a.b.c;
+import root_import as .;
+
+## template_f
+
+void f() {
+	core.assert(root_import.root_module() == 0);
+	core.assert(root_import.root_value == 0);
+	core.assert(folder.child_import.child_module() == 1);
+	core.assert(folder.child_import.child_value == 1);
+	core.assert(ri.root_module() == 0);
+	core.assert(ri.root_value == 0);
+	core.assert(ci.child_module() == 1);
+	core.assert(ci.child_value == 1);
+	core.assert(a.b.c.root_module() == 0);
+	core.assert(a.b.c.root_value == 0);
+	core.assert(a.b.c.child_module() == 1);
+	core.assert(a.b.c.child_value == 1);
+	core.assert(root_module() == 0);
+	core.assert(root_value == 0);
+}

@@ -1,0 +1,10 @@
+### TEMPLATE template
+bool voice_main(out real mono) {
+	mono = 0;
+	return true;
+}
+
+### TEST unexpected_token k_unexpected_token
+## template
+
+real;

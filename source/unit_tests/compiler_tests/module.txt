@@ -1,0 +1,347 @@
+### TEMPLATE template
+bool voice_main(out real mono) {
+	mono = 0;
+	return false;
+}
+
+### TEMPLATE template_f
+bool voice_main(out real mono) {
+	f();
+	mono = 0;
+	return false;
+}
+
+### TEST in_arguments success
+import core;
+
+## template_f
+
+void f(const real x, const bool y) {
+	core.assert(x == 1);
+	core.assert(y);
+}
+
+void g() {
+	f(1, true);
+}
+
+### TEST out_arguments success
+import core;
+
+## template_f
+
+void f(out const real x, out const bool y) {
+	x = 1;
+	y = true;
+}
+
+void g() {
+	real x;
+	bool y;
+	f(out x, out y);
+	core.assert(x == 1);
+	core.assert(y);
+}
+
+### TEST default_arguments success
+import core;
+
+## template_f
+
+const real f(const real x = 10) {
+	return x;
+}
+
+void g() {
+	core.assert(f() == 10);
+	core.assert(f(5) == 5);
+}
+
+### TEST illegal_argument_ordering k_illegal_argument_ordering
+## template
+
+void f(real x = 5, real y) {}
+
+### TEST duplicate_argument k_duplicate_argument
+## template
+
+void f(real x, real x) {}
+
+### TEST illegal_out_argument k_illegal_out_argument
+## template
+
+void f(out real x = 10) {}
+
+### TEST unassigned_out_argument k_unassigned_out_argument
+## template
+
+void f(out real x) {}
+
+### TEST maybe_unassigned_out_argument k_unassigned_out_argument
+## template
+
+void f(const real x, out real y) {
+	if (x == 0) {
+		y = 1;
+	}
+}
+
+### TEST assigned_out_argument success
+## template
+
+void f(const real x, out real y) {
+	if (x == 0) {
+		y = 1;
+	} else {
+		y = 2;
+	}
+}
+
+### TEST missing_return_statement k_missing_return_statement
+## template
+
+real f() {}
+
+### TEST maybe_missing_return_statement k_missing_return_statement
+## template
+
+real f(const real x) {
+	if (x == 0) {
+		return 1;
+	}
+}
+
+### TEST present_return_statement success
+## template
+
+real f(const real x) {
+	if (x == 0) {
+		return 1;
+	} else {
+		return 2;
+	}
+}
+
+### TEST not_callable_type k_not_callable_type
+## template
+
+const real x = 2;
+
+void f() {
+	x();
+}
+
+### TEST overload success
+import core;
+
+## template_f
+
+const real g(const real x) {
+	return 0;
+}
+
+const real g(real x) {
+	return 1;
+}
+
+const real g(const bool x) {
+	return 2;
+}
+
+const real g(const real x, const real y) {
+	return 3;
+}
+
+void f() {
+	core.assert(g(0) == 0);
+	core.assert(g((real)0) == 1);
+	core.assert(g(false) == 2);
+	core.assert(g(0, 0) == 3);
+}
+
+### TEST overload_conflict k_declaration_conflict
+## template
+
+const real f() {
+	return 0;
+}
+
+const bool f() {
+	return false;
+}
+
+### TEST constant_and_module_conflict k_declaration_conflict
+## template
+
+const real f = 5;
+
+void f() {}
+
+### TEST named_arguments success
+import core;
+
+## template_f
+
+const real g(const real a, const real b, const real c = 10) {
+	return c;
+}
+
+void f() {
+	core.assert(g(0, 1, 2) == 2);
+	core.assert(g(0, 1, c = 2) == 2);
+	core.assert(g(0, c = 2, b = 1) == 2);
+	core.assert(g(a = 0, b = 1, c = 2) == 2);
+	core.assert(g(b = 1, c = 2, a = 0) == 2);
+}
+
+### TEST invalid_named_argument k_invalid_named_argument
+## template
+
+void g(const real a, const real b) {}
+
+void f() {
+	g(0, c = 2);
+}
+
+### TEST too_many_arguments k_too_many_arguments_provided
+## template
+
+void g(const real a) {}
+
+void f() {
+	g(0, 1);
+}
+
+### TEST duplicate_argument k_duplicate_argument_provided
+## template
+
+void g(const real a) {}
+
+void f() {
+	g(a = 0, a = 1);
+}
+
+### TEST argument_direction_mismatch_1 k_argument_direction_mismatch
+## template
+
+void g(const real a) {}
+
+void f() {
+	const real x;
+	g(out x);
+}
+
+### TEST argument_direction_mismatch_2 k_argument_direction_mismatch
+## template
+
+void g(out const real a) {
+	a = 0;
+}
+
+void f() {
+	g(1);
+}
+
+### TEST missing_argument k_missing_argument
+## template
+
+void g(const real a, const real b) {}
+
+void f() {
+	g(0);
+}
+
+### TEST ambiguous_overload_resolution k_ambiguous_module_overload_resolution
+## template
+
+void g(const real a = 0) {}
+void g(const bool a = false) {}
+
+void f() {
+	g();
+}
+
+### TEST no_matching_modules k_no_matching_modules
+## template
+
+void g(const real a) {}
+void g(const bool a) {}
+
+void f() {
+	g("hello");
+}
+
+### TEST argument_type_mismatch k_type_mismatch
+
+void g(const real a) {}
+
+void f() {
+	g(false);
+}
+
+### TEST invalid_out_argument k_invalid_out_argument
+## template
+
+void g(out const real x) {
+	x = 0;
+}
+
+void f() {
+	g(out 1);
+}
+
+### TEST unmodifiable_out_argument k_invalid_out_argument
+## template
+
+void g(out const real x) {
+	x = 0;
+}
+
+const real y = 0;
+
+void f() {
+	g(out y);
+}
+
+### TEST out_argument_type_mismatch k_type_mismatch
+## template
+
+void g(out const real x) {
+	x = 0;
+}
+
+void f() {
+	const bool x;
+	g(out x);
+}
+
+### TEST invalid_out_argument_subscript k_illegal_variable_subscript_assignment
+## template
+
+void g(out const real x) {
+	x = 0;
+}
+
+void f() {
+	const real x[] = {[1, 2, 3]);
+	real i = 0;
+	g(out x[i]);
+}
+
+### TEST incorrect_return_type k_return_type_mismatch
+## template
+
+real f() {
+	return true;
+}
+
+### TEST module_recursion_limit k_module_call_depth_limit_exceeded
+## template_f
+
+void g() {
+	f();
+}
+
+void f() {
+	g();
+}

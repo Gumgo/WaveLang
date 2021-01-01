@@ -1,0 +1,81 @@
+### TEMPLATE template
+bool voice_main(out real mono) {
+	mono = 0;
+	return false;
+}
+
+### TEMPLATE template_f
+bool voice_main(out real mono) {
+	f();
+	mono = 0;
+	return false;
+}
+
+### TEST primitive_type_mismatch k_type_mismatch
+## template
+
+void f() {
+	real x = false;
+}
+
+### TEST mutability_mismatch k_type_mismatch
+## template
+
+void f() {
+	const real x = 5;
+	real y = x;
+}
+
+### TEST array_mismatch k_type_mismatch
+## template
+
+void f() {
+	real x[] = {[ 1, 2, 3 ]};
+	real y = x;
+}
+
+### TEST string_upgrades_to_const success
+## template
+
+void f() {
+	string x = "hello";
+	const string y = x;
+}
+
+### TEST assignments success
+import core;
+
+## template_f
+
+void f() {
+	const real x = 5;
+	core.assert(x == 5);
+	x = 4;
+	core.assert(x == 4);
+	const real y = x;
+	x = 10;
+	core.assert(y == 4);
+}
+
+### TEST conversion success
+## template
+
+void f() {
+	const real x = 10;
+	real y = (real)x;
+}
+
+### TEST illegal_conversion k_illegal_type_conversion
+## template
+
+void f() {
+	const real x = 10;
+	const bool y = (const bool)x;
+}
+
+### TEST illegal_value_data_type k_illegal_value_data_type
+## template
+
+void f() {
+	void x;
+}

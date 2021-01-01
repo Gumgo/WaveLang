@@ -1,0 +1,96 @@
+### TEMPLATE template
+bool voice_main(out real mono) {
+	mono = 0;
+	return false;
+}
+
+### TEMPLATE template_f
+bool voice_main(out real mono) {
+	f();
+	mono = 0;
+	return false;
+}
+
+### TEST inconsistent_array k_inconsistent_array_element_data_types
+## template
+
+void f() {
+	real x[] = {[1, true, 3]};
+}
+
+### TEST subscript_assignment success
+import core;
+
+## template
+
+void f() {
+	real x[] = {[ 0, 1 ]};
+	const real i = 1;
+	x[i] = 2;
+	core.assert(x[1] == 2);
+}
+
+### TEST bad_subscript_assignment k_illegal_variable_subscript_assignment
+## template
+
+void f() {
+	real x[] = {[ 0, 1 ]};
+	real i = 1;
+	x[i] = 2;
+}
+
+### TEST empty_array success
+## template
+
+void f() {
+	const real x[] = {[]};
+}
+
+### TEST out_subscript_assignment success
+import core;
+
+## template_f
+
+void g(out const real x) {
+	x = 2;
+}
+
+void f() {
+	real x[] = {[ 0, 1 ]};
+	const real i = 1;
+	g(out x[i]);
+	core.assert(x[1] == 2);
+}
+
+### TEST bad_subscript_assignment k_illegal_variable_subscript_assignment
+## template
+
+void g(out const real x) {
+	x = 2;
+}
+
+void f() {
+	real x[] = {[ 0, 1 ]};
+	real i = 1;
+	g(x[i]);
+}
+
+### TEST array_index_out_of_bounds k_array_index_out_of_bounds
+## template_f
+
+void f() {
+	real x[] = {[1, 2, 3]};
+	x[3] = 4;
+}
+
+### TEST out_array_index_out_of_bounds k_array_index_out_of_bounds
+## template_f
+
+void g(out real x) {
+	x = 4;
+}
+
+void f() {
+	real x[] = {[1, 2, 3]};
+	g(out x[3]);
+}

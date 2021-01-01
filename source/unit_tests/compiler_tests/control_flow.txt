@@ -1,0 +1,107 @@
+### TEMPLATE template
+bool voice_main(out real mono) {
+	mono = 0;
+	return false;
+}
+
+### TEMPLATE template_f
+bool voice_main(out real mono) {
+	f();
+	mono = 0;
+	return false;
+}
+
+### TEST illegal_break k_illegal_break_statement
+## template
+
+void f() {
+	break;
+}
+
+### TEST illegal_continue k_illegal_continue_statement
+## template
+
+void f() {
+	continue;
+}
+
+### TEST invalid_if_statement_1 k_invalid_if_statement_data_type
+## template
+
+void f() {
+	if (5) {}
+}
+
+### TEST invalid_if_statement_2 k_invalid_if_statement_data_type
+## template
+
+void f() {
+	 bool b = true;
+	 if (b) {}
+}
+
+### TEST invalid_for_loop_1 k_invalid_for_loop_range_type
+## template
+
+void f() {
+	for (const real x : 5) {}
+}
+
+### TEST invalid_for_loop_2 k_type_mismatch
+## template
+
+void f() {
+	for (const bool x : {[1, 2, 3]}) {}
+}
+
+### TEST invalid_for_loop_3 k_type_mismatch
+## template
+
+void f() {
+	real a = {[1, 2, 3]};
+	for (const real x : a) {}
+}
+
+### TEST if_statements success
+import core;
+
+## template_f
+
+void f() {
+	const bool b = true;
+	const real x;
+	if (false) {
+		x = 1;
+	} else if (b) {
+		x = 2;
+		if (x + x == 4) {
+			x = 20;
+		} else {
+			x = 5;
+		}
+	} else {
+		x = 10;
+	}
+
+	core.assert(x == 20);
+}
+
+### TEST for_loops success
+import core;
+
+## template_f
+
+void f() {
+	for (real x : {[1, 2, 3]}) {}
+	for (const real x : {[1, 2, 3]}) {}
+
+	real[] a = {[1, 2, 3]};
+	for (real x : a) {}
+
+	const real x = 0;
+	for (const real i : {[1, 0, 2, -1, 4]}) {
+		x += i;
+	}
+
+	core.assert(x == 6);
+}

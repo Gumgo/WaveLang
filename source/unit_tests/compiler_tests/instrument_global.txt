@@ -1,0 +1,26 @@
+### TEMPLATE template
+bool voice_main(out real mono) {
+	mono = 0;
+	return true;
+}
+
+### FILE not_at_top_level.wl
+#sample_rate 48000
+
+### TEST instrument_globals success
+#max_voices 16
+#sample_rate 44100 48000
+#chunk_size 1024
+#activate_fx_immediately true
+
+## template
+
+### TEST unrecognized_instrument_global k_unrecognized_instrument_global
+#unknown 10
+
+## template
+
+### TEST instrument_global_not_at_top_level k_illegal_instrument_global
+import not_at_top_level
+
+## template

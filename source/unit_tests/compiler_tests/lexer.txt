@@ -1,0 +1,24 @@
+### TEMPLATE template
+bool voice_main(out real mono) {
+	mono = 0;
+	return true;
+}
+
+### TEST invalid_token k_invalid_token
+## template
+
+$
+
+### TEST literals success
+## template
+
+const real a = 1;
+const real b = 1.23;
+const real c = -2;
+const real d = 1e3;
+const real e = 2.4e-3;
+const bool f = false;
+const bool g = true;
+const string h = "hello";
+const string i = "a \"quoted\" value";
+const string j = "escape \r\n\t";

@@ -13,4 +13,44 @@
     <ClCompile Include="json_tests.cpp" />
     <ClCompile Include="compiler_tests.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <Filter Include="compiler_tests">
+      <UniqueIdentifier>{fef48577-2572-4d4e-9a50-c300f84df6b4}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="compiler_tests\expression.txt">
+      <Filter>compiler_tests</Filter>
+    </Text>
+    <Text Include="compiler_tests\global_scope_constant.txt">
+      <Filter>compiler_tests</Filter>
+    </Text>
+    <Text Include="compiler_tests\import.txt">
+      <Filter>compiler_tests</Filter>
+    </Text>
+    <Text Include="compiler_tests\instrument_global.txt">
+      <Filter>compiler_tests</Filter>
+    </Text>
+    <Text Include="compiler_tests\lexer.txt">
+      <Filter>compiler_tests</Filter>
+    </Text>
+    <Text Include="compiler_tests\module.txt">
+      <Filter>compiler_tests</Filter>
+    </Text>
+    <Text Include="compiler_tests\parser.txt">
+      <Filter>compiler_tests</Filter>
+    </Text>
+    <Text Include="compiler_tests\types.txt">
+      <Filter>compiler_tests</Filter>
+    </Text>
+    <Text Include="compiler_tests\array.txt">
+      <Filter>compiler_tests</Filter>
+    </Text>
+    <Text Include="compiler_tests\control_flow.txt">
+      <Filter>compiler_tests</Filter>
+    </Text>
+    <Text Include="compiler_tests\entry_point.txt">
+      <Filter>compiler_tests</Filter>
+    </Text>
+  </ItemGroup>
 </Project>

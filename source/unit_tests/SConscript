@@ -47,5 +47,7 @@ unit_tests_installed = env.Install("../bin", unit_tests_program)
 env.Alias("unit_tests", unit_tests_installed)
 
 # Install to app directory
+compiler_tests = utils.enumerate_files(env, "compiler_tests", ["txt"])
 unit_tests_app = env.Install("#app", unit_tests_installed)
-env.Alias("unit_tests_app", unit_tests_app)
+compiler_tests_app = env.Install("#app/compiler_tests", compiler_tests)
+env.Alias("unit_tests_app", [unit_tests_app, compiler_tests_app])

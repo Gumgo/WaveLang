@@ -185,6 +185,23 @@ namespace core_native_modules {
 		result->get_string() = *condition ? true_value->get_string() : false_value->get_string();
 	}
 
+	void assert(
+		const s_native_module_context &context,
+		wl_argument(in const bool, condition)) {
+		if (!*condition) {
+			context.diagnostic_interface->error("Assertion failed");
+		}
+	}
+
+	void assert_message(
+		const s_native_module_context &context,
+		wl_argument(in const bool, condition),
+		wl_argument(in const string, message)) {
+		if (!*condition) {
+			context.diagnostic_interface->error("Assertion failed: %s", message->get_string().c_str());
+		}
+	}
+
 	static constexpr uint32 k_core_library_id = 0;
 	wl_native_module_library(k_core_library_id, "core", 0);
 
@@ -290,6 +307,12 @@ namespace core_native_modules {
 
 	wl_native_module(0x7ea6fc04, "select$string")
 		.set_compile_time_call<select_string>();
+
+	wl_native_module(0xd0a71018, "assert")
+		.set_compile_time_call<assert>();
+
+	wl_native_module(0xba5e8b11, "assert$message")
+		.set_compile_time_call<assert_message>();
 
 	wl_optimization_rule(noop$real(x) -> x);
 	wl_optimization_rule(noop$bool(x) -> x);

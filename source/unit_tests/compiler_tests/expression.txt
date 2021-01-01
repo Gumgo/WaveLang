@@ -1,0 +1,70 @@
+### TEMPLATE template
+bool voice_main(out real mono) {
+	mono = 0;
+	return false;
+}
+
+### TEMPLATE template_f
+bool voice_main(out real mono) {
+	f();
+	mono = 0;
+	return false;
+}
+
+### TEST identifier_resolution_not_allowed k_identifier_resolution_not_allowed
+## template
+
+void f() {
+	real x = 0;
+	real z = x.y;
+}
+
+### TEST bad_assignment k_invalid_assignment
+## template
+
+void f() {
+	real x = true;
+}
+
+### TEST assignments success
+import core;
+
+## template_f
+
+void f() {
+	const real x = 5;
+	x += 2;
+	core.assert(x == 7);
+	x -= 2;
+	core.assert(x == 5);
+	x *= 3;
+	core.assert(x == 15);
+	x /= 5;
+	core.assert(x == 3);
+	x %= 2;
+	core.assert(x == 1);
+
+	const real bool y = false;
+	y |= true;
+	core.assert(y);
+}
+
+### TEST resolution_failed k_identifier_resolution_failed
+## template
+
+void f() {
+	const real x = y;
+}
+
+### TEST resolution_ambiguous k_ambiguous_identifier_resolution
+## template
+
+const real g = 5;
+
+const real g() {
+	return 5;
+}
+
+void f() {
+	const real x = g;
+}
