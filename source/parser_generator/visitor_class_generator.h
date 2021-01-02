@@ -29,6 +29,7 @@ private:
 		std::string context_type;
 		std::string name;
 		size_t child_index;
+		bool is_consumed_by_function;
 	};
 
 	std::vector<std::string> get_unique_variant_types() const;

@@ -156,7 +156,7 @@ public:
 
 protected:
 	virtual bool enter_node(size_t node_index) = 0;
-	virtual void exit_node(size_t node_index) = 0;
+	virtual void exit_node(size_t node_index, bool call_exit) = 0;
 
 	void get_child_node_indices(size_t node_index, std::vector<size_t> &child_node_indices_out) const;
 

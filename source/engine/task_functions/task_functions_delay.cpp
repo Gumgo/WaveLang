@@ -163,6 +163,7 @@ namespace delay_task_functions {
 
 	void delay(
 		const s_task_function_context &context,
+		wl_task_argument(real32, duration),
 		wl_task_argument(const c_real_buffer *, signal),
 		wl_task_argument(c_real_buffer *, result)) {
 		s_delay_context *delay_context = static_cast<s_delay_context *>(context.task_memory);
@@ -182,15 +183,15 @@ namespace delay_task_functions {
 		if (signal->is_constant() && delay_context->is_constant) {
 			real32 signal_value = signal->get_constant();
 			if (signal_value == *delay_buffer) {
-				// The input and the delay buffer are constant and identical, so the output is constant and the delay buffer
-				// doesn't change
+				// The input and the delay buffer are constant and identical, so the output is constant and the delay
+				// buffer doesn't change
 				result->assign_constant(signal_value);
 				return;
 			}
 		}
 
-		// $TODO Keep track of whether we fill the delay buffer with identical constant pushes, so we can set is_constant.
-		// Right now, is_constant starts as true, but will always immediately become false forever.
+		// $TODO Keep track of whether we fill the delay buffer with identical constant pushes, so we can set
+		// is_constant. Right now, is_constant starts as true, but will always immediately become false forever.
 		delay_context->is_constant = false;
 
 		size_t delay_samples_size = delay_context->delay_samples * sizeof(real32);
@@ -223,8 +224,8 @@ namespace delay_task_functions {
 		}
 
 		if (delay_context->delay_samples < context.buffer_size) {
-			// 3) If our delay is smaller than our buffer, it means that some input samples will be immediately used in the
-			// output buffer, so copy beginning of input to end of output
+			// 3) If our delay is smaller than our buffer, it means that some input samples will be immediately used in
+			// the output buffer, so copy beginning of input to end of output
 			if (signal->is_constant()) {
 				real32 signal_value = signal->get_constant();
 				real32 *out_start = result->get_data() + delay_context->delay_samples;
@@ -372,25 +373,27 @@ namespace delay_task_functions {
 		memory_context->m_value = memory_value;
 	}
 
-	static constexpr uint32 k_delay_library_id = 4;
-	wl_task_function_library(k_delay_library_id, "delay", 0);
+	void scrape_task_functions() {
+		static constexpr uint32 k_delay_library_id = 4;
+		wl_task_function_library(k_delay_library_id, "delay", 0);
 
-	wl_task_function(0xbd8b8e85, "delay")
-		.set_function<delay>()
-		.set_memory_query<delay_memory_query>()
-		.set_initializer<delay_initializer>()
-		.set_voice_initializer<delay_voice_initializer>();
+		wl_task_function(0xbd8b8e85, "delay")
+			.set_function<delay>()
+			.set_memory_query<delay_memory_query>()
+			.set_initializer<delay_initializer>()
+			.set_voice_initializer<delay_voice_initializer>();
 
-	wl_task_function(0xbe5eb8bd, "memory$real")
-		.set_function<memory_real>()
-		.set_memory_query<memory_real_memory_query>()
-		.set_voice_initializer<memory_real_voice_initializer>();
+		wl_task_function(0xbe5eb8bd, "memory$real")
+			.set_function<memory_real>()
+			.set_memory_query<memory_real_memory_query>()
+			.set_voice_initializer<memory_real_voice_initializer>();
 
-	wl_task_function(0x1fbebc67, "memory$bool")
-		.set_function<memory_bool>()
-		.set_memory_query<memory_bool_memory_query>()
-		.set_voice_initializer<memory_bool_voice_initializer>();
+		wl_task_function(0x1fbebc67, "memory$bool")
+			.set_function<memory_bool>()
+			.set_memory_query<memory_bool_memory_query>()
+			.set_voice_initializer<memory_bool_voice_initializer>();
 
-	wl_end_active_library_task_function_registration();
+		wl_end_active_library_task_function_registration();
+	}
 
 }

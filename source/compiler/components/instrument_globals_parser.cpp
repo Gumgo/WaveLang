@@ -169,7 +169,7 @@ void c_instrument_globals_parser::deinitialize() {
 
 	g_instrument_globals_parser_globals.parsers.clear();
 
-	g_instrument_globals_parser_initialized = true;
+	g_instrument_globals_parser_initialized = false;
 }
 
 void c_instrument_globals_parser::parse_instrument_globals(

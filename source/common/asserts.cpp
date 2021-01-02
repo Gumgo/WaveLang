@@ -3,11 +3,11 @@
 #include <cassert>
 #include <iostream>
 
-#ifdef _DEBUG
+#if IS_TRUE(ASSERTS_ENABLED)
 
 void handle_assert(const char *message, const char *file, int32 line) {
 	std::cerr << "Assertion failed (" << file << ":" << line << "): " << message << "\n";
 	assert(false);
 }
 
-#endif // _DEBUG
+#endif // IS_TRUE(ASSERTS_ENABLED)

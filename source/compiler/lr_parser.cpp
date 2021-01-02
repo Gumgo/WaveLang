@@ -261,19 +261,20 @@ void c_lr_parse_tree_visitor::visit() {
 	struct s_node_state {
 		size_t node_index;
 		bool entered;
+		bool enter_result;
 	};
 	std::vector<s_node_state> node_stack;
 	node_stack.push_back({ m_parse_tree.get_root_node_index(), false });
 	while (!node_stack.empty()) {
 		s_node_state &node_state = node_stack.back();
 		if (!node_state.entered) {
-			bool enter_child_nodes = enter_node(node_state.node_index);
 			node_state.entered = true;
-			if (enter_child_nodes && m_parse_tree.get_node(node_state.node_index).has_child()) {
+			node_state.enter_result = enter_node(node_state.node_index);
+			if (node_state.enter_result && m_parse_tree.get_node(node_state.node_index).has_child()) {
 				node_stack.push_back({ m_parse_tree.get_node(node_state.node_index).get_child_index() });
 			}
 		} else {
-			exit_node(node_state.node_index);
+			exit_node(node_state.node_index, node_state.enter_result);
 			if (m_parse_tree.get_node(node_state.node_index).has_sibling()) {
 				node_state = { m_parse_tree.get_node(node_state.node_index).get_sibling_index(), false };
 			} else {

@@ -256,67 +256,68 @@ namespace core_task_functions {
 		}
 	}
 
+	void scrape_task_functions() {
+		static constexpr uint32 k_core_library_id = 0;
+		wl_task_function_library(k_core_library_id, "core", 0);
 
-	static constexpr uint32 k_core_library_id = 0;
-	wl_task_function_library(k_core_library_id, "core", 0);
+		wl_task_function(0x54ae3577, "negation")
+			.set_function<negation>();
 
-	wl_task_function(0x54ae3577, "negation")
-		.set_function<negation>();
+		wl_task_function(0xc9171617, "addition")
+			.set_function<addition>();
 
-	wl_task_function(0xc9171617, "addition")
-		.set_function<addition>();
+		wl_task_function(0x1f1d8e92, "subtraction")
+			.set_function<subtraction>();
 
-	wl_task_function(0x1f1d8e92, "subtraction")
-		.set_function<subtraction>();
+		wl_task_function(0xb81d2e65, "multiplication")
+			.set_function<multiplication>();
 
-	wl_task_function(0xb81d2e65, "multiplication")
-		.set_function<multiplication>();
+		wl_task_function(0x1bce0fd6, "division")
+			.set_function<division>();
 
-	wl_task_function(0x1bce0fd6, "division")
-		.set_function<division>();
+		wl_task_function(0xaa104145, "modulo")
+			.set_function<modulo>();
 
-	wl_task_function(0xaa104145, "modulo")
-		.set_function<modulo>();
+		wl_task_function(0x796d904f, "not")
+			.set_function<not_>();
 
-	wl_task_function(0x796d904f, "not")
-		.set_function<not_>();
+		wl_task_function(0xb81092bf, "equal$real")
+			.set_function<equal_real>();
 
-	wl_task_function(0xb81092bf, "equal$real")
-		.set_function<equal_real>();
+		wl_task_function(0x09b92133, "not_equal$real")
+			.set_function<not_equal_real>();
 
-	wl_task_function(0x09b92133, "not_equal$real")
-		.set_function<not_equal_real>();
+		wl_task_function(0xfdb20dfa, "equal$bool")
+			.set_function<equal_bool>();
 
-	wl_task_function(0xfdb20dfa, "equal$bool")
-		.set_function<equal_bool>();
+		wl_task_function(0xd0f31354, "not_equal$bool")
+			.set_function<not_equal_bool>();
 
-	wl_task_function(0xd0f31354, "not_equal$bool")
-		.set_function<not_equal_bool>();
+		wl_task_function(0x80b0f714, "greater")
+			.set_function<greater>();
 
-	wl_task_function(0x80b0f714, "greater")
-		.set_function<greater>();
+		wl_task_function(0xd51c2202, "less")
+			.set_function<less>();
 
-	wl_task_function(0xd51c2202, "less")
-		.set_function<less>();
+		wl_task_function(0xabd7961b, "greater_equal")
+			.set_function<greater_equal>();
 
-	wl_task_function(0xabd7961b, "greater_equal")
-		.set_function<greater_equal>();
+		wl_task_function(0xbe4a3f1c, "less_equal")
+			.set_function<less_equal>();
 
-	wl_task_function(0xbe4a3f1c, "less_equal")
-		.set_function<less_equal>();
+		wl_task_function(0xa63e91eb, "and")
+			.set_function<and_>();
 
-	wl_task_function(0xa63e91eb, "and")
-		.set_function<and_>();
+		wl_task_function(0x0655ac08, "or")
+			.set_function<or_>();
 
-	wl_task_function(0x0655ac08, "or")
-		.set_function<or_>();
+		wl_task_function(0x716c993c, "select$real")
+			.set_function<select_real>();
 
-	wl_task_function(0x716c993c, "select$real")
-		.set_function<select_real>();
+		wl_task_function(0xd5383677, "select$bool")
+			.set_function<select_bool>();
 
-	wl_task_function(0xd5383677, "select$bool")
-		.set_function<select_bool>();
-
-	wl_end_active_library_task_function_registration();
+		wl_end_active_library_task_function_registration();
+	}
 
 }

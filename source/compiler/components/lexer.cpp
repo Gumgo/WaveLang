@@ -17,9 +17,7 @@ public:
 	struct s_state_handle_identifier {};
 	using h_state = c_handle<s_state_handle_identifier, size_t>;
 
-	c_symbol_detector() {
-		m_states.push_back({});
-	}
+	c_symbol_detector() = default;
 
 	void clear() {
 		m_states.clear();
@@ -29,10 +27,14 @@ public:
 	}
 
 	void add_symbol(e_token_type token_type, const char *symbol_string) {
+		if (m_states.empty()) {
+			m_states.push_back({});
+		}
+
 		h_state current_state_handle = h_state::construct(0);
 
 		while (true) {
-			char c = *symbol_string;
+			char c = *(symbol_string++);
 			if (c == '\0') {
 				break;
 			}
@@ -74,6 +76,10 @@ public:
 	// Attempts to advance to the next state, returning true if successful. If the new state has an associated token, it
 	// is stored in token_out; otherwise, token_out is set to invalid.
 	bool advance(char c, h_state &state_handle_inout, e_token_type &token_out) const {
+		if (m_states.empty()) {
+			return false;
+		}
+
 		if (!state_handle_inout.is_valid()) {
 			state_handle_inout = h_state::construct(0);
 		}
@@ -87,6 +93,7 @@ public:
 				state_handle_inout = transition.next_state_handle;
 				const s_state &new_state = m_states[transition.next_state_handle.get_data()];
 				token_out = new_state.token_type;
+				return true;
 			}
 
 			transition_handle = transition.next_transition_handle;
@@ -226,7 +233,7 @@ void c_lexer::initialize() {
 		std::make_pair(k_token_type_constant_bool_true_string, e_token_type::k_literal_bool));
 
 	for (e_token_type token_type = enum_next(e_token_type::k_symbols_start);
-		token_type <= e_token_type::k_symbols_end;
+		token_type < e_token_type::k_symbols_end;
 		token_type = enum_next(token_type)) {
 		if (!is_string_empty(get_wavelang_terminal_string(token_type))) {
 			g_lexer_globals.symbol_detector.add_symbol(token_type, get_wavelang_terminal_string(token_type));
@@ -265,7 +272,7 @@ bool c_lexer::process(c_compiler_context &context, h_compiler_source_file source
 				e_compiler_error::k_invalid_token,
 				location.source_location(),
 				"Invalid token '%s'",
-				std::string(token.token_string));
+				std::string(token.token_string).c_str());
 			if (invalid_token_count >= k_invalid_token_limit) {
 				context.error(
 					e_compiler_error::k_invalid_token,
@@ -276,6 +283,8 @@ bool c_lexer::process(c_compiler_context &context, h_compiler_source_file source
 		} else if (token.token_type == e_token_type::k_eof) {
 			break;
 		}
+
+		source_file.tokens.push_back(token);
 	}
 
 	return result;

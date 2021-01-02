@@ -13,12 +13,14 @@ namespace filter_native_modules {
 		wl_argument(in real, signal),
 		wl_argument(return out real, result));
 
-	static constexpr uint32 k_filter_library_id = 5;
-	wl_native_module_library(k_filter_library_id, "filter", 0);
+	void scrape_native_modules() {
+		static constexpr uint32 k_filter_library_id = 5;
+		wl_native_module_library(k_filter_library_id, "filter", 0);
 
-	wl_native_module(0x683cea52, "biquad")
-		.set_call_signature<decltype(biquad)>();
+		wl_native_module(0x683cea52, "biquad")
+			.set_call_signature<decltype(biquad)>();
 
-	wl_end_active_library_native_module_registration();
+		wl_end_active_library_native_module_registration();
+	}
 
 }

@@ -60,12 +60,33 @@ void get_native_module_compile_time_properties(
 }
 
 bool validate_native_module(const s_native_module &native_module) {
+	if (native_module.argument_count > k_max_native_module_arguments) {
+		return false;
+	}
+
 	for (size_t argument_index = 0; argument_index < native_module.argument_count; argument_index++) {
 		const s_native_module_argument &argument = native_module.arguments[argument_index];
 
-		if (!argument.type.is_legal()) {
+		if (argument.name.is_empty()
+			|| !valid_enum_index(argument.argument_direction)
+			|| !argument.type.is_legal()
+			|| !valid_enum_index(argument.data_access)) {
 			return false;
 		}
+
+		for (size_t other_argument_index = 0; other_argument_index < argument_index; other_argument_index++) {
+			if (argument.name == native_module.arguments[other_argument_index].name) {
+				return false;
+			}
+		}
+	}
+
+	if (native_module.return_argument_index == k_invalid_native_module_argument_index) {
+		// No return argument
+	} else if (native_module.return_argument_index >= native_module.argument_count
+		|| native_module.arguments[native_module.return_argument_index].argument_direction !=
+		e_native_module_argument_direction::k_out) {
+		return false;
 	}
 
 	bool always_runs_at_compile_time;

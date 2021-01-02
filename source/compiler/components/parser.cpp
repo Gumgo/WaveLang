@@ -45,7 +45,7 @@ bool c_parser::process(c_compiler_context &context, h_compiler_source_file sourc
 		static bool get_next_token(void *context, uint16 &token_out) {
 			s_parser_context *this_ptr = static_cast<s_parser_context *>(context);
 			if (this_ptr->next_token_index < this_ptr->tokens.get_count()) {
-				token_out = static_cast<uint16>(this_ptr->tokens[this_ptr->next_token_index].token_type);
+				token_out = static_cast<uint16>(this_ptr->tokens[this_ptr->next_token_index++].token_type);
 				return true;
 			} else {
 				return false;

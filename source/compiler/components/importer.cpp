@@ -93,7 +93,7 @@ void c_importer::add_imports_to_global_scope(c_compiler_context &context, h_comp
 
 		c_ast_node_module_declaration *module_declaration =
 			create_module_declaration_for_native_module(native_module, true);
-		global_scope->add_scope_item(module_declaration, true);
+		global_scope->add_imported_scope_item(module_declaration, true);
 	}
 
 	std::vector<c_ast_node_declaration *> lookup_buffer;
@@ -117,7 +117,7 @@ void c_importer::add_imports_to_global_scope(c_compiler_context &context, h_comp
 				child_namespace->set_name(import_as_component.c_str());
 			}
 
-			current_scope->add_scope_item(child_namespace);
+			current_scope->add_imported_scope_item(child_namespace, true);
 			current_scope = child_namespace->get_scope();
 		}
 
@@ -131,7 +131,7 @@ void c_importer::add_imports_to_global_scope(c_compiler_context &context, h_comp
 				c_ast_node_declaration *declaration =
 					imported_scope->get_scope_item(item_index)->try_get_as<c_ast_node_declaration>();
 				if (declaration && declaration->get_visibility() == e_ast_visibility::k_public) {
-					current_scope->add_scope_item(declaration, false);
+					current_scope->add_imported_scope_item(declaration, false);
 				}
 			}
 		} else {
@@ -152,7 +152,7 @@ void c_importer::add_imports_to_global_scope(c_compiler_context &context, h_comp
 
 				c_ast_node_module_declaration *module_declaration =
 					create_module_declaration_for_native_module(native_module, false);
-				current_scope->add_scope_item(module_declaration, true);
+				current_scope->add_imported_scope_item(module_declaration, true);
 			}
 		}
 	}

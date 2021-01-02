@@ -75,11 +75,19 @@ bool c_ast_data_type::is_array() const {
 }
 
 c_ast_data_type c_ast_data_type::get_element_type() const {
+	if (is_error()) {
+		return error();
+	}
+
 	wl_assert(m_is_array);
 	return c_ast_data_type(m_primitive_type, false);
 }
 
 c_ast_data_type c_ast_data_type::get_array_type() const {
+	if (is_error()) {
+		return error();
+	}
+
 	wl_assert(!m_is_array);
 	return c_ast_data_type(m_primitive_type, true);
 }
@@ -183,10 +191,18 @@ e_ast_data_mutability c_ast_qualified_data_type::get_data_mutability() const {
 }
 
 c_ast_qualified_data_type c_ast_qualified_data_type::get_element_type() const {
+	if (is_error()) {
+		return error();
+	}
+
 	return c_ast_qualified_data_type(m_data_type.get_element_type(), m_data_mutability);
 }
 
 c_ast_qualified_data_type c_ast_qualified_data_type::get_array_type() const {
+	if (is_error()) {
+		return error();
+	}
+
 	return c_ast_qualified_data_type(m_data_type.get_array_type(), m_data_mutability);
 }
 

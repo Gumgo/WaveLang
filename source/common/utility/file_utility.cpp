@@ -88,7 +88,7 @@ std::string canonicalize_path(const char *path) {
 		// On success, the return value is the length of the resulting string, not including the null terminator
 		if (result < MAX_PATH) {
 			// Remove prefixes
-			std::string canonicalized_path(buffer);
+			canonicalized_path = buffer;
 			if (canonicalized_path.substr(0, 8).compare("\\\\?\\UNC\\") == 0) {
 				// Network path, replace "\\?\UNC\" with just "\\"
 				canonicalized_path = "\\" + canonicalized_path.substr(7);

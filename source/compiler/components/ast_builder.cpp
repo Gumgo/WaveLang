@@ -118,6 +118,10 @@ protected:
 		c_ast_node_module_declaration *&rule_head_context,
 		c_ast_node_module_declaration *&list_child,
 		c_temporary_reference<c_ast_node_module_declaration_argument> &argument) override;
+	bool enter_module_declaration_argument(
+		c_temporary_reference<c_ast_node_module_declaration_argument> &rule_head_context,
+		s_value_with_source_location<e_ast_argument_direction> &argument_direction,
+		c_temporary_reference<c_ast_node_value_declaration> &value_declaration) override;
 	void exit_module_declaration_argument(
 		c_temporary_reference<c_ast_node_module_declaration_argument> &rule_head_context,
 		s_value_with_source_location<e_ast_argument_direction> &argument_direction,
@@ -263,6 +267,9 @@ protected:
 	void exit_scope_item_expression(
 		c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 		c_temporary_reference<c_ast_node_expression> &expression) override;
+	bool enter_scope_item_value_declaration(
+		c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
+		c_temporary_reference<c_ast_node_value_declaration> &value_declaration) override;
 	void exit_scope_item_value_declaration(
 		c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 		c_temporary_reference<c_ast_node_value_declaration> &value_declaration) override;
@@ -477,8 +484,9 @@ bool c_ast_builder_visitor::enter_global_scope(
 		build_tracked_scope(rule_head_context.get(), tracked_scope);
 
 		// Since global scope items use a left-recursive list, we enter item nodes in reverse order (and exit them in
-		// forward order). We use this counter in the enter functions, so start at the end of the list.
-		begin_left_recursive_list(rule_head_context->get_scope_item_count());
+		// forward order). We use this counter in the enter functions, so start at the end of the list. Note that we
+		// only want to iterate over scope items owned by this scope, not ones that have been imported.
+		begin_left_recursive_list(rule_head_context->get_non_imported_scope_item_count());
 	}
 
 	// Pass along the global scope to each item
@@ -517,7 +525,7 @@ bool c_ast_builder_visitor::enter_global_scope_item_list(
 		// Find the Nth previously declared item and pass it along - since this is a left-recursive list, we enter nodes
 		// in reverse order so we index from the end
 		size_t item_index = get_and_advance_left_recursive_list_index();
-		item.initialize(rule_head_context->get_scope_item(item_index));
+		item.initialize(rule_head_context->get_non_imported_scope_item(item_index));
 	}
 
 	list_child = rule_head_context;
@@ -540,10 +548,13 @@ bool c_ast_builder_visitor::enter_global_scope_item_value_declaration(
 	c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 	e_ast_visibility &visibility,
 	c_temporary_reference<c_ast_node_value_declaration> &value_declaration) {
-	// Pass along the item
-	value_declaration.initialize(
-		forward_on_definition_pass(
-			get_ast_node_as_or_null<c_ast_node_value_declaration>(rule_head_context.release())));
+	if (m_pass == e_ast_builder_pass::k_declarations) {
+		value_declaration.initialize(new c_ast_node_value_declaration());
+	} else {
+		wl_assert(m_pass == e_ast_builder_pass::k_definitions);
+		value_declaration.initialize(rule_head_context.release()->get_as<c_ast_node_value_declaration>());
+	}
+
 	return true;
 }
 
@@ -636,7 +647,7 @@ void c_ast_builder_visitor::exit_visibility_specifier(
 bool c_ast_builder_visitor::enter_forward_value_declaration(
 	c_temporary_reference<c_ast_node_value_declaration> &rule_head_context,
 	c_temporary_reference<c_ast_node_value_declaration> &declaration) {
-	declaration.initialize(forward_on_definition_pass(rule_head_context.release()));
+	declaration.initialize(rule_head_context.release());
 	return true;
 }
 
@@ -650,7 +661,7 @@ bool c_ast_builder_visitor::enter_value_declaration_with_initialization(
 	c_temporary_reference<c_ast_node_value_declaration> &rule_head_context,
 	c_temporary_reference<c_ast_node_value_declaration> &declaration,
 	c_temporary_reference<c_ast_node_expression> &expression) {
-	declaration.initialize(forward_on_definition_pass(rule_head_context.release()));
+	declaration.initialize(rule_head_context.release());
 	return true;
 }
 
@@ -668,21 +679,22 @@ void c_ast_builder_visitor::exit_value_declaration_with_initialization(
 
 		// Make sure the default initializer is of a compatible type
 		const c_ast_qualified_data_type &declaration_data_type = rule_head_context->get_data_type();
-		const c_ast_qualified_data_type &initialization_expression_data_type =
-			rule_head_context->get_initialization_expression()->get_data_type();
+		const c_ast_qualified_data_type &initialization_expression_data_type = expression->get_data_type();
 		if (!is_ast_data_type_assignable(initialization_expression_data_type, declaration_data_type)) {
 			m_context.error(
 				e_compiler_error::k_type_mismatch,
-				rule_head_context->get_initialization_expression()->get_source_location(),
+				expression->get_source_location(),
 				"Cannot initialize value '%s' of type '%s' with a value of type '%s'",
 				rule_head_context->get_name(),
 				declaration_data_type.to_string().c_str(),
 				initialization_expression_data_type.to_string().c_str());
 		}
 
-		// Replace the placeholder expression with the real one
+		// If there is already an initialization expression, it is the placeholder from the declaration pass. Replace it
+		// with the real expression.
 		wl_assert(
-			rule_head_context->get_initialization_expression()->is_type(e_ast_node_type::k_expression_placeholder));
+			!rule_head_context->get_initialization_expression()
+			|| rule_head_context->get_initialization_expression()->is_type(e_ast_node_type::k_expression_placeholder));
 		rule_head_context->set_initialization_expression(expression.release());
 	}
 }
@@ -690,7 +702,7 @@ void c_ast_builder_visitor::exit_value_declaration_with_initialization(
 bool c_ast_builder_visitor::enter_value_declaration_without_initialization(
 	c_temporary_reference<c_ast_node_value_declaration> &rule_head_context,
 	c_temporary_reference<c_ast_node_value_declaration> &declaration) {
-	declaration.initialize(forward_on_definition_pass(rule_head_context.release()));
+	declaration.initialize(rule_head_context.release());
 	return true;
 }
 
@@ -704,8 +716,12 @@ void c_ast_builder_visitor::exit_value_declaration_data_type_name(
 	c_temporary_reference<c_ast_node_value_declaration> &rule_head_context,
 	s_value_with_source_location<c_ast_qualified_data_type> &data_type,
 	const s_token &name) {
-	if (m_pass == e_ast_builder_pass::k_declarations) {
-		rule_head_context.initialize(new c_ast_node_value_declaration());
+	wl_assert(rule_head_context.get());
+
+	// We want to fill out the declaration the first time we encounter it. For global scope declarations and module
+	// arguments, this is in the declaration pass, and for module scope declarations, it is in the definition pass.
+	// Note: is there a cleaner way than checking the name string?
+	if (is_string_empty(rule_head_context->get_name())) {
 		rule_head_context->set_name(std::string(name.token_string).c_str());
 		rule_head_context->set_source_location(data_type.source_location);
 
@@ -724,7 +740,6 @@ void c_ast_builder_visitor::exit_value_declaration_data_type_name(
 		wl_assert(m_pass == e_ast_builder_pass::k_definitions);
 
 		// We should have been provided the declaration from the declarations pass
-		wl_assert(rule_head_context.get());
 		wl_assert(rule_head_context->get_name() == name.token_string);
 	}
 }
@@ -756,6 +771,8 @@ void c_ast_builder_visitor::exit_module_declaration(
 	c_ast_node_module_declaration *&argument_list,
 	c_ast_node_module_declaration *&body) {
 	if (m_pass == e_ast_builder_pass::k_declarations) {
+		rule_head_context->set_name(std::string(name.token_string).c_str());
+
 		// Validate all arguments
 		size_t argument_count = rule_head_context->get_argument_count();
 
@@ -885,6 +902,20 @@ void c_ast_builder_visitor::exit_module_declaration_nonempty_argument_list_item(
 	}
 }
 
+bool c_ast_builder_visitor::enter_module_declaration_argument(
+	c_temporary_reference<c_ast_node_module_declaration_argument> &rule_head_context,
+	s_value_with_source_location<e_ast_argument_direction> &argument_direction,
+	c_temporary_reference<c_ast_node_value_declaration> &value_declaration) {
+	if (m_pass == e_ast_builder_pass::k_declarations) {
+		value_declaration.initialize(new c_ast_node_value_declaration());
+	} else {
+		wl_assert(m_pass == e_ast_builder_pass::k_definitions);
+		value_declaration.initialize(rule_head_context->get_value_declaration());
+	}
+
+	return true;
+}
+
 void c_ast_builder_visitor::exit_module_declaration_argument(
 	c_temporary_reference<c_ast_node_module_declaration_argument> &rule_head_context,
 	s_value_with_source_location<e_ast_argument_direction> &argument_direction,
@@ -896,15 +927,16 @@ void c_ast_builder_visitor::exit_module_declaration_argument(
 		rule_head_context->set_value_declaration(value_declaration.release());
 
 		if (argument_direction.value == e_ast_argument_direction::k_out
-			&& value_declaration->get_initialization_expression()) {
+			&& rule_head_context->get_value_declaration()->get_initialization_expression()) {
 			m_context.error(
 				e_compiler_error::k_illegal_out_argument,
 				argument_direction.source_location,
 				"Argument '%s' with 'out' qualifier cannot have a default value",
-				value_declaration->get_name());
+				rule_head_context->get_value_declaration()->get_name());
 		}
 	} else {
 		wl_assert(m_pass == e_ast_builder_pass::k_definitions);
+		value_declaration.release();
 	}
 }
 
@@ -1009,7 +1041,7 @@ void c_ast_builder_visitor::exit_module_body(
 			m_context.error(
 				e_compiler_error::k_missing_return_statement,
 				rule_head_context->get_source_location(),
-				"The out module '%s' never returns a value",
+				"The module '%s' never returns a value",
 				rule_head_context->get_name());
 			break;
 
@@ -1609,6 +1641,13 @@ void c_ast_builder_visitor::exit_scope_item_expression(
 	expression_statement_node->set_expression(expression.release());
 }
 
+bool c_ast_builder_visitor::enter_scope_item_value_declaration(
+	c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
+	c_temporary_reference<c_ast_node_value_declaration> &value_declaration) {
+	value_declaration.initialize(new c_ast_node_value_declaration());
+	return true;
+}
+
 void c_ast_builder_visitor::exit_scope_item_value_declaration(
 	c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 	c_temporary_reference<c_ast_node_value_declaration> &value_declaration) {
@@ -2056,8 +2095,9 @@ void c_ast_builder_visitor::build_tracked_scope(c_ast_node_scope *scope_node, c_
 		c_ast_node_declaration *declaration_node =
 			scope_node->get_scope_item(item_index)->try_get_as<c_ast_node_declaration>();
 
-		c_ast_node_namespace_declaration *namespace_declaration_node =
-			declaration_node->try_get_as<c_ast_node_namespace_declaration>();
+		c_ast_node_namespace_declaration *namespace_declaration_node = declaration_node
+			? declaration_node->try_get_as<c_ast_node_namespace_declaration>()
+			: nullptr;
 		if (namespace_declaration_node) {
 			c_tracked_scope *tracked_namespace_scope =
 				new c_tracked_scope(tracked_scope, e_tracked_scope_type::k_namespace, nullptr);

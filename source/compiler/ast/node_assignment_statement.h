@@ -26,7 +26,7 @@ protected:
 	c_ast_node *copy_internal() const override;
 
 private:
-	std::unique_ptr<c_ast_node_value_declaration> m_lhs_value_declaration;
+	c_ast_node_value_declaration *m_lhs_value_declaration; // The value declaration is not owned by the assignment
 	std::unique_ptr<c_ast_node_expression> m_lhs_index_expression;
 	std::unique_ptr<c_ast_node_expression> m_rhs_expression;
 };

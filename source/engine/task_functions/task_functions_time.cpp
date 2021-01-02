@@ -57,15 +57,17 @@ namespace time_task_functions {
 		}
 	}
 
-	static constexpr uint32 k_time_library_id = 6;
-	wl_task_function_library(k_time_library_id, "time", 0);
+	void scrape_task_functions() {
+		static constexpr uint32 k_time_library_id = 6;
+		wl_task_function_library(k_time_library_id, "time", 0);
 
-	wl_task_function(0xee27c86e, "period")
-		.set_function<period>()
-		.set_memory_query<period_memory_query>()
-		.set_initializer<period_initializer>()
-		.set_voice_initializer<period_voice_initializer>();
+		wl_task_function(0xee27c86e, "period")
+			.set_function<period>()
+			.set_memory_query<period_memory_query>()
+			.set_initializer<period_initializer>()
+			.set_voice_initializer<period_voice_initializer>();
 
-	wl_end_active_library_task_function_registration();
+		wl_end_active_library_task_function_registration();
+	}
 
 }

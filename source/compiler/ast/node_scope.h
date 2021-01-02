@@ -14,10 +14,16 @@ public:
 	AST_NODE_TYPE_DESCRIPTION(c_ast_node_scope, k_scope, "scope");
 	c_ast_node_scope();
 
-	// If a scope item is being imported, this node doesn't take ownership
-	void add_scope_item(c_ast_node_scope_item *scope_item, bool take_ownership = true);
+	void add_scope_item(c_ast_node_scope_item *scope_item);
+
+	// In some cases, if a scope item is being imported, this node doesn't take ownership
+	void add_imported_scope_item(c_ast_node_scope_item *scope_item, bool take_ownership);
+
 	size_t get_scope_item_count() const;
 	c_ast_node_scope_item *get_scope_item(size_t index) const;
+
+	size_t get_non_imported_scope_item_count() const;
+	c_ast_node_scope_item *get_non_imported_scope_item(size_t index) const;
 
 	void lookup_declarations_by_name(const char *name, std::vector<c_ast_node_declaration *> &declarations_out) const;
 
@@ -35,5 +41,8 @@ private:
 		c_ast_node_scope_item *scope_item;
 	};
 
+	void add_scope_item_internal(c_ast_node_scope_item *scope_item, bool is_imported, bool take_ownership);
+
 	std::vector<s_scope_item_entry> m_scope_items;
+	std::vector<size_t> m_non_imported_scope_item_indices;
 };

@@ -4,7 +4,7 @@ bool validate_task_function(const s_task_function &task_function) {
 	for (size_t argument_index = 0; argument_index < task_function.argument_count; argument_index++) {
 		const s_task_function_argument &argument = task_function.arguments[argument_index];
 
-		if (!argument.type.is_legal()) {
+		if (!valid_enum_index(argument.argument_direction) || !argument.type.is_legal()) {
 			return false;
 		}
 

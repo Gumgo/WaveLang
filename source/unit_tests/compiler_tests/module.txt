@@ -323,7 +323,7 @@ void g(out const real x) {
 }
 
 void f() {
-	const real x[] = {[1, 2, 3]);
+	const real[] x = {[1, 2, 3]);
 	real i = 0;
 	g(out x[i]);
 }

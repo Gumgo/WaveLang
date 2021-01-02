@@ -105,7 +105,7 @@ nonterminal_type_name: "e_parser_nonterminal";
 nonterminal_value_prefix: k_;
 nonterminals: {
 	source_file: {
-		import_list instrument_global_list global_scope_item_list;
+		import_list instrument_global_list global_scope;
 	}
 
 	// Imports:

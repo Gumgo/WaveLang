@@ -940,8 +940,21 @@ bool c_execution_graph::validate_node(c_node_reference node_reference) const {
 		const s_native_module &native_module =
 			c_native_module_registry::get_native_module(node.native_module_call_node_data().native_module_handle);
 
-		return (node.incoming_edge_references.size() == native_module.in_argument_count)
-			&& (node.outgoing_edge_references.size() == native_module.out_argument_count);
+		size_t in_argument_count = 0;
+		size_t out_argument_count = 0;
+		for (size_t argument_index = 0; argument_index < native_module.argument_count; argument_index++) {
+			e_native_module_argument_direction argument_direction =
+				native_module.arguments[argument_index].argument_direction;
+			if (argument_direction == e_native_module_argument_direction::k_in) {
+				in_argument_count++;
+			} else {
+				wl_assert(argument_direction == e_native_module_argument_direction::k_out);
+				out_argument_count++;
+			}
+		}
+
+		return (node.incoming_edge_references.size() == in_argument_count)
+			&& (node.outgoing_edge_references.size() == out_argument_count);
 	}
 
 	case e_execution_graph_node_type::k_indexed_input:
@@ -1072,7 +1085,20 @@ bool c_execution_graph::validate_native_modules() const {
 		// Check to see if all dependent-constant inputs are constants
 		bool all_dependent_constants_are_constant = true;
 
-		wl_assert(native_module.in_argument_count == get_node_incoming_edge_count(node_reference));
+#if IS_TRUE(ASSERTS_ENABLED)
+		size_t in_argument_count = 0;
+		for (size_t argument_index = 0; argument_index < native_module.argument_count; argument_index++) {
+			e_native_module_argument_direction argument_direction =
+				native_module.arguments[argument_index].argument_direction;
+			if (argument_direction == e_native_module_argument_direction::k_in) {
+				in_argument_count++;
+			} else {
+				wl_assert(argument_direction == e_native_module_argument_direction::k_out);
+			}
+		}
+#endif // IS_TRUE(ASSERTS_ENABLED)
+
+		wl_assert(in_argument_count == get_node_incoming_edge_count(node_reference));
 
 		// For each constant input, verify that a constant node is linked up
 		size_t input = 0;
@@ -1099,7 +1125,7 @@ bool c_execution_graph::validate_native_modules() const {
 			}
 		}
 
-		wl_assert(input == native_module.in_argument_count);
+		wl_assert(input == in_argument_count);
 
 		if (always_runs_at_compile_time_if_dependent_constants_are_constant && all_dependent_constants_are_constant) {
 			// Since all dependent-constants are constant, this native module should have run when we compiled

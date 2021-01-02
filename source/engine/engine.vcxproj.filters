@@ -77,6 +77,9 @@
       <Filter>task_functions\sampler</Filter>
     </ClInclude>
     <ClInclude Include="task_function_registration.h" />
+    <ClInclude Include="task_functions\scrape_task_functions.h">
+      <Filter>task_functions</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="predecessor_resolver.cpp" />
@@ -178,6 +181,12 @@
       <Filter>task_functions\sampler</Filter>
     </ClCompile>
     <ClCompile Include="task_function_registration.cpp" />
+    <ClCompile Include="task_functions\scrape_task_functions.cpp">
+      <Filter>task_functions</Filter>
+    </ClCompile>
+    <ClCompile Include="task_functions\task_functions_json.cpp">
+      <Filter>task_functions</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="SConscript" />

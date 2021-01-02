@@ -55,15 +55,18 @@ namespace filter_task_functions {
 			});
 	}
 
-	static constexpr uint32 k_filter_library_id = 5;
-	wl_task_function_library(k_filter_library_id, "filter", 0);
+	void scrape_task_functions() {
+		static constexpr uint32 k_filter_library_id = 5;
+		wl_task_function_library(k_filter_library_id, "filter", 0);
 
-	// $TODO rename this to iir or sos, change the parameter to an array of N biquad filters
-	// Fix the order - should be b0 b1 b2 a1 a2
-	wl_task_function(0xe6fc480d, "biquad")
-		.set_function<biquad>()
-		.set_memory_query<biquad_memory_query>()
-		.set_voice_initializer<biquad_voice_initializer>();
+		// $TODO rename this to iir or sos, change the parameter to an array of N biquad filters
+		// Fix the order - should be b0 b1 b2 a1 a2
+		wl_task_function(0xe6fc480d, "biquad")
+			.set_function<biquad>()
+			.set_memory_query<biquad_memory_query>()
+			.set_voice_initializer<biquad_voice_initializer>();
 
-	wl_end_active_library_task_function_registration();
+		wl_end_active_library_task_function_registration();
+	}
+
 }

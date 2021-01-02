@@ -319,29 +319,31 @@ namespace json_native_modules {
 	}
 
 
-	static constexpr uint32 k_json_library_id = 9;
-	wl_native_module_library(k_json_library_id, "json", 0)
-		.set_compiler_initializer(json_library_compiler_initializer)
-		.set_compiler_deinitializer(json_library_compiler_deinitializer);
+	void scrape_native_modules() {
+		static constexpr uint32 k_json_library_id = 9;
+		wl_native_module_library(k_json_library_id, "json", 0)
+			.set_compiler_initializer(json_library_compiler_initializer)
+			.set_compiler_deinitializer(json_library_compiler_deinitializer);
 
-	wl_native_module(0x24e6ff0c, "read_real")
-		.set_compile_time_call<read_real>();
+		wl_native_module(0x24e6ff0c, "read_real")
+			.set_compile_time_call<read_real>();
 
-	wl_native_module(0x24ed0917, "read_real_array")
-		.set_compile_time_call<read_real_array>();
+		wl_native_module(0x24ed0917, "read_real_array")
+			.set_compile_time_call<read_real_array>();
 
-	wl_native_module(0x77adcb5c, "read_bool")
-		.set_compile_time_call<read_bool>();
+		wl_native_module(0x77adcb5c, "read_bool")
+			.set_compile_time_call<read_bool>();
 
-	wl_native_module(0xf8c9553d, "read_bool_array")
-		.set_compile_time_call<read_bool_array>();
+		wl_native_module(0xf8c9553d, "read_bool_array")
+			.set_compile_time_call<read_bool_array>();
 
-	wl_native_module(0x4a8c9808, "read_string")
-		.set_compile_time_call<read_string>();
+		wl_native_module(0x4a8c9808, "read_string")
+			.set_compile_time_call<read_string>();
 
-	wl_native_module(0xa684c942, "read_string_array")
-		.set_compile_time_call<read_string_array>();
+		wl_native_module(0xa684c942, "read_string_array")
+			.set_compile_time_call<read_string_array>();
 
-	wl_end_active_library_native_module_registration();
+		wl_end_active_library_native_module_registration();
+	}
 
 }

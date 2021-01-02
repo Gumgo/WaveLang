@@ -148,48 +148,50 @@ namespace math_task_functions {
 			});
 	}
 
-	static constexpr uint32 k_math_library_id = 2;
-	wl_task_function_library(k_math_library_id, "math", 0);
+	void scrape_task_functions() {
+		static constexpr uint32 k_math_library_id = 2;
+		wl_task_function_library(k_math_library_id, "math", 0);
 
-	wl_task_function(0x58acf9ca, "abs")
-		.set_function<abs>();
+		wl_task_function(0x58acf9ca, "abs")
+			.set_function<abs>();
 
-	wl_task_function(0xd090bfa7, "floor")
-		.set_function<floor>();
+		wl_task_function(0xd090bfa7, "floor")
+			.set_function<floor>();
 
-	wl_task_function(0xc0e9f7af, "ceil")
-		.set_function<ceil>();
+		wl_task_function(0xc0e9f7af, "ceil")
+			.set_function<ceil>();
 
-	wl_task_function(0xd120c3b5, "round")
-		.set_function<round>();
+		wl_task_function(0xd120c3b5, "round")
+			.set_function<round>();
 
-	wl_task_function(0x17eea946, "min")
-		.set_function<min>();
+		wl_task_function(0x17eea946, "min")
+			.set_function<min>();
 
-	wl_task_function(0x500ed33c, "max")
-		.set_function<max>();
+		wl_task_function(0x500ed33c, "max")
+			.set_function<max>();
 
-	wl_task_function(0xf0d33c62, "exp")
-		.set_function<exp>();
+		wl_task_function(0xf0d33c62, "exp")
+			.set_function<exp>();
 
-	wl_task_function(0x1b308bb4, "log")
-		.set_function<log>();
+		wl_task_function(0x1b308bb4, "log")
+			.set_function<log>();
 
-	wl_task_function(0xf3c4357a, "sqrt")
-		.set_function<sqrt>();
+		wl_task_function(0xf3c4357a, "sqrt")
+			.set_function<sqrt>();
 
-	wl_task_function(0x50b6af65, "pow")
-		.set_function<pow>();
+		wl_task_function(0x50b6af65, "pow")
+			.set_function<pow>();
 
-	wl_task_function(0x6123b4e2, "sin")
-		.set_function<sin>();
+		wl_task_function(0x6123b4e2, "sin")
+			.set_function<sin>();
 
-	wl_task_function(0xb95cad11, "cos")
-		.set_function<cos>();
+		wl_task_function(0xb95cad11, "cos")
+			.set_function<cos>();
 
-	wl_task_function(0xd0448dbf, "sincos")
-		.set_function<sincos>();
+		wl_task_function(0xd0448dbf, "sincos")
+			.set_function<sincos>();
 
-	wl_end_active_library_task_function_registration();
+		wl_end_active_library_task_function_registration();
+	}
 
 }

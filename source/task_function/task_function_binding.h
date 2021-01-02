@@ -185,6 +185,7 @@ namespace task_function_binding {
 					c_task_data_type(t_argument::k_primitive_type, t_argument::k_is_array),
 					t_argument::k_data_mutability);
 				argument.is_unshared = t_argument::k_is_unshared;
+				argument_names[k_argument_index] = t_argument::k_name;
 			});
 	}
 

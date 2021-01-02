@@ -15,11 +15,14 @@ namespace stream_native_modules {
 		}
 	}
 
-	static constexpr uint32 k_stream_library_id = 8;
-	wl_native_module_library(k_stream_library_id, "stream", 0);
+	void scrape_native_modules() {
+		static constexpr uint32 k_stream_library_id = 8;
+		wl_native_module_library(k_stream_library_id, "stream", 0);
 
-	wl_native_module(0x2e1c0616, "get_sample_rate")
-		.set_compile_time_call<get_sample_rate>();
+		wl_native_module(0x2e1c0616, "get_sample_rate")
+			.set_compile_time_call<get_sample_rate>();
 
-	wl_end_active_library_native_module_registration();
+		wl_end_active_library_native_module_registration();
+	}
+
 }

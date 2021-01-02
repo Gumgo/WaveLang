@@ -133,19 +133,6 @@ bool c_native_module_registry::register_native_module(const s_native_module &nat
 
 	// Validate that the native module is set up correctly
 	native_module.name.validate();
-	wl_assert(!native_module.name.is_empty());
-	wl_assert(native_module.argument_count <= k_max_native_module_arguments);
-	wl_assert(native_module.argument_count == native_module.in_argument_count + native_module.out_argument_count);
-	wl_assert((native_module.return_argument_index == k_invalid_native_module_argument_index)
-		|| (native_module.arguments[native_module.return_argument_index].argument_direction ==
-			e_native_module_argument_direction::k_out));
-#if IS_TRUE(ASSERTS_ENABLED)
-	for (size_t arg = 0; arg < native_module.argument_count; arg++) {
-		wl_assert(valid_enum_index(native_module.arguments[arg].argument_direction));
-		wl_assert(native_module.arguments[arg].type.is_valid());
-	}
-#endif // IS_TRUE(ASSERTS_ENABLED)
-
 	if (!validate_native_module(native_module)) {
 		report_error(
 			"Failed to register native module 0x%04x ('%s') because it contains errors",
@@ -327,7 +314,6 @@ bool c_native_module_registry::output_registered_native_modules(const char *file
 				// Return type of void is a special case
 				out << k_native_module_no_return_type_string;
 			} else {
-				wl_assert(native_module.out_argument_count > 0);
 				const s_native_module_argument &argument = native_module.arguments[native_module.return_argument_index];
 				wl_assert(argument.argument_direction == e_native_module_argument_direction::k_out);
 				out << argument.type.to_string();

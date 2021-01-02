@@ -7,11 +7,13 @@
 #include "engine/events/event_data_types.h"
 #include "engine/task_function_registration.h"
 #include "engine/task_function_registry.h"
+#include "engine/task_functions/scrape_task_functions.h"
 
 #include "execution_graph/execution_graph.h"
 #include "execution_graph/instrument.h"
 #include "execution_graph/native_module_registration.h"
 #include "execution_graph/native_module_registry.h"
+#include "execution_graph/native_modules/scrape_native_modules.h"
 
 #include "runtime/runtime_config.h"
 #include "runtime/runtime_context.h"
@@ -100,11 +102,19 @@ c_command_line_interface::~c_command_line_interface() {
 }
 
 int c_command_line_interface::main_function() {
+	scrape_native_modules();
+	scrape_task_functions();
+
 	c_native_module_registry::initialize();
 	c_task_function_registry::initialize();
 
-	register_native_modules();
-	register_task_functions();
+	if (!register_native_modules()) {
+		return 1;
+	}
+
+	if (!register_task_functions()) {
+		return 1;
+	}
 
 	m_task_function_library_contexts.resize(c_task_function_registry::get_task_function_library_count(), nullptr);
 	for (uint32 library_index = 0;

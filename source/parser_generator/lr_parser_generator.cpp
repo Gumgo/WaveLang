@@ -169,7 +169,11 @@ void c_lr_production_set::output_productions(std::ofstream &file) const {
 
 		file << "static const c_lr_symbol k_production_" << index << "_rhs[] = { ";
 		for (const c_lr_symbol &symbol : production.rhs) {
-			file << "c_lr_symbol(" << (symbol.is_terminal() ? "true" : "false") << ", " << symbol.get_index() << "), ";
+			file << "c_lr_symbol(";
+			if (!symbol.is_epsilon()) {
+				file << (symbol.is_terminal() ? "true" : "false") << ", " << symbol.get_index();
+			}
+			file << "), ";
 		}
 
 		file << "};\n";
@@ -179,6 +183,7 @@ void c_lr_production_set::output_productions(std::ofstream &file) const {
 	file << "static const s_lr_production k_productions[] = {\n";
 	for (size_t index = 0; index < m_productions.size(); index++) {
 		const s_lr_production &production = m_productions[index];
+		wl_assert(!production.lhs.is_epsilon());
 		file << "\t{ c_lr_symbol("
 			<< (production.lhs.is_terminal() ? "true" : "false") << ", " << production.lhs.get_index() << "), ";
 		file << "c_wrapped_array<const c_lr_symbol>::construct(k_production_" << index << "_rhs) }, \n";

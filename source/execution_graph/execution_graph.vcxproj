@@ -97,6 +97,7 @@
     <ClCompile Include="native_modules\native_modules_sampler.cpp" />
     <ClCompile Include="native_modules\native_modules_stream.cpp" />
     <ClCompile Include="native_modules\native_modules_time.cpp" />
+    <ClCompile Include="native_modules\scrape_native_modules.cpp" />
     <ClCompile Include="native_module_registration.cpp" />
     <ClCompile Include="native_module_registry.cpp" />
   </ItemGroup>
@@ -108,6 +109,7 @@
     <ClInclude Include="instrument_stage.h" />
     <ClInclude Include="native_modules\json\json_file.h" />
     <ClInclude Include="native_modules\json\json_file_manager.h" />
+    <ClInclude Include="native_modules\scrape_native_modules.h" />
     <ClInclude Include="native_module_registration.h" />
     <ClInclude Include="native_module_registry.h" />
     <ClInclude Include="node_reference.h" />

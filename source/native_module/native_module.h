@@ -351,8 +351,6 @@ struct s_native_module {
 	
 	// Number of arguments
 	size_t argument_count = 0;
-	size_t in_argument_count = 0;
-	size_t out_argument_count = 0;
 
 	// Index of the argument representing the return value when called from script, or
 	// k_invalid_native_module_argument_index

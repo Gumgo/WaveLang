@@ -41,6 +41,9 @@
       <Filter>native_modules\json</Filter>
     </ClCompile>
     <ClCompile Include="native_module_registration.cpp" />
+    <ClCompile Include="native_modules\scrape_native_modules.cpp">
+      <Filter>native_modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="execution_graph.h" />
@@ -57,6 +60,9 @@
       <Filter>native_modules\json</Filter>
     </ClInclude>
     <ClInclude Include="native_module_registration.h" />
+    <ClInclude Include="native_modules\scrape_native_modules.h">
+      <Filter>native_modules</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="SConscript" />

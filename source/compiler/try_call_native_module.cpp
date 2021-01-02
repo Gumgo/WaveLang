@@ -144,6 +144,21 @@ bool c_native_module_caller::try_call(bool &did_call_out) {
 		execution_graph.get_node_incoming_edge_count(m_native_module_call_node_reference)
 		+ execution_graph.get_node_outgoing_edge_count(m_native_module_call_node_reference));
 
+#if IS_TRUE(ASSERTS_ENABLED)
+	size_t in_argument_count = 0;
+	size_t out_argument_count = 0;
+	for (size_t argument_index = 0; argument_index < native_module.argument_count; argument_index++) {
+		e_native_module_argument_direction argument_direction =
+			native_module.arguments[argument_index].argument_direction;
+		if (argument_direction == e_native_module_argument_direction::k_in) {
+			in_argument_count++;
+		} else {
+			wl_assert(argument_direction == e_native_module_argument_direction::k_out);
+			out_argument_count++;
+		}
+	}
+#endif // IS_TRUE(ASSERTS_ENABLED)
+
 	size_t next_input = 0;
 	size_t next_output = 0;
 	bool all_dependent_constant_inputs_are_constant = true;
@@ -324,8 +339,9 @@ bool c_native_module_caller::try_call(bool &did_call_out) {
 		}
 	}
 
-	wl_assert(next_input == native_module.in_argument_count);
-	wl_assert(next_output == native_module.out_argument_count);
+	wl_assert(next_input == in_argument_count);
+	wl_assert(next_output == out_argument_count);
+	wl_assert(next_input + next_output == native_module.argument_count);
 
 	// Make the compile time call to resolve the outputs
 	s_native_module_context native_module_context;
@@ -455,7 +471,7 @@ bool c_native_module_caller::try_call(bool &did_call_out) {
 		next_output++;
 	}
 
-	wl_assert(next_output == native_module.out_argument_count);
+	wl_assert(next_output == out_argument_count);
 
 	// Remove any newly created but unused constant nodes
 	for (c_node_reference constant_node_reference : m_created_node_references) {

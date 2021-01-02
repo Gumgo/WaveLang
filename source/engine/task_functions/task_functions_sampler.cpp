@@ -201,6 +201,7 @@ namespace sampler_task_functions {
 	void sampler(
 		const s_task_function_context &context,
 		wl_task_argument(const char *, name),
+		wl_task_argument(real32, channel),
 		wl_task_argument(const c_real_buffer *, speed),
 		wl_task_argument(c_real_buffer *, result)) {
 		c_sample_library *sample_library = static_cast<c_sample_library *>(context.library_context);
@@ -229,6 +230,8 @@ namespace sampler_task_functions {
 	void sampler_loop(
 		const s_task_function_context &context,
 		wl_task_argument(const char *, name),
+		wl_task_argument(real32, channel),
+		wl_task_argument(bool, bidi),
 		wl_task_argument(const c_real_buffer *, speed),
 		wl_task_argument(const c_real_buffer *, phase),
 		wl_task_argument(c_real_buffer *, result)) {
@@ -256,6 +259,7 @@ namespace sampler_task_functions {
 
 	void sampler_wavetable(
 		const s_task_function_context &context,
+		wl_task_argument(c_real_constant_array, harmonic_weights),
 		wl_task_argument(const c_real_buffer *, frequency),
 		wl_task_argument(const c_real_buffer *, phase),
 		wl_task_argument(c_real_buffer *, result)) {
@@ -263,31 +267,33 @@ namespace sampler_task_functions {
 		run_sampler_loop<true>(sample_library, context, "<generated_wavetable>", frequency, phase, result);
 	}
 
-	static constexpr uint32 k_sampler_library_id = 3;
-	wl_task_function_library(k_sampler_library_id, "sampler", 0)
-		.set_engine_initializer(sampler_library_engine_initializer)
-		.set_engine_deinitializer(sampler_library_engine_deinitializer)
-		.set_tasks_pre_initializer(sampler_library_tasks_pre_initializer)
-		.set_tasks_post_initializer(sampler_library_tasks_post_initializer);
+	void scrape_task_functions() {
+		static constexpr uint32 k_sampler_library_id = 3;
+		wl_task_function_library(k_sampler_library_id, "sampler", 0)
+			.set_engine_initializer(sampler_library_engine_initializer)
+			.set_engine_deinitializer(sampler_library_engine_deinitializer)
+			.set_tasks_pre_initializer(sampler_library_tasks_pre_initializer)
+			.set_tasks_post_initializer(sampler_library_tasks_post_initializer);
 
-	wl_task_function(0x8cd13477, "sampler")
-		.set_function<sampler>()
-		.set_memory_query<sampler_memory_query>()
-		.set_initializer<sampler_initializer>()
-		.set_voice_initializer<sampler_voice_initializer>();
+		wl_task_function(0x8cd13477, "sampler")
+			.set_function<sampler>()
+			.set_memory_query<sampler_memory_query>()
+			.set_initializer<sampler_initializer>()
+			.set_voice_initializer<sampler_voice_initializer>();
 
-	wl_task_function(0xdf906f59, "sampler_loop")
-		.set_function<sampler_loop>()
-		.set_memory_query<sampler_memory_query>()
-		.set_initializer<sampler_loop_initializer>()
-		.set_voice_initializer<sampler_voice_initializer>();
+		wl_task_function(0xdf906f59, "sampler_loop")
+			.set_function<sampler_loop>()
+			.set_memory_query<sampler_memory_query>()
+			.set_initializer<sampler_loop_initializer>()
+			.set_voice_initializer<sampler_voice_initializer>();
 
-	wl_task_function(0x7429e1e3, "sampler_wavetable")
-		.set_function<sampler_wavetable>()
-		.set_memory_query<sampler_memory_query>()
-		.set_initializer<sampler_wavetable_initializer>()
-		.set_voice_initializer<sampler_voice_initializer>();
+		wl_task_function(0x7429e1e3, "sampler_wavetable")
+			.set_function<sampler_wavetable>()
+			.set_memory_query<sampler_memory_query>()
+			.set_initializer<sampler_wavetable_initializer>()
+			.set_voice_initializer<sampler_voice_initializer>();
 
-	wl_end_active_library_task_function_registration();
+		wl_end_active_library_task_function_registration();
+	}
 
 }

@@ -1,10 +1,10 @@
 #include "engine/task_function_registration.h"
 
-namespace stream_task_functions {
+namespace json_task_functions {
 
 	void scrape_task_functions() {
-		static constexpr uint32 k_stream_library_id = 8;
-		wl_task_function_library(k_stream_library_id, "stream", 0);
+		static constexpr uint32 k_json_library_id = 9;
+		wl_task_function_library(k_json_library_id, "json", 0);
 
 		// No runtime task functions, currently
 

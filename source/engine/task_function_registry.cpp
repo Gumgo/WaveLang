@@ -202,13 +202,12 @@ bool c_task_function_registry::register_task_function(const s_task_function &tas
 
 	// Validate that the task function is set up correctly
 	// We don't need a memory query or initializer, but all task functions must have something to execute
-	wl_assert(task_function.function);
-	wl_assert(task_function.argument_count <= k_max_task_function_arguments);
-#if IS_TRUE(ASSERTS_ENABLED)
-	for (size_t arg = 0; arg < task_function.argument_count; arg++) {
-		wl_assert(task_function.arguments[arg].type.is_valid());
+	if (!task_function.function) {
+		report_error(
+			"Failed to register task function 0x%04x because no function was provided",
+			task_function.uid.get_task_function_id());
+		return false;
 	}
-#endif // IS_TRUE(ASSERTS_ENABLED)
 
 	if (!validate_task_function(task_function)) {
 		report_error(

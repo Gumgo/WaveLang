@@ -35,7 +35,7 @@ void c_visitor_class_generator::generate_class_declaration(std::ofstream &file) 
 	}
 
 	file << "\tbool enter_node(size_t node_index) override;\n";
-	file << "\tvoid exit_node(size_t node_index) override;\n";
+	file << "\tvoid exit_node(size_t node_index, bool call_exit) override;\n";
 
 	file << "\n";
 	file << "private:\n";
@@ -126,29 +126,39 @@ std::vector<c_visitor_class_generator::s_rule_function_argument> c_visitor_class
 
 	const s_grammar::s_nonterminal &nonterminal = m_grammar.nonterminals[rule.nonterminal_index];
 	if (!nonterminal.context_type.empty()) {
-		arguments.push_back({ e_argument_type::k_rule_nonterminal, nonterminal.context_type, "rule_head_context", 0 });
+		arguments.push_back(
+			{
+				e_argument_type::k_rule_nonterminal,
+				nonterminal.context_type,
+				"rule_head_context",
+				0,
+				!rule.function.empty()
+			});
 	}
 
 	for (size_t index = 0; index < rule.components.size(); index++) {
 		const s_grammar::s_rule_component &rule_component = rule.components[index];
-		if (!rule_component.argument.empty()) {
-			if (rule_component.is_terminal) {
-				arguments.push_back(
-					{
-						e_argument_type::k_terminal,
-						"const " + m_grammar.terminal_context_type,
-						rule_component.argument,
-						index
-					});
-			} else {
-				const s_grammar::s_nonterminal &nonterminal_component =
-					m_grammar.nonterminals[rule_component.terminal_or_nonterminal_index];
+		bool is_consumed_by_function = !rule_component.argument.empty();
+		if (rule_component.is_terminal) {
+			arguments.push_back(
+				{
+					e_argument_type::k_terminal,
+					"const " + m_grammar.terminal_context_type,
+					rule_component.argument,
+					index,
+					is_consumed_by_function
+				});
+		} else {
+			const s_grammar::s_nonterminal &nonterminal_component =
+				m_grammar.nonterminals[rule_component.terminal_or_nonterminal_index];
+			if (!nonterminal_component.context_type.empty()) {
 				arguments.push_back(
 					{
 						e_argument_type::k_nonterminal,
 						nonterminal_component.context_type,
 						rule_component.argument,
-						index
+						index,
+						is_consumed_by_function
 					});
 			}
 		}
@@ -164,6 +174,10 @@ void c_visitor_class_generator::output_rule_function_declaration_arguments(
 
 	bool first = true;
 	for (const s_rule_function_argument &argument : arguments) {
+		if (!argument.is_consumed_by_function) {
+			continue;
+		}
+
 		if (!first) {
 			file << ", ";
 		} else {
@@ -179,8 +193,11 @@ void c_visitor_class_generator::output_rule_function_declaration_arguments(
 }
 
 void c_visitor_class_generator::output_enter_or_exit_node_function_definition(bool enter, std::ofstream &file) const {
-	file << (enter ? "bool " : "void ") << m_class_name << "::"
-		<< (enter ? "enter" : "exit") << "_node(size_t node_index) {\n";
+	if (enter) {
+		file << "bool " << m_class_name << "::enter_node(size_t node_index) {\n";
+	} else {
+		file << "void " << m_class_name << "::exit_node(size_t node_index, bool call_exit) {\n";
+	}
 	file << "\tconst c_lr_parse_tree_node &node = m_parse_tree.get_node(node_index);\n";
 	file << "\tif (node.get_symbol().is_terminal()) {\n";
 	file << "\t\treturn" << (enter ? " false" : "") << ";\n"; // No point to visiting terminals
@@ -194,19 +211,25 @@ void c_visitor_class_generator::output_enter_or_exit_node_function_definition(bo
 	// Handle each possible production that has an associated function
 	for (size_t rule_index = 0; rule_index < m_grammar.rules.size(); rule_index++) {
 		const s_grammar::s_rule &rule = m_grammar.rules[rule_index];
-		if (rule.function.empty()) {
-			continue;
-		}
 
 		file << "\tcase " << rule_index << ":\n";
 
 		if (enter) {
 			// When calling enter, we must instantiate the contexts first, then pass them to the function
 			output_instantiate_or_deinstantiate_contexts(true, rule, file);
-			output_call_enter_or_exit_function(true, rule, file);
+
+			if (!rule.function.empty()) {
+				output_call_enter_or_exit_function(true, rule, file);
+			} else {
+				// No function, assume we always enter the node
+				file << "\t\treturn true;\n";
+			}
 		} else {
 			// When calling exit, we must pass contexts to the function before deinstantiating them
-			output_call_enter_or_exit_function(false, rule, file);
+			if (!rule.function.empty()) {
+				output_call_enter_or_exit_function(false, rule, file);
+			}
+
 			output_instantiate_or_deinstantiate_contexts(false, rule, file);
 			file << "\t\tbreak;\n";
 		}
@@ -215,7 +238,8 @@ void c_visitor_class_generator::output_enter_or_exit_node_function_definition(bo
 	}
 
 	file << "\tdefault:\n";
-	file << "\t\t" << (enter ? "return true" : "break") << ";\n";
+	file << "\t\twl_unreachable();\n";
+	file << "\t\t" << (enter ? "return false" : "break") << ";\n";
 	file << "\t}\n";
 	file << "}\n";
 }
@@ -265,17 +289,29 @@ void c_visitor_class_generator::output_call_enter_or_exit_function(
 	std::ofstream &file) const {
 	std::vector<s_rule_function_argument> arguments = get_rule_function_arguments(rule);
 
+	const char *tabs;
+	if (!enter) {
+		tabs = "\t\t\t";
+		file << "\t\tif (call_exit) {\n";
+	} else {
+		tabs = "\t\t";
+	}
+
 	// Call the function
-	file << "\t\t" << (enter ? "return enter_" : "exit_") << rule.function << "(";
+	file << tabs << (enter ? "return enter_" : "exit_") << rule.function << "(";
 	bool first = true;
 	for (const s_rule_function_argument &argument : arguments) {
+		if (!argument.is_consumed_by_function) {
+			continue;
+		}
+
 		if (!first) {
 			file << ",";
 		} else {
 			first = false;
 		}
 
-		file << "\n\t\t\t";
+		file << "\n\t" << tabs;
 		switch (argument.argument_type) {
 		case e_argument_type::k_rule_nonterminal:
 			file << "std::get<" << argument.context_type << ">(m_node_contexts[node_index])";
@@ -297,4 +333,8 @@ void c_visitor_class_generator::output_call_enter_or_exit_function(
 	}
 
 	file << ");\n";
+
+	if (!enter) {
+		file << "\t\t}\n";
+	}
 }

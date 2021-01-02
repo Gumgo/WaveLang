@@ -10,6 +10,7 @@
 #include "execution_graph/instrument.h"
 #include "execution_graph/native_module_registration.h"
 #include "execution_graph/native_module_registry.h"
+#include "execution_graph/native_modules/scrape_native_modules.h"
 
 #include <iostream>
 
@@ -23,8 +24,12 @@ int main(int argc, char **argv) {
 
 	initialize_floating_point_behavior();
 
+	scrape_native_modules();
+
 	c_native_module_registry::initialize();
-	register_native_modules();
+	if (!register_native_modules()) {
+		return 1;
+	}
 
 	std::vector<void *> library_contexts(c_native_module_registry::get_native_module_library_count(), nullptr);
 	for (h_native_module_library library_handle : c_native_module_registry::iterate_native_module_libraries()) {

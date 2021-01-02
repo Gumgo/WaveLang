@@ -101,249 +101,260 @@ static std::string_view get_next_token(std::string_view &line) {
 	return result;
 }
 
-static void run_compiler_test(const char *test_definition_filename) {
-	std::ifstream file(test_definition_filename);
-	ASSERT_TRUE(file.is_open());
+class CompilerTest : public testing::Test {
+protected:
+	void SetUp() override {
+		c_native_module_registry::initialize();
+		ASSERT_TRUE(register_native_modules());
 
-	std::filesystem::remove_all(k_compiler_tests_directory);
-	ASSERT_TRUE(std::filesystem::create_directory(k_compiler_tests_directory));
-
-	std::vector<std::tuple<std::string, e_compiler_error>> tests;
-	std::vector<std::tuple<std::string, std::string>> templates;
-
-	std::ofstream output_file;
-	bool is_template = false;
-	std::string line;
-	while (std::getline(file, line)) {
-		if (line.starts_with("###")) {
-			std::string_view line_remaining = line;
-
-			get_next_token(line_remaining); // Skip ###
-			std::string_view command = get_next_token(line_remaining);
-			if (command == "FILE") {
-				std::string_view path_string = get_next_token(line_remaining);
-				// The rest of the line can be a comment
-
-				std::filesystem::path path(path_string);
-				ASSERT_TRUE(path.has_extension());
-
-				// Create each subdirectory
-				std::filesystem::path current_path(k_compiler_tests_directory);
-				for (auto path_element : path) {
-					if (!path_element.has_extension()) {
-						if (!std::filesystem::exists(current_path / path_element)) {
-							ASSERT_TRUE(std::filesystem::create_directory(current_path / path_element));
-						}
-					}
-				}
-
-				// Create and open the file
-				if (output_file.is_open()) {
-					output_file.close();
-				}
-
-				is_template = false;
-
-				output_file.open(std::filesystem::path(k_compiler_tests_directory) / path);
-				ASSERT_TRUE(output_file.is_open());
-			} else if (command == "TEMPLATE") {
-				std::string_view template_name = get_next_token(line_remaining);
-				ASSERT_TRUE(!template_name.empty());
-				// The rest of the line can be a comment
-
-				// Create the template
-				if (output_file.is_open()) {
-					output_file.close();
-				}
-
-				is_template = true;
-
-				templates.emplace_back(std::make_tuple(template_name, std::string()));
-			} else if (command == "TEST") {
-				std::string_view test_name = get_next_token(line_remaining);
-				ASSERT_TRUE(!test_name.empty());
-				std::string_view expected_result_string = get_next_token(line_remaining);
-				ASSERT_TRUE(!expected_result_string.empty());
-				// The rest of the line can be a comment
-
-				e_compiler_error expected_result = e_compiler_error::k_invalid;
-				if (expected_result_string == "success") {
-					// We expect compilation to succeed
-				} else {
-					for (e_compiler_error compiler_error : iterate_enum<e_compiler_error>()) {
-						if (expected_result_string == k_compiler_error_strings[enum_index(compiler_error)]) {
-							expected_result = compiler_error;
-							break;
-						}
-					}
-
-					ASSERT_NE(expected_result, e_compiler_error::k_invalid)
-						<< "(compiler error '" << expected_result_string << "' not found)";
-				}
-
-				tests.push_back(std::make_tuple(std::string(test_name), expected_result));
-
-				// Create and open the test file
-				if (output_file.is_open()) {
-					output_file.close();
-				}
-
-				is_template = false;
-
-				output_file.open(
-					std::filesystem::path(k_compiler_tests_directory) / (std::string(test_name) + k_test_extension));
-				ASSERT_TRUE(output_file.is_open());
-			} else {
-				FAIL();
+		m_library_contexts.resize(
+			c_native_module_registry::get_native_module_library_count(),
+			nullptr);
+		for (h_native_module_library library_handle : c_native_module_registry::iterate_native_module_libraries()) {
+			const s_native_module_library &library =
+				c_native_module_registry::get_native_module_library(library_handle);
+			if (library.compiler_initializer) {
+				m_library_contexts[library_handle.get_data()] = library.compiler_initializer();
 			}
-		} else if (output_file.is_open()) {
-			if (line.starts_with("##")) {
+		}
+
+	}
+
+	void TearDown() override {
+		for (h_native_module_library library_handle : c_native_module_registry::iterate_native_module_libraries()) {
+			const s_native_module_library &library =
+				c_native_module_registry::get_native_module_library(library_handle);
+			if (library.compiler_deinitializer) {
+				library.compiler_deinitializer(m_library_contexts[library_handle.get_data()]);
+			}
+		}
+
+		c_native_module_registry::shutdown();
+	}
+
+	void run_compiler_test(const char *test_definition_filename) {
+		std::ifstream file(test_definition_filename);
+		ASSERT_TRUE(file.is_open());
+
+		std::filesystem::remove_all(k_compiler_tests_directory);
+		ASSERT_TRUE(std::filesystem::create_directory(k_compiler_tests_directory));
+
+		std::vector<std::tuple<std::string, e_compiler_error>> tests;
+		std::vector<std::tuple<std::string, std::string>> templates;
+
+		std::ofstream output_file;
+		bool is_template = false;
+		std::string line;
+		while (std::getline(file, line)) {
+			if (line.starts_with("###")) {
 				std::string_view line_remaining = line;
 
-				get_next_token(line_remaining); // Skip ##
-				std::string_view template_name = get_next_token(line_remaining);
+				get_next_token(line_remaining); // Skip ###
+				std::string_view command = get_next_token(line_remaining);
+				if (command == "FILE") {
+					std::string_view path_string = get_next_token(line_remaining);
+					// The rest of the line can be a comment
 
-				// Paste the template
-				bool found = false;
-				for (const std::tuple<std::string, std::string> &template_ : templates) {
-					if (std::get<0>(template_) == template_name) {
-						output_file << std::get<1>(template_);
-						found = true;
-						break;
+					std::filesystem::path path(path_string);
+					ASSERT_TRUE(path.has_extension());
+
+					// Create each subdirectory
+					std::filesystem::path current_path(k_compiler_tests_directory);
+					for (auto path_element : path) {
+						if (!path_element.has_extension()) {
+							if (!std::filesystem::exists(current_path / path_element)) {
+								ASSERT_TRUE(std::filesystem::create_directory(current_path / path_element));
+							}
+						}
 					}
-				}
 
-				ASSERT_TRUE(found) << "(template '" << template_name << "' not found)";
-			} else {
-				output_file << line << std::endl;
-				ASSERT_FALSE(output_file.fail());
-			}
-		} else if (is_template) {
-			std::get<1>(templates.back()) += line;
-			std::get<1>(templates.back()).push_back('\n');
-		} else {
-			// No file open yet, only allow empty lines
-			ASSERT_TRUE(line.empty());
-		}
-	}
+					// Create and open the file
+					if (output_file.is_open()) {
+						output_file.close();
+					}
 
-	if (output_file.is_open()) {
-		output_file.close();
-	}
+					is_template = false;
 
-	// Run each test
-	for (const std::tuple<std::string, e_compiler_error> &test : tests) {
-		const std::string &test_name = std::get<0>(test);
-		e_compiler_error expected_result = std::get<1>(test);
+					output_file.open(std::filesystem::path(k_compiler_tests_directory) / path);
+					ASSERT_TRUE(output_file.is_open());
+				} else if (command == "TEMPLATE") {
+					std::string_view template_name = get_next_token(line_remaining);
+					ASSERT_TRUE(!template_name.empty());
+					// The rest of the line can be a comment
 
-		std::filesystem::path test_path =
-			std::filesystem::path(k_compiler_tests_directory) / (test_name + k_test_extension);
+					// Create the template
+					if (output_file.is_open()) {
+						output_file.close();
+					}
 
-		bool test_passed = true;
-		std::string error_message;
+					is_template = true;
 
-		{
-			c_native_module_registry::initialize();
-			register_native_modules();
+					templates.emplace_back(std::make_tuple(template_name, std::string()));
+				} else if (command == "TEST") {
+					std::string_view test_name = get_next_token(line_remaining);
+					ASSERT_TRUE(!test_name.empty());
+					std::string_view expected_result_string = get_next_token(line_remaining);
+					ASSERT_TRUE(!expected_result_string.empty());
+					// The rest of the line can be a comment
 
-			std::vector<void *> library_contexts(
-				c_native_module_registry::get_native_module_library_count(),
-				nullptr);
-			for (h_native_module_library library_handle : c_native_module_registry::iterate_native_module_libraries()) {
-				const s_native_module_library &library =
-					c_native_module_registry::get_native_module_library(library_handle);
-				if (library.compiler_initializer) {
-					library_contexts[library_handle.get_data()] = library.compiler_initializer();
-				}
-			}
+					e_compiler_error expected_result = e_compiler_error::k_invalid;
+					if (expected_result_string == "success") {
+						// We expect compilation to succeed
+					} else {
+						for (e_compiler_error compiler_error : iterate_enum<e_compiler_error>()) {
+							if (expected_result_string == k_compiler_error_strings[enum_index(compiler_error)]) {
+								expected_result = compiler_error;
+								break;
+							}
+						}
 
-			c_compiler_context context = c_compiler_context(library_contexts);
-			std::unique_ptr<c_instrument> result(c_compiler::compile(context, test_path.string().c_str()));
+						ASSERT_NE(expected_result, e_compiler_error::k_invalid)
+							<< "(compiler error '" << expected_result_string << "' not found)";
+					}
 
-			for (h_native_module_library library_handle : c_native_module_registry::iterate_native_module_libraries()) {
-				const s_native_module_library &library =
-					c_native_module_registry::get_native_module_library(library_handle);
-				if (library.compiler_deinitializer) {
-					library.compiler_deinitializer(library_contexts[library_handle.get_data()]);
-				}
-			}
+					tests.push_back(std::make_tuple(std::string(test_name), expected_result));
 
-			c_native_module_registry::shutdown();
+					// Create and open the test file
+					if (output_file.is_open()) {
+						output_file.close();
+					}
 
-			if (expected_result == e_compiler_error::k_invalid && !result) {
-				test_passed = false;
-				error_message = "expected success but compilation failed";
-			} else if (expected_result != e_compiler_error::k_invalid) {
-				if (result) {
-					test_passed = false;
-					error_message = "expected error '"
-						+ std::string(k_compiler_error_strings[enum_index(expected_result)])
-						+ "' but compilation succeeded";
+					is_template = false;
+
+					output_file.open(
+						std::filesystem::path(k_compiler_tests_directory) / (std::string(test_name) + k_test_extension));
+					ASSERT_TRUE(output_file.is_open());
 				} else {
+					FAIL();
+				}
+			} else if (output_file.is_open()) {
+				if (line.starts_with("##")) {
+					std::string_view line_remaining = line;
+
+					get_next_token(line_remaining); // Skip ##
+					std::string_view template_name = get_next_token(line_remaining);
+
+					// Paste the template
 					bool found = false;
-					for (size_t i = 0; i < context.get_error_count(); i++) {
-						if (context.get_error(i).error == expected_result) {
+					for (const std::tuple<std::string, std::string> &template_ : templates) {
+						if (std::get<0>(template_) == template_name) {
+							output_file << std::get<1>(template_);
 							found = true;
 							break;
 						}
 					}
 
-					if (!found) {
+					ASSERT_TRUE(found) << "(template '" << template_name << "' not found)";
+				} else {
+					output_file << line << std::endl;
+					ASSERT_FALSE(output_file.fail());
+				}
+			} else if (is_template) {
+				std::get<1>(templates.back()) += line;
+				std::get<1>(templates.back()).push_back('\n');
+			} else {
+				// No file open yet, only allow empty lines
+				ASSERT_TRUE(line.empty());
+			}
+		}
+
+		if (output_file.is_open()) {
+			output_file.close();
+		}
+
+		// Run each test
+		for (const std::tuple<std::string, e_compiler_error> &test : tests) {
+			const std::string &test_name = std::get<0>(test);
+			e_compiler_error expected_result = std::get<1>(test);
+
+			std::filesystem::path test_path =
+				std::filesystem::path(k_compiler_tests_directory) / (test_name + k_test_extension);
+
+			bool test_passed = true;
+			std::string error_message;
+
+			{
+				c_compiler_context context = c_compiler_context(m_library_contexts);
+				std::unique_ptr<c_instrument> result(c_compiler::compile(context, test_path.string().c_str()));
+
+				if (expected_result == e_compiler_error::k_invalid && !result) {
+					test_passed = false;
+					error_message = "expected success but compilation failed";
+				} else if (expected_result != e_compiler_error::k_invalid) {
+					if (result) {
 						test_passed = false;
 						error_message = "expected error '"
 							+ std::string(k_compiler_error_strings[enum_index(expected_result)])
-							+ "' but it did not occur despite compilation failing";
+							+ "' but compilation succeeded";
+					} else {
+						bool found = false;
+						for (size_t i = 0; i < context.get_error_count(); i++) {
+							if (context.get_error(i).error == expected_result) {
+								found = true;
+								break;
+							}
+						}
+
+						if (!found) {
+							test_passed = false;
+							error_message = "expected error '"
+								+ std::string(k_compiler_error_strings[enum_index(expected_result)])
+								+ "' but it did not occur despite compilation failing";
+						}
 					}
 				}
+
 			}
 
+			// This outputs test name and error message only if we failed
+			EXPECT_TRUE(test_passed) << " (" << test_name << ", " << error_message << ")";
 		}
-
-		// This outputs test name and error message only if we failed
-		EXPECT_TRUE(test_passed) << " (" << test_name << ", " << error_message << ")";
 	}
-}
 
-TEST(Compiler, Array) {
+private:
+	std::vector<void *> m_library_contexts;
+};
+
+TEST_F(CompilerTest, Array) {
 	run_compiler_test("compiler_tests/array.txt");
 }
 
-TEST(Compiler, ControlFlow) {
+TEST_F(CompilerTest, ControlFlow) {
 	run_compiler_test("compiler_tests/control_flow.txt");
 }
 
-TEST(Compiler, EntryPoint) {
+TEST_F(CompilerTest, EntryPoint) {
 	run_compiler_test("compiler_tests/entry_point.txt");
 }
 
-TEST(Compiler, Expression) {
+TEST_F(CompilerTest, Expression) {
 	run_compiler_test("compiler_tests/expression.txt");
 }
 
-TEST(Compiler, GlobalScopeConstant) {
+TEST_F(CompilerTest, GlobalScopeConstant) {
 	run_compiler_test("compiler_tests/global_scope_constant.txt");
 }
 
-TEST(Compiler, Import) {
+TEST_F(CompilerTest, Import) {
 	run_compiler_test("compiler_tests/import.txt");
 }
 
-TEST(Compiler, InstrumentGlobal) {
+TEST_F(CompilerTest, InstrumentGlobal) {
 	run_compiler_test("compiler_tests/instrument_global.txt");
 }
 
-TEST(Compiler, Lexer) {
+TEST_F(CompilerTest, Lexer) {
 	run_compiler_test("compiler_tests/lexer.txt");
 }
 
-TEST(Compiler, Module) {
+TEST_F(CompilerTest, Module) {
 	run_compiler_test("compiler_tests/module.txt");
 }
 
-TEST(Compiler, Parser) {
+TEST_F(CompilerTest, Parser) {
 	run_compiler_test("compiler_tests/parser.txt");
 }
 
-TEST(Compiler, Types) {
+TEST_F(CompilerTest, Types) {
 	run_compiler_test("compiler_tests/types.txt");
 }

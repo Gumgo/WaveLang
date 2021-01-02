@@ -108,6 +108,7 @@
     <ClInclude Include="task_functions\sampler\sampler_context.h" />
     <ClInclude Include="task_functions\sampler\sample_library.h" />
     <ClInclude Include="task_functions\sampler\sample_loader.h" />
+    <ClInclude Include="task_functions\scrape_task_functions.h" />
     <ClInclude Include="task_function_registration.h" />
     <ClInclude Include="task_function_registry.h" />
     <ClInclude Include="task_graph.h" />
@@ -138,11 +139,13 @@
     <ClCompile Include="task_functions\sampler\sampler_context.cpp" />
     <ClCompile Include="task_functions\sampler\sample_library.cpp" />
     <ClCompile Include="task_functions\sampler\sample_loader.cpp" />
+    <ClCompile Include="task_functions\scrape_task_functions.cpp" />
     <ClCompile Include="task_functions\task_functions_array.cpp" />
     <ClCompile Include="task_functions\task_functions_controller.cpp" />
     <ClCompile Include="task_functions\task_functions_core.cpp" />
     <ClCompile Include="task_functions\task_functions_delay.cpp" />
     <ClCompile Include="task_functions\task_functions_filter.cpp" />
+    <ClCompile Include="task_functions\task_functions_json.cpp" />
     <ClCompile Include="task_functions\task_functions_math.cpp" />
     <ClCompile Include="task_functions\task_functions_sampler.cpp" />
     <ClCompile Include="task_functions\task_functions_stream.cpp" />

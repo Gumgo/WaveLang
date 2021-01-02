@@ -148,29 +148,31 @@ namespace controller_task_functions {
 		}
 	}
 
-	static constexpr uint32 k_controller_library_id = 7;
-	wl_task_function_library(k_controller_library_id, "controller", 0);
+	void scrape_task_functions() {
+		static constexpr uint32 k_controller_library_id = 7;
+		wl_task_function_library(k_controller_library_id, "controller", 0);
 
-	wl_task_function(0xbeaf383d, "get_note_id")
-		.set_function<get_note_id>();
+		wl_task_function(0xbeaf383d, "get_note_id")
+			.set_function<get_note_id>();
 
-	wl_task_function(0x8b9d039b, "get_note_velocity")
-		.set_function<get_note_velocity>();
+		wl_task_function(0x8b9d039b, "get_note_velocity")
+			.set_function<get_note_velocity>();
 
-	wl_task_function(0x05b9e818, "get_note_press_duration")
-		.set_function<get_note_press_duration>()
-		.set_memory_query<get_note_press_duration_memory_query>()
-		.set_initializer<get_note_press_duration_voice_initializer>();
+		wl_task_function(0x05b9e818, "get_note_press_duration")
+			.set_function<get_note_press_duration>()
+			.set_memory_query<get_note_press_duration_memory_query>()
+			.set_initializer<get_note_press_duration_voice_initializer>();
 
-	wl_task_function(0xa370e402, "get_note_release_duration")
-		.set_function<get_note_release_duration>()
-		.set_memory_query<get_note_release_duration_memory_query>()
-		.set_initializer<get_note_release_duration_voice_initializer>();
+		wl_task_function(0xa370e402, "get_note_release_duration")
+			.set_function<get_note_release_duration>()
+			.set_memory_query<get_note_release_duration_memory_query>()
+			.set_initializer<get_note_release_duration_voice_initializer>();
 
-	wl_task_function(0x6badd8e8, "get_parameter_value")
-		.set_function<get_parameter_value>()
-		.set_initializer<get_parameter_value_initializer>();
+		wl_task_function(0x6badd8e8, "get_parameter_value")
+			.set_function<get_parameter_value>()
+			.set_initializer<get_parameter_value_initializer>();
 
-	wl_end_active_library_task_function_registration();
+		wl_end_active_library_task_function_registration();
+	}
 
 }

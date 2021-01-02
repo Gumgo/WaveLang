@@ -238,7 +238,7 @@ bool register_native_modules() {
 				return false; // Error already reported
 			}
 
-			native_module_entry = native_module_entry->next;
+			optimization_rule_entry = optimization_rule_entry->next;
 		}
 
 		library_entry = library_entry->next;
@@ -351,7 +351,7 @@ bool c_optimization_rule_generator::build() {
 					return false;
 				}
 
-				auto iter = m_native_module_identifier_map.find(next_token.source);
+				auto iter = m_native_module_identifier_map.find(token.source);
 				if (iter == m_native_module_identifier_map.end()) {
 					return false;
 				}
@@ -363,6 +363,9 @@ bool c_optimization_rule_generator::build() {
 				}
 
 				depth++;
+
+				token = next_token;
+				next_token = get_next_token();
 			} else {
 				s_native_module_optimization_symbol identifier_symbol =
 					get_identifier_symbol(token.source, is_const, building_source);
@@ -463,7 +466,7 @@ c_optimization_rule_generator::s_token c_optimization_rule_generator::get_next_t
 		}
 
 	default:
-		if (c >= '0' && c <= '0') {
+		if (c >= '0' && c <= '9') {
 			is_number = true;
 		} else if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c == '_')) { // $TODO $UNICODE
 			is_identifier = true;
@@ -474,13 +477,14 @@ c_optimization_rule_generator::s_token c_optimization_rule_generator::get_next_t
 	if (is_identifier) {
 		size_t start_offset = m_rule_string_offset;
 		while (true) {
-			char c = m_rule_string[m_rule_string_offset++];
+			char c = m_rule_string[m_rule_string_offset];
 			if ((c >= 'A' && c <= 'Z')
 				|| (c >= 'a' && c <= 'z')
 				|| (c >= '0' && c <= '9')
 				|| (c == '_')
 				|| (c == '$')) { // $ is a valid character for native module identifiers
 				// Valid character
+				m_rule_string_offset++;
 			} else {
 				std::string_view token_string(&m_rule_string[start_offset], m_rule_string_offset - start_offset);
 				if (token_string == "const") {
@@ -506,10 +510,11 @@ c_optimization_rule_generator::s_token c_optimization_rule_generator::get_next_t
 
 		// Loop until we hit a non-digit character - could improve this if needed
 		while (true) {
-			char c = m_rule_string[m_rule_string_offset++];
+			char c = m_rule_string[m_rule_string_offset];
 			if (c >= '0' && c <= '9') {
 				value *= 10;
 				value += (c - '0');
+				m_rule_string_offset++;
 			} else {
 				if (is_negative) {
 					value = -value;
