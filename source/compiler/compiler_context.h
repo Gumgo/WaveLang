@@ -81,6 +81,7 @@ enum class e_compiler_error {
 	k_illegal_variable_subscript_assignment,
 
 	// Entry point errors
+	k_missing_entry_point,
 	k_ambiguous_entry_point,
 	k_invalid_entry_point,
 	k_incompatible_entry_points,

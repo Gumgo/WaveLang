@@ -43,8 +43,6 @@ c_ast_node_expression *c_ast_node_module_call::get_resolved_module_argument_expr
 	// $PERF could pre-compute this
 
 	c_ast_node_module_declaration_argument *argument = m_resolved_module_declaration->get_argument(argument_index);
-	wl_assert(argument->get_argument_direction() == e_ast_argument_direction::k_in);
-
 	for (size_t call_argument_index = 0; call_argument_index < m_arguments.size(); call_argument_index++) {
 		c_ast_node_module_call_argument *call_argument = m_arguments[call_argument_index].get();
 		if (!call_argument->get_name()) {

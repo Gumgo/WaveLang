@@ -1,7 +1,5 @@
 #include "compiler/try_call_native_module.h"
 
-#include <vector>
-
 template<typename t_argument_reference>
 static t_argument_reference argument_reference_from_node_reference(c_node_reference node_reference);
 
@@ -17,7 +15,7 @@ public:
 		c_node_reference native_module_call_node_reference,
 		const s_compiler_source_location &call_source_location);
 
-	bool try_call(bool &did_call_out);
+	bool try_call(bool &did_call_out, std::vector<c_node_reference> *output_node_references_out);
 
 	void message(const char *format, ...) override;
 	void warning(const char *format, ...) override;
@@ -82,14 +80,15 @@ bool try_call_native_module(
 	const s_instrument_globals &instrument_globals,
 	c_node_reference native_module_call_node_reference,
 	const s_compiler_source_location &call_source_location,
-	bool &did_call_out) {
+	bool &did_call_out,
+	std::vector<c_node_reference> *output_node_references_out) {
 	c_native_module_caller native_module_caller(
 		context,
 		graph_trimmer,
 		instrument_globals,
 		native_module_call_node_reference,
 		call_source_location);
-	return native_module_caller.try_call(did_call_out);
+	return native_module_caller.try_call(did_call_out, output_node_references_out);
 }
 
 template<typename t_argument_reference>
@@ -125,7 +124,7 @@ c_native_module_caller::c_native_module_caller(
 	, m_native_module_call_node_reference(native_module_call_node_reference)
 	, m_call_source_location(call_source_location) {}
 
-bool c_native_module_caller::try_call(bool &did_call_out) {
+bool c_native_module_caller::try_call(bool &did_call_out, std::vector<c_node_reference> *output_node_references_out) {
 	did_call_out = false;
 
 	c_execution_graph &execution_graph = m_graph_trimmer.get_execution_graph();
@@ -468,6 +467,11 @@ bool c_native_module_caller::try_call(bool &did_call_out) {
 			execution_graph.add_edge(target_node_reference, to_node_reference);
 		}
 
+		// Store off the resulting output node
+		if (output_node_references_out) {
+			output_node_references_out->push_back(target_node_reference);
+		}
+
 		next_output++;
 	}
 
@@ -484,6 +488,7 @@ bool c_native_module_caller::try_call(bool &did_call_out) {
 
 	// Finally, remove the native module call entirely
 	m_graph_trimmer.try_trim_node(m_native_module_call_node_reference);
+	did_call_out = true;
 	return true;
 }
 
@@ -658,7 +663,7 @@ void c_native_module_caller::build_reference_array_value(
 	t_reference_array &reference_array_value_out,
 	bool &all_elements_constant_out) {
 	const c_execution_graph &execution_graph = m_graph_trimmer.get_execution_graph();
-	size_t element_count = execution_graph.get_node_outgoing_edge_count(array_node_reference);
+	size_t element_count = execution_graph.get_node_incoming_edge_count(array_node_reference);
 	reference_array_value_out.get_array().resize(element_count);
 	all_elements_constant_out = true;
 	for (size_t element_index = 0; element_index < element_count; element_index++) {

@@ -154,8 +154,7 @@ bool c_ast_qualified_data_type::is_legal_type_declaration() const {
 	}
 
 	const s_ast_primitive_type_traits &primitive_type_traits = m_data_type.get_primitive_type_traits();
-	if (m_data_mutability == e_ast_data_mutability::k_constant
-		|| m_data_mutability == e_ast_data_mutability::k_dependent_constant) {
+	if (m_data_mutability != e_ast_data_mutability::k_variable) {
 		return primitive_type_traits.allows_const;
 	}
 

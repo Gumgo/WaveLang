@@ -24,13 +24,13 @@ import core;
 ## template
 
 void f() {
-	real[] x = {[ 0, 1 ]};
+	const real[] x = {[ 0, 1 ]};
 	const real i = 1;
 	x[i] = 2;
 	core.assert(x[1] == 2);
 }
 
-### TEST bad_subscript_assignment k_illegal_variable_subscript_assignment
+### TEST bad_subscript_assignment_1 k_illegal_variable_subscript_assignment
 ## template
 
 void f() {
@@ -56,13 +56,13 @@ void g(out const real x) {
 }
 
 void f() {
-	real[] x = {[ 0, 1 ]};
+	const real[] x = {[ 0, 1 ]};
 	const real i = 1;
 	g(out x[i]);
 	core.assert(x[1] == 2);
 }
 
-### TEST bad_subscript_assignment k_illegal_variable_subscript_assignment
+### TEST bad_subscript_assignment_2 k_illegal_variable_subscript_assignment
 ## template
 
 void g(out const real x) {
@@ -72,7 +72,7 @@ void g(out const real x) {
 void f() {
 	real[] x = {[ 0, 1 ]};
 	real i = 1;
-	g(x[i]);
+	g(out x[i]);
 }
 
 ### TEST array_index_out_of_bounds k_array_index_out_of_bounds

@@ -34,7 +34,7 @@ void c_ast_node_scope::lookup_declarations_by_name(
 
 	for (const s_scope_item_entry &scope_item_entry : m_scope_items) {
 		c_ast_node_declaration *declaration = scope_item_entry.scope_item->try_get_as<c_ast_node_declaration>();
-		if (declaration && declaration->get_name() == name) {
+		if (declaration && strcmp(declaration->get_name(), name) == 0) {
 			declarations_out.push_back(declaration);
 		}
 	}

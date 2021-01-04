@@ -80,14 +80,14 @@ namespace core_native_modules {
 	void equal_real(
 		wl_argument(in const? real, a),
 		wl_argument(in const? real, b),
-		wl_argument(return out const? real, result)) {
+		wl_argument(return out const? bool, result)) {
 		*result = (*a == *b);
 	}
 
 	void not_equal_real(
 		wl_argument(in const? real, a),
 		wl_argument(in const? real, b),
-		wl_argument(return out const? real, result)) {
+		wl_argument(return out const? bool, result)) {
 		*result = (*a != *b);
 	}
 
@@ -122,28 +122,28 @@ namespace core_native_modules {
 	void greater(
 		wl_argument(in const? real, a),
 		wl_argument(in const? real, b),
-		wl_argument(return out const? real, result)) {
+		wl_argument(return out const? bool, result)) {
 		*result = (*a > *b);
 	}
 
 	void less(
 		wl_argument(in const? real, a),
 		wl_argument(in const? real, b),
-		wl_argument(return out const? real, result)) {
+		wl_argument(return out const? bool, result)) {
 		*result = (*a < *b);
 	}
 
 	void greater_equal(
 		wl_argument(in const? real, a),
 		wl_argument(in const? real, b),
-		wl_argument(return out const? real, result)) {
+		wl_argument(return out const? bool, result)) {
 		*result = (*a >= *b);
 	}
 
 	void less_equal(
 		wl_argument(in const? real, a),
 		wl_argument(in const? real, b),
-		wl_argument(return out const? real, result)) {
+		wl_argument(return out const? bool, result)) {
 		*result = (*a <= *b);
 	}
 

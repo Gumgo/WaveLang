@@ -1,0 +1,19 @@
+Test files consist of a list of items, where each item consists of a command line followed by the item content. The content continues until the next command or EOF.
+Command lines are prefixed with ### and look like this:
+### COMMAND [arguments] The remainder of the line is a comment
+The following commands are available:
+
+IGNORE
+	The contents of this item are ignored. This is useful for "commenting out" tests.
+
+FILE path
+	The contents are written to a file at the specified path.
+
+TEMPLATE template_name
+	The contents are stored in-memory for later use. The template contents can be "pasted" into a test using the syntax:
+	## template_name
+
+TEST test_name expected_result
+	The contents are written to a file called test_name.wl and the compiler is run on that file.
+	expected_result can either be an e_compile_error value or "success".
+	The test passes if compilation produces expected_result.

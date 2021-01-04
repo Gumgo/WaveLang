@@ -331,12 +331,13 @@ void c_import_resolver_visitor::try_resolve_import(const s_token &import_keyword
 		}
 	}
 
-	if (!success && !m_import_path_prefix_dot_count == 0 && m_import_path_components.size() == 1) {
+	if (!success && m_import_path_prefix_dot_count == 0 && m_import_path_components.size() == 1) {
 		// Check if this is a native module library import
 		for (h_native_module_library library_handle : c_native_module_registry::iterate_native_module_libraries()) {
 			const s_native_module_library &library =
 				c_native_module_registry::get_native_module_library(library_handle);
 			if (library.name == m_import_path_components[0].token_string) {
+				new_import.native_module_library_handle = library_handle;
 				success = true;
 				break;
 			}

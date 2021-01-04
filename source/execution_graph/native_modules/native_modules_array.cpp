@@ -61,9 +61,9 @@ namespace array_native_modules {
 
 	void subscript_real(
 		const s_native_module_context &context,
-		wl_argument(in ref const ? real[], a),
-		wl_argument(in const ? real, b),
-		wl_argument(return out ref const ? real, result)) {
+		wl_argument(in ref const? real[], a),
+		wl_argument(in const? real, b),
+		wl_argument(return out ref const? real, result)) {
 		if (!array_subscript(context, a->get_array(), *b, *result)) {
 			*result = context.reference_interface->create_constant_reference(0.0f);
 		}
@@ -76,33 +76,33 @@ namespace array_native_modules {
 	}
 
 	void combine_real(
-		wl_argument(in ref const ? real[], a),
-		wl_argument(in ref const ? real[], b),
-		wl_argument(return out ref const ? real[], result)) {
+		wl_argument(in ref const? real[], a),
+		wl_argument(in ref const? real[], b),
+		wl_argument(return out ref const? real[], result)) {
 		result->get_array() = array_combine(a->get_array(), b->get_array());
 	}
 
 	void repeat_real(
 		const s_native_module_context &context,
-		wl_argument(in ref const ? real[], a),
+		wl_argument(in ref const? real[], a),
 		wl_argument(in const real, b),
-		wl_argument(return out ref const ? real[], result)) {
+		wl_argument(return out ref const? real[], result)) {
 		result->get_array() = array_repeat(context, a->get_array(), *b);
 	}
 
 	void repeat_rev_real(
 		const s_native_module_context &context,
 		wl_argument(in const real, a),
-		wl_argument(in ref const ? real[], b),
-		wl_argument(return out ref const ? real[], result)) {
+		wl_argument(in ref const? real[], b),
+		wl_argument(return out ref const? real[], result)) {
 		result->get_array() = array_repeat(context, b->get_array(), *a);
 	}
 
 	void subscript_bool(
 		const s_native_module_context &context,
-		wl_argument(in ref const ? bool[], a),
-		wl_argument(in const ? bool, b),
-		wl_argument(return out ref const ? bool, result)) {
+		wl_argument(in ref const? bool[], a),
+		wl_argument(in const? bool, b),
+		wl_argument(return out ref const? bool, result)) {
 		if (!array_subscript(context, a->get_array(), *b, *result)) {
 			*result = context.reference_interface->create_constant_reference(false);
 		}
@@ -115,25 +115,25 @@ namespace array_native_modules {
 	}
 
 	void combine_bool(
-		wl_argument(in ref const ? bool[], a),
-		wl_argument(in ref const ? bool[], b),
-		wl_argument(return out ref const ? bool[], result)) {
+		wl_argument(in ref const? bool[], a),
+		wl_argument(in ref const? bool[], b),
+		wl_argument(return out ref const? bool[], result)) {
 		result->get_array() = array_combine(a->get_array(), b->get_array());
 	}
 
 	void repeat_bool(
 		const s_native_module_context &context,
-		wl_argument(in ref const ? bool[], a),
+		wl_argument(in ref const? bool[], a),
 		wl_argument(in const real, b),
-		wl_argument(return out ref const ? bool[], result)) {
+		wl_argument(return out ref const? bool[], result)) {
 		result->get_array() = array_repeat(context, a->get_array(), *b);
 	}
 
 	void repeat_rev_bool(
 		const s_native_module_context &context,
 		wl_argument(in const real, a),
-		wl_argument(in ref const ? bool[], b),
-		wl_argument(return out ref const ? bool[], result)) {
+		wl_argument(in ref const? bool[], b),
+		wl_argument(return out ref const? bool[], result)) {
 		result->get_array() = array_repeat(context, b->get_array(), *a);
 	}
 
@@ -219,6 +219,7 @@ namespace array_native_modules {
 			.set_compile_time_call<repeat_rev_bool>();
 
 		wl_native_module(0xf1c6de7f, "subscript$string")
+			.set_native_operator(e_native_operator::k_subscript)
 			.set_compile_time_call<subscript_string>();
 
 		wl_native_module(0xa49c681c, "count$string")

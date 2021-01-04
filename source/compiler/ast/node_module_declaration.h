@@ -26,9 +26,6 @@ public:
 	const c_ast_qualified_data_type &get_return_type() const;
 	void set_return_type(const c_ast_qualified_data_type &return_type);
 
-	// Returns true if any arguments or the return type are dependent-const
-	bool is_dependent_const() const;
-
 	c_ast_node_scope *get_body_scope() const;
 	void set_body_scope(c_ast_node_scope *body_scope);
 
@@ -84,4 +81,4 @@ s_module_call_resolution_result resolve_module_call(
 void get_argument_expressions(
 	const c_ast_node_module_declaration *module_declaration,
 	const c_ast_node_module_call *module_call,
-	std::vector<c_ast_node_expression *> argument_expressions_out);
+	std::vector<c_ast_node_expression *> &argument_expressions_out);

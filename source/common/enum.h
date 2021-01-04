@@ -109,7 +109,7 @@ struct s_enum_flags_underlying_type<33> {
 
 template<typename t_enum>
 struct s_enum_flags {
-	using t_underlying_type = typename s_enum_flags_underlying_type<t_enum::k_count>::t_underlying_type;
+	using t_underlying_type = typename s_enum_flags_underlying_type<enum_count<t_enum>()>::t_underlying_type;
 	t_underlying_type flags;
 
 	constexpr s_enum_flags() = default;
@@ -119,15 +119,19 @@ struct s_enum_flags {
 	}
 
 	static constexpr s_enum_flags<t_enum> empty() {
-		return s_enum_flags<t_enum> { 0 };
+		s_enum_flags<t_enum> result;
+		result.flags = 0;
+		return result;
 	}
 
 	constexpr bool test_flag(t_enum value) const {
-		return (flags | (static_cast<t_underlying_type>(1) << static_cast<t_underlying_type>(value))) != 0;
+		return (flags & (static_cast<t_underlying_type>(1) << static_cast<t_underlying_type>(value))) != 0;
 	}
 
 	constexpr s_enum_flags<t_enum> operator|(const s_enum_flags<t_enum> &flag) const {
-		return { flags | flag.flags };
+		s_enum_flags result;
+		result.flags = flags | flag.flags;
+		return result;
 	}
 
 	bool operator==(const s_enum_flags<t_enum> &other) const {
@@ -141,7 +145,9 @@ struct s_enum_flags {
 
 template<typename t_enum>
 constexpr s_enum_flags<t_enum> enum_flag(t_enum value) {
-	return { 1 << static_cast<typename s_enum_flags<t_enum>::t_underlying_type>(value) };
+	s_enum_flags<t_enum> result;
+	result.flags = static_cast<typename s_enum_flags<t_enum>::t_underlying_type>(1 << enum_index(value));
+	return result;
 }
 
 template<typename t_enum, typename t_element, size_t k_count>

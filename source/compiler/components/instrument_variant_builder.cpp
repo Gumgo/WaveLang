@@ -148,7 +148,7 @@ c_instrument_variant *c_instrument_variant_builder::build_instrument_variant(
 	instrument_variant->set_instrument_globals(instrument_globals);
 
 	if (voice_entry_point) {
-		std::unique_ptr<c_execution_graph> execution_graph;
+		std::unique_ptr<c_execution_graph> execution_graph = std::make_unique<c_execution_graph>();
 		c_execution_graph_builder execution_graph_builder(
 			context,
 			*execution_graph.get(),
@@ -909,7 +909,7 @@ bool c_execution_graph_builder::evaluate_ast_node(
 	c_ast_node_declaration_reference *declaration_reference,
 	uint64 &state,
 	bool &pop_node_out) {
-	wl_assert(state == 1);
+	wl_assert(state == 0);
 
 	// All declaration references should resolve to a single node
 	wl_assert(declaration_reference->get_references().get_count() == 1);
@@ -956,29 +956,32 @@ bool c_execution_graph_builder::evaluate_ast_node(
 			return false;
 		}
 
-		push_validation_token(module_call);
+		m_module_call_depth++;
 
 		// Start by pushing the input argument expressions in reverse order so they get evaluated in forward order
 		for (size_t reverse_argument_index = 0; reverse_argument_index < argument_count; reverse_argument_index++) {
 			size_t argument_index = argument_count - reverse_argument_index - 1;
 			if (is_entry_point_module_call) {
+				// The input graph nodes are already on the result stack for the entry point case
 				pop_validation_token(argument_index);
-			}
-
-			c_ast_node_module_declaration_argument *argument = module_declaration->get_argument(argument_index);
-			c_ast_node_expression *argument_expression =
-				module_call->get_resolved_module_argument_expression(argument_index);
-			if (argument->get_argument_direction() == e_ast_argument_direction::k_in) {
-				push_ast_node(argument_expression);
 			} else {
-				wl_assert(argument->get_argument_direction() == e_ast_argument_direction::k_out);
-				c_ast_node_subscript *subscript = argument_expression->try_get_as<c_ast_node_subscript>();
-				if (subscript) {
-					// Push the subscript index expression
-					push_ast_node(subscript->get_index_expression());
+				c_ast_node_module_declaration_argument *argument = module_declaration->get_argument(argument_index);
+				c_ast_node_expression *argument_expression =
+					module_call->get_resolved_module_argument_expression(argument_index);
+				if (argument->get_argument_direction() == e_ast_argument_direction::k_in) {
+					push_ast_node(argument_expression);
+				} else {
+					wl_assert(argument->get_argument_direction() == e_ast_argument_direction::k_out);
+					c_ast_node_subscript *subscript = argument_expression->try_get_as<c_ast_node_subscript>();
+					if (subscript) {
+						// Push the subscript index expression
+						push_ast_node(subscript->get_index_expression());
+					}
 				}
 			}
 		}
+
+		push_validation_token(module_call);
 
 		state = 1;
 		pop_node_out = false;
@@ -1111,7 +1114,7 @@ bool c_execution_graph_builder::evaluate_ast_node(
 		pop_validation_token(module_call);
 
 		// If this is a non-void module, push the return value onto the stack
-		wl_assert(m_return_value_node_reference.is_valid() == !module_declaration->get_return_type().is_void());
+		wl_assert(m_return_value_node_reference.is_valid() != module_declaration->get_return_type().is_void());
 		if (m_return_value_node_reference.is_valid()) {
 			push_expression_result(m_return_value_node_reference);
 			m_graph_trimmer.remove_temporary_reference(m_return_value_node_reference);
@@ -1144,7 +1147,7 @@ bool c_execution_graph_builder::evaluate_ast_node(
 					tracked_scope->get_tracked_declaration(argument->get_value_declaration());
 				wl_assert(tracked_declaration);
 				if (argument->get_argument_direction() == e_ast_argument_direction::k_out) {
-					m_expression_result_stack.push_back(tracked_declaration->get_node_reference());
+					push_expression_result(tracked_declaration->get_node_reference());
 
 #if IS_TRUE(ASSERTS_ENABLED)
 					push_validation_token(output_count - reverse_output_index - 1);
@@ -1235,19 +1238,14 @@ bool c_execution_graph_builder::issue_native_module_call(
 	c_node_reference native_module_call_node_reference =
 		m_execution_graph.add_native_module_call_node(native_module_handle);
 
-	// Track the inputs and outputs
+	// Pass in the inputs
 	size_t input_index = 0;
-	size_t output_index = 0;
-	size_t native_module_argument_index = 0;
-	for (size_t argument_index = 0;
-		argument_index < native_module_declaration->get_argument_count();
-		argument_index++) {
+	size_t argument_index = 0;
+	for (size_t native_module_argument_index = 0;
+		native_module_argument_index < native_module.argument_count;
+		native_module_argument_index++) {
 		if (native_module_argument_index == native_module.return_argument_index) {
-			// Hook up the return output
-			m_return_value_node_reference =
-				m_execution_graph.get_node_outgoing_edge_reference(native_module_call_node_reference, output_index);
-			m_graph_trimmer.add_temporary_reference(m_return_value_node_reference);
-			output_index++;
+			// Nothing to do, this is an output
 		} else {
 			c_ast_node_module_declaration_argument *argument = native_module_declaration->get_argument(argument_index);
 			c_tracked_declaration *tracked_declaration =
@@ -1260,29 +1258,69 @@ bool c_execution_graph_builder::issue_native_module_call(
 				input_index++;
 			} else {
 				wl_assert(argument->get_argument_direction() == e_ast_argument_direction::k_out);
-				// Store off the output node
-				c_node_reference output_node_reference =
-					m_execution_graph.get_node_outgoing_edge_reference(native_module_call_node_reference, output_index);
-				tracked_declaration->set_node_reference(output_node_reference);
-				output_index++;
 			}
 		}
 
-		native_module_argument_index++;
+		argument_index++;
 	}
 
+	// Attempt to call the native module. If it can't be called at compile-time, the native module node will remain
+	// untouched. Otherise, the native module node will be removed and the output nodes will be replaced with the
+	// results of the call.
 	bool did_call;
-	return try_call_native_module(
+	std::vector<c_node_reference> output_node_references;
+	if (!try_call_native_module(
 		m_context,
 		m_graph_trimmer,
 		m_instrument_globals,
 		native_module_call_node_reference,
 		native_module_call->get_source_location(),
-		did_call);
+		did_call,
+		&output_node_references)) {
+		return false;
+	}
+
+	// Store off the outputs, which will be native module output nodes (if the native module couldn't be called) or the
+	// native module call results.
+	size_t output_index = 0;
+	argument_index = 0;
+	for (size_t native_module_argument_index = 0;
+		native_module_argument_index < native_module.argument_count;
+		native_module_argument_index++) {
+		if (native_module_argument_index == native_module.return_argument_index) {
+			// Hook up the return output
+			m_return_value_node_reference = did_call
+				? output_node_references[output_index]
+				: m_execution_graph.get_node_outgoing_edge_reference(native_module_call_node_reference, output_index);
+			m_graph_trimmer.add_temporary_reference(m_return_value_node_reference);
+			output_index++;
+		} else {
+			c_ast_node_module_declaration_argument *argument = native_module_declaration->get_argument(argument_index);
+			c_tracked_declaration *tracked_declaration =
+				m_tracked_scopes.back()->get_tracked_declaration(argument->get_value_declaration());
+			if (argument->get_argument_direction() == e_ast_argument_direction::k_in) {
+				// Nothing to do
+			} else {
+				wl_assert(argument->get_argument_direction() == e_ast_argument_direction::k_out);
+				// Store off the output node
+				c_node_reference output_node_reference = did_call
+					? output_node_references[output_index]
+					: m_execution_graph.get_node_outgoing_edge_reference(
+						native_module_call_node_reference,
+						output_index);
+				tracked_declaration->set_node_reference(output_node_reference);
+				output_index++;
+			}
+		}
+
+		argument_index++;
+	}
+
+	return true;
 }
 
 static c_native_module_data_type native_module_data_type_from_ast_data_type(c_ast_data_type ast_data_type) {
-	switch (ast_data_type.get_element_type().get_primitive_type()) {
+	switch (ast_data_type.get_primitive_type()) {
 	case e_ast_primitive_type::k_real:
 		return c_native_module_data_type(e_native_module_primitive_type::k_real, ast_data_type.is_array());
 

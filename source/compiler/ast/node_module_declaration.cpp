@@ -52,17 +52,6 @@ void c_ast_node_module_declaration::set_return_type(const c_ast_qualified_data_t
 	m_return_type = return_type;
 }
 
-bool c_ast_node_module_declaration::is_dependent_const() const {
-	for (size_t argument_index = 0; argument_index < m_arguments.size(); argument_index++) {
-		e_ast_data_mutability data_mutability = m_arguments[argument_index]->get_data_type().get_data_mutability();
-		if (data_mutability == e_ast_data_mutability::k_dependent_constant) {
-			return true;
-		}
-	}
-
-	return m_return_type.get_data_mutability() == e_ast_data_mutability::k_dependent_constant;
-}
-
 c_ast_node_scope *c_ast_node_module_declaration::get_body_scope() const {
 	return m_body_scope.get();
 }
@@ -176,7 +165,7 @@ s_module_call_resolution_result resolve_module_call(
 		size_t exact_match_count = 0;
 		for (size_t index = 0; index < module_declaration_candidates.get_count(); index++) {
 			s_module_call_resolution_result argument_list_result = construct_argument_list(
-				module_declaration_candidates[0],
+				module_declaration_candidates[index],
 				module_call,
 				argument_list);
 			if (argument_list_result.result != e_module_call_resolution_result::k_success) {
@@ -224,6 +213,8 @@ s_module_call_resolution_result resolve_module_call(
 
 		if (result.result != e_module_call_resolution_result::k_success) {
 			result.selected_module_index = k_invalid_module_index;
+		} else {
+			wl_assert(result.selected_module_index != k_invalid_module_index);
 		}
 
 		return result;
@@ -235,80 +226,85 @@ static e_module_argument_match_type match_module_arguments(
 	c_wrapped_array<const s_argument_info> provided_arguments) {
 	wl_assert(provided_arguments.get_count() == module_declaration->get_argument_count());
 
-	bool any_dependent_constant_dependent_constant_arguments = false;
-	bool any_constant_dependent_constant_arguments = false;
-	bool any_variable_dependent_constant_arguments = false;
+	// If a module is dependent-constant, there are really three modules, one with variable inputs/outputs, one with
+	// constant inputs/outputs, and one with dependent-constant inputs/outputs. If we provided variables of different
+	// data mutability types to different arguments, then none of those "true" underlying modules got matched exactly,
+	// so this is not an exact match. To detect this, determine the data mutability of dependent-constant arguments
+	// based on the provided inputs and then match arguments against types of that data mutability, which can produce
+	// inexact matches.
+	e_ast_data_mutability dependent_constant_data_mutability = e_ast_data_mutability::k_constant;
+
 	e_module_argument_match_type match_type = e_module_argument_match_type::k_exact_match;
 	for (size_t argument_index = 0; argument_index < module_declaration->get_argument_count(); argument_index++) {
 		const c_ast_node_module_declaration_argument *module_argument =
 			module_declaration->get_argument(argument_index);
 		const s_argument_info &provided_argument = provided_arguments[argument_index];
 
-		if (!provided_argument.data_type.is_valid()) {
+		e_ast_data_mutability provided_data_mutability;
+		if (provided_argument.data_type.is_valid()) {
+			provided_data_mutability = provided_argument.data_type.get_data_mutability();
+		} else if (provided_argument.data_type.is_error()) {
+			provided_data_mutability = e_ast_data_mutability::k_variable;
+		} else {
 			// An invalid type means this argument has a default initializer
 			wl_assert(module_argument->get_initialization_expression());
+			provided_data_mutability =
+				module_argument->get_initialization_expression()->get_data_type().get_data_mutability();
 			match_type = e_module_argument_match_type::k_inexact_match;
 			continue;
 		}
 
 		if (provided_argument.direction != module_argument->get_argument_direction()) {
-			match_type = e_module_argument_match_type::k_mismatch;
-			break;
+			return e_module_argument_match_type::k_mismatch;
 		}
 
-		c_ast_qualified_data_type argument_data_type = module_argument->get_data_type();
-		if (argument_data_type.get_data_mutability() != e_ast_data_mutability::k_dependent_constant) {
-			if (argument_data_type == provided_argument.data_type) {
-				// Exact match
-			} else {
-				if (module_argument->get_argument_direction() == e_ast_argument_direction::k_in
-					&& is_ast_data_type_assignable(provided_argument.data_type, argument_data_type)) {
-					// For inputs, the provided value gets assigned to the argument value
-					match_type = e_module_argument_match_type::k_inexact_match;
-				} else if (module_argument->get_argument_direction() == e_ast_argument_direction::k_out
-					&& is_ast_data_type_assignable(argument_data_type, provided_argument.data_type)) {
-					// For outputs, the argument value gets assigned to the provided value
-					match_type = e_module_argument_match_type::k_inexact_match;
-				} else {
-					match_type = e_module_argument_match_type::k_mismatch;
-					break;
-				}
-			}
-		} else {
-			e_ast_data_mutability provided_argument_data_mutability = provided_argument.data_type.get_data_mutability();
-			any_variable_dependent_constant_arguments |=
-				provided_argument_data_mutability == e_ast_data_mutability::k_variable;
-			any_constant_dependent_constant_arguments |=
-				provided_argument_data_mutability == e_ast_data_mutability::k_constant;
-			any_dependent_constant_dependent_constant_arguments |=
-				provided_argument_data_mutability == e_ast_data_mutability::k_dependent_constant;
-
-			if (module_argument->get_argument_direction() == e_ast_argument_direction::k_in
-				&& is_ast_data_type_assignable(provided_argument.data_type, argument_data_type)) {
-				// For inputs, the provided value gets assigned to the argument value
-				// This is considered an exact match as long as all dependent-constants have the same mutability
-			} else if (module_argument->get_argument_direction() == e_ast_argument_direction::k_out
-				&& is_ast_data_type_assignable(argument_data_type, provided_argument.data_type)) {
-				// For outputs, the argument value gets assigned to the provided value
-				// This is considered an exact match as long as all dependent-constants have the same mutability
-			} else {
-				match_type = e_module_argument_match_type::k_mismatch;
-				break;
+		// First determine the data mutability of dependent-constant arguments based on inputs
+		if (module_argument->get_argument_direction() == e_ast_argument_direction::k_in
+			&& module_argument->get_data_type().get_data_mutability() == e_ast_data_mutability::k_dependent_constant) {
+			// nocheckin Reorder enum and use min/max?
+			// Downgrade dependent-constant data mutability
+			if (provided_data_mutability == e_ast_data_mutability::k_dependent_constant
+				&& dependent_constant_data_mutability == e_ast_data_mutability::k_constant) {
+				dependent_constant_data_mutability = e_ast_data_mutability::k_dependent_constant;
+			} else if (provided_data_mutability == e_ast_data_mutability::k_variable) {
+				dependent_constant_data_mutability = e_ast_data_mutability::k_variable;
 			}
 		}
 	}
 
-	if (match_type == e_module_argument_match_type::k_exact_match) {
-		// If a module is dependent-constant, there are really three modules, one with variable inputs/outputs, one with
-		// constant inputs/outputs, and one with dependent-constant inputs/outputs. If we provided variables of
-		// different data mutability types to different arguments, then none of those "true" underlying modules got
-		// matched exactly, so this is not an exact match.
-		int32 dependent_constant_type_count =
-			any_variable_dependent_constant_arguments
-			+ any_constant_dependent_constant_arguments
-			+ any_dependent_constant_dependent_constant_arguments;
-		if (dependent_constant_type_count > 1) {
-			match_type = e_module_argument_match_type::k_inexact_match;
+	for (size_t argument_index = 0; argument_index < module_declaration->get_argument_count(); argument_index++) {
+		const c_ast_node_module_declaration_argument *module_argument =
+			module_declaration->get_argument(argument_index);
+		const s_argument_info &provided_argument = provided_arguments[argument_index];
+
+		c_ast_qualified_data_type provided_data_type = provided_argument.data_type.is_valid()
+			? provided_argument.data_type
+			: module_argument->get_initialization_expression()->get_data_type();
+
+		wl_assert(
+			provided_argument.direction == e_ast_argument_direction::k_invalid // Default argument used, see above
+			|| provided_argument.direction == module_argument->get_argument_direction());
+
+		c_ast_qualified_data_type argument_data_type = module_argument->get_data_type();
+		if (argument_data_type.get_data_mutability() == e_ast_data_mutability::k_dependent_constant) {
+			argument_data_type =
+				c_ast_qualified_data_type(argument_data_type.get_data_type(), dependent_constant_data_mutability);
+		}
+
+		if (argument_data_type == provided_data_type) {
+			// Exact match
+		} else {
+			if (module_argument->get_argument_direction() == e_ast_argument_direction::k_in
+				&& is_ast_data_type_assignable(provided_data_type, argument_data_type)) {
+				// For inputs, the provided value gets assigned to the argument value
+				match_type = e_module_argument_match_type::k_inexact_match;
+			} else if (module_argument->get_argument_direction() == e_ast_argument_direction::k_out
+				&& is_ast_data_type_assignable(argument_data_type, provided_data_type)) {
+				// For outputs, the argument value gets assigned to the provided value
+				match_type = e_module_argument_match_type::k_inexact_match;
+			} else {
+				return e_module_argument_match_type::k_mismatch;
+			}
 		}
 	}
 
@@ -355,18 +351,18 @@ static s_module_call_resolution_result construct_argument_list(
 
 
 	IF_ASSERTS_ENABLED(bool any_named_arguments = false;)
-		for (size_t call_argument_index = 0;
-			call_argument_index < module_call->get_argument_count();
-			call_argument_index++) {
+	for (size_t call_argument_index = 0;
+		call_argument_index < module_call->get_argument_count();
+		call_argument_index++) {
 		const c_ast_node_module_call_argument *call_argument = module_call->get_argument(call_argument_index);
 
 		size_t matched_argument_index = k_invalid_argument_index;
 		if (call_argument->get_name()) {
 			IF_ASSERTS_ENABLED(any_named_arguments = true;)
 
-				for (size_t declaration_argument_index = 0;
-					declaration_argument_index < module_declaration->get_argument_count();
-					declaration_argument_index++) {
+			for (size_t declaration_argument_index = 0;
+				declaration_argument_index < module_declaration->get_argument_count();
+				declaration_argument_index++) {
 				const c_ast_node_module_declaration_argument *declaration_argument =
 					module_declaration->get_argument(declaration_argument_index);
 
@@ -391,6 +387,8 @@ static s_module_call_resolution_result construct_argument_list(
 				result.result = e_module_call_resolution_result::k_too_many_arguments_provided;
 				return result;
 			}
+
+			matched_argument_index = call_argument_index;
 		}
 
 		wl_assert(matched_argument_index != k_invalid_argument_index);
@@ -436,13 +434,14 @@ static s_module_call_resolution_result construct_argument_list(
 	// We're not responsible for checking types in this function - as long as all arguments were provided and their
 	// directions match, we're successful.
 	result.result = e_module_call_resolution_result::k_success;
+	result.selected_module_index = 0;
 	return result;
 }
 
 void get_argument_expressions(
 	const c_ast_node_module_declaration *module_declaration,
 	const c_ast_node_module_call *module_call,
-	std::vector<c_ast_node_expression *> argument_expressions_out) {
+	std::vector<c_ast_node_expression *> &argument_expressions_out) {
 	std::vector<s_argument_info> argument_list;
 	IF_ASSERTS_ENABLED(s_module_call_resolution_result result = ) construct_argument_list(
 		module_declaration,

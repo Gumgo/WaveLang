@@ -392,9 +392,9 @@ nonterminals: {
 	}
 
 	if_statement("c_temporary_reference<c_ast_node_if_statement>"): {
-		keyword_if left_parenthesis if_statement_expression(expression) right_parenthesis if_statement_scope(true_scope) -> if_statement;
-		keyword_if left_parenthesis if_statement_expression(expression) right_parenthesis if_statement_scope(true_scope) keyword_else if_statement_scope(false_scope) -> if_else_statement;
-		keyword_if left_parenthesis if_statement_expression(expression) right_parenthesis if_statement_scope(true_scope) keyword_else else_if(false_scope) -> if_else_statement;
+		keyword_if(if_keyword) left_parenthesis if_statement_expression(expression) right_parenthesis if_statement_scope(true_scope) -> if_statement;
+		keyword_if(if_keyword) left_parenthesis if_statement_expression(expression) right_parenthesis if_statement_scope(true_scope) keyword_else if_statement_scope(false_scope) -> if_else_statement;
+		keyword_if(if_keyword) left_parenthesis if_statement_expression(expression) right_parenthesis if_statement_scope(true_scope) keyword_else else_if(false_scope) -> if_else_statement;
 	}
 
 	if_statement_expression("c_temporary_reference<c_ast_node_expression>"): {

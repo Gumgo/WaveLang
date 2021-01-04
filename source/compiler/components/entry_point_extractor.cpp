@@ -52,6 +52,8 @@ void c_entry_point_extractor::extract_entry_points(
 					k_fx_entry_point_module_name[index]);
 				break;
 			}
+
+			entry_point = module_declaration;
 		}
 
 		entry_points[index] = entry_point;
@@ -145,6 +147,11 @@ void c_entry_point_extractor::extract_entry_points(
 	}
 
 	if (failed) {
+		return;
+	}
+
+	if (!entry_points[k_voice_entry_point_index] && !entry_points[k_fx_entry_point_index]) {
+		context.error(e_compiler_error::k_missing_entry_point, "No entry point provided");
 		return;
 	}
 

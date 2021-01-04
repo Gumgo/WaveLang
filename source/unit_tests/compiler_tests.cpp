@@ -58,6 +58,7 @@ static constexpr const char *k_compiler_error_strings[] = {
 	"k_illegal_break_statement",
 	"k_illegal_continue_statement",
 	"k_illegal_variable_subscript_assignment",
+	"k_missing_entry_point",
 	"k_ambiguous_entry_point",
 	"k_invalid_entry_point",
 	"k_incompatible_entry_points",
@@ -144,6 +145,17 @@ protected:
 
 		std::ofstream output_file;
 		bool is_template = false;
+		bool ignore = false;
+
+		auto reset_state = [&]() {
+			if (output_file.is_open()) {
+				output_file.close();
+			}
+
+			is_template = false;
+			ignore = false;
+		};
+
 		std::string line;
 		while (std::getline(file, line)) {
 			if (line.starts_with("###")) {
@@ -151,7 +163,14 @@ protected:
 
 				get_next_token(line_remaining); // Skip ###
 				std::string_view command = get_next_token(line_remaining);
-				if (command == "FILE") {
+				if (command == "IGNORE") {
+					// The rest of the line can be a comment
+
+					reset_state();
+
+					// Ignore following lines
+					ignore = true;
+				} else if (command == "FILE") {
 					std::string_view path_string = get_next_token(line_remaining);
 					// The rest of the line can be a comment
 
@@ -168,13 +187,9 @@ protected:
 						}
 					}
 
+					reset_state();
+
 					// Create and open the file
-					if (output_file.is_open()) {
-						output_file.close();
-					}
-
-					is_template = false;
-
 					output_file.open(std::filesystem::path(k_compiler_tests_directory) / path);
 					ASSERT_TRUE(output_file.is_open());
 				} else if (command == "TEMPLATE") {
@@ -182,11 +197,9 @@ protected:
 					ASSERT_TRUE(!template_name.empty());
 					// The rest of the line can be a comment
 
-					// Create the template
-					if (output_file.is_open()) {
-						output_file.close();
-					}
+					reset_state();
 
+					// Create the template
 					is_template = true;
 
 					templates.emplace_back(std::make_tuple(template_name, std::string()));
@@ -214,15 +227,11 @@ protected:
 
 					tests.push_back(std::make_tuple(std::string(test_name), expected_result));
 
+					reset_state();
+
 					// Create and open the test file
-					if (output_file.is_open()) {
-						output_file.close();
-					}
-
-					is_template = false;
-
-					output_file.open(
-						std::filesystem::path(k_compiler_tests_directory) / (std::string(test_name) + k_test_extension));
+					std::string test_filename = std::string(test_name) + k_test_extension;
+					output_file.open(std::filesystem::path(k_compiler_tests_directory) / test_filename);
 					ASSERT_TRUE(output_file.is_open());
 				} else {
 					FAIL();
@@ -252,7 +261,7 @@ protected:
 			} else if (is_template) {
 				std::get<1>(templates.back()) += line;
 				std::get<1>(templates.back()).push_back('\n');
-			} else {
+			} else if (!ignore) {
 				// No file open yet, only allow empty lines
 				ASSERT_TRUE(line.empty());
 			}
@@ -307,7 +316,7 @@ protected:
 			}
 
 			// This outputs test name and error message only if we failed
-			EXPECT_TRUE(test_passed) << " (" << test_name << ", " << error_message << ")";
+			EXPECT_TRUE(test_passed) << "(" << test_name << ", " << error_message << ")";
 		}
 	}
 

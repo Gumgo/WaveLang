@@ -29,6 +29,7 @@ struct s_ast_primitive_type_traits {
 	bool constant_only;	// Whether this type must always be constant
 };
 
+// nocheckin Reorder this for easy assignment validation
 enum class e_ast_data_mutability {
 	k_invalid,
 	k_variable,				// This data changes at runtime

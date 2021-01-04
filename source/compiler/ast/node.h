@@ -41,13 +41,13 @@ class c_ast_node_type {
 public:
 	c_ast_node_type(e_ast_node_type type) {
 		m_type = type;
-		m_type_flags = 1u << static_cast<uint32>(type);
+		m_type_flags = enum_flag(type);
 	}
 
 	// Keeps the root type but adds to the type flags
 	c_ast_node_type operator+(e_ast_node_type type) const {
 		c_ast_node_type result(m_type);
-		result.m_type_flags |= 1u << static_cast<uint32>(type);
+		result.m_type_flags = m_type_flags | enum_flag(type);
 		return result;
 	}
 
@@ -56,12 +56,12 @@ public:
 	}
 
 	bool is_type(e_ast_node_type type) const {
-		return (m_type_flags & (1u << static_cast<uint32>(type))) != 0;
+		return m_type_flags.test_flag(type);
 	}
 
 private:
 	e_ast_node_type m_type;
-	uint32 m_type_flags;
+	s_enum_flags<e_ast_node_type> m_type_flags;
 };
 
 class c_ast_node {

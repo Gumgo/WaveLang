@@ -8,9 +8,9 @@ c_ast_node_module_call *c_ast_node_subscript::get_module_call() const {
 }
 
 void c_ast_node_subscript::set_module_call(c_ast_node_module_call *module_call) {
-	wl_assert(module_call->get_argument(0)->is_type(e_ast_node_type::k_declaration_reference));
+	wl_assert(module_call->get_argument(0)->get_value_expression()->is_type(e_ast_node_type::k_declaration_reference));
 	m_module_call.reset(module_call);
-	set_data_type(module_call->get_resolved_module_declaration()->get_return_type());
+	set_data_type(module_call->get_data_type());
 }
 
 c_ast_node_declaration_reference *c_ast_node_subscript::get_reference() const {

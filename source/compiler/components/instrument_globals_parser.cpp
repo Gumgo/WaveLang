@@ -140,11 +140,15 @@ void s_instrument_globals_context::assign_defaults() {
 std::vector<s_instrument_globals> s_instrument_globals_context::build_instrument_globals_set() const {
 	std::vector<s_instrument_globals> result;
 
+	uint32 default_sample_rate = 0;
+	c_wrapped_array<const uint32> sample_rates_view(
+		sample_rates.empty() ? c_wrapped_array<const uint32>(&default_sample_rate, 1) : sample_rates);
+
 	// Add loop nesting for each multi-valued execution graph global:
-	for (size_t sample_rate_index = 0; sample_rate_index < sample_rates.size(); sample_rate_index++) {
+	for (uint32 sample_rate : sample_rates_view) {
 		s_instrument_globals globals;
 		globals.max_voices = max_voices;
-		globals.sample_rate = sample_rates[sample_rate_index];
+		globals.sample_rate = sample_rate;
 		globals.chunk_size = chunk_size;
 		globals.activate_fx_immediately = activate_fx_immediately;
 
