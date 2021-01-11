@@ -84,3 +84,8 @@ bool fx_main(in real voices_left, in real voices_right, out real mono) {
 	mono = voices_left + voices_right;
 	return false;
 }
+
+### TEST no_out_arguments k_invalid_entry_point
+bool voice_main() {
+	return false;
+}

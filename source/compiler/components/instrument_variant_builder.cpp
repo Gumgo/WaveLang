@@ -162,7 +162,7 @@ c_instrument_variant *c_instrument_variant_builder::build_instrument_variant(
 	}
 
 	if (fx_entry_point) {
-		std::unique_ptr<c_execution_graph> execution_graph;
+		std::unique_ptr<c_execution_graph> execution_graph = std::make_unique<c_execution_graph>();
 		c_execution_graph_builder execution_graph_builder(
 			context,
 			*execution_graph.get(),
@@ -218,7 +218,6 @@ bool c_execution_graph_builder::build() {
 				wl_assert(argument->get_argument_direction() == e_ast_argument_direction::k_out);
 				output_node_references.push_back(m_execution_graph.add_output_node(output_index++));
 			}
-			push_validation_token(argument_index);
 		}
 	}
 
@@ -234,6 +233,12 @@ bool c_execution_graph_builder::build() {
 		push_expression_result(node_reference);
 	}
 
+#if IS_TRUE(ASSERTS_ENABLED)
+	for (size_t argument_index = 0; argument_index < m_entry_point->get_argument_count(); argument_index++) {
+		push_validation_token(argument_index);
+	}
+#endif // IS_TRUE(ASSERTS_ENABLED)
+
 	push_ast_node(entry_point_module_call.get());
 	if (!evaluate_ast_node_stack()) {
 		return false;
@@ -242,10 +247,7 @@ bool c_execution_graph_builder::build() {
 	// Hook up the output nodes. There is special-case logic to push the out argument nodes onto the result stack for
 	// the entry point module calls.
 	wl_assert(m_expression_result_stack.size() == output_node_references.size() + 1);
-	for (uint32 reverse_output_index = 0;
-		reverse_output_index < output_node_references.size();
-		reverse_output_index++) {
-		size_t output_index = output_node_references.size() - reverse_output_index - 1;
+	for (uint32 output_index = 0; output_index < output_node_references.size(); output_index++) {
 		pop_validation_token(output_index);
 		m_execution_graph.add_edge(m_expression_result_stack.back(), output_node_references[output_index]);
 		pop_and_trim_expression_results(1);
@@ -300,8 +302,17 @@ bool c_execution_graph_builder::initialize_global_scope_constants(c_ast_node_sco
 	for (size_t item_index = 0; item_index < scope_node->get_scope_item_count(); item_index++) {
 		c_ast_node_value_declaration *value_declaration_node =
 			scope_node->get_scope_item(item_index)->try_get_as<c_ast_node_value_declaration>();
-		if (value_declaration_node && !initialize_global_scope_constant(value_declaration_node)) {
-			return false;
+		if (value_declaration_node) {
+			// This global-scope constant may have already been initialized from another global-scope constant which
+			// depends on it
+			c_tracked_declaration *tracked_declaration =
+				m_tracked_scopes.back()->get_tracked_declaration(value_declaration_node);
+			if (!tracked_declaration->get_node_reference().is_valid()
+				&& !initialize_global_scope_constant(value_declaration_node)) {
+				return false;
+			}
+
+			wl_assert(tracked_declaration->get_node_reference().is_valid());
 		}
 	}
 
@@ -313,7 +324,7 @@ bool c_execution_graph_builder::initialize_global_scope_constant(c_ast_node_valu
 	wl_assert(!value_declaration->is_modifiable());
 	wl_assert(value_declaration->get_initialization_expression());
 
-	if (!m_constants_being_initialized.contains(value_declaration)) {
+	if (m_constants_being_initialized.contains(value_declaration)) {
 		m_context.error(
 			e_compiler_error::k_self_referential_constant,
 			value_declaration->get_source_location(),
@@ -407,7 +418,6 @@ void c_execution_graph_builder::pop_and_trim_expression_results(size_t count) {
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
 		m_graph_trimmer.remove_temporary_reference(m_expression_result_stack.back());
-		m_graph_trimmer.try_trim_node(m_expression_result_stack.back());
 		m_expression_result_stack.pop_back();
 	}
 }
@@ -923,7 +933,6 @@ bool c_execution_graph_builder::evaluate_ast_node(
 		// pause evaluation of the first constant and evaluate the dependent one, then swap back and continue
 		// initializing the first constant. Self-referential constants are automatically detected and an error is
 		// raised.
-		wl_assert(m_constants_being_initialized.empty());
 		if (!initialize_global_scope_constant(value_declaration)) {
 			return false;
 		}
@@ -994,6 +1003,11 @@ bool c_execution_graph_builder::evaluate_ast_node(
 			&m_graph_trimmer);
 		m_tracked_scopes.emplace_back(tracked_scope);
 
+		if (is_entry_point_module_call) {
+			// The input argument nodes were already on the stack before we pushed this validation token so pop it first
+			pop_validation_token(module_call);
+		}
+
 		std::vector<c_node_reference> subscript_index_node_references;
 		for (size_t reverse_argument_index = 0; reverse_argument_index < argument_count; reverse_argument_index++) {
 			size_t argument_index = argument_count - reverse_argument_index - 1;
@@ -1025,7 +1039,11 @@ bool c_execution_graph_builder::evaluate_ast_node(
 			}
 		}
 
-		pop_validation_token(module_call);
+		if (!is_entry_point_module_call) {
+			// This validation token was pushed before the input arguments were evaluated so pop it last
+			pop_validation_token(module_call);
+		}
+
 		push_validation_token(module_call);
 
 		// Push subscript index node references back onto the stack so we don't lose them
@@ -1036,7 +1054,9 @@ bool c_execution_graph_builder::evaluate_ast_node(
 
 		if (module_declaration->get_native_module_uid().is_valid()) {
 			// Call the native module which will fill in the tracked declarations in the module scope
-			issue_native_module_call(module_declaration, module_call);
+			if (!issue_native_module_call(module_declaration, module_call)) {
+				return false;
+			}
 		} else {
 			// Push the scope if this is a script-defined module
 			push_ast_node(module_declaration->get_body_scope());

@@ -19,12 +19,13 @@ struct s_native_module_primitive_type_traits {
 	bool constant_only;	// Whether this type must always be constant
 };
 
+// These are ordered such that if x >= y then x is assignable to y (i.e. with increasing const-ness)
 enum class e_native_module_data_mutability {
 	k_invalid = -1,
 
 	k_variable,
-	k_constant,
 	k_dependent_constant,
+	k_constant,
 
 	k_count
 };

@@ -19,7 +19,7 @@ void f() {
 	real z = x.y;
 }
 
-### TEST bad_assignment k_invalid_assignment
+### TEST bad_assignment k_type_mismatch
 ## template
 
 void f() {
@@ -44,7 +44,7 @@ void f() {
 	x %= 2;
 	core.assert(x == 1);
 
-	const real bool y = false;
+	const bool y = false;
 	y |= true;
 	core.assert(y);
 }

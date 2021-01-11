@@ -61,6 +61,13 @@ void c_ast_node_scope::add_scope_item_internal(
 	c_ast_node_scope_item *scope_item,
 	bool is_imported,
 	bool take_ownership) {
+#if IS_TRUE(ASSERTS_ENABLED)
+	// Make sure we're not double-adding this scope item
+	for (const s_scope_item_entry &scope_item_entry : m_scope_items) {
+		wl_assert(scope_item_entry.scope_item != scope_item);
+	}
+#endif // IS_TRUE(ASSERTS_ENABLED)
+
 	if (!is_imported) {
 		m_non_imported_scope_item_indices.push_back(m_scope_items.size());
 	}

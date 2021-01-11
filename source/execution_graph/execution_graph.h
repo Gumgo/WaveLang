@@ -65,7 +65,7 @@ public:
 
 	c_node_reference add_constant_node(real32 constant_value);
 	c_node_reference add_constant_node(bool constant_value);
-	c_node_reference add_constant_node(const std::string &constant_value);
+	c_node_reference add_constant_node(const char *constant_value);
 	c_node_reference add_array_node(c_native_module_data_type element_data_type);
 	void add_array_value(c_node_reference array_node_reference, c_node_reference value_node_reference);
 	// Returns the old value

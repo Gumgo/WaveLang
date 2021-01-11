@@ -261,14 +261,8 @@ static e_module_argument_match_type match_module_arguments(
 		// First determine the data mutability of dependent-constant arguments based on inputs
 		if (module_argument->get_argument_direction() == e_ast_argument_direction::k_in
 			&& module_argument->get_data_type().get_data_mutability() == e_ast_data_mutability::k_dependent_constant) {
-			// nocheckin Reorder enum and use min/max?
 			// Downgrade dependent-constant data mutability
-			if (provided_data_mutability == e_ast_data_mutability::k_dependent_constant
-				&& dependent_constant_data_mutability == e_ast_data_mutability::k_constant) {
-				dependent_constant_data_mutability = e_ast_data_mutability::k_dependent_constant;
-			} else if (provided_data_mutability == e_ast_data_mutability::k_variable) {
-				dependent_constant_data_mutability = e_ast_data_mutability::k_variable;
-			}
+			dependent_constant_data_mutability = std::min(dependent_constant_data_mutability, provided_data_mutability);
 		}
 	}
 

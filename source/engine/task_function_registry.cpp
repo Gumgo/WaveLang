@@ -418,13 +418,14 @@ static bool validate_task_function_mapping(const s_native_module &native_module,
 					task_function_argument.type.get_data_mutability() == e_task_data_mutability::k_variable;
 				break;
 
-			case e_native_module_data_mutability::k_constant:
-				// Constants can be mapped to task function buffers - the buffer simply holds a constant value
-
 			case e_native_module_data_mutability::k_dependent_constant:
 				// Dependent constants can be variable, so the task function type must be a buffer
 				type_mapping_valid =
 					task_function_argument.type.get_data_mutability() == e_task_data_mutability::k_variable;
+				break;
+
+			case e_native_module_data_mutability::k_constant:
+				// Constants can be mapped to task function buffers - the buffer simply holds a constant value
 				break;
 
 			default:

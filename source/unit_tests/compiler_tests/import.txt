@@ -17,23 +17,31 @@ import self_ref;
 ### FILE math.wl This conflicts with a native module library
 import core;
 
-real abs(in real x) {
+public real abs(in real x) {
 	core.assert(false);
+	return 0;
 }
+
+### FILE private_imports.wl
+
+void private_a() {}
+private void private_b() {}
+const real private_c = 0;
+private const real private_d = 0;
 
 ### FILE root_import.wl
 
-const real root_value = 0;
+public const real root_value = 0;
 
-const real root_module() {
+public const real root_module() {
 	return root_value;
 }
 
 ### FILE folder/child_import.wl
 
-const real child_value = 1;
+public const real child_value = 1;
 
-const real child_module() {
+public const real child_module() {
 	return child_value;
 }
 
@@ -48,27 +56,55 @@ import self_ref;
 ## template
 
 ### TEST import_native_library success
-@import core;
+@import math;
 
 ## template_f
 
-void f() { core.abs(0); }
+void f() { math.abs(0); }
 
 ### TEST prefer_file_over_native_import k_native_module_error
-import core;
+import math;
 
 ## template_f
 
-void f() { core.abs(0); }
+void f() { math.abs(0); }
+
+### TEST private_declarations_not_imported_1 k_identifier_resolution_failed
+import private_imports;
+
+## template
+
+void f() { private_imports.private_a(); }
+
+### TEST private_declarations_not_imported_2 k_identifier_resolution_failed
+import private_imports;
+
+## template
+
+void f() { private_imports.private_b(); }
+
+### TEST private_declarations_not_imported_3 k_identifier_resolution_failed
+import private_imports;
+
+## template
+
+real f() { return private_imports.private_c; }
+
+### TEST private_declarations_not_imported_4 k_identifier_resolution_failed
+import private_imports;
+
+## template
+
+real f() { return private_imports.private_d; }
 
 ### TEST import_as success
-@import core;
+import core;
 import root_import;
 import folder.child_import;
 import root_import as ri;
-import child_import as ci;
+import folder.child_import as ci;
 import root_import as a.b.c;
-import child_import as a.b.c;
+import folder.child_import as a.b.c;
 import root_import as .;
 
 ## template_f

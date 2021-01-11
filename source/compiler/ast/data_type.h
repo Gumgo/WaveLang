@@ -29,12 +29,12 @@ struct s_ast_primitive_type_traits {
 	bool constant_only;	// Whether this type must always be constant
 };
 
-// nocheckin Reorder this for easy assignment validation
+// These are ordered such that if x >= y then x is assignable to y (i.e. ordered with increasing const-ness)
 enum class e_ast_data_mutability {
 	k_invalid,
 	k_variable,				// This data changes at runtime
-	k_constant,				// This data type must be constant after compilation
 	k_dependent_constant,	// Only allowed on outputs and return values - constant if all inputs are constant
+	k_constant,				// This data type must be constant after compilation
 
 	k_count
 };

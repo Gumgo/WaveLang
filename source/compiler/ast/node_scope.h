@@ -33,7 +33,7 @@ protected:
 private:
 	struct s_scope_item_entry {
 		s_scope_item_entry(c_ast_node_scope_item *item, bool take_ownership)
-			: owned_scope_item(take_ownership ? nullptr : item)
+			: owned_scope_item(take_ownership ? item : nullptr)
 			, scope_item(item) {}
 		UNCOPYABLE_MOVABLE(s_scope_item_entry);
 

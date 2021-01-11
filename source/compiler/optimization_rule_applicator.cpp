@@ -20,7 +20,13 @@ bool c_optimization_rule_applicator::try_apply_optimization_rule(c_node_referenc
 	if (try_to_match_source_pattern()) {
 		c_node_reference target_root_node_reference = build_target_pattern();
 		reroute_source_to_target(target_root_node_reference);
+
+		wl_assert(m_match_state_stack.empty());
 		return true;
+	}
+
+	while (!m_match_state_stack.empty()) {
+		m_match_state_stack.pop();
 	}
 
 	return false;

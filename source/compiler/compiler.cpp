@@ -36,7 +36,6 @@ c_instrument *c_compiler::compile(c_compiler_context &context, const char *sourc
 	c_instrument_globals_parser::initialize();
 
 	s_instrument_globals_context instrument_globals_context;
-	instrument_globals_context.assign_defaults();
 
 	// Iterate and process imports for each source file. This will continue looping until no new imports are discovered.
 	for (size_t source_file_index = 0; source_file_index < context.get_source_file_count(); source_file_index++) {
@@ -56,6 +55,8 @@ c_instrument *c_compiler::compile(c_compiler_context &context, const char *sourc
 			}
 		}
 	}
+
+	instrument_globals_context.assign_defaults();
 
 	c_instrument_globals_parser::deinitialize();
 	c_importer::deinitialize();

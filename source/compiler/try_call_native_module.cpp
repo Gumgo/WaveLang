@@ -235,7 +235,6 @@ bool c_native_module_caller::try_call(bool &did_call_out, std::vector<c_node_ref
 
 			case e_native_module_primitive_type::k_string:
 				if (argument.data_access == e_native_module_data_access::k_value) {
-					wl_assert(argument.data_access == e_native_module_data_access::k_reference);
 					if (argument.type.is_array()) {
 						c_native_module_string_array &string_array =
 							compile_time_argument.value.emplace<c_native_module_string_array>();
@@ -245,6 +244,7 @@ bool c_native_module_caller::try_call(bool &did_call_out, std::vector<c_node_ref
 							execution_graph.get_constant_node_string_value(source_node_reference);
 					}
 				} else {
+					wl_assert(argument.data_access == e_native_module_data_access::k_reference);
 					if (argument.type.is_array()) {
 						c_native_module_string_reference_array &string_reference_array =
 							compile_time_argument.value.emplace<c_native_module_string_reference_array>();
@@ -432,7 +432,7 @@ bool c_native_module_caller::try_call(bool &did_call_out, std::vector<c_node_ref
 						build_constant_array_node(compile_time_argument.get_string_array_out());
 				} else {
 					target_node_reference =
-						execution_graph.add_constant_node(compile_time_argument.get_string_out().get_string());
+						execution_graph.add_constant_node(compile_time_argument.get_string_out().get_string().c_str());
 				}
 			} else {
 				wl_assert(argument.data_access == e_native_module_data_access::k_reference);
@@ -531,6 +531,7 @@ void c_native_module_caller::error(const char *format, ...) {
 		"Native module '%s': %s",
 		get_native_module_name(),
 		message.c_str());
+	m_error_issued = true;
 }
 
 c_native_module_real_reference c_native_module_caller::create_constant_reference(real32 value) {
@@ -706,9 +707,15 @@ c_node_reference c_native_module_caller::build_constant_array_node(const t_array
 
 	c_node_reference array_node_reference = execution_graph.add_array_node(element_data_type);
 	for (size_t index = 0; index < array_value.get_array().size(); index++) {
-		execution_graph.add_array_value(
-			array_node_reference,
-			execution_graph.add_constant_node(array_value.get_array()[index]));
+		if constexpr (std::is_same_v<t_array, c_native_module_string_array>) {
+			execution_graph.add_array_value(
+				array_node_reference,
+				execution_graph.add_constant_node(array_value.get_array()[index].c_str()));
+		} else {
+			execution_graph.add_array_value(
+				array_node_reference,
+				execution_graph.add_constant_node(array_value.get_array()[index]));
+		}
 	}
 
 	return array_node_reference;

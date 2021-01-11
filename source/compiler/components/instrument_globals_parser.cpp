@@ -104,20 +104,6 @@ private:
 	void try_execute_parser(const s_token &command_token);
 };
 
-void s_instrument_globals_context::clear() {
-	max_voices_command_executed = false;
-	max_voices = 0;
-
-	sample_rate_command_executed = false;
-	sample_rates.clear();
-
-	chunk_size_command_executed = false;
-	chunk_size = 0;
-
-	activate_fx_immediately_command_executed = false;
-	activate_fx_immediately = false;
-}
-
 void s_instrument_globals_context::assign_defaults() {
 	if (!max_voices_command_executed) {
 		max_voices = 1;
@@ -459,7 +445,7 @@ void c_instrument_globals_visitor::try_execute_parser(const s_token &command_tok
 		return;
 	}
 
-	if (m_is_top_level_source_file) {
+	if (!m_is_top_level_source_file) {
 		m_context.error(
 			e_compiler_error::k_illegal_instrument_global,
 			command_token.source_location,

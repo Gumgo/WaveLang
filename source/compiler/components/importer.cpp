@@ -115,9 +115,9 @@ void c_importer::add_imports_to_global_scope(c_compiler_context &context, h_comp
 			if (!child_namespace) {
 				child_namespace = new c_ast_node_namespace_declaration();
 				child_namespace->set_name(import_as_component.c_str());
+				current_scope->add_imported_scope_item(child_namespace, true);
 			}
 
-			current_scope->add_imported_scope_item(child_namespace, true);
 			current_scope = child_namespace->get_scope();
 		}
 
@@ -458,12 +458,12 @@ static c_ast_qualified_data_type ast_data_type_from_native_module_data_type(
 		ast_data_mutability = e_ast_data_mutability::k_variable;
 		break;
 
-	case e_native_module_data_mutability::k_constant:
-		ast_data_mutability = e_ast_data_mutability::k_constant;
-		break;
-
 	case e_native_module_data_mutability::k_dependent_constant:
 		ast_data_mutability = e_ast_data_mutability::k_dependent_constant;
+		break;
+
+	case e_native_module_data_mutability::k_constant:
+		ast_data_mutability = e_ast_data_mutability::k_constant;
 		break;
 
 	default:

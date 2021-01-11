@@ -12,19 +12,17 @@
 // specifying N different sample rates will cause the instrument to be built N times using a different sample rate
 // constant in each instance. At runtime, the best instrument variant is then selected based on the stream parameters.
 struct s_instrument_globals_context {
-	bool max_voices_command_executed;
-	uint32 max_voices;
+	bool max_voices_command_executed = false;
+	uint32 max_voices = 0;
 
-	bool sample_rate_command_executed;
+	bool sample_rate_command_executed = false;
 	std::vector<uint32> sample_rates;
 
-	bool chunk_size_command_executed;
-	uint32 chunk_size;
+	bool chunk_size_command_executed = false;
+	uint32 chunk_size = 0;
 
-	bool activate_fx_immediately_command_executed;
-	bool activate_fx_immediately;
-
-	void clear();
+	bool activate_fx_immediately_command_executed = false;
+	bool activate_fx_immediately = false;
 
 	// Fills in defaults for values which weren't specified
 	void assign_defaults();

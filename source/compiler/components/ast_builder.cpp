@@ -293,13 +293,7 @@ protected:
 		const s_token &for_keyword,
 		c_ast_node_for_loop *&iterator,
 		const s_token &brace,
-		c_temporary_reference<c_ast_node_scope> &scope) override;
-	void exit_scope_item_for_loop(
-		c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
-		const s_token &for_keyword,
-		c_ast_node_for_loop *&iterator,
-		const s_token &brace,
-		c_temporary_reference<c_ast_node_scope> &scope) override;
+		c_ast_node_for_loop *&scope) override;
 	void exit_break_statement(
 		c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 		const s_token &break_keyword) override;
@@ -350,6 +344,12 @@ protected:
 		c_ast_node_for_loop *&rule_head_context,
 		c_temporary_reference<c_ast_node_value_declaration> &value,
 		c_temporary_reference<c_ast_node_expression> &range) override;
+	bool enter_for_loop_scope(
+		c_ast_node_for_loop *&rule_head_context,
+		c_temporary_reference<c_ast_node_scope> &scope) override;
+	void exit_for_loop_scope(
+		c_ast_node_for_loop *&rule_head_context,
+		c_temporary_reference<c_ast_node_scope> &scope) override;
 
 	void exit_assignment(
 		s_value_with_source_location<e_native_operator> &rule_head_context,
@@ -1674,6 +1674,7 @@ void c_ast_builder_visitor::exit_scope_item_assignment(
 	s_value_with_source_location<e_native_operator> &assignment_type,
 	c_temporary_reference<c_ast_node_expression> &rhs) {
 	c_ast_node_assignment_statement *assignment_statement_node = new c_ast_node_assignment_statement();
+	assignment_statement_node->set_source_location(lhs->get_source_location());
 	rule_head_context.initialize(assignment_statement_node);
 
 	// The LHS might be a subscript node
@@ -1819,31 +1820,18 @@ bool c_ast_builder_visitor::enter_scope_item_for_loop(
 	const s_token &for_keyword,
 	c_ast_node_for_loop *&iterator,
 	const s_token &brace,
-	c_temporary_reference<c_ast_node_scope> &scope) {
+	c_ast_node_for_loop *&scope) {
 	c_ast_node_for_loop *for_loop_node = new c_ast_node_for_loop();
 	rule_head_context.initialize(for_loop_node);
 	for_loop_node->set_source_location(for_keyword.source_location);
 
-	// Initialize the scope here so that the loop value gets pulled in
-	scope.initialize(new c_ast_node_scope());
-	scope->set_source_location(brace.source_location);
-
-	c_tracked_scope *tracked_scope =
-		new c_tracked_scope(m_tracked_scopes.back(), e_tracked_scope_type::k_local, nullptr);
-	m_tracked_scopes_from_scope_nodes.insert(std::make_pair(scope.get(), tracked_scope));
-	m_tracked_scopes.push_back(tracked_scope);
+	c_ast_node_scope *scope_node = new c_ast_node_scope();
+	scope_node->set_source_location(brace.source_location);
+	for_loop_node->set_loop_scope(scope_node);
 
 	iterator = for_loop_node;
+	scope = for_loop_node;
 	return true;
-}
-
-void c_ast_builder_visitor::exit_scope_item_for_loop(
-	c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
-	const s_token &for_keyword,
-	c_ast_node_for_loop *&iterator,
-	const s_token &brace,
-	c_temporary_reference<c_ast_node_scope> &scope) {
-	rule_head_context->get_as<c_ast_node_for_loop>()->set_loop_scope(scope.release());
 }
 
 void c_ast_builder_visitor::exit_break_statement(
@@ -2062,6 +2050,37 @@ void c_ast_builder_visitor::exit_for_loop_iterator(
 
 	rule_head_context->set_value_declaration(value.release());
 	rule_head_context->set_range_expression(range.release());
+}
+
+bool c_ast_builder_visitor::enter_for_loop_scope(
+	c_ast_node_for_loop *&rule_head_context,
+	c_temporary_reference<c_ast_node_scope> &scope) {
+	scope.initialize(rule_head_context->get_loop_scope());
+
+	c_tracked_scope *tracked_scope =
+		new c_tracked_scope(m_tracked_scopes.back(), e_tracked_scope_type::k_for_loop, nullptr);
+	m_tracked_scopes_from_scope_nodes.insert(std::make_pair(scope.get(), tracked_scope));
+	m_tracked_scopes.push_back(tracked_scope);
+
+	// Add the iterator declaration, which is always initialized
+	add_declaration_to_tracked_scope(m_tracked_scopes.back(), rule_head_context->get_value_declaration());
+	m_tracked_scopes.back()->issue_declaration_assignment(rule_head_context->get_value_declaration());
+
+	return true;
+}
+
+void c_ast_builder_visitor::exit_for_loop_scope(
+	c_ast_node_for_loop *&rule_head_context,
+	c_temporary_reference<c_ast_node_scope> &scope) {
+	c_tracked_scope *tracked_scope = m_tracked_scopes.back();
+	wl_assert(tracked_scope == m_tracked_scopes_from_scope_nodes.find(scope.get())->second.get());
+	m_tracked_scopes.pop_back();
+
+	// Merge the child scope down into the parent scope
+	m_tracked_scopes.back()->merge_child_scope(tracked_scope);
+	m_tracked_scopes_from_scope_nodes.erase(scope.get());
+
+	scope.release();
 }
 
 void c_ast_builder_visitor::exit_assignment(
@@ -2294,9 +2313,7 @@ void c_ast_builder_visitor::resolve_module_call(
 	get_argument_expressions(module_declaration, module_call, argument_expressions);
 
 	// First check what we should do with dependent-constant outputs
-	// nocheckin Use min/max for this
-	bool any_dependent_constant_inputs_variable = false;
-	bool any_dependent_constant_inputs_dependent_constant = false;
+	e_ast_data_mutability dependent_constant_data_mutability = e_ast_data_mutability::k_constant;
 	for (size_t argument_index = 0; argument_index < module_declaration->get_argument_count(); argument_index++) {
 		const c_ast_node_module_declaration_argument *argument = module_declaration->get_argument(argument_index);
 		if (argument->get_argument_direction() != e_ast_argument_direction::k_in
@@ -2304,25 +2321,14 @@ void c_ast_builder_visitor::resolve_module_call(
 			continue;
 		}
 
+		// Downgrade dependent-constant data mutability
 		c_ast_qualified_data_type data_type = argument_expressions[argument_index]->get_data_type();
-		if (data_type.is_error() || data_type.get_data_mutability() == e_ast_data_mutability::k_variable) {
-			// If any error types are provided, assume that they are not intended to be constant
-			any_dependent_constant_inputs_variable = true;
-		} else if (data_type.get_data_mutability() == e_ast_data_mutability::k_dependent_constant) {
-			any_dependent_constant_inputs_dependent_constant = true;
+		if (data_type.is_error()) {
+			dependent_constant_data_mutability = e_ast_data_mutability::k_variable;
+		} else {
+			dependent_constant_data_mutability =
+				std::min(dependent_constant_data_mutability, data_type.get_data_mutability());
 		}
-	}
-
-	e_ast_data_mutability dependent_constant_data_mutability;
-	if (any_dependent_constant_inputs_variable) {
-		// If any dependent constant inputs were variable, then the outputs must all be variable
-		dependent_constant_data_mutability = e_ast_data_mutability::k_variable;
-	} else if (any_dependent_constant_inputs_dependent_constant) {
-		// If any dependent constant inputs were dependent-constants, then the outputs must all be dependent-constants
-		dependent_constant_data_mutability = e_ast_data_mutability::k_dependent_constant;
-	} else {
-		// Otherwise, the outputs are constants
-		dependent_constant_data_mutability = e_ast_data_mutability::k_constant;
 	}
 
 	for (size_t argument_index = 0; argument_index < module_declaration->get_argument_count(); argument_index++) {

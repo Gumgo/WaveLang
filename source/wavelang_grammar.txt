@@ -385,7 +385,7 @@ nonterminals: {
 		keyword_return(return_keyword) semicolon -> scope_item_return_void_statement;
 		keyword_return(return_keyword) expression(expression) semicolon -> scope_item_return_statement;
 		if_statement(if_statement) -> scope_item_if_statement;
-		keyword_for(for_keyword) left_parenthesis for_loop_iterator(iterator) right_parenthesis left_brace(brace) scope(scope) right_brace -> scope_item_for_loop;
+		keyword_for(for_keyword) left_parenthesis for_loop_iterator(iterator) right_parenthesis left_brace(brace) for_loop_scope(scope) right_brace -> scope_item_for_loop;
 		keyword_break(break_keyword) semicolon -> break_statement;
 		keyword_continue(continue_keyword) semicolon -> continue_statement;
 		left_brace(brace) scope(scope) right_brace -> scope_item_scope;
@@ -411,6 +411,10 @@ nonterminals: {
 
 	for_loop_iterator("c_ast_node_for_loop *"): {
 		value_declaration_without_initialization(value) colon expression(range) -> for_loop_iterator;
+	}
+
+	for_loop_scope("c_ast_node_for_loop *"): {
+		scope(scope) -> for_loop_scope;
 	}
 
 	assignment("s_value_with_source_location<e_native_operator>"): {

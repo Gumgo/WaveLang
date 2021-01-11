@@ -629,14 +629,13 @@ c_node_reference c_execution_graph::add_constant_node(bool constant_value) {
 	return node_reference;
 }
 
-c_node_reference c_execution_graph::add_constant_node(const std::string &constant_value) {
+c_node_reference c_execution_graph::add_constant_node(const char *constant_value) {
 	c_node_reference node_reference = allocate_node();
 	s_node &node = get_node(node_reference);
 	node.type = e_execution_graph_node_type::k_constant;
 	node.node_data.emplace<s_node::s_constant_node_data>();
 	node.constant_node_data().type = c_native_module_data_type(e_native_module_primitive_type::k_string);
-	node.constant_node_data().string_index = cast_integer_verify<uint32>(
-		m_string_table.add_string(constant_value.c_str()));
+	node.constant_node_data().string_index = cast_integer_verify<uint32>(m_string_table.add_string(constant_value));
 	return node_reference;
 }
 
@@ -1117,7 +1116,6 @@ bool c_execution_graph::validate_native_modules() const {
 				} else if (data_mutability == e_native_module_data_mutability::k_dependent_constant) {
 					if (!is_node_constant(source_node_reference)) {
 						all_dependent_constants_are_constant = false;
-						break;
 					}
 				}
 
@@ -1355,9 +1353,11 @@ bool c_execution_graph::is_node_constant(c_node_reference node_reference) const 
 				return false;
 			}
 		}
+
+		return true;
 	}
 
-	return true;
+	return false;
 }
 
 real32 c_execution_graph::get_constant_node_real_value(c_node_reference node_reference) const {

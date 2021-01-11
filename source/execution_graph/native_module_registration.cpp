@@ -533,7 +533,7 @@ c_optimization_rule_generator::s_token c_optimization_rule_generator::get_next_t
 
 bool c_optimization_rule_generator::add_symbol(s_native_module_optimization_symbol symbol, bool is_source_symbol) {
 	s_native_module_optimization_pattern &pattern = is_source_symbol ? m_rule.source : m_rule.target;
-	size_t symbol_count = is_source_symbol ? m_source_symbol_count : m_target_symbol_count;
+	size_t &symbol_count = is_source_symbol ? m_source_symbol_count : m_target_symbol_count;
 
 	if (symbol_count >= pattern.symbols.get_count()) {
 		return false;
