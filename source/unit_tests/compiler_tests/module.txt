@@ -16,13 +16,13 @@ import core;
 
 ## template_f
 
-void f(const real x, const bool y) {
+void g(in const real x, in const bool y) {
 	core.assert(x == 1);
 	core.assert(y);
 }
 
-void g() {
-	f(1, true);
+void f() {
+	g(1, true);
 }
 
 ### TEST out_arguments success
@@ -30,15 +30,15 @@ import core;
 
 ## template_f
 
-void f(out const real x, out const bool y) {
+void g(out const real x, out const bool y) {
 	x = 1;
 	y = true;
 }
 
-void g() {
-	real x;
-	bool y;
-	f(out x, out y);
+void f() {
+	const real x;
+	const bool y;
+	g(out x, out y);
 	core.assert(x == 1);
 	core.assert(y);
 }
@@ -48,7 +48,7 @@ import core;
 
 ## template_f
 
-const real f(const real x = 10) {
+const real f(in const real x = 10) {
 	return x;
 }
 
@@ -60,12 +60,12 @@ void g() {
 ### TEST illegal_argument_ordering k_illegal_argument_ordering
 ## template
 
-void f(real x = 5, real y) {}
+void f(in real x = 5, in real y) {}
 
 ### TEST duplicate_argument k_duplicate_argument
 ## template
 
-void f(real x, real x) {}
+void f(in real x, in real x) {}
 
 ### TEST illegal_out_argument k_illegal_out_argument
 ## template
@@ -80,7 +80,7 @@ void f(out real x) {}
 ### TEST maybe_unassigned_out_argument k_unassigned_out_argument
 ## template
 
-void f(const real x, out real y) {
+void f(in const real x, out real y) {
 	if (x == 0) {
 		y = 1;
 	}
@@ -89,7 +89,7 @@ void f(const real x, out real y) {
 ### TEST assigned_out_argument success
 ## template
 
-void f(const real x, out real y) {
+void f(in const real x, out real y) {
 	if (x == 0) {
 		y = 1;
 	} else {
@@ -105,7 +105,7 @@ real f() {}
 ### TEST maybe_missing_return_statement k_missing_return_statement
 ## template
 
-real f(const real x) {
+real f(in const real x) {
 	if (x == 0) {
 		return 1;
 	}
@@ -114,7 +114,7 @@ real f(const real x) {
 ### TEST present_return_statement success
 ## template
 
-real f(const real x) {
+real f(in const real x) {
 	if (x == 0) {
 		return 1;
 	} else {
@@ -136,25 +136,25 @@ import core;
 
 ## template_f
 
-const real g(const real x) {
+const real g(in const real x) {
 	return 0;
 }
 
-const real g(real x) {
+const real g(in real x) {
 	return 1;
 }
 
-const real g(const bool x) {
+const real g(in const bool x) {
 	return 2;
 }
 
-const real g(const real x, const real y) {
+const real g(in const real x, in const real y) {
 	return 3;
 }
 
 void f() {
 	core.assert(g(0) == 0);
-	core.assert(g((real)0) == 1);
+	core.assert(g(real(0)) == 1);
 	core.assert(g(false) == 2);
 	core.assert(g(0, 0) == 3);
 }
@@ -182,7 +182,7 @@ import core;
 
 ## template_f
 
-const real g(const real a, const real b, const real c = 10) {
+const real g(in const real a, in const real b, in const real c = 10) {
 	return c;
 }
 
@@ -197,7 +197,7 @@ void f() {
 ### TEST invalid_named_argument k_invalid_named_argument
 ## template
 
-void g(const real a, const real b) {}
+void g(in const real a, in const real b) {}
 
 void f() {
 	g(0, c = 2);
@@ -206,16 +206,16 @@ void f() {
 ### TEST too_many_arguments k_too_many_arguments_provided
 ## template
 
-void g(const real a) {}
+void g(in const real a) {}
 
 void f() {
 	g(0, 1);
 }
 
-### TEST duplicate_argument k_duplicate_argument_provided
+### TEST duplicate_argument_provided k_duplicate_argument_provided
 ## template
 
-void g(const real a) {}
+void g(in const real a) {}
 
 void f() {
 	g(a = 0, a = 1);
@@ -224,7 +224,7 @@ void f() {
 ### TEST argument_direction_mismatch_1 k_argument_direction_mismatch
 ## template
 
-void g(const real a) {}
+void g(in const real a) {}
 
 void f() {
 	const real x;
@@ -245,7 +245,7 @@ void f() {
 ### TEST missing_argument k_missing_argument
 ## template
 
-void g(const real a, const real b) {}
+void g(in const real a, in const real b) {}
 
 void f() {
 	g(0);
@@ -254,18 +254,18 @@ void f() {
 ### TEST ambiguous_overload_resolution k_ambiguous_module_overload_resolution
 ## template
 
-void g(const real a = 0) {}
-void g(const bool a = false) {}
+void g(in const real a = 0) {}
+void g(in const bool a = false) {}
 
 void f() {
 	g();
 }
 
-### TEST no_matching_modules k_no_matching_modules
+### TEST no_matching_modules k_empty_module_overload_resolution
 ## template
 
-void g(const real a) {}
-void g(const bool a) {}
+void g(in const real a) {}
+void g(in const bool a) {}
 
 void f() {
 	g("hello");
@@ -273,7 +273,7 @@ void f() {
 
 ### TEST argument_type_mismatch k_type_mismatch
 
-void g(const real a) {}
+void g(in const real a) {}
 
 void f() {
 	g(false);
@@ -323,7 +323,7 @@ void g(out const real x) {
 }
 
 void f() {
-	const real[] x = {[1, 2, 3]);
+	const real[] x = {[1, 2, 3]};
 	real i = 0;
 	g(out x[i]);
 }
@@ -344,4 +344,37 @@ void g() {
 
 void f() {
 	g();
+}
+
+### TEST dependent_constant success
+## template
+
+void f() {
+	const real y;
+	const real x = g(1, out y);
+
+	real w;
+	real z = g(1, out w);
+
+	real c = 0;
+	real b;
+	real a = g(c, out b);
+}
+
+const? real g(in const? real a, out const? real b) {
+	b = a;
+	return a;
+}
+
+### TEST dependent_constant_failure k_type_mismatch
+
+void f() {
+	real a = 0;
+	const real y;
+	const real x = g(a, out y);
+}
+
+const? real g(in const? real a, out const? real b) {
+	b = a;
+	return a;
 }

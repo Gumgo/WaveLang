@@ -1079,7 +1079,6 @@ void c_ast_builder_visitor::exit_qualified_data_type(
 	s_value_with_source_location<c_ast_qualified_data_type> &rule_head_context,
 	s_value_with_source_location<e_ast_data_mutability> &mutability,
 	s_value_with_source_location<c_ast_data_type> &data_type) {
-	rule_head_context.value = c_ast_qualified_data_type(data_type.value, mutability.value);
 	rule_head_context.source_location = mutability.source_location.is_valid()
 		? mutability.source_location
 		: data_type.source_location;
@@ -1089,6 +1088,7 @@ void c_ast_builder_visitor::exit_qualified_data_type(
 		mutability.value = e_ast_data_mutability::k_constant;
 	}
 
+	rule_head_context.value = c_ast_qualified_data_type(data_type.value, mutability.value);
 	if (!rule_head_context.value.is_legal_type_declaration()) {
 		m_context.error(
 			e_compiler_error::k_illegal_data_type,
@@ -1377,20 +1377,19 @@ void c_ast_builder_visitor::exit_convert(
 	convert_node->set_source_location(data_type.source_location);
 
 	if (expression->get_data_type().is_error()) {
-		convert_node->set_data_type(c_ast_qualified_data_type::error());
+		convert_node->set_expression_and_data_type(expression.release(), c_ast_qualified_data_type::error());
 	} else if (is_ast_data_type_assignable(expression->get_data_type(), data_type.value)) {
-		convert_node->set_data_type(data_type.value);
+		convert_node->set_expression_and_data_type(expression.release(), data_type.value);
 	} else {
-		convert_node->set_data_type(c_ast_qualified_data_type::error());
 		m_context.error(
 			e_compiler_error::k_illegal_type_conversion,
 			data_type.source_location,
 			"Cannot convert from type '%s' to type '%s'",
 			expression->get_data_type().to_string().c_str(),
 			data_type.value.to_string().c_str());
-	}
 
-	expression.release();
+		convert_node->set_expression_and_data_type(expression.release(), c_ast_qualified_data_type::error());
+	}
 }
 
 void c_ast_builder_visitor::exit_access(
@@ -1600,7 +1599,7 @@ void c_ast_builder_visitor::exit_module_call_named_argument(
 	rule_head_context->set_source_location(
 		direction.source_location.is_valid() ? direction.source_location : name.source_location);
 	rule_head_context->set_argument_direction(direction.value);
-	rule_head_context->set_name(get_unescaped_token_string(name).c_str());
+	rule_head_context->set_name(std::string(name.token_string).c_str());
 	rule_head_context->set_value_expression(expression.release());
 }
 
@@ -1780,22 +1779,24 @@ void c_ast_builder_visitor::exit_scope_item_assignment(
 void c_ast_builder_visitor::exit_scope_item_return_void_statement(
 	c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 	const s_token &return_keyword) {
+	validate_current_module_return_type(
+		c_ast_qualified_data_type(c_ast_data_type(e_ast_primitive_type::k_void), e_ast_data_mutability::k_variable),
+		return_keyword.source_location);
+
 	c_ast_node_return_statement *return_statement_node = new c_ast_node_return_statement();
 	rule_head_context.initialize(return_statement_node);
 	return_statement_node->set_source_location(return_keyword.source_location);
 
 	// Keep track of where we return in the current scope
 	m_tracked_scopes.back()->issue_return_statement();
-
-	validate_current_module_return_type(
-		c_ast_qualified_data_type(c_ast_data_type(e_ast_primitive_type::k_void), e_ast_data_mutability::k_variable),
-		return_keyword.source_location);
 }
 
 void c_ast_builder_visitor::exit_scope_item_return_statement(
 	c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 	const s_token &return_keyword,
 	c_temporary_reference<c_ast_node_expression> &expression) {
+	validate_current_module_return_type(expression->get_data_type(), return_keyword.source_location);
+
 	c_ast_node_return_statement *return_statement_node = new c_ast_node_return_statement();
 	rule_head_context.initialize(return_statement_node);
 	return_statement_node->set_source_location(return_keyword.source_location);
@@ -1803,10 +1804,6 @@ void c_ast_builder_visitor::exit_scope_item_return_statement(
 
 	// Keep track of where we return in the current scope
 	m_tracked_scopes.back()->issue_return_statement();
-
-	validate_current_module_return_type(
-		c_ast_qualified_data_type(c_ast_data_type(e_ast_primitive_type::k_void), e_ast_data_mutability::k_variable),
-		return_keyword.source_location);
 }
 
 void c_ast_builder_visitor::exit_scope_item_if_statement(
@@ -2135,7 +2132,8 @@ void c_ast_builder_visitor::build_tracked_scope(c_ast_node_scope *scope_node, c_
 			scope_node->get_scope_item(item_index)->try_get_as<c_ast_node_declaration>();
 
 		if (declaration_node) {
-			tracked_scope->add_declaration(declaration_node);
+			add_declaration_to_tracked_scope(tracked_scope, declaration_node);
+
 			c_ast_node_namespace_declaration *namespace_declaration_node =
 				declaration_node->try_get_as<c_ast_node_namespace_declaration>();
 			if (namespace_declaration_node) {
@@ -2335,12 +2333,16 @@ void c_ast_builder_visitor::resolve_module_call(
 		c_ast_node_module_declaration_argument *argument = module_declaration->get_argument(argument_index);
 		c_ast_node_expression *argument_expression = argument_expressions[argument_index];
 
-		resolve_module_call_argument(
-			module_declaration,
-			argument,
-			module_call,
-			argument_expression,
-			dependent_constant_data_mutability);
+		// If argument_expression is null, the argument's default initializer was used and we don't need to validate
+		// the type here (it's validated in the declaration)
+		if (argument_expression) {
+			resolve_module_call_argument(
+				module_declaration,
+				argument,
+				module_call,
+				argument_expression,
+				dependent_constant_data_mutability);
+		}
 	}
 
 	module_call->set_resolved_module_declaration(module_declaration, dependent_constant_data_mutability);
@@ -2512,7 +2514,7 @@ void c_ast_builder_visitor::validate_current_module_return_type(
 		return;
 	}
 
-	if (is_ast_data_type_assignable(data_type, m_current_module->get_return_type())) {
+	if (!is_ast_data_type_assignable(data_type, m_current_module->get_return_type())) {
 		m_context.error(
 			e_compiler_error::k_return_type_mismatch,
 			source_location,

@@ -360,6 +360,10 @@ TEST_F(CompilerTest, Module) {
 	run_compiler_test("compiler_tests/module.txt");
 }
 
+TEST_F(CompilerTest, Optimization) {
+	run_compiler_test("compiler_tests/optimization.txt");
+}
+
 TEST_F(CompilerTest, Parser) {
 	run_compiler_test("compiler_tests/parser.txt");
 }

@@ -94,6 +94,7 @@ private:
 	bool evaluate_ast_node(c_ast_node_array *array, uint64 &state, bool &pop_node_out);
 	bool evaluate_ast_node(c_ast_node_declaration_reference *declaration_reference, uint64 &state, bool &pop_node_out);
 	bool evaluate_ast_node(c_ast_node_module_call *module_call, uint64 &state, bool &pop_node_out);
+	bool evaluate_ast_node(c_ast_node_convert *convert, uint64 &state, bool &pop_node_out);
 	bool evaluate_ast_node(c_ast_node_subscript *subscript, uint64 &state, bool &pop_node_out);
 
 	bool assign_expression_value(
@@ -484,7 +485,6 @@ bool c_execution_graph_builder::evaluate_ast_node_stack() {
 bool c_execution_graph_builder::evaluate_ast_node(c_ast_node *node, uint64 &state, bool &pop_node_out) {
 	// We should never encounter these types of nodes:
 	wl_assert(!node->try_get_as<c_ast_node_expression_placeholder>());
-	wl_assert(!node->try_get_as<c_ast_node_convert>());
 	wl_assert(!node->try_get_as<c_ast_node_access>());
 
 	switch (node->get_type()) {
@@ -526,6 +526,9 @@ bool c_execution_graph_builder::evaluate_ast_node(c_ast_node *node, uint64 &stat
 
 	case e_ast_node_type::k_module_call:
 		return evaluate_ast_node(node->get_as<c_ast_node_module_call>(), state, pop_node_out);
+
+	case e_ast_node_type::k_convert:
+		return evaluate_ast_node(node->get_as<c_ast_node_convert>(), state, pop_node_out);
 
 	case e_ast_node_type::k_subscript:
 		return evaluate_ast_node(node->get_as<c_ast_node_subscript>(), state, pop_node_out);
@@ -1184,6 +1187,14 @@ bool c_execution_graph_builder::evaluate_ast_node(
 	}
 
 	return true;
+}
+
+bool c_execution_graph_builder::evaluate_ast_node(
+	c_ast_node_convert *convert,
+	uint64 &state,
+	bool &pop_node_out) {
+	// Convert is a no-op at this stage
+	return evaluate_ast_node(convert->get_expression(), state, pop_node_out);
 }
 
 bool c_execution_graph_builder::evaluate_ast_node(

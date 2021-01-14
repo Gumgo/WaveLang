@@ -9,8 +9,11 @@ public:
 	AST_NODE_TYPE(c_ast_node_convert, k_convert);
 	c_ast_node_convert();
 
-	void set_data_type(const c_ast_qualified_data_type &data_type);
+	c_ast_node_expression *get_expression() const;
+	void set_expression_and_data_type(c_ast_node_expression *expression, const c_ast_qualified_data_type &data_type);
 
 protected:
 	c_ast_node *copy_internal() const override;
+
+	std::unique_ptr<c_ast_node_expression> m_expression;
 };

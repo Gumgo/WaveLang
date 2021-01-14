@@ -22,15 +22,15 @@ void f() {
 ## template
 
 void f() {
-	const real x = 5;
-	real y = x;
+	real x = 5;
+	const real y = x;
 }
 
 ### TEST array_mismatch k_type_mismatch
 ## template
 
 void f() {
-	real x[] = {[ 1, 2, 3 ]};
+	real[] x = {[ 1, 2, 3 ]};
 	real y = x;
 }
 
@@ -62,7 +62,7 @@ void f() {
 
 void f() {
 	const real x = 10;
-	real y = (real)x;
+	real y = real(x);
 }
 
 ### TEST illegal_conversion k_illegal_type_conversion
@@ -70,7 +70,7 @@ void f() {
 
 void f() {
 	const real x = 10;
-	const bool y = (const bool)x;
+	const bool y = const bool(x);
 }
 
 ### TEST illegal_value_data_type k_illegal_value_data_type

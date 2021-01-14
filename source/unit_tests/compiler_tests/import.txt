@@ -45,6 +45,26 @@ public const real child_module() {
 	return child_value;
 }
 
+### FILE folder/relative_import.wl
+import .rel;
+import ..up_tree;
+import ..folder2.up_down_tree;
+
+void f() {
+	rel.rel();
+	up_tree.up_tree();
+	folder2.up_down_tree.up_down_tree();
+}
+
+### FILE folder/rel.wl
+public void rel() {}
+
+### FILE up_tree.wl
+public void up_tree() {}
+
+### FILE folder2/up_down_tree.wl
+public void up_down_tree() {}
+
 ### TEST import_does_not_exist k_failed_to_resolve_import
 import does_not_exist;
 
@@ -106,6 +126,7 @@ import folder.child_import as ci;
 import root_import as a.b.c;
 import folder.child_import as a.b.c;
 import root_import as .;
+import folder.relative_import;
 
 ## template_f
 

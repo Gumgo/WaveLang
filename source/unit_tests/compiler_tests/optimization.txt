@@ -1,0 +1,20 @@
+### TEST optimization_rule_applied k_native_module_error
+import delay;
+
+bool voice_main(out real mono) {
+	mono = f();
+	return false;
+}
+
+real f() {
+	// Call a function that must run at runtime
+	real index = delay.delay(1, 1);
+
+	// Multiplication by 0 invokes an optimization rule
+	index *= 0;
+
+	// Attempt to index the array. The optimization rule should have converted index into a compile-time constant, so compilation will fail due to out-of-bounds subscript.
+	real[] x = {[1, 2, 3]};
+	real y = x[index - 1];
+	return y;
+}

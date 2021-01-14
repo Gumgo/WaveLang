@@ -289,7 +289,7 @@ e_tracked_event_state c_tracked_scope::update_event_state(e_tracked_event_state 
 }
 
 static e_tracked_event_state event_state_min(e_tracked_event_state event_state_a, e_tracked_event_state event_state_b) {
-	return static_cast<e_tracked_event_state>(std::max(enum_index(event_state_a), enum_index(event_state_b)));
+	return static_cast<e_tracked_event_state>(std::min(enum_index(event_state_a), enum_index(event_state_b)));
 }
 
 static e_tracked_event_state event_state_max(e_tracked_event_state event_state_a, e_tracked_event_state event_state_b) {

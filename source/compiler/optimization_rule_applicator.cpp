@@ -230,7 +230,7 @@ c_node_reference c_optimization_rule_applicator::build_target_pattern() {
 
 	size_t symbol_count;
 	for (symbol_count = 0;
-		symbol_count < m_rule->source.symbols.get_count() && m_rule->source.symbols[symbol_count].is_valid();
+		symbol_count < m_rule->target.symbols.get_count() && m_rule->target.symbols[symbol_count].is_valid();
 		symbol_count++);
 
 	IF_ASSERTS_ENABLED(bool should_be_done = false);

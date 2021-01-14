@@ -109,6 +109,11 @@ bool do_module_overloads_conflict(
 	// foo(in real x, in const real y), foo(in const real x, in real y) requires exact input types and will not
 	// resolve properly if both x and y are const.
 
+	if (module_a->get_argument_count() != module_b->get_argument_count()) {
+		// If they have different argument counts, they definitely don't conflict
+		return false;
+	}
+
 	// Construct canonical argument lists for both modules and test against the other module. We need to construct two
 	// canonical argument lists if the module is dependent-const, as described above.
 	std::vector<s_argument_info> canonical_argument_list;
@@ -271,9 +276,13 @@ static e_module_argument_match_type match_module_arguments(
 			module_declaration->get_argument(argument_index);
 		const s_argument_info &provided_argument = provided_arguments[argument_index];
 
+		// The default expression type may not be resolved by the time it's used (since expressions get resolved in the
+		// definitions pass but order isn't guaranteed) so pass the argument's declared type instead of the default
+		// expression's type. Unfortunately this breaks dependent-constant arguments with constant defaults, but right
+		// now there's no great solution.
 		c_ast_qualified_data_type provided_data_type = provided_argument.data_type.is_valid()
 			? provided_argument.data_type
-			: module_argument->get_initialization_expression()->get_data_type();
+			: module_argument->get_data_type();
 
 		wl_assert(
 			provided_argument.direction == e_ast_argument_direction::k_invalid // Default argument used, see above
@@ -379,6 +388,7 @@ static s_module_call_resolution_result construct_argument_list(
 			if (call_argument_index >= module_declaration->get_argument_count()) {
 				// Too many arguments provided
 				result.result = e_module_call_resolution_result::k_too_many_arguments_provided;
+				result.call_argument_index = call_argument_index;
 				return result;
 			}
 
@@ -446,6 +456,8 @@ void get_argument_expressions(
 	argument_expressions_out.resize(argument_list.size());
 	for (size_t index = 0; index < argument_list.size(); index++) {
 		wl_assert(argument_list[index].expression);
-		argument_expressions_out[index] = argument_list[index].expression;
+		argument_expressions_out[index] = argument_list[index].data_type.is_valid()
+			? argument_list[index].expression
+			: nullptr; // Return null in place of default initializer expressions
 	}
 }

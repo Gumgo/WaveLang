@@ -77,7 +77,8 @@ s_module_call_resolution_result resolve_module_call(
 	c_wrapped_array<const c_ast_node_module_declaration *const> module_declaration_candidates);
 
 // Matches each argument with the expression being passed to that argument. Note that resolve_module_call must have been
-// called successfully as a prerequisite to calling this function.
+// called successfully as a prerequisite to calling this function. If a default initializer is used, null is returned
+// for that argument. This is because default expression types may not have been resolved when we can this function.
 void get_argument_expressions(
 	const c_ast_node_module_declaration *module_declaration,
 	const c_ast_node_module_call *module_call,
