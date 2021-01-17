@@ -54,12 +54,12 @@ private:
 	bool initialize_global_scope_constants(c_ast_node_scope *scope);
 	bool initialize_global_scope_constant(c_ast_node_value_declaration *value_declaration);
 
-	// Pushes a node reference onto the expression result stack and adds a temporary reference to it
-	void push_expression_result(c_node_reference node_reference);
+	// Pushes a node handle onto the expression result stack and adds a temporary reference to it
+	void push_expression_result(h_graph_node node_handle);
 
 	// Returns an iterable list of expression results of the range [end-count, end). Iteration ends at the last element
 	// in the stack.
-	c_wrapped_array<c_node_reference> get_expression_results(size_t count);
+	c_wrapped_array<h_graph_node> get_expression_results(size_t count);
 
 	// Pops the last "count" expression results from the stack, removing a temporary reference from each and trimming
 	// the graph
@@ -99,8 +99,8 @@ private:
 
 	bool assign_expression_value(
 		c_tracked_declaration *tracked_declaration,
-		c_node_reference expression_node_reference,
-		c_node_reference index_expression_node_reference,
+		h_graph_node expression_node_handle,
+		h_graph_node index_expression_node_handle,
 		const s_compiler_source_location &index_expression_source_location);
 
 	bool issue_native_module_call(
@@ -120,17 +120,17 @@ private:
 	// Stack of AST nodes to visit
 	std::vector<s_ast_node_stack_entry> m_ast_node_stack;
 
-	// Stack of graph node references returned when expressions are evaluated
-	std::vector<c_node_reference> m_expression_result_stack;
+	// Stack of graph node handles returned when expressions are evaluated
+	std::vector<h_graph_node> m_expression_result_stack;
 
 #if IS_TRUE(ASSERTS_ENABLED)
-	// Each time a node reference is pushed on the expression result stack, an empty entry is pushed here. Additionally,
+	// Each time a node handle is pushed on the expression result stack, an empty entry is pushed here. Additionally,
 	// validation tokens can be pushed and popped on this stack. Validation tokens are used to ensure that the state of
 	// the expression result stack is valid.
 	std::vector<s_validation_token_stack_entry> m_validation_token_stack;
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
-	c_node_reference m_return_value_node_reference;
+	h_graph_node m_return_value_node_handle = h_graph_node::invalid();
 	bool m_return_statement_issued = false;
 	bool m_break_statement_issued = false;
 	bool m_continue_statement_issued = false;
@@ -206,23 +206,23 @@ bool c_execution_graph_builder::build() {
 	}
 
 	// Start by adding nodes for all inputs and outputs
-	std::vector<c_node_reference> output_node_references;
-	std::vector<c_node_reference> input_node_references;
+	std::vector<h_graph_node> output_node_handles;
+	std::vector<h_graph_node> input_node_handles;
 	{
 		uint32 input_index = 0;
 		uint32 output_index = 0;
 		for (size_t argument_index = 0; argument_index < m_entry_point->get_argument_count(); argument_index++) {
 			c_ast_node_module_declaration_argument *argument = m_entry_point->get_argument(argument_index);
 			if (argument->get_argument_direction() == e_ast_argument_direction::k_in) {
-				input_node_references.push_back(m_execution_graph.add_input_node(input_index++));
+				input_node_handles.push_back(m_execution_graph.add_input_node(input_index++));
 			} else {
 				wl_assert(argument->get_argument_direction() == e_ast_argument_direction::k_out);
-				output_node_references.push_back(m_execution_graph.add_output_node(output_index++));
+				output_node_handles.push_back(m_execution_graph.add_output_node(output_index++));
 			}
 		}
 	}
 
-	c_node_reference return_value_node_reference =
+	h_graph_node return_value_node_handle =
 		m_execution_graph.add_output_node(c_execution_graph::k_remain_active_output_index);
 
 	// Construct a module call node for the entry point
@@ -230,8 +230,8 @@ bool c_execution_graph_builder::build() {
 	entry_point_module_call->set_resolved_module_declaration(m_entry_point, e_ast_data_mutability::k_variable);
 
 	// Push input nodes onto the stack so they're accessible to the module call
-	for (c_node_reference node_reference : input_node_references) {
-		push_expression_result(node_reference);
+	for (h_graph_node node_handle : input_node_handles) {
+		push_expression_result(node_handle);
 	}
 
 #if IS_TRUE(ASSERTS_ENABLED)
@@ -247,16 +247,16 @@ bool c_execution_graph_builder::build() {
 
 	// Hook up the output nodes. There is special-case logic to push the out argument nodes onto the result stack for
 	// the entry point module calls.
-	wl_assert(m_expression_result_stack.size() == output_node_references.size() + 1);
-	for (uint32 output_index = 0; output_index < output_node_references.size(); output_index++) {
+	wl_assert(m_expression_result_stack.size() == output_node_handles.size() + 1);
+	for (uint32 output_index = 0; output_index < output_node_handles.size(); output_index++) {
 		pop_validation_token(output_index);
-		m_execution_graph.add_edge(m_expression_result_stack.back(), output_node_references[output_index]);
+		m_execution_graph.add_edge(m_expression_result_stack.back(), output_node_handles[output_index]);
 		pop_and_trim_expression_results(1);
 	}
 
 	// Hook up the remain-active output
 	pop_validation_token(c_execution_graph::k_remain_active_output_index);
-	m_execution_graph.add_edge(m_expression_result_stack.back(), return_value_node_reference);
+	m_execution_graph.add_edge(m_expression_result_stack.back(), return_value_node_handle);
 	pop_and_trim_expression_results(1);
 	wl_assert(m_expression_result_stack.empty());
 
@@ -265,11 +265,11 @@ bool c_execution_graph_builder::build() {
 
 #if IS_TRUE(ASSERTS_ENABLED)
 	// Validate that there are no temporary reference nodes remaining
-	for (c_node_reference node_reference = m_execution_graph.nodes_begin();
-		node_reference.is_valid();
-		node_reference = m_execution_graph.nodes_next(node_reference)) {
+	for (h_graph_node node_handle = m_execution_graph.nodes_begin();
+		node_handle.is_valid();
+		node_handle = m_execution_graph.nodes_next(node_handle)) {
 		wl_assert(
-			m_execution_graph.get_node_type(node_reference) != e_execution_graph_node_type::k_temporary_reference);
+			m_execution_graph.get_node_type(node_handle) != e_execution_graph_node_type::k_temporary_reference);
 	}
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
@@ -292,7 +292,7 @@ void c_execution_graph_builder::build_tracked_scope(c_ast_node_scope *scope_node
 			// If this node isn't already tracked, add it. We check for this because the same declarations can be
 			// imported multiple times under different namespaces, but in terms of tracking, we simply put everything
 			// global into the global scope (rather than a scope per-namespace) because namespace access has already
-			// been resolved for node references.
+			// been resolved for node handles.
 			tracked_scope->add_declaration(declaration_node);
 		}
 	}
@@ -308,12 +308,12 @@ bool c_execution_graph_builder::initialize_global_scope_constants(c_ast_node_sco
 			// depends on it
 			c_tracked_declaration *tracked_declaration =
 				m_tracked_scopes.back()->get_tracked_declaration(value_declaration_node);
-			if (!tracked_declaration->get_node_reference().is_valid()
+			if (!tracked_declaration->get_node_handle().is_valid()
 				&& !initialize_global_scope_constant(value_declaration_node)) {
 				return false;
 			}
 
-			wl_assert(tracked_declaration->get_node_reference().is_valid());
+			wl_assert(tracked_declaration->get_node_handle().is_valid());
 		}
 	}
 
@@ -340,12 +340,12 @@ bool c_execution_graph_builder::initialize_global_scope_constant(c_ast_node_valu
 	// relevant state and restore it at the end
 	std::vector<std::unique_ptr<c_tracked_scope>> tracked_scopes_backup(std::move(m_tracked_scopes));
 	std::vector<s_ast_node_stack_entry> ast_node_stack_backup(std::move(m_ast_node_stack));
-	std::vector<c_node_reference> expression_result_stack_backup(std::move(m_expression_result_stack));
+	std::vector<h_graph_node> expression_result_stack_backup(std::move(m_expression_result_stack));
 #if IS_TRUE(ASSERTS_ENABLED)
 	std::vector<s_validation_token_stack_entry> validation_token_stack_backup(std::move(m_validation_token_stack));
 #endif // IS_TRUE(ASSERTS_ENABLED)
-	c_node_reference return_value_node_reference_backup = m_return_value_node_reference;
-	m_return_value_node_reference = c_node_reference();
+	h_graph_node return_value_node_handle_backup = m_return_value_node_handle;
+	m_return_value_node_handle = h_graph_node::invalid();
 	bool return_statement_issued_backup = m_return_statement_issued;
 	m_return_statement_issued = false;
 	bool break_statement_issued_backup = m_break_statement_issued;
@@ -368,8 +368,8 @@ bool c_execution_graph_builder::initialize_global_scope_constant(c_ast_node_valu
 	// There should be only a single result on the stack
 	wl_assert(m_expression_result_stack.size() == 1);
 	c_tracked_declaration *tracked_declaration = m_tracked_scopes.back()->get_tracked_declaration(value_declaration);
-	wl_assert(!tracked_declaration->get_node_reference().is_valid());
-	tracked_declaration->set_node_reference(m_expression_result_stack.back());
+	wl_assert(!tracked_declaration->get_node_handle().is_valid());
+	tracked_declaration->set_node_handle(m_expression_result_stack.back());
 	pop_and_trim_expression_results(1);
 
 	wl_assert(m_tracked_scopes.size() == 1);
@@ -382,7 +382,7 @@ bool c_execution_graph_builder::initialize_global_scope_constant(c_ast_node_valu
 #if IS_TRUE(ASSERTS_ENABLED)
 	std::swap(validation_token_stack_backup, m_validation_token_stack);
 #endif // IS_TRUE(ASSERTS_ENABLED)
-	m_return_value_node_reference = return_value_node_reference_backup;
+	m_return_value_node_handle = return_value_node_handle_backup;
 	m_return_statement_issued = return_statement_issued_backup;
 	m_break_statement_issued = break_statement_issued_backup;
 	m_continue_statement_issued = continue_statement_issued_backup;
@@ -392,18 +392,18 @@ bool c_execution_graph_builder::initialize_global_scope_constant(c_ast_node_valu
 	return true;
 }
 
-void c_execution_graph_builder::push_expression_result(c_node_reference node_reference) {
-	wl_assert(node_reference.is_valid());
-	m_graph_trimmer.add_temporary_reference(node_reference);
-	m_expression_result_stack.push_back(node_reference);
+void c_execution_graph_builder::push_expression_result(h_graph_node node_handle) {
+	wl_assert(node_handle.is_valid());
+	m_graph_trimmer.add_temporary_reference(node_handle);
+	m_expression_result_stack.push_back(node_handle);
 #if IS_TRUE(ASSERTS_ENABLED)
 	m_validation_token_stack.push_back({ false });
 #endif // IS_TRUE(ASSERTS_ENABLED)
 }
 
-c_wrapped_array<c_node_reference> c_execution_graph_builder::get_expression_results(size_t count) {
+c_wrapped_array<h_graph_node> c_execution_graph_builder::get_expression_results(size_t count) {
 	wl_assert(m_expression_result_stack.size() >= count);
-	return c_wrapped_array<c_node_reference>(
+	return c_wrapped_array<h_graph_node>(
 		m_expression_result_stack,
 		m_expression_result_stack.size() - count,
 		count);
@@ -413,7 +413,7 @@ void c_execution_graph_builder::pop_and_trim_expression_results(size_t count) {
 	wl_assert(m_expression_result_stack.size() >= count);
 	for (size_t index = 0; index < count; index++) {
 #if IS_TRUE(ASSERTS_ENABLED)
-		// If we're popping a node reference, the back of the validation token stack should not be a validation token
+		// If we're popping a node handle, the back of the validation token stack should not be a validation token
 		wl_assert(!m_validation_token_stack.back().is_validation_token);
 		m_validation_token_stack.pop_back();
 #endif // IS_TRUE(ASSERTS_ENABLED)
@@ -590,7 +590,7 @@ bool c_execution_graph_builder::evaluate_ast_node(
 		wl_assert(tracked_declaration);
 		if (value_declaration->get_initialization_expression()) {
 			// Assign the initial value
-			tracked_declaration->set_node_reference(m_expression_result_stack.back());
+			tracked_declaration->set_node_handle(m_expression_result_stack.back());
 			pop_and_trim_expression_results(1);
 		}
 
@@ -649,15 +649,15 @@ bool c_execution_graph_builder::evaluate_ast_node(
 	} else {
 		wl_assert(state == 1);
 
-		c_node_reference expression_node_reference = m_expression_result_stack.back();
-		m_graph_trimmer.add_temporary_reference(expression_node_reference);
+		h_graph_node expression_node_handle = m_expression_result_stack.back();
+		m_graph_trimmer.add_temporary_reference(expression_node_handle);
 		pop_and_trim_expression_results(1);
 
-		c_node_reference index_expression_node_reference;
+		h_graph_node index_expression_node_handle = h_graph_node::invalid();
 		s_compiler_source_location index_expression_source_location;
 		if (assignment_statement->get_lhs_index_expression()) {
-			index_expression_node_reference = m_expression_result_stack.back();
-			m_graph_trimmer.add_temporary_reference(index_expression_node_reference);
+			index_expression_node_handle = m_expression_result_stack.back();
+			m_graph_trimmer.add_temporary_reference(index_expression_node_handle);
 			pop_and_trim_expression_results(1);
 			index_expression_source_location = assignment_statement->get_lhs_index_expression()->get_source_location();
 		}
@@ -669,14 +669,14 @@ bool c_execution_graph_builder::evaluate_ast_node(
 
 		if (!assign_expression_value(
 			tracked_declaration,
-			expression_node_reference,
-			index_expression_node_reference,
+			expression_node_handle,
+			index_expression_node_handle,
 			index_expression_source_location)) {
 			return false;
 		}
 
-		m_graph_trimmer.remove_temporary_reference(expression_node_reference);
-		m_graph_trimmer.remove_temporary_reference(index_expression_node_reference);
+		m_graph_trimmer.remove_temporary_reference(expression_node_handle);
+		m_graph_trimmer.remove_temporary_reference(index_expression_node_handle);
 
 		pop_validation_token(assignment_statement);
 		pop_node_out = true;
@@ -703,8 +703,8 @@ bool c_execution_graph_builder::evaluate_ast_node(
 
 		m_return_statement_issued = true;
 		if (return_statement->get_expression()) {
-			m_return_value_node_reference = m_expression_result_stack.back();
-			m_graph_trimmer.add_temporary_reference(m_return_value_node_reference);
+			m_return_value_node_handle = m_expression_result_stack.back();
+			m_graph_trimmer.add_temporary_reference(m_return_value_node_handle);
 			pop_and_trim_expression_results(1);
 		}
 
@@ -732,8 +732,8 @@ bool c_execution_graph_builder::evaluate_ast_node(
 		wl_assert(state == 1 || state == 2);
 
 		// Don't remove this yet - we'll remove it when we pop the if statement
-		c_node_reference expression_node_reference = m_expression_result_stack.back();
-		bool if_statement_value = m_execution_graph.get_constant_node_bool_value(expression_node_reference);
+		h_graph_node expression_node_handle = m_expression_result_stack.back();
+		bool if_statement_value = m_execution_graph.get_constant_node_bool_value(expression_node_handle);
 
 		// Depending on the result, push the "true" or "false" scope (if it exists)
 		c_ast_node_scope *scope = nullptr;
@@ -791,9 +791,9 @@ bool c_execution_graph_builder::evaluate_ast_node(
 			m_tracked_scopes.pop_back();
 		}
 
-		// Don't pop this node reference from the stack until we're done looping - we need to keep referring to it
-		c_node_reference array_node_reference = m_expression_result_stack.back();
-		size_t array_count = m_execution_graph.get_node_incoming_edge_count(array_node_reference);
+		// Don't pop this node handle from the stack until we're done looping - we need to keep referring to it
+		h_graph_node array_node_handle = m_expression_result_stack.back();
+		size_t array_count = m_execution_graph.get_node_incoming_edge_count(array_node_handle);
 
 		m_continue_statement_issued = false;
 		if (array_index < array_count && !m_break_statement_issued) {
@@ -806,11 +806,11 @@ bool c_execution_graph_builder::evaluate_ast_node(
 			m_tracked_scopes.emplace_back(tracked_scope);
 
 			// Add the loop value to the scope
-			c_node_reference element_node_reference =
-				m_execution_graph.get_node_indexed_input_incoming_edge_reference(array_node_reference, array_index, 0);
+			h_graph_node element_node_handle =
+				m_execution_graph.get_node_indexed_input_incoming_edge_handle(array_node_handle, array_index, 0);
 			c_tracked_declaration *tracked_declaration =
 				m_tracked_scopes.back()->add_declaration(for_loop->get_value_declaration());
-			tracked_declaration->set_node_reference(element_node_reference);
+			tracked_declaration->set_node_handle(element_node_handle);
 
 			push_ast_node(for_loop->get_loop_scope());
 
@@ -856,27 +856,27 @@ bool c_execution_graph_builder::evaluate_ast_node(
 	wl_assert(state == 0);
 
 	// Construct a constant node
-	c_node_reference constant_node_reference;
+	h_graph_node constant_node_handle = h_graph_node::invalid();
 	wl_assert(literal->get_data_type().get_data_mutability() == e_ast_data_mutability::k_constant);
 	switch (literal->get_data_type().get_primitive_type()) {
 	case e_ast_primitive_type::k_real:
-		constant_node_reference = m_execution_graph.add_constant_node(literal->get_real_value());
+		constant_node_handle = m_execution_graph.add_constant_node(literal->get_real_value());
 		break;
 
 	case e_ast_primitive_type::k_bool:
-		constant_node_reference = m_execution_graph.add_constant_node(literal->get_bool_value());
+		constant_node_handle = m_execution_graph.add_constant_node(literal->get_bool_value());
 		break;
 
 	case e_ast_primitive_type::k_string:
-		constant_node_reference = m_execution_graph.add_constant_node(literal->get_string_value());
+		constant_node_handle = m_execution_graph.add_constant_node(literal->get_string_value());
 		break;
 
 	default:
 		wl_unreachable();
 	}
 
-	wl_assert(constant_node_reference.is_valid());
-	push_expression_result(constant_node_reference);
+	wl_assert(constant_node_handle.is_valid());
+	push_expression_result(constant_node_handle);
 
 	pop_node_out = true;
 	return true;
@@ -901,17 +901,17 @@ bool c_execution_graph_builder::evaluate_ast_node(
 	} else {
 		wl_assert(state == 1);
 
-		c_node_reference array_node_reference = m_execution_graph.add_array_node(
+		h_graph_node array_node_handle = m_execution_graph.add_array_node(
 			native_module_data_type_from_ast_data_type(array->get_data_type().get_element_type().get_data_type()));
-		for (c_node_reference element_node_reference : get_expression_results(array->get_element_count())) {
-			m_execution_graph.add_array_value(array_node_reference, element_node_reference);
+		for (h_graph_node element_node_handle : get_expression_results(array->get_element_count())) {
+			m_execution_graph.add_array_value(array_node_handle, element_node_handle);
 		}
 
 		pop_and_trim_expression_results(array->get_element_count());
 
 		pop_validation_token(array);
 
-		push_expression_result(array_node_reference);
+		push_expression_result(array_node_handle);
 		pop_node_out = true;
 	}
 
@@ -930,7 +930,7 @@ bool c_execution_graph_builder::evaluate_ast_node(
 		declaration_reference->get_references()[0]->get_as<c_ast_node_value_declaration>();
 	c_tracked_declaration *tracked_declaration = m_tracked_scopes.back()->get_tracked_declaration(value_declaration);
 
-	if (!tracked_declaration->get_node_reference().is_valid()) {
+	if (!tracked_declaration->get_node_handle().is_valid()) {
 		// If this value doesn't have an associated node, it means we're initializing global-scope constants and one of
 		// the constants refers to another global-scope constant which hasn't yet been initialized. In this case, we
 		// pause evaluation of the first constant and evaluate the dependent one, then swap back and continue
@@ -942,8 +942,8 @@ bool c_execution_graph_builder::evaluate_ast_node(
 	}
 
 	wl_assert(tracked_declaration);
-	wl_assert(tracked_declaration->get_node_reference().is_valid());
-	push_expression_result(tracked_declaration->get_node_reference());
+	wl_assert(tracked_declaration->get_node_handle().is_valid());
+	push_expression_result(tracked_declaration->get_node_handle());
 
 	pop_node_out = true;
 	return true;
@@ -1011,7 +1011,7 @@ bool c_execution_graph_builder::evaluate_ast_node(
 			pop_validation_token(module_call);
 		}
 
-		std::vector<c_node_reference> subscript_index_node_references;
+		std::vector<h_graph_node> subscript_index_node_handles;
 		for (size_t reverse_argument_index = 0; reverse_argument_index < argument_count; reverse_argument_index++) {
 			size_t argument_index = argument_count - reverse_argument_index - 1;
 			c_ast_node_module_declaration_argument *argument = module_declaration->get_argument(argument_index);
@@ -1020,7 +1020,7 @@ bool c_execution_graph_builder::evaluate_ast_node(
 			wl_assert(tracked_declaration);
 			if (argument->get_argument_direction() == e_ast_argument_direction::k_in) {
 				// Grab input arguments off the result stack
-				tracked_declaration->set_node_reference(m_expression_result_stack.back());
+				tracked_declaration->set_node_handle(m_expression_result_stack.back());
 				pop_and_trim_expression_results(1);
 			} else {
 				wl_assert(argument->get_argument_direction() == e_ast_argument_direction::k_out);
@@ -1034,7 +1034,7 @@ bool c_execution_graph_builder::evaluate_ast_node(
 					c_ast_node_subscript *subscript = argument_expression->try_get_as<c_ast_node_subscript>();
 					if (subscript) {
 						// Grab the subscript index off the result stack
-						subscript_index_node_references.push_back(m_expression_result_stack.back());
+						subscript_index_node_handles.push_back(m_expression_result_stack.back());
 						m_graph_trimmer.add_temporary_reference(m_expression_result_stack.back());
 						pop_and_trim_expression_results(1);
 					}
@@ -1049,10 +1049,10 @@ bool c_execution_graph_builder::evaluate_ast_node(
 
 		push_validation_token(module_call);
 
-		// Push subscript index node references back onto the stack so we don't lose them
-		for (c_node_reference subscript_index_node_reference : subscript_index_node_references) {
-			push_expression_result(subscript_index_node_reference);
-			m_graph_trimmer.remove_temporary_reference(subscript_index_node_reference);
+		// Push subscript index node handles back onto the stack so we don't lose them
+		for (h_graph_node subscript_index_node_handle : subscript_index_node_handles) {
+			push_expression_result(subscript_index_node_handle);
+			m_graph_trimmer.remove_temporary_reference(subscript_index_node_handle);
 		}
 
 		if (module_declaration->get_native_module_uid().is_valid()) {
@@ -1079,9 +1079,9 @@ bool c_execution_graph_builder::evaluate_ast_node(
 		// If this is the entry point module call, we have different logic for out arguments
 		if (!is_entry_point_module_call) {
 			// Assign any out arguments to the declarations provided. For array subscripting, we'll grab the index node
-			// references from the stack. Since we pulled them into subscript_index_node_references in reverse and then
-			// pushed them back onto the stack in that same order, we can grab them off the end of the stack in forward
-			// order, which is the order we expect for assignment.
+			// handles from the stack. Since we pulled them into subscript_index_node_handles in reverse and then pushed
+			// them back onto the stack in that same order, we can grab them off the end of the stack in forward order,
+			// which is the order we expect for assignment.
 			c_tracked_scope *tracked_scope = m_tracked_scopes.back().get();
 			c_tracked_scope *parent_tracked_scope = m_tracked_scopes[m_tracked_scopes.size() - 2].get();
 			for (size_t argument_index = 0; argument_index < argument_count; argument_index++) {
@@ -1090,7 +1090,7 @@ bool c_execution_graph_builder::evaluate_ast_node(
 					continue;
 				}
 
-				// The provided out argument is either a declaration reference or an array subscript, which consists of
+				// The provided out argument is either a declaration handle or an array subscript, which consists of
 				// a declaration reference plus an index expression (which we already evaluated). Find the associated
 				// tracked declaration.
 				c_tracked_declaration *tracked_declaration =
@@ -1100,15 +1100,15 @@ bool c_execution_graph_builder::evaluate_ast_node(
 				c_ast_node_declaration_reference *declaration_reference =
 					argument_expression->try_get_as<c_ast_node_declaration_reference>();
 
-				c_node_reference subscript_index_node_reference;
+				h_graph_node subscript_index_node_handle = h_graph_node::invalid();
 				s_compiler_source_location subscript_index_expression_source_location;
 				if (!declaration_reference) {
 					c_ast_node_subscript *subscript = argument_expression->get_as<c_ast_node_subscript>();
 					declaration_reference = subscript->get_reference();
 
 					// Grab the subscript index off the result stack
-					subscript_index_node_reference = m_expression_result_stack.back();
-					m_graph_trimmer.add_temporary_reference(subscript_index_node_reference);
+					subscript_index_node_handle = m_expression_result_stack.back();
+					m_graph_trimmer.add_temporary_reference(subscript_index_node_handle);
 					pop_and_trim_expression_results(1);
 
 					subscript_index_expression_source_location =
@@ -1124,24 +1124,24 @@ bool c_execution_graph_builder::evaluate_ast_node(
 
 				if (!assign_expression_value(
 					target_tracked_declaration,
-					tracked_declaration->get_node_reference(),
-					subscript_index_node_reference,
+					tracked_declaration->get_node_handle(),
+					subscript_index_node_handle,
 					subscript_index_expression_source_location)) {
 					return false;
 				}
 
-				m_graph_trimmer.remove_temporary_reference(subscript_index_node_reference);
+				m_graph_trimmer.remove_temporary_reference(subscript_index_node_handle);
 			}
 		}
 
 		pop_validation_token(module_call);
 
 		// If this is a non-void module, push the return value onto the stack
-		wl_assert(m_return_value_node_reference.is_valid() != module_declaration->get_return_type().is_void());
-		if (m_return_value_node_reference.is_valid()) {
-			push_expression_result(m_return_value_node_reference);
-			m_graph_trimmer.remove_temporary_reference(m_return_value_node_reference);
-			m_return_value_node_reference = c_node_reference();
+		wl_assert(m_return_value_node_handle.is_valid() != module_declaration->get_return_type().is_void());
+		if (m_return_value_node_handle.is_valid()) {
+			push_expression_result(m_return_value_node_handle);
+			m_graph_trimmer.remove_temporary_reference(m_return_value_node_handle);
+			m_return_value_node_handle = h_graph_node::invalid();
 
 			if (is_entry_point_module_call) {
 				push_validation_token(c_execution_graph::k_remain_active_output_index);
@@ -1170,7 +1170,7 @@ bool c_execution_graph_builder::evaluate_ast_node(
 					tracked_scope->get_tracked_declaration(argument->get_value_declaration());
 				wl_assert(tracked_declaration);
 				if (argument->get_argument_direction() == e_ast_argument_direction::k_out) {
-					push_expression_result(tracked_declaration->get_node_reference());
+					push_expression_result(tracked_declaration->get_node_handle());
 
 #if IS_TRUE(ASSERTS_ENABLED)
 					push_validation_token(output_count - reverse_output_index - 1);
@@ -1207,15 +1207,15 @@ bool c_execution_graph_builder::evaluate_ast_node(
 
 bool c_execution_graph_builder::assign_expression_value(
 	c_tracked_declaration *tracked_declaration,
-	c_node_reference expression_node_reference,
-	c_node_reference index_expression_node_reference,
+	h_graph_node expression_node_handle,
+	h_graph_node index_expression_node_handle,
 	const s_compiler_source_location &index_expression_source_location) {
 	// Update the node pointed to by the declaration
-	if (index_expression_node_reference.is_valid()) {
+	if (index_expression_node_handle.is_valid()) {
 		// This is an array subscript assignment
-		c_node_reference array_node_reference = tracked_declaration->get_node_reference();
-		size_t array_count = m_execution_graph.get_node_incoming_edge_count(array_node_reference);
-		real32 array_index_real = m_execution_graph.get_constant_node_real_value(index_expression_node_reference);
+		h_graph_node array_node_handle = tracked_declaration->get_node_handle();
+		size_t array_count = m_execution_graph.get_node_incoming_edge_count(array_node_handle);
+		real32 array_index_real = m_execution_graph.get_constant_node_real_value(index_expression_node_handle);
 		size_t array_index;
 		if (!get_and_validate_native_module_array_index(array_index_real, array_count, array_index)) {
 			m_context.error(
@@ -1227,31 +1227,31 @@ bool c_execution_graph_builder::assign_expression_value(
 			return false;
 		}
 
-		if (m_execution_graph.get_node_outgoing_edge_count(array_node_reference) == 1) {
+		if (m_execution_graph.get_node_outgoing_edge_count(array_node_handle) == 1) {
 			// Optimization: if we're the only thing referencing this array, just swap out a single node rather than
 			// copying the entire array
-			c_node_reference old_element_node_reference = m_execution_graph.set_array_value_at_index(
-				array_node_reference,
+			h_graph_node old_element_node_handle = m_execution_graph.set_array_value_at_index(
+				array_node_handle,
 				cast_integer_verify<uint32>(array_index),
-				expression_node_reference);
-			m_graph_trimmer.try_trim_node(old_element_node_reference);
+				expression_node_handle);
+			m_graph_trimmer.try_trim_node(old_element_node_handle);
 		} else {
 			// Copy the entire array and redirect the declaration to point at the copy
-			c_node_reference new_array_node_reference = m_execution_graph.add_array_node(
-				m_execution_graph.get_node_data_type(array_node_reference).get_element_type());
+			h_graph_node new_array_node_handle = m_execution_graph.add_array_node(
+				m_execution_graph.get_node_data_type(array_node_handle).get_element_type());
 			for (size_t index = 0; index < array_count; index++) {
-				c_node_reference element_node_reference = (index == array_index)
-					? expression_node_reference
-					: m_execution_graph.get_node_indexed_input_incoming_edge_reference(
-						array_node_reference,
+				h_graph_node element_node_handle = (index == array_index)
+					? expression_node_handle
+					: m_execution_graph.get_node_indexed_input_incoming_edge_handle(
+						array_node_handle,
 						array_index,
 						0);
-				m_execution_graph.add_array_value(new_array_node_reference, element_node_reference);
+				m_execution_graph.add_array_value(new_array_node_handle, element_node_handle);
 			}
 		}
 	} else {
 		// This is an ordinary assignment
-		tracked_declaration->set_node_reference(expression_node_reference);
+		tracked_declaration->set_node_handle(expression_node_handle);
 	}
 
 	return true;
@@ -1266,7 +1266,7 @@ bool c_execution_graph_builder::issue_native_module_call(
 	const s_native_module &native_module =
 		c_native_module_registry::get_native_module(native_module_handle);
 
-	c_node_reference native_module_call_node_reference =
+	h_graph_node native_module_call_node_handle =
 		m_execution_graph.add_native_module_call_node(native_module_handle);
 
 	// Pass in the inputs
@@ -1283,9 +1283,9 @@ bool c_execution_graph_builder::issue_native_module_call(
 				m_tracked_scopes.back()->get_tracked_declaration(argument->get_value_declaration());
 			if (argument->get_argument_direction() == e_ast_argument_direction::k_in) {
 				// Hook up the input source node
-				c_node_reference input_node_reference =
-					m_execution_graph.get_node_incoming_edge_reference(native_module_call_node_reference, input_index);
-				m_execution_graph.add_edge(tracked_declaration->get_node_reference(), input_node_reference);
+				h_graph_node input_node_handle =
+					m_execution_graph.get_node_incoming_edge_handle(native_module_call_node_handle, input_index);
+				m_execution_graph.add_edge(tracked_declaration->get_node_handle(), input_node_handle);
 				input_index++;
 			} else {
 				wl_assert(argument->get_argument_direction() == e_ast_argument_direction::k_out);
@@ -1299,15 +1299,15 @@ bool c_execution_graph_builder::issue_native_module_call(
 	// untouched. Otherise, the native module node will be removed and the output nodes will be replaced with the
 	// results of the call.
 	bool did_call;
-	std::vector<c_node_reference> output_node_references;
+	std::vector<h_graph_node> output_node_handles;
 	if (!try_call_native_module(
 		m_context,
 		m_graph_trimmer,
 		m_instrument_globals,
-		native_module_call_node_reference,
+		native_module_call_node_handle,
 		native_module_call->get_source_location(),
 		did_call,
-		&output_node_references)) {
+		&output_node_handles)) {
 		return false;
 	}
 
@@ -1320,10 +1320,10 @@ bool c_execution_graph_builder::issue_native_module_call(
 		native_module_argument_index++) {
 		if (native_module_argument_index == native_module.return_argument_index) {
 			// Hook up the return output
-			m_return_value_node_reference = did_call
-				? output_node_references[output_index]
-				: m_execution_graph.get_node_outgoing_edge_reference(native_module_call_node_reference, output_index);
-			m_graph_trimmer.add_temporary_reference(m_return_value_node_reference);
+			m_return_value_node_handle = did_call
+				? output_node_handles[output_index]
+				: m_execution_graph.get_node_outgoing_edge_handle(native_module_call_node_handle, output_index);
+			m_graph_trimmer.add_temporary_reference(m_return_value_node_handle);
 			output_index++;
 		} else {
 			c_ast_node_module_declaration_argument *argument = native_module_declaration->get_argument(argument_index);
@@ -1334,12 +1334,12 @@ bool c_execution_graph_builder::issue_native_module_call(
 			} else {
 				wl_assert(argument->get_argument_direction() == e_ast_argument_direction::k_out);
 				// Store off the output node
-				c_node_reference output_node_reference = did_call
-					? output_node_references[output_index]
-					: m_execution_graph.get_node_outgoing_edge_reference(
-						native_module_call_node_reference,
+				h_graph_node output_node_handle = did_call
+					? output_node_handles[output_index]
+					: m_execution_graph.get_node_outgoing_edge_handle(
+						native_module_call_node_handle,
 						output_index);
-				tracked_declaration->set_node_reference(output_node_reference);
+				tracked_declaration->set_node_handle(output_node_handle);
 				output_index++;
 			}
 		}

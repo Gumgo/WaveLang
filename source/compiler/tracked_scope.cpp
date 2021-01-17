@@ -6,9 +6,9 @@ static e_tracked_event_state event_state_min(e_tracked_event_state event_state_a
 static e_tracked_event_state event_state_max(e_tracked_event_state event_state_a, e_tracked_event_state event_state_b);
 
 c_tracked_declaration::~c_tracked_declaration() {
-	if (m_node_reference.is_valid()) {
+	if (m_node_handle.is_valid()) {
 		// This will remove the temporary reference and trim the graph
-		set_node_reference(c_node_reference());
+		set_node_handle(h_graph_node::invalid());
 	}
 }
 
@@ -22,17 +22,17 @@ c_tracked_declaration::c_tracked_declaration(c_ast_node_declaration *declaration
 	m_next_name_lookup = nullptr;
 }
 
-c_node_reference c_tracked_declaration::get_node_reference() const {
-	return m_node_reference;
+h_graph_node c_tracked_declaration::get_node_handle() const {
+	return m_node_handle;
 }
 
-void c_tracked_declaration::set_node_reference(c_node_reference node_reference) {
-	// If we're storing node references, we require that a graph trimmer is available
+void c_tracked_declaration::set_node_handle(h_graph_node node_handle) {
+	// If we're storing node handles, we require that a graph trimmer is available
 	wl_assert(m_graph_trimmer);
 
-	m_graph_trimmer->add_temporary_reference(node_reference);
-	m_graph_trimmer->remove_temporary_reference(m_node_reference);
-	m_node_reference = node_reference;
+	m_graph_trimmer->add_temporary_reference(node_handle);
+	m_graph_trimmer->remove_temporary_reference(m_node_handle);
+	m_node_handle = node_handle;
 }
 
 c_tracked_scope::c_tracked_scope(

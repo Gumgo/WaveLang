@@ -2,11 +2,21 @@
 
 #include "common/common.h"
 
+template<typename t_data>
+struct s_make_invalid_handle_data {
+	constexpr t_data operator()() const {
+		return static_cast<t_data>(-1);
+	}
+};
+
 // A generic handle class wrapping simple data such as uint32. Handles are immutable once constructed and are type-safe
 // - they can only be compared with other handles of the same type. Example handle definition:
 // struct s_foo_handle_identifier {};
 // using h_foo = c_handle<s_foo_handle_identifier, uint32>;
-template<typename t_identifier, typename t_data, t_data k_invalid_data = static_cast<t_data>(-1)>
+template<
+	typename t_identifier,
+	typename t_data,
+	typename t_make_invalid_data = s_make_invalid_handle_data<t_data>>
 class c_handle {
 public:
 	using c_data = t_data;
@@ -18,11 +28,15 @@ public:
 	}
 
 	static c_handle invalid() {
-		return construct(k_invalid_data);
+		return c_handle();
+	}
+
+	c_handle() {
+		m_data = t_make_invalid_data()();
 	}
 
 	bool is_valid() const {
-		return m_data != k_invalid_data;
+		return m_data != t_make_invalid_data()();
 	}
 
 	t_data get_data() const {
@@ -43,10 +57,10 @@ private:
 };
 
 namespace std {
-	template<typename t_identifier, typename t_data, t_data k_invalid_data>
-	struct hash<c_handle<t_identifier, t_data, k_invalid_data>> {
-		size_t operator()(const c_handle<t_identifier, t_data, k_invalid_data> &key) const {
-			return hash()(key.get_data());
+	template<typename t_identifier, typename t_data, typename t_make_invalid_data>
+	struct hash<c_handle<t_identifier, t_data, t_make_invalid_data>> {
+		size_t operator()(const c_handle<t_identifier, t_data, t_make_invalid_data> &key) const {
+			return hash<t_data>()(key.get_data());
 		}
 	};
 }

@@ -10,43 +10,43 @@
 class c_optimization_rule_applicator {
 public:
 	c_optimization_rule_applicator(c_execution_graph &execution_graph);
-	bool try_apply_optimization_rule(c_node_reference node_reference, uint32 rule_index);
+	bool try_apply_optimization_rule(h_graph_node node_handle, uint32 rule_index);
 
 private:
 	// Used to determine if the rule matches
 	struct s_match_state {
-		c_node_reference current_node_reference;
-		c_node_reference current_node_output_reference;
+		h_graph_node current_node_handle;
+		h_graph_node current_node_output_handle;
 		uint32 next_input_index;
 	};
 
 	bool has_more_inputs(const s_match_state &match_state) const;
-	c_node_reference follow_next_input(s_match_state &match_state, c_node_reference &output_node_reference_out);
+	h_graph_node follow_next_input(s_match_state &match_state, h_graph_node &output_node_handle_out);
 
 	bool try_to_match_source_pattern();
 	bool handle_source_native_module_symbol_match(h_native_module native_module_handle) const;
 	bool handle_source_value_symbol_match(
 		const s_native_module_optimization_symbol &symbol,
-		c_node_reference node_reference,
-		c_node_reference output_node_reference);
+		h_graph_node node_handle,
+		h_graph_node output_node_handle);
 
-	void store_match(const s_native_module_optimization_symbol &symbol, c_node_reference node_reference);
-	c_node_reference load_match(const s_native_module_optimization_symbol &symbol) const;
+	void store_match(const s_native_module_optimization_symbol &symbol, h_graph_node node_handle);
+	h_graph_node load_match(const s_native_module_optimization_symbol &symbol) const;
 
-	c_node_reference build_target_pattern();
-	c_node_reference handle_target_value_symbol_match(const s_native_module_optimization_symbol &symbol);
-	void reroute_source_to_target(c_node_reference target_root_node_reference);
-	void transfer_outputs(c_node_reference destination_reference, c_node_reference source_reference);
+	h_graph_node build_target_pattern();
+	h_graph_node handle_target_value_symbol_match(const s_native_module_optimization_symbol &symbol);
+	void reroute_source_to_target(h_graph_node target_root_node_handle);
+	void transfer_outputs(h_graph_node destination_handle, h_graph_node source_handle);
 
 	c_execution_graph &m_execution_graph;
-	c_node_reference m_source_root_node_reference;
+	h_graph_node m_source_root_node_handle;
 	const s_native_module_optimization_rule *m_rule = nullptr;
 
 	std::stack<s_match_state> m_match_state_stack;
 
 	// Node indices for the values and constants we've matched in the source pattern
-	s_static_array<c_node_reference, s_native_module_optimization_symbol::k_max_matched_symbols>
-		m_matched_variable_node_references;
-	s_static_array<c_node_reference, s_native_module_optimization_symbol::k_max_matched_symbols>
-		m_matched_constant_node_references;
+	s_static_array<h_graph_node, s_native_module_optimization_symbol::k_max_matched_symbols>
+		m_matched_variable_node_handles;
+	s_static_array<h_graph_node, s_native_module_optimization_symbol::k_max_matched_symbols>
+		m_matched_constant_node_handles;
 };

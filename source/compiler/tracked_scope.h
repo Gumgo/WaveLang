@@ -5,7 +5,7 @@
 #include "compiler/ast/nodes.h"
 #include "compiler/graph_trimmer.h"
 
-#include "execution_graph/node_reference.h"
+#include "execution_graph/graph_node_handle.h"
 
 #include <memory>
 #include <vector>
@@ -37,8 +37,8 @@ public:
 	c_ast_node_declaration *get_declaration() const;
 
 	// Keeps track of the last value assigned to this declaration when building an instrument variant
-	c_node_reference get_node_reference() const;
-	void set_node_reference(c_node_reference node_reference);
+	h_graph_node get_node_handle() const;
+	void set_node_handle(h_graph_node node_handle);
 
 private:
 	friend class c_tracked_scope;
@@ -46,7 +46,7 @@ private:
 
 	c_ast_node_declaration *m_declaration = nullptr;
 	c_graph_trimmer *m_graph_trimmer = nullptr;
-	c_node_reference m_node_reference;
+	h_graph_node m_node_handle = h_graph_node::invalid();
 
 	// Forms a linked list of scope items with the same name for quick lookups
 	c_tracked_declaration *m_next_name_lookup = nullptr;

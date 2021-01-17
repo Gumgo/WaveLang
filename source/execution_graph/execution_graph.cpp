@@ -9,9 +9,9 @@
 #include <string>
 
 #if IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
-#define SALT_ARG(salt) , (salt)
+#define NODE_SALT(salt) , (salt)
 #else // IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
-#define SALT_ARG(salt)
+#define NODE_SALT(salt)
 #endif // IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
 
 struct s_native_module_data_type_format {
@@ -101,9 +101,9 @@ e_instrument_result c_execution_graph::save(std::ofstream &out) const {
 	writer.write(node_count);
 	for (uint32 index = 0; index < node_count; index++) {
 		const s_node &node = m_nodes[index];
-		edge_count += cast_integer_verify<uint32>(node.outgoing_edge_references.size());
+		edge_count += cast_integer_verify<uint32>(node.outgoing_edge_handles.size());
 #if IS_TRUE(ASSERTS_ENABLED)
-		edge_count_verify += cast_integer_verify<uint32>(node.incoming_edge_references.size());
+		edge_count_verify += cast_integer_verify<uint32>(node.incoming_edge_handles.size());
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
 		uint32 node_type = static_cast<uint32>(node.type);
@@ -172,22 +172,22 @@ e_instrument_result c_execution_graph::save(std::ofstream &out) const {
 	writer.write(edge_count);
 	for (uint32 index = 0; index < node_count; index++) {
 		const s_node &from_node = m_nodes[index];
-		for (size_t from_edge = 0; from_edge < from_node.outgoing_edge_references.size(); from_edge++) {
-			c_node_reference to_node_reference = from_node.outgoing_edge_references[from_edge];
-			const s_node &to_node = get_node(to_node_reference);
+		for (size_t from_edge = 0; from_edge < from_node.outgoing_edge_handles.size(); from_edge++) {
+			h_graph_node to_node_handle = from_node.outgoing_edge_handles[from_edge];
+			const s_node &to_node = get_node(to_node_handle);
 
 			size_t to_edge;
-			for (to_edge = 0; to_edge < to_node.incoming_edge_references.size(); to_edge++) {
-				if (to_node.incoming_edge_references[to_edge].get_node_index() == index) {
+			for (to_edge = 0; to_edge < to_node.incoming_edge_handles.size(); to_edge++) {
+				if (to_node.incoming_edge_handles[to_edge].get_data().index == index) {
 					break;
 				}
 			}
 
-			wl_assert(valid_index(to_edge, to_node.incoming_edge_references.size()));
+			wl_assert(valid_index(to_edge, to_node.incoming_edge_handles.size()));
 
 			// Write (a, b, outgoing_index, incoming_index)
 			writer.write(index);
-			writer.write(to_node_reference.get_node_index());
+			writer.write(to_node_handle.get_data().index);
 			writer.write(cast_integer_verify<uint32>(from_edge));
 			writer.write(cast_integer_verify<uint32>(to_edge));
 		}
@@ -363,9 +363,9 @@ e_instrument_result c_execution_graph::load(std::ifstream &in) {
 			return invalid_graph_or_read_failure(in);
 		}
 
-		c_node_reference from_node_reference(from_index SALT_ARG(0));
-		c_node_reference to_node_reference(to_index SALT_ARG(0));
-		if (!add_edge_for_load(from_node_reference, to_node_reference, from_edge, to_edge)) {
+		h_graph_node from_node_handle = h_graph_node::construct({ from_index NODE_SALT(0) });
+		h_graph_node to_node_handle = h_graph_node::construct({ to_index NODE_SALT(0) });
+		if (!add_edge_for_load(from_node_handle, to_node_handle, from_edge, to_edge)) {
 			return e_instrument_result::k_invalid_graph;
 		}
 	}
@@ -394,12 +394,12 @@ bool c_execution_graph::validate() const {
 
 	// Validate each node first
 	for (uint32 index = 0; index < get_node_count(); index++) {
-		c_node_reference node_reference = node_reference_from_index(index);
-		input_node_count += (get_node_type(node_reference) == e_execution_graph_node_type::k_input);
-		output_node_count += (get_node_type(node_reference) == e_execution_graph_node_type::k_output);
+		h_graph_node node_handle = node_handle_from_index(index);
+		input_node_count += (get_node_type(node_handle) == e_execution_graph_node_type::k_input);
+		output_node_count += (get_node_type(node_handle) == e_execution_graph_node_type::k_output);
 
-		if (!validate_node(node_reference)
-			|| get_node_type(node_reference) == e_execution_graph_node_type::k_temporary_reference) {
+		if (!validate_node(node_handle)
+			|| get_node_type(node_handle) == e_execution_graph_node_type::k_temporary_reference) {
 			return false;
 		}
 	}
@@ -411,11 +411,11 @@ bool c_execution_graph::validate() const {
 
 	// Validate each edge (requires nodes to be validated), check for cycles
 	for (uint32 index = 0; index < get_node_count(); index++) {
-		c_node_reference node_reference = node_reference_from_index(index);
+		h_graph_node node_handle = node_handle_from_index(index);
 
 		// Only bother validating outgoing edges, since it would be redundant to check both directions
-		for (size_t edge = 0; edge < m_nodes[index].outgoing_edge_references.size(); edge++) {
-			if (!validate_edge(node_reference, m_nodes[index].outgoing_edge_references[edge])) {
+		for (size_t edge = 0; edge < m_nodes[index].outgoing_edge_handles.size(); edge++) {
+			if (!validate_edge(node_handle, m_nodes[index].outgoing_edge_handles[edge])) {
 				return false;
 			}
 		}
@@ -427,10 +427,10 @@ bool c_execution_graph::validate() const {
 	std::vector<bool> output_nodes_found(output_node_count - 1, false);
 	bool remain_active_output_node_found = false;
 	for (uint32 index = 0; index < get_node_count(); index++) {
-		c_node_reference node_reference = node_reference_from_index(index);
+		h_graph_node node_handle = node_handle_from_index(index);
 
-		if (get_node_type(node_reference) == e_execution_graph_node_type::k_input) {
-			uint32 input_index = get_input_node_input_index(node_reference);
+		if (get_node_type(node_handle) == e_execution_graph_node_type::k_input) {
+			uint32 input_index = get_input_node_input_index(node_handle);
 
 			if (!valid_index(input_index, input_node_count)) {
 				// Not in the range [0,n-1]
@@ -443,8 +443,8 @@ bool c_execution_graph::validate() const {
 			}
 
 			input_nodes_found[input_index] = true;
-		} else if (get_node_type(node_reference) == e_execution_graph_node_type::k_output) {
-			uint32 output_index = get_output_node_output_index(node_reference);
+		} else if (get_node_type(node_handle) == e_execution_graph_node_type::k_output) {
+			uint32 output_index = get_output_node_output_index(node_handle);
 
 			if (output_index == k_remain_active_output_index) {
 				if (remain_active_output_node_found) {
@@ -487,16 +487,16 @@ bool c_execution_graph::validate() const {
 	std::vector<bool> nodes_marked(m_nodes.size());
 	while (true) {
 		// Find an unvisited node
-		c_node_reference node_reference;
+		h_graph_node node_handle = h_graph_node::invalid();
 		for (uint32 index = 0; index < m_nodes.size(); index++) {
 			if (!nodes_visited[index]) {
-				node_reference = node_reference_from_index(index);
+				node_handle = node_handle_from_index(index);
 				break;
 			}
 		}
 
-		if (node_reference.is_valid()) {
-			if (!visit_node_for_cycle_detection(node_reference, nodes_visited, nodes_marked)) {
+		if (node_handle.is_valid()) {
+			if (!visit_node_for_cycle_detection(node_handle, nodes_visited, nodes_marked)) {
 				return false;
 			}
 		} else {
@@ -561,7 +561,7 @@ bool c_execution_graph::does_node_use_indexed_outputs(const s_node &node) {
 	}
 }
 
-c_node_reference c_execution_graph::allocate_node() {
+h_graph_node c_execution_graph::allocate_node() {
 	uint32 index;
 	s_node *node;
 	if (m_free_node_indices.empty()) {
@@ -579,126 +579,121 @@ c_node_reference c_execution_graph::allocate_node() {
 	}
 
 	zero_type(&node->node_data);
-	return c_node_reference(index SALT_ARG(node->salt));
+	return h_graph_node::construct({ index NODE_SALT(node->salt) });
 }
 
-c_node_reference c_execution_graph::node_reference_from_index(uint32 node_index) const {
+h_graph_node c_execution_graph::node_handle_from_index(uint32 node_index) const {
 	wl_assert(valid_index(node_index, m_nodes.size()));
 	wl_assert(m_nodes[node_index].type != e_execution_graph_node_type::k_invalid);
-
-#if IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
-	return c_node_reference(node_index, m_nodes[node_index].salt);
-#else // IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
-	return c_node_reference(node_index);
-#endif // IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
+	return h_graph_node::construct({ node_index NODE_SALT(m_nodes[node_index].salt) });
 }
 
-c_execution_graph::s_node &c_execution_graph::get_node(c_node_reference node_reference) {
-	s_node &result = m_nodes[node_reference.get_node_index()];
+c_execution_graph::s_node &c_execution_graph::get_node(h_graph_node node_handle) {
+	s_node &result = m_nodes[node_handle.get_data().index];
 #if IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
-	wl_assertf(result.salt == node_reference.get_salt(), "Salt mismatch");
+	wl_assertf(result.salt == node_handle.get_data().salt, "Salt mismatch");
 #endif // IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
 	return result;
 }
 
-const c_execution_graph::s_node &c_execution_graph::get_node(c_node_reference node_reference) const {
-	const s_node &result = m_nodes[node_reference.get_node_index()];
+const c_execution_graph::s_node &c_execution_graph::get_node(h_graph_node node_handle) const {
+	const s_node &result = m_nodes[node_handle.get_data().index];
 #if IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
-	wl_assertf(result.salt == node_reference.get_salt(), "Salt mismatch");
+	wl_assertf(result.salt == node_handle.get_data().salt, "Salt mismatch");
 #endif // IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
 	return result;
 }
 
-c_node_reference c_execution_graph::add_constant_node(real32 constant_value) {
-	c_node_reference node_reference = allocate_node();
-	s_node &node = get_node(node_reference);
+h_graph_node c_execution_graph::add_constant_node(real32 constant_value) {
+	h_graph_node node_handle = allocate_node();
+	s_node &node = get_node(node_handle);
 	node.type = e_execution_graph_node_type::k_constant;
 	node.node_data.emplace<s_node::s_constant_node_data>();
 	node.constant_node_data().type = c_native_module_data_type(e_native_module_primitive_type::k_real);
 	node.constant_node_data().real_value = constant_value;
-	return node_reference;
+	return node_handle;
 }
 
-c_node_reference c_execution_graph::add_constant_node(bool constant_value) {
-	c_node_reference node_reference = allocate_node();
-	s_node &node = get_node(node_reference);
+h_graph_node c_execution_graph::add_constant_node(bool constant_value) {
+	h_graph_node node_handle = allocate_node();
+	s_node &node = get_node(node_handle);
 	node.type = e_execution_graph_node_type::k_constant;
 	node.node_data.emplace<s_node::s_constant_node_data>();
 	node.constant_node_data().type = c_native_module_data_type(e_native_module_primitive_type::k_bool);
 	node.constant_node_data().bool_value = constant_value;
-	return node_reference;
+	return node_handle;
 }
 
-c_node_reference c_execution_graph::add_constant_node(const char *constant_value) {
-	c_node_reference node_reference = allocate_node();
-	s_node &node = get_node(node_reference);
+h_graph_node c_execution_graph::add_constant_node(const char *constant_value) {
+	h_graph_node node_handle = allocate_node();
+	s_node &node = get_node(node_handle);
 	node.type = e_execution_graph_node_type::k_constant;
 	node.node_data.emplace<s_node::s_constant_node_data>();
 	node.constant_node_data().type = c_native_module_data_type(e_native_module_primitive_type::k_string);
 	node.constant_node_data().string_index = cast_integer_verify<uint32>(m_string_table.add_string(constant_value));
-	return node_reference;
+	return node_handle;
 }
 
-c_node_reference c_execution_graph::add_array_node(c_native_module_data_type element_type) {
-	c_node_reference node_reference = allocate_node();
-	s_node &node = get_node(node_reference);
+h_graph_node c_execution_graph::add_array_node(c_native_module_data_type element_type) {
+	h_graph_node node_handle = allocate_node();
+	s_node &node = get_node(node_handle);
 	node.type = e_execution_graph_node_type::k_array;
 	node.node_data.emplace<s_node::s_array_node_data>();
 	// Will assert if there is not a valid array type (e.g. cannot make array of array)
 	node.array_node_data().type = element_type.get_array_type();
-	return node_reference;
+	return node_handle;
 }
 
 void c_execution_graph::add_array_value(
-	c_node_reference array_node_reference,
-	c_node_reference value_node_reference) {
+	h_graph_node array_node_handle,
+	h_graph_node value_node_handle) {
 #if IS_TRUE(ASSERTS_ENABLED)
-	const s_node &array_node = get_node(array_node_reference);
+	const s_node &array_node = get_node(array_node_handle);
 	wl_assert(array_node.type == e_execution_graph_node_type::k_array);
 	c_native_module_data_type element_type = array_node.array_node_data().type.get_element_type();
-	c_native_module_data_type value_node_type = get_node_data_type(value_node_reference);
+	c_native_module_data_type value_node_type = get_node_data_type(value_node_handle);
 	wl_assert(value_node_type.is_valid());
 	wl_assert(element_type == value_node_type);
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
 	// Create an indexed input node to represent this array index
-	c_node_reference input_node_reference = allocate_node();
-	s_node &input_node = get_node(input_node_reference);
+	h_graph_node input_node_handle = allocate_node();
+	s_node &input_node = get_node(input_node_handle);
 	input_node.type = e_execution_graph_node_type::k_indexed_input;
-	add_edge_internal(input_node_reference, array_node_reference);
-	add_edge_internal(value_node_reference, input_node_reference);
+	add_edge_internal(input_node_handle, array_node_handle);
+	add_edge_internal(value_node_handle, input_node_handle);
 }
 
-c_node_reference c_execution_graph::set_array_value_at_index(
-	c_node_reference array_node_reference,
+h_graph_node c_execution_graph::set_array_value_at_index(
+	h_graph_node array_node_handle,
 	uint32 index,
-	c_node_reference value_node_reference) {
-	const s_node &array_node = get_node(array_node_reference);
+	h_graph_node value_node_handle) {
+	const s_node &array_node = get_node(array_node_handle);
 
 #if IS_TRUE(ASSERTS_ENABLED)
 	wl_assert(array_node.type == e_execution_graph_node_type::k_array);
 	c_native_module_data_type element_type = array_node.array_node_data().type.get_element_type();
-	c_native_module_data_type value_node_type = get_node_data_type(value_node_reference);
+	c_native_module_data_type value_node_type = get_node_data_type(value_node_handle);
 	wl_assert(value_node_type.is_valid());
 	wl_assert(element_type == value_node_type);
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
 	// Replace the input to the indexed input node at the given index
-	c_node_reference input_node_reference = array_node.incoming_edge_references[index];
-	c_node_reference old_value_node_reference = get_node_incoming_edge_reference(input_node_reference, 0);
-	remove_edge_internal(old_value_node_reference, input_node_reference);
-	add_edge_internal(value_node_reference, input_node_reference);
-	return old_value_node_reference;
+	h_graph_node input_node_handle = array_node.incoming_edge_handles[index];
+	h_graph_node old_value_node_handle = get_node_incoming_edge_handle(input_node_handle, 0);
+	remove_edge_internal(old_value_node_handle, input_node_handle);
+	add_edge_internal(value_node_handle, input_node_handle);
+	return old_value_node_handle;
 }
 
-c_node_reference c_execution_graph::add_native_module_call_node(h_native_module native_module_handle) {
+h_graph_node c_execution_graph::add_native_module_call_node(h_native_module native_module_handle) {
 	wl_assert(native_module_handle.is_valid());
 
-	c_node_reference node_reference = allocate_node();
-	// Don't store a reference to the node, it gets invalidated if the vector is resized when adding inputs/outputs
-	get_node(node_reference).type = e_execution_graph_node_type::k_native_module_call;
-	get_node(node_reference).node_data.emplace<s_node::s_native_module_call_node_data>();
-	get_node(node_reference).native_module_call_node_data().native_module_handle = native_module_handle;
+	h_graph_node node_handle = allocate_node();
+	// Don't store a handle to the node, it gets invalidated if the vector is resized when adding inputs/outputs
+	get_node(node_handle).type = e_execution_graph_node_type::k_native_module_call;
+	get_node(node_handle).node_data.emplace<s_node::s_native_module_call_node_data>();
+	get_node(node_handle).native_module_call_node_data().native_module_handle = native_module_handle;
 
 	// Add nodes for each argument; the return value is output 0
 	// Note that the incoming and outgoing edge lists are ordered by argument index so accessing the nth edge will give
@@ -706,78 +701,78 @@ c_node_reference c_execution_graph::add_native_module_call_node(h_native_module 
 	const s_native_module &native_module = c_native_module_registry::get_native_module(native_module_handle);
 	for (size_t arg = 0; arg < native_module.argument_count; arg++) {
 		s_native_module_argument argument = native_module.arguments[arg];
-		c_node_reference argument_node_reference = allocate_node();
-		s_node &argument_node = get_node(argument_node_reference);
+		h_graph_node argument_node_handle = allocate_node();
+		s_node &argument_node = get_node(argument_node_handle);
 		if (argument.argument_direction == e_native_module_argument_direction::k_in) {
 			argument_node.type = e_execution_graph_node_type::k_indexed_input;
-			add_edge_internal(argument_node_reference, node_reference);
+			add_edge_internal(argument_node_handle, node_handle);
 		} else {
 			wl_assert(argument.argument_direction == e_native_module_argument_direction::k_out);
 			argument_node.type = e_execution_graph_node_type::k_indexed_output;
-			add_edge_internal(node_reference, argument_node_reference);
+			add_edge_internal(node_handle, argument_node_handle);
 		}
 	}
 
-	return node_reference;
+	return node_handle;
 }
 
-c_node_reference c_execution_graph::add_input_node(uint32 input_index) {
-	c_node_reference node_reference = allocate_node();
-	s_node &node = get_node(node_reference);
+h_graph_node c_execution_graph::add_input_node(uint32 input_index) {
+	h_graph_node node_handle = allocate_node();
+	s_node &node = get_node(node_handle);
 	node.type = e_execution_graph_node_type::k_input;
 	node.node_data.emplace<s_node::s_input_node_data>();
 	node.input_node_data().input_index = input_index;
-	return node_reference;
+	return node_handle;
 }
 
-c_node_reference c_execution_graph::add_output_node(uint32 output_index) {
-	c_node_reference node_reference = allocate_node();
-	s_node &node = get_node(node_reference);
+h_graph_node c_execution_graph::add_output_node(uint32 output_index) {
+	h_graph_node node_handle = allocate_node();
+	s_node &node = get_node(node_handle);
 	node.type = e_execution_graph_node_type::k_output;
 	node.node_data.emplace<s_node::s_output_node_data>();
 	node.output_node_data().output_index = output_index;
-	return node_reference;
+	return node_handle;
 }
 
-c_node_reference c_execution_graph::add_temporary_reference_node() {
-	c_node_reference node_reference = allocate_node();
-	s_node &node = get_node(node_reference);
+h_graph_node c_execution_graph::add_temporary_reference_node() {
+	h_graph_node node_handle = allocate_node();
+	s_node &node = get_node(node_handle);
 	node.type = e_execution_graph_node_type::k_temporary_reference;
-	return node_reference;
+	return node_handle;
 }
 
 void c_execution_graph::remove_node(
-	c_node_reference node_reference,
+	h_graph_node node_handle,
 	f_on_node_removed on_node_removed,
 	void *on_node_removed_context) {
-	s_node &node = get_node(node_reference);
+	s_node &node = get_node(node_handle);
 
 	if (does_node_use_indexed_inputs(node)) {
 		// Remove input nodes - this will naturally break edges
-		while (!node.incoming_edge_references.empty()) {
-			remove_node(node.incoming_edge_references.back(), on_node_removed, on_node_removed_context);
+		while (!node.incoming_edge_handles.empty()) {
+			remove_node(node.incoming_edge_handles.back(), on_node_removed, on_node_removed_context);
 		}
 	} else {
 		// Break edges
-		while (!node.incoming_edge_references.empty()) {
-			remove_edge_internal(node.incoming_edge_references.back(), node_reference);
+		while (!node.incoming_edge_handles.empty()) {
+			remove_edge_internal(node.incoming_edge_handles.back(), node_handle);
 		}
 	}
 
 	if (does_node_use_indexed_outputs(node)) {
 		// Remove output nodes - this will naturally break edges
-		while (!node.outgoing_edge_references.empty()) {
-			remove_node(node.outgoing_edge_references.back(), on_node_removed, on_node_removed_context);
+		while (!node.outgoing_edge_handles.empty()) {
+			remove_node(node.outgoing_edge_handles.back(), on_node_removed, on_node_removed_context);
 		}
 	} else {
 		// Break edges
-		while (!node.outgoing_edge_references.empty()) {
-			remove_edge_internal(node_reference, node.outgoing_edge_references.back());
+		while (!node.outgoing_edge_handles.empty()) {
+			remove_edge_internal(node_handle, node.outgoing_edge_handles.back());
 		}
 	}
 
 	if (on_node_removed) {
-		on_node_removed(on_node_removed_context, node_reference);
+		on_node_removed(on_node_removed_context, node_handle);
 	}
 
 	// Set to invalid and clear
@@ -788,32 +783,32 @@ void c_execution_graph::remove_node(
 #endif // IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
 	zero_type(&node.node_data);
 
-	m_free_node_indices.push_back(node_reference.get_node_index());
+	m_free_node_indices.push_back(node_handle.get_data().index);
 }
 
-void c_execution_graph::add_edge(c_node_reference from_reference, c_node_reference to_reference) {
+void c_execution_graph::add_edge(h_graph_node from_handle, h_graph_node to_handle) {
 #if IS_TRUE(ASSERTS_ENABLED)
 	// The user-facing function should never touch nodes which use indexed inputs/outputs directly. Instead, the user
 	// should always be creating edges to/from indexed inputs/outputs.
-	const s_node &to_node = get_node(to_reference);
-	const s_node &from_node = get_node(from_reference);
+	const s_node &to_node = get_node(to_handle);
+	const s_node &from_node = get_node(from_handle);
 	wl_assert(!does_node_use_indexed_inputs(to_node));
 	wl_assert(!does_node_use_indexed_outputs(from_node));
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
-	add_edge_internal(from_reference, to_reference);
+	add_edge_internal(from_handle, to_handle);
 }
 
-void c_execution_graph::add_edge_internal(c_node_reference from_reference, c_node_reference to_reference) {
-	s_node &from_node = get_node(from_reference);
-	s_node &to_node = get_node(to_reference);
+void c_execution_graph::add_edge_internal(h_graph_node from_handle, h_graph_node to_handle) {
+	s_node &from_node = get_node(from_handle);
+	s_node &to_node = get_node(to_handle);
 
 	// Add the edge only if it does not already exist
 	bool exists = false;
 	for (size_t from_out_index = 0;
-		!exists && from_out_index < from_node.outgoing_edge_references.size();
+		!exists && from_out_index < from_node.outgoing_edge_handles.size();
 		from_out_index++) {
-		if (from_node.outgoing_edge_references[from_out_index] == to_reference) {
+		if (from_node.outgoing_edge_handles[from_out_index] == to_handle) {
 			exists = true;
 		}
 	}
@@ -821,9 +816,9 @@ void c_execution_graph::add_edge_internal(c_node_reference from_reference, c_nod
 #if IS_TRUE(ASSERTS_ENABLED)
 	bool validate_exists = false;
 	for (size_t to_in_index = 0;
-		!validate_exists && to_in_index < to_node.incoming_edge_references.size();
+		!validate_exists && to_in_index < to_node.incoming_edge_handles.size();
 		to_in_index++) {
-		if (to_node.incoming_edge_references[to_in_index] == from_reference) {
+		if (to_node.incoming_edge_handles[to_in_index] == from_handle) {
 			validate_exists = true;
 		}
 	}
@@ -832,82 +827,82 @@ void c_execution_graph::add_edge_internal(c_node_reference from_reference, c_nod
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
 	if (!exists) {
-		wl_assert(validate_edge(from_reference, to_reference));
-		from_node.outgoing_edge_references.push_back(to_reference);
-		to_node.incoming_edge_references.push_back(from_reference);
+		wl_assert(validate_edge(from_handle, to_handle));
+		from_node.outgoing_edge_handles.push_back(to_handle);
+		to_node.incoming_edge_handles.push_back(from_handle);
 	}
 }
 
 bool c_execution_graph::add_edge_for_load(
-	c_node_reference from_reference,
-	c_node_reference to_reference,
+	h_graph_node from_handle,
+	h_graph_node to_handle,
 	size_t from_edge,
 	size_t to_edge) {
 	// Don't perform validation, and return false if the edge is invalid or already exists
-	if (!valid_index(from_reference.get_node_index(), m_nodes.size())
-		|| !valid_index(to_reference.get_node_index(), m_nodes.size())) {
+	if (!valid_index(from_handle.get_data().index, m_nodes.size())
+		|| !valid_index(to_handle.get_data().index, m_nodes.size())) {
 		return false;
 	}
 
-	s_node &from_node = get_node(from_reference);
-	s_node &to_node = get_node(to_reference);
+	s_node &from_node = get_node(from_handle);
+	s_node &to_node = get_node(to_handle);
 
-	for (size_t from_out_index = 0; from_out_index < from_node.outgoing_edge_references.size(); from_out_index++) {
-		if (from_node.outgoing_edge_references[from_out_index] == to_reference) {
+	for (size_t from_out_index = 0; from_out_index < from_node.outgoing_edge_handles.size(); from_out_index++) {
+		if (from_node.outgoing_edge_handles[from_out_index] == to_handle) {
 			return false;
 		}
 	}
 
 #if IS_TRUE(ASSERTS_ENABLED)
-	for (size_t to_in_index = 0; to_in_index < to_node.incoming_edge_references.size(); to_in_index++) {
+	for (size_t to_in_index = 0; to_in_index < to_node.incoming_edge_handles.size(); to_in_index++) {
 		// Validate that it doesn't exist in both directions
-		wl_assert(to_node.incoming_edge_references[to_in_index] != from_reference);
+		wl_assert(to_node.incoming_edge_handles[to_in_index] != from_handle);
 	}
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
-	from_node.outgoing_edge_references.resize(std::max(from_node.outgoing_edge_references.size(), from_edge + 1));
-	from_node.outgoing_edge_references[from_edge] = to_reference;
+	from_node.outgoing_edge_handles.resize(std::max(from_node.outgoing_edge_handles.size(), from_edge + 1));
+	from_node.outgoing_edge_handles[from_edge] = to_handle;
 
-	to_node.incoming_edge_references.resize(std::max(to_node.incoming_edge_references.size(), to_edge + 1));
-	to_node.incoming_edge_references[to_edge] = from_reference;
+	to_node.incoming_edge_handles.resize(std::max(to_node.incoming_edge_handles.size(), to_edge + 1));
+	to_node.incoming_edge_handles[to_edge] = from_handle;
 
 	return true;
 }
 
-void c_execution_graph::remove_edge(c_node_reference from_reference, c_node_reference to_reference) {
+void c_execution_graph::remove_edge(h_graph_node from_handle, h_graph_node to_handle) {
 #if IS_TRUE(ASSERTS_ENABLED)
 	// The user-facing function should never touch nodes which use indexed inputs/outputs directly. Instead, the user
 	// should always be creating edges to/from indexed inputs/outputs.
-	const s_node &to_node = get_node(to_reference);
-	const s_node &from_node = get_node(from_reference);
+	const s_node &to_node = get_node(to_handle);
+	const s_node &from_node = get_node(from_handle);
 	wl_assert(!does_node_use_indexed_inputs(to_node));
 	wl_assert(!does_node_use_indexed_outputs(from_node));
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
-	remove_edge_internal(from_reference, to_reference);
+	remove_edge_internal(from_handle, to_handle);
 }
 
-void c_execution_graph::remove_edge_internal(c_node_reference from_reference, c_node_reference to_reference) {
-	s_node &from_node = get_node(from_reference);
-	s_node &to_node = get_node(to_reference);
+void c_execution_graph::remove_edge_internal(h_graph_node from_handle, h_graph_node to_handle) {
+	s_node &from_node = get_node(from_handle);
+	s_node &to_node = get_node(to_handle);
 
 	// Remove the edge only if it exists
 	bool found_out = false;
 	for (size_t from_out_index = 0;
-		!found_out && from_out_index < from_node.outgoing_edge_references.size();
+		!found_out && from_out_index < from_node.outgoing_edge_handles.size();
 		from_out_index++) {
-		if (from_node.outgoing_edge_references[from_out_index] == to_reference) {
-			from_node.outgoing_edge_references.erase(from_node.outgoing_edge_references.begin() + from_out_index);
+		if (from_node.outgoing_edge_handles[from_out_index] == to_handle) {
+			from_node.outgoing_edge_handles.erase(from_node.outgoing_edge_handles.begin() + from_out_index);
 			found_out = true;
 		}
 	}
 
 	bool found_in = false;
 	for (size_t to_in_index = 0;
-		!found_in && to_in_index < to_node.incoming_edge_references.size();
+		!found_in && to_in_index < to_node.incoming_edge_handles.size();
 		to_in_index++) {
-		if (to_node.incoming_edge_references[to_in_index] == from_reference) {
-			to_node.incoming_edge_references.erase(to_node.incoming_edge_references.begin() + to_in_index);
+		if (to_node.incoming_edge_handles[to_in_index] == from_handle) {
+			to_node.incoming_edge_handles.erase(to_node.incoming_edge_handles.begin() + to_in_index);
 			found_in = true;
 		}
 	}
@@ -916,14 +911,14 @@ void c_execution_graph::remove_edge_internal(c_node_reference from_reference, c_
 	wl_assert(found_out == found_in);
 }
 
-bool c_execution_graph::validate_node(c_node_reference node_reference) const {
-	const s_node &node = get_node(node_reference);
+bool c_execution_graph::validate_node(h_graph_node node_handle) const {
+	const s_node &node = get_node(node_handle);
 
 	// Validate edge counts. To validate each edge individually use validate_edge.
 	switch (node.type) {
 	case e_execution_graph_node_type::k_constant:
 		// We don't need to check here that the type itself it valid because if it isn't the graph will fail to load
-		return node.incoming_edge_references.empty();
+		return node.incoming_edge_handles.empty();
 
 	case e_execution_graph_node_type::k_array:
 		// We don't need to check here that the type itself it valid because if it isn't the graph will fail to load
@@ -952,25 +947,25 @@ bool c_execution_graph::validate_node(c_node_reference node_reference) const {
 			}
 		}
 
-		return (node.incoming_edge_references.size() == in_argument_count)
-			&& (node.outgoing_edge_references.size() == out_argument_count);
+		return (node.incoming_edge_handles.size() == in_argument_count)
+			&& (node.outgoing_edge_handles.size() == out_argument_count);
 	}
 
 	case e_execution_graph_node_type::k_indexed_input:
-		return (node.incoming_edge_references.size() == 1)
-			&& (node.outgoing_edge_references.size() == 1);
+		return (node.incoming_edge_handles.size() == 1)
+			&& (node.outgoing_edge_handles.size() == 1);
 
 	case e_execution_graph_node_type::k_indexed_output:
 		return
-			(node.incoming_edge_references.size() == 1);
+			(node.incoming_edge_handles.size() == 1);
 
 	case e_execution_graph_node_type::k_input:
 		return
-			(node.incoming_edge_references.empty());
+			(node.incoming_edge_handles.empty());
 
 	case e_execution_graph_node_type::k_output:
-		return (node.incoming_edge_references.size() == 1)
-			&& node.outgoing_edge_references.empty();
+		return (node.incoming_edge_handles.size() == 1)
+			&& node.outgoing_edge_handles.empty();
 
 	case e_execution_graph_node_type::k_temporary_reference:
 		return true;
@@ -981,15 +976,15 @@ bool c_execution_graph::validate_node(c_node_reference node_reference) const {
 	}
 }
 
-bool c_execution_graph::validate_edge(c_node_reference from_reference, c_node_reference to_reference) const {
-	if (!valid_index(from_reference.get_node_index(), m_nodes.size())
-		|| !valid_index(to_reference.get_node_index(), m_nodes.size())) {
+bool c_execution_graph::validate_edge(h_graph_node from_handle, h_graph_node to_handle) const {
+	if (!valid_index(from_handle.get_data().index, m_nodes.size())
+		|| !valid_index(to_handle.get_data().index, m_nodes.size())) {
 		return false;
 	}
 
 	bool check_type = false;
-	const s_node &from_node = get_node(from_reference);
-	const s_node &to_node = get_node(to_reference);
+	const s_node &from_node = get_node(from_handle);
+	const s_node &to_node = get_node(to_handle);
 
 	switch (from_node.type) {
 	case e_execution_graph_node_type::k_constant:
@@ -1048,8 +1043,8 @@ bool c_execution_graph::validate_edge(c_node_reference from_reference, c_node_re
 
 	if (check_type) {
 		// Note: this assumes that all nodes have been validated
-		c_native_module_data_type from_type = get_node_data_type(from_reference);
-		c_native_module_data_type to_type = get_node_data_type(to_reference);
+		c_native_module_data_type from_type = get_node_data_type(from_handle);
+		c_native_module_data_type to_type = get_node_data_type(to_handle);
 		if (!from_type.is_valid() || !to_type.is_valid() || from_type != to_type) {
 			return false;
 		}
@@ -1061,13 +1056,13 @@ bool c_execution_graph::validate_edge(c_node_reference from_reference, c_node_re
 bool c_execution_graph::validate_native_modules() const {
 	// This should only be called after all nodes and edges have been validated
 	for (uint32 node_index = 0; node_index < m_nodes.size(); node_index++) {
-		c_node_reference node_reference = node_reference_from_index(node_index);
-		if (get_node_type(node_reference) != e_execution_graph_node_type::k_native_module_call) {
+		h_graph_node node_handle = node_handle_from_index(node_index);
+		if (get_node_type(node_handle) != e_execution_graph_node_type::k_native_module_call) {
 			continue;
 		}
 
 		const s_native_module &native_module = c_native_module_registry::get_native_module(
-			get_native_module_call_native_module_handle(node_reference));
+			get_native_module_call_native_module_handle(node_handle));
 
 		bool always_runs_at_compile_time;
 		bool always_runs_at_compile_time_if_dependent_constants_are_constant;
@@ -1097,24 +1092,24 @@ bool c_execution_graph::validate_native_modules() const {
 		}
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
-		wl_assert(in_argument_count == get_node_incoming_edge_count(node_reference));
+		wl_assert(in_argument_count == get_node_incoming_edge_count(node_handle));
 
 		// For each constant input, verify that a constant node is linked up
 		size_t input = 0;
 		for (size_t arg = 0; arg < native_module.argument_count; arg++) {
 			s_native_module_argument argument = native_module.arguments[arg];
 			if (argument.argument_direction == e_native_module_argument_direction::k_in) {
-				c_node_reference source_node_reference =
-					get_node_indexed_input_incoming_edge_reference(node_reference, input, 0);
+				h_graph_node source_node_handle =
+					get_node_indexed_input_incoming_edge_handle(node_handle, input, 0);
 
 				e_native_module_data_mutability data_mutability = argument.type.get_data_mutability();
 				if (data_mutability == e_native_module_data_mutability::k_constant) {
 					// Validate that this input is constant
-					if (!is_node_constant(source_node_reference)) {
+					if (!is_node_constant(source_node_handle)) {
 						return false;
 					}
 				} else if (data_mutability == e_native_module_data_mutability::k_dependent_constant) {
-					if (!is_node_constant(source_node_reference)) {
+					if (!is_node_constant(source_node_handle)) {
 						all_dependent_constants_are_constant = false;
 					}
 				}
@@ -1159,26 +1154,26 @@ bool c_execution_graph::validate_string_table() const {
 }
 
 bool c_execution_graph::visit_node_for_cycle_detection(
-	c_node_reference node_reference,
+	h_graph_node node_handle,
 	std::vector<bool> &nodes_visited,
 	std::vector<bool> &nodes_marked) const {
-	if (nodes_marked[node_reference.get_node_index()]) {
+	if (nodes_marked[node_handle.get_data().index]) {
 		// Cycle
 		return false;
 	}
 
-	if (!nodes_visited[node_reference.get_node_index()]) {
-		nodes_marked[node_reference.get_node_index()] = true;
+	if (!nodes_visited[node_handle.get_data().index]) {
+		nodes_marked[node_handle.get_data().index] = true;
 
-		const s_node &node = m_nodes[node_reference.get_node_index()];
-		for (size_t edge = 0; edge < node.outgoing_edge_references.size(); edge++) {
-			if (!visit_node_for_cycle_detection(node.outgoing_edge_references[edge], nodes_visited, nodes_marked)) {
+		const s_node &node = m_nodes[node_handle.get_data().index];
+		for (size_t edge = 0; edge < node.outgoing_edge_handles.size(); edge++) {
+			if (!visit_node_for_cycle_detection(node.outgoing_edge_handles[edge], nodes_visited, nodes_marked)) {
 				return false;
 			}
 		}
 
-		nodes_marked[node_reference.get_node_index()] = false;
-		nodes_visited[node_reference.get_node_index()] = true;
+		nodes_marked[node_handle.get_data().index] = false;
+		nodes_visited[node_handle.get_data().index] = true;
 	}
 
 	return true;
@@ -1207,38 +1202,38 @@ uint32 c_execution_graph::get_node_count() const {
 	return cast_integer_verify<uint32>(m_nodes.size());
 }
 
-c_node_reference c_execution_graph::nodes_begin() const {
+h_graph_node c_execution_graph::nodes_begin() const {
 	uint32 index = 0;
 	while (index < m_nodes.size()) {
 		if (m_nodes[index].type != e_execution_graph_node_type::k_invalid) {
-			return c_node_reference(index SALT_ARG(m_nodes[index].salt));
+			return h_graph_node::construct({ index NODE_SALT(m_nodes[index].salt) });
 		}
 
 		index++;
 	}
 
-	return c_node_reference();
+	return h_graph_node::invalid();
 }
 
-c_node_reference c_execution_graph::nodes_next(c_node_reference node_reference) const {
-	uint32 index = node_reference.get_node_index() + 1;
+h_graph_node c_execution_graph::nodes_next(h_graph_node node_handle) const {
+	uint32 index = node_handle.get_data().index + 1;
 	while (index < m_nodes.size()) {
 		if (m_nodes[index].type != e_execution_graph_node_type::k_invalid) {
-			return c_node_reference(index SALT_ARG(m_nodes[index].salt));
+			return h_graph_node::construct({ index NODE_SALT(m_nodes[index].salt) });
 		}
 
 		index++;
 	}
 
-	return c_node_reference();
+	return h_graph_node::invalid();
 }
 
-e_execution_graph_node_type c_execution_graph::get_node_type(c_node_reference node_reference) const {
-	return get_node(node_reference).type;
+e_execution_graph_node_type c_execution_graph::get_node_type(h_graph_node node_handle) const {
+	return get_node(node_handle).type;
 }
 
-c_native_module_data_type c_execution_graph::get_node_data_type(c_node_reference node_reference) const {
-	const s_node &node = get_node(node_reference);
+c_native_module_data_type c_execution_graph::get_node_data_type(h_graph_node node_handle) const {
+	const s_node &node = get_node(node_handle);
 
 	switch (node.type) {
 	case e_execution_graph_node_type::k_constant:
@@ -1254,16 +1249,16 @@ c_native_module_data_type c_execution_graph::get_node_data_type(c_node_reference
 	case e_execution_graph_node_type::k_indexed_input:
 	{
 		// Find the index of this input
-		if (node.outgoing_edge_references.size() != 1) {
+		if (node.outgoing_edge_handles.size() != 1) {
 			return c_native_module_data_type::invalid();
 		}
 
-		c_node_reference dest_node_reference = node.outgoing_edge_references[0];
-		if (!valid_index(dest_node_reference.get_node_index(), m_nodes.size())) {
+		h_graph_node dest_node_handle = node.outgoing_edge_handles[0];
+		if (!valid_index(dest_node_handle.get_data().index, m_nodes.size())) {
 			return c_native_module_data_type::invalid();
 		}
 
-		const s_node &dest_node = get_node(dest_node_reference);
+		const s_node &dest_node = get_node(dest_node_handle);
 
 		if (dest_node.type == e_execution_graph_node_type::k_array) {
 			return dest_node.array_node_data().type.get_element_type();
@@ -1274,7 +1269,7 @@ c_native_module_data_type c_execution_graph::get_node_data_type(c_node_reference
 			size_t input = 0;
 			for (size_t arg = 0; arg < native_module.argument_count; arg++) {
 				if (native_module.arguments[arg].argument_direction == e_native_module_argument_direction::k_in) {
-					if (dest_node.incoming_edge_references[input] == node_reference) {
+					if (dest_node.incoming_edge_handles[input] == node_handle) {
 						// We've found the matching argument - return its type
 						return native_module.arguments[arg].type.get_data_type();
 					}
@@ -1289,16 +1284,16 @@ c_native_module_data_type c_execution_graph::get_node_data_type(c_node_reference
 	case e_execution_graph_node_type::k_indexed_output:
 	{
 		// Find the index of this output
-		if (node.incoming_edge_references.size() != 1) {
+		if (node.incoming_edge_handles.size() != 1) {
 			return c_native_module_data_type::invalid();
 		}
 
-		c_node_reference dest_node_reference = node.incoming_edge_references[0];
-		if (!valid_index(dest_node_reference.get_node_index(), m_nodes.size())) {
+		h_graph_node dest_node_handle = node.incoming_edge_handles[0];
+		if (!valid_index(dest_node_handle.get_data().index, m_nodes.size())) {
 			return c_native_module_data_type::invalid();
 		}
 
-		const s_node &dest_node = get_node(dest_node_reference);
+		const s_node &dest_node = get_node(dest_node_handle);
 
 		if (dest_node.type == e_execution_graph_node_type::k_native_module_call) {
 			const s_native_module &native_module = c_native_module_registry::get_native_module(
@@ -1307,7 +1302,7 @@ c_native_module_data_type c_execution_graph::get_node_data_type(c_node_reference
 			size_t output = 0;
 			for (size_t arg = 0; arg < native_module.argument_count; arg++) {
 				if (native_module.arguments[arg].argument_direction == e_native_module_argument_direction::k_out) {
-					if (dest_node.outgoing_edge_references[output] == node_reference) {
+					if (dest_node.outgoing_edge_handles[output] == node_handle) {
 						// We've found the matching argument - return its type
 						return native_module.arguments[arg].type.get_data_type();
 					}
@@ -1339,17 +1334,17 @@ c_native_module_data_type c_execution_graph::get_node_data_type(c_node_reference
 	}
 }
 
-bool c_execution_graph::is_node_constant(c_node_reference node_reference) const {
-	const s_node &node = get_node(node_reference);
+bool c_execution_graph::is_node_constant(h_graph_node node_handle) const {
+	const s_node &node = get_node(node_handle);
 	if (node.type == e_execution_graph_node_type::k_constant) {
 		return true;
 	}
 
 	if (node.type == e_execution_graph_node_type::k_array) {
-		for (size_t edge = 0; edge < node.incoming_edge_references.size(); edge++) {
-			c_node_reference source_node_reference =
-				get_node_indexed_input_incoming_edge_reference(node_reference, edge, 0);
-			if (!is_node_constant(source_node_reference)) {
+		for (size_t edge = 0; edge < node.incoming_edge_handles.size(); edge++) {
+			h_graph_node source_node_handle =
+				get_node_indexed_input_incoming_edge_handle(node_handle, edge, 0);
+			if (!is_node_constant(source_node_handle)) {
 				return false;
 			}
 		}
@@ -1360,109 +1355,105 @@ bool c_execution_graph::is_node_constant(c_node_reference node_reference) const 
 	return false;
 }
 
-real32 c_execution_graph::get_constant_node_real_value(c_node_reference node_reference) const {
-	const s_node &node = get_node(node_reference);
+real32 c_execution_graph::get_constant_node_real_value(h_graph_node node_handle) const {
+	const s_node &node = get_node(node_handle);
 	wl_assert(node.type == e_execution_graph_node_type::k_constant);
 	wl_assert(node.constant_node_data().type == c_native_module_data_type(e_native_module_primitive_type::k_real));
 	return node.constant_node_data().real_value;
 }
 
-bool c_execution_graph::get_constant_node_bool_value(c_node_reference node_reference) const {
-	const s_node &node = get_node(node_reference);
+bool c_execution_graph::get_constant_node_bool_value(h_graph_node node_handle) const {
+	const s_node &node = get_node(node_handle);
 	wl_assert(node.type == e_execution_graph_node_type::k_constant);
 	wl_assert(node.constant_node_data().type == c_native_module_data_type(e_native_module_primitive_type::k_bool));
 	return node.constant_node_data().bool_value;
 }
 
-const char *c_execution_graph::get_constant_node_string_value(c_node_reference node_reference) const {
-	const s_node &node = get_node(node_reference);
+const char *c_execution_graph::get_constant_node_string_value(h_graph_node node_handle) const {
+	const s_node &node = get_node(node_handle);
 	wl_assert(node.type == e_execution_graph_node_type::k_constant);
 	wl_assert(node.constant_node_data().type == c_native_module_data_type(e_native_module_primitive_type::k_string));
 	return m_string_table.get_string(node.constant_node_data().string_index);
 }
 
-h_native_module c_execution_graph::get_native_module_call_native_module_handle(c_node_reference node_reference) const {
-	const s_node &node = get_node(node_reference);
+h_native_module c_execution_graph::get_native_module_call_native_module_handle(h_graph_node node_handle) const {
+	const s_node &node = get_node(node_handle);
 	wl_assert(node.type == e_execution_graph_node_type::k_native_module_call);
 	return node.native_module_call_node_data().native_module_handle;
 }
 
-uint32 c_execution_graph::get_input_node_input_index(c_node_reference node_reference) const {
-	const s_node &node = get_node(node_reference);
+uint32 c_execution_graph::get_input_node_input_index(h_graph_node node_handle) const {
+	const s_node &node = get_node(node_handle);
 	wl_assert(node.type == e_execution_graph_node_type::k_input);
 	return node.input_node_data().input_index;
 }
 
-uint32 c_execution_graph::get_output_node_output_index(c_node_reference node_reference) const {
-	const s_node &node = get_node(node_reference);
+uint32 c_execution_graph::get_output_node_output_index(h_graph_node node_handle) const {
+	const s_node &node = get_node(node_handle);
 	wl_assert(node.type == e_execution_graph_node_type::k_output);
 	return node.output_node_data().output_index;
 }
 
-size_t c_execution_graph::get_node_incoming_edge_count(c_node_reference node_reference) const {
-	const s_node &node = get_node(node_reference);
-	return node.incoming_edge_references.size();
+size_t c_execution_graph::get_node_incoming_edge_count(h_graph_node node_handle) const {
+	const s_node &node = get_node(node_handle);
+	return node.incoming_edge_handles.size();
 }
 
-c_node_reference c_execution_graph::get_node_incoming_edge_reference(
-	c_node_reference node_reference,
-	size_t edge) const {
-	const s_node &node = get_node(node_reference);
-	return node.incoming_edge_references[edge];
+h_graph_node c_execution_graph::get_node_incoming_edge_handle(h_graph_node node_handle, size_t edge) const {
+	const s_node &node = get_node(node_handle);
+	return node.incoming_edge_handles[edge];
 }
 
-size_t c_execution_graph::get_node_outgoing_edge_count(c_node_reference node_reference) const {
-	const s_node &node = get_node(node_reference);
-	return node.outgoing_edge_references.size();
+size_t c_execution_graph::get_node_outgoing_edge_count(h_graph_node node_handle) const {
+	const s_node &node = get_node(node_handle);
+	return node.outgoing_edge_handles.size();
 }
 
-c_node_reference c_execution_graph::get_node_outgoing_edge_reference(
-	c_node_reference node_reference,
-	size_t edge) const {
-	const s_node &node = get_node(node_reference);
-	return node.outgoing_edge_references[edge];
+h_graph_node c_execution_graph::get_node_outgoing_edge_handle(h_graph_node node_handle, size_t edge) const {
+	const s_node &node = get_node(node_handle);
+	return node.outgoing_edge_handles[edge];
 }
 
-bool c_execution_graph::does_node_use_indexed_inputs(c_node_reference node_reference) const {
-	return does_node_use_indexed_inputs(get_node(node_reference));
+bool c_execution_graph::does_node_use_indexed_inputs(h_graph_node node_handle) const {
+	return does_node_use_indexed_inputs(get_node(node_handle));
 }
 
-bool c_execution_graph::does_node_use_indexed_outputs(c_node_reference node_reference) const {
-	return does_node_use_indexed_outputs(get_node(node_reference));
+bool c_execution_graph::does_node_use_indexed_outputs(h_graph_node node_handle) const {
+	return does_node_use_indexed_outputs(get_node(node_handle));
 }
 
 size_t c_execution_graph::get_node_indexed_input_incoming_edge_count(
-	c_node_reference node_reference,
+	h_graph_node node_handle,
 	size_t input_index) const {
-	wl_assert(does_node_use_indexed_inputs(node_reference));
-	return get_node_incoming_edge_count(get_node_incoming_edge_reference(node_reference, input_index));
+	wl_assert(does_node_use_indexed_inputs(node_handle));
+	return get_node_incoming_edge_count(get_node_incoming_edge_handle(node_handle, input_index));
 }
 
-c_node_reference c_execution_graph::get_node_indexed_input_incoming_edge_reference(
-	c_node_reference node_reference,
+h_graph_node c_execution_graph::get_node_indexed_input_incoming_edge_handle(
+	h_graph_node node_handle,
 	size_t input_index,
 	size_t edge) const {
-	wl_assert(does_node_use_indexed_inputs(node_reference));
-	return get_node_incoming_edge_reference(get_node_incoming_edge_reference(node_reference, input_index), edge);
+	wl_assert(does_node_use_indexed_inputs(node_handle));
+	return get_node_incoming_edge_handle(get_node_incoming_edge_handle(node_handle, input_index), edge);
 }
 
 size_t c_execution_graph::get_node_indexed_output_outgoing_edge_count(
-	c_node_reference node_reference,
+	h_graph_node node_handle,
 	size_t output_index) const {
-	wl_assert(does_node_use_indexed_outputs(node_reference));
-	return get_node_outgoing_edge_count(get_node_outgoing_edge_reference(node_reference, output_index));
+	wl_assert(does_node_use_indexed_outputs(node_handle));
+	return get_node_outgoing_edge_count(get_node_outgoing_edge_handle(node_handle, output_index));
 }
 
-c_node_reference c_execution_graph::get_node_indexed_output_outgoing_edge_reference(
-	c_node_reference node_reference,
+h_graph_node c_execution_graph::get_node_indexed_output_outgoing_edge_handle(
+	h_graph_node node_handle,
 	size_t output_index,
 	size_t edge) const {
-	wl_assert(does_node_use_indexed_outputs(node_reference));
-	return get_node_outgoing_edge_reference(get_node_outgoing_edge_reference(node_reference, output_index), edge);
+	wl_assert(does_node_use_indexed_outputs(node_handle));
+	return get_node_outgoing_edge_handle(get_node_outgoing_edge_handle(node_handle, output_index), edge);
 }
 
 void c_execution_graph::remove_unused_nodes_and_reassign_node_indices() {
-	std::vector<c_node_reference> old_to_new_references(m_nodes.size());
+	std::vector<h_graph_node> old_to_new_handles(m_nodes.size());
 
 	uint32 next_new_index = 0;
 	for (uint32 old_index = 0; old_index < m_nodes.size(); old_index++) {
@@ -1477,7 +1468,7 @@ void c_execution_graph::remove_unused_nodes_and_reassign_node_indices() {
 			m_nodes[next_new_index].salt = 0;
 #endif // IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
 
-			old_to_new_references[old_index] = c_node_reference(next_new_index SALT_ARG(0));
+			old_to_new_handles[old_index] = h_graph_node::construct({ next_new_index NODE_SALT(0) });
 			next_new_index++;
 		}
 	}
@@ -1488,15 +1479,15 @@ void c_execution_graph::remove_unused_nodes_and_reassign_node_indices() {
 	// Remap edge indices
 	for (size_t old_index = 0; old_index < m_nodes.size(); old_index++) {
 		s_node &node = m_nodes[old_index];
-		for (uint32 in = 0; in < node.incoming_edge_references.size(); in++) {
-			node.incoming_edge_references[in] =
-				old_to_new_references[node.incoming_edge_references[in].get_node_index()];
-			wl_assert(node.incoming_edge_references[in].is_valid());
+		for (uint32 in = 0; in < node.incoming_edge_handles.size(); in++) {
+			node.incoming_edge_handles[in] =
+				old_to_new_handles[node.incoming_edge_handles[in].get_data().index];
+			wl_assert(node.incoming_edge_handles[in].is_valid());
 		}
-		for (uint32 out = 0; out < node.outgoing_edge_references.size(); out++) {
-			node.outgoing_edge_references[out] =
-				old_to_new_references[node.outgoing_edge_references[out].get_node_index()];
-			wl_assert(node.outgoing_edge_references[out].is_valid());
+		for (uint32 out = 0; out < node.outgoing_edge_handles.size(); out++) {
+			node.outgoing_edge_handles[out] =
+				old_to_new_handles[node.outgoing_edge_handles[out].get_data().index];
+			wl_assert(node.outgoing_edge_handles[out].is_valid());
 		}
 	}
 
@@ -1515,38 +1506,38 @@ bool c_execution_graph::generate_graphviz_file(const char *fname, bool collapse_
 
 		// Find and mark all large constant arrays
 		for (uint32 index = 0; index < m_nodes.size(); index++) {
-			c_node_reference node_reference = node_reference_from_index(index);
-			const s_node &node = get_node(node_reference);
+			h_graph_node node_handle = node_handle_from_index(index);
+			const s_node &node = get_node(node_handle);
 
 			if (node.type == e_execution_graph_node_type::k_array
-				&& node.incoming_edge_references.size() >= k_large_array_limit
-				&& is_node_constant(node_reference)) {
-				arrays_to_collapse[node_reference.get_node_index()] = true;
+				&& node.incoming_edge_handles.size() >= k_large_array_limit
+				&& is_node_constant(node_handle)) {
+				arrays_to_collapse[node_handle.get_data().index] = true;
 
 				// Mark each input as an array to collapse so that checking the constants below is easier. Also
 				// mark it as a node to skip, so we skip it during output.
-				for (size_t input = 0; input < node.incoming_edge_references.size(); input++) {
-					c_node_reference input_node_reference = node.incoming_edge_references[input];
-					arrays_to_collapse[input_node_reference.get_node_index()] = true;
-					nodes_to_skip[input_node_reference.get_node_index()] = true;
+				for (size_t input = 0; input < node.incoming_edge_handles.size(); input++) {
+					h_graph_node input_node_handle = node.incoming_edge_handles[input];
+					arrays_to_collapse[input_node_handle.get_data().index] = true;
+					nodes_to_skip[input_node_handle.get_data().index] = true;
 				}
 			}
 		}
 
 		// Find and mark all constants which are inputs to only the nodes we just marked
 		for (uint32 index = 0; index < m_nodes.size(); index++) {
-			c_node_reference node_reference = node_reference_from_index(index);
-			const s_node &node = get_node(node_reference);
+			h_graph_node node_handle = node_handle_from_index(index);
+			const s_node &node = get_node(node_handle);
 
 			if (node.type == e_execution_graph_node_type::k_constant) {
 				bool all_outputs_marked = true;
-				for (size_t output = 0; all_outputs_marked && output < node.outgoing_edge_references.size(); output++) {
-					c_node_reference output_node_reference = node.outgoing_edge_references[output];
-					all_outputs_marked = arrays_to_collapse[output_node_reference.get_node_index()];
+				for (size_t output = 0; all_outputs_marked && output < node.outgoing_edge_handles.size(); output++) {
+					h_graph_node output_node_handle = node.outgoing_edge_handles[output];
+					all_outputs_marked = arrays_to_collapse[output_node_handle.get_data().index];
 				}
 
 				if (all_outputs_marked) {
-					nodes_to_skip[node_reference.get_node_index()] = true;
+					nodes_to_skip[node_handle.get_data().index] = true;
 				}
 			}
 		}
@@ -1559,11 +1550,11 @@ bool c_execution_graph::generate_graphviz_file(const char *fname, bool collapse_
 
 	// Declare the nodes
 	for (uint32 index = 0; index < m_nodes.size(); index++) {
-		c_node_reference node_reference = node_reference_from_index(index);
-		const s_node &node = get_node(node_reference);
+		h_graph_node node_handle = node_handle_from_index(index);
+		const s_node &node = get_node(node_handle);
 		c_graphviz_node graph_node;
 
-		if (collapse_large_arrays && nodes_to_skip[node_reference.get_node_index()]) {
+		if (collapse_large_arrays && nodes_to_skip[node_handle.get_data().index]) {
 			// This is a node which has been collapsed - skip it
 			continue;
 		}
@@ -1611,16 +1602,16 @@ bool c_execution_graph::generate_graphviz_file(const char *fname, bool collapse_
 
 		case e_execution_graph_node_type::k_indexed_input:
 		{
-			wl_assert(node.outgoing_edge_references.size() == 1);
-			const s_node &root_node = get_node(node.outgoing_edge_references[0]);
+			wl_assert(node.outgoing_edge_handles.size() == 1);
+			const s_node &root_node = get_node(node.outgoing_edge_handles[0]);
 			uint32 input_index;
-			for (input_index = 0; input_index < root_node.incoming_edge_references.size(); input_index++) {
-				if (root_node.incoming_edge_references[input_index] == node_reference) {
+			for (input_index = 0; input_index < root_node.incoming_edge_handles.size(); input_index++) {
+				if (root_node.incoming_edge_handles[input_index] == node_handle) {
 					break;
 				}
 			}
 
-			wl_assert(valid_index(input_index, root_node.incoming_edge_references.size()));
+			wl_assert(valid_index(input_index, root_node.incoming_edge_handles.size()));
 			graph_node.set_shape("house");
 			graph_node.set_orientation(180.0f);
 			graph_node.set_margin(0.0f, 0.0f);
@@ -1630,16 +1621,16 @@ bool c_execution_graph::generate_graphviz_file(const char *fname, bool collapse_
 
 		case e_execution_graph_node_type::k_indexed_output:
 		{
-			wl_assert(node.incoming_edge_references.size() == 1);
-			const s_node &root_node = get_node(node.incoming_edge_references[0]);
+			wl_assert(node.incoming_edge_handles.size() == 1);
+			const s_node &root_node = get_node(node.incoming_edge_handles[0]);
 			uint32 output_index;
-			for (output_index = 0; output_index < root_node.outgoing_edge_references.size(); output_index++) {
-				if (root_node.outgoing_edge_references[output_index] == node_reference) {
+			for (output_index = 0; output_index < root_node.outgoing_edge_handles.size(); output_index++) {
+				if (root_node.outgoing_edge_handles[output_index] == node_handle) {
 					break;
 				}
 			}
 
-			wl_assert(valid_index(output_index, root_node.outgoing_edge_references.size()));
+			wl_assert(valid_index(output_index, root_node.outgoing_edge_handles.size()));
 			graph_node.set_shape("house");
 			graph_node.set_margin(0.0f, 0.0f);
 			graph_node.set_label((std::to_string(output_index)).c_str());
@@ -1685,7 +1676,7 @@ bool c_execution_graph::generate_graphviz_file(const char *fname, bool collapse_
 			collapsed_array_node.set_name(collapsed_array_node_name.c_str());
 			collapsed_array_node.set_shape("ellipse");
 			collapsed_array_node.set_peripheries(2);
-			collapsed_array_node.set_label(("[" + std::to_string(node.incoming_edge_references.size()) + "]").c_str());
+			collapsed_array_node.set_label(("[" + std::to_string(node.incoming_edge_handles.size()) + "]").c_str());
 			graph.add_node(collapsed_array_node);
 
 			collapsed_nodes++;
@@ -1697,24 +1688,24 @@ bool c_execution_graph::generate_graphviz_file(const char *fname, bool collapse_
 
 	// Declare the edges
 	for (uint32 index = 0; index < m_nodes.size(); index++) {
-		c_node_reference node_reference = node_reference_from_index(index);
+		h_graph_node node_handle = node_handle_from_index(index);
 
-		if (collapse_large_arrays && nodes_to_skip[node_reference.get_node_index()]) {
+		if (collapse_large_arrays && nodes_to_skip[node_handle.get_data().index]) {
 			// This is a node which has been collapsed - skip it
 			continue;
 		}
 
-		const s_node &node = get_node(node_reference);
-		for (size_t edge = 0; edge < node.outgoing_edge_references.size(); edge++) {
-			c_node_reference to_reference = node.outgoing_edge_references[edge];
-			if (collapse_large_arrays && nodes_to_skip[to_reference.get_node_index()]) {
+		const s_node &node = get_node(node_handle);
+		for (size_t edge = 0; edge < node.outgoing_edge_handles.size(); edge++) {
+			h_graph_node to_handle = node.outgoing_edge_handles[edge];
+			if (collapse_large_arrays && nodes_to_skip[to_handle.get_data().index]) {
 				// This is a node which has been collapsed - skip it
 				continue;
 			}
 
 			graph.add_edge(
-				("node_" + std::to_string(node_reference.get_node_index())).c_str(),
-				("node_" + std::to_string(to_reference.get_node_index())).c_str());
+				("node_" + std::to_string(node_handle.get_data().index)).c_str(),
+				("node_" + std::to_string(to_handle.get_data().index)).c_str());
 		}
 	}
 

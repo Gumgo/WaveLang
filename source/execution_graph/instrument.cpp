@@ -100,11 +100,11 @@ bool c_instrument_variant::validate() const {
 
 	if (m_voice_execution_graph && m_fx_execution_graph) {
 		uint32 voice_graph_output_count = 0;
-		for (c_node_reference node_reference = m_voice_execution_graph->nodes_begin();
-			node_reference.is_valid();
-			node_reference = m_voice_execution_graph->nodes_next(node_reference)) {
-			if (m_voice_execution_graph->get_node_type(node_reference) == e_execution_graph_node_type::k_output) {
-				uint32 output_index = m_voice_execution_graph->get_output_node_output_index(node_reference);
+		for (h_graph_node node_handle = m_voice_execution_graph->nodes_begin();
+			node_handle.is_valid();
+			node_handle = m_voice_execution_graph->nodes_next(node_handle)) {
+			if (m_voice_execution_graph->get_node_type(node_handle) == e_execution_graph_node_type::k_output) {
+				uint32 output_index = m_voice_execution_graph->get_output_node_output_index(node_handle);
 				if (output_index != c_execution_graph::k_remain_active_output_index) {
 					voice_graph_output_count++;
 				}
@@ -112,10 +112,10 @@ bool c_instrument_variant::validate() const {
 		}
 
 		uint32 fx_graph_input_count = 0;
-		for (c_node_reference node_reference = m_fx_execution_graph->nodes_begin();
-			node_reference.is_valid();
-			node_reference = m_fx_execution_graph->nodes_next(node_reference)) {
-			if (m_fx_execution_graph->get_node_type(node_reference) == e_execution_graph_node_type::k_input) {
+		for (h_graph_node node_handle = m_fx_execution_graph->nodes_begin();
+			node_handle.is_valid();
+			node_handle = m_fx_execution_graph->nodes_next(node_handle)) {
+			if (m_fx_execution_graph->get_node_type(node_handle) == e_execution_graph_node_type::k_input) {
 				fx_graph_input_count++;
 			}
 		}

@@ -3,12 +3,12 @@
 #include "common/common.h"
 #include "common/utility/string_table.h"
 
+#include "execution_graph/graph_node_handle.h"
 #include "execution_graph/instrument_stage.h"
-#include "execution_graph/node_reference.h"
 
 #include "task_function/task_function.h"
 
-#include <map>
+#include <unordered_map>
 #include <vector>
 
 class c_execution_graph;
@@ -85,37 +85,37 @@ private:
 	};
 
 	void clear();
-	void create_buffer_for_input(const c_execution_graph &execution_graph, c_node_reference node_reference);
-	void assign_buffer_to_output(const c_execution_graph &execution_graph, c_node_reference node_reference);
+	void create_buffer_for_input(const c_execution_graph &execution_graph, h_graph_node node_handle);
+	void assign_buffer_to_output(const c_execution_graph &execution_graph, h_graph_node node_handle);
 	bool add_task_for_node(
 		const c_execution_graph &execution_graph,
-		c_node_reference node_reference,
-		std::map<c_node_reference, uint32> &nodes_to_tasks);
+		h_graph_node node_handle,
+		std::unordered_map<h_graph_node, uint32> &nodes_to_tasks);
 	bool setup_task(
 		const c_execution_graph &execution_graph,
-		c_node_reference node_reference,
+		h_graph_node node_handle,
 		uint32 task_index);
 
 	c_buffer *add_or_get_buffer(
 		const c_execution_graph &execution_graph,
-		c_node_reference node_reference,
+		h_graph_node node_handle,
 		c_task_data_type data_type);
 	c_buffer_array add_or_get_buffer_array(
 		const c_execution_graph &execution_graph,
-		c_node_reference node_reference,
+		h_graph_node node_handle,
 		c_task_data_type data_type);
 
 	// These functions build constant arrays. Note: the arrays they return are relative to null and should be rebased
 	// by calling rebase_arrays(). This is because the underlying array can be reallocated.
 	c_real_constant_array build_real_constant_array(
 		const c_execution_graph &execution_graph,
-		c_node_reference node_reference);
+		h_graph_node node_handle);
 	c_bool_constant_array build_bool_constant_array(
 		const c_execution_graph &execution_graph,
-		c_node_reference node_reference);
+		h_graph_node node_handle);
 	c_string_constant_array build_string_constant_array(
 		const c_execution_graph &execution_graph,
-		c_node_reference node_reference);
+		h_graph_node node_handle);
 
 	void rebase_arrays();
 	void rebase_buffers();
@@ -134,7 +134,7 @@ private:
 
 	void build_task_successor_lists(
 		const c_execution_graph &execution_graph,
-		const std::map<c_node_reference, uint32> &nodes_to_tasks);
+		const std::unordered_map<h_graph_node, uint32> &nodes_to_tasks);
 	void add_task_successor(uint32 predecessor_task_index, uint32 successor_task_index);
 	void calculate_max_concurrency();
 	void add_usage_info_for_buffer_type(
@@ -152,10 +152,10 @@ private:
 	std::vector<c_buffer> m_buffers;
 
 	// Used when building the graph - maps nodes to buffers
-	std::map<c_node_reference, c_buffer *> m_nodes_to_buffers;
+	std::unordered_map<h_graph_node, c_buffer *> m_nodes_to_buffers;
 
 	// Used when building the graph - maps output nodes to input nodes they are being shared with
-	std::map<c_node_reference, c_node_reference> m_output_nodes_to_shared_input_nodes;
+	std::unordered_map<h_graph_node, h_graph_node> m_output_nodes_to_shared_input_nodes;
 
 	// Input and output buffers
 	std::vector<c_buffer *> m_input_buffers;

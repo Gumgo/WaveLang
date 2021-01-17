@@ -112,7 +112,7 @@
     <ClInclude Include="native_modules\scrape_native_modules.h" />
     <ClInclude Include="native_module_registration.h" />
     <ClInclude Include="native_module_registry.h" />
-    <ClInclude Include="node_reference.h" />
+    <ClInclude Include="graph_node_handle.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="SConscript" />
