@@ -3,7 +3,7 @@
 
 #include "generated/wavelang_grammar.h"
 
-#define OUTPUT_PARSE_TREE_ENABLED 1 // $TODO $COMPILER disable this when compiler is done
+#define OUTPUT_PARSE_TREE_ENABLED 0
 
 #if IS_TRUE(OUTPUT_PARSE_TREE_ENABLED)
 #include "common/utility/graphviz_generator.h"

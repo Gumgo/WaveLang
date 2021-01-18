@@ -14,9 +14,7 @@
 
 #include <iostream>
 
-// $TODO move somewhere better?
-static constexpr const char *k_wavelang_synth_extension = "wls";
-
+static constexpr const char *k_wavelang_instrument_extension = "wli";
 static constexpr const char *k_documentation_filename = "registered_native_modules.txt";
 
 int main(int argc, char **argv) {
@@ -115,7 +113,7 @@ int main(int argc, char **argv) {
 				fname_no_ext.resize(last_dot);
 			}
 
-			std::string out_fname = fname_no_ext + '.' + k_wavelang_synth_extension;
+			std::string out_fname = fname_no_ext + '.' + k_wavelang_instrument_extension;
 			std::cout << "Compiled '" << argv[arg] << "' successfully, saving result to '" << out_fname << "'\n";
 
 			e_instrument_result save_result = instrument->save(out_fname.c_str());
