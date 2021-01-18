@@ -1,4 +1,4 @@
-#include "execution_graph/native_modules/scrape_native_modules.h"
+#include "instrument/native_modules/scrape_native_modules.h"
 
 namespace core_native_modules {
 	void scrape_native_modules();

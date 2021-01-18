@@ -1,5 +1,5 @@
-#include "execution_graph/instrument_globals.h"
-#include "execution_graph/native_module_registration.h"
+#include "instrument/instrument_globals.h"
+#include "instrument/native_module_registration.h"
 
 namespace stream_native_modules {
 

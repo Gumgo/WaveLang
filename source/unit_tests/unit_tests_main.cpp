@@ -3,7 +3,7 @@
 
 #include "engine/task_functions/scrape_task_functions.h"
 
-#include "execution_graph/native_modules/scrape_native_modules.h"
+#include "instrument/native_modules/scrape_native_modules.h"
 
 #include <gtest/gtest.h>
 

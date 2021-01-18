@@ -10,7 +10,7 @@
 #include "compiler/components/lexer.h"
 #include "compiler/components/parser.h"
 
-#include "execution_graph/instrument.h"
+#include "instrument/instrument.h"
 
 #include <memory>
 #include <vector>

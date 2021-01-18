@@ -4,7 +4,7 @@
 
 #include "compiler/compiler_context.h"
 
-#include "execution_graph/instrument_globals.h"
+#include "instrument/instrument_globals.h"
 
 #include <vector>
 

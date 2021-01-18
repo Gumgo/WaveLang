@@ -3,9 +3,9 @@
 #include "common/common.h"
 #include "common/utility/string_table.h"
 
-#include "execution_graph/graph_node_handle.h"
-#include "execution_graph/instrument_constants.h"
-#include "execution_graph/native_module_registry.h"
+#include "instrument/graph_node_handle.h"
+#include "instrument/instrument_constants.h"
+#include "instrument/native_module_registry.h"
 
 #include "native_module/native_module.h"
 

@@ -9,11 +9,11 @@
 #include "engine/task_function_registry.h"
 #include "engine/task_functions/scrape_task_functions.h"
 
-#include "execution_graph/execution_graph.h"
-#include "execution_graph/instrument.h"
-#include "execution_graph/native_module_registration.h"
-#include "execution_graph/native_module_registry.h"
-#include "execution_graph/native_modules/scrape_native_modules.h"
+#include "instrument/execution_graph.h"
+#include "instrument/instrument.h"
+#include "instrument/native_module_registration.h"
+#include "instrument/native_module_registry.h"
+#include "instrument/native_modules/scrape_native_modules.h"
 
 #include "runtime/runtime_config.h"
 #include "runtime/runtime_context.h"

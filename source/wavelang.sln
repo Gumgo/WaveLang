@@ -13,7 +13,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "driver", "driver\driver.vcx
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "engine", "engine\engine.vcxproj", "{1DF80208-7675-4E3D-85BB-21F3107107F6}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "execution_graph", "execution_graph\execution_graph.vcxproj", "{F1681AAC-4017-40DC-870A-219F62B8D265}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "instrument", "instrument\instrument.vcxproj", "{F1681AAC-4017-40DC-870A-219F62B8D265}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "runtime", "runtime\runtime.vcxproj", "{01922655-9D92-4AC4-B074-4A1282AF3CA6}"
 EndProject

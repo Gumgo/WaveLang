@@ -2,7 +2,7 @@
 
 #include "common/common.h"
 
-#include "execution_graph/native_module_registry.h"
+#include "instrument/native_module_registry.h"
 
 #include "task_function/task_function.h"
 

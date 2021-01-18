@@ -1,5 +1,5 @@
-#include "execution_graph/native_module_registration.h"
-#include "execution_graph/native_modules/json/json_file_manager.h"
+#include "instrument/native_module_registration.h"
+#include "instrument/native_modules/json/json_file_manager.h"
 
 static const c_json_file *load_json_file_or_report_error(
 	c_json_file_manager *json_file_manager,

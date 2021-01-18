@@ -1,6 +1,6 @@
 #include "common/utility/reporting.h"
 
-#include "execution_graph/native_module_registry.h"
+#include "instrument/native_module_registry.h"
 
 #include <algorithm>
 #include <fstream>

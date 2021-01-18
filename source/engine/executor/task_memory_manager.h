@@ -5,7 +5,7 @@
 
 #include "engine/runtime_instrument.h"
 
-#include "execution_graph/instrument_stage.h"
+#include "instrument/instrument_stage.h"
 
 #include <vector>
 

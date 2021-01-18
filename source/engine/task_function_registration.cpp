@@ -3,7 +3,7 @@
 #include "engine/task_function_registration.h"
 #include "engine/task_function_registry.h"
 
-#include "execution_graph/native_module_registration.h"
+#include "instrument/native_module_registration.h"
 
 template<typename t_type>
 static void reverse_linked_list(t_type *&list_head);

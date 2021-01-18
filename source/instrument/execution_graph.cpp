@@ -1,8 +1,8 @@
 #include "common/utility/file_utility.h"
 #include "common/utility/graphviz_generator.h"
 
-#include "execution_graph/execution_graph.h"
-#include "execution_graph/native_module_registry.h"
+#include "instrument/execution_graph.h"
+#include "instrument/native_module_registry.h"
 
 #include <algorithm>
 #include <fstream>
@@ -1544,7 +1544,7 @@ bool c_execution_graph::generate_graphviz_file(const char *fname, bool collapse_
 	}
 
 	c_graphviz_generator graph;
-	graph.set_graph_name("execution_graph");
+	graph.set_graph_name("native_module_graph");
 
 	size_t collapsed_nodes = 0;
 

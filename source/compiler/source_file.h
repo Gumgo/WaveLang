@@ -6,7 +6,7 @@
 #include "compiler/source_location.h"
 #include "compiler/token.h"
 
-#include "execution_graph/native_module_registry.h"
+#include "instrument/native_module_registry.h"
 
 #include <memory>
 

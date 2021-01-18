@@ -1,6 +1,6 @@
 #include "common/common.h"
 
-#include "execution_graph/native_modules/json/json_file.h"
+#include "instrument/native_modules/json/json_file.h"
 
 #include <gtest/gtest.h>
 

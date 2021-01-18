@@ -1,8 +1,8 @@
 #include "common/utility/file_utility.h"
 
-#include "execution_graph/execution_graph.h"
-#include "execution_graph/instrument.h"
-#include "execution_graph/instrument_globals.h"
+#include "instrument/execution_graph.h"
+#include "instrument/instrument.h"
+#include "instrument/instrument_globals.h"
 
 static constexpr char k_format_identifier[] = { 'w', 'a', 'v', 'e', 'l', 'a', 'n', 'g' };
 

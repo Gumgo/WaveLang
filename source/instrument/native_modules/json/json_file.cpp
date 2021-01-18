@@ -1,6 +1,6 @@
 #include "common/utility/file_utility.h"
 
-#include "execution_graph/native_modules/json/json_file.h"
+#include "instrument/native_modules/json/json_file.h"
 
 #include <charconv>
 

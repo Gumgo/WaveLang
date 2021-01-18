@@ -4,7 +4,7 @@
 #include "common/threading/lock_free.h"
 #include "common/utility/stopwatch.h"
 
-#include "execution_graph/instrument_stage.h"
+#include "instrument/instrument_stage.h"
 
 #include <vector>
 

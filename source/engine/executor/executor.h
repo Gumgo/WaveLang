@@ -18,7 +18,7 @@
 #include "engine/thread_pool.h"
 #include "engine/voice_interface/voice_interface.h"
 
-#include "execution_graph/instrument_stage.h"
+#include "instrument/instrument_stage.h"
 
 #include "task_function/task_function.h"
 

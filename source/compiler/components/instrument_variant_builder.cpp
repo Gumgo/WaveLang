@@ -3,7 +3,7 @@
 #include "compiler/tracked_scope.h"
 #include "compiler/try_call_native_module.h"
 
-#include "execution_graph/execution_graph.h"
+#include "instrument/execution_graph.h"
 
 #include <memory>
 #include <unordered_map>

@@ -1,8 +1,8 @@
 #include "engine/runtime_instrument.h"
 #include "engine/task_graph.h"
 
-#include "execution_graph/execution_graph.h"
-#include "execution_graph/instrument.h"
+#include "instrument/execution_graph.h"
+#include "instrument/instrument.h"
 
 c_runtime_instrument::c_runtime_instrument() {
 	zero_type(&m_task_graphs);

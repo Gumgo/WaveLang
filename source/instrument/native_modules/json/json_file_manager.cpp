@@ -1,6 +1,6 @@
 #include "common/utility/file_utility.h"
 
-#include "execution_graph/native_modules/json/json_file_manager.h"
+#include "instrument/native_modules/json/json_file_manager.h"
 
 s_json_result c_json_file_manager::load_json_file(const char *filename, const c_json_file **json_file_out) {
 	for (const s_load_request &load_request : m_load_requests) {

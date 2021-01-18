@@ -3,8 +3,8 @@
 #include "common/common.h"
 #include "common/utility/string_table.h"
 
-#include "execution_graph/graph_node_handle.h"
-#include "execution_graph/instrument_stage.h"
+#include "instrument/graph_node_handle.h"
+#include "instrument/instrument_stage.h"
 
 #include "task_function/task_function.h"
 

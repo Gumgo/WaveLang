@@ -1,8 +1,8 @@
 #include "compiler/components/instrument_globals_parser.h"
 
-#include "execution_graph/execution_graph.h"
-
 #include "generated/wavelang_grammar.h"
+
+#include "instrument/execution_graph.h"
 
 #include <unordered_map>
 

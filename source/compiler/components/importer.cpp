@@ -3,9 +3,9 @@
 #include "compiler/ast/nodes.h"
 #include "compiler/components/importer.h"
 
-#include "execution_graph/native_module_registry.h"
-
 #include "generated/wavelang_grammar.h"
+
+#include "instrument/native_module_registry.h"
 
 #include <vector>
 

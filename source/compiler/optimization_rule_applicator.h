@@ -2,8 +2,8 @@
 
 #include "common/common.h"
 
-#include "execution_graph/execution_graph.h"
-#include "execution_graph/native_module_registry.h"
+#include "instrument/execution_graph.h"
+#include "instrument/native_module_registry.h"
 
 #include <stack>
 

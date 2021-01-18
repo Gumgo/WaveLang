@@ -31,7 +31,7 @@ else:
 env.Append(CPPPATH = ["#source", googletest_include_dir])
 
 sources = utils.enumerate_files(env, ".", utils.SOURCE_EXTENSIONS)
-static_libraries = ["common", "compiler", "engine", "execution_graph", "native_module", "task_function"]
+static_libraries = ["common", "compiler", "engine", "instrument", "native_module", "task_function"]
 env.Append(
 	LIBS = static_libraries + [googletest_lib_name],
 	LIBPATH = ["../bin", googletest_lib_dir])

@@ -133,7 +133,7 @@ projects = [
 	"console",
 	"driver",
 	"engine",
-	"execution_graph",
+	"instrument",
 	"native_module",
 	"parser_generator",
 	"runtime",

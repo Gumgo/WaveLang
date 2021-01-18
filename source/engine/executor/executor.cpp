@@ -5,7 +5,7 @@
 #include "engine/task_function_registry.h"
 #include "engine/task_graph.h"
 
-#include "execution_graph/instrument_globals.h"
+#include "instrument/instrument_globals.h"
 
 #include <algorithm>
 

@@ -15,7 +15,7 @@ for source in sources:
 	obj = env.StaticObject(source)
 	objects += obj
 
-execution_graph_library = env.StaticLibrary("execution_graph", objects)
+instrument_library = env.StaticLibrary("instrument", objects)
 
-execution_graph_installed = env.Install("../bin", execution_graph_library)
-env.Alias("execution_graph", execution_graph_installed)
+instrument_installed = env.Install("../bin", instrument_library)
+env.Alias("instrument", instrument_installed)

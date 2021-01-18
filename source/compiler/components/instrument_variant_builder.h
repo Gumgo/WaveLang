@@ -5,8 +5,8 @@
 #include "compiler/ast/nodes.h"
 #include "compiler/compiler_context.h"
 
-#include "execution_graph/instrument.h"
-#include "execution_graph/instrument_globals.h"
+#include "instrument/instrument.h"
+#include "instrument/instrument_globals.h"
 
 class c_instrument_variant_builder {
 public:

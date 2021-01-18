@@ -2,8 +2,8 @@
 
 #include "common/common.h"
 
-#include "execution_graph/instrument_globals.h"
-#include "execution_graph/instrument_stage.h"
+#include "instrument/instrument_globals.h"
+#include "instrument/instrument_stage.h"
 
 class c_instrument_variant;
 class c_task_graph;

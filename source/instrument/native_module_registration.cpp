@@ -1,7 +1,7 @@
 #include "common/utility/reporting.h"
 
-#include "execution_graph/native_module_registration.h"
-#include "execution_graph/native_module_registry.h"
+#include "instrument/native_module_registration.h"
+#include "instrument/native_module_registry.h"
 
 template<typename t_type>
 static void reverse_linked_list(t_type *&list_head);

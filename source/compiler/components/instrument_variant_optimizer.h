@@ -4,7 +4,7 @@
 
 #include "compiler/compiler_context.h"
 
-#include "execution_graph/instrument.h"
+#include "instrument/instrument.h"
 
 class c_instrument_variant_optimizer {
 public:

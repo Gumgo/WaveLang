@@ -3,9 +3,9 @@
 #include "compiler/compiler.h"
 #include "compiler/compiler_context.h"
 
-#include "execution_graph/instrument.h"
-#include "execution_graph/native_module_registration.h"
-#include "execution_graph/native_module_registry.h"
+#include "instrument/instrument.h"
+#include "instrument/native_module_registration.h"
+#include "instrument/native_module_registry.h"
 
 #include <gtest/gtest.h>
 

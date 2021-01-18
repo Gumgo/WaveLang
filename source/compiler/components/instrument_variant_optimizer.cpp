@@ -3,7 +3,7 @@
 #include "compiler/optimization_rule_applicator.h"
 #include "compiler/try_call_native_module.h"
 
-#include "execution_graph/execution_graph.h"
+#include "instrument/execution_graph.h"
 
 #include <stack>
 #include <unordered_map>

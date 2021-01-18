@@ -2,8 +2,8 @@
 #include "engine/task_function_registry.h"
 #include "engine/task_graph.h"
 
-#include "execution_graph/native_module_registry.h"
-#include "execution_graph/execution_graph.h"
+#include "instrument/native_module_registry.h"
+#include "instrument/execution_graph.h"
 
 #include "native_module/native_module.h"
 

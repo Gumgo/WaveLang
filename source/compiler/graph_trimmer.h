@@ -2,7 +2,7 @@
 
 #include "common/common.h"
 
-#include "execution_graph/execution_graph.h"
+#include "instrument/execution_graph.h"
 
 #include <stack>
 #include <unordered_set>

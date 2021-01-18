@@ -2,8 +2,8 @@
 
 #include "common/common.h"
 
-#include "execution_graph/instrument_constants.h"
-#include "execution_graph/instrument_globals.h"
+#include "instrument/instrument_constants.h"
+#include "instrument/instrument_globals.h"
 
 #include <fstream>
 #include <memory>

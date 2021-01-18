@@ -16,7 +16,7 @@ if str(platform) == "win32":
 env.Append(CPPPATH = ["#source"])
 
 sources = utils.enumerate_files(env, ".", utils.SOURCE_EXTENSIONS)
-static_libraries = ["common", "compiler", "execution_graph", "native_module"]
+static_libraries = ["common", "compiler", "instrument", "native_module"]
 env.Append(LIBS = static_libraries, LIBPATH = ["../bin"])
 
 objects = []

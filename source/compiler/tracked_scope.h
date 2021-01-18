@@ -5,7 +5,7 @@
 #include "compiler/ast/nodes.h"
 #include "compiler/graph_trimmer.h"
 
-#include "execution_graph/graph_node_handle.h"
+#include "instrument/graph_node_handle.h"
 
 #include <memory>
 #include <unordered_map>

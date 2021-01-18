@@ -1,4 +1,4 @@
-#include "execution_graph/native_module_registration.h"
+#include "instrument/native_module_registration.h"
 
 namespace delay_native_modules {
 
