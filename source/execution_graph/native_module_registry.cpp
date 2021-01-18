@@ -4,8 +4,8 @@
 
 #include <algorithm>
 #include <fstream>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 // Strings for native module registry output
 static constexpr const char *k_native_module_no_return_type_string = "void";

@@ -6,7 +6,6 @@
 
 #include "task_function/task_function.h"
 
-
 // $TODO $HANDLE add h_task_function and h_task_function_library
 static constexpr uint32 k_invalid_task_function_index = static_cast<uint32>(-1);
 

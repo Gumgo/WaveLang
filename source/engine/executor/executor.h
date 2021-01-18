@@ -6,7 +6,6 @@
 
 #include "driver/sample_format.h"
 
-#include "engine/thread_pool.h"
 #include "engine/controller_interface/controller_interface.h"
 #include "engine/events/async_event_handler.h"
 #include "engine/events/event_console.h"
@@ -16,6 +15,7 @@
 #include "engine/executor/task_memory_manager.h"
 #include "engine/executor/voice_allocator.h"
 #include "engine/profiler/profiler.h"
+#include "engine/thread_pool.h"
 #include "engine/voice_interface/voice_interface.h"
 
 #include "execution_graph/instrument_stage.h"

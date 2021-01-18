@@ -10,8 +10,8 @@ static void cpuid(int32 cpu_info[4], int function) {
 #if IS_TRUE(COMPILER_MSVC)
 	__cpuidex(cpu_info, function, 0);
 #elif IS_TRUE(COMPILER_GCC) || IS_TRUE(COMPILER_CLANG)
-#else // COMPILER
 	__get_cpuid(function, &cpu_info[3], &cpu_info[2], &cpu_info[1], &cpu_info[0]);
+#else // COMPILER
 #error Unknown compiler
 #endif // COMPILER
 }

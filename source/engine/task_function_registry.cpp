@@ -2,8 +2,8 @@
 
 #include "engine/task_function_registry.h"
 
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 enum class e_task_function_registry_state {
 	k_uninitialized,

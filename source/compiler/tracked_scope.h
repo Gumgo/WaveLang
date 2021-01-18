@@ -8,8 +8,8 @@
 #include "execution_graph/graph_node_handle.h"
 
 #include <memory>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 class c_tracked_scope;
 

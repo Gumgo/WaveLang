@@ -6,8 +6,8 @@
 #include "native_module/native_module_data_type.h"
 
 #include <string>
-#include <vector>
 #include <variant>
+#include <vector>
 
 struct s_instrument_globals;
 

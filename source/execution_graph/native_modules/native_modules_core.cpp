@@ -1,7 +1,7 @@
 #include "execution_graph/native_module_registration.h"
 
-#include <cmath>
 #include <algorithm>
+#include <cmath>
 
 namespace core_native_modules {
 
