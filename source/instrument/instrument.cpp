@@ -1,13 +1,13 @@
 #include "common/utility/file_utility.h"
 
-#include "instrument/execution_graph.h"
 #include "instrument/instrument.h"
 #include "instrument/instrument_globals.h"
+#include "instrument/native_module_graph.h"
 
 static constexpr char k_format_identifier[] = { 'w', 'a', 'v', 'e', 'l', 'a', 'n', 'g' };
 
-void s_delete_execution_graph::operator()(c_execution_graph *execution_graph) {
-	delete execution_graph;
+void s_delete_native_module_graph::operator()(c_native_module_graph *native_module_graph) {
+	delete native_module_graph;
 }
 
 c_instrument_variant::c_instrument_variant() {
@@ -24,17 +24,17 @@ e_instrument_result c_instrument_variant::save(std::ofstream &out) const {
 	writer.write(m_instrument_globals.activate_fx_immediately);
 
 	// Write each graph
-	writer.write(m_voice_execution_graph != nullptr);
-	if (m_voice_execution_graph) {
-		e_instrument_result graph_result = m_voice_execution_graph->save(out);
+	writer.write(m_voice_native_module_graph != nullptr);
+	if (m_voice_native_module_graph) {
+		e_instrument_result graph_result = m_voice_native_module_graph->save(out);
 		if (graph_result != e_instrument_result::k_success) {
 			return graph_result;
 		}
 	}
 
-	writer.write(m_fx_execution_graph != nullptr);
-	if (m_fx_execution_graph) {
-		e_instrument_result graph_result = m_fx_execution_graph->save(out);
+	writer.write(m_fx_native_module_graph != nullptr);
+	if (m_fx_native_module_graph) {
+		e_instrument_result graph_result = m_fx_native_module_graph->save(out);
 		if (graph_result != e_instrument_result::k_success) {
 			return graph_result;
 		}
@@ -65,8 +65,8 @@ e_instrument_result c_instrument_variant::load(std::ifstream &in) {
 	}
 
 	if (has_voice_graph) {
-		m_voice_execution_graph.reset(new c_execution_graph());
-		e_instrument_result graph_result = m_voice_execution_graph->load(in);
+		m_voice_native_module_graph.reset(new c_native_module_graph());
+		e_instrument_result graph_result = m_voice_native_module_graph->load(in);
 		if (graph_result != e_instrument_result::k_success) {
 			return graph_result;
 		}
@@ -78,8 +78,8 @@ e_instrument_result c_instrument_variant::load(std::ifstream &in) {
 	}
 
 	if (has_fx_graph) {
-		m_fx_execution_graph.reset(new c_execution_graph());
-		e_instrument_result graph_result = m_fx_execution_graph->load(in);
+		m_fx_native_module_graph.reset(new c_native_module_graph());
+		e_instrument_result graph_result = m_fx_native_module_graph->load(in);
 		if (graph_result != e_instrument_result::k_success) {
 			return graph_result;
 		}
@@ -89,33 +89,33 @@ e_instrument_result c_instrument_variant::load(std::ifstream &in) {
 }
 
 bool c_instrument_variant::validate() const {
-	if (!m_voice_execution_graph && !m_fx_execution_graph) {
+	if (!m_voice_native_module_graph && !m_fx_native_module_graph) {
 		return false;
 	}
 
-	if ((m_voice_execution_graph && !m_voice_execution_graph->validate())
-		|| (m_fx_execution_graph && !m_fx_execution_graph->validate())) {
+	if ((m_voice_native_module_graph && !m_voice_native_module_graph->validate())
+		|| (m_fx_native_module_graph && !m_fx_native_module_graph->validate())) {
 		return false;
 	}
 
-	if (m_voice_execution_graph && m_fx_execution_graph) {
+	if (m_voice_native_module_graph && m_fx_native_module_graph) {
 		uint32 voice_graph_output_count = 0;
-		for (h_graph_node node_handle = m_voice_execution_graph->nodes_begin();
+		for (h_graph_node node_handle = m_voice_native_module_graph->nodes_begin();
 			node_handle.is_valid();
-			node_handle = m_voice_execution_graph->nodes_next(node_handle)) {
-			if (m_voice_execution_graph->get_node_type(node_handle) == e_execution_graph_node_type::k_output) {
-				uint32 output_index = m_voice_execution_graph->get_output_node_output_index(node_handle);
-				if (output_index != c_execution_graph::k_remain_active_output_index) {
+			node_handle = m_voice_native_module_graph->nodes_next(node_handle)) {
+			if (m_voice_native_module_graph->get_node_type(node_handle) == e_native_module_graph_node_type::k_output) {
+				uint32 output_index = m_voice_native_module_graph->get_output_node_output_index(node_handle);
+				if (output_index != c_native_module_graph::k_remain_active_output_index) {
 					voice_graph_output_count++;
 				}
 			}
 		}
 
 		uint32 fx_graph_input_count = 0;
-		for (h_graph_node node_handle = m_fx_execution_graph->nodes_begin();
+		for (h_graph_node node_handle = m_fx_native_module_graph->nodes_begin();
 			node_handle.is_valid();
-			node_handle = m_fx_execution_graph->nodes_next(node_handle)) {
-			if (m_fx_execution_graph->get_node_type(node_handle) == e_execution_graph_node_type::k_input) {
+			node_handle = m_fx_native_module_graph->nodes_next(node_handle)) {
+			if (m_fx_native_module_graph->get_node_type(node_handle) == e_native_module_graph_node_type::k_input) {
 				fx_graph_input_count++;
 			}
 		}
@@ -137,36 +137,36 @@ void c_instrument_variant::set_instrument_globals(const s_instrument_globals &in
 	m_instrument_globals = instrument_globals;
 }
 
-void c_instrument_variant::set_voice_execution_graph(c_execution_graph *execution_graph) {
-	wl_assert(execution_graph);
-	wl_assert(!m_voice_execution_graph);
-	m_voice_execution_graph.reset(execution_graph);
+void c_instrument_variant::set_voice_native_module_graph(c_native_module_graph *native_module_graph) {
+	wl_assert(native_module_graph);
+	wl_assert(!m_voice_native_module_graph);
+	m_voice_native_module_graph.reset(native_module_graph);
 }
 
-void c_instrument_variant::set_fx_execution_graph(c_execution_graph *execution_graph) {
-	wl_assert(execution_graph);
-	wl_assert(!m_fx_execution_graph);
-	m_fx_execution_graph.reset(execution_graph);
+void c_instrument_variant::set_fx_native_module_graph(c_native_module_graph *native_module_graph) {
+	wl_assert(native_module_graph);
+	wl_assert(!m_fx_native_module_graph);
+	m_fx_native_module_graph.reset(native_module_graph);
 }
 
 const s_instrument_globals &c_instrument_variant::get_instrument_globals() const {
 	return m_instrument_globals;
 }
 
-c_execution_graph *c_instrument_variant::get_voice_execution_graph() {
-	return m_voice_execution_graph.get();
+c_native_module_graph *c_instrument_variant::get_voice_native_module_graph() {
+	return m_voice_native_module_graph.get();
 }
 
-const c_execution_graph *c_instrument_variant::get_voice_execution_graph() const {
-	return m_voice_execution_graph.get();
+const c_native_module_graph *c_instrument_variant::get_voice_native_module_graph() const {
+	return m_voice_native_module_graph.get();
 }
 
-c_execution_graph *c_instrument_variant::get_fx_execution_graph() {
-	return m_fx_execution_graph.get();
+c_native_module_graph *c_instrument_variant::get_fx_native_module_graph() {
+	return m_fx_native_module_graph.get();
 }
 
-const c_execution_graph *c_instrument_variant::get_fx_execution_graph() const {
-	return m_fx_execution_graph.get();
+const c_native_module_graph *c_instrument_variant::get_fx_native_module_graph() const {
+	return m_fx_native_module_graph.get();
 }
 
 e_instrument_result c_instrument::save(const char *fname) const {

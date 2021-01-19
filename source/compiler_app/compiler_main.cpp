@@ -6,8 +6,8 @@
 
 #include "compiler_app/getopt/getopt.h"
 
-#include "instrument/execution_graph.h"
 #include "instrument/instrument.h"
+#include "instrument/native_module_graph.h"
 #include "instrument/native_module_registration.h"
 #include "instrument/native_module_registry.h"
 #include "instrument/native_modules/scrape_native_modules.h"
@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
 
 	// Command line options
 	bool output_documentation = false;
-	bool output_execution_graph = false;
+	bool output_native_module_graph = false;
 	bool condense_large_arrays = false;
 	bool command_line_option_error = false;
 	int32 first_file_argument_index;
@@ -55,11 +55,11 @@ int main(int argc, char **argv) {
 				break;
 
 			case 'g':
-				output_execution_graph = true;
+				output_native_module_graph = true;
 				break;
 
 			case 'G':
-				output_execution_graph = true;
+				output_native_module_graph = true;
 				condense_large_arrays = true;
 				break;
 
@@ -121,15 +121,15 @@ int main(int argc, char **argv) {
 				std::cerr << "Failed to save '" << out_fname << "' (result code " << enum_index(save_result) << ")\n";
 			}
 
-			if (output_execution_graph) {
+			if (output_native_module_graph) {
 				for (uint32 variant_index = 0;
 					variant_index < instrument->get_instrument_variant_count();
 					variant_index++) {
 					const c_instrument_variant *instrument_variant = instrument->get_instrument_variant(variant_index);
 
-					const c_execution_graph *execution_graphs[] = {
-						instrument_variant->get_voice_execution_graph(),
-						instrument_variant->get_fx_execution_graph()
+					const c_native_module_graph *native_module_graphs[] = {
+						instrument_variant->get_voice_native_module_graph(),
+						instrument_variant->get_fx_native_module_graph()
 					};
 
 					static constexpr const char *k_instrument_stages[] = {
@@ -137,16 +137,16 @@ int main(int argc, char **argv) {
 						"fx"
 					};
 
-					for (size_t type = 0; type < array_count(execution_graphs); type++) {
+					for (size_t type = 0; type < array_count(native_module_graphs); type++) {
 						std::string graph_fname = fname_no_ext + '.' + std::string(k_instrument_stages[type]) +
 							'.' + std::to_string(variant_index) + '.' + k_graphviz_file_extension;
 
-						if (execution_graphs[type]) {
-							bool execution_graph_result = execution_graphs[type]->generate_graphviz_file(
+						if (native_module_graphs[type]) {
+							bool native_module_graph_result = native_module_graphs[type]->generate_graphviz_file(
 								graph_fname.c_str(), condense_large_arrays);
 
-							if (execution_graph_result) {
-								std::cout << "Saved execution graph to '" << graph_fname << "'\n";
+							if (native_module_graph_result) {
+								std::cout << "Saved native module graph to '" << graph_fname << "'\n";
 							} else {
 								std::cerr << "Failed to save '" << graph_fname << "'\n";
 							}

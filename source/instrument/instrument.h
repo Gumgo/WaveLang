@@ -9,11 +9,11 @@
 #include <memory>
 #include <vector>
 
-class c_execution_graph;
+class c_native_module_graph;
 
 // Exists because std::unique_ptr doesn't work with incomplete types
-struct s_delete_execution_graph {
-	void operator()(c_execution_graph *execution_graph);
+struct s_delete_native_module_graph {
+	void operator()(c_native_module_graph *native_module_graph);
 };
 
 // Used to select the appropriate instrument variant from an instrument
@@ -29,8 +29,8 @@ enum class e_instrument_variant_for_requirements_result {
 	k_count
 };
 
-// An instrument variant consists of an instance of instrument globals and either a voice execution graph, an FX
-// execution graph, or both
+// An instrument variant consists of an instance of instrument globals and either a voice native module graph, an FX
+// native module graph, or both
 class c_instrument_variant {
 public:
 	c_instrument_variant();
@@ -42,24 +42,24 @@ public:
 
 	void set_instrument_globals(const s_instrument_globals &instrument_globals);
 
-	// These functions take ownership of the execution graph, which should be allocated using new
-	void set_voice_execution_graph(c_execution_graph *execution_graph);
-	void set_fx_execution_graph(c_execution_graph *execution_graph);
+	// These functions take ownership of the native module graph, which should be allocated using new
+	void set_voice_native_module_graph(c_native_module_graph *native_module_graph);
+	void set_fx_native_module_graph(c_native_module_graph *native_module_graph);
 
 	const s_instrument_globals &get_instrument_globals() const;
-	c_execution_graph *get_voice_execution_graph();
-	const c_execution_graph *get_voice_execution_graph() const;
-	c_execution_graph *get_fx_execution_graph();
-	const c_execution_graph *get_fx_execution_graph() const;
+	c_native_module_graph *get_voice_native_module_graph();
+	const c_native_module_graph *get_voice_native_module_graph() const;
+	c_native_module_graph *get_fx_native_module_graph();
+	const c_native_module_graph *get_fx_native_module_graph() const;
 
 private:
 	s_instrument_globals m_instrument_globals;
-	std::unique_ptr<c_execution_graph, s_delete_execution_graph> m_voice_execution_graph;
-	std::unique_ptr<c_execution_graph, s_delete_execution_graph> m_fx_execution_graph;
+	std::unique_ptr<c_native_module_graph, s_delete_native_module_graph> m_voice_native_module_graph;
+	std::unique_ptr<c_native_module_graph, s_delete_native_module_graph> m_fx_native_module_graph;
 };
 
 // An instrument contains one or more instrument variants. An instrument may contain more than one instrument variant if
-// the instrument globals are context-specific - e.g. an execution graph may be compiled several times for
+// the instrument globals are context-specific - e.g. an native module graph may be compiled several times for
 // different sample rates.
 class c_instrument {
 public:

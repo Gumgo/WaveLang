@@ -2,8 +2,8 @@
 #include "engine/task_function_registry.h"
 #include "engine/task_graph.h"
 
+#include "instrument/native_module_graph.h"
 #include "instrument/native_module_registry.h"
-#include "instrument/execution_graph.h"
 
 #include "native_module/native_module.h"
 
@@ -24,7 +24,7 @@ template<typename t_pointer> static size_t extract_index_from_pointer(t_pointer 
 // Returns true if the given input is used as more than once. This indicates that the input cannot be shared with an
 // output because overwriting the buffer would invalidate its second usage as an input.
 static bool does_native_module_call_input_branch(
-	const c_execution_graph &execution_graph,
+	const c_native_module_graph &native_module_graph,
 	h_graph_node node_handle,
 	size_t in_arg_index);
 
@@ -193,10 +193,10 @@ c_wrapped_array<const c_task_graph::s_buffer_usage_info> c_task_graph::get_buffe
 	return c_wrapped_array<const c_task_graph::s_buffer_usage_info>(m_buffer_usage_info);
 }
 
-bool c_task_graph::build(const c_execution_graph &execution_graph) {
+bool c_task_graph::build(const c_native_module_graph &native_module_graph) {
 	clear();
 
-	// Maps nodes in the execution graph to tasks in the task graph
+	// Maps nodes in the native module graph to tasks in the task graph
 	std::unordered_map<h_graph_node, uint32> nodes_to_tasks;
 
 	bool success = true;
@@ -205,26 +205,26 @@ bool c_task_graph::build(const c_execution_graph &execution_graph) {
 	size_t input_count = 0;
 	size_t output_count = 0;
 	std::vector<h_graph_node> ordered_nodes;
-	ordered_nodes.reserve(execution_graph.get_node_count());
+	ordered_nodes.reserve(native_module_graph.get_node_count());
 
 	std::unordered_map<h_graph_node, size_t> node_dependencies_remaining;
 	std::vector<h_graph_node> node_stack;
-	node_stack.reserve(execution_graph.get_node_count());
+	node_stack.reserve(native_module_graph.get_node_count());
 
 	// Find our initial nodes without any predecessors
-	for (h_graph_node node_handle = execution_graph.nodes_begin();
+	for (h_graph_node node_handle = native_module_graph.nodes_begin();
 		node_handle.is_valid();
-		node_handle = execution_graph.nodes_next(node_handle)) {
-		e_execution_graph_node_type node_type = execution_graph.get_node_type(node_handle);
-		if (node_type == e_execution_graph_node_type::k_input) {
+		node_handle = native_module_graph.nodes_next(node_handle)) {
+		e_native_module_graph_node_type node_type = native_module_graph.get_node_type(node_handle);
+		if (node_type == e_native_module_graph_node_type::k_input) {
 			input_count++;
-		} else if (node_type == e_execution_graph_node_type::k_output) {
+		} else if (node_type == e_native_module_graph_node_type::k_output) {
 			output_count++;
 		}
 
 		node_dependencies_remaining.insert(
-			std::make_pair(node_handle, execution_graph.get_node_incoming_edge_count(node_handle)));
-		if (execution_graph.get_node_incoming_edge_count(node_handle) == 0) {
+			std::make_pair(node_handle, native_module_graph.get_node_incoming_edge_count(node_handle)));
+		if (native_module_graph.get_node_incoming_edge_count(node_handle) == 0) {
 			node_stack.push_back(node_handle);
 		}
 	}
@@ -235,9 +235,9 @@ bool c_task_graph::build(const c_execution_graph &execution_graph) {
 		wl_assert(node_dependencies_remaining[node_handle] == 0);
 
 		ordered_nodes.push_back(node_handle);
-		for (size_t edge = 0; edge < execution_graph.get_node_outgoing_edge_count(node_handle); edge++) {
+		for (size_t edge = 0; edge < native_module_graph.get_node_outgoing_edge_count(node_handle); edge++) {
 			h_graph_node edge_node_handle =
-				execution_graph.get_node_outgoing_edge_handle(node_handle, edge);
+				native_module_graph.get_node_outgoing_edge_handle(node_handle, edge);
 			size_t dependencies_remaining = --node_dependencies_remaining[edge_node_handle];
 			wl_assert(dependencies_remaining >= 0);
 
@@ -247,7 +247,7 @@ bool c_task_graph::build(const c_execution_graph &execution_graph) {
 		}
 	}
 
-	wl_assert(ordered_nodes.size() == execution_graph.get_node_count());
+	wl_assert(ordered_nodes.size() == native_module_graph.get_node_count());
 
 	// The remain-active buffer must always exist
 	wl_assert(output_count >= 1);
@@ -260,15 +260,15 @@ bool c_task_graph::build(const c_execution_graph &execution_graph) {
 	for (h_graph_node node_handle : ordered_nodes) {
 		// We should never encounter these node types, even if the graph was loaded from a file (they should never
 		// appear in a file and if they do we should fail to load).
-		e_execution_graph_node_type node_type = execution_graph.get_node_type(node_handle);
-		wl_assert(node_type != e_execution_graph_node_type::k_invalid);
+		e_native_module_graph_node_type node_type = native_module_graph.get_node_type(node_handle);
+		wl_assert(node_type != e_native_module_graph_node_type::k_invalid);
 
-		if (node_type == e_execution_graph_node_type::k_input) {
-			create_buffer_for_input(execution_graph, node_handle);
-		} else if (node_type == e_execution_graph_node_type::k_output) {
-			assign_buffer_to_output(execution_graph, node_handle);
-		} else if (node_type == e_execution_graph_node_type::k_native_module_call) {
-			success &= add_task_for_node(execution_graph, node_handle, nodes_to_tasks);
+		if (node_type == e_native_module_graph_node_type::k_input) {
+			create_buffer_for_input(native_module_graph, node_handle);
+		} else if (node_type == e_native_module_graph_node_type::k_output) {
+			assign_buffer_to_output(native_module_graph, node_handle);
+		} else if (node_type == e_native_module_graph_node_type::k_native_module_call) {
+			success &= add_task_for_node(native_module_graph, node_handle, nodes_to_tasks);
 		}
 	}
 
@@ -290,7 +290,7 @@ bool c_task_graph::build(const c_execution_graph &execution_graph) {
 		wl_assert(m_remain_active_output_buffer);
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
-		build_task_successor_lists(execution_graph, nodes_to_tasks);
+		build_task_successor_lists(native_module_graph, nodes_to_tasks);
 		calculate_max_concurrency();
 
 #if IS_TRUE(OUTPUT_TASK_GRAPH_BUILD_RESULT)
@@ -318,24 +318,24 @@ template<typename t_pointer> static size_t extract_index_from_pointer(t_pointer 
 }
 
 static bool does_native_module_call_input_branch(
-	const c_execution_graph &execution_graph,
+	const c_native_module_graph &native_module_graph,
 	h_graph_node node_handle,
 	size_t in_arg_index) {
-	wl_assert(execution_graph.get_node_type(node_handle) == e_execution_graph_node_type::k_native_module_call);
+	wl_assert(native_module_graph.get_node_type(node_handle) == e_native_module_graph_node_type::k_native_module_call);
 	h_graph_node source_node_handle =
-		execution_graph.get_node_indexed_input_incoming_edge_handle(node_handle, in_arg_index, 0);
+		native_module_graph.get_node_indexed_input_incoming_edge_handle(node_handle, in_arg_index, 0);
 
-	if (execution_graph.get_node_type(source_node_handle) == e_execution_graph_node_type::k_constant) {
+	if (native_module_graph.get_node_type(source_node_handle) == e_native_module_graph_node_type::k_constant) {
 		// We don't care if a constant value is branched because constant values don't take up buffers, they are
 		// directly inlined into the task.
 		// Note: arrays do use buffers, but we don't perform branch optimization on them
 		return false;
 	} else {
-		IF_ASSERTS_ENABLED(e_execution_graph_node_type node_type =
-			execution_graph.get_node_type(source_node_handle);)
-		wl_assert(node_type == e_execution_graph_node_type::k_indexed_output
-			|| node_type == e_execution_graph_node_type::k_input);
-		return (execution_graph.get_node_outgoing_edge_count(source_node_handle) > 1);
+		IF_ASSERTS_ENABLED(e_native_module_graph_node_type node_type =
+			native_module_graph.get_node_type(source_node_handle);)
+		wl_assert(node_type == e_native_module_graph_node_type::k_indexed_output
+			|| node_type == e_native_module_graph_node_type::k_input);
+		return (native_module_graph.get_node_outgoing_edge_count(source_node_handle) > 1);
 	}
 }
 
@@ -360,10 +360,10 @@ void c_task_graph::clear() {
 	m_initial_tasks_count = 0;
 }
 
-void c_task_graph::create_buffer_for_input(const c_execution_graph &execution_graph, h_graph_node node_handle) {
-	uint32 input_index = execution_graph.get_input_node_input_index(node_handle);
+void c_task_graph::create_buffer_for_input(const c_native_module_graph &native_module_graph, h_graph_node node_handle) {
+	uint32 input_index = native_module_graph.get_input_node_input_index(node_handle);
 	c_buffer *input_buffer = add_or_get_buffer(
-		execution_graph,
+		native_module_graph,
 		node_handle,
 		c_task_data_type(e_task_primitive_type::k_real));
 
@@ -371,19 +371,19 @@ void c_task_graph::create_buffer_for_input(const c_execution_graph &execution_gr
 	m_input_buffers[input_index] = input_buffer;
 }
 
-void c_task_graph::assign_buffer_to_output(const c_execution_graph &execution_graph, h_graph_node node_handle) {
-	uint32 output_index = execution_graph.get_output_node_output_index(node_handle);
-	h_graph_node input_node_handle = execution_graph.get_node_incoming_edge_handle(node_handle, 0);
-	bool is_remain_active_output = (output_index == c_execution_graph::k_remain_active_output_index);
+void c_task_graph::assign_buffer_to_output(const c_native_module_graph &native_module_graph, h_graph_node node_handle) {
+	uint32 output_index = native_module_graph.get_output_node_output_index(node_handle);
+	h_graph_node input_node_handle = native_module_graph.get_node_incoming_edge_handle(node_handle, 0);
+	bool is_remain_active_output = (output_index == c_native_module_graph::k_remain_active_output_index);
 
 	c_buffer *output_buffer;
 	auto iter = m_nodes_to_buffers.find(input_node_handle);
 	if (iter != m_nodes_to_buffers.end()) {
 		output_buffer = iter->second;
 	} else {
-		wl_assert(execution_graph.get_node_type(input_node_handle) == e_execution_graph_node_type::k_constant);
+		wl_assert(native_module_graph.get_node_type(input_node_handle) == e_native_module_graph_node_type::k_constant);
 		output_buffer = add_or_get_buffer(
-			execution_graph,
+			native_module_graph,
 			input_node_handle,
 			c_task_data_type(is_remain_active_output ? e_task_primitive_type::k_bool : e_task_primitive_type::k_real));
 	}
@@ -398,10 +398,10 @@ void c_task_graph::assign_buffer_to_output(const c_execution_graph &execution_gr
 }
 
 bool c_task_graph::add_task_for_node(
-	const c_execution_graph &execution_graph,
+	const c_native_module_graph &native_module_graph,
 	h_graph_node node_handle,
 	std::unordered_map<h_graph_node, uint32> &nodes_to_tasks) {
-	wl_assert(execution_graph.get_node_type(node_handle) == e_execution_graph_node_type::k_native_module_call);
+	wl_assert(native_module_graph.get_node_type(node_handle) == e_native_module_graph_node_type::k_native_module_call);
 
 	uint32 task_index = cast_integer_verify<uint32>(m_tasks.size());
 	m_tasks.push_back(s_task());
@@ -409,16 +409,16 @@ bool c_task_graph::add_task_for_node(
 	wl_assert(nodes_to_tasks.find(node_handle) == nodes_to_tasks.end());
 	nodes_to_tasks.insert(std::make_pair(node_handle, task_index));
 
-	h_native_module native_module_handle = execution_graph.get_native_module_call_native_module_handle(node_handle);
-	return setup_task(execution_graph, node_handle, task_index);
+	h_native_module native_module_handle = native_module_graph.get_native_module_call_native_module_handle(node_handle);
+	return setup_task(native_module_graph, node_handle, task_index);
 }
 
 bool c_task_graph::setup_task(
-	const c_execution_graph &execution_graph,
+	const c_native_module_graph &native_module_graph,
 	h_graph_node node_handle,
 	uint32 task_index) {
-	wl_assert(execution_graph.get_node_type(node_handle) == e_execution_graph_node_type::k_native_module_call);
-	h_native_module native_module_handle = execution_graph.get_native_module_call_native_module_handle(node_handle);
+	wl_assert(native_module_graph.get_node_type(node_handle) == e_native_module_graph_node_type::k_native_module_call);
+	h_native_module native_module_handle = native_module_graph.get_native_module_call_native_module_handle(node_handle);
 	s_task_function_uid task_function_uid = c_task_function_registry::get_task_function_mapping(native_module_handle);
 	if (!task_function_uid.is_valid()) {
 		// No valid task function mapping for the native module
@@ -444,8 +444,8 @@ bool c_task_graph::setup_task(
 
 	// Map each input and output to its defined location in the task
 	size_t input_output_count =
-		execution_graph.get_node_incoming_edge_count(node_handle) +
-		execution_graph.get_node_outgoing_edge_count(node_handle);
+		native_module_graph.get_node_incoming_edge_count(node_handle) +
+		native_module_graph.get_node_outgoing_edge_count(node_handle);
 
 	// This is a candidate for sharing a single buffer for input and output
 	struct s_share_candidate {
@@ -467,10 +467,10 @@ bool c_task_graph::setup_task(
 		if (argument.argument_direction == e_task_argument_direction::k_in) {
 			// Obtain the source input node
 			h_graph_node source_node_handle =
-				execution_graph.get_node_indexed_input_incoming_edge_handle(node_handle, input_index, 0);
+				native_module_graph.get_node_indexed_input_incoming_edge_handle(node_handle, input_index, 0);
 
 			if (argument.type.get_data_mutability() == e_task_data_mutability::k_constant) {
-				wl_assert(execution_graph.is_node_constant(source_node_handle));
+				wl_assert(native_module_graph.is_node_constant(source_node_handle));
 			}
 
 			bool is_buffer = false;
@@ -479,30 +479,30 @@ bool c_task_graph::setup_task(
 				case e_task_primitive_type::k_real:
 					if (argument.type.is_array()) {
 						runtime_argument.value.emplace<c_real_constant_array>(
-							build_real_constant_array(execution_graph, source_node_handle));
+							build_real_constant_array(native_module_graph, source_node_handle));
 					} else {
 						runtime_argument.value.emplace<real32>(
-							execution_graph.get_constant_node_real_value(source_node_handle));
+							native_module_graph.get_constant_node_real_value(source_node_handle));
 					}
 					break;
 
 				case e_task_primitive_type::k_bool:
 					if (argument.type.is_array()) {
 						runtime_argument.value.emplace<c_bool_constant_array>(
-							build_bool_constant_array(execution_graph, source_node_handle));
+							build_bool_constant_array(native_module_graph, source_node_handle));
 					} else {
 						runtime_argument.value.emplace<bool>(
-							execution_graph.get_constant_node_bool_value(source_node_handle));
+							native_module_graph.get_constant_node_bool_value(source_node_handle));
 					}
 					break;
 
 				case e_task_primitive_type::k_string:
 					if (argument.type.is_array()) {
 						runtime_argument.value.emplace<c_string_constant_array>(
-							build_string_constant_array(execution_graph, source_node_handle));
+							build_string_constant_array(native_module_graph, source_node_handle));
 					} else {
 						runtime_argument.value.emplace<const char *>(
-							add_string(execution_graph.get_constant_node_string_value(source_node_handle)));
+							add_string(native_module_graph.get_constant_node_string_value(source_node_handle)));
 					}
 					break;
 
@@ -514,12 +514,12 @@ bool c_task_graph::setup_task(
 				if (argument.type.is_array()) {
 					runtime_argument.value.emplace<c_buffer_array>(
 						add_or_get_buffer_array(
-							execution_graph,
+							native_module_graph,
 							source_node_handle,
 							argument.type.get_element_type().get_data_type()));
 				} else {
 					runtime_argument.value.emplace<c_buffer *>(
-						add_or_get_buffer(execution_graph, source_node_handle, argument.type.get_data_type()));
+						add_or_get_buffer(native_module_graph, source_node_handle, argument.type.get_data_type()));
 					is_buffer = true;
 				}
 			}
@@ -527,7 +527,7 @@ bool c_task_graph::setup_task(
 			// See if we can share this input buffer with an output buffer
 			if (!argument.is_unshared
 				&& is_buffer
-				&& !does_native_module_call_input_branch(execution_graph, node_handle, input_index)) {
+				&& !does_native_module_call_input_branch(native_module_graph, node_handle, input_index)) {
 				// Determine if this is a non-constant sourced buffer. Note: we can't just check is_constant because we
 				// may have a non-constant buffer that's pointing to constant data. is_constant just means compile-time
 				// constant.
@@ -556,7 +556,7 @@ bool c_task_graph::setup_task(
 		if (argument.argument_direction == e_task_argument_direction::k_out) {
 			// Obtain the output node
 			h_graph_node output_node_handle =
-				execution_graph.get_node_outgoing_edge_handle(node_handle, output_index);
+				native_module_graph.get_node_outgoing_edge_handle(node_handle, output_index);
 
 			if (!argument.is_unshared) {
 				for (size_t share_index = 0; share_index < share_candidates.size(); share_index++) {
@@ -578,7 +578,7 @@ bool c_task_graph::setup_task(
 			wl_assert(argument.type.get_data_mutability() != e_task_data_mutability::k_constant);
 
 			runtime_argument.value.emplace<c_buffer *>(
-				add_or_get_buffer(execution_graph, output_node_handle, argument.type.get_data_type()));
+				add_or_get_buffer(native_module_graph, output_node_handle, argument.type.get_data_type()));
 			output_index++;
 		}
 	}
@@ -594,7 +594,7 @@ bool c_task_graph::setup_task(
 }
 
 c_buffer *c_task_graph::add_or_get_buffer(
-	const c_execution_graph &execution_graph,
+	const c_native_module_graph &native_module_graph,
 	h_graph_node node_handle,
 	c_task_data_type data_type) {
 	wl_assert(data_type.is_valid());
@@ -605,8 +605,8 @@ c_buffer *c_task_graph::add_or_get_buffer(
 		return iter->second;
 	}
 
-	e_execution_graph_node_type node_type = execution_graph.get_node_type(node_handle);
-	if (node_type == e_execution_graph_node_type::k_constant) {
+	e_native_module_graph_node_type node_type = native_module_graph.get_node_type(node_handle);
+	if (node_type == e_native_module_graph_node_type::k_constant) {
 		// Check to see if a buffer representing this constant already exists
 		bool match = false;
 		size_t buffer_index;
@@ -618,7 +618,7 @@ c_buffer *c_task_graph::add_or_get_buffer(
 				case e_task_primitive_type::k_real:
 				{
 					real32 existing_value = buffer.get_as<c_real_buffer>().get_constant();
-					real32 node_value = execution_graph.get_constant_node_real_value(node_handle);
+					real32 node_value = native_module_graph.get_constant_node_real_value(node_handle);
 					match = existing_value == node_value;
 					break;
 				}
@@ -626,7 +626,7 @@ c_buffer *c_task_graph::add_or_get_buffer(
 				case e_task_primitive_type::k_bool:
 				{
 					bool existing_value = buffer.get_as<c_bool_buffer>().get_constant();
-					bool node_value = execution_graph.get_constant_node_real_value(node_handle);
+					bool node_value = native_module_graph.get_constant_node_real_value(node_handle);
 					match = existing_value == node_value;
 					break;
 				}
@@ -647,14 +647,14 @@ c_buffer *c_task_graph::add_or_get_buffer(
 			switch (data_type.get_primitive_type()) {
 			case e_task_primitive_type::k_real:
 			{
-				real32 node_value = execution_graph.get_constant_node_real_value(node_handle);
+				real32 node_value = native_module_graph.get_constant_node_real_value(node_handle);
 				m_buffers.push_back(c_real_buffer::construct_compile_time_constant(data_type, node_value));
 				break;
 			}
 
 			case e_task_primitive_type::k_bool:
 			{
-				bool node_value = execution_graph.get_constant_node_bool_value(node_handle);
+				bool node_value = native_module_graph.get_constant_node_bool_value(node_handle);
 				m_buffers.push_back(c_bool_buffer::construct_compile_time_constant(data_type, node_value));
 				break;
 			}
@@ -672,10 +672,10 @@ c_buffer *c_task_graph::add_or_get_buffer(
 		c_buffer *buffer = store_index_in_pointer<c_buffer>(buffer_index);
 		m_nodes_to_buffers.insert(std::make_pair(node_handle, buffer));
 		return buffer;
-	} else if (node_type == e_execution_graph_node_type::k_input) {
+	} else if (node_type == e_native_module_graph_node_type::k_input) {
 		// $TODO $UPSAMPLE the FX graph could have upsampled inputs
 		wl_assert(data_type.get_primitive_type() == e_task_primitive_type::k_real);
-	} else if (node_type == e_execution_graph_node_type::k_indexed_output) {
+	} else if (node_type == e_native_module_graph_node_type::k_indexed_output) {
 		// Don't allocate a buffer for this output if it's being shared with an input
 		auto iter = m_output_nodes_to_shared_input_nodes.find(node_handle);
 		if (iter != m_output_nodes_to_shared_input_nodes.end()) {
@@ -699,10 +699,10 @@ c_buffer *c_task_graph::add_or_get_buffer(
 }
 
 c_buffer_array c_task_graph::add_or_get_buffer_array(
-	const c_execution_graph &execution_graph,
+	const c_native_module_graph &native_module_graph,
 	h_graph_node node_handle,
 	c_task_data_type data_type) {
-	size_t array_count = execution_graph.get_node_incoming_edge_count(node_handle);
+	size_t array_count = native_module_graph.get_node_incoming_edge_count(node_handle);
 	size_t start_index;
 	bool match = false;
 
@@ -710,8 +710,8 @@ c_buffer_array c_task_graph::add_or_get_buffer_array(
 	for (start_index = 0; start_index + array_count < m_buffer_arrays.size(); start_index++) {
 		bool match_inner = true;
 		for (size_t index = 0; index < array_count; index++) {
-			h_graph_node input_node_handle = execution_graph.get_node_incoming_edge_handle(node_handle, index);
-			h_graph_node element_node_handle = execution_graph.get_node_incoming_edge_handle(input_node_handle, 0);
+			h_graph_node input_node_handle = native_module_graph.get_node_incoming_edge_handle(node_handle, index);
+			h_graph_node element_node_handle = native_module_graph.get_node_incoming_edge_handle(input_node_handle, 0);
 			c_buffer *existing_buffer = m_buffer_arrays[start_index + index];
 
 			auto iter = m_nodes_to_buffers.find(element_node_handle);
@@ -731,9 +731,9 @@ c_buffer_array c_task_graph::add_or_get_buffer_array(
 		start_index = m_buffer_arrays.size();
 		m_buffer_arrays.resize(start_index + array_count);
 		for (size_t index = 0; index < array_count; index++) {
-			h_graph_node input_node_handle = execution_graph.get_node_incoming_edge_handle(node_handle, index);
-			h_graph_node element_node_handle = execution_graph.get_node_incoming_edge_handle(input_node_handle, 0);
-			c_buffer *buffer = add_or_get_buffer(execution_graph, element_node_handle, data_type);
+			h_graph_node input_node_handle = native_module_graph.get_node_incoming_edge_handle(node_handle, index);
+			h_graph_node element_node_handle = native_module_graph.get_node_incoming_edge_handle(input_node_handle, 0);
+			c_buffer *buffer = add_or_get_buffer(native_module_graph, element_node_handle, data_type);
 			m_buffer_arrays[start_index + index] = buffer;
 		}
 	}
@@ -742,9 +742,9 @@ c_buffer_array c_task_graph::add_or_get_buffer_array(
 }
 
 c_real_constant_array c_task_graph::build_real_constant_array(
-	const c_execution_graph &execution_graph,
+	const c_native_module_graph &native_module_graph,
 	h_graph_node node_handle) {
-	size_t array_count = execution_graph.get_node_incoming_edge_count(node_handle);
+	size_t array_count = native_module_graph.get_node_incoming_edge_count(node_handle);
 	size_t start_index;
 	bool match = false;
 
@@ -753,9 +753,9 @@ c_real_constant_array c_task_graph::build_real_constant_array(
 		bool match_inner = true;
 		for (size_t index = 0; index < array_count; index++) {
 			real32 existing_value = m_real_constant_arrays[start_index + index];
-			h_graph_node input_node_handle = execution_graph.get_node_incoming_edge_handle(node_handle, index);
-			h_graph_node constant_node_handle = execution_graph.get_node_incoming_edge_handle(input_node_handle, 0);
-			real32 node_value = execution_graph.get_constant_node_real_value(constant_node_handle);
+			h_graph_node input_node_handle = native_module_graph.get_node_incoming_edge_handle(node_handle, index);
+			h_graph_node constant_node_handle = native_module_graph.get_node_incoming_edge_handle(input_node_handle, 0);
+			real32 node_value = native_module_graph.get_constant_node_real_value(constant_node_handle);
 
 			if (existing_value != node_value) {
 				match_inner = false;
@@ -773,9 +773,9 @@ c_real_constant_array c_task_graph::build_real_constant_array(
 		start_index = m_real_constant_arrays.size();
 		m_real_constant_arrays.resize(start_index + array_count);
 		for (size_t index = 0; index < array_count; index++) {
-			h_graph_node input_node_handle = execution_graph.get_node_incoming_edge_handle(node_handle, index);
-			h_graph_node constant_node_handle = execution_graph.get_node_incoming_edge_handle(input_node_handle, 0);
-			real32 node_value = execution_graph.get_constant_node_real_value(constant_node_handle);
+			h_graph_node input_node_handle = native_module_graph.get_node_incoming_edge_handle(node_handle, index);
+			h_graph_node constant_node_handle = native_module_graph.get_node_incoming_edge_handle(input_node_handle, 0);
+			real32 node_value = native_module_graph.get_constant_node_real_value(constant_node_handle);
 			m_real_constant_arrays[start_index + index] = node_value;
 		}
 	}
@@ -784,9 +784,9 @@ c_real_constant_array c_task_graph::build_real_constant_array(
 }
 
 c_bool_constant_array c_task_graph::build_bool_constant_array(
-	const c_execution_graph &execution_graph,
+	const c_native_module_graph &native_module_graph,
 	h_graph_node node_handle) {
-	size_t array_count = execution_graph.get_node_incoming_edge_count(node_handle);
+	size_t array_count = native_module_graph.get_node_incoming_edge_count(node_handle);
 	size_t start_index;
 	bool match = false;
 
@@ -795,9 +795,9 @@ c_bool_constant_array c_task_graph::build_bool_constant_array(
 		bool match_inner = true;
 		for (size_t index = 0; index < array_count; index++) {
 			bool existing_value = static_cast<bool>(m_bool_constant_arrays[start_index + index]);
-			h_graph_node input_node_handle = execution_graph.get_node_incoming_edge_handle(node_handle, index);
-			h_graph_node constant_node_handle = execution_graph.get_node_incoming_edge_handle(input_node_handle, 0);
-			bool node_value = execution_graph.get_constant_node_bool_value(constant_node_handle);
+			h_graph_node input_node_handle = native_module_graph.get_node_incoming_edge_handle(node_handle, index);
+			h_graph_node constant_node_handle = native_module_graph.get_node_incoming_edge_handle(input_node_handle, 0);
+			bool node_value = native_module_graph.get_constant_node_bool_value(constant_node_handle);
 
 			if (existing_value != node_value) {
 				match_inner = false;
@@ -815,9 +815,9 @@ c_bool_constant_array c_task_graph::build_bool_constant_array(
 		start_index = m_bool_constant_arrays.size();
 		m_bool_constant_arrays.resize(start_index + array_count);
 		for (size_t index = 0; index < array_count; index++) {
-			h_graph_node input_node_handle = execution_graph.get_node_incoming_edge_handle(node_handle, index);
-			h_graph_node constant_node_handle = execution_graph.get_node_incoming_edge_handle(input_node_handle, 0);
-			bool node_value = execution_graph.get_constant_node_bool_value(constant_node_handle);
+			h_graph_node input_node_handle = native_module_graph.get_node_incoming_edge_handle(node_handle, index);
+			h_graph_node constant_node_handle = native_module_graph.get_node_incoming_edge_handle(input_node_handle, 0);
+			bool node_value = native_module_graph.get_constant_node_bool_value(constant_node_handle);
 			m_bool_constant_arrays[start_index + index] = node_value;
 		}
 	}
@@ -826,9 +826,9 @@ c_bool_constant_array c_task_graph::build_bool_constant_array(
 }
 
 c_string_constant_array c_task_graph::build_string_constant_array(
-	const c_execution_graph &execution_graph,
+	const c_native_module_graph &native_module_graph,
 	h_graph_node node_handle) {
-	size_t array_count = execution_graph.get_node_incoming_edge_count(node_handle);
+	size_t array_count = native_module_graph.get_node_incoming_edge_count(node_handle);
 	size_t start_index;
 	bool match = false;
 
@@ -837,9 +837,9 @@ c_string_constant_array c_task_graph::build_string_constant_array(
 		bool match_inner = true;
 		for (size_t index = 0; index < array_count; index++) {
 			const char *existing_value = get_pre_rebased_string(m_string_constant_arrays[start_index + index]);
-			h_graph_node input_node_handle = execution_graph.get_node_incoming_edge_handle(node_handle, index);
-			h_graph_node constant_node_handle = execution_graph.get_node_incoming_edge_handle(input_node_handle, 0);
-			const char *node_value = execution_graph.get_constant_node_string_value(constant_node_handle);
+			h_graph_node input_node_handle = native_module_graph.get_node_incoming_edge_handle(node_handle, index);
+			h_graph_node constant_node_handle = native_module_graph.get_node_incoming_edge_handle(input_node_handle, 0);
+			const char *node_value = native_module_graph.get_constant_node_string_value(constant_node_handle);
 
 			if (strcmp(existing_value, node_value) == 0) {
 				match_inner = false;
@@ -857,9 +857,9 @@ c_string_constant_array c_task_graph::build_string_constant_array(
 		start_index = m_string_constant_arrays.size();
 		m_string_constant_arrays.resize(start_index + array_count);
 		for (size_t index = 0; index < array_count; index++) {
-			h_graph_node input_node_handle = execution_graph.get_node_incoming_edge_handle(node_handle, index);
-			h_graph_node constant_node_handle = execution_graph.get_node_incoming_edge_handle(input_node_handle, 0);
-			const char *node_value = execution_graph.get_constant_node_string_value(constant_node_handle);
+			h_graph_node input_node_handle = native_module_graph.get_node_incoming_edge_handle(node_handle, index);
+			h_graph_node constant_node_handle = native_module_graph.get_node_incoming_edge_handle(input_node_handle, 0);
+			const char *node_value = native_module_graph.get_constant_node_string_value(constant_node_handle);
 			m_string_constant_arrays[start_index + index] = add_string(node_value);
 		}
 	}
@@ -975,75 +975,77 @@ void c_task_graph::rebase_strings() {
 }
 
 void c_task_graph::build_task_successor_lists(
-	const c_execution_graph &execution_graph,
+	const c_native_module_graph &native_module_graph,
 	const std::unordered_map<h_graph_node, uint32> &nodes_to_tasks) {
 	// Clear predecessor counts first since those are set in a random order
 	for (uint32 task_index = 0; task_index < m_tasks.size(); task_index++) {
 		m_tasks[task_index].predecessor_count = 0;
 	}
 
-	for (h_graph_node node_handle = execution_graph.nodes_begin();
+	for (h_graph_node node_handle = native_module_graph.nodes_begin();
 		node_handle.is_valid();
-		node_handle = execution_graph.nodes_next(node_handle)) {
+		node_handle = native_module_graph.nodes_next(node_handle)) {
 		if (nodes_to_tasks.find(node_handle) == nodes_to_tasks.end()) {
 			// This node is not a task
 			wl_assert(
-				execution_graph.get_node_type(node_handle) != e_execution_graph_node_type::k_native_module_call);
+				native_module_graph.get_node_type(node_handle) !=
+				e_native_module_graph_node_type::k_native_module_call);
 			continue;
 		}
 
-		wl_assert(execution_graph.get_node_type(node_handle) == e_execution_graph_node_type::k_native_module_call);
+		wl_assert(
+			native_module_graph.get_node_type(node_handle) == e_native_module_graph_node_type::k_native_module_call);
 		uint32 task_index = nodes_to_tasks.at(node_handle);
 		s_task &task = m_tasks[task_index];
 
 		task.successors_start = m_task_lists.size();
 		task.successors_count = 0;
-		for (size_t edge = 0; edge < execution_graph.get_node_outgoing_edge_count(node_handle); edge++) {
+		for (size_t edge = 0; edge < native_module_graph.get_node_outgoing_edge_count(node_handle); edge++) {
 			h_graph_node output_node_handle =
-				execution_graph.get_node_outgoing_edge_handle(node_handle, edge);
+				native_module_graph.get_node_outgoing_edge_handle(node_handle, edge);
 
-			for (size_t dest = 0; dest < execution_graph.get_node_outgoing_edge_count(output_node_handle); dest++) {
+			for (size_t dest = 0; dest < native_module_graph.get_node_outgoing_edge_count(output_node_handle); dest++) {
 				h_graph_node dest_node_handle =
-					execution_graph.get_node_outgoing_edge_handle(output_node_handle, dest);
+					native_module_graph.get_node_outgoing_edge_handle(output_node_handle, dest);
 
 				// We only care about native module and array inputs
-				if (execution_graph.get_node_type(dest_node_handle) !=
-					e_execution_graph_node_type::k_indexed_input) {
+				if (native_module_graph.get_node_type(dest_node_handle) !=
+					e_native_module_graph_node_type::k_indexed_input) {
 					continue;
 				}
 
 				h_graph_node input_node_handle =
-					execution_graph.get_node_outgoing_edge_handle(dest_node_handle, 0);
+					native_module_graph.get_node_outgoing_edge_handle(dest_node_handle, 0);
 
-				e_execution_graph_node_type input_node_type = execution_graph.get_node_type(input_node_handle);
-				if (input_node_type == e_execution_graph_node_type::k_native_module_call) {
+				e_native_module_graph_node_type input_node_type = native_module_graph.get_node_type(input_node_handle);
+				if (input_node_type == e_native_module_graph_node_type::k_native_module_call) {
 					// This output is used as a native module input
 					// Find the task belonging to this node
 					uint32 successor_task_index = nodes_to_tasks.at(input_node_handle);
 					wl_assert(successor_task_index != k_invalid_task);
 					add_task_successor(task_index, successor_task_index);
-				} else if (input_node_type == e_execution_graph_node_type::k_array) {
+				} else if (input_node_type == e_native_module_graph_node_type::k_array) {
 					// This output is used as an array input
-					wl_assert(execution_graph.get_node_data_type(input_node_handle).is_array());
+					wl_assert(native_module_graph.get_node_data_type(input_node_handle).is_array());
 
 					// Find all native modules which use this array
 					for (size_t array_dest = 0;
-						array_dest < execution_graph.get_node_outgoing_edge_count(input_node_handle);
+						array_dest < native_module_graph.get_node_outgoing_edge_count(input_node_handle);
 						array_dest++) {
 						h_graph_node array_dest_node_handle =
-							execution_graph.get_node_outgoing_edge_handle(input_node_handle, array_dest);
+							native_module_graph.get_node_outgoing_edge_handle(input_node_handle, array_dest);
 
 						// We only care about native module inputs
-						if (execution_graph.get_node_type(array_dest_node_handle) !=
-							e_execution_graph_node_type::k_indexed_input) {
+						if (native_module_graph.get_node_type(array_dest_node_handle) !=
+							e_native_module_graph_node_type::k_indexed_input) {
 							continue;
 						}
 
 						h_graph_node array_input_node_handle =
-							execution_graph.get_node_outgoing_edge_handle(array_dest_node_handle, 0);
+							native_module_graph.get_node_outgoing_edge_handle(array_dest_node_handle, 0);
 
-						if (execution_graph.get_node_type(array_input_node_handle) ==
-							e_execution_graph_node_type::k_native_module_call) {
+						if (native_module_graph.get_node_type(array_input_node_handle) ==
+							e_native_module_graph_node_type::k_native_module_call) {
 							// This output is used as a native module input
 							// Find the task belonging to this node
 							uint32 successor_task_index = nodes_to_tasks.at(array_input_node_handle);

@@ -2,7 +2,7 @@
 
 #include "common/common.h"
 
-#include "instrument/execution_graph.h"
+#include "instrument/native_module_graph.h"
 
 #include <stack>
 #include <unordered_set>
@@ -11,10 +11,10 @@ class c_graph_trimmer {
 public:
 	using f_on_node_removed = void (*)(void *context, h_graph_node node_handle);
 
-	c_graph_trimmer(c_execution_graph &execution_graph);
+	c_graph_trimmer(c_native_module_graph &native_module_graph);
 
 	void set_on_node_removed(f_on_node_removed on_node_removed, void *context);
-	c_execution_graph &get_execution_graph();
+	c_native_module_graph &get_native_module_graph();
 
 	// Temporary references are used to prevent a node from getting trimmed when it's in an intermediate state (e.g. the
 	// result of an expression that has yet to be assigned to a variable). The methods do nothing if called on invalid
@@ -28,7 +28,7 @@ private:
 	void add_pending_node(h_graph_node node_handle);
 
 	// The graph
-	c_execution_graph &m_execution_graph;
+	c_native_module_graph &m_native_module_graph;
 
 	f_on_node_removed m_on_node_removed = nullptr;
 	void *m_on_node_removed_context = nullptr;

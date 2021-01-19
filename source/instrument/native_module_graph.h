@@ -13,7 +13,7 @@
 #include <variant>
 #include <vector>
 
-enum class e_execution_graph_node_type {
+enum class e_native_module_graph_node_type {
 	// An invalid node, or a node which has been removed
 	k_invalid,
 
@@ -23,8 +23,8 @@ enum class e_execution_graph_node_type {
 	// Represents an array; can only be used as inputs
 	k_array,
 
-	// Has 1 input per in argument pointing to a e_execution_graph_node_type::k_indexed_input node
-	// Has 1 output per out argument pointing to a e_execution_graph_node_type::k_indexed_output node
+	// Has 1 input per in argument pointing to a e_native_module_graph_node_type::k_indexed_input node
+	// Has 1 output per out argument pointing to a e_native_module_graph_node_type::k_indexed_output node
 	k_native_module_call,
 
 	// An input with an index, used for native module arguments and array indices
@@ -45,8 +45,7 @@ enum class e_execution_graph_node_type {
 	k_count
 };
 
-// $TODO c_execution_graph -> c_native_module_graph
-class c_execution_graph {
+class c_native_module_graph {
 public:
 	using f_on_node_removed = void (*)(void *context, h_graph_node node_handle);
 
@@ -54,7 +53,7 @@ public:
 	// be disabled for improved performance
 	static constexpr uint32 k_remain_active_output_index = static_cast<uint32>(-1);
 
-	c_execution_graph();
+	c_native_module_graph();
 
 	e_instrument_result save(std::ofstream &out) const;
 	e_instrument_result load(std::ifstream &in);
@@ -84,7 +83,7 @@ public:
 	h_graph_node nodes_begin() const; // $TODO $COMPILER make an iterator class instead
 	h_graph_node nodes_next(h_graph_node node_handle) const;
 
-	e_execution_graph_node_type get_node_type(h_graph_node node_handle) const;
+	e_native_module_graph_node_type get_node_type(h_graph_node node_handle) const;
 	c_native_module_data_type get_node_data_type(h_graph_node node_handle) const;
 	bool is_node_constant(h_graph_node node_handle) const; // Returns true for arrays with only constant inputs
 	real32 get_constant_node_real_value(h_graph_node node_handle) const;
@@ -147,10 +146,10 @@ private:
 			uint32 output_index;
 		};
 
-		e_execution_graph_node_type type;
-#if IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
+		e_native_module_graph_node_type type;
+#if IS_TRUE(NATIVE_MODULE_GRAPH_NODE_SALT_ENABLED)
 		uint32 salt;
-#endif // IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
+#endif // IS_TRUE(NATIVE_MODULE_GRAPH_NODE_SALT_ENABLED)
 		std::variant<
 			s_no_node_data,
 			s_constant_node_data,

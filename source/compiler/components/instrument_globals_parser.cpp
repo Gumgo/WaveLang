@@ -2,7 +2,7 @@
 
 #include "generated/wavelang_grammar.h"
 
-#include "instrument/execution_graph.h"
+#include "instrument/native_module_graph.h"
 
 #include <unordered_map>
 
@@ -130,7 +130,7 @@ std::vector<s_instrument_globals> s_instrument_globals_context::build_instrument
 	c_wrapped_array<const uint32> sample_rates_view(
 		sample_rates.empty() ? c_wrapped_array<const uint32>(&default_sample_rate, 1) : sample_rates);
 
-	// Add loop nesting for each multi-valued execution graph global:
+	// Add loop nesting for each multi-valued instrument global:
 	for (uint32 sample_rate : sample_rates_view) {
 		s_instrument_globals globals;
 		globals.max_voices = max_voices;

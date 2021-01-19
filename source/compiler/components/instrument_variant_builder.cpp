@@ -3,7 +3,7 @@
 #include "compiler/tracked_scope.h"
 #include "compiler/try_call_native_module.h"
 
-#include "instrument/execution_graph.h"
+#include "instrument/native_module_graph.h"
 
 #include <memory>
 #include <unordered_map>
@@ -14,11 +14,11 @@ static constexpr size_t k_max_module_call_depth = 100;
 
 static c_native_module_data_type native_module_data_type_from_ast_data_type(c_ast_data_type ast_data_type);
 
-class c_execution_graph_builder {
+class c_native_module_graph_builder {
 public:
-	c_execution_graph_builder(
+	c_native_module_graph_builder(
 		c_compiler_context &context,
-		c_execution_graph &execution_graph,
+		c_native_module_graph &native_module_graph,
 		const s_instrument_globals &instrument_globals,
 		c_ast_node_module_declaration *entry_point);
 
@@ -108,7 +108,7 @@ private:
 		c_ast_node_module_call *native_module_call);
 
 	c_compiler_context &m_context;
-	c_execution_graph &m_execution_graph;
+	c_native_module_graph &m_native_module_graph;
 	const s_instrument_globals &m_instrument_globals;
 	c_ast_node_module_declaration *m_entry_point;
 
@@ -149,48 +149,48 @@ c_instrument_variant *c_instrument_variant_builder::build_instrument_variant(
 	instrument_variant->set_instrument_globals(instrument_globals);
 
 	if (voice_entry_point) {
-		std::unique_ptr<c_execution_graph> execution_graph = std::make_unique<c_execution_graph>();
-		c_execution_graph_builder execution_graph_builder(
+		std::unique_ptr<c_native_module_graph> native_module_graph = std::make_unique<c_native_module_graph>();
+		c_native_module_graph_builder native_module_graph_builder(
 			context,
-			*execution_graph.get(),
+			*native_module_graph.get(),
 			instrument_globals,
 			voice_entry_point);
-		if (!execution_graph_builder.build()) {
+		if (!native_module_graph_builder.build()) {
 			return nullptr;
 		}
 
-		instrument_variant->set_voice_execution_graph(execution_graph.release());
+		instrument_variant->set_voice_native_module_graph(native_module_graph.release());
 	}
 
 	if (fx_entry_point) {
-		std::unique_ptr<c_execution_graph> execution_graph = std::make_unique<c_execution_graph>();
-		c_execution_graph_builder execution_graph_builder(
+		std::unique_ptr<c_native_module_graph> native_module_graph = std::make_unique<c_native_module_graph>();
+		c_native_module_graph_builder native_module_graph_builder(
 			context,
-			*execution_graph.get(),
+			*native_module_graph.get(),
 			instrument_globals,
 			fx_entry_point);
-		if (!execution_graph_builder.build()) {
+		if (!native_module_graph_builder.build()) {
 			return nullptr;
 		}
 
-		instrument_variant->set_fx_execution_graph(execution_graph.release());
+		instrument_variant->set_fx_native_module_graph(native_module_graph.release());
 	}
 
 	return instrument_variant.release();
 }
 
-c_execution_graph_builder::c_execution_graph_builder(
+c_native_module_graph_builder::c_native_module_graph_builder(
 	c_compiler_context &context,
-	c_execution_graph &execution_graph,
+	c_native_module_graph &native_module_graph,
 	const s_instrument_globals &instrument_globals,
 	c_ast_node_module_declaration *entry_point)
 	: m_context(context)
-	, m_execution_graph(execution_graph)
+	, m_native_module_graph(native_module_graph)
 	, m_instrument_globals(instrument_globals)
 	, m_entry_point(entry_point)
-	, m_graph_trimmer(execution_graph) {}
+	, m_graph_trimmer(native_module_graph) {}
 
-bool c_execution_graph_builder::build() {
+bool c_native_module_graph_builder::build() {
 	// The first thing we need to do is initialize all global scope and namespace scope constants
 	h_compiler_source_file source_file_handle = h_compiler_source_file::construct(0);
 	const s_compiler_source_file &source_file = m_context.get_source_file(source_file_handle);
@@ -214,16 +214,16 @@ bool c_execution_graph_builder::build() {
 		for (size_t argument_index = 0; argument_index < m_entry_point->get_argument_count(); argument_index++) {
 			c_ast_node_module_declaration_argument *argument = m_entry_point->get_argument(argument_index);
 			if (argument->get_argument_direction() == e_ast_argument_direction::k_in) {
-				input_node_handles.push_back(m_execution_graph.add_input_node(input_index++));
+				input_node_handles.push_back(m_native_module_graph.add_input_node(input_index++));
 			} else {
 				wl_assert(argument->get_argument_direction() == e_ast_argument_direction::k_out);
-				output_node_handles.push_back(m_execution_graph.add_output_node(output_index++));
+				output_node_handles.push_back(m_native_module_graph.add_output_node(output_index++));
 			}
 		}
 	}
 
 	h_graph_node return_value_node_handle =
-		m_execution_graph.add_output_node(c_execution_graph::k_remain_active_output_index);
+		m_native_module_graph.add_output_node(c_native_module_graph::k_remain_active_output_index);
 
 	// Construct a module call node for the entry point
 	std::unique_ptr<c_ast_node_module_call> entry_point_module_call(new c_ast_node_module_call());
@@ -250,13 +250,13 @@ bool c_execution_graph_builder::build() {
 	wl_assert(m_expression_result_stack.size() == output_node_handles.size() + 1);
 	for (uint32 output_index = 0; output_index < output_node_handles.size(); output_index++) {
 		pop_validation_token(output_index);
-		m_execution_graph.add_edge(m_expression_result_stack.back(), output_node_handles[output_index]);
+		m_native_module_graph.add_edge(m_expression_result_stack.back(), output_node_handles[output_index]);
 		pop_and_trim_expression_results(1);
 	}
 
 	// Hook up the remain-active output
-	pop_validation_token(c_execution_graph::k_remain_active_output_index);
-	m_execution_graph.add_edge(m_expression_result_stack.back(), return_value_node_handle);
+	pop_validation_token(c_native_module_graph::k_remain_active_output_index);
+	m_native_module_graph.add_edge(m_expression_result_stack.back(), return_value_node_handle);
 	pop_and_trim_expression_results(1);
 	wl_assert(m_expression_result_stack.empty());
 
@@ -265,19 +265,19 @@ bool c_execution_graph_builder::build() {
 
 #if IS_TRUE(ASSERTS_ENABLED)
 	// Validate that there are no temporary reference nodes remaining
-	for (h_graph_node node_handle = m_execution_graph.nodes_begin();
+	for (h_graph_node node_handle = m_native_module_graph.nodes_begin();
 		node_handle.is_valid();
-		node_handle = m_execution_graph.nodes_next(node_handle)) {
+		node_handle = m_native_module_graph.nodes_next(node_handle)) {
 		wl_assert(
-			m_execution_graph.get_node_type(node_handle) != e_execution_graph_node_type::k_temporary_reference);
+			m_native_module_graph.get_node_type(node_handle) != e_native_module_graph_node_type::k_temporary_reference);
 	}
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
-	m_execution_graph.remove_unused_nodes_and_reassign_node_indices();
+	m_native_module_graph.remove_unused_nodes_and_reassign_node_indices();
 	return true;
 }
 
-void c_execution_graph_builder::build_tracked_scope(c_ast_node_scope *scope_node, c_tracked_scope *tracked_scope) {
+void c_native_module_graph_builder::build_tracked_scope(c_ast_node_scope *scope_node, c_tracked_scope *tracked_scope) {
 	for (size_t item_index = 0; item_index < scope_node->get_scope_item_count(); item_index++) {
 		c_ast_node_declaration *declaration_node =
 			scope_node->get_scope_item(item_index)->try_get_as<c_ast_node_declaration>();
@@ -298,7 +298,7 @@ void c_execution_graph_builder::build_tracked_scope(c_ast_node_scope *scope_node
 	}
 }
 
-bool c_execution_graph_builder::initialize_global_scope_constants(c_ast_node_scope *scope_node) {
+bool c_native_module_graph_builder::initialize_global_scope_constants(c_ast_node_scope *scope_node) {
 	// We've put all global declarations into the global namespace already so simply iterate over them all
 	for (size_t item_index = 0; item_index < scope_node->get_scope_item_count(); item_index++) {
 		c_ast_node_value_declaration *value_declaration_node =
@@ -320,7 +320,7 @@ bool c_execution_graph_builder::initialize_global_scope_constants(c_ast_node_sco
 	return true;
 }
 
-bool c_execution_graph_builder::initialize_global_scope_constant(c_ast_node_value_declaration *value_declaration) {
+bool c_native_module_graph_builder::initialize_global_scope_constant(c_ast_node_value_declaration *value_declaration) {
 	// Make sure this is a global-scope constant
 	wl_assert(!value_declaration->is_modifiable());
 	wl_assert(value_declaration->get_initialization_expression());
@@ -392,7 +392,7 @@ bool c_execution_graph_builder::initialize_global_scope_constant(c_ast_node_valu
 	return true;
 }
 
-void c_execution_graph_builder::push_expression_result(h_graph_node node_handle) {
+void c_native_module_graph_builder::push_expression_result(h_graph_node node_handle) {
 	wl_assert(node_handle.is_valid());
 	m_graph_trimmer.add_temporary_reference(node_handle);
 	m_expression_result_stack.push_back(node_handle);
@@ -401,7 +401,7 @@ void c_execution_graph_builder::push_expression_result(h_graph_node node_handle)
 #endif // IS_TRUE(ASSERTS_ENABLED)
 }
 
-c_wrapped_array<h_graph_node> c_execution_graph_builder::get_expression_results(size_t count) {
+c_wrapped_array<h_graph_node> c_native_module_graph_builder::get_expression_results(size_t count) {
 	wl_assert(m_expression_result_stack.size() >= count);
 	return c_wrapped_array<h_graph_node>(
 		m_expression_result_stack,
@@ -409,7 +409,7 @@ c_wrapped_array<h_graph_node> c_execution_graph_builder::get_expression_results(
 		count);
 }
 
-void c_execution_graph_builder::pop_and_trim_expression_results(size_t count) {
+void c_native_module_graph_builder::pop_and_trim_expression_results(size_t count) {
 	wl_assert(m_expression_result_stack.size() >= count);
 	for (size_t index = 0; index < count; index++) {
 #if IS_TRUE(ASSERTS_ENABLED)
@@ -423,7 +423,7 @@ void c_execution_graph_builder::pop_and_trim_expression_results(size_t count) {
 	}
 }
 
-void c_execution_graph_builder::push_validation_token(void *validation_token) {
+void c_native_module_graph_builder::push_validation_token(void *validation_token) {
 #if IS_TRUE(ASSERTS_ENABLED)
 	s_validation_token_stack_entry entry;
 	entry.is_validation_token = true;
@@ -432,7 +432,7 @@ void c_execution_graph_builder::push_validation_token(void *validation_token) {
 #endif // IS_TRUE(ASSERTS_ENABLED)
 }
 
-void c_execution_graph_builder::push_validation_token(size_t validation_token) {
+void c_native_module_graph_builder::push_validation_token(size_t validation_token) {
 #if IS_TRUE(ASSERTS_ENABLED)
 	s_validation_token_stack_entry entry;
 	entry.is_validation_token = true;
@@ -441,7 +441,7 @@ void c_execution_graph_builder::push_validation_token(size_t validation_token) {
 #endif // IS_TRUE(ASSERTS_ENABLED)
 }
 
-void c_execution_graph_builder::pop_validation_token(void *validation_token) {
+void c_native_module_graph_builder::pop_validation_token(void *validation_token) {
 #if IS_TRUE(ASSERTS_ENABLED)
 	wl_assert(m_validation_token_stack.back().is_validation_token);
 	wl_assert(m_validation_token_stack.back().pointer_validation_token == validation_token);
@@ -449,7 +449,7 @@ void c_execution_graph_builder::pop_validation_token(void *validation_token) {
 #endif // IS_TRUE(ASSERTS_ENABLED)
 }
 
-void c_execution_graph_builder::pop_validation_token(size_t validation_token) {
+void c_native_module_graph_builder::pop_validation_token(size_t validation_token) {
 #if IS_TRUE(ASSERTS_ENABLED)
 	wl_assert(m_validation_token_stack.back().is_validation_token);
 	wl_assert(m_validation_token_stack.back().value_validation_token == validation_token);
@@ -457,11 +457,11 @@ void c_execution_graph_builder::pop_validation_token(size_t validation_token) {
 #endif // IS_TRUE(ASSERTS_ENABLED)
 }
 
-void c_execution_graph_builder::push_ast_node(c_ast_node *node) {
+void c_native_module_graph_builder::push_ast_node(c_ast_node *node) {
 	m_ast_node_stack.push_back({ node, 0 });
 }
 
-bool c_execution_graph_builder::evaluate_ast_node_stack() {
+bool c_native_module_graph_builder::evaluate_ast_node_stack() {
 	while (!m_ast_node_stack.empty()) {
 		size_t index = m_ast_node_stack.size() - 1;
 		uint64 state = m_ast_node_stack.back().state;
@@ -482,7 +482,7 @@ bool c_execution_graph_builder::evaluate_ast_node_stack() {
 	return true;
 }
 
-bool c_execution_graph_builder::evaluate_ast_node(c_ast_node *node, uint64 &state, bool &pop_node_out) {
+bool c_native_module_graph_builder::evaluate_ast_node(c_ast_node *node, uint64 &state, bool &pop_node_out) {
 	// We should never encounter these types of nodes:
 	wl_assert(!node->try_get_as<c_ast_node_expression_placeholder>());
 	wl_assert(!node->try_get_as<c_ast_node_access>());
@@ -539,7 +539,7 @@ bool c_execution_graph_builder::evaluate_ast_node(c_ast_node *node, uint64 &stat
 	}
 }
 
-bool c_execution_graph_builder::evaluate_ast_node(c_ast_node_scope *node, uint64 &state, bool &pop_node_out) {
+bool c_native_module_graph_builder::evaluate_ast_node(c_ast_node_scope *node, uint64 &state, bool &pop_node_out) {
 	// If return, break, or continue has been issued, we immediately stop handling scope items. The surrounding module
 	// or for-loop will handle the return/break/continue state.
 	if (state < node->get_scope_item_count()
@@ -568,7 +568,7 @@ bool c_execution_graph_builder::evaluate_ast_node(c_ast_node_scope *node, uint64
 	return true;
 }
 
-bool c_execution_graph_builder::evaluate_ast_node(
+bool c_native_module_graph_builder::evaluate_ast_node(
 	c_ast_node_value_declaration *value_declaration,
 	uint64 &state,
 	bool &pop_node_out) {
@@ -601,7 +601,7 @@ bool c_execution_graph_builder::evaluate_ast_node(
 	return true;
 }
 
-bool c_execution_graph_builder::evaluate_ast_node(
+bool c_native_module_graph_builder::evaluate_ast_node(
 	c_ast_node_expression_statement *expression_statement,
 	uint64 &state,
 	bool &pop_node_out) {
@@ -628,7 +628,7 @@ bool c_execution_graph_builder::evaluate_ast_node(
 	return true;
 }
 
-bool c_execution_graph_builder::evaluate_ast_node(
+bool c_native_module_graph_builder::evaluate_ast_node(
 	c_ast_node_assignment_statement *assignment_statement,
 	uint64 &state,
 	bool &pop_node_out) {
@@ -685,7 +685,7 @@ bool c_execution_graph_builder::evaluate_ast_node(
 	return true;
 }
 
-bool c_execution_graph_builder::evaluate_ast_node(
+bool c_native_module_graph_builder::evaluate_ast_node(
 	c_ast_node_return_statement *return_statement,
 	uint64 &state,
 	bool &pop_node_out) {
@@ -717,7 +717,7 @@ bool c_execution_graph_builder::evaluate_ast_node(
 }
 
 
-bool c_execution_graph_builder::evaluate_ast_node(
+bool c_native_module_graph_builder::evaluate_ast_node(
 	c_ast_node_if_statement *if_statement,
 	uint64 &state,
 	bool &pop_node_out) {
@@ -733,7 +733,7 @@ bool c_execution_graph_builder::evaluate_ast_node(
 
 		// Don't remove this yet - we'll remove it when we pop the if statement
 		h_graph_node expression_node_handle = m_expression_result_stack.back();
-		bool if_statement_value = m_execution_graph.get_constant_node_bool_value(expression_node_handle);
+		bool if_statement_value = m_native_module_graph.get_constant_node_bool_value(expression_node_handle);
 
 		// Depending on the result, push the "true" or "false" scope (if it exists)
 		c_ast_node_scope *scope = nullptr;
@@ -770,7 +770,7 @@ bool c_execution_graph_builder::evaluate_ast_node(
 	return true;
 }
 
-bool c_execution_graph_builder::evaluate_ast_node(
+bool c_native_module_graph_builder::evaluate_ast_node(
 	c_ast_node_for_loop *for_loop,
 	uint64 &state,
 	bool &pop_node_out) {
@@ -793,7 +793,7 @@ bool c_execution_graph_builder::evaluate_ast_node(
 
 		// Don't pop this node handle from the stack until we're done looping - we need to keep referring to it
 		h_graph_node array_node_handle = m_expression_result_stack.back();
-		size_t array_count = m_execution_graph.get_node_incoming_edge_count(array_node_handle);
+		size_t array_count = m_native_module_graph.get_node_incoming_edge_count(array_node_handle);
 
 		m_continue_statement_issued = false;
 		if (array_index < array_count && !m_break_statement_issued) {
@@ -807,7 +807,7 @@ bool c_execution_graph_builder::evaluate_ast_node(
 
 			// Add the loop value to the scope
 			h_graph_node element_node_handle =
-				m_execution_graph.get_node_indexed_input_incoming_edge_handle(array_node_handle, array_index, 0);
+				m_native_module_graph.get_node_indexed_input_incoming_edge_handle(array_node_handle, array_index, 0);
 			c_tracked_declaration *tracked_declaration =
 				m_tracked_scopes.back()->add_declaration(for_loop->get_value_declaration());
 			tracked_declaration->set_node_handle(element_node_handle);
@@ -831,7 +831,7 @@ bool c_execution_graph_builder::evaluate_ast_node(
 	return true;
 }
 
-bool c_execution_graph_builder::evaluate_ast_node(
+bool c_native_module_graph_builder::evaluate_ast_node(
 	c_ast_node_break_statement *break_statement,
 	uint64 &state,
 	bool &pop_node_out) {
@@ -840,7 +840,7 @@ bool c_execution_graph_builder::evaluate_ast_node(
 	return true;
 }
 
-bool c_execution_graph_builder::evaluate_ast_node(
+bool c_native_module_graph_builder::evaluate_ast_node(
 	c_ast_node_continue_statement *continue_statement,
 	uint64 &state,
 	bool &pop_node_out) {
@@ -849,7 +849,7 @@ bool c_execution_graph_builder::evaluate_ast_node(
 	return true;
 }
 
-bool c_execution_graph_builder::evaluate_ast_node(
+bool c_native_module_graph_builder::evaluate_ast_node(
 	c_ast_node_literal *literal,
 	uint64 &state,
 	bool &pop_node_out) {
@@ -860,15 +860,15 @@ bool c_execution_graph_builder::evaluate_ast_node(
 	wl_assert(literal->get_data_type().get_data_mutability() == e_ast_data_mutability::k_constant);
 	switch (literal->get_data_type().get_primitive_type()) {
 	case e_ast_primitive_type::k_real:
-		constant_node_handle = m_execution_graph.add_constant_node(literal->get_real_value());
+		constant_node_handle = m_native_module_graph.add_constant_node(literal->get_real_value());
 		break;
 
 	case e_ast_primitive_type::k_bool:
-		constant_node_handle = m_execution_graph.add_constant_node(literal->get_bool_value());
+		constant_node_handle = m_native_module_graph.add_constant_node(literal->get_bool_value());
 		break;
 
 	case e_ast_primitive_type::k_string:
-		constant_node_handle = m_execution_graph.add_constant_node(literal->get_string_value());
+		constant_node_handle = m_native_module_graph.add_constant_node(literal->get_string_value());
 		break;
 
 	default:
@@ -882,7 +882,7 @@ bool c_execution_graph_builder::evaluate_ast_node(
 	return true;
 }
 
-bool c_execution_graph_builder::evaluate_ast_node(
+bool c_native_module_graph_builder::evaluate_ast_node(
 	c_ast_node_array *array,
 	uint64 &state,
 	bool &pop_node_out) {
@@ -901,10 +901,10 @@ bool c_execution_graph_builder::evaluate_ast_node(
 	} else {
 		wl_assert(state == 1);
 
-		h_graph_node array_node_handle = m_execution_graph.add_array_node(
+		h_graph_node array_node_handle = m_native_module_graph.add_array_node(
 			native_module_data_type_from_ast_data_type(array->get_data_type().get_element_type().get_data_type()));
 		for (h_graph_node element_node_handle : get_expression_results(array->get_element_count())) {
-			m_execution_graph.add_array_value(array_node_handle, element_node_handle);
+			m_native_module_graph.add_array_value(array_node_handle, element_node_handle);
 		}
 
 		pop_and_trim_expression_results(array->get_element_count());
@@ -918,7 +918,7 @@ bool c_execution_graph_builder::evaluate_ast_node(
 	return true;
 }
 
-bool c_execution_graph_builder::evaluate_ast_node(
+bool c_native_module_graph_builder::evaluate_ast_node(
 	c_ast_node_declaration_reference *declaration_reference,
 	uint64 &state,
 	bool &pop_node_out) {
@@ -949,7 +949,7 @@ bool c_execution_graph_builder::evaluate_ast_node(
 	return true;
 }
 
-bool c_execution_graph_builder::evaluate_ast_node(
+bool c_native_module_graph_builder::evaluate_ast_node(
 	c_ast_node_module_call *module_call,
 	uint64 &state,
 	bool &pop_node_out) {
@@ -1144,7 +1144,7 @@ bool c_execution_graph_builder::evaluate_ast_node(
 			m_return_value_node_handle = h_graph_node::invalid();
 
 			if (is_entry_point_module_call) {
-				push_validation_token(c_execution_graph::k_remain_active_output_index);
+				push_validation_token(c_native_module_graph::k_remain_active_output_index);
 			}
 		}
 
@@ -1189,7 +1189,7 @@ bool c_execution_graph_builder::evaluate_ast_node(
 	return true;
 }
 
-bool c_execution_graph_builder::evaluate_ast_node(
+bool c_native_module_graph_builder::evaluate_ast_node(
 	c_ast_node_convert *convert,
 	uint64 &state,
 	bool &pop_node_out) {
@@ -1197,7 +1197,7 @@ bool c_execution_graph_builder::evaluate_ast_node(
 	return evaluate_ast_node(convert->get_expression(), state, pop_node_out);
 }
 
-bool c_execution_graph_builder::evaluate_ast_node(
+bool c_native_module_graph_builder::evaluate_ast_node(
 	c_ast_node_subscript *subscript,
 	uint64 &state,
 	bool &pop_node_out) {
@@ -1205,7 +1205,7 @@ bool c_execution_graph_builder::evaluate_ast_node(
 	return evaluate_ast_node(subscript->get_module_call(), state, pop_node_out);
 }
 
-bool c_execution_graph_builder::assign_expression_value(
+bool c_native_module_graph_builder::assign_expression_value(
 	c_tracked_declaration *tracked_declaration,
 	h_graph_node expression_node_handle,
 	h_graph_node index_expression_node_handle,
@@ -1214,8 +1214,8 @@ bool c_execution_graph_builder::assign_expression_value(
 	if (index_expression_node_handle.is_valid()) {
 		// This is an array subscript assignment
 		h_graph_node array_node_handle = tracked_declaration->get_node_handle();
-		size_t array_count = m_execution_graph.get_node_incoming_edge_count(array_node_handle);
-		real32 array_index_real = m_execution_graph.get_constant_node_real_value(index_expression_node_handle);
+		size_t array_count = m_native_module_graph.get_node_incoming_edge_count(array_node_handle);
+		real32 array_index_real = m_native_module_graph.get_constant_node_real_value(index_expression_node_handle);
 		size_t array_index;
 		if (!get_and_validate_native_module_array_index(array_index_real, array_count, array_index)) {
 			m_context.error(
@@ -1227,26 +1227,26 @@ bool c_execution_graph_builder::assign_expression_value(
 			return false;
 		}
 
-		if (m_execution_graph.get_node_outgoing_edge_count(array_node_handle) == 1) {
+		if (m_native_module_graph.get_node_outgoing_edge_count(array_node_handle) == 1) {
 			// Optimization: if we're the only thing referencing this array, just swap out a single node rather than
 			// copying the entire array
-			h_graph_node old_element_node_handle = m_execution_graph.set_array_value_at_index(
+			h_graph_node old_element_node_handle = m_native_module_graph.set_array_value_at_index(
 				array_node_handle,
 				cast_integer_verify<uint32>(array_index),
 				expression_node_handle);
 			m_graph_trimmer.try_trim_node(old_element_node_handle);
 		} else {
 			// Copy the entire array and redirect the declaration to point at the copy
-			h_graph_node new_array_node_handle = m_execution_graph.add_array_node(
-				m_execution_graph.get_node_data_type(array_node_handle).get_element_type());
+			h_graph_node new_array_node_handle = m_native_module_graph.add_array_node(
+				m_native_module_graph.get_node_data_type(array_node_handle).get_element_type());
 			for (size_t index = 0; index < array_count; index++) {
 				h_graph_node element_node_handle = (index == array_index)
 					? expression_node_handle
-					: m_execution_graph.get_node_indexed_input_incoming_edge_handle(
+					: m_native_module_graph.get_node_indexed_input_incoming_edge_handle(
 						array_node_handle,
 						array_index,
 						0);
-				m_execution_graph.add_array_value(new_array_node_handle, element_node_handle);
+				m_native_module_graph.add_array_value(new_array_node_handle, element_node_handle);
 			}
 		}
 	} else {
@@ -1257,7 +1257,7 @@ bool c_execution_graph_builder::assign_expression_value(
 	return true;
 }
 
-bool c_execution_graph_builder::issue_native_module_call(
+bool c_native_module_graph_builder::issue_native_module_call(
 	c_ast_node_module_declaration *native_module_declaration,
 	c_ast_node_module_call *native_module_call) {
 	wl_assert(native_module_declaration->get_native_module_uid().is_valid());
@@ -1267,7 +1267,7 @@ bool c_execution_graph_builder::issue_native_module_call(
 		c_native_module_registry::get_native_module(native_module_handle);
 
 	h_graph_node native_module_call_node_handle =
-		m_execution_graph.add_native_module_call_node(native_module_handle);
+		m_native_module_graph.add_native_module_call_node(native_module_handle);
 
 	// Pass in the inputs
 	size_t input_index = 0;
@@ -1284,8 +1284,8 @@ bool c_execution_graph_builder::issue_native_module_call(
 			if (argument->get_argument_direction() == e_ast_argument_direction::k_in) {
 				// Hook up the input source node
 				h_graph_node input_node_handle =
-					m_execution_graph.get_node_incoming_edge_handle(native_module_call_node_handle, input_index);
-				m_execution_graph.add_edge(tracked_declaration->get_node_handle(), input_node_handle);
+					m_native_module_graph.get_node_incoming_edge_handle(native_module_call_node_handle, input_index);
+				m_native_module_graph.add_edge(tracked_declaration->get_node_handle(), input_node_handle);
 				input_index++;
 			} else {
 				wl_assert(argument->get_argument_direction() == e_ast_argument_direction::k_out);
@@ -1322,7 +1322,7 @@ bool c_execution_graph_builder::issue_native_module_call(
 			// Hook up the return output
 			m_return_value_node_handle = did_call
 				? output_node_handles[output_index]
-				: m_execution_graph.get_node_outgoing_edge_handle(native_module_call_node_handle, output_index);
+				: m_native_module_graph.get_node_outgoing_edge_handle(native_module_call_node_handle, output_index);
 			m_graph_trimmer.add_temporary_reference(m_return_value_node_handle);
 			output_index++;
 		} else {
@@ -1336,7 +1336,7 @@ bool c_execution_graph_builder::issue_native_module_call(
 				// Store off the output node
 				h_graph_node output_node_handle = did_call
 					? output_node_handles[output_index]
-					: m_execution_graph.get_node_outgoing_edge_handle(
+					: m_native_module_graph.get_node_outgoing_edge_handle(
 						native_module_call_node_handle,
 						output_index);
 				tracked_declaration->set_node_handle(output_node_handle);

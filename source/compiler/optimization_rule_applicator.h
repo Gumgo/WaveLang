@@ -2,14 +2,14 @@
 
 #include "common/common.h"
 
-#include "instrument/execution_graph.h"
+#include "instrument/native_module_graph.h"
 #include "instrument/native_module_registry.h"
 
 #include <stack>
 
 class c_optimization_rule_applicator {
 public:
-	c_optimization_rule_applicator(c_execution_graph &execution_graph);
+	c_optimization_rule_applicator(c_native_module_graph &native_module_graph);
 	bool try_apply_optimization_rule(h_graph_node node_handle, uint32 rule_index);
 
 private:
@@ -38,7 +38,7 @@ private:
 	void reroute_source_to_target(h_graph_node target_root_node_handle);
 	void transfer_outputs(h_graph_node destination_handle, h_graph_node source_handle);
 
-	c_execution_graph &m_execution_graph;
+	c_native_module_graph &m_native_module_graph;
 	h_graph_node m_source_root_node_handle;
 	const s_native_module_optimization_rule *m_rule = nullptr;
 

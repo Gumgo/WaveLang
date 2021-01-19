@@ -1,7 +1,7 @@
 #include "compiler/optimization_rule_applicator.h"
 
-c_optimization_rule_applicator::c_optimization_rule_applicator(c_execution_graph &execution_graph)
-	: m_execution_graph(execution_graph) {}
+c_optimization_rule_applicator::c_optimization_rule_applicator(c_native_module_graph &native_module_graph)
+	: m_native_module_graph(native_module_graph) {}
 
 bool c_optimization_rule_applicator::try_apply_optimization_rule(h_graph_node node_handle, uint32 rule_index) {
 	m_source_root_node_handle = node_handle;
@@ -33,7 +33,7 @@ bool c_optimization_rule_applicator::try_apply_optimization_rule(h_graph_node no
 }
 
 bool c_optimization_rule_applicator::has_more_inputs(const s_match_state &match_state) const {
-	size_t input_count = m_execution_graph.get_node_incoming_edge_count(match_state.current_node_handle);
+	size_t input_count = m_native_module_graph.get_node_incoming_edge_count(match_state.current_node_handle);
 	return match_state.next_input_index < input_count;
 }
 
@@ -44,15 +44,15 @@ h_graph_node c_optimization_rule_applicator::follow_next_input(
 	wl_assert(has_more_inputs(match_state));
 
 	// Grab the input
-	h_graph_node new_node_handle = m_execution_graph.get_node_indexed_input_incoming_edge_handle(
+	h_graph_node new_node_handle = m_native_module_graph.get_node_indexed_input_incoming_edge_handle(
 		match_state.current_node_handle,
 		match_state.next_input_index,
 		0);
 
-	if (m_execution_graph.get_node_type(new_node_handle) == e_execution_graph_node_type::k_indexed_output) {
+	if (m_native_module_graph.get_node_type(new_node_handle) == e_native_module_graph_node_type::k_indexed_output) {
 		// We need to advance an additional node for the case (module <- input <- output <- module)
 		output_node_handle_out = new_node_handle;
-		new_node_handle = m_execution_graph.get_node_incoming_edge_handle(new_node_handle, 0);
+		new_node_handle = m_native_module_graph.get_node_incoming_edge_handle(new_node_handle, 0);
 	}
 
 	match_state.next_input_index++;
@@ -152,8 +152,8 @@ bool c_optimization_rule_applicator::handle_source_native_module_symbol_match(
 	h_graph_node node_handle = current_state.current_node_handle;
 
 	// It's a match if the current node is a native module of the same index
-	return (m_execution_graph.get_node_type(node_handle) == e_execution_graph_node_type::k_native_module_call)
-		&& (m_execution_graph.get_native_module_call_native_module_handle(node_handle) == native_module_handle);
+	return (m_native_module_graph.get_node_type(node_handle) == e_native_module_graph_node_type::k_native_module_call)
+		&& (m_native_module_graph.get_native_module_call_native_module_handle(node_handle) == native_module_handle);
 }
 
 bool c_optimization_rule_applicator::handle_source_value_symbol_match(
@@ -162,7 +162,7 @@ bool c_optimization_rule_applicator::handle_source_value_symbol_match(
 	h_graph_node output_node_handle) {
 	if (symbol.type == e_native_module_optimization_symbol_type::k_variable) {
 		// Match anything except for constants
-		if (m_execution_graph.is_node_constant(node_handle)) {
+		if (m_native_module_graph.is_node_constant(node_handle)) {
 			return false;
 		}
 
@@ -172,7 +172,7 @@ bool c_optimization_rule_applicator::handle_source_value_symbol_match(
 		return true;
 	} else if (symbol.type == e_native_module_optimization_symbol_type::k_constant) {
 		// Match only constants
-		if (!m_execution_graph.is_node_constant(node_handle)) {
+		if (!m_native_module_graph.is_node_constant(node_handle)) {
 			return false;
 		}
 
@@ -180,15 +180,15 @@ bool c_optimization_rule_applicator::handle_source_value_symbol_match(
 		return true;
 	} else {
 		// Match only constants with the given value
-		if (m_execution_graph.get_node_type(node_handle) != e_execution_graph_node_type::k_constant) {
+		if (m_native_module_graph.get_node_type(node_handle) != e_native_module_graph_node_type::k_constant) {
 			return false;
 		}
 
 		// get_constant_node_<type>_value will assert that there's no type mismatch
 		if (symbol.type == e_native_module_optimization_symbol_type::k_real_value) {
-			return (symbol.data.real_value == m_execution_graph.get_constant_node_real_value(node_handle));
+			return (symbol.data.real_value == m_native_module_graph.get_constant_node_real_value(node_handle));
 		} else if (symbol.type == e_native_module_optimization_symbol_type::k_bool_value) {
-			return (symbol.data.bool_value == m_execution_graph.get_constant_node_bool_value(node_handle));
+			return (symbol.data.bool_value == m_native_module_graph.get_constant_node_bool_value(node_handle));
 		} else {
 			wl_unreachable();
 			return false;
@@ -243,11 +243,11 @@ h_graph_node c_optimization_rule_applicator::build_target_pattern() {
 		{
 			h_native_module native_module_handle =
 				c_native_module_registry::get_native_module_handle(symbol.data.native_module_uid);
-			h_graph_node node_handle = m_execution_graph.add_native_module_call_node(native_module_handle);
+			h_graph_node node_handle = m_native_module_graph.add_native_module_call_node(native_module_handle);
 
 			// We currently only allow a single outgoing edge, due to the way we express rules (out arguments aren't
 			// currently supported)
-			wl_assert(m_execution_graph.get_node_outgoing_edge_count(node_handle) == 1);
+			wl_assert(m_native_module_graph.get_node_outgoing_edge_count(node_handle) == 1);
 
 			if (!root_node_handle.is_valid()) {
 				// This is the root node of the target pattern
@@ -257,13 +257,13 @@ h_graph_node c_optimization_rule_applicator::build_target_pattern() {
 				s_match_state &current_state = m_match_state_stack.top();
 				wl_assert(has_more_inputs(current_state));
 
-				h_graph_node input_node_handle = m_execution_graph.get_node_incoming_edge_handle(
+				h_graph_node input_node_handle = m_native_module_graph.get_node_incoming_edge_handle(
 					current_state.current_node_handle,
 					current_state.next_input_index);
-				h_graph_node output_node_handle = m_execution_graph.get_node_outgoing_edge_handle(
+				h_graph_node output_node_handle = m_native_module_graph.get_node_outgoing_edge_handle(
 					node_handle,
 					0);
-				m_execution_graph.add_edge(output_node_handle, input_node_handle);
+				m_native_module_graph.add_edge(output_node_handle, input_node_handle);
 				current_state.next_input_index++;
 			}
 
@@ -303,11 +303,11 @@ h_graph_node c_optimization_rule_applicator::build_target_pattern() {
 				s_match_state &current_state = m_match_state_stack.top();
 				wl_assert(has_more_inputs(current_state));
 
-				h_graph_node input_node_handle = m_execution_graph.get_node_incoming_edge_handle(
+				h_graph_node input_node_handle = m_native_module_graph.get_node_incoming_edge_handle(
 					current_state.current_node_handle,
 					current_state.next_input_index);
 				current_state.next_input_index++;
-				m_execution_graph.add_edge(matched_node_handle, input_node_handle);
+				m_native_module_graph.add_edge(matched_node_handle, input_node_handle);
 			}
 			break;
 		}
@@ -328,10 +328,10 @@ h_graph_node c_optimization_rule_applicator::handle_target_value_symbol_match(
 		return load_match(symbol);
 	} else if (symbol.type == e_native_module_optimization_symbol_type::k_real_value) {
 		// Create a constant node with this value
-		return m_execution_graph.add_constant_node(symbol.data.real_value);
+		return m_native_module_graph.add_constant_node(symbol.data.real_value);
 	} else if (symbol.type == e_native_module_optimization_symbol_type::k_bool_value) {
 		// Create a constant node with this value
-		return m_execution_graph.add_constant_node(symbol.data.bool_value);
+		return m_native_module_graph.add_constant_node(symbol.data.bool_value);
 	} else {
 		wl_unreachable();
 		return h_graph_node::invalid();
@@ -344,27 +344,27 @@ void c_optimization_rule_applicator::reroute_source_to_target(h_graph_node targe
 	// deleting the old set of nodes, they will automatically be cleaned up later.
 
 	// We currently only support modules with a single output
-	wl_assert(m_execution_graph.get_node_outgoing_edge_count(m_source_root_node_handle) == 1);
+	wl_assert(m_native_module_graph.get_node_outgoing_edge_count(m_source_root_node_handle) == 1);
 	h_graph_node old_output_node =
-		m_execution_graph.get_node_outgoing_edge_handle(m_source_root_node_handle, 0);
+		m_native_module_graph.get_node_outgoing_edge_handle(m_source_root_node_handle, 0);
 
-	switch (m_execution_graph.get_node_type(target_root_node_handle)) {
-	case e_execution_graph_node_type::k_native_module_call:
+	switch (m_native_module_graph.get_node_type(target_root_node_handle)) {
+	case e_native_module_graph_node_type::k_native_module_call:
 	{
-		wl_assert(m_execution_graph.get_node_outgoing_edge_count(target_root_node_handle) == 1);
+		wl_assert(m_native_module_graph.get_node_outgoing_edge_count(target_root_node_handle) == 1);
 		h_graph_node new_output_node =
-			m_execution_graph.get_node_outgoing_edge_handle(target_root_node_handle, 0);
+			m_native_module_graph.get_node_outgoing_edge_handle(target_root_node_handle, 0);
 		transfer_outputs(new_output_node, old_output_node);
 		break;
 	}
 
-	case e_execution_graph_node_type::k_constant:
-	case e_execution_graph_node_type::k_array:
-	case e_execution_graph_node_type::k_indexed_output:
+	case e_native_module_graph_node_type::k_constant:
+	case e_native_module_graph_node_type::k_array:
+	case e_native_module_graph_node_type::k_indexed_output:
 		transfer_outputs(target_root_node_handle, old_output_node);
 		break;
 
-	case e_execution_graph_node_type::k_temporary_reference:
+	case e_native_module_graph_node_type::k_temporary_reference:
 		// These should have all been removed
 		wl_unreachable();
 		break;
@@ -378,9 +378,9 @@ void c_optimization_rule_applicator::transfer_outputs(
 	h_graph_node destination_handle,
 	h_graph_node source_handle) {
 	// Redirect the inputs of input_node directly to the outputs of output_node
-	while (m_execution_graph.get_node_outgoing_edge_count(source_handle) > 0) {
-		h_graph_node to_node_handle = m_execution_graph.get_node_outgoing_edge_handle(source_handle, 0);
-		m_execution_graph.remove_edge(source_handle, to_node_handle);
-		m_execution_graph.add_edge(destination_handle, to_node_handle);
+	while (m_native_module_graph.get_node_outgoing_edge_count(source_handle) > 0) {
+		h_graph_node to_node_handle = m_native_module_graph.get_node_outgoing_edge_handle(source_handle, 0);
+		m_native_module_graph.remove_edge(source_handle, to_node_handle);
+		m_native_module_graph.add_edge(destination_handle, to_node_handle);
 	}
 }

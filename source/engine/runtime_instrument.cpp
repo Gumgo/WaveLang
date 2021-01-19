@@ -1,8 +1,8 @@
 #include "engine/runtime_instrument.h"
 #include "engine/task_graph.h"
 
-#include "instrument/execution_graph.h"
 #include "instrument/instrument.h"
+#include "instrument/native_module_graph.h"
 
 c_runtime_instrument::c_runtime_instrument() {
 	zero_type(&m_task_graphs);
@@ -16,25 +16,25 @@ c_runtime_instrument::~c_runtime_instrument() {
 }
 
 bool c_runtime_instrument::build(const c_instrument_variant *instrument_variant) {
-	wl_assert(instrument_variant->get_voice_execution_graph() || instrument_variant->get_fx_execution_graph());
+	wl_assert(instrument_variant->get_voice_native_module_graph() || instrument_variant->get_fx_native_module_graph());
 
 	for (e_instrument_stage instrument_stage : iterate_enum<e_instrument_stage>()) {
 		delete m_task_graphs[enum_index(instrument_stage)];
 		m_task_graphs[enum_index(instrument_stage)] = nullptr;
 	}
 
-	if (instrument_variant->get_voice_execution_graph()) {
+	if (instrument_variant->get_voice_native_module_graph()) {
 		m_task_graphs[enum_index(e_instrument_stage::k_voice)] = new c_task_graph();
 		if (!m_task_graphs[enum_index(e_instrument_stage::k_voice)]->build(
-			*instrument_variant->get_voice_execution_graph())) {
+			*instrument_variant->get_voice_native_module_graph())) {
 			return false;
 		}
 	}
 
-	if (instrument_variant->get_fx_execution_graph()) {
+	if (instrument_variant->get_fx_native_module_graph()) {
 		m_task_graphs[enum_index(e_instrument_stage::k_fx)] = new c_task_graph();
 		if (!m_task_graphs[enum_index(e_instrument_stage::k_fx)]->build(
-			*instrument_variant->get_fx_execution_graph())) {
+			*instrument_variant->get_fx_native_module_graph())) {
 			return false;
 		}
 	}

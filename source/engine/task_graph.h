@@ -11,7 +11,7 @@
 #include <unordered_map>
 #include <vector>
 
-class c_execution_graph;
+class c_native_module_graph;
 class c_predecessor_resolver;
 
 using c_task_graph_task_array = c_wrapped_array<const uint32>;
@@ -44,7 +44,7 @@ public:
 
 	c_task_graph() = default;
 
-	bool build(const c_execution_graph &execution_graph);
+	bool build(const c_native_module_graph &native_module_graph);
 
 	uint32 get_task_count() const;
 	uint32 get_max_task_concurrency() const;
@@ -85,36 +85,36 @@ private:
 	};
 
 	void clear();
-	void create_buffer_for_input(const c_execution_graph &execution_graph, h_graph_node node_handle);
-	void assign_buffer_to_output(const c_execution_graph &execution_graph, h_graph_node node_handle);
+	void create_buffer_for_input(const c_native_module_graph &native_module_graph, h_graph_node node_handle);
+	void assign_buffer_to_output(const c_native_module_graph &native_module_graph, h_graph_node node_handle);
 	bool add_task_for_node(
-		const c_execution_graph &execution_graph,
+		const c_native_module_graph &native_module_graph,
 		h_graph_node node_handle,
 		std::unordered_map<h_graph_node, uint32> &nodes_to_tasks);
 	bool setup_task(
-		const c_execution_graph &execution_graph,
+		const c_native_module_graph &native_module_graph,
 		h_graph_node node_handle,
 		uint32 task_index);
 
 	c_buffer *add_or_get_buffer(
-		const c_execution_graph &execution_graph,
+		const c_native_module_graph &native_module_graph,
 		h_graph_node node_handle,
 		c_task_data_type data_type);
 	c_buffer_array add_or_get_buffer_array(
-		const c_execution_graph &execution_graph,
+		const c_native_module_graph &native_module_graph,
 		h_graph_node node_handle,
 		c_task_data_type data_type);
 
 	// These functions build constant arrays. Note: the arrays they return are relative to null and should be rebased
 	// by calling rebase_arrays(). This is because the underlying array can be reallocated.
 	c_real_constant_array build_real_constant_array(
-		const c_execution_graph &execution_graph,
+		const c_native_module_graph &native_module_graph,
 		h_graph_node node_handle);
 	c_bool_constant_array build_bool_constant_array(
-		const c_execution_graph &execution_graph,
+		const c_native_module_graph &native_module_graph,
 		h_graph_node node_handle);
 	c_string_constant_array build_string_constant_array(
-		const c_execution_graph &execution_graph,
+		const c_native_module_graph &native_module_graph,
 		h_graph_node node_handle);
 
 	void rebase_arrays();
@@ -133,7 +133,7 @@ private:
 	void rebase_strings();
 
 	void build_task_successor_lists(
-		const c_execution_graph &execution_graph,
+		const c_native_module_graph &native_module_graph,
 		const std::unordered_map<h_graph_node, uint32> &nodes_to_tasks);
 	void add_task_successor(uint32 predecessor_task_index, uint32 successor_task_index);
 	void calculate_max_concurrency();

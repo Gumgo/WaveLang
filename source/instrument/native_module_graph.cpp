@@ -1,18 +1,18 @@
 #include "common/utility/file_utility.h"
 #include "common/utility/graphviz_generator.h"
 
-#include "instrument/execution_graph.h"
+#include "instrument/native_module_graph.h"
 #include "instrument/native_module_registry.h"
 
 #include <algorithm>
 #include <fstream>
 #include <string>
 
-#if IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
+#if IS_TRUE(NATIVE_MODULE_GRAPH_NODE_SALT_ENABLED)
 #define NODE_SALT(salt) , (salt)
-#else // IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
+#else // IS_TRUE(NATIVE_MODULE_GRAPH_NODE_SALT_ENABLED)
 #define NODE_SALT(salt)
-#endif // IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
+#endif // IS_TRUE(NATIVE_MODULE_GRAPH_NODE_SALT_ENABLED)
 
 struct s_native_module_data_type_format {
 	union {
@@ -75,16 +75,16 @@ static bool read_data_type(uint32 data, c_native_module_data_type &data_type_out
 	return true;
 }
 
-c_execution_graph::c_execution_graph() {}
+c_native_module_graph::c_native_module_graph() {}
 
-e_instrument_result c_execution_graph::save(std::ofstream &out) const {
+e_instrument_result c_native_module_graph::save(std::ofstream &out) const {
 	wl_assert(validate());
 
 #if IS_TRUE(ASSERTS_ENABLED)
 	// Make sure there are no invalid or temporary reference nodes
 	for (size_t index = 0; index < m_nodes.size(); index++) {
-		wl_assert(m_nodes[index].type != e_execution_graph_node_type::k_invalid);
-		wl_assert(m_nodes[index].type != e_execution_graph_node_type::k_temporary_reference);
+		wl_assert(m_nodes[index].type != e_native_module_graph_node_type::k_invalid);
+		wl_assert(m_nodes[index].type != e_native_module_graph_node_type::k_temporary_reference);
 	}
 
 	wl_assert(m_free_node_indices.empty());
@@ -110,7 +110,7 @@ e_instrument_result c_execution_graph::save(std::ofstream &out) const {
 		writer.write(node_type);
 
 		switch (node.type) {
-		case e_execution_graph_node_type::k_constant:
+		case e_native_module_graph_node_type::k_constant:
 			wl_assert(!node.constant_node_data().type.is_array());
 			writer.write(write_data_type(node.constant_node_data().type));
 			switch (node.constant_node_data().type.get_primitive_type()) {
@@ -131,12 +131,12 @@ e_instrument_result c_execution_graph::save(std::ofstream &out) const {
 			}
 			break;
 
-		case e_execution_graph_node_type::k_array:
+		case e_native_module_graph_node_type::k_array:
 			wl_assert(node.array_node_data().type.is_array());
 			writer.write(write_data_type(node.array_node_data().type));
 			break;
 
-		case e_execution_graph_node_type::k_native_module_call:
+		case e_native_module_graph_node_type::k_native_module_call:
 		{
 			// Save out the UID, not the index
 			const s_native_module &native_module =
@@ -145,19 +145,19 @@ e_instrument_result c_execution_graph::save(std::ofstream &out) const {
 			break;
 		}
 
-		case e_execution_graph_node_type::k_indexed_input:
-		case e_execution_graph_node_type::k_indexed_output:
+		case e_native_module_graph_node_type::k_indexed_input:
+		case e_native_module_graph_node_type::k_indexed_output:
 			break;
 
-		case e_execution_graph_node_type::k_input:
+		case e_native_module_graph_node_type::k_input:
 			writer.write(node.input_node_data().input_index);
 			break;
 
-		case e_execution_graph_node_type::k_output:
+		case e_native_module_graph_node_type::k_output:
 			writer.write(node.output_node_data().output_index);
 			break;
 
-		case e_execution_graph_node_type::k_temporary_reference:
+		case e_native_module_graph_node_type::k_temporary_reference:
 			wl_unreachable();
 			break;
 
@@ -205,7 +205,7 @@ e_instrument_result c_execution_graph::save(std::ofstream &out) const {
 	return e_instrument_result::k_success;
 }
 
-e_instrument_result c_execution_graph::load(std::ifstream &in) {
+e_instrument_result c_native_module_graph::load(std::ifstream &in) {
 	wl_assert(m_nodes.empty());
 	wl_assert(m_free_node_indices.empty());
 	wl_assert(m_string_table.get_table_size() == 0);
@@ -230,13 +230,13 @@ e_instrument_result c_execution_graph::load(std::ifstream &in) {
 			return invalid_graph_or_read_failure(in);
 		}
 
-		node.type = static_cast<e_execution_graph_node_type>(node_type);
-#if IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
+		node.type = static_cast<e_native_module_graph_node_type>(node_type);
+#if IS_TRUE(NATIVE_MODULE_GRAPH_NODE_SALT_ENABLED)
 		node.salt = 0;
-#endif // IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
+#endif // IS_TRUE(NATIVE_MODULE_GRAPH_NODE_SALT_ENABLED)
 
 		switch (node.type) {
-		case e_execution_graph_node_type::k_constant:
+		case e_native_module_graph_node_type::k_constant:
 		{
 			node.node_data.emplace<s_node::s_constant_node_data>();
 
@@ -279,7 +279,7 @@ e_instrument_result c_execution_graph::load(std::ifstream &in) {
 			break;
 		}
 
-		case e_execution_graph_node_type::k_array:
+		case e_native_module_graph_node_type::k_array:
 		{
 			node.node_data.emplace<s_node::s_array_node_data>();
 
@@ -299,7 +299,7 @@ e_instrument_result c_execution_graph::load(std::ifstream &in) {
 			break;
 		}
 
-		case e_execution_graph_node_type::k_native_module_call:
+		case e_native_module_graph_node_type::k_native_module_call:
 		{
 			node.node_data.emplace<s_node::s_native_module_call_node_data>();
 
@@ -318,11 +318,11 @@ e_instrument_result c_execution_graph::load(std::ifstream &in) {
 			break;
 		}
 
-		case e_execution_graph_node_type::k_indexed_input:
-		case e_execution_graph_node_type::k_indexed_output:
+		case e_native_module_graph_node_type::k_indexed_input:
+		case e_native_module_graph_node_type::k_indexed_output:
 			break;
 
-		case e_execution_graph_node_type::k_input:
+		case e_native_module_graph_node_type::k_input:
 			node.node_data.emplace<s_node::s_input_node_data>();
 
 			if (!reader.read(node.input_node_data().input_index)) {
@@ -330,7 +330,7 @@ e_instrument_result c_execution_graph::load(std::ifstream &in) {
 			}
 			break;
 
-		case e_execution_graph_node_type::k_output:
+		case e_native_module_graph_node_type::k_output:
 			node.node_data.emplace<s_node::s_output_node_data>();
 
 			if (!reader.read(node.output_node_data().output_index)) {
@@ -338,7 +338,7 @@ e_instrument_result c_execution_graph::load(std::ifstream &in) {
 			}
 			break;
 
-		case e_execution_graph_node_type::k_temporary_reference:
+		case e_native_module_graph_node_type::k_temporary_reference:
 			return e_instrument_result::k_invalid_graph;
 
 		default:
@@ -388,18 +388,18 @@ e_instrument_result c_execution_graph::load(std::ifstream &in) {
 	return e_instrument_result::k_success;
 }
 
-bool c_execution_graph::validate() const {
+bool c_native_module_graph::validate() const {
 	size_t input_node_count = 0;
 	size_t output_node_count = 0;
 
 	// Validate each node first
 	for (uint32 index = 0; index < get_node_count(); index++) {
 		h_graph_node node_handle = node_handle_from_index(index);
-		input_node_count += (get_node_type(node_handle) == e_execution_graph_node_type::k_input);
-		output_node_count += (get_node_type(node_handle) == e_execution_graph_node_type::k_output);
+		input_node_count += (get_node_type(node_handle) == e_native_module_graph_node_type::k_input);
+		output_node_count += (get_node_type(node_handle) == e_native_module_graph_node_type::k_output);
 
 		if (!validate_node(node_handle)
-			|| get_node_type(node_handle) == e_execution_graph_node_type::k_temporary_reference) {
+			|| get_node_type(node_handle) == e_native_module_graph_node_type::k_temporary_reference) {
 			return false;
 		}
 	}
@@ -429,7 +429,7 @@ bool c_execution_graph::validate() const {
 	for (uint32 index = 0; index < get_node_count(); index++) {
 		h_graph_node node_handle = node_handle_from_index(index);
 
-		if (get_node_type(node_handle) == e_execution_graph_node_type::k_input) {
+		if (get_node_type(node_handle) == e_native_module_graph_node_type::k_input) {
 			uint32 input_index = get_input_node_input_index(node_handle);
 
 			if (!valid_index(input_index, input_node_count)) {
@@ -443,7 +443,7 @@ bool c_execution_graph::validate() const {
 			}
 
 			input_nodes_found[input_index] = true;
-		} else if (get_node_type(node_handle) == e_execution_graph_node_type::k_output) {
+		} else if (get_node_type(node_handle) == e_native_module_graph_node_type::k_output) {
 			uint32 output_index = get_output_node_output_index(node_handle);
 
 			if (output_index == k_remain_active_output_index) {
@@ -515,22 +515,22 @@ bool c_execution_graph::validate() const {
 	return true;
 }
 
-bool c_execution_graph::does_node_use_indexed_inputs(const s_node &node) {
+bool c_native_module_graph::does_node_use_indexed_inputs(const s_node &node) {
 	switch (node.type) {
-	case e_execution_graph_node_type::k_constant:
+	case e_native_module_graph_node_type::k_constant:
 		return false;
 
-	case e_execution_graph_node_type::k_array:
+	case e_native_module_graph_node_type::k_array:
 		return true;
 
-	case e_execution_graph_node_type::k_native_module_call:
+	case e_native_module_graph_node_type::k_native_module_call:
 		return true;
 
-	case e_execution_graph_node_type::k_indexed_input:
-	case e_execution_graph_node_type::k_indexed_output:
-	case e_execution_graph_node_type::k_input:
-	case e_execution_graph_node_type::k_output:
-	case e_execution_graph_node_type::k_temporary_reference:
+	case e_native_module_graph_node_type::k_indexed_input:
+	case e_native_module_graph_node_type::k_indexed_output:
+	case e_native_module_graph_node_type::k_input:
+	case e_native_module_graph_node_type::k_output:
+	case e_native_module_graph_node_type::k_temporary_reference:
 		return false;
 
 	default:
@@ -539,20 +539,20 @@ bool c_execution_graph::does_node_use_indexed_inputs(const s_node &node) {
 	}
 }
 
-bool c_execution_graph::does_node_use_indexed_outputs(const s_node &node) {
+bool c_native_module_graph::does_node_use_indexed_outputs(const s_node &node) {
 	switch (node.type) {
-	case e_execution_graph_node_type::k_constant:
-	case e_execution_graph_node_type::k_array:
+	case e_native_module_graph_node_type::k_constant:
+	case e_native_module_graph_node_type::k_array:
 		return false;
 
-	case e_execution_graph_node_type::k_native_module_call:
+	case e_native_module_graph_node_type::k_native_module_call:
 		return true;
 
-	case e_execution_graph_node_type::k_indexed_input:
-	case e_execution_graph_node_type::k_indexed_output:
-	case e_execution_graph_node_type::k_input:
-	case e_execution_graph_node_type::k_output:
-	case e_execution_graph_node_type::k_temporary_reference:
+	case e_native_module_graph_node_type::k_indexed_input:
+	case e_native_module_graph_node_type::k_indexed_output:
+	case e_native_module_graph_node_type::k_input:
+	case e_native_module_graph_node_type::k_output:
+	case e_native_module_graph_node_type::k_temporary_reference:
 		return false;
 
 	default:
@@ -561,95 +561,95 @@ bool c_execution_graph::does_node_use_indexed_outputs(const s_node &node) {
 	}
 }
 
-h_graph_node c_execution_graph::allocate_node() {
+h_graph_node c_native_module_graph::allocate_node() {
 	uint32 index;
 	s_node *node;
 	if (m_free_node_indices.empty()) {
 		index = cast_integer_verify<uint32>(m_nodes.size());
 		m_nodes.push_back(s_node());
 		node = &m_nodes.back();
-#if IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
+#if IS_TRUE(NATIVE_MODULE_GRAPH_NODE_SALT_ENABLED)
 		node->salt = 0;
-#endif // IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
+#endif // IS_TRUE(NATIVE_MODULE_GRAPH_NODE_SALT_ENABLED)
 	} else {
 		index = m_free_node_indices.back();
 		m_free_node_indices.pop_back();
 		node = &m_nodes[index];
-		wl_assert(node->type == e_execution_graph_node_type::k_invalid);
+		wl_assert(node->type == e_native_module_graph_node_type::k_invalid);
 	}
 
 	zero_type(&node->node_data);
 	return h_graph_node::construct({ index NODE_SALT(node->salt) });
 }
 
-h_graph_node c_execution_graph::node_handle_from_index(uint32 node_index) const {
+h_graph_node c_native_module_graph::node_handle_from_index(uint32 node_index) const {
 	wl_assert(valid_index(node_index, m_nodes.size()));
-	wl_assert(m_nodes[node_index].type != e_execution_graph_node_type::k_invalid);
+	wl_assert(m_nodes[node_index].type != e_native_module_graph_node_type::k_invalid);
 	return h_graph_node::construct({ node_index NODE_SALT(m_nodes[node_index].salt) });
 }
 
-c_execution_graph::s_node &c_execution_graph::get_node(h_graph_node node_handle) {
+c_native_module_graph::s_node &c_native_module_graph::get_node(h_graph_node node_handle) {
 	s_node &result = m_nodes[node_handle.get_data().index];
-#if IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
+#if IS_TRUE(NATIVE_MODULE_GRAPH_NODE_SALT_ENABLED)
 	wl_assertf(result.salt == node_handle.get_data().salt, "Salt mismatch");
-#endif // IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
+#endif // IS_TRUE(NATIVE_MODULE_GRAPH_NODE_SALT_ENABLED)
 	return result;
 }
 
-const c_execution_graph::s_node &c_execution_graph::get_node(h_graph_node node_handle) const {
+const c_native_module_graph::s_node &c_native_module_graph::get_node(h_graph_node node_handle) const {
 	const s_node &result = m_nodes[node_handle.get_data().index];
-#if IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
+#if IS_TRUE(NATIVE_MODULE_GRAPH_NODE_SALT_ENABLED)
 	wl_assertf(result.salt == node_handle.get_data().salt, "Salt mismatch");
-#endif // IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
+#endif // IS_TRUE(NATIVE_MODULE_GRAPH_NODE_SALT_ENABLED)
 	return result;
 }
 
-h_graph_node c_execution_graph::add_constant_node(real32 constant_value) {
+h_graph_node c_native_module_graph::add_constant_node(real32 constant_value) {
 	h_graph_node node_handle = allocate_node();
 	s_node &node = get_node(node_handle);
-	node.type = e_execution_graph_node_type::k_constant;
+	node.type = e_native_module_graph_node_type::k_constant;
 	node.node_data.emplace<s_node::s_constant_node_data>();
 	node.constant_node_data().type = c_native_module_data_type(e_native_module_primitive_type::k_real);
 	node.constant_node_data().real_value = constant_value;
 	return node_handle;
 }
 
-h_graph_node c_execution_graph::add_constant_node(bool constant_value) {
+h_graph_node c_native_module_graph::add_constant_node(bool constant_value) {
 	h_graph_node node_handle = allocate_node();
 	s_node &node = get_node(node_handle);
-	node.type = e_execution_graph_node_type::k_constant;
+	node.type = e_native_module_graph_node_type::k_constant;
 	node.node_data.emplace<s_node::s_constant_node_data>();
 	node.constant_node_data().type = c_native_module_data_type(e_native_module_primitive_type::k_bool);
 	node.constant_node_data().bool_value = constant_value;
 	return node_handle;
 }
 
-h_graph_node c_execution_graph::add_constant_node(const char *constant_value) {
+h_graph_node c_native_module_graph::add_constant_node(const char *constant_value) {
 	h_graph_node node_handle = allocate_node();
 	s_node &node = get_node(node_handle);
-	node.type = e_execution_graph_node_type::k_constant;
+	node.type = e_native_module_graph_node_type::k_constant;
 	node.node_data.emplace<s_node::s_constant_node_data>();
 	node.constant_node_data().type = c_native_module_data_type(e_native_module_primitive_type::k_string);
 	node.constant_node_data().string_index = cast_integer_verify<uint32>(m_string_table.add_string(constant_value));
 	return node_handle;
 }
 
-h_graph_node c_execution_graph::add_array_node(c_native_module_data_type element_type) {
+h_graph_node c_native_module_graph::add_array_node(c_native_module_data_type element_type) {
 	h_graph_node node_handle = allocate_node();
 	s_node &node = get_node(node_handle);
-	node.type = e_execution_graph_node_type::k_array;
+	node.type = e_native_module_graph_node_type::k_array;
 	node.node_data.emplace<s_node::s_array_node_data>();
 	// Will assert if there is not a valid array type (e.g. cannot make array of array)
 	node.array_node_data().type = element_type.get_array_type();
 	return node_handle;
 }
 
-void c_execution_graph::add_array_value(
+void c_native_module_graph::add_array_value(
 	h_graph_node array_node_handle,
 	h_graph_node value_node_handle) {
 #if IS_TRUE(ASSERTS_ENABLED)
 	const s_node &array_node = get_node(array_node_handle);
-	wl_assert(array_node.type == e_execution_graph_node_type::k_array);
+	wl_assert(array_node.type == e_native_module_graph_node_type::k_array);
 	c_native_module_data_type element_type = array_node.array_node_data().type.get_element_type();
 	c_native_module_data_type value_node_type = get_node_data_type(value_node_handle);
 	wl_assert(value_node_type.is_valid());
@@ -659,19 +659,19 @@ void c_execution_graph::add_array_value(
 	// Create an indexed input node to represent this array index
 	h_graph_node input_node_handle = allocate_node();
 	s_node &input_node = get_node(input_node_handle);
-	input_node.type = e_execution_graph_node_type::k_indexed_input;
+	input_node.type = e_native_module_graph_node_type::k_indexed_input;
 	add_edge_internal(input_node_handle, array_node_handle);
 	add_edge_internal(value_node_handle, input_node_handle);
 }
 
-h_graph_node c_execution_graph::set_array_value_at_index(
+h_graph_node c_native_module_graph::set_array_value_at_index(
 	h_graph_node array_node_handle,
 	uint32 index,
 	h_graph_node value_node_handle) {
 	const s_node &array_node = get_node(array_node_handle);
 
 #if IS_TRUE(ASSERTS_ENABLED)
-	wl_assert(array_node.type == e_execution_graph_node_type::k_array);
+	wl_assert(array_node.type == e_native_module_graph_node_type::k_array);
 	c_native_module_data_type element_type = array_node.array_node_data().type.get_element_type();
 	c_native_module_data_type value_node_type = get_node_data_type(value_node_handle);
 	wl_assert(value_node_type.is_valid());
@@ -686,12 +686,12 @@ h_graph_node c_execution_graph::set_array_value_at_index(
 	return old_value_node_handle;
 }
 
-h_graph_node c_execution_graph::add_native_module_call_node(h_native_module native_module_handle) {
+h_graph_node c_native_module_graph::add_native_module_call_node(h_native_module native_module_handle) {
 	wl_assert(native_module_handle.is_valid());
 
 	h_graph_node node_handle = allocate_node();
 	// Don't store a handle to the node, it gets invalidated if the vector is resized when adding inputs/outputs
-	get_node(node_handle).type = e_execution_graph_node_type::k_native_module_call;
+	get_node(node_handle).type = e_native_module_graph_node_type::k_native_module_call;
 	get_node(node_handle).node_data.emplace<s_node::s_native_module_call_node_data>();
 	get_node(node_handle).native_module_call_node_data().native_module_handle = native_module_handle;
 
@@ -704,11 +704,11 @@ h_graph_node c_execution_graph::add_native_module_call_node(h_native_module nati
 		h_graph_node argument_node_handle = allocate_node();
 		s_node &argument_node = get_node(argument_node_handle);
 		if (argument.argument_direction == e_native_module_argument_direction::k_in) {
-			argument_node.type = e_execution_graph_node_type::k_indexed_input;
+			argument_node.type = e_native_module_graph_node_type::k_indexed_input;
 			add_edge_internal(argument_node_handle, node_handle);
 		} else {
 			wl_assert(argument.argument_direction == e_native_module_argument_direction::k_out);
-			argument_node.type = e_execution_graph_node_type::k_indexed_output;
+			argument_node.type = e_native_module_graph_node_type::k_indexed_output;
 			add_edge_internal(node_handle, argument_node_handle);
 		}
 	}
@@ -716,32 +716,32 @@ h_graph_node c_execution_graph::add_native_module_call_node(h_native_module nati
 	return node_handle;
 }
 
-h_graph_node c_execution_graph::add_input_node(uint32 input_index) {
+h_graph_node c_native_module_graph::add_input_node(uint32 input_index) {
 	h_graph_node node_handle = allocate_node();
 	s_node &node = get_node(node_handle);
-	node.type = e_execution_graph_node_type::k_input;
+	node.type = e_native_module_graph_node_type::k_input;
 	node.node_data.emplace<s_node::s_input_node_data>();
 	node.input_node_data().input_index = input_index;
 	return node_handle;
 }
 
-h_graph_node c_execution_graph::add_output_node(uint32 output_index) {
+h_graph_node c_native_module_graph::add_output_node(uint32 output_index) {
 	h_graph_node node_handle = allocate_node();
 	s_node &node = get_node(node_handle);
-	node.type = e_execution_graph_node_type::k_output;
+	node.type = e_native_module_graph_node_type::k_output;
 	node.node_data.emplace<s_node::s_output_node_data>();
 	node.output_node_data().output_index = output_index;
 	return node_handle;
 }
 
-h_graph_node c_execution_graph::add_temporary_reference_node() {
+h_graph_node c_native_module_graph::add_temporary_reference_node() {
 	h_graph_node node_handle = allocate_node();
 	s_node &node = get_node(node_handle);
-	node.type = e_execution_graph_node_type::k_temporary_reference;
+	node.type = e_native_module_graph_node_type::k_temporary_reference;
 	return node_handle;
 }
 
-void c_execution_graph::remove_node(
+void c_native_module_graph::remove_node(
 	h_graph_node node_handle,
 	f_on_node_removed on_node_removed,
 	void *on_node_removed_context) {
@@ -776,17 +776,17 @@ void c_execution_graph::remove_node(
 	}
 
 	// Set to invalid and clear
-	node.type = e_execution_graph_node_type::k_invalid;
+	node.type = e_native_module_graph_node_type::k_invalid;
 	node.node_data.emplace<s_node::s_no_node_data>();
-#if IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
+#if IS_TRUE(NATIVE_MODULE_GRAPH_NODE_SALT_ENABLED)
 	node.salt++;
-#endif // IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
+#endif // IS_TRUE(NATIVE_MODULE_GRAPH_NODE_SALT_ENABLED)
 	zero_type(&node.node_data);
 
 	m_free_node_indices.push_back(node_handle.get_data().index);
 }
 
-void c_execution_graph::add_edge(h_graph_node from_handle, h_graph_node to_handle) {
+void c_native_module_graph::add_edge(h_graph_node from_handle, h_graph_node to_handle) {
 #if IS_TRUE(ASSERTS_ENABLED)
 	// The user-facing function should never touch nodes which use indexed inputs/outputs directly. Instead, the user
 	// should always be creating edges to/from indexed inputs/outputs.
@@ -799,7 +799,7 @@ void c_execution_graph::add_edge(h_graph_node from_handle, h_graph_node to_handl
 	add_edge_internal(from_handle, to_handle);
 }
 
-void c_execution_graph::add_edge_internal(h_graph_node from_handle, h_graph_node to_handle) {
+void c_native_module_graph::add_edge_internal(h_graph_node from_handle, h_graph_node to_handle) {
 	s_node &from_node = get_node(from_handle);
 	s_node &to_node = get_node(to_handle);
 
@@ -833,7 +833,7 @@ void c_execution_graph::add_edge_internal(h_graph_node from_handle, h_graph_node
 	}
 }
 
-bool c_execution_graph::add_edge_for_load(
+bool c_native_module_graph::add_edge_for_load(
 	h_graph_node from_handle,
 	h_graph_node to_handle,
 	size_t from_edge,
@@ -869,7 +869,7 @@ bool c_execution_graph::add_edge_for_load(
 	return true;
 }
 
-void c_execution_graph::remove_edge(h_graph_node from_handle, h_graph_node to_handle) {
+void c_native_module_graph::remove_edge(h_graph_node from_handle, h_graph_node to_handle) {
 #if IS_TRUE(ASSERTS_ENABLED)
 	// The user-facing function should never touch nodes which use indexed inputs/outputs directly. Instead, the user
 	// should always be creating edges to/from indexed inputs/outputs.
@@ -882,7 +882,7 @@ void c_execution_graph::remove_edge(h_graph_node from_handle, h_graph_node to_ha
 	remove_edge_internal(from_handle, to_handle);
 }
 
-void c_execution_graph::remove_edge_internal(h_graph_node from_handle, h_graph_node to_handle) {
+void c_native_module_graph::remove_edge_internal(h_graph_node from_handle, h_graph_node to_handle) {
 	s_node &from_node = get_node(from_handle);
 	s_node &to_node = get_node(to_handle);
 
@@ -911,20 +911,20 @@ void c_execution_graph::remove_edge_internal(h_graph_node from_handle, h_graph_n
 	wl_assert(found_out == found_in);
 }
 
-bool c_execution_graph::validate_node(h_graph_node node_handle) const {
+bool c_native_module_graph::validate_node(h_graph_node node_handle) const {
 	const s_node &node = get_node(node_handle);
 
 	// Validate edge counts. To validate each edge individually use validate_edge.
 	switch (node.type) {
-	case e_execution_graph_node_type::k_constant:
+	case e_native_module_graph_node_type::k_constant:
 		// We don't need to check here that the type itself it valid because if it isn't the graph will fail to load
 		return node.incoming_edge_handles.empty();
 
-	case e_execution_graph_node_type::k_array:
+	case e_native_module_graph_node_type::k_array:
 		// We don't need to check here that the type itself it valid because if it isn't the graph will fail to load
 		return true; // Arrays can have inputs
 
-	case e_execution_graph_node_type::k_native_module_call:
+	case e_native_module_graph_node_type::k_native_module_call:
 	{
 		if (!valid_index(node.native_module_call_node_data().native_module_handle.get_data(), 
 			c_native_module_registry::get_native_module_count())) {
@@ -951,23 +951,23 @@ bool c_execution_graph::validate_node(h_graph_node node_handle) const {
 			&& (node.outgoing_edge_handles.size() == out_argument_count);
 	}
 
-	case e_execution_graph_node_type::k_indexed_input:
+	case e_native_module_graph_node_type::k_indexed_input:
 		return (node.incoming_edge_handles.size() == 1)
 			&& (node.outgoing_edge_handles.size() == 1);
 
-	case e_execution_graph_node_type::k_indexed_output:
+	case e_native_module_graph_node_type::k_indexed_output:
 		return
 			(node.incoming_edge_handles.size() == 1);
 
-	case e_execution_graph_node_type::k_input:
+	case e_native_module_graph_node_type::k_input:
 		return
 			(node.incoming_edge_handles.empty());
 
-	case e_execution_graph_node_type::k_output:
+	case e_native_module_graph_node_type::k_output:
 		return (node.incoming_edge_handles.size() == 1)
 			&& node.outgoing_edge_handles.empty();
 
-	case e_execution_graph_node_type::k_temporary_reference:
+	case e_native_module_graph_node_type::k_temporary_reference:
 		return true;
 
 	default:
@@ -976,7 +976,7 @@ bool c_execution_graph::validate_node(h_graph_node node_handle) const {
 	}
 }
 
-bool c_execution_graph::validate_edge(h_graph_node from_handle, h_graph_node to_handle) const {
+bool c_native_module_graph::validate_edge(h_graph_node from_handle, h_graph_node to_handle) const {
 	if (!valid_index(from_handle.get_data().index, m_nodes.size())
 		|| !valid_index(to_handle.get_data().index, m_nodes.size())) {
 		return false;
@@ -987,52 +987,52 @@ bool c_execution_graph::validate_edge(h_graph_node from_handle, h_graph_node to_
 	const s_node &to_node = get_node(to_handle);
 
 	switch (from_node.type) {
-	case e_execution_graph_node_type::k_constant:
-	case e_execution_graph_node_type::k_array:
-		if ((to_node.type != e_execution_graph_node_type::k_indexed_input)
-			&& (to_node.type != e_execution_graph_node_type::k_output)
-			&& (to_node.type != e_execution_graph_node_type::k_temporary_reference)) {
+	case e_native_module_graph_node_type::k_constant:
+	case e_native_module_graph_node_type::k_array:
+		if ((to_node.type != e_native_module_graph_node_type::k_indexed_input)
+			&& (to_node.type != e_native_module_graph_node_type::k_output)
+			&& (to_node.type != e_native_module_graph_node_type::k_temporary_reference)) {
 			return false;
 		}
-		check_type = to_node.type != e_execution_graph_node_type::k_temporary_reference;
+		check_type = to_node.type != e_native_module_graph_node_type::k_temporary_reference;
 		break;
 
-	case e_execution_graph_node_type::k_native_module_call:
-		if (to_node.type != e_execution_graph_node_type::k_indexed_output) {
+	case e_native_module_graph_node_type::k_native_module_call:
+		if (to_node.type != e_native_module_graph_node_type::k_indexed_output) {
 			return false;
 		}
 		// Don't check type for native module calls
 		break;
 
-	case e_execution_graph_node_type::k_indexed_input:
+	case e_native_module_graph_node_type::k_indexed_input:
 		if (!does_node_use_indexed_inputs(to_node)) {
 			return false;
 		}
 		// Don't check type for indexed inputs
 		break;
 
-	case e_execution_graph_node_type::k_indexed_output:
-		if ((to_node.type != e_execution_graph_node_type::k_indexed_input)
-			&& (to_node.type != e_execution_graph_node_type::k_output)
-			&& (to_node.type != e_execution_graph_node_type::k_temporary_reference)) {
+	case e_native_module_graph_node_type::k_indexed_output:
+		if ((to_node.type != e_native_module_graph_node_type::k_indexed_input)
+			&& (to_node.type != e_native_module_graph_node_type::k_output)
+			&& (to_node.type != e_native_module_graph_node_type::k_temporary_reference)) {
 			return false;
 		}
-		check_type = to_node.type != e_execution_graph_node_type::k_temporary_reference;
+		check_type = to_node.type != e_native_module_graph_node_type::k_temporary_reference;
 		break;
 
-	case e_execution_graph_node_type::k_input:
-		if ((to_node.type != e_execution_graph_node_type::k_indexed_input)
-			&& (to_node.type != e_execution_graph_node_type::k_output)
-			&& (to_node.type != e_execution_graph_node_type::k_temporary_reference)) {
+	case e_native_module_graph_node_type::k_input:
+		if ((to_node.type != e_native_module_graph_node_type::k_indexed_input)
+			&& (to_node.type != e_native_module_graph_node_type::k_output)
+			&& (to_node.type != e_native_module_graph_node_type::k_temporary_reference)) {
 			return false;
 		}
-		check_type = to_node.type != e_execution_graph_node_type::k_temporary_reference;
+		check_type = to_node.type != e_native_module_graph_node_type::k_temporary_reference;
 		break;
 
-	case e_execution_graph_node_type::k_output:
+	case e_native_module_graph_node_type::k_output:
 		return false;
 
-	case e_execution_graph_node_type::k_temporary_reference:
+	case e_native_module_graph_node_type::k_temporary_reference:
 		// This type effectively acts as a temporary output
 		return false;
 
@@ -1053,11 +1053,11 @@ bool c_execution_graph::validate_edge(h_graph_node from_handle, h_graph_node to_
 	return true;
 }
 
-bool c_execution_graph::validate_native_modules() const {
+bool c_native_module_graph::validate_native_modules() const {
 	// This should only be called after all nodes and edges have been validated
 	for (uint32 node_index = 0; node_index < m_nodes.size(); node_index++) {
 		h_graph_node node_handle = node_handle_from_index(node_index);
-		if (get_node_type(node_handle) != e_execution_graph_node_type::k_native_module_call) {
+		if (get_node_type(node_handle) != e_native_module_graph_node_type::k_native_module_call) {
 			continue;
 		}
 
@@ -1129,7 +1129,7 @@ bool c_execution_graph::validate_native_modules() const {
 	return true;
 }
 
-bool c_execution_graph::validate_string_table() const {
+bool c_native_module_graph::validate_string_table() const {
 	// If we have any strings, they should be null-terminated
 	if (m_string_table.get_table_size() > 0
 		&& m_string_table.get_table_pointer()[m_string_table.get_table_size()-1] != '\0') {
@@ -1140,7 +1140,7 @@ bool c_execution_graph::validate_string_table() const {
 	for (size_t index = 0; index < m_nodes.size(); index++) {
 		const s_node &node = m_nodes[index];
 
-		if (node.type != e_execution_graph_node_type::k_constant
+		if (node.type != e_native_module_graph_node_type::k_constant
 			|| node.constant_node_data().type != c_native_module_data_type(e_native_module_primitive_type::k_string)) {
 			continue;
 		}
@@ -1153,7 +1153,7 @@ bool c_execution_graph::validate_string_table() const {
 	return true;
 }
 
-bool c_execution_graph::visit_node_for_cycle_detection(
+bool c_native_module_graph::visit_node_for_cycle_detection(
 	h_graph_node node_handle,
 	std::vector<bool> &nodes_visited,
 	std::vector<bool> &nodes_marked) const {
@@ -1179,13 +1179,13 @@ bool c_execution_graph::visit_node_for_cycle_detection(
 	return true;
 }
 
-void c_execution_graph::remove_unused_strings() {
+void c_native_module_graph::remove_unused_strings() {
 	// We could be more efficient about this, but it's easier to just build another table and swap
 	c_string_table new_string_table;
 	for (size_t index = 0; index < m_nodes.size(); index++) {
 		s_node &node = m_nodes[index];
 
-		if (node.type != e_execution_graph_node_type::k_constant
+		if (node.type != e_native_module_graph_node_type::k_constant
 			|| node.constant_node_data().type != c_native_module_data_type(e_native_module_primitive_type::k_string)) {
 			continue;
 		}
@@ -1198,14 +1198,14 @@ void c_execution_graph::remove_unused_strings() {
 	m_string_table.swap(new_string_table);
 }
 
-uint32 c_execution_graph::get_node_count() const {
+uint32 c_native_module_graph::get_node_count() const {
 	return cast_integer_verify<uint32>(m_nodes.size());
 }
 
-h_graph_node c_execution_graph::nodes_begin() const {
+h_graph_node c_native_module_graph::nodes_begin() const {
 	uint32 index = 0;
 	while (index < m_nodes.size()) {
-		if (m_nodes[index].type != e_execution_graph_node_type::k_invalid) {
+		if (m_nodes[index].type != e_native_module_graph_node_type::k_invalid) {
 			return h_graph_node::construct({ index NODE_SALT(m_nodes[index].salt) });
 		}
 
@@ -1215,10 +1215,10 @@ h_graph_node c_execution_graph::nodes_begin() const {
 	return h_graph_node::invalid();
 }
 
-h_graph_node c_execution_graph::nodes_next(h_graph_node node_handle) const {
+h_graph_node c_native_module_graph::nodes_next(h_graph_node node_handle) const {
 	uint32 index = node_handle.get_data().index + 1;
 	while (index < m_nodes.size()) {
-		if (m_nodes[index].type != e_execution_graph_node_type::k_invalid) {
+		if (m_nodes[index].type != e_native_module_graph_node_type::k_invalid) {
 			return h_graph_node::construct({ index NODE_SALT(m_nodes[index].salt) });
 		}
 
@@ -1228,25 +1228,25 @@ h_graph_node c_execution_graph::nodes_next(h_graph_node node_handle) const {
 	return h_graph_node::invalid();
 }
 
-e_execution_graph_node_type c_execution_graph::get_node_type(h_graph_node node_handle) const {
+e_native_module_graph_node_type c_native_module_graph::get_node_type(h_graph_node node_handle) const {
 	return get_node(node_handle).type;
 }
 
-c_native_module_data_type c_execution_graph::get_node_data_type(h_graph_node node_handle) const {
+c_native_module_data_type c_native_module_graph::get_node_data_type(h_graph_node node_handle) const {
 	const s_node &node = get_node(node_handle);
 
 	switch (node.type) {
-	case e_execution_graph_node_type::k_constant:
+	case e_native_module_graph_node_type::k_constant:
 		return node.constant_node_data().type;
 
-	case e_execution_graph_node_type::k_array:
+	case e_native_module_graph_node_type::k_array:
 		return node.array_node_data().type;
 
-	case e_execution_graph_node_type::k_native_module_call:
+	case e_native_module_graph_node_type::k_native_module_call:
 		wl_haltf("We shouldn't be checking types for this node, but instead for its argument nodes");
 		return c_native_module_data_type::invalid();
 
-	case e_execution_graph_node_type::k_indexed_input:
+	case e_native_module_graph_node_type::k_indexed_input:
 	{
 		// Find the index of this input
 		if (node.outgoing_edge_handles.size() != 1) {
@@ -1260,9 +1260,9 @@ c_native_module_data_type c_execution_graph::get_node_data_type(h_graph_node nod
 
 		const s_node &dest_node = get_node(dest_node_handle);
 
-		if (dest_node.type == e_execution_graph_node_type::k_array) {
+		if (dest_node.type == e_native_module_graph_node_type::k_array) {
 			return dest_node.array_node_data().type.get_element_type();
-		} else if (dest_node.type == e_execution_graph_node_type::k_native_module_call) {
+		} else if (dest_node.type == e_native_module_graph_node_type::k_native_module_call) {
 			const s_native_module &native_module = c_native_module_registry::get_native_module(
 				dest_node.native_module_call_node_data().native_module_handle);
 
@@ -1281,7 +1281,7 @@ c_native_module_data_type c_execution_graph::get_node_data_type(h_graph_node nod
 		return c_native_module_data_type::invalid();
 	}
 
-	case e_execution_graph_node_type::k_indexed_output:
+	case e_native_module_graph_node_type::k_indexed_output:
 	{
 		// Find the index of this output
 		if (node.incoming_edge_handles.size() != 1) {
@@ -1295,7 +1295,7 @@ c_native_module_data_type c_execution_graph::get_node_data_type(h_graph_node nod
 
 		const s_node &dest_node = get_node(dest_node_handle);
 
-		if (dest_node.type == e_execution_graph_node_type::k_native_module_call) {
+		if (dest_node.type == e_native_module_graph_node_type::k_native_module_call) {
 			const s_native_module &native_module = c_native_module_registry::get_native_module(
 				dest_node.native_module_call_node_data().native_module_handle);
 
@@ -1314,17 +1314,17 @@ c_native_module_data_type c_execution_graph::get_node_data_type(h_graph_node nod
 		return c_native_module_data_type::invalid();
 	}
 
-	case e_execution_graph_node_type::k_input:
+	case e_native_module_graph_node_type::k_input:
 		return c_native_module_data_type(e_native_module_primitive_type::k_real);
 
-	case e_execution_graph_node_type::k_output:
+	case e_native_module_graph_node_type::k_output:
 		if (node.output_node_data().output_index == k_remain_active_output_index) {
 			return c_native_module_data_type(e_native_module_primitive_type::k_bool);
 		} else {
 			return c_native_module_data_type(e_native_module_primitive_type::k_real);
 		}
 
-	case e_execution_graph_node_type::k_temporary_reference:
+	case e_native_module_graph_node_type::k_temporary_reference:
 		wl_haltf("Temporary reference nodes don't have a type, they just exist to prevent other nodes from deletion");
 		return c_native_module_data_type::invalid();
 
@@ -1334,13 +1334,13 @@ c_native_module_data_type c_execution_graph::get_node_data_type(h_graph_node nod
 	}
 }
 
-bool c_execution_graph::is_node_constant(h_graph_node node_handle) const {
+bool c_native_module_graph::is_node_constant(h_graph_node node_handle) const {
 	const s_node &node = get_node(node_handle);
-	if (node.type == e_execution_graph_node_type::k_constant) {
+	if (node.type == e_native_module_graph_node_type::k_constant) {
 		return true;
 	}
 
-	if (node.type == e_execution_graph_node_type::k_array) {
+	if (node.type == e_native_module_graph_node_type::k_array) {
 		for (size_t edge = 0; edge < node.incoming_edge_handles.size(); edge++) {
 			h_graph_node source_node_handle =
 				get_node_indexed_input_incoming_edge_handle(node_handle, edge, 0);
@@ -1355,81 +1355,81 @@ bool c_execution_graph::is_node_constant(h_graph_node node_handle) const {
 	return false;
 }
 
-real32 c_execution_graph::get_constant_node_real_value(h_graph_node node_handle) const {
+real32 c_native_module_graph::get_constant_node_real_value(h_graph_node node_handle) const {
 	const s_node &node = get_node(node_handle);
-	wl_assert(node.type == e_execution_graph_node_type::k_constant);
+	wl_assert(node.type == e_native_module_graph_node_type::k_constant);
 	wl_assert(node.constant_node_data().type == c_native_module_data_type(e_native_module_primitive_type::k_real));
 	return node.constant_node_data().real_value;
 }
 
-bool c_execution_graph::get_constant_node_bool_value(h_graph_node node_handle) const {
+bool c_native_module_graph::get_constant_node_bool_value(h_graph_node node_handle) const {
 	const s_node &node = get_node(node_handle);
-	wl_assert(node.type == e_execution_graph_node_type::k_constant);
+	wl_assert(node.type == e_native_module_graph_node_type::k_constant);
 	wl_assert(node.constant_node_data().type == c_native_module_data_type(e_native_module_primitive_type::k_bool));
 	return node.constant_node_data().bool_value;
 }
 
-const char *c_execution_graph::get_constant_node_string_value(h_graph_node node_handle) const {
+const char *c_native_module_graph::get_constant_node_string_value(h_graph_node node_handle) const {
 	const s_node &node = get_node(node_handle);
-	wl_assert(node.type == e_execution_graph_node_type::k_constant);
+	wl_assert(node.type == e_native_module_graph_node_type::k_constant);
 	wl_assert(node.constant_node_data().type == c_native_module_data_type(e_native_module_primitive_type::k_string));
 	return m_string_table.get_string(node.constant_node_data().string_index);
 }
 
-h_native_module c_execution_graph::get_native_module_call_native_module_handle(h_graph_node node_handle) const {
+h_native_module c_native_module_graph::get_native_module_call_native_module_handle(h_graph_node node_handle) const {
 	const s_node &node = get_node(node_handle);
-	wl_assert(node.type == e_execution_graph_node_type::k_native_module_call);
+	wl_assert(node.type == e_native_module_graph_node_type::k_native_module_call);
 	return node.native_module_call_node_data().native_module_handle;
 }
 
-uint32 c_execution_graph::get_input_node_input_index(h_graph_node node_handle) const {
+uint32 c_native_module_graph::get_input_node_input_index(h_graph_node node_handle) const {
 	const s_node &node = get_node(node_handle);
-	wl_assert(node.type == e_execution_graph_node_type::k_input);
+	wl_assert(node.type == e_native_module_graph_node_type::k_input);
 	return node.input_node_data().input_index;
 }
 
-uint32 c_execution_graph::get_output_node_output_index(h_graph_node node_handle) const {
+uint32 c_native_module_graph::get_output_node_output_index(h_graph_node node_handle) const {
 	const s_node &node = get_node(node_handle);
-	wl_assert(node.type == e_execution_graph_node_type::k_output);
+	wl_assert(node.type == e_native_module_graph_node_type::k_output);
 	return node.output_node_data().output_index;
 }
 
-size_t c_execution_graph::get_node_incoming_edge_count(h_graph_node node_handle) const {
+size_t c_native_module_graph::get_node_incoming_edge_count(h_graph_node node_handle) const {
 	const s_node &node = get_node(node_handle);
 	return node.incoming_edge_handles.size();
 }
 
-h_graph_node c_execution_graph::get_node_incoming_edge_handle(h_graph_node node_handle, size_t edge) const {
+h_graph_node c_native_module_graph::get_node_incoming_edge_handle(h_graph_node node_handle, size_t edge) const {
 	const s_node &node = get_node(node_handle);
 	return node.incoming_edge_handles[edge];
 }
 
-size_t c_execution_graph::get_node_outgoing_edge_count(h_graph_node node_handle) const {
+size_t c_native_module_graph::get_node_outgoing_edge_count(h_graph_node node_handle) const {
 	const s_node &node = get_node(node_handle);
 	return node.outgoing_edge_handles.size();
 }
 
-h_graph_node c_execution_graph::get_node_outgoing_edge_handle(h_graph_node node_handle, size_t edge) const {
+h_graph_node c_native_module_graph::get_node_outgoing_edge_handle(h_graph_node node_handle, size_t edge) const {
 	const s_node &node = get_node(node_handle);
 	return node.outgoing_edge_handles[edge];
 }
 
-bool c_execution_graph::does_node_use_indexed_inputs(h_graph_node node_handle) const {
+bool c_native_module_graph::does_node_use_indexed_inputs(h_graph_node node_handle) const {
 	return does_node_use_indexed_inputs(get_node(node_handle));
 }
 
-bool c_execution_graph::does_node_use_indexed_outputs(h_graph_node node_handle) const {
+bool c_native_module_graph::does_node_use_indexed_outputs(h_graph_node node_handle) const {
 	return does_node_use_indexed_outputs(get_node(node_handle));
 }
 
-size_t c_execution_graph::get_node_indexed_input_incoming_edge_count(
+size_t c_native_module_graph::get_node_indexed_input_incoming_edge_count(
 	h_graph_node node_handle,
 	size_t input_index) const {
 	wl_assert(does_node_use_indexed_inputs(node_handle));
 	return get_node_incoming_edge_count(get_node_incoming_edge_handle(node_handle, input_index));
 }
 
-h_graph_node c_execution_graph::get_node_indexed_input_incoming_edge_handle(
+h_graph_node c_native_module_graph::get_node_indexed_input_incoming_edge_handle(
 	h_graph_node node_handle,
 	size_t input_index,
 	size_t edge) const {
@@ -1437,14 +1437,14 @@ h_graph_node c_execution_graph::get_node_indexed_input_incoming_edge_handle(
 	return get_node_incoming_edge_handle(get_node_incoming_edge_handle(node_handle, input_index), edge);
 }
 
-size_t c_execution_graph::get_node_indexed_output_outgoing_edge_count(
+size_t c_native_module_graph::get_node_indexed_output_outgoing_edge_count(
 	h_graph_node node_handle,
 	size_t output_index) const {
 	wl_assert(does_node_use_indexed_outputs(node_handle));
 	return get_node_outgoing_edge_count(get_node_outgoing_edge_handle(node_handle, output_index));
 }
 
-h_graph_node c_execution_graph::get_node_indexed_output_outgoing_edge_handle(
+h_graph_node c_native_module_graph::get_node_indexed_output_outgoing_edge_handle(
 	h_graph_node node_handle,
 	size_t output_index,
 	size_t edge) const {
@@ -1452,21 +1452,21 @@ h_graph_node c_execution_graph::get_node_indexed_output_outgoing_edge_handle(
 	return get_node_outgoing_edge_handle(get_node_outgoing_edge_handle(node_handle, output_index), edge);
 }
 
-void c_execution_graph::remove_unused_nodes_and_reassign_node_indices() {
+void c_native_module_graph::remove_unused_nodes_and_reassign_node_indices() {
 	std::vector<h_graph_node> old_to_new_handles(m_nodes.size());
 
 	uint32 next_new_index = 0;
 	for (uint32 old_index = 0; old_index < m_nodes.size(); old_index++) {
-		if (m_nodes[old_index].type == e_execution_graph_node_type::k_invalid) {
+		if (m_nodes[old_index].type == e_native_module_graph_node_type::k_invalid) {
 			// This node was removed, don't assign it a new index
 		} else {
 			// Compress nodes down - use the move operator if possible to avoid copying edge list unnecessarily
 			std::swap(m_nodes[old_index], m_nodes[next_new_index]);
 
 			// Reset salt to 0 since we're shifting everything around anyway
-#if IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
+#if IS_TRUE(NATIVE_MODULE_GRAPH_NODE_SALT_ENABLED)
 			m_nodes[next_new_index].salt = 0;
-#endif // IS_TRUE(EXECUTION_GRAPH_NODE_SALT_ENABLED)
+#endif // IS_TRUE(NATIVE_MODULE_GRAPH_NODE_SALT_ENABLED)
 
 			old_to_new_handles[old_index] = h_graph_node::construct({ next_new_index NODE_SALT(0) });
 			next_new_index++;
@@ -1494,7 +1494,7 @@ void c_execution_graph::remove_unused_nodes_and_reassign_node_indices() {
 	remove_unused_strings();
 }
 
-bool c_execution_graph::generate_graphviz_file(const char *fname, bool collapse_large_arrays) const {
+bool c_native_module_graph::generate_graphviz_file(const char *fname, bool collapse_large_arrays) const {
 	static constexpr uint32 k_large_array_limit = 8;
 
 	std::vector<bool> arrays_to_collapse;
@@ -1509,7 +1509,7 @@ bool c_execution_graph::generate_graphviz_file(const char *fname, bool collapse_
 			h_graph_node node_handle = node_handle_from_index(index);
 			const s_node &node = get_node(node_handle);
 
-			if (node.type == e_execution_graph_node_type::k_array
+			if (node.type == e_native_module_graph_node_type::k_array
 				&& node.incoming_edge_handles.size() >= k_large_array_limit
 				&& is_node_constant(node_handle)) {
 				arrays_to_collapse[node_handle.get_data().index] = true;
@@ -1529,7 +1529,7 @@ bool c_execution_graph::generate_graphviz_file(const char *fname, bool collapse_
 			h_graph_node node_handle = node_handle_from_index(index);
 			const s_node &node = get_node(node_handle);
 
-			if (node.type == e_execution_graph_node_type::k_constant) {
+			if (node.type == e_native_module_graph_node_type::k_constant) {
 				bool all_outputs_marked = true;
 				for (size_t output = 0; all_outputs_marked && output < node.outgoing_edge_handles.size(); output++) {
 					h_graph_node output_node_handle = node.outgoing_edge_handles[output];
@@ -1560,7 +1560,7 @@ bool c_execution_graph::generate_graphviz_file(const char *fname, bool collapse_
 		}
 
 		switch (node.type) {
-		case e_execution_graph_node_type::k_constant:
+		case e_native_module_graph_node_type::k_constant:
 		{
 			graph_node.set_shape("ellipse");
 			std::string label;
@@ -1586,7 +1586,7 @@ bool c_execution_graph::generate_graphviz_file(const char *fname, bool collapse_
 			break;
 		}
 
-		case e_execution_graph_node_type::k_array:
+		case e_native_module_graph_node_type::k_array:
 		{
 			graph_node.set_shape("ellipse");
 			std::string label = node.array_node_data().type.to_string();
@@ -1594,13 +1594,13 @@ bool c_execution_graph::generate_graphviz_file(const char *fname, bool collapse_
 			break;
 		}
 
-		case e_execution_graph_node_type::k_native_module_call:
+		case e_native_module_graph_node_type::k_native_module_call:
 			graph_node.set_shape("box");
 			graph_node.set_label(c_native_module_registry::get_native_module(
 				node.native_module_call_node_data().native_module_handle).name.get_string());
 			break;
 
-		case e_execution_graph_node_type::k_indexed_input:
+		case e_native_module_graph_node_type::k_indexed_input:
 		{
 			wl_assert(node.outgoing_edge_handles.size() == 1);
 			const s_node &root_node = get_node(node.outgoing_edge_handles[0]);
@@ -1619,7 +1619,7 @@ bool c_execution_graph::generate_graphviz_file(const char *fname, bool collapse_
 			break;
 		}
 
-		case e_execution_graph_node_type::k_indexed_output:
+		case e_native_module_graph_node_type::k_indexed_output:
 		{
 			wl_assert(node.incoming_edge_handles.size() == 1);
 			const s_node &root_node = get_node(node.incoming_edge_handles[0]);
@@ -1637,13 +1637,13 @@ bool c_execution_graph::generate_graphviz_file(const char *fname, bool collapse_
 			break;
 		}
 
-		case e_execution_graph_node_type::k_input:
+		case e_native_module_graph_node_type::k_input:
 			graph_node.set_shape("box");
 			graph_node.set_label(("input " + std::to_string(node.input_node_data().input_index)).c_str());
 			graph_node.set_style("rounded");
 			break;
 
-		case e_execution_graph_node_type::k_output:
+		case e_native_module_graph_node_type::k_output:
 			graph_node.set_shape("box");
 			{
 				std::string output_index_string;
@@ -1657,7 +1657,7 @@ bool c_execution_graph::generate_graphviz_file(const char *fname, bool collapse_
 			graph_node.set_style("rounded");
 			break;
 
-		case e_execution_graph_node_type::k_temporary_reference:
+		case e_native_module_graph_node_type::k_temporary_reference:
 			wl_unreachable();
 			break;
 

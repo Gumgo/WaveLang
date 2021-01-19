@@ -7,7 +7,7 @@ c_resampler::c_resampler(const s_resampler_parameters &parameters)
 	: m_upsample_factor(static_cast<real32>(parameters.upsample_factor))
 	, m_taps_per_phase(parameters.taps_per_phase)
 	, m_phases(parameters.phases) {
-	wl_assert(m_taps_per_phase % int32xN::k_element_count == 0); // $TODO $SIMD change this to int32xN::k_elements
+	wl_assert(m_taps_per_phase % int32xN::k_element_count == 0);
 }
 
 real32 c_resampler::resample(

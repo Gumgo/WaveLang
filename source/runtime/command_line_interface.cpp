@@ -9,8 +9,8 @@
 #include "engine/task_function_registry.h"
 #include "engine/task_functions/scrape_task_functions.h"
 
-#include "instrument/execution_graph.h"
 #include "instrument/instrument.h"
+#include "instrument/native_module_graph.h"
 #include "instrument/native_module_registration.h"
 #include "instrument/native_module_registry.h"
 #include "instrument/native_modules/scrape_native_modules.h"
@@ -406,7 +406,7 @@ void c_command_line_interface::process_command_load_synth(const s_command &comma
 			return;
 		}
 
-		// Select the execution graph from the instrument
+		// Select the native module graph from the instrument
 		uint32 instrument_variant_index;
 		{
 			s_instrument_variant_requirements requirements;
