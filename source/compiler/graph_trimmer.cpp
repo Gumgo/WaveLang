@@ -3,11 +3,6 @@
 c_graph_trimmer::c_graph_trimmer(c_native_module_graph &native_module_graph)
 	: m_native_module_graph(native_module_graph) {}
 
-void c_graph_trimmer ::set_on_node_removed(f_on_node_removed on_node_removed, void *context) {
-	m_on_node_removed = on_node_removed;
-	m_on_node_removed_context = context;
-}
-
 c_native_module_graph &c_graph_trimmer::get_native_module_graph() {
 	return m_native_module_graph;
 }
@@ -146,7 +141,7 @@ void c_graph_trimmer::try_trim_node(h_graph_node node_handle) {
 				}
 			}
 
-			m_native_module_graph.remove_node(node_handle, m_on_node_removed, m_on_node_removed_context);
+			m_native_module_graph.remove_node(node_handle);
 		}
 	}
 

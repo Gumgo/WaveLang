@@ -82,13 +82,13 @@ bool c_native_module_graph_optimizer::optimize() {
 	// Keep trying to optimize nodes until no optimizations can be applied
 	while (true) {
 		bool optimization_performed = false;
-		for (h_graph_node node_handle = m_native_module_graph.nodes_begin();
-			!optimization_performed && node_handle.is_valid();
-			node_handle = m_native_module_graph.nodes_next(node_handle)) {
+		for (h_graph_node node_handle : m_native_module_graph.iterate_nodes()) {
 			// $PERF: we can only apply one optimization per loop because iteration gets invalidated when the graph is
 			// modified
 			if (!try_optimize_node(node_handle, optimization_performed)) {
 				return false;
+			} else if (optimization_performed) {
+				break;
 			}
 		}
 
@@ -110,9 +110,7 @@ void c_native_module_graph_optimizer::remove_unused_nodes() {
 	std::unordered_set<h_graph_node> nodes_visited;
 
 	// Start at the output nodes and work backwards, marking each node as it is encountered
-	for (h_graph_node node_handle = m_native_module_graph.nodes_begin();
-		node_handle.is_valid();
-		node_handle = m_native_module_graph.nodes_next(node_handle)) {
+	for (h_graph_node node_handle : m_native_module_graph.iterate_nodes()) {
 		e_native_module_graph_node_type type = m_native_module_graph.get_node_type(node_handle);
 		if (type == e_native_module_graph_node_type::k_output) {
 			node_stack.push(node_handle);
@@ -134,9 +132,7 @@ void c_native_module_graph_optimizer::remove_unused_nodes() {
 	}
 
 	// Remove all unvisited nodes
-	for (h_graph_node node_handle = m_native_module_graph.nodes_begin();
-		node_handle.is_valid();
-		node_handle = m_native_module_graph.nodes_next(node_handle)) {
+	for (h_graph_node node_handle : m_native_module_graph.iterate_nodes()) {
 		if (nodes_visited.find(node_handle) == nodes_visited.end()) {
 			// A few exceptions:
 			// - Don't directly remove inputs/outputs, since they automatically get removed along with their nodes
@@ -198,9 +194,7 @@ void c_native_module_graph_optimizer::deduplicate_constants() {
 	std::unordered_map<bool, h_graph_node> deduplicated_bools;
 	std::unordered_map<std::string, h_graph_node> deduplicated_strings;
 
-	for (h_graph_node node_handle = m_native_module_graph.nodes_begin();
-		node_handle.is_valid();
-		node_handle = m_native_module_graph.nodes_next(node_handle)) {
+	for (h_graph_node node_handle : m_native_module_graph.iterate_nodes()) {
 		if (m_native_module_graph.get_node_type(node_handle) != e_native_module_graph_node_type::k_constant) {
 			continue;
 		}
@@ -269,9 +263,7 @@ void c_native_module_graph_optimizer::deduplicate_arrays_and_native_modules() {
 		graph_changed = false;
 		std::unordered_set<h_graph_node> deduplicated_nodes;
 
-		for (h_graph_node node_a_handle = m_native_module_graph.nodes_begin();
-			node_a_handle.is_valid();
-			node_a_handle = m_native_module_graph.nodes_next(node_a_handle)) {
+		for (h_graph_node node_a_handle : m_native_module_graph.iterate_nodes()) {
 			if (m_native_module_graph.get_node_type(node_a_handle) == e_native_module_graph_node_type::k_invalid) {
 				continue;
 			}
@@ -280,9 +272,9 @@ void c_native_module_graph_optimizer::deduplicate_arrays_and_native_modules() {
 				continue;
 			}
 
-			for (h_graph_node node_b_handle = m_native_module_graph.nodes_next(node_a_handle);
+			for (h_graph_node node_b_handle = m_native_module_graph.get_next_node(node_a_handle);
 				node_b_handle.is_valid();
-				node_b_handle = m_native_module_graph.nodes_next(node_b_handle)) {
+				node_b_handle = m_native_module_graph.get_next_node(node_b_handle)) {
 				if (deduplicated_nodes.contains(node_b_handle)) {
 					// We already deduplicated this node - it has no outputs
 					continue;

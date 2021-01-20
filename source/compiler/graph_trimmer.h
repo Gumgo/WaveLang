@@ -9,11 +9,8 @@
 
 class c_graph_trimmer {
 public:
-	using f_on_node_removed = void (*)(void *context, h_graph_node node_handle);
-
 	c_graph_trimmer(c_native_module_graph &native_module_graph);
 
-	void set_on_node_removed(f_on_node_removed on_node_removed, void *context);
 	c_native_module_graph &get_native_module_graph();
 
 	// Temporary references are used to prevent a node from getting trimmed when it's in an intermediate state (e.g. the
@@ -29,9 +26,6 @@ private:
 
 	// The graph
 	c_native_module_graph &m_native_module_graph;
-
-	f_on_node_removed m_on_node_removed = nullptr;
-	void *m_on_node_removed_context = nullptr;
 
 	// List of nodes to check, cached here to avoid unnecessary allocations
 	std::stack<h_graph_node> m_pending_nodes;

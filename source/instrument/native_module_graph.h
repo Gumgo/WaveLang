@@ -49,6 +49,32 @@ class c_native_module_graph {
 public:
 	using f_on_node_removed = void (*)(void *context, h_graph_node node_handle);
 
+	class c_node_iterator {
+	public:
+		class c_iterand {
+		public:
+			c_iterand(const c_native_module_graph &graph, h_graph_node node_handle);
+
+			bool operator!=(const c_iterand &other) const;
+			c_iterand &operator++();
+			h_graph_node operator*() const;
+
+		private:
+			const c_native_module_graph &m_graph;
+			h_graph_node m_node_handle;
+		};
+
+		c_iterand begin() const;
+		c_iterand end() const;
+
+	private:
+		friend class c_native_module_graph;
+
+		c_node_iterator(const c_native_module_graph &graph);
+
+		const c_native_module_graph &m_graph;
+	};
+
 	// Special output index representing whether processing should remain active - once a voice drops to 0 volume it can
 	// be disabled for improved performance
 	static constexpr uint32 k_remain_active_output_index = static_cast<uint32>(-1);
@@ -71,17 +97,16 @@ public:
 	h_graph_node add_input_node(uint32 input_index);
 	h_graph_node add_output_node(uint32 output_index);
 	h_graph_node add_temporary_reference_node();
-	void remove_node(
-		h_graph_node node_handle,
-		f_on_node_removed on_node_removed = nullptr,
-		void *on_node_removed_context = nullptr);
+	void remove_node(h_graph_node node_handle);
 
 	void add_edge(h_graph_node from_handle, h_graph_node to_handle);
 	void remove_edge(h_graph_node from_handle, h_graph_node to_handle);
 
 	uint32 get_node_count() const;
-	h_graph_node nodes_begin() const; // $TODO $COMPILER make an iterator class instead
-	h_graph_node nodes_next(h_graph_node node_handle) const;
+	c_node_iterator iterate_nodes() const;
+
+	// Returns the first node if h_graph_node::invalid() is provided
+	h_graph_node get_next_node(h_graph_node node_handle) const;
 
 	e_native_module_graph_node_type get_node_type(h_graph_node node_handle) const;
 	c_native_module_data_type get_node_data_type(h_graph_node node_handle) const;
@@ -117,6 +142,8 @@ public:
 	bool generate_graphviz_file(const char *fname, bool collapse_large_arrays) const;
 
 private:
+	friend class c_node_iterator;
+
 	struct s_node {
 		struct s_no_node_data {};
 

@@ -100,9 +100,7 @@ bool c_instrument_variant::validate() const {
 
 	if (m_voice_native_module_graph && m_fx_native_module_graph) {
 		uint32 voice_graph_output_count = 0;
-		for (h_graph_node node_handle = m_voice_native_module_graph->nodes_begin();
-			node_handle.is_valid();
-			node_handle = m_voice_native_module_graph->nodes_next(node_handle)) {
+		for (h_graph_node node_handle : m_voice_native_module_graph->iterate_nodes()) {
 			if (m_voice_native_module_graph->get_node_type(node_handle) == e_native_module_graph_node_type::k_output) {
 				uint32 output_index = m_voice_native_module_graph->get_output_node_output_index(node_handle);
 				if (output_index != c_native_module_graph::k_remain_active_output_index) {
@@ -112,9 +110,7 @@ bool c_instrument_variant::validate() const {
 		}
 
 		uint32 fx_graph_input_count = 0;
-		for (h_graph_node node_handle = m_fx_native_module_graph->nodes_begin();
-			node_handle.is_valid();
-			node_handle = m_fx_native_module_graph->nodes_next(node_handle)) {
+		for (h_graph_node node_handle : m_fx_native_module_graph->iterate_nodes()) {
 			if (m_fx_native_module_graph->get_node_type(node_handle) == e_native_module_graph_node_type::k_input) {
 				fx_graph_input_count++;
 			}

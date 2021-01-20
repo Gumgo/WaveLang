@@ -212,9 +212,7 @@ bool c_task_graph::build(const c_native_module_graph &native_module_graph) {
 	node_stack.reserve(native_module_graph.get_node_count());
 
 	// Find our initial nodes without any predecessors
-	for (h_graph_node node_handle = native_module_graph.nodes_begin();
-		node_handle.is_valid();
-		node_handle = native_module_graph.nodes_next(node_handle)) {
+	for (h_graph_node node_handle : native_module_graph.iterate_nodes()) {
 		e_native_module_graph_node_type node_type = native_module_graph.get_node_type(node_handle);
 		if (node_type == e_native_module_graph_node_type::k_input) {
 			input_count++;
@@ -982,9 +980,7 @@ void c_task_graph::build_task_successor_lists(
 		m_tasks[task_index].predecessor_count = 0;
 	}
 
-	for (h_graph_node node_handle = native_module_graph.nodes_begin();
-		node_handle.is_valid();
-		node_handle = native_module_graph.nodes_next(node_handle)) {
+	for (h_graph_node node_handle : native_module_graph.iterate_nodes()) {
 		if (nodes_to_tasks.find(node_handle) == nodes_to_tasks.end()) {
 			// This node is not a task
 			wl_assert(

@@ -265,9 +265,7 @@ bool c_native_module_graph_builder::build() {
 
 #if IS_TRUE(ASSERTS_ENABLED)
 	// Validate that there are no temporary reference nodes remaining
-	for (h_graph_node node_handle = m_native_module_graph.nodes_begin();
-		node_handle.is_valid();
-		node_handle = m_native_module_graph.nodes_next(node_handle)) {
+	for (h_graph_node node_handle : m_native_module_graph.iterate_nodes()) {
 		wl_assert(
 			m_native_module_graph.get_node_type(node_handle) != e_native_module_graph_node_type::k_temporary_reference);
 	}

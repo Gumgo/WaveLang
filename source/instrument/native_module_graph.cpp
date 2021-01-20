@@ -75,6 +75,36 @@ static bool read_data_type(uint32 data, c_native_module_data_type &data_type_out
 	return true;
 }
 
+c_native_module_graph::c_node_iterator::c_iterand::c_iterand(
+	const c_native_module_graph &graph,
+	h_graph_node node_handle)
+	: m_graph(graph)
+	, m_node_handle(node_handle) {}
+
+bool c_native_module_graph::c_node_iterator::c_iterand::operator!=(const c_iterand &other) const {
+	return m_node_handle != other.m_node_handle;
+}
+
+c_native_module_graph::c_node_iterator::c_iterand &c_native_module_graph::c_node_iterator::c_iterand::operator++() {
+	m_node_handle = m_graph.get_next_node(m_node_handle);
+	return *this;
+}
+
+h_graph_node c_native_module_graph::c_node_iterator::c_iterand::operator*() const {
+	return m_node_handle;
+}
+
+c_native_module_graph::c_node_iterator::c_iterand c_native_module_graph::c_node_iterator::begin() const {
+	return c_iterand(m_graph, m_graph.get_next_node(h_graph_node::invalid()));
+}
+
+c_native_module_graph::c_node_iterator::c_iterand c_native_module_graph::c_node_iterator::end() const {
+	return c_iterand(m_graph, h_graph_node::invalid());
+}
+
+c_native_module_graph::c_node_iterator::c_node_iterator(const c_native_module_graph &graph)
+	: m_graph(graph) {}
+
 c_native_module_graph::c_native_module_graph() {}
 
 e_instrument_result c_native_module_graph::save(std::ofstream &out) const {
@@ -741,16 +771,13 @@ h_graph_node c_native_module_graph::add_temporary_reference_node() {
 	return node_handle;
 }
 
-void c_native_module_graph::remove_node(
-	h_graph_node node_handle,
-	f_on_node_removed on_node_removed,
-	void *on_node_removed_context) {
+void c_native_module_graph::remove_node(h_graph_node node_handle) {
 	s_node &node = get_node(node_handle);
 
 	if (does_node_use_indexed_inputs(node)) {
 		// Remove input nodes - this will naturally break edges
 		while (!node.incoming_edge_handles.empty()) {
-			remove_node(node.incoming_edge_handles.back(), on_node_removed, on_node_removed_context);
+			remove_node(node.incoming_edge_handles.back());
 		}
 	} else {
 		// Break edges
@@ -762,17 +789,13 @@ void c_native_module_graph::remove_node(
 	if (does_node_use_indexed_outputs(node)) {
 		// Remove output nodes - this will naturally break edges
 		while (!node.outgoing_edge_handles.empty()) {
-			remove_node(node.outgoing_edge_handles.back(), on_node_removed, on_node_removed_context);
+			remove_node(node.outgoing_edge_handles.back());
 		}
 	} else {
 		// Break edges
 		while (!node.outgoing_edge_handles.empty()) {
 			remove_edge_internal(node_handle, node.outgoing_edge_handles.back());
 		}
-	}
-
-	if (on_node_removed) {
-		on_node_removed(on_node_removed_context, node_handle);
 	}
 
 	// Set to invalid and clear
@@ -1202,21 +1225,12 @@ uint32 c_native_module_graph::get_node_count() const {
 	return cast_integer_verify<uint32>(m_nodes.size());
 }
 
-h_graph_node c_native_module_graph::nodes_begin() const {
-	uint32 index = 0;
-	while (index < m_nodes.size()) {
-		if (m_nodes[index].type != e_native_module_graph_node_type::k_invalid) {
-			return h_graph_node::construct({ index NODE_SALT(m_nodes[index].salt) });
-		}
-
-		index++;
-	}
-
-	return h_graph_node::invalid();
+c_native_module_graph::c_node_iterator c_native_module_graph::iterate_nodes() const {
+	return c_node_iterator(*this);
 }
 
-h_graph_node c_native_module_graph::nodes_next(h_graph_node node_handle) const {
-	uint32 index = node_handle.get_data().index + 1;
+h_graph_node c_native_module_graph::get_next_node(h_graph_node node_handle) const {
+	uint32 index = node_handle.is_valid() ? node_handle.get_data().index + 1 : 0;
 	while (index < m_nodes.size()) {
 		if (m_nodes[index].type != e_native_module_graph_node_type::k_invalid) {
 			return h_graph_node::construct({ index NODE_SALT(m_nodes[index].salt) });
