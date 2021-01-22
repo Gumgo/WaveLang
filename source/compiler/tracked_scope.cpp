@@ -56,6 +56,14 @@ e_tracked_scope_type c_tracked_scope::get_scope_type() const {
 	return m_scope_type;
 }
 
+size_t c_tracked_scope::get_tracked_declaration_count() const {
+	return m_declarations.size();
+}
+
+c_tracked_declaration *c_tracked_scope::get_tracked_declaration(size_t index) {
+	return m_declarations[index].get();
+}
+
 c_tracked_declaration *c_tracked_scope::add_declaration(c_ast_node_declaration *declaration) {
 	wl_assert(m_tracked_declaration_lookup.find(declaration) == m_tracked_declaration_lookup.end());
 

@@ -62,6 +62,9 @@ public:
 	const c_tracked_scope *get_parent() const;
 	e_tracked_scope_type get_scope_type() const;
 
+	size_t get_tracked_declaration_count() const;
+	c_tracked_declaration *get_tracked_declaration(size_t index);
+
 	c_tracked_declaration *add_declaration(c_ast_node_declaration *declaration);
 	c_tracked_declaration *get_tracked_declaration(c_ast_node_declaration *declaration);
 

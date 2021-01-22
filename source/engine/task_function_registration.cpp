@@ -154,6 +154,8 @@ static bool map_task_function_arguments(
 		return false;
 	}
 
+	task_function_entry->task_function.native_module_uid = iter->second;
+
 	h_native_module native_module_handle = c_native_module_registry::get_native_module_handle(iter->second);
 	wl_assert(native_module_handle.is_valid());
 	const s_native_module &native_module = c_native_module_registry::get_native_module(native_module_handle);
@@ -177,7 +179,7 @@ static bool map_task_function_arguments(
 				native_module.arguments[native_module_argument_index].name.get_string();
 
 			if (strcmp(task_function_argument_name, native_module_argument_name) == 0) {
-				if (task_function_entry->task_function.task_function_argument_indices[mapped_argument_index] !=
+				if (task_function_entry->task_function.task_function_argument_indices[native_module_argument_index] !=
 					k_invalid_task_argument_index) {
 					report_error(
 						"Argument '%s' of native module '%s' "

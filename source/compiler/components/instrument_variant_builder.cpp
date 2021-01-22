@@ -51,7 +51,7 @@ private:
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
 	void build_tracked_scope(c_ast_node_scope *scope_node, c_tracked_scope *tracked_scope);
-	bool initialize_global_scope_constants(c_ast_node_scope *scope);
+	bool initialize_global_scope_constants(c_tracked_scope *global_scope);
 	bool initialize_global_scope_constant(c_ast_node_value_declaration *value_declaration);
 
 	// Pushes a node handle onto the expression result stack and adds a temporary reference to it
@@ -192,16 +192,19 @@ c_native_module_graph_builder::c_native_module_graph_builder(
 
 bool c_native_module_graph_builder::build() {
 	// The first thing we need to do is initialize all global scope and namespace scope constants
-	h_compiler_source_file source_file_handle = h_compiler_source_file::construct(0);
-	const s_compiler_source_file &source_file = m_context.get_source_file(source_file_handle);
-	c_ast_node_scope *global_scope = source_file.ast->get_as<c_ast_node_scope>();
-
 	c_tracked_scope *tracked_global_scope =
 		new c_tracked_scope(nullptr, e_tracked_scope_type::k_namespace, &m_graph_trimmer);
 	m_tracked_scopes.emplace_back(tracked_global_scope);
-	build_tracked_scope(global_scope, tracked_global_scope);
 
-	if (!initialize_global_scope_constants(global_scope)) {
+	for (size_t source_file_index = 0; source_file_index < m_context.get_source_file_count(); source_file_index++) {
+		h_compiler_source_file source_file_handle = h_compiler_source_file::construct(source_file_index);
+		const s_compiler_source_file &source_file = m_context.get_source_file(source_file_handle);
+
+		c_ast_node_scope *global_scope = source_file.ast->get_as<c_ast_node_scope>();
+		build_tracked_scope(global_scope, tracked_global_scope);
+	}
+
+	if (!initialize_global_scope_constants(tracked_global_scope)) {
 		return false;
 	}
 
@@ -296,16 +299,16 @@ void c_native_module_graph_builder::build_tracked_scope(c_ast_node_scope *scope_
 	}
 }
 
-bool c_native_module_graph_builder::initialize_global_scope_constants(c_ast_node_scope *scope_node) {
+bool c_native_module_graph_builder::initialize_global_scope_constants(c_tracked_scope *global_scope) {
 	// We've put all global declarations into the global namespace already so simply iterate over them all
-	for (size_t item_index = 0; item_index < scope_node->get_scope_item_count(); item_index++) {
+	for (size_t index = 0; index < global_scope->get_tracked_declaration_count(); index++) {
+		c_tracked_declaration *tracked_declaration = global_scope->get_tracked_declaration(index);
+
 		c_ast_node_value_declaration *value_declaration_node =
-			scope_node->get_scope_item(item_index)->try_get_as<c_ast_node_value_declaration>();
+			tracked_declaration->get_declaration()->try_get_as<c_ast_node_value_declaration>();
 		if (value_declaration_node) {
 			// This global-scope constant may have already been initialized from another global-scope constant which
 			// depends on it
-			c_tracked_declaration *tracked_declaration =
-				m_tracked_scopes.back()->get_tracked_declaration(value_declaration_node);
 			if (!tracked_declaration->get_node_handle().is_valid()
 				&& !initialize_global_scope_constant(value_declaration_node)) {
 				return false;

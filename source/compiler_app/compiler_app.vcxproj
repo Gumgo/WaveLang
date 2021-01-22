@@ -53,9 +53,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='debug|x64'">
     <NMakeOutput>compiler_app.exe</NMakeOutput>
     <NMakePreprocessorDefinitions>_DEBUG;__AVX__;__AVX2__;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
-    <NMakeBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeBuildCommandLine>
-    <NMakeReBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName) &amp;&amp; SCons config=$(Configuration) $(ProjectName)</NMakeReBuildCommandLine>
-    <NMakeCleanCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)</NMakeCleanCommandLine>
+    <NMakeBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons config=$(Configuration) $(ProjectName)_app</NMakeBuildCommandLine>
+    <NMakeReBuildCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)_app &amp;&amp; SCons config=$(Configuration) $(ProjectName)_app</NMakeReBuildCommandLine>
+    <NMakeCleanCommandLine>cd $(SolutionDir).. &amp;&amp; SCons -c config=$(Configuration) $(ProjectName)_app</NMakeCleanCommandLine>
     <IntDir>$(SolutionDir)..\build\win32\$(Configuration)\msvc</IntDir>
     <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
     <AdditionalOptions>/std:c++latest</AdditionalOptions>

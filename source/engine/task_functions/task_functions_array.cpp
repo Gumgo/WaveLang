@@ -29,12 +29,12 @@ namespace array_task_functions {
 
 	void subscript_real(
 		const s_task_function_context &context,
-		wl_task_argument(c_real_buffer_array_in, a),
+		wl_task_argument(c_real_buffer_array_in, array),
 		wl_task_argument(const c_real_buffer *, index),
 		wl_task_argument(c_real_buffer *, result)) {
 		wl_assertf(!index->is_compile_time_constant(), "Constant-index subscript should have been optimized away");
 
-		uint32 array_count = cast_integer_verify<uint32>(a->get_count());
+		uint32 array_count = cast_integer_verify<uint32>(array->get_count());
 		if (array_count == 0) {
 			// The array is empty, therefore all values will dereference to an invalid index, so we can set the result
 			// to a constant 0.
@@ -48,7 +48,7 @@ namespace array_task_functions {
 			if (array_index == k_invalid_array_index) {
 				result->assign_constant(0.0f);
 			} else {
-				const c_real_buffer *element = (*a)[array_index];
+				const c_real_buffer *element = (*array)[array_index];
 				if (element->is_constant()) {
 					result->assign_constant(element->get_constant());
 				} else {
@@ -58,7 +58,7 @@ namespace array_task_functions {
 			}
 		} else {
 			iterate_buffers<1, false>(context.buffer_size, *index, *result,
-				[&a, &array_count](size_t i, real32 index, real32 &result) {
+				[&array, &array_count](size_t i, real32 index, real32 &result) {
 					// This is written using masks to avoid branching
 					// Note: could SIMD-optimize part of this using gather
 					uint32 array_index = get_index_or_invalid(array_count, index);
@@ -69,7 +69,7 @@ namespace array_task_functions {
 					array_index &= array_index_mask;
 
 					// It is always safe to dereference the 0th element due to the first branch in this function
-					const c_real_buffer *element = (*a)[array_index];
+					const c_real_buffer *element = (*array)[array_index];
 
 					// Dereference the element, masking with 0 if the element is constant and thus only has a 0th value
 					// We use ptrdiff_t for sign extension purposes since it is probably the same size as size_t
@@ -88,12 +88,12 @@ namespace array_task_functions {
 
 	void subscript_bool(
 		const s_task_function_context &context,
-		wl_task_argument(c_bool_buffer_array_in, a),
+		wl_task_argument(c_bool_buffer_array_in, array),
 		wl_task_argument(const c_real_buffer *, index),
 		wl_task_argument(c_bool_buffer *, result)) {
 		wl_assertf(!index->is_compile_time_constant(), "Constant-index subscript should have been optimized away");
 
-		uint32 array_count = cast_integer_verify<uint32>(a->get_count());
+		uint32 array_count = cast_integer_verify<uint32>(array->get_count());
 		if (array_count == 0) {
 			// The array is empty, therefore all values will dereference to an invalid index, so we can set the result
 			// to a constant 0.
@@ -107,7 +107,7 @@ namespace array_task_functions {
 			if (array_index == k_invalid_array_index) {
 				result->assign_constant(0.0f);
 			} else {
-				const c_bool_buffer *element = (*a)[array_index];
+				const c_bool_buffer *element = (*array)[array_index];
 				if (element->is_constant()) {
 					result->assign_constant(element->get_constant());
 				} else {
@@ -120,7 +120,7 @@ namespace array_task_functions {
 			}
 		} else {
 			iterate_buffers<1, false>(context.buffer_size, *index, *result,
-				[&a, &array_count](size_t i, real32 index, bool &result) {
+				[&array, &array_count](size_t i, real32 index, bool &result) {
 					// This is written using masks to avoid branching
 					uint32 array_index = get_index_or_invalid(array_count, index);
 					int32 array_index_is_valid = (array_index != k_invalid_array_index);
@@ -130,7 +130,7 @@ namespace array_task_functions {
 					array_index &= array_index_mask;
 
 					// It is always safe to dereference the 0th element due to the first branch in this function
-					const c_bool_buffer *element = (*a)[array_index];
+					const c_bool_buffer *element = (*array)[array_index];
 
 					// Dereference the element, masking with 0 if the element is constant and thus only has a 0th value
 					// We use ptrdiff_t for sign extension purposes since it is probably the same size as size_t

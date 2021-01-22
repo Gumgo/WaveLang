@@ -6,21 +6,21 @@
 namespace core_native_modules {
 
 	void noop_real(
-		wl_argument(in const? real, a),
-		wl_argument(return out const? real, result)) {
+		wl_argument(in ref const? real, a),
+		wl_argument(return out ref const? real, result)) {
 		*result = *a;
 	}
 
 	void noop_bool(
-		wl_argument(in const? bool, a),
-		wl_argument(return out const? bool, result)) {
+		wl_argument(in ref const? bool, a),
+		wl_argument(return out ref const? bool, result)) {
 		*result = *a;
 	}
 
 	void noop_string(
-		wl_argument(in const string, a),
-		wl_argument(return out const string, result)) {
-		result->get_string() = a->get_string();
+		wl_argument(in ref const string, a),
+		wl_argument(return out ref const string, result)) {
+		*result = *a;
 	}
 
 	void negation(

@@ -21,7 +21,7 @@ s_json_result c_json_file::load(const char *filename) {
 	}
 
 	// Place a null terminator at the end so we always have a valid offset
-	file_buffer.back() = '\0';
+	file_buffer.push_back('\0');
 
 	s_buffer_with_offset buffer_with_offset;
 	buffer_with_offset.buffer = file_buffer.data();

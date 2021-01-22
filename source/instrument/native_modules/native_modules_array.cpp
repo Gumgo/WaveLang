@@ -39,9 +39,7 @@ static std::vector<t_element> array_repeat(
 	const std::vector<t_element> &arr,
 	real32 real_repeat_count) {
 	if (real_repeat_count < 0.0f || std::isnan(real_repeat_count) || std::isinf(real_repeat_count)) {
-		context.diagnostic_interface->error(
-			"Illegal array repeat count '%f'",
-			real_repeat_count);
+		context.diagnostic_interface->error("Illegal array repeat count '%f'", real_repeat_count);
 		return std::vector<t_element>();
 	}
 
@@ -57,14 +55,45 @@ static std::vector<t_element> array_repeat(
 	return result;
 }
 
+static std::vector<real32> array_range(const s_native_module_context &context, real32 start, real32 stop, real32 step) {
+	std::vector<real32> result;
+
+	if (std::isnan(start) || std::isinf(start)) {
+		context.diagnostic_interface->error("Illegal array range start value '%f'", start);
+		return result;
+	}
+
+	if (std::isnan(stop) || std::isinf(stop)) {
+		context.diagnostic_interface->error("Illegal array range stop value '%f'", stop);
+		return result;
+	}
+
+	if (std::isnan(step) || std::isinf(step) || step == 0.0f) {
+		context.diagnostic_interface->error("Illegal array range step value '%f'", step);
+		return result;
+	}
+
+	if (step > 0.0f) {
+		for (real32 value = start; value < stop; value += step) {
+			result.push_back(value);
+		}
+	} else {
+		for (real32 value = start; value > stop; value += step) {
+			result.push_back(value);
+		}
+	}
+
+	return result;
+}
+
 namespace array_native_modules {
 
 	void subscript_real(
 		const s_native_module_context &context,
-		wl_argument(in ref const? real[], a),
-		wl_argument(in const? real, b),
+		wl_argument(in ref const? real[], array),
+		wl_argument(in const? real, index),
 		wl_argument(return out ref const? real, result)) {
-		if (!array_subscript(context, a->get_array(), *b, *result)) {
+		if (!array_subscript(context, array->get_array(), *index, *result)) {
 			*result = context.reference_interface->create_constant_reference(0.0f);
 		}
 	}
@@ -100,10 +129,10 @@ namespace array_native_modules {
 
 	void subscript_bool(
 		const s_native_module_context &context,
-		wl_argument(in ref const? bool[], a),
-		wl_argument(in const? bool, b),
+		wl_argument(in ref const? bool[], array),
+		wl_argument(in const? real, index),
 		wl_argument(return out ref const? bool, result)) {
-		if (!array_subscript(context, a->get_array(), *b, *result)) {
+		if (!array_subscript(context, array->get_array(), *index, *result)) {
 			*result = context.reference_interface->create_constant_reference(false);
 		}
 	}
@@ -139,10 +168,10 @@ namespace array_native_modules {
 
 	void subscript_string(
 		const s_native_module_context &context,
-		wl_argument(in ref const string[], a),
-		wl_argument(in const real, b),
+		wl_argument(in ref const string[], array),
+		wl_argument(in const real, index),
 		wl_argument(return out ref const string, result)) {
-		if (!array_subscript(context, a->get_array(), *b, *result)) {
+		if (!array_subscript(context, array->get_array(), *index, *result)) {
 			*result = context.reference_interface->create_constant_reference("");
 		}
 	}
@@ -174,6 +203,30 @@ namespace array_native_modules {
 		wl_argument(in ref const string[], b),
 		wl_argument(return out ref const string[], result)) {
 		result->get_array() = array_repeat(context, b->get_array(), *a);
+	}
+
+	void range_stop(
+		const s_native_module_context &context,
+		wl_argument(in const real, stop),
+		wl_argument(return out const real[], result)) {
+		array_range(context, 0.0f, stop, 1.0f);
+	}
+
+	void range_start_stop(
+		const s_native_module_context &context,
+		wl_argument(in const real, start),
+		wl_argument(in const real, stop),
+		wl_argument(return out const real[], result)) {
+		array_range(context, start, stop, 1.0f);
+	}
+
+	void range_start_stop_step(
+		const s_native_module_context &context,
+		wl_argument(in const real, start),
+		wl_argument(in const real, stop),
+		wl_argument(in const real, step),
+		wl_argument(return out const real[], result)) {
+		array_range(context, start, stop, step);
 	}
 
 	void scrape_native_modules() {
@@ -236,6 +289,15 @@ namespace array_native_modules {
 		wl_native_module(0xfcd4a1d5, "repeat_rev$string")
 			.set_native_operator(e_native_operator::k_multiplication)
 			.set_compile_time_call<repeat_rev_string>();
+
+		wl_native_module(0x1ee13a09, "range$stop")
+			.set_compile_time_call<range_stop>();
+
+		wl_native_module(0x2e3fc3b0, "range$start_stop")
+			.set_compile_time_call<range_start_stop>();
+
+		wl_native_module(0x913c2452, "range$start_stop_step")
+			.set_compile_time_call<range_start_stop_step>();
 
 		wl_end_active_library_native_module_registration();
 	}

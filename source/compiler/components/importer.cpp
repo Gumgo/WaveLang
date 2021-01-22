@@ -158,7 +158,6 @@ void c_importer::add_imports_to_global_scope(c_compiler_context &context, h_comp
 	}
 }
 
-
 static bool are_imports_identical(
 	const s_compiler_source_file_import &import_a,
 	const s_compiler_source_file_import &import_b) {

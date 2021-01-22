@@ -161,12 +161,12 @@ namespace controller_task_functions {
 		wl_task_function(0x05b9e818, "get_note_press_duration")
 			.set_function<get_note_press_duration>()
 			.set_memory_query<get_note_press_duration_memory_query>()
-			.set_initializer<get_note_press_duration_voice_initializer>();
+			.set_voice_initializer<get_note_press_duration_voice_initializer>();
 
 		wl_task_function(0xa370e402, "get_note_release_duration")
 			.set_function<get_note_release_duration>()
 			.set_memory_query<get_note_release_duration_memory_query>()
-			.set_initializer<get_note_release_duration_voice_initializer>();
+			.set_voice_initializer<get_note_release_duration_voice_initializer>();
 
 		wl_task_function(0x6badd8e8, "get_parameter_value")
 			.set_function<get_parameter_value>()

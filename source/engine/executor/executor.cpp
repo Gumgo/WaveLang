@@ -496,7 +496,9 @@ void c_executor::process_voice_or_fx(const s_executor_chunk_context &chunk_conte
 	uint32 frame_count = chunk_context.frames - voice.chunk_offset_samples;
 
 	m_voice_interface = c_voice_interface(
-		voice.note_id, voice.note_velocity, voice.note_release_sample - voice.chunk_offset_samples);
+		voice.note_id,
+		voice.note_velocity,
+		voice.note_release_sample - voice.chunk_offset_samples);
 
 	// Add the initial tasks
 	c_task_graph_task_array initial_tasks = m_active_task_graph->get_initial_tasks();

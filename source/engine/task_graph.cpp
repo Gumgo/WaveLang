@@ -917,7 +917,7 @@ void c_task_graph::rebase_buffers() {
 	for (s_task_function_runtime_argument &argument : m_task_function_arguments) {
 		if (!argument.type.is_array()
 			&& argument.type.get_data_mutability() != e_task_data_mutability::k_constant) {
-			c_buffer *buffer = std::get<c_buffer *>(argument.value);
+			c_buffer *&buffer = std::get<c_buffer *>(argument.value);
 			size_t buffer_index = extract_index_from_pointer(buffer);
 			buffer = &m_buffers[buffer_index];
 		}

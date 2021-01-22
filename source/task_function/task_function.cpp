@@ -9,7 +9,7 @@ bool validate_task_function(const s_task_function &task_function) {
 		}
 
 		if (argument.argument_direction == e_task_argument_direction::k_out
-			&& argument.type.get_data_mutability() != e_task_data_mutability::k_constant) {
+			&& argument.type.get_data_mutability() == e_task_data_mutability::k_constant) {
 			return false;
 		}
 	}
