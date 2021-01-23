@@ -209,7 +209,7 @@ namespace array_native_modules {
 		const s_native_module_context &context,
 		wl_argument(in const real, stop),
 		wl_argument(return out const real[], result)) {
-		array_range(context, 0.0f, stop, 1.0f);
+		result->get_array() = array_range(context, 0.0f, stop, 1.0f);
 	}
 
 	void range_start_stop(
@@ -217,7 +217,7 @@ namespace array_native_modules {
 		wl_argument(in const real, start),
 		wl_argument(in const real, stop),
 		wl_argument(return out const real[], result)) {
-		array_range(context, start, stop, 1.0f);
+		result->get_array() = array_range(context, start, stop, 1.0f);
 	}
 
 	void range_start_stop_step(
@@ -226,7 +226,7 @@ namespace array_native_modules {
 		wl_argument(in const real, stop),
 		wl_argument(in const real, step),
 		wl_argument(return out const real[], result)) {
-		array_range(context, start, stop, step);
+		result->get_array() = array_range(context, start, stop, step);
 	}
 
 	void scrape_native_modules() {

@@ -18,9 +18,14 @@ public:
 	void shutdown();
 
 	void begin_chunk(uint32 chunk_size);
-	void initialize_buffers_for_graph(e_instrument_stage instrument_stage);
+	void allocate_voice_accumulation_buffers();
+	void allocate_voice_shift_buffers();
 	void accumulate_voice_output(uint32 voice_sample_offset);
+	void allocate_fx_output_buffers();
+	void transfer_voice_accumulation_buffers_to_fx_inputs();
+	void free_voice_accumulation_buffers();
 	void store_fx_output();
+	void initialize_buffers_for_graph_processing(e_instrument_stage instrument_stage);
 	bool process_remain_active_output(e_instrument_stage instrument_stage, uint32 voice_sample_offset);
 	void mix_voice_accumulation_buffers_to_channel_buffers();
 	void mix_fx_output_to_channel_buffers();

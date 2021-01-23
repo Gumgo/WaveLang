@@ -375,10 +375,14 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 	m_controller_event_manager.process_controller_events(controller_event_count);
 
 	m_voice_allocator.allocate_voices_for_chunk(
-		m_controller_event_manager.get_note_events(), chunk_context.sample_rate, chunk_context.frames);
+		m_controller_event_manager.get_note_events(),
+		chunk_context.sample_rate,
+		chunk_context.frames);
 
 	m_active_task_graph = m_settings.runtime_instrument->get_voice_task_graph();
 	m_active_instrument_stage = e_instrument_stage::k_voice;
+
+	m_buffer_manager.allocate_voice_accumulation_buffers();
 
 	if (m_active_task_graph) {
 		if (m_settings.profiling_enabled) {
@@ -393,6 +397,7 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 				continue;
 			}
 
+			m_buffer_manager.allocate_voice_shift_buffers();
 			process_voice(chunk_context, voice_index);
 			m_buffer_manager.accumulate_voice_output(voice.chunk_offset_samples);
 		}
@@ -406,9 +411,13 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 	m_active_instrument_stage = e_instrument_stage::k_fx;
 
 	if (m_active_task_graph) {
+		m_buffer_manager.allocate_fx_output_buffers();
 		if (m_voice_allocator.get_fx_voice().active) {
+			m_buffer_manager.transfer_voice_accumulation_buffers_to_fx_inputs();
 			process_fx(chunk_context);
 			m_buffer_manager.store_fx_output();
+		} else {
+			m_buffer_manager.free_voice_accumulation_buffers();
 		}
 
 		m_buffer_manager.mix_fx_output_to_channel_buffers();
@@ -488,7 +497,7 @@ void c_executor::process_voice_or_fx(const s_executor_chunk_context &chunk_conte
 			cast_integer_verify<int32>(m_active_task_graph->get_task_predecessor_count(task));
 	}
 
-	m_buffer_manager.initialize_buffers_for_graph(m_active_instrument_stage);
+	m_buffer_manager.initialize_buffers_for_graph_processing(m_active_instrument_stage);
 
 	m_tasks_remaining = cast_integer_verify<int32>(m_active_task_graph->get_task_count());
 
@@ -513,8 +522,8 @@ void c_executor::process_voice_or_fx(const s_executor_chunk_context &chunk_conte
 		m_thread_pool.pause();
 	}
 
-	bool remain_active = m_buffer_manager.process_remain_active_output(
-		m_active_instrument_stage, voice.chunk_offset_samples);
+	bool remain_active =
+		m_buffer_manager.process_remain_active_output(m_active_instrument_stage, voice.chunk_offset_samples);
 
 	if (!remain_active) {
 		if (m_active_instrument_stage == e_instrument_stage::k_voice) {
