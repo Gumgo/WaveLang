@@ -52,5 +52,11 @@
     <Text Include="compiler_tests\entry_point.txt">
       <Filter>compiler_tests</Filter>
     </Text>
+    <Text Include="compiler_tests\optimization.txt">
+      <Filter>compiler_tests</Filter>
+    </Text>
+    <Text Include="compiler_tests\latency.txt">
+      <Filter>compiler_tests</Filter>
+    </Text>
   </ItemGroup>
 </Project>

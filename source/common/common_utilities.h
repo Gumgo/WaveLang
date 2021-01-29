@@ -11,6 +11,13 @@
 
 // $TODO add constexpr min_fast, max_fast
 
+struct s_size_alignment {
+	size_t size;
+	size_t alignment;
+};
+
+#define sizealignof(type) s_size_alignment{ sizeof(type), alignof(type) }
+
 template<typename t_element, size_t k_count>
 constexpr size_t array_count(const t_element (&)[k_count]) {
 	return k_count;

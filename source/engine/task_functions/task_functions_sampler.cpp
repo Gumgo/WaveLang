@@ -23,7 +23,8 @@ static void run_sampler(
 	const char *name,
 	const c_real_buffer *speed,
 	c_real_buffer *result) {
-	s_sampler_context *sampler_context = static_cast<s_sampler_context *>(context.task_memory);
+	s_sampler_voice_context *sampler_context =
+		reinterpret_cast<s_sampler_voice_context *>(context.voice_memory.get_pointer());
 	const c_sample *sample =
 		sampler_context->get_sample_or_fail_gracefully(sample_library, result, context.event_interface, name);
 	if (!sample || sampler_context->handle_reached_end(result)) {
@@ -81,7 +82,8 @@ static void run_sampler_loop(
 	const c_real_buffer *speed,
 	const c_real_buffer *phase,
 	c_real_buffer *result) {
-	s_sampler_context *sampler_context = static_cast<s_sampler_context *>(context.task_memory);
+	s_sampler_voice_context *sampler_context =
+		reinterpret_cast<s_sampler_voice_context *>(context.voice_memory.get_pointer());
 	const c_sample *sample =
 		sampler_context->get_sample_or_fail_gracefully(sample_library, result, context.event_interface, name);
 	if (!sample || sampler_context->handle_reached_end(result)) {
@@ -174,8 +176,11 @@ namespace sampler_task_functions {
 		sample_library->update_loaded_samples();
 	}
 
-	size_t sampler_memory_query(const s_task_function_context &context) {
-		return sizeof(s_sampler_context);
+	s_task_memory_query_result sampler_memory_query(const s_task_function_context &context) {
+		s_task_memory_query_result result;
+		result.shared_size_alignment = sizealignof(s_sampler_shared_context);
+		result.voice_size_alignment = sizealignof(s_sampler_voice_context);
+		return result;
 	}
 
 	void sampler_initializer(
@@ -183,7 +188,8 @@ namespace sampler_task_functions {
 		wl_task_argument(const char *, name),
 		wl_task_argument(real32, channel)) {
 		c_sample_library *sample_library = static_cast<c_sample_library *>(context.library_context);
-		s_sampler_context *sampler_context = static_cast<s_sampler_context *>(context.task_memory);
+		s_sampler_shared_context *sampler_context =
+			reinterpret_cast<s_sampler_shared_context *>(context.shared_memory.get_pointer());
 		sampler_context->initialize_file(
 			context.event_interface,
 			sample_library,
@@ -194,8 +200,17 @@ namespace sampler_task_functions {
 	}
 
 	void sampler_voice_initializer(const s_task_function_context &context) {
-		s_sampler_context *sampler_context = static_cast<s_sampler_context *>(context.task_memory);
-		sampler_context->voice_initialize();
+		s_sampler_shared_context *sampler_shared_context =
+			reinterpret_cast<s_sampler_shared_context *>(context.shared_memory.get_pointer());
+		s_sampler_voice_context *sampler_voice_context =
+			reinterpret_cast<s_sampler_voice_context *>(context.voice_memory.get_pointer());
+		sampler_voice_context->initialize(sampler_shared_context);
+	}
+
+	void sampler_voice_activator(const s_task_function_context &context) {
+		s_sampler_voice_context *sampler_voice_context =
+			reinterpret_cast<s_sampler_voice_context *>(context.voice_memory.get_pointer());
+		sampler_voice_context->activate();
 	}
 
 	void sampler(
@@ -215,7 +230,8 @@ namespace sampler_task_functions {
 		wl_task_argument(bool, bidi),
 		wl_task_argument(const c_real_buffer *, phase)) {
 		c_sample_library *sample_library = static_cast<c_sample_library *>(context.library_context);
-		s_sampler_context *sampler_context = static_cast<s_sampler_context *>(context.task_memory);
+		s_sampler_shared_context *sampler_context =
+			reinterpret_cast<s_sampler_shared_context *>(context.shared_memory.get_pointer());
 		bool phase_shift_enabled = !phase->is_constant() || (clamp(phase->get_constant(), 0.0f, 1.0f) != 0.0f);
 		e_sample_loop_mode loop_mode = bidi ? e_sample_loop_mode::k_bidi_loop : e_sample_loop_mode::k_loop;
 		sampler_context->initialize_file(
@@ -236,10 +252,6 @@ namespace sampler_task_functions {
 		wl_task_argument(const c_real_buffer *, phase),
 		wl_task_argument(c_real_buffer *, result)) {
 		c_sample_library *sample_library = static_cast<c_sample_library *>(context.library_context);
-		s_sampler_context *sampler_context = static_cast<s_sampler_context *>(context.task_memory);
-		const c_sample *sample = sample_library->get_sample(
-			sampler_context->sample_handle,
-			sampler_context->channel);
 		run_sampler_loop<false>(sample_library, context, name, speed, phase, result);
 	}
 
@@ -248,7 +260,8 @@ namespace sampler_task_functions {
 		wl_task_argument(c_real_constant_array, harmonic_weights),
 		wl_task_argument(const c_real_buffer *, phase)) {
 		c_sample_library *sample_library = static_cast<c_sample_library *>(context.library_context);
-		s_sampler_context *sampler_context = static_cast<s_sampler_context *>(context.task_memory);
+		s_sampler_shared_context *sampler_context =
+			reinterpret_cast<s_sampler_shared_context *>(context.shared_memory.get_pointer());
 		bool phase_shift_enabled = !phase->is_constant() || (clamp(phase->get_constant(), 0.0f, 1.0f) != 0.0f);
 		sampler_context->initialize_wavetable(
 			context.event_interface,
@@ -279,19 +292,22 @@ namespace sampler_task_functions {
 			.set_function<sampler>()
 			.set_memory_query<sampler_memory_query>()
 			.set_initializer<sampler_initializer>()
-			.set_voice_initializer<sampler_voice_initializer>();
+			.set_voice_initializer<sampler_voice_initializer>()
+			.set_voice_activator<sampler_voice_activator>();
 
 		wl_task_function(0xdf906f59, "sampler_loop")
 			.set_function<sampler_loop>()
 			.set_memory_query<sampler_memory_query>()
 			.set_initializer<sampler_loop_initializer>()
-			.set_voice_initializer<sampler_voice_initializer>();
+			.set_voice_initializer<sampler_voice_initializer>()
+			.set_voice_activator<sampler_voice_activator>();
 
 		wl_task_function(0x7429e1e3, "sampler_wavetable")
 			.set_function<sampler_wavetable>()
 			.set_memory_query<sampler_memory_query>()
 			.set_initializer<sampler_wavetable_initializer>()
-			.set_voice_initializer<sampler_voice_initializer>();
+			.set_voice_initializer<sampler_voice_initializer>()
+			.set_voice_activator<sampler_voice_activator>();
 
 		wl_end_active_library_task_function_registration();
 	}

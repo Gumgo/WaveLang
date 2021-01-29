@@ -6,9 +6,9 @@ static e_tracked_event_state event_state_min(e_tracked_event_state event_state_a
 static e_tracked_event_state event_state_max(e_tracked_event_state event_state_a, e_tracked_event_state event_state_b);
 
 c_tracked_declaration::~c_tracked_declaration() {
-	if (m_node_handle.is_valid()) {
+	if (m_node_handle_with_latency.node_handle.is_valid()) {
 		// This will remove the temporary reference and trim the graph
-		set_node_handle(h_graph_node::invalid());
+		set_node_handle_with_latency({ h_graph_node::invalid(), 0 });
 	}
 }
 
@@ -22,17 +22,28 @@ c_tracked_declaration::c_tracked_declaration(c_ast_node_declaration *declaration
 	m_next_name_lookup = nullptr;
 }
 
-h_graph_node c_tracked_declaration::get_node_handle() const {
-	return m_node_handle;
+const s_node_handle_with_latency &c_tracked_declaration::get_node_handle_with_latency() const {
+	return m_node_handle_with_latency;
 }
 
-void c_tracked_declaration::set_node_handle(h_graph_node node_handle) {
+void c_tracked_declaration::set_node_handle_with_latency(const s_node_handle_with_latency &node_handle_with_latency) {
 	// If we're storing node handles, we require that a graph trimmer is available
 	wl_assert(m_graph_trimmer);
 
-	m_graph_trimmer->add_temporary_reference(node_handle);
-	m_graph_trimmer->remove_temporary_reference(m_node_handle);
-	m_node_handle = node_handle;
+	// Invalid node handles should not have latency
+	wl_assert(node_handle_with_latency.node_handle.is_valid() || node_handle_with_latency.latency == 0);
+
+	m_graph_trimmer->add_temporary_reference(node_handle_with_latency.node_handle);
+	m_graph_trimmer->remove_temporary_reference(m_node_handle_with_latency.node_handle);
+	m_node_handle_with_latency = node_handle_with_latency;
+
+#if IS_TRUE(ASSERTS_ENABLED)
+	// Nonzero latency should never apply to a constant type
+	if (node_handle_with_latency.latency > 0) {
+		const c_ast_node_value_declaration *value_declaration = m_declaration->get_as<c_ast_node_value_declaration>();
+		wl_assert(value_declaration->get_data_type().get_data_mutability() != e_ast_data_mutability::k_constant);
+	}
+#endif // IS_TRUE(ASSERTS_ENABLED)
 }
 
 c_tracked_scope::c_tracked_scope(

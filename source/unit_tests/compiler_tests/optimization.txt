@@ -8,7 +8,7 @@ bool voice_main(out real mono) {
 
 real f() {
 	// Call a function that must run at runtime
-	real index = delay.delay(1, 1);
+	real index = delay.delay_samples(1, 1);
 
 	// Multiplication by 0 invokes an optimization rule
 	index *= 0;

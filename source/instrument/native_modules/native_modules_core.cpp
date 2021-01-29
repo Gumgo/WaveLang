@@ -3,6 +3,12 @@
 #include <algorithm>
 #include <cmath>
 
+static void validate_latency(const s_native_module_context &context, real32 latency) {
+	if (latency < 0.0f || std::isnan(latency) || std::isinf(latency) || static_cast<int32>(latency) < 0) {
+		context.diagnostic_interface->error("Invalid latency value '%f'", latency);
+	}
+}
+
 namespace core_native_modules {
 
 	void noop_real(
@@ -202,6 +208,84 @@ namespace core_native_modules {
 		}
 	}
 
+	void get_latency_real(
+		wl_argument(in ref real, value),
+		wl_argument(return out const real, latency)) {
+		wl_assert("Custom intrinsic implementation - this should not be called");
+	}
+
+	void get_latency_bool(
+		wl_argument(in ref bool, value),
+		wl_argument(return out const real, latency)) {
+		wl_assert("Custom intrinsic implementation - this should not be called");
+	}
+
+	void get_latency_string(
+		wl_argument(in ref const string, value),
+		wl_argument(return out const real, latency)) {
+		wl_assert("Custom intrinsic implementation - this should not be called");
+	}
+
+	void get_latency_real_array(
+		wl_argument(in ref real[], value),
+		wl_argument(return out const real, latency)) {
+		wl_assert("Custom intrinsic implementation - this should not be called");
+	}
+
+	void get_latency_bool_array(
+		wl_argument(in ref bool[], value),
+		wl_argument(return out const real, latency)) {
+		wl_assert("Custom intrinsic implementation - this should not be called");
+	}
+
+	void get_latency_string_array(
+		wl_argument(in ref const string[], value),
+		wl_argument(return out const real, latency)) {
+		wl_assert("Custom intrinsic implementation - this should not be called");
+	}
+
+	// This only relies on the "latency" argument so we can use this implementation for all type variants
+	int32 add_latency_get_latency(
+		wl_argument(in const real, latency)) {
+		return static_cast<int32>(latency);
+	}
+
+	void add_latency_real(
+		const s_native_module_context &context,
+		wl_argument(in ref real, value),
+		wl_argument(in const real, latency),
+		wl_argument(return out ref real, value_with_latency)) {
+		validate_latency(context, latency);
+		*value_with_latency = *value;
+	}
+
+	void add_latency_bool(
+		const s_native_module_context &context,
+		wl_argument(in ref bool, value),
+		wl_argument(in const real, latency),
+		wl_argument(return out ref bool, value_with_latency)) {
+		validate_latency(context, latency);
+		*value_with_latency = *value;
+	}
+
+	void add_latency_real_array(
+		const s_native_module_context &context,
+		wl_argument(in ref real[], value),
+		wl_argument(in const real, latency),
+		wl_argument(return out ref real[], value_with_latency)) {
+		validate_latency(context, latency);
+		*value_with_latency = *value;
+	}
+
+	void add_latency_bool_array(
+		const s_native_module_context &context,
+		wl_argument(in ref bool[], value),
+		wl_argument(in const real, latency),
+		wl_argument(return out ref bool[], value_with_latency)) {
+		validate_latency(context, latency);
+		*value_with_latency = *value;
+	}
+
 	void scrape_native_modules() {
 		static constexpr uint32 k_core_library_id = 0;
 		wl_native_module_library(k_core_library_id, "core", 0);
@@ -314,6 +398,46 @@ namespace core_native_modules {
 
 		wl_native_module(0xba5e8b11, "assert$message")
 			.set_compile_time_call<assert_message>();
+
+		wl_native_module(0xcec22cbd, "get_latency$real")
+			.set_intrinsic(e_native_module_intrinsic::k_get_latency_real)
+			.set_compile_time_call<get_latency_real>();
+
+		wl_native_module(0x3ce48cc7, "get_latency$bool")
+			.set_intrinsic(e_native_module_intrinsic::k_get_latency_bool)
+			.set_compile_time_call<get_latency_bool>();
+
+		wl_native_module(0xf38d3002, "get_latency$string")
+			.set_intrinsic(e_native_module_intrinsic::k_get_latency_string)
+			.set_compile_time_call<get_latency_string>();
+
+		wl_native_module(0x1f52f7ae, "get_latency$real_array")
+			.set_intrinsic(e_native_module_intrinsic::k_get_latency_real_array)
+			.set_compile_time_call<get_latency_real_array>();
+
+		wl_native_module(0xa78878fb, "get_latency$bool_array")
+			.set_intrinsic(e_native_module_intrinsic::k_get_latency_bool_array)
+			.set_compile_time_call<get_latency_bool_array>();
+
+		wl_native_module(0x4ba1fc23, "get_latency$string_array")
+			.set_intrinsic(e_native_module_intrinsic::k_get_latency_string_array)
+			.set_compile_time_call<get_latency_string_array>();
+
+		wl_native_module(0x2298346f, "add_latency$real")
+			.set_compile_time_call<add_latency_real>()
+			.set_get_latency<add_latency_get_latency>();
+
+		wl_native_module(0xcc6bc280, "add_latency$bool")
+			.set_compile_time_call<add_latency_bool>()
+			.set_get_latency<add_latency_get_latency>();
+
+		wl_native_module(0xfee9ad2e, "add_latency$real_array")
+			.set_compile_time_call<add_latency_real_array>()
+			.set_get_latency<add_latency_get_latency>();
+
+		wl_native_module(0x206f50c1, "add_latency$bool_array")
+			.set_compile_time_call<add_latency_bool_array>()
+			.set_get_latency<add_latency_get_latency>();
 
 		wl_optimization_rule(noop$real(x) -> x);
 		wl_optimization_rule(noop$bool(x) -> x);

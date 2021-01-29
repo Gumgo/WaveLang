@@ -4,7 +4,7 @@
 
 #include <cmath>
 
-void s_sampler_context::initialize_file(
+void s_sampler_shared_context::initialize_file(
 	c_event_interface *event_interface,
 	c_sample_library *sample_library,
 	const char *sample,
@@ -23,12 +23,11 @@ void s_sampler_context::initialize_file(
 		sample_handle = h_sample::invalid();
 		event_interface->submit(EVENT_ERROR << "Invalid sample channel '" << channel_real << "'");
 	}
+
 	channel = static_cast<uint32>(channel_real);
-	sample_index = 0.0;
-	reached_end = false;
 }
 
-void s_sampler_context::initialize_wavetable(
+void s_sampler_shared_context::initialize_wavetable(
 	c_event_interface *event_interface,
 	c_sample_library *sample_library,
 	c_real_constant_array harmonic_weights,
@@ -49,35 +48,37 @@ void s_sampler_context::initialize_wavetable(
 	}
 
 	channel = 0;
+}
+
+void s_sampler_voice_context::initialize(s_sampler_shared_context *sampler_shared_context) {
+	shared_context = shared_context;
+}
+
+void s_sampler_voice_context::activate() {
 	sample_index = 0.0;
 	reached_end = false;
 }
 
-void s_sampler_context::voice_initialize() {
-	sample_index = 0.0;
-	reached_end = false;
-}
-
-const c_sample *s_sampler_context::get_sample_or_fail_gracefully(
+const c_sample *s_sampler_voice_context::get_sample_or_fail_gracefully(
 	const c_sample_library *sample_library,
 	c_real_buffer *result,
 	c_event_interface *event_interface,
 	const char *sample_name) {
 	bool failed = false;
 
-	const c_sample *sample = sample_library->get_sample(sample_handle, channel);
+	const c_sample *sample = sample_library->get_sample(shared_context->sample_handle, shared_context->channel);
 
 	// If the sample failed, fill the buffer with 0
 	if (!sample) {
-		if (!sample_failure_reported) {
-			sample_failure_reported = true;
+		if (!shared_context->sample_failure_reported) {
+			shared_context->sample_failure_reported = true;
 
 			// Determine whether the same failed to load or an invalid channel was specified
-			if (!sample_library->get_sample(sample_handle, 0)) {
+			if (!sample_library->get_sample(shared_context->sample_handle, 0)) {
 				event_interface->submit(EVENT_ERROR << "Failed to load sample '" << c_dstr(sample_name) << "'");
 			} else {
 				event_interface->submit(
-					EVENT_ERROR << "Invalid sample channel '" << channel
+					EVENT_ERROR << "Invalid sample channel '" << shared_context->channel
 					<< "' for sample '" << c_dstr(sample_name) << "'");
 			}
 		}
@@ -89,7 +90,7 @@ const c_sample *s_sampler_context::get_sample_or_fail_gracefully(
 	return sample;
 }
 
-bool s_sampler_context::handle_reached_end(c_real_buffer *result) {
+bool s_sampler_voice_context::handle_reached_end(c_real_buffer *result) {
 	if (reached_end) {
 		result->assign_constant(0.0f);
 	}
@@ -97,7 +98,7 @@ bool s_sampler_context::handle_reached_end(c_real_buffer *result) {
 	return reached_end;
 }
 
-real64 s_sampler_context::increment_time(real64 length_samples, real32 advance) {
+real64 s_sampler_voice_context::increment_time(real64 length_samples, real32 advance) {
 	wl_assert(!reached_end);
 	real64 result = sample_index;
 	sample_index += advance;
@@ -108,7 +109,10 @@ real64 s_sampler_context::increment_time(real64 length_samples, real32 advance) 
 	return result;
 }
 
-real64 s_sampler_context::increment_time_looping(real64 loop_start_sample, real64 loop_end_sample, real32 advance) {
+real64 s_sampler_voice_context::increment_time_looping(
+	real64 loop_start_sample,
+	real64 loop_end_sample,
+	real32 advance) {
 	wl_assert(!reached_end);
 	real64 result = sample_index;
 	sample_index += advance;

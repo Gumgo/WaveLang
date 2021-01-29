@@ -165,6 +165,11 @@ const c_native_module_graph *c_instrument_variant::get_fx_native_module_graph() 
 	return m_fx_native_module_graph.get();
 }
 
+int32 c_instrument_variant::get_output_latency() const {
+	return (m_voice_native_module_graph ? m_voice_native_module_graph->get_output_latency() : 0)
+		+ (m_fx_native_module_graph ? m_fx_native_module_graph->get_output_latency() : 0);
+}
+
 e_instrument_result c_instrument::save(const char *fname) const {
 	wl_assert(validate());
 

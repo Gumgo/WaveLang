@@ -11,7 +11,7 @@ static void reverse_linked_list(t_type *&list_head);
 static const char *get_task_function_library_name(uint32 library_id);
 
 static bool map_task_function_arguments(
-	const std::unordered_map<std::string_view, s_native_module_uid> &native_module_identifier_map,
+	const std::unordered_map<std::string, s_native_module_uid> &native_module_identifier_map,
 	s_task_function_registration_entry *task_function_entry);
 
 void c_task_function_registration_utilities::validate_argument_names(
@@ -96,10 +96,11 @@ bool register_task_functions() {
 			return false; // Error already reported
 		}
 
-		std::unordered_map<std::string_view, s_native_module_uid> native_module_identifier_map =
-			c_native_module_registration_utilities::build_native_module_identifier_map(
-				library_entry->library.id,
-				library_entry->library.version);
+		std::unordered_map<std::string, s_native_module_uid> native_module_identifier_map;
+		c_native_module_registration_utilities::add_native_modules_to_identifier_map(
+			library_entry->library.id,
+			library_entry->library.version,
+			native_module_identifier_map);
 
 		s_task_function_registration_entry *task_function_entry = library_entry->task_functions;
 		while (task_function_entry) {
@@ -142,14 +143,16 @@ static const char *get_task_function_library_name(uint32 library_id) {
 }
 
 static bool map_task_function_arguments(
-	const std::unordered_map<std::string_view, s_native_module_uid> &native_module_identifier_map,
+	const std::unordered_map<std::string, s_native_module_uid> &native_module_identifier_map,
 	s_task_function_registration_entry *task_function_entry) {
+	const char *library = get_task_function_library_name(task_function_entry->task_function.uid.get_library_id());
+	std::string identifier = std::string(library) + '.' + task_function_entry->native_module_identifier;
 	auto iter = native_module_identifier_map.find(task_function_entry->native_module_identifier);
 	if (iter == native_module_identifier_map.end()) {
 		report_error(
 			"Failed to map arguments for task function 0x%04x (library '%s'): native module '%s' was not found",
 			task_function_entry->task_function.uid.get_task_function_id(),
-			get_task_function_library_name(task_function_entry->task_function.uid.get_library_id()),
+			library,
 			task_function_entry->native_module_identifier);
 		return false;
 	}
@@ -187,7 +190,7 @@ static bool map_task_function_arguments(
 						native_module_argument_name,
 						native_module.name.get_string(),
 						task_function_entry->task_function.uid.get_task_function_id(),
-						get_task_function_library_name(task_function_entry->task_function.uid.get_library_id()));
+						library);
 					return false;
 				}
 
@@ -201,7 +204,7 @@ static bool map_task_function_arguments(
 				"Argument '%s' of task function 0x%04x (library '%s') was not found in native module '%s'",
 				task_function_argument_name,
 				task_function_entry->task_function.uid.get_task_function_id(),
-				get_task_function_library_name(task_function_entry->task_function.uid.get_library_id()),
+				library,
 				native_module.name.get_string());
 			return false;
 		}

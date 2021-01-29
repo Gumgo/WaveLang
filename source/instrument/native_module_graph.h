@@ -135,6 +135,9 @@ public:
 		size_t output_index,
 		size_t edge) const;
 
+	void set_output_latency(int32 latency);
+	int32 get_output_latency() const;
+
 	void remove_unused_nodes_and_reassign_node_indices();
 
 	// If collapse_large_arrays is true, constant arrays with at least k_large_array_limit elements will be collapsed
@@ -260,5 +263,7 @@ private:
 	std::vector<uint32> m_free_node_indices;
 
 	c_string_table m_string_table;
+
+	int32 m_output_latency = 0;
 };
 

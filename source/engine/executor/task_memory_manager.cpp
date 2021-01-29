@@ -4,25 +4,27 @@
 
 #include "task_function/task_function.h"
 
-// Since we initially store offsets when computing memory requirements, this value cast to a pointer represents null
-static constexpr size_t k_invalid_memory_pointer = static_cast<size_t>(-1);
-
 static void assign_task_function_library_contexts(
 	const c_task_graph *task_graph,
 	c_wrapped_array<void *> task_function_library_contexts,
 	std::vector<void *> &assigned_contexts);
 
+static void reserve_allocation(s_size_alignment &total_size_alignment, const s_size_alignment &allocation);
+static c_wrapped_array<uint8> add_allocation(c_wrapped_array<uint8> &buffer, const s_size_alignment &allocation);
+
 void c_task_memory_manager::initialize(
 	c_wrapped_array<void *> task_function_library_contexts,
 	const c_runtime_instrument *runtime_instrument,
 	f_task_memory_query_callback task_memory_query_callback,
-	void *task_memory_query_callback_context) {
-
-	
+	void *task_memory_query_callback_context,
+	size_t thread_context_count) {
 	for (e_instrument_stage instrument_stage : iterate_enum<e_instrument_stage>()) {
 		m_task_library_contexts[enum_index(instrument_stage)].clear();
-		m_task_memory_pointers[enum_index(instrument_stage)].clear();
+		m_shared_allocations[enum_index(instrument_stage)].clear();
+		m_voice_allocations[enum_index(instrument_stage)].clear();
 	}
+
+	m_scratch_allocations.clear();
 
 	const c_task_graph *voice_task_graph = runtime_instrument->get_voice_task_graph();
 	const c_task_graph *fx_task_graph = runtime_instrument->get_fx_task_graph();
@@ -45,132 +47,145 @@ void c_task_memory_manager::initialize(
 		}
 	}
 
-	// Query task memory
-	s_static_array<size_t, enum_count<e_instrument_stage>()> required_task_memory_per_voice;
-	size_t total_required_memory = 0;
-	for (e_instrument_stage instrument_stage : iterate_enum<e_instrument_stage>()) {
-		if (task_graphs[enum_index(instrument_stage)]) {
-			size_t total_task_memory_pointers =
-				task_graphs[enum_index(instrument_stage)]->get_task_count() * max_voices[enum_index(instrument_stage)];
-			m_task_memory_pointers[enum_index(instrument_stage)].reserve(total_task_memory_pointers);
+	std::vector<s_task_memory_query_result> task_memory_query_results[enum_count<e_instrument_stage>()];
+	s_size_alignment total_size_alignment{ 0, k_lock_free_alignment };
+	s_size_alignment scratch_size_alignment{ 0, 1 };
 
-			required_task_memory_per_voice[enum_index(instrument_stage)] = calculate_required_memory_for_task_graph(
+	for (e_instrument_stage instrument_stage : iterate_enum<e_instrument_stage>()) {
+		size_t stage_index = enum_index(instrument_stage);
+
+		if (task_graphs[stage_index]) {
+			// Query memory for all tasks
+			task_memory_query_results[stage_index] = query_required_task_graph_memory(
 				instrument_stage,
-				task_graphs[enum_index(instrument_stage)],
+				task_graphs[stage_index],
 				task_memory_query_callback,
-				task_memory_query_callback_context,
-				m_task_memory_pointers[enum_index(instrument_stage)]);
-		} else {
-			required_task_memory_per_voice[enum_index(instrument_stage)] = 0;
-		}
+				task_memory_query_callback_context);
 
-		wl_assert(is_size_aligned(required_task_memory_per_voice[enum_index(instrument_stage)], k_lock_free_alignment));
-		total_required_memory +=
-			required_task_memory_per_voice[enum_index(instrument_stage)] * max_voices[enum_index(instrument_stage)];
+			// Calculate total memory required
+			const std::vector<s_task_memory_query_result> &results =
+				task_memory_query_results[stage_index];
+			for (const s_task_memory_query_result &task_memory_query_result : results) {
+				// Reserve shared memory
+				reserve_allocation(total_size_alignment, task_memory_query_result.shared_size_alignment);
+
+				// Reserve per-voice memory
+				for (uint32 voice = 0; voice < max_voices[stage_index]; voice++) {
+					reserve_allocation(total_size_alignment, task_memory_query_result.voice_size_alignment);
+				}
+
+				// Update scratch memory
+				scratch_size_alignment.size = std::max(
+					scratch_size_alignment.size,
+					task_memory_query_result.scratch_size_alignment.size);
+				scratch_size_alignment.alignment = std::max(
+					scratch_size_alignment.alignment,
+					task_memory_query_result.scratch_size_alignment.alignment);
+			}
+		}
 	}
 
-	// Allocate the memory so we can calculate the true pointers
+	// Add scratch memory once per thread
+	for (size_t thread = 0; thread < thread_context_count; thread++) {
+		reserve_allocation(total_size_alignment, scratch_size_alignment);
+	}
+
+	// Allocate memory
+	wl_assert(total_size_alignment.alignment <= k_lock_free_alignment); // $TODO remove this requirement
 	m_task_memory_allocator.free();
 
-	if (total_required_memory > 0) {
-		m_task_memory_allocator.allocate(total_required_memory);
-		void *task_memory_base = m_task_memory_allocator.get_array().get_pointer();
-		size_t task_memory_offset = 0;
+	if (total_size_alignment.size > 0) {
+		m_task_memory_allocator.allocate(total_size_alignment.size);
+		c_wrapped_array<uint8> buffer = m_task_memory_allocator.get_array();
+		zero_type(buffer.get_pointer(), buffer.get_count());
 
 		for (e_instrument_stage instrument_stage : iterate_enum<e_instrument_stage>()) {
-			resolve_task_memory_pointers(
-				static_cast<uint8 *>(task_memory_base) + task_memory_offset,
-				m_task_memory_pointers[enum_index(instrument_stage)],
-				max_voices[enum_index(instrument_stage)],
-				required_task_memory_per_voice[enum_index(instrument_stage)]);
+			size_t stage_index = enum_index(instrument_stage);
 
-			task_memory_offset +=
-				required_task_memory_per_voice[enum_index(instrument_stage)] * max_voices[enum_index(instrument_stage)];
-		}
+			if (task_graphs[stage_index]) {
+				uint32 task_count = task_graphs[stage_index]->get_task_count();
+				uint32 total_voice_count = task_graphs[stage_index]->get_task_count() * max_voices[stage_index];
+				m_shared_allocations[stage_index].resize(task_count);
+				m_voice_allocations[stage_index].resize(total_voice_count);
 
-		// Zero out all the memory - tasks can detect whether it is initialized by providing an "initialized" field
-		zero_type(m_task_memory_allocator.get_array().get_pointer(), m_task_memory_allocator.get_array().get_count());
-	} else {
-#if IS_TRUE(ASSERTS_ENABLED)
-		// All pointers should be invalid
-		for (e_instrument_stage instrument_stage : iterate_enum<e_instrument_stage>()) {
-			for (void *task_memory_pointer : m_task_memory_pointers[enum_index(instrument_stage)]) {
-				wl_assert(task_memory_pointer == reinterpret_cast<void *>(k_invalid_memory_pointer));
+				// Create sub-allocations
+				const std::vector<s_task_memory_query_result> &results =
+					task_memory_query_results[enum_index(instrument_stage)];
+				for (size_t task_index = 0; task_index < results.size(); task_index++) {
+					const s_task_memory_query_result &task_memory_query_result = results[task_index];
+
+					// Allocate shared memory
+					m_shared_allocations[stage_index][task_index] =
+						add_allocation(buffer, task_memory_query_result.shared_size_alignment);
+
+					// Allocate per-voice memory
+					for (uint32 voice = 0; voice < max_voices[stage_index]; voice++) {
+						m_voice_allocations[stage_index][task_count * voice + task_index] =
+							add_allocation(buffer, task_memory_query_result.voice_size_alignment);
+					}
+				}
 			}
-
-			// All point to null
-			size_t count =
-				m_task_memory_pointers[enum_index(instrument_stage)].size() * max_voices[enum_index(instrument_stage)];
-			m_task_memory_pointers[enum_index(instrument_stage)].clear();
-			m_task_memory_pointers[enum_index(instrument_stage)].resize(count, nullptr);
 		}
-#endif // IS_TRUE(ASSERTS_ENABLED)
+
+		// Allocate scratch memory
+		for (size_t thread = 0; thread < thread_context_count; thread++) {
+			add_allocation(buffer, scratch_size_alignment);
+		}
 	}
 }
 
-void c_task_memory_manager::shutdown() {
+void c_task_memory_manager::deinitialize() {
 	m_task_memory_allocator.free();
 
 	for (e_instrument_stage instrument_stage : iterate_enum<e_instrument_stage>()) {
-		m_task_memory_pointers[enum_index(instrument_stage)].clear();
+		m_shared_allocations[enum_index(instrument_stage)].clear();
+		m_voice_allocations[enum_index(instrument_stage)].clear();
+		m_scratch_allocations.clear();
 	}
 }
 
-size_t c_task_memory_manager::calculate_required_memory_for_task_graph(
+std::vector<s_task_memory_query_result> c_task_memory_manager::query_required_task_graph_memory(
 	e_instrument_stage instrument_stage,
 	const c_task_graph *task_graph,
 	f_task_memory_query_callback task_memory_query_callback,
-	void *task_memory_query_callback_context,
-	std::vector<void *> &task_memory_pointers) {
-	size_t required_memory_per_voice = 0;
-
+	void *task_memory_query_callback_context) {
+	std::vector<s_task_memory_query_result> memory_query_results;
 	for (uint32 task = 0; task < task_graph->get_task_count(); task++) {
-		size_t required_memory_for_task =
+		memory_query_results[task] =
 			task_memory_query_callback(task_memory_query_callback_context, instrument_stage, task_graph, task);
-
-		if (required_memory_for_task == 0) {
-			task_memory_pointers.push_back(reinterpret_cast<void *>(k_invalid_memory_pointer));
-		} else {
-			task_memory_pointers.push_back(reinterpret_cast<void *>(required_memory_per_voice));
-
-			required_memory_per_voice += required_memory_for_task;
-			required_memory_per_voice = align_size(required_memory_per_voice, k_lock_free_alignment);
-		}
 	}
 
-	return required_memory_per_voice;
+	return memory_query_results;
 }
 
-void c_task_memory_manager::resolve_task_memory_pointers(
-	void *task_memory_base,
-	std::vector<void *> &task_memory_pointers,
-	uint32 max_voices,
-	size_t required_memory_per_voice) {
-	size_t task_memory_base_uint = reinterpret_cast<size_t>(task_memory_base);
-
-	// Compute offset pointers
-	for (size_t index = 0; index < task_memory_pointers.size(); index++) {
-		size_t offset = reinterpret_cast<size_t>(task_memory_pointers[index]);
-		void *offset_pointer = (offset == k_invalid_memory_pointer)
-			? nullptr
-			: reinterpret_cast<void *>(task_memory_base_uint + offset);
-		task_memory_pointers[index] = offset_pointer;
+static void reserve_allocation(s_size_alignment &total_size_alignment, const s_size_alignment &allocation) {
+	if (allocation.size == 0) {
+		return;
 	}
 
-	// Now offset for each additional voice
-	size_t task_count = task_memory_pointers.size();
-	task_memory_pointers.resize(task_count * max_voices);
-	for (uint32 voice = 1; voice < max_voices; voice++) {
-		size_t voice_offset = voice * task_count;
-		size_t voice_memory_offset = voice * required_memory_per_voice;
-		for (size_t index = 0; index < task_count; index++) {
-			size_t base_pointer = reinterpret_cast<size_t>(task_memory_pointers[index]);
-			void *offset_pointer = (base_pointer == 0)
-				? nullptr
-				: reinterpret_cast<void *>(base_pointer + voice_memory_offset);
-			task_memory_pointers[voice_offset + index] = offset_pointer;
-		}
+	// Make sure all allocations are aligned on lock-free boundaries to prevent false sharing
+	size_t alignment = std::max(allocation.alignment, k_lock_free_alignment);
+	total_size_alignment.size = align_size(total_size_alignment.size, alignment);
+	total_size_alignment.size += allocation.size;
+	total_size_alignment.alignment = std::max(total_size_alignment.alignment, alignment);
+}
+
+static c_wrapped_array<uint8> add_allocation(c_wrapped_array<uint8> &buffer, const s_size_alignment &allocation) {
+	if (allocation.size == 0) {
+		return {};
 	}
+
+	// Make sure all allocations are aligned on lock-free boundaries to prevent false sharing
+	size_t alignment = std::max(allocation.alignment, k_lock_free_alignment);
+	uint8 *aligned_pointer = align_pointer(buffer.get_pointer(), alignment);
+	size_t alignment_offset = aligned_pointer - buffer.get_pointer();
+	wl_assert(alignment_offset <= buffer.get_count());
+
+	buffer = buffer.get_range(alignment_offset, buffer.get_count() - alignment_offset);
+	c_wrapped_array<uint8> result = buffer.get_range(0, allocation.size);
+	buffer = buffer.get_range(allocation.size, buffer.get_count() - allocation.size);
+
+	return result;
 }
 
 void assign_task_function_library_contexts(

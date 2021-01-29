@@ -145,6 +145,9 @@
     <ClInclude Include="utility\reporting.h">
       <Filter>utility</Filter>
     </ClInclude>
+    <ClInclude Include="utility\stack_allocator.h">
+      <Filter>utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="SConscript" />
@@ -204,6 +207,9 @@
     </ClCompile>
     <ClCompile Include="string.cpp" />
     <ClCompile Include="utility\reporting.cpp">
+      <Filter>utility</Filter>
+    </ClCompile>
+    <ClCompile Include="utility\stack_allocator.cpp">
       <Filter>utility</Filter>
     </ClCompile>
   </ItemGroup>

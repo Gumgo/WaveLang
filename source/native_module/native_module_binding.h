@@ -296,7 +296,7 @@ namespace native_module_binding {
 	using s_argument_index_map = s_static_array<size_t, k_max_native_module_arguments>;
 
 	// k_argument_index_map: not all task function calls necessarily use all arguments (e.g. the memory query). This
-	// structure maps the function call arguments to the arguments defined in s_task_function
+	// structure maps the function call arguments to the arguments defined in s_native_module
 	template<auto k_function, typename t_return_type, const s_argument_index_map *k_argument_index_map = nullptr>
 	t_return_type native_module_call_wrapper(const s_native_module_context &context) {
 		using t_function_pointer = std::remove_reference_t<decltype(k_function)> *;

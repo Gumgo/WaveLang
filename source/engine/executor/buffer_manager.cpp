@@ -340,14 +340,25 @@ void c_buffer_manager::initialize_buffers_for_graph_processing(e_instrument_stag
 	}
 }
 
-bool c_buffer_manager::process_remain_active_output(e_instrument_stage instrument_stage, uint32 voice_sample_offset) {
+bool c_buffer_manager::process_remain_active_output(
+	e_instrument_stage instrument_stage,
+	uint64 voice_sample_index,
+	uint32 voice_sample_offset) {
 	const c_task_graph *task_graph = m_runtime_instrument->get_task_graph(instrument_stage);
 	wl_assert(task_graph);
 
-	bool remain_active;
+	wl_assert(voice_sample_offset < m_chunk_size);
+	uint32 voice_chunk_size = m_chunk_size - voice_sample_offset;
+	uint32 output_latency = task_graph->get_output_latency();
+	uint64 remaining_output_latency = (output_latency > voice_sample_index) ? (output_latency - voice_sample_index) : 0;
 
+	bool remain_active;
 	const c_bool_buffer *remain_active_buffer = &task_graph->get_remain_active_output()->get_as<c_bool_buffer>();
-	if (remain_active_buffer->is_constant()) {
+	if (remaining_output_latency >= voice_chunk_size) {
+		// Latency takes up this entire chunk, so ignore all remain_active values (if they were automatically latency-
+		// compensated, the initial values will be false, which is likely not what the user intended)
+		remain_active = true;
+	} else if (remain_active_buffer->is_constant()) {
 		// The remain-active output is just a constant, so return it directly
 		remain_active = remain_active_buffer->get_constant();
 	} else {
@@ -356,9 +367,35 @@ bool c_buffer_manager::process_remain_active_output(e_instrument_stage instrumen
 		remain_active = false;
 
 		uint32 chunk_size = m_chunk_size;
+#if IS_TRUE(SIMD_256_ENABLED)
+		const int32xN bit_offsets(0, 32, 64, 96, 128, 160, 192, 224);
+#elif IS_TRUE(SIMD_128_ENABLED)
+		const int32xN bit_offsets(0, 32, 64, 96);
+#else // SIMD
+#error Single element SIMD type not supported // $TODO $SIMD int32x1 fallback
+#endif // SIMD
+
 		iterate_buffers<k_simd_size_bits, true>(m_chunk_size, static_cast<const c_bool_buffer *>(remain_active_buffer),
-			[&remain_active](size_t i, const int32xN &value) {
-				if (any_false(value == int32xN(0))) {
+			[&](size_t i, const int32xN &value) {
+				int32xN padded_value = value;
+				if (i < align_size_down(remaining_output_latency, int32xN::k_element_count)) {
+					// These values are fully covered up by latency
+					return true;
+				} else if (i < align_size(remaining_output_latency, int32xN::k_element_count)) {
+					// Some bits are covered up by latency and some aren't
+					int32 samples_with_latency = cast_integer_verify<int32>(remaining_output_latency - i);
+					int32xN elements_with_latency = int32xN(samples_with_latency) - bit_offsets;
+					int32xN clamped_elements_with_latency =
+						min(max(elements_with_latency, int32xN(0)), int32xN(32));
+					int32xN underflow_mask =
+						int32xN(0xffffffff).shift_right_unsigned(clamped_elements_with_latency);
+
+					// We now have zeros in the positions of all bits covered up by latency. Mask the value being tested
+					// so we don't get false positives.
+					padded_value = value & underflow_mask;
+				}
+
+				if (any_false(padded_value == int32xN(0))) {
 					// At least one bit was true
 					remain_active = true;
 				}
@@ -366,24 +403,35 @@ bool c_buffer_manager::process_remain_active_output(e_instrument_stage instrumen
 				// Stop iterating once we've discovered that we shouldn't remain active
 				return !remain_active;
 			},
-			[&remain_active, &chunk_size](size_t i, const int32xN &value) {
+			[&](size_t i, const int32xN &value) {
+				int32xN padded_value = value;
+				if (i < align_size_down(remaining_output_latency, int32xN::k_element_count)) {
+					// These values are fully covered up by latency
+					return;
+				} else if (i < align_size(remaining_output_latency, int32xN::k_element_count)) {
+					// Some bits are covered up by latency and some aren't
+					int32 samples_with_latency = cast_integer_verify<int32>(remaining_output_latency - i);
+					int32xN elements_with_latency = int32xN(samples_with_latency) - bit_offsets;
+					int32xN clamped_elements_with_latency =
+						min(max(elements_with_latency, int32xN(0)), int32xN(32));
+					int32xN underflow_mask =
+						int32xN(0xffffffff).shift_right_unsigned(clamped_elements_with_latency);
+
+					// We now have zeros in the positions of all bits covered up by latency. Mask the value being tested
+					// so we don't get false positives.
+					padded_value = value & underflow_mask;
+				}
+
 				// This only runs on the final iteration
-#if IS_TRUE(SIMD_256_ENABLED)
-				const int32xN bit_offsets(0, 32, 64, 96, 128, 160, 192, 224);
-#elif IS_TRUE(SIMD_128_ENABLED)
-				const int32xN bit_offsets(0, 32, 64, 96);
-#else // SIMD
-#error Single element SIMD type not supported // $TODO $SIMD int32x1 fallback
-#endif // SIMD
 				int32 samples_remaining = cast_integer_verify<int32>(chunk_size - i);
 				int32xN elements_remaining = int32xN(samples_remaining) - bit_offsets;
 				int32xN clamped_elements_remaining = min(max(elements_remaining, int32xN(0)), int32xN(32));
 				int32xN zeros_to_shift = int32xN(32) - clamped_elements_remaining;
 				int32xN overflow_mask = int32xN(0xffffffff) << zeros_to_shift;
 
-				// We now have zeros in the positions of all bits past the end of the buffer
-				// Mask the value being tested so we don't get false positives
-				int32xN padded_value = value & overflow_mask;
+				// We now have zeros in the positions of all bits past the end of the buffer. Mask the value being tested
+				// so we don't get false positives.
+				padded_value = padded_value & overflow_mask;
 				if (any_false(padded_value == int32xN(0))) {
 					// At least one bit was true, so stop scanning
 					remain_active = true;

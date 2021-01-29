@@ -103,8 +103,10 @@
     <Text Include="compiler_tests\global_scope_constant.txt" />
     <Text Include="compiler_tests\import.txt" />
     <Text Include="compiler_tests\instrument_global.txt" />
+    <Text Include="compiler_tests\latency.txt" />
     <Text Include="compiler_tests\lexer.txt" />
     <Text Include="compiler_tests\module.txt" />
+    <Text Include="compiler_tests\optimization.txt" />
     <Text Include="compiler_tests\parser.txt" />
     <Text Include="compiler_tests\types.txt" />
   </ItemGroup>

@@ -52,6 +52,8 @@ public:
 	c_native_module_graph *get_fx_native_module_graph();
 	const c_native_module_graph *get_fx_native_module_graph() const;
 
+	int32 get_output_latency() const;
+
 private:
 	s_instrument_globals m_instrument_globals;
 	std::unique_ptr<c_native_module_graph, s_delete_native_module_graph> m_voice_native_module_graph;

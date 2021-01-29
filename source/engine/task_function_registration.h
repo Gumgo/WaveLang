@@ -94,7 +94,10 @@ struct s_task_function_registration_entry {
 		s_task_function_registration_entry *k_entry,
 		task_function_binding::s_argument_index_map *k_memory_query_argument_indices,
 		task_function_binding::s_argument_index_map *k_initializer_argument_indices,
-		task_function_binding::s_argument_index_map *k_voice_initializer_argument_indices>
+		task_function_binding::s_argument_index_map *k_deinitializer_argument_indices,
+		task_function_binding::s_argument_index_map *k_voice_initializer_argument_indices,
+		task_function_binding::s_argument_index_map *k_voice_deinitializer_argument_indices,
+		task_function_binding::s_argument_index_map *k_voice_activator_argument_indices>
 	class c_builder {
 	public:
 		c_builder(uint32 id, const char *identifier) {
@@ -132,12 +135,12 @@ struct s_task_function_registration_entry {
 			k_entry->task_function.memory_query =
 				task_function_binding::task_function_call_wrapper<
 				k_function,
-				size_t,
+				s_task_memory_query_result,
 				k_memory_query_argument_indices>;
 
 			s_task_function task_function;
 			task_function_binding::s_task_function_argument_names argument_names;
-			task_function_binding::populate_task_function_arguments<decltype(k_function), size_t>(
+			task_function_binding::populate_task_function_arguments<decltype(k_function), s_task_memory_query_result>(
 				task_function,
 				argument_names);
 			c_task_function_registration_utilities::validate_argument_names(
@@ -146,13 +149,14 @@ struct s_task_function_registration_entry {
 			c_task_function_registration_utilities::map_arguments(
 				k_entry->task_function,
 				k_entry->argument_names,
-				task_function, argument_names,
+				task_function,
+				argument_names,
 				*k_memory_query_argument_indices);
 
 			return *this;
 		}
 
-		// Sets the function to initialize this task function
+		// Sets the function to initialize task memory shared across all voices
 		template<auto k_function>
 		c_builder &set_initializer() {
 			wl_assert(k_entry->arguments_initialized);
@@ -173,17 +177,47 @@ struct s_task_function_registration_entry {
 			c_task_function_registration_utilities::map_arguments(
 				k_entry->task_function,
 				k_entry->argument_names,
-				task_function, argument_names,
+				task_function,
+				argument_names,
 				*k_initializer_argument_indices);
 
 			return *this;
 		}
 
-		// Sets the function to initialize an individual voice for this task function
+		// Sets the function to deinitialize task memory shared across all voices
+		template<auto k_function>
+		c_builder &set_deinitializer() {
+			wl_assert(k_entry->arguments_initialized);
+			k_entry->task_function.deinitializer =
+				task_function_binding::task_function_call_wrapper<
+				k_function,
+				void,
+				k_deinitializer_argument_indices>;
+
+			s_task_function task_function;
+			task_function_binding::s_task_function_argument_names argument_names;
+			task_function_binding::populate_task_function_arguments<decltype(k_function), void>(
+				task_function,
+				argument_names);
+			c_task_function_registration_utilities::validate_argument_names(
+				task_function.argument_count,
+				argument_names);
+			c_task_function_registration_utilities::map_arguments(
+				k_entry->task_function,
+				k_entry->argument_names,
+				task_function,
+				argument_names,
+				*k_deinitializer_argument_indices);
+
+			return *this;
+		}
+
+		// Sets the function to initialize per-voice task memory
 		template<auto k_function>
 		c_builder &set_voice_initializer() {
 			wl_assert(k_entry->arguments_initialized);
-			k_entry->task_function.voice_initializer = task_function_binding::task_function_call_wrapper<
+			k_entry->task_function.voice_initializer =
+				task_function_binding::task_function_call_wrapper<
 				k_function,
 				void,
 				k_voice_initializer_argument_indices>;
@@ -199,8 +233,63 @@ struct s_task_function_registration_entry {
 			c_task_function_registration_utilities::map_arguments(
 				k_entry->task_function,
 				k_entry->argument_names,
-				task_function, argument_names,
+				task_function,
+				argument_names,
 				*k_voice_initializer_argument_indices);
+
+			return *this;
+		}
+
+		// Sets the function to deinitialize per-voice task memory
+		template<auto k_function>
+		c_builder &set_voice_deinitializer() {
+			wl_assert(k_entry->arguments_initialized);
+			k_entry->task_function.voice_deinitializer =
+				task_function_binding::task_function_call_wrapper<
+				k_function,
+				void,
+				k_voice_deinitializer_argument_indices>;
+
+			s_task_function task_function;
+			task_function_binding::s_task_function_argument_names argument_names;
+			task_function_binding::populate_task_function_arguments<decltype(k_function), void>(
+				task_function,
+				argument_names);
+			c_task_function_registration_utilities::validate_argument_names(
+				task_function.argument_count,
+				argument_names);
+			c_task_function_registration_utilities::map_arguments(
+				k_entry->task_function,
+				k_entry->argument_names,
+				task_function,
+				argument_names,
+				*k_voice_deinitializer_argument_indices);
+
+			return *this;
+		}
+
+		// Sets the function called when a voice is activated
+		template<auto k_function>
+		c_builder &set_voice_activator() {
+			wl_assert(k_entry->arguments_initialized);
+			k_entry->task_function.voice_activator = task_function_binding::task_function_call_wrapper<
+				k_function,
+				void,
+				k_voice_activator_argument_indices>;
+
+			s_task_function task_function;
+			task_function_binding::s_task_function_argument_names argument_names;
+			task_function_binding::populate_task_function_arguments<decltype(k_function), void>(
+				task_function,
+				argument_names);
+			c_task_function_registration_utilities::validate_argument_names(
+				task_function.argument_count,
+				argument_names);
+			c_task_function_registration_utilities::map_arguments(
+				k_entry->task_function,
+				k_entry->argument_names,
+				task_function, argument_names,
+				*k_voice_activator_argument_indices);
 
 			return *this;
 		}
@@ -231,20 +320,29 @@ struct s_task_function_registration_entry {
 
 // Declares a task function in the active registration library
 // "identifier" is the identifier of a native module in the same library which should map to this task function
-#define wl_task_function(id, identifier)														\
-	static s_task_function_registration_entry TF_REG_ENTRY;										\
-	static task_function_binding::s_argument_index_map TF_REG_ENTRY_INDICES(memory_query);		\
-	static task_function_binding::s_argument_index_map TF_REG_ENTRY_INDICES(initializer);		\
-	static task_function_binding::s_argument_index_map TF_REG_ENTRY_INDICES(voice_initializer);	\
-	static s_task_function_registration_entry::c_builder<										\
-		&TF_REG_ENTRY,																			\
-		&TF_REG_ENTRY_INDICES(memory_query),													\
-		&TF_REG_ENTRY_INDICES(initializer),														\
-		&TF_REG_ENTRY_INDICES(voice_initializer)> TF_REG_ENTRY_BUILDER =						\
-		s_task_function_registration_entry::c_builder<											\
-			&TF_REG_ENTRY,																		\
-			&TF_REG_ENTRY_INDICES(memory_query),												\
-			&TF_REG_ENTRY_INDICES(initializer),													\
-			&TF_REG_ENTRY_INDICES(voice_initializer)>(id, identifier)
+#define wl_task_function(id, identifier)															\
+	static s_task_function_registration_entry TF_REG_ENTRY;											\
+	static task_function_binding::s_argument_index_map TF_REG_ENTRY_INDICES(memory_query);			\
+	static task_function_binding::s_argument_index_map TF_REG_ENTRY_INDICES(initializer);			\
+	static task_function_binding::s_argument_index_map TF_REG_ENTRY_INDICES(deinitializer);			\
+	static task_function_binding::s_argument_index_map TF_REG_ENTRY_INDICES(voice_initializer);		\
+	static task_function_binding::s_argument_index_map TF_REG_ENTRY_INDICES(voice_deinitializer);	\
+	static task_function_binding::s_argument_index_map TF_REG_ENTRY_INDICES(voice_activator);		\
+	static s_task_function_registration_entry::c_builder<											\
+		&TF_REG_ENTRY,																				\
+		&TF_REG_ENTRY_INDICES(memory_query),														\
+		&TF_REG_ENTRY_INDICES(initializer),															\
+		&TF_REG_ENTRY_INDICES(deinitializer),														\
+		&TF_REG_ENTRY_INDICES(voice_initializer),													\
+		&TF_REG_ENTRY_INDICES(voice_deinitializer),													\
+		&TF_REG_ENTRY_INDICES(voice_activator)> TF_REG_ENTRY_BUILDER =								\
+		s_task_function_registration_entry::c_builder<												\
+			&TF_REG_ENTRY,																			\
+			&TF_REG_ENTRY_INDICES(memory_query),													\
+			&TF_REG_ENTRY_INDICES(initializer),														\
+			&TF_REG_ENTRY_INDICES(deinitializer),													\
+			&TF_REG_ENTRY_INDICES(voice_initializer),												\
+			&TF_REG_ENTRY_INDICES(voice_deinitializer),												\
+			&TF_REG_ENTRY_INDICES(voice_activator)>(id, identifier)
 
 bool register_task_functions();

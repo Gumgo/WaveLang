@@ -29,6 +29,11 @@ enum class e_tracked_event_state {
 	k_occurred
 };
 
+struct s_node_handle_with_latency {
+	h_graph_node node_handle;
+	int32 latency;
+};
+
 class c_tracked_declaration {
 public:
 	UNCOPYABLE_MOVABLE(c_tracked_declaration);
@@ -37,8 +42,8 @@ public:
 	c_ast_node_declaration *get_declaration() const;
 
 	// Keeps track of the last value assigned to this declaration when building an instrument variant
-	h_graph_node get_node_handle() const;
-	void set_node_handle(h_graph_node node_handle);
+	const s_node_handle_with_latency &get_node_handle_with_latency() const;
+	void set_node_handle_with_latency(const s_node_handle_with_latency &node_handle_with_latency);
 
 private:
 	friend class c_tracked_scope;
@@ -46,7 +51,7 @@ private:
 
 	c_ast_node_declaration *m_declaration = nullptr;
 	c_graph_trimmer *m_graph_trimmer = nullptr;
-	h_graph_node m_node_handle = h_graph_node::invalid();
+	s_node_handle_with_latency m_node_handle_with_latency = { h_graph_node::invalid(), 0 };
 
 	// Forms a linked list of scope items with the same name for quick lookups
 	c_tracked_declaration *m_next_name_lookup = nullptr;

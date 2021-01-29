@@ -13,9 +13,10 @@ public:
 		c_graph_trimmer &graph_trimmer,
 		const s_instrument_globals &instrument_globals,
 		h_graph_node native_module_call_node_handle,
+		int32 input_latency,
 		const s_compiler_source_location &call_source_location);
 
-	bool try_call(bool &did_call_out, std::vector<h_graph_node> *output_node_handles_out);
+	bool try_call(bool &did_call_out, int32 &output_latency_out, std::vector<h_graph_node> *output_node_handles_out);
 
 	void message(const char *format, ...) override;
 	void warning(const char *format, ...) override;
@@ -65,10 +66,14 @@ private:
 
 	const char *get_native_module_name() const;
 
+	// Native module intrinsic implementations:
+	void get_latency(const s_native_module_context &context) const;
+
 	c_compiler_context &m_context;
 	c_graph_trimmer &m_graph_trimmer;
 	const s_instrument_globals &m_instrument_globals;
 	h_graph_node m_native_module_call_node_handle;
+	int32 m_input_latency;
 	const s_compiler_source_location &m_call_source_location;
 
 	bool m_error_issued = false;
@@ -80,16 +85,19 @@ bool try_call_native_module(
 	c_graph_trimmer &graph_trimmer,
 	const s_instrument_globals &instrument_globals,
 	h_graph_node native_module_call_node_handle,
+	int32 input_latency,
 	const s_compiler_source_location &call_source_location,
 	bool &did_call_out,
+	int32 &output_latency_out,
 	std::vector<h_graph_node> *output_node_handles_out) {
 	c_native_module_caller native_module_caller(
 		context,
 		graph_trimmer,
 		instrument_globals,
 		native_module_call_node_handle,
+		input_latency,
 		call_source_location);
-	return native_module_caller.try_call(did_call_out, output_node_handles_out);
+	return native_module_caller.try_call(did_call_out, output_latency_out, output_node_handles_out);
 }
 
 template<typename t_argument_reference>
@@ -120,15 +128,21 @@ c_native_module_caller::c_native_module_caller(
 	c_graph_trimmer &graph_trimmer,
 	const s_instrument_globals &instrument_globals,
 	h_graph_node native_module_call_node_handle,
+	int32 input_latency,
 	const s_compiler_source_location &call_source_location)
 	: m_context(context)
 	, m_graph_trimmer(graph_trimmer)
 	, m_instrument_globals(instrument_globals)
 	, m_native_module_call_node_handle(native_module_call_node_handle)
+	, m_input_latency(input_latency)
 	, m_call_source_location(call_source_location) {}
 
-bool c_native_module_caller::try_call(bool &did_call_out, std::vector<h_graph_node> *output_node_handles_out) {
+bool c_native_module_caller::try_call(
+	bool &did_call_out,
+	int32 &output_latency_out,
+	std::vector<h_graph_node> *output_node_handles_out) {
 	did_call_out = false;
+	output_latency_out = m_input_latency;
 
 	c_native_module_graph &native_module_graph = m_graph_trimmer.get_native_module_graph();
 	h_native_module native_module_handle =
@@ -136,7 +150,10 @@ bool c_native_module_caller::try_call(bool &did_call_out, std::vector<h_graph_no
 	const s_native_module &native_module =
 		c_native_module_registry::get_native_module(native_module_handle);
 
-	if (!native_module.compile_time_call) {
+	// Early-out
+	if (!native_module.compile_time_call
+		&& !native_module.validate_arguments
+		&& !native_module.get_latency) {
 		return true;
 	}
 
@@ -357,9 +374,66 @@ bool c_native_module_caller::try_call(bool &did_call_out, std::vector<h_graph_no
 
 	native_module_context.arguments = c_native_module_compile_time_argument_list(compile_time_arguments);
 
-	native_module.compile_time_call(native_module_context);
-	if (m_error_issued) {
-		return false;
+	// Detect intrinsics with custom implementations
+	s_native_module_uid get_latency_real_uid = 
+		c_native_module_registry::get_native_module_intrinsic(e_native_module_intrinsic::k_get_latency_real);
+	s_native_module_uid get_latency_bool_uid =
+		c_native_module_registry::get_native_module_intrinsic(e_native_module_intrinsic::k_get_latency_bool);
+	s_native_module_uid get_latency_string_uid =
+		c_native_module_registry::get_native_module_intrinsic(e_native_module_intrinsic::k_get_latency_string);
+	s_native_module_uid get_latency_real_array_uid =
+		c_native_module_registry::get_native_module_intrinsic(e_native_module_intrinsic::k_get_latency_real_array);
+	s_native_module_uid get_latency_bool_array_uid =
+		c_native_module_registry::get_native_module_intrinsic(e_native_module_intrinsic::k_get_latency_bool_array);
+	s_native_module_uid get_latency_string_array_uid =
+		c_native_module_registry::get_native_module_intrinsic(e_native_module_intrinsic::k_get_latency_string_array);
+
+	// Issue the call
+	int32 latency = 0;
+	if (native_module.uid == get_latency_real_uid
+		|| native_module.uid == get_latency_bool_uid
+		|| native_module.uid == get_latency_string_uid
+		|| native_module.uid == get_latency_real_array_uid
+		|| native_module.uid == get_latency_bool_array_uid
+		|| native_module.uid == get_latency_string_array_uid) {
+		get_latency(native_module_context);
+		wl_assert(!m_error_issued);
+	} else {
+		if (native_module.validate_arguments) {
+			native_module.validate_arguments(native_module_context);
+			if (m_error_issued) {
+				return false;
+			}
+		}
+
+		if (native_module.get_latency) {
+			latency = native_module.get_latency(native_module_context);
+			if (m_error_issued) {
+				return false;
+			}
+
+			if (latency < 0) {
+				m_context.error(
+					e_compiler_error::k_invalid_native_module_implementation,
+					m_call_source_location,
+					"Native module '%s' produced negative latency; "
+					"the implementation of '%s' is broken, this is not a script error",
+					get_native_module_name(),
+					get_native_module_name());
+				return false;
+			}
+
+			output_latency_out = m_input_latency + latency;
+		}
+
+		if (!native_module.compile_time_call) {
+			return true;
+		}
+
+		native_module.compile_time_call(native_module_context);
+		if (m_error_issued) {
+			return false;
+		}
 	}
 
 	// Now that we've successfully issued the call, assign all the outputs and try trimming the native module call node.
@@ -760,4 +834,9 @@ const char *c_native_module_caller::get_native_module_name() const {
 	const s_native_module &native_module =
 		c_native_module_registry::get_native_module(native_module_handle);
 	return native_module.name.get_string();
+}
+
+void c_native_module_caller::get_latency(const s_native_module_context &context) const {
+	wl_assert(context.arguments.get_count() == 2);
+	context.arguments[1].get_real_out() = static_cast<real32>(m_input_latency);
 }

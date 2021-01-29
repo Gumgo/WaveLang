@@ -4,6 +4,7 @@
 #include "compiler/compiler_context.h"
 
 #include "instrument/instrument.h"
+#include "instrument/native_module_graph.h"
 #include "instrument/native_module_registration.h"
 #include "instrument/native_module_registry.h"
 
@@ -133,7 +134,8 @@ protected:
 		c_native_module_registry::shutdown();
 	}
 
-	void run_compiler_test(const char *test_definition_filename) {
+	template<typename t_additional_tests>
+	void run_compiler_test(const char *test_definition_filename, const t_additional_tests &additional_tests) {
 		std::ifstream file(test_definition_filename);
 		ASSERT_TRUE(file.is_open());
 
@@ -313,11 +315,21 @@ protected:
 					}
 				}
 
+				if (test_passed)
+				{
+					additional_tests(test_name, result.get());
+				}
 			}
 
 			// This outputs test name and error message only if we failed
 			EXPECT_TRUE(test_passed) << "(" << test_name << ", " << error_message << ")";
 		}
+	}
+
+	void run_compiler_test(const char *test_definition_filename) {
+		run_compiler_test(
+			test_definition_filename,
+			[](const std::string &test_name, const c_instrument *instrument) {});
 	}
 
 private:
@@ -350,6 +362,22 @@ TEST_F(CompilerTest, Import) {
 
 TEST_F(CompilerTest, InstrumentGlobal) {
 	run_compiler_test("compiler_tests/instrument_global.txt");
+}
+
+TEST_F(CompilerTest, Latency) {
+	run_compiler_test(
+		"compiler_tests/latency.txt",
+		[](const std::string &test_name, const c_instrument *instrument) {
+			if (test_name == "latency") {
+				ASSERT_EQ(
+					instrument->get_instrument_variant(0)->get_voice_native_module_graph()->get_output_latency(),
+					40);
+				ASSERT_EQ(
+					instrument->get_instrument_variant(0)->get_fx_native_module_graph()->get_output_latency(),
+					25);
+				ASSERT_EQ(instrument->get_instrument_variant(0)->get_output_latency(), 65);
+			}
+		});
 }
 
 TEST_F(CompilerTest, Lexer) {

@@ -97,6 +97,7 @@ private:
 
 	struct s_task_parameters {
 		c_executor *this_ptr;
+		e_instrument_stage instrument_stage;
 		uint32 voice_index;
 		uint32 task_index;
 		uint32 sample_rate;
@@ -119,23 +120,30 @@ private:
 	void initialize_profiler();
 
 	void shutdown_internal();
+	void deinitialize_tasks();
 
-	static size_t task_memory_query_wrapper(
+	static s_task_memory_query_result task_memory_query_wrapper(
 		void *context,
 		e_instrument_stage instrument_stage,
 		const c_task_graph *task_graph,
 		uint32 task_index);
-	size_t task_memory_query(
+	s_task_memory_query_result task_memory_query(
 		e_instrument_stage instrument_stage,
 		const c_task_graph *task_graph,
 		uint32 task_index);
 
 	void execute_internal(const s_executor_chunk_context &chunk_context);
-	void process_fx(const s_executor_chunk_context &chunk_context);
-	void process_voice(const s_executor_chunk_context &chunk_context, uint32 voice_index);
-	void process_voice_or_fx(const s_executor_chunk_context &chunk_context, uint32 voice_index);
+	void process_instrument_stage(
+		e_instrument_stage instrument_stage,
+		const s_executor_chunk_context &chunk_context,
+		uint32 voice_index);
 
-	void add_task(uint32 voice_index, uint32 task_index, uint32 sample_rate, uint32 frames);
+	void add_task(
+		e_instrument_stage instrument_stage,
+		uint32 voice_index,
+		uint32 task_index,
+		uint32 sample_rate,
+		uint32 frames);
 
 	static void process_task_wrapper(uint32 thread_index, const s_thread_parameter_block *params);
 	void process_task(uint32 thread_index, const s_task_parameters *params);
@@ -150,10 +158,6 @@ private:
 	// Contexts for each task function library
 	std::vector<void *> m_task_function_library_contexts;
 
-	// The active task graph (voice or FX)
-	const c_task_graph *m_active_task_graph;
-	e_instrument_stage m_active_instrument_stage;
-
 	// Settings for the executor
 	s_executor_settings m_settings;
 
@@ -163,7 +167,8 @@ private:
 	// Context for each thread
 	c_aligned_allocator<s_thread_context, CACHE_LINE_SIZE> m_thread_contexts;
 
-	alignas(CACHE_LINE_SIZE) s_task_function_context m_voice_initializer_task_function_context;
+	// Voice activators don't run in the thread pool so they get their own context
+	alignas(CACHE_LINE_SIZE) s_task_function_context m_voice_activator_task_function_context;
 
 	// Manages lifetime of various buffers used during processing
 	c_buffer_manager m_buffer_manager;

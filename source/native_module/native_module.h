@@ -79,6 +79,22 @@ struct s_native_module_uid {
 	}
 };
 
+// Certain native modules either have custom implementations or are used in a custom way in specific contexts
+enum class e_native_module_intrinsic {
+	k_invalid = -1,
+
+	k_get_latency_real,
+	k_get_latency_bool,
+	k_get_latency_string,
+	k_get_latency_real_array,
+	k_get_latency_bool_array,
+	k_get_latency_string_array,
+	k_delay_samples_real,
+	k_delay_samples_bool,
+
+	k_count
+};
+
 // Fixed list of operators which are to be associated with native modules
 enum class e_native_operator {
 	k_invalid = -1,
@@ -331,7 +347,14 @@ struct s_native_module_context {
 	c_native_module_compile_time_argument_list arguments;
 };
 
+// Function executed at compile-time to evaluate the native module
 using f_native_module_compile_time_call = void (*)(const s_native_module_context &context);
+
+// Function called to raise errors if any arguments to the native module are invalid
+using f_native_module_validate_arguments = void (*)(const s_native_module_context &context);
+
+// Returns the amount of latency caused by this native module
+using f_native_module_get_latency = int32 (*)(const s_native_module_context &context);
 
 struct s_native_module_argument {
 	c_static_string<k_max_native_module_argument_name_length> name =
@@ -359,9 +382,17 @@ struct s_native_module {
 	// List of arguments
 	s_static_array<s_native_module_argument, k_max_native_module_arguments> arguments{};
 
-	// Function to resolve the module at compile time if all inputs are constant, or null if this is not possible
+	// Function to resolve the module at compile time if all inputs are available, or null if this is not possible
 	f_native_module_compile_time_call compile_time_call = nullptr;
+
+	// Function to validate arguments
+	f_native_module_validate_arguments validate_arguments = nullptr;
+
+	// Returns the amount of latency caused by this native module
+	f_native_module_get_latency get_latency = nullptr;
 };
+
+bool is_native_module_argument_always_available_at_compile_time(const s_native_module_argument &native_module_argument);
 
 void get_native_module_compile_time_properties(
 	const s_native_module &native_module,

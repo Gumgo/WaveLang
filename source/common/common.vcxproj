@@ -65,6 +65,7 @@
     <ClInclude Include="utility\radix_sort.h" />
     <ClInclude Include="utility\reporting.h" />
     <ClInclude Include="utility\sha1\SHA1.h" />
+    <ClInclude Include="utility\stack_allocator.h" />
     <ClInclude Include="utility\stopwatch.h" />
     <ClInclude Include="utility\string_table.h" />
     <ClInclude Include="utility\template_string.h" />
@@ -94,6 +95,7 @@
     <ClCompile Include="utility\linked_array.cpp" />
     <ClCompile Include="utility\reporting.cpp" />
     <ClCompile Include="utility\sha1\SHA1.cpp" />
+    <ClCompile Include="utility\stack_allocator.cpp" />
     <ClCompile Include="utility\stopwatch.cpp" />
     <ClCompile Include="utility\string_table.cpp" />
   </ItemGroup>

@@ -19,9 +19,14 @@ public:
 		const char *identifier,
 		c_static_string<k_max_native_module_name_length> &name_out);
 
-	static std::unordered_map<std::string_view, s_native_module_uid> build_native_module_identifier_map(
+	static void add_native_modules_to_identifier_map(
 		uint32 library_id,
-		uint32 library_version);
+		uint32 library_version,
+		std::unordered_map<std::string, s_native_module_uid> &identifier_map);
+
+	static void validate_argument_compile_time_availability(
+		const s_native_module &native_module,
+		const native_module_binding::s_argument_index_map &argument_index_map);
 };
 
 struct s_native_module_registration_entry;
@@ -72,7 +77,8 @@ struct s_native_module_library_registration_entry {
 };
 
 struct s_native_module_registration_entry {
-	s_native_module native_module{};
+	s_native_module native_module {};
+	e_native_module_intrinsic intrinsic = e_native_module_intrinsic::k_invalid;
 	bool arguments_initialized = false;
 
 	// A native module identifier is used to distinguish between overloaded native modules. For example, if there are
@@ -81,9 +87,10 @@ struct s_native_module_registration_entry {
 
 	s_native_module_registration_entry *next = nullptr;
 
-	// $TODO $LATENCY add native_module_binding::s_argument_index_map k_get_latency_argument_index_map template param -
-	// see task_function_registration.h for details
-	template<s_native_module_registration_entry *k_entry>
+	template<
+		s_native_module_registration_entry *k_entry,
+		native_module_binding::s_argument_index_map *k_validate_arguments_argument_indices,
+		native_module_binding::s_argument_index_map *k_get_latency_argument_indices>
 	class c_builder {
 	public:
 		c_builder(uint32 id, const char *identifier) {
@@ -98,6 +105,13 @@ struct s_native_module_registration_entry {
 			k_entry->native_module.uid = s_native_module_uid::build(active_library->library.id, id);
 			c_native_module_registration_utilities::get_name_from_identifier(identifier, k_entry->native_module.name);
 			k_entry->identifier = identifier;
+		}
+
+		// Assocates an intrinsic with the native module
+		c_builder &set_intrinsic(e_native_module_intrinsic intrinsic) {
+			wl_assert(intrinsic != e_native_module_intrinsic::k_invalid);
+			k_entry->intrinsic = intrinsic;
+			return *this;
 		}
 
 		// Associates an operator with the native module
@@ -122,30 +136,58 @@ struct s_native_module_registration_entry {
 		template<typename t_function>
 		c_builder &set_call_signature() {
 			native_module_binding::populate_native_module_arguments<t_function, void>(k_entry->native_module);
+			c_native_module_registration_utilities::validate_argument_names(k_entry->native_module);
+			k_entry->arguments_initialized = true;
 			return *this;
 		}
 
-		// $TODO $LATENCY
+		// Sets the function to be called at compile-time to validate the arguments of this native module
+		template<auto k_function>
+		c_builder &set_validate_arguments() {
+			wl_assert(k_entry->arguments_initialized);
+			k_entry->native_module.validate_arguments =
+				native_module_binding::native_module_call_wrapper<
+					k_function,
+					void,
+					k_validate_arguments_argument_indices>;
+
+			s_native_module native_module;
+			native_module_binding::populate_native_module_arguments<decltype(k_function), void>(native_module);
+			c_native_module_registration_utilities::validate_argument_names(native_module);
+			c_native_module_registration_utilities::map_arguments(
+				k_entry->native_module,
+				native_module,
+				*k_validate_arguments_argument_indices);
+			c_native_module_registration_utilities::validate_argument_compile_time_availability(
+				k_entry->native_module,
+				*k_validate_arguments_argument_indices);
+
+			return *this;
+		}
+
 		// Sets the function to be called at compile-time to query the latency of this native module
-		//template<auto k_function>
-		//c_builder &set_get_latency() {
-		//	wl_assert(k_entry->arguments_initialized);
-		//	k_entry->get_latency =
-		//		native_module_binding::native_module_call_wrapper<
-		//			k_function,
-		//			uint32,
-		//			k_get_latency_argument_index_map>;
-		//
-		//	s_native_module native_module;
-		//	native_module_binding::populate_native_module_arguments<decltype(k_function), uint32>(native_module);
-		//	c_native_module_registration_utilities::validate_argument_names(native_module);
-		//	c_native_module_registration_utilities::map_arguments(
-		//		k_entry->native_module,
-		//		native_module,
-		//		*k_get_latency_argument_index_map);
-		//
-		//	return *this;
-		//}
+		template<auto k_function>
+		c_builder &set_get_latency() {
+			wl_assert(k_entry->arguments_initialized);
+			k_entry->native_module.get_latency =
+				native_module_binding::native_module_call_wrapper<
+					k_function,
+					int32,
+					k_get_latency_argument_indices>;
+
+			s_native_module native_module;
+			native_module_binding::populate_native_module_arguments<decltype(k_function), int32>(native_module);
+			c_native_module_registration_utilities::validate_argument_names(native_module);
+			c_native_module_registration_utilities::map_arguments(
+				k_entry->native_module,
+				native_module,
+				*k_get_latency_argument_indices);
+			c_native_module_registration_utilities::validate_argument_compile_time_availability(
+				k_entry->native_module,
+				*k_get_latency_argument_indices);
+		
+			return *this;
+		}
 	};
 };
 
@@ -172,6 +214,10 @@ struct s_native_module_optimization_rule_registration_entry {
 
 #define NM_REG_ENTRY TOKEN_CONCATENATE(s_registration_entry_, __LINE__)
 #define NM_REG_ENTRY_BUILDER TOKEN_CONCATENATE(s_registration_entry_builder_, __LINE__)
+#define NM_REG_ENTRY_INDICES(name)						\
+	TOKEN_CONCATENATE(s_registration_entry_builder_,	\
+		TOKEN_CONCATENATE(name,							\
+			TOKEN_CONCATENATE(_, __LINE__)))
 
 // Registration API:
 
@@ -191,10 +237,18 @@ struct s_native_module_optimization_rule_registration_entry {
 // Declares a native module in the active registration library
 // "identifier" is the script-visible name optionally followed by the character $ and an additional string used to
 // uniquely identify this native module from overloads. The identifier is used in optimization rule strings.
-#define wl_native_module(id, identifier)														\
-	static s_native_module_registration_entry NM_REG_ENTRY;										\
-	static s_native_module_registration_entry::c_builder<&NM_REG_ENTRY> NM_REG_ENTRY_BUILDER =	\
-		s_native_module_registration_entry::c_builder<&NM_REG_ENTRY>(id, identifier)
+#define wl_native_module(id, identifier)															\
+	static s_native_module_registration_entry NM_REG_ENTRY;											\
+	static native_module_binding::s_argument_index_map NM_REG_ENTRY_INDICES(validate_arguments);	\
+	static native_module_binding::s_argument_index_map NM_REG_ENTRY_INDICES(get_latency);			\
+	static s_native_module_registration_entry::c_builder<											\
+		&NM_REG_ENTRY,																				\
+		&NM_REG_ENTRY_INDICES(validate_arguments),													\
+		&NM_REG_ENTRY_INDICES(get_latency)> NM_REG_ENTRY_BUILDER =									\
+		s_native_module_registration_entry::c_builder<												\
+			&NM_REG_ENTRY,																			\
+			&NM_REG_ENTRY_INDICES(validate_arguments),												\
+			&NM_REG_ENTRY_INDICES(get_latency)>(id, identifier)
 
 // Declares an optimization rule in the active registration library
 // Defines an optimization rule using the following syntax:

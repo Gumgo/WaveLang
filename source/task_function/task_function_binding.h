@@ -131,10 +131,10 @@ namespace task_function_binding {
 	t_return_type task_function_call_wrapper(const s_task_function_context &context) {
 		using t_function_pointer = std::remove_reference_t<decltype(k_function)> *;
 		using t_info = s_task_function_type_info<t_function_pointer, t_return_type>;
-		static constexpr auto k_argument_indices =
-			build_argument_indices(std::make_index_sequence<t_info::k_script_argument_count>());
 
 		// Call the correct s_task_function_context function for each argument and store the results as a tuple
+		static constexpr auto k_argument_indices =
+			build_argument_indices(std::make_index_sequence<t_info::k_script_argument_count>());
 		auto script_argument_values = tuple_apply(
 			k_argument_indices,
 			[&](auto argument_index) {

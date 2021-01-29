@@ -193,6 +193,10 @@ c_wrapped_array<const c_task_graph::s_buffer_usage_info> c_task_graph::get_buffe
 	return c_wrapped_array<const c_task_graph::s_buffer_usage_info>(m_buffer_usage_info);
 }
 
+uint32 c_task_graph::get_output_latency() const {
+	return m_output_latency;
+}
+
 bool c_task_graph::build(const c_native_module_graph &native_module_graph) {
 	clear();
 
@@ -300,6 +304,8 @@ bool c_task_graph::build(const c_native_module_graph &native_module_graph) {
 	m_nodes_to_buffers.clear();
 	m_output_nodes_to_shared_input_nodes.clear();
 
+	m_output_latency = cast_integer_verify<uint32>(native_module_graph.get_output_latency());
+
 	if (!success) {
 		clear();
 	}
@@ -356,6 +362,7 @@ void c_task_graph::clear() {
 	m_buffer_usage_info.clear();
 	m_initial_tasks_start = k_invalid_list_index;
 	m_initial_tasks_count = 0;
+	m_output_latency = 0;
 }
 
 void c_task_graph::create_buffer_for_input(const c_native_module_graph &native_module_graph, h_graph_node node_handle) {

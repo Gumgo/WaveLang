@@ -45,6 +45,7 @@ struct s_native_module_registry_data {
 
 	std::vector<s_native_module_internal> native_modules;
 	std::unordered_map<s_native_module_uid, uint32> native_module_uids_to_indices;
+	s_static_array<s_native_module_uid, enum_count<e_native_module_intrinsic>()> native_module_intrinsics;
 	std::vector<s_native_module_optimization_rule> optimization_rules;
 };
 
@@ -69,6 +70,14 @@ void c_native_module_registry::shutdown() {
 	g_native_module_registry_data.native_modules.shrink_to_fit();
 	g_native_module_registry_data.native_module_uids_to_indices.clear();
 
+	for (s_native_module_uid &uid : g_native_module_registry_data.native_module_intrinsics)
+	{
+		uid = s_native_module_uid::invalid();
+	}
+
+	g_native_module_registry_data.optimization_rules.clear();
+	g_native_module_registry_data.optimization_rules.shrink_to_fit();
+
 	g_native_module_registry_state = e_native_module_registry_state::k_uninitialized;
 }
 
@@ -78,6 +87,13 @@ void c_native_module_registry::begin_registration() {
 }
 
 bool c_native_module_registry::end_registration() {
+	for (e_native_module_intrinsic intrinsic : iterate_enum<e_native_module_intrinsic>()) {
+		if (!g_native_module_registry_data.native_module_intrinsics[enum_index(intrinsic)].is_valid()) {
+			report_error("Native module intrinsic %d has not been registered", intrinsic);
+			return false;
+		}
+	}
+
 	wl_assert(g_native_module_registry_state == e_native_module_registry_state::k_registering);
 	g_native_module_registry_state = e_native_module_registry_state::k_finalized;
 	return true;
@@ -184,6 +200,47 @@ bool c_native_module_registry::register_native_module(const s_native_module &nat
 	g_native_module_registry_data.native_module_uids_to_indices.insert(std::make_pair(native_module.uid, index));
 
 	return true;
+}
+
+bool c_native_module_registry::register_native_module_intrinsic(
+	e_native_module_intrinsic intrinsic,
+	const s_native_module_uid &native_module_uid) {
+	wl_assert(g_native_module_registry_state == e_native_module_registry_state::k_registering);
+
+	auto native_module_iter = g_native_module_registry_data.native_module_uids_to_indices.find(native_module_uid);
+	if (native_module_iter == g_native_module_registry_data.native_module_uids_to_indices.end()) {
+		report_error(
+			"Failed to register native module 0x%04x as intrinsic %d "
+			"because the native module was not registered",
+			native_module_uid.get_module_id(),
+			intrinsic);
+		return false;
+	}
+
+	if (g_native_module_registry_data.native_module_intrinsics[enum_index(intrinsic)].is_valid()) {
+		const s_native_module &native_module =
+			g_native_module_registry_data.native_modules[native_module_iter->second].native_module;
+		auto existing_iter = g_native_module_registry_data.native_module_uids_to_indices.find(
+			g_native_module_registry_data.native_module_intrinsics[enum_index(intrinsic)]);
+		const s_native_module &existing_native_module =
+			g_native_module_registry_data.native_modules[existing_iter->second].native_module;
+		report_error(
+			"Failed to register native module 0x%04x ('%s') as intrinsic %d "
+			"because native module 0x%04x ('%s') was already registered as that intrinsic",
+			native_module_uid.get_module_id(),
+			native_module.name.get_string(),
+			intrinsic,
+			existing_native_module.uid.get_module_id(),
+			existing_native_module.name.get_string());
+		return false;
+	}
+
+	g_native_module_registry_data.native_module_intrinsics[enum_index(intrinsic)] = native_module_uid;
+	return true;
+}
+
+s_native_module_uid c_native_module_registry::get_native_module_intrinsic(e_native_module_intrinsic intrinsic) {
+	return g_native_module_registry_data.native_module_intrinsics[enum_index(intrinsic)];
 }
 
 e_native_operator c_native_module_registry::get_native_module_operator(s_native_module_uid native_module_uid) {

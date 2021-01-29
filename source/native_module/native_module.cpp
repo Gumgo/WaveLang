@@ -26,6 +26,12 @@ const char *get_native_operator_native_module_name(e_native_operator native_oper
 	return k_native_operator_names[enum_index(native_operator)];
 }
 
+bool is_native_module_argument_always_available_at_compile_time(
+	const s_native_module_argument &native_module_argument) {
+	return (native_module_argument.type.get_data_mutability() == e_native_module_data_mutability::k_constant)
+		|| (native_module_argument.data_access == e_native_module_data_access::k_reference);
+}
+
 void get_native_module_compile_time_properties(
 	const s_native_module &native_module,
 	bool &always_runs_at_compile_time_out,
@@ -59,6 +65,7 @@ void get_native_module_compile_time_properties(
 	always_runs_at_compile_time_if_dependent_constants_are_constant_out &= (native_module.compile_time_call != nullptr);
 }
 
+// nocheckin We should validate that validate_arguments and get_latency can run at compile time (i.e. all arguments are either const or ref)
 bool validate_native_module(const s_native_module &native_module) {
 	if (native_module.argument_count > k_max_native_module_arguments) {
 		return false;

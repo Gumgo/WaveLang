@@ -33,6 +33,13 @@ public:
 	// Registers a native module - returns whether successful
 	static bool register_native_module(const s_native_module &native_module);
 
+	// Associates a registered native module with an intrinsic
+	static bool register_native_module_intrinsic(
+		e_native_module_intrinsic intrinsic,
+		const s_native_module_uid &native_module_uid);
+
+	static s_native_module_uid get_native_module_intrinsic(e_native_module_intrinsic intrinsic);
+
 	// If a native module is registered using a native operator name, it is automatically associated with that operator
 	static e_native_operator get_native_module_operator(s_native_module_uid native_module_uid);
 

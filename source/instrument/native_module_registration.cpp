@@ -10,7 +10,8 @@ class c_optimization_rule_generator {
 public:
 	c_optimization_rule_generator(
 		const char *rule_string,
-		const std::unordered_map<std::string_view, s_native_module_uid> &native_module_identifier_map);
+		const char *library,
+		const std::unordered_map<std::string, s_native_module_uid> &native_module_identifier_map);
 	bool build();
 	const s_native_module_optimization_rule &get_rule() const;
 
@@ -74,8 +75,9 @@ private:
 	size_t m_target_symbol_count = 0;
 
 	const char *m_rule_string = nullptr;
+	const char *m_library = nullptr;
 	size_t m_rule_string_offset = 0;
-	const std::unordered_map<std::string_view, s_native_module_uid> &m_native_module_identifier_map;
+	const std::unordered_map<std::string, s_native_module_uid> &m_native_module_identifier_map;
 
 	std::unordered_map<std::string_view, s_identifier> m_identifier_map;
 	uint32 m_constant_count = 0;
@@ -162,10 +164,10 @@ void s_native_module_library_registration_entry::end_active_library_native_modul
 	active_library() = nullptr;
 }
 
-std::unordered_map<std::string_view, s_native_module_uid>
-c_native_module_registration_utilities::build_native_module_identifier_map(uint32 library_id, uint32 library_version) {
-	std::unordered_map<std::string_view, s_native_module_uid> map;
-
+void c_native_module_registration_utilities::add_native_modules_to_identifier_map(
+	uint32 library_id,
+	uint32 library_version,
+	std::unordered_map<std::string, s_native_module_uid> &identifier_map) {
 	s_native_module_library_registration_entry *library_entry =
 		s_native_module_library_registration_entry::registration_list();
 	while (library_entry) {
@@ -174,7 +176,9 @@ c_native_module_registration_utilities::build_native_module_identifier_map(uint3
 
 			s_native_module_registration_entry *native_module_entry = library_entry->native_modules;
 			while (native_module_entry) {
-				map.insert(std::make_pair(native_module_entry->identifier, native_module_entry->native_module.uid));
+				std::string identifier =
+					str_format("%s.%s", library_entry->library.name.get_string(), native_module_entry->identifier);
+				identifier_map.insert(std::make_pair(identifier, native_module_entry->native_module.uid));
 				native_module_entry = native_module_entry->next;
 			}
 
@@ -183,8 +187,19 @@ c_native_module_registration_utilities::build_native_module_identifier_map(uint3
 
 		library_entry = library_entry->next;
 	}
+}
 
-	return map;
+void c_native_module_registration_utilities::validate_argument_compile_time_availability(
+	const s_native_module &native_module,
+	const native_module_binding::s_argument_index_map &argument_index_map) {
+#if IS_TRUE(ASSERTS_ENABLED)
+	for (size_t argument_index : argument_index_map) {
+		if (argument_index != k_invalid_native_module_argument_index) {
+			wl_assert(
+				is_native_module_argument_always_available_at_compile_time(native_module.arguments[argument_index]));
+		}
+	}
+#endif // IS_TRUE(ASSERTS_ENABLED)
 }
 
 bool register_native_modules() {
@@ -197,6 +212,9 @@ bool register_native_modules() {
 	// The registration lists get built in reverse order, so flip them
 	reverse_linked_list(s_native_module_library_registration_entry::registration_list());
 
+	std::unordered_map<std::string, s_native_module_uid> native_module_identifier_map;
+
+	// Register the libraries and native modules first
 	s_native_module_library_registration_entry *library_entry =
 		s_native_module_library_registration_entry::registration_list();
 	while (library_entry) {
@@ -213,19 +231,33 @@ bool register_native_modules() {
 				return false; // Error already reported
 			}
 
+			if (native_module_entry->intrinsic != e_native_module_intrinsic::k_invalid
+				&& !c_native_module_registry::register_native_module_intrinsic(
+					native_module_entry->intrinsic,
+					native_module_entry->native_module.uid)) {
+				return false; // Error already reported
+			}
+
 			native_module_entry = native_module_entry->next;
 		}
 
-		std::unordered_map<std::string_view, s_native_module_uid> native_module_identifier_map =
-			c_native_module_registration_utilities::build_native_module_identifier_map(
-				library_entry->library.id,
-				library_entry->library.version);
+		c_native_module_registration_utilities::add_native_modules_to_identifier_map(
+			library_entry->library.id,
+			library_entry->library.version,
+			native_module_identifier_map);
 
+		library_entry = library_entry->next;
+	}
+
+	// Register optimization rules last so they can access any registered native module
+	library_entry = s_native_module_library_registration_entry::registration_list();
+	while (library_entry) {
 		s_native_module_optimization_rule_registration_entry *optimization_rule_entry =
 			library_entry->optimization_rules;
 		while (optimization_rule_entry) {
 			c_optimization_rule_generator generator(
 				optimization_rule_entry->optimization_rule_string,
+				library_entry->library.name.get_string(),
 				native_module_identifier_map);
 			if (!generator.build()) {
 				report_error(
@@ -265,9 +297,11 @@ static void reverse_linked_list(t_type *&list_head) {
 
 c_optimization_rule_generator::c_optimization_rule_generator(
 	const char *rule_string,
-	const std::unordered_map<std::string_view, s_native_module_uid> &native_module_identifier_map)
+	const char *library,
+	const std::unordered_map<std::string, s_native_module_uid> &native_module_identifier_map)
 	: m_native_module_identifier_map(native_module_identifier_map) {
 	m_rule_string = rule_string;
+	m_library = library;
 
 	for (s_native_module_optimization_symbol &symbol : m_rule.source.symbols) {
 		symbol = s_native_module_optimization_symbol::invalid();
@@ -351,7 +385,13 @@ bool c_optimization_rule_generator::build() {
 					return false;
 				}
 
-				auto iter = m_native_module_identifier_map.find(token.source);
+				std::string identifier(token.source);
+				if (identifier.find('.') == std::string::npos) {
+					// Add the library identifier if it was left off
+					identifier = std::string(m_library) + '.' + identifier;
+				}
+
+				auto iter = m_native_module_identifier_map.find(identifier);
 				if (iter == m_native_module_identifier_map.end()) {
 					return false;
 				}
@@ -482,6 +522,7 @@ c_optimization_rule_generator::s_token c_optimization_rule_generator::get_next_t
 				|| (c >= 'a' && c <= 'z')
 				|| (c >= '0' && c <= '9')
 				|| (c == '_')
+				|| (c == '.') // Used to identify the library
 				|| (c == '$')) { // $ is a valid character for native module identifiers
 				// Valid character
 				m_rule_string_offset++;

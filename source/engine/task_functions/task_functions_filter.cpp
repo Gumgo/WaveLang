@@ -2,20 +2,22 @@
 #include "engine/buffer_operations/buffer_iterator.h"
 #include "engine/task_function_registration.h"
 
+struct s_biquad_context {
+	// See http://www.musicdsp.org/files/Audio-EQ-Cookbook.txt for algorithm details
+	real32 x1, x2;
+	real32 y1, y2;
+};
+
 namespace filter_task_functions {
 
-	struct s_biquad_context {
-		// See http://www.musicdsp.org/files/Audio-EQ-Cookbook.txt for algorithm details
-		real32 x1, x2;
-		real32 y1, y2;
-	};
-
-	size_t biquad_memory_query(const s_task_function_context &context) {
-		return sizeof(s_biquad_context);
+	s_task_memory_query_result biquad_memory_query(const s_task_function_context &context) {
+		s_task_memory_query_result result;
+		result.voice_size_alignment = sizealignof(s_biquad_context);
+		return result;
 	}
 
-	void biquad_voice_initializer(const s_task_function_context &context) {
-		zero_type(static_cast<s_biquad_context *>(context.task_memory));
+	void biquad_voice_activator(const s_task_function_context &context) {
+		zero_type(reinterpret_cast<s_biquad_context *>(context.voice_memory.get_pointer()));
 	}
 
 	void biquad(
@@ -27,7 +29,7 @@ namespace filter_task_functions {
 		wl_task_argument(const c_real_buffer *, b2),
 		wl_task_argument(const c_real_buffer *, signal),
 		wl_task_argument(c_real_buffer *, result)) {
-		s_biquad_context *biquad_context = static_cast<s_biquad_context *>(context.task_memory);
+		s_biquad_context *biquad_context = reinterpret_cast<s_biquad_context *>(context.voice_memory.get_pointer());
 		real32 x1 = biquad_context->x1;
 		real32 x2 = biquad_context->x2;
 		real32 y1 = biquad_context->y1;
@@ -64,7 +66,7 @@ namespace filter_task_functions {
 		wl_task_function(0xe6fc480d, "biquad")
 			.set_function<biquad>()
 			.set_memory_query<biquad_memory_query>()
-			.set_voice_initializer<biquad_voice_initializer>();
+			.set_voice_activator<biquad_voice_activator>();
 
 		wl_end_active_library_task_function_registration();
 	}

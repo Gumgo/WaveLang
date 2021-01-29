@@ -26,7 +26,10 @@ public:
 	void free_voice_accumulation_buffers();
 	void store_fx_output();
 	void initialize_buffers_for_graph_processing(e_instrument_stage instrument_stage);
-	bool process_remain_active_output(e_instrument_stage instrument_stage, uint32 voice_sample_offset);
+	bool process_remain_active_output(
+		e_instrument_stage instrument_stage,
+		uint64 voice_sample_index,
+		uint32 voice_sample_offset);
 	void mix_voice_accumulation_buffers_to_channel_buffers();
 	void mix_fx_output_to_channel_buffers();
 	void mix_channel_buffers_to_output_buffer(

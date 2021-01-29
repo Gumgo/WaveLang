@@ -25,14 +25,15 @@ c_ast_node_module_declaration *c_ast_node_module_call::get_resolved_module_decla
 
 void c_ast_node_module_call::set_resolved_module_declaration(
 	c_ast_node_module_declaration *resolved_module_declaration,
-	e_ast_data_mutability dependent_constant_output_mutability) {
+	e_ast_data_mutability dependent_constant_data_mutability) {
 	m_resolved_module_declaration = resolved_module_declaration;
+	m_dependent_constant_data_mutability = dependent_constant_data_mutability;
 
 	c_ast_qualified_data_type return_type = resolved_module_declaration->get_return_type();
 	if (return_type.get_data_mutability() == e_ast_data_mutability::k_dependent_constant) {
 		return_type = c_ast_qualified_data_type(
 			return_type.get_data_type(),
-			dependent_constant_output_mutability);
+			dependent_constant_data_mutability);
 	}
 
 	set_data_type(return_type);
@@ -60,6 +61,18 @@ c_ast_node_expression *c_ast_node_module_call::get_resolved_module_argument_expr
 	return argument->get_initialization_expression();
 }
 
+c_ast_qualified_data_type c_ast_node_module_call::get_resolved_module_argument_data_type(size_t argument_index) const {
+	wl_assert(m_resolved_module_declaration);
+
+	c_ast_node_module_declaration_argument *argument = m_resolved_module_declaration->get_argument(argument_index);
+	c_ast_qualified_data_type data_type = argument->get_data_type();
+	if (data_type.get_data_mutability() == e_ast_data_mutability::k_dependent_constant) {
+		data_type = c_ast_qualified_data_type(data_type.get_data_type(), m_dependent_constant_data_mutability);
+	}
+
+	return data_type;
+}
+
 c_ast_node *c_ast_node_module_call::copy_internal() const {
 	c_ast_node_module_call *node_copy = new c_ast_node_module_call();
 	node_copy->set_data_type(get_data_type());
@@ -68,6 +81,7 @@ c_ast_node *c_ast_node_module_call::copy_internal() const {
 		node_copy->m_arguments.emplace_back(argument->copy());
 	}
 	node_copy->m_resolved_module_declaration = m_resolved_module_declaration;
+	node_copy->m_dependent_constant_data_mutability = m_dependent_constant_data_mutability;
 
 	return node_copy;
 }

@@ -6,10 +6,6 @@
 
 static uint32 compute_sample_offset(real64 timestamp_sec, uint32 sample_rate, uint32 frame_count);
 
-c_voice_allocator::c_voice_allocator() {}
-
-c_voice_allocator::~c_voice_allocator() {}
-
 void c_voice_allocator::initialize(uint32 max_voices, bool has_fx, bool activate_fx_immediately) {
 	wl_assert(max_voices > 0);
 	m_voices.resize(max_voices);
@@ -18,14 +14,14 @@ void c_voice_allocator::initialize(uint32 max_voices, bool has_fx, bool activate
 	// All voices are initially inactive and the voice list is put in its initial state
 	m_voice_list_nodes.initialize_list(m_voice_list);
 	for (size_t index = 0; index < max_voices; index++) {
-		zero_type(&m_voices[index]);
+		m_voices[index] = {};
 
 		size_t list_node_index = m_voice_list_nodes.allocate_node();
 		m_voice_list_nodes.push_node_onto_list_back(m_voice_list, list_node_index);
 	}
 
 	m_has_fx = has_fx;
-	zero_type(&m_fx_voice);
+	m_fx_voice = {};
 	m_fx_needs_activation = activate_fx_immediately;
 }
 
@@ -35,13 +31,14 @@ void c_voice_allocator::shutdown() {
 
 void c_voice_allocator::allocate_voices_for_chunk(
 	c_wrapped_array<const s_timestamped_controller_event> controller_events,
-	uint32 sample_rate, uint32 chunk_sample_count) {
+	uint32 sample_rate,
+	uint32 chunk_sample_count) {
 	wl_assert(!m_voices.empty());
 
 	bool activate_fx = m_has_fx && m_fx_needs_activation;
 	m_fx_needs_activation = false;
 
-	// Any active voice with an offset the previous chunk should no longer have an offset
+	// Any active voice with an offset from the previous chunk should no longer have an offset
 	for (size_t index = m_voice_list.back;
 		index != c_linked_array::k_invalid_linked_array_index;
 		index = m_voice_list_nodes.get_prev_node(index)) {
@@ -52,6 +49,7 @@ void c_voice_allocator::allocate_voices_for_chunk(
 
 		wl_assert(voice.chunk_offset_samples == 0 || voice.activated_this_chunk);
 		voice.activated_this_chunk = false;
+		voice.sample_index = 0;
 		voice.chunk_offset_samples = 0;
 		voice.note_release_sample = -1;
 	}
@@ -104,6 +102,7 @@ void c_voice_allocator::allocate_voices_for_chunk(
 			voice.activated_this_chunk = true;
 			voice.released = false;
 
+			voice.sample_index = 0;
 			voice.chunk_offset_samples =
 				compute_sample_offset(controller_event.timestamp_sec, sample_rate, chunk_sample_count);
 			voice.note_id = note_on_data->note_id;
@@ -140,6 +139,7 @@ void c_voice_allocator::allocate_voices_for_chunk(
 		m_fx_voice.active = true;
 		m_fx_voice.activated_this_chunk = true;
 		m_fx_voice.released = false;
+		m_fx_voice.sample_index = 0;
 		m_fx_voice.chunk_offset_samples = 0;
 		m_fx_voice.note_id = 0;
 		m_fx_voice.note_velocity = 1.0f;
@@ -170,8 +170,16 @@ const c_voice_allocator::s_voice &c_voice_allocator::get_voice(uint32 voice_inde
 	return m_voices[voice_index];
 }
 
+void c_voice_allocator::voice_samples_processed(uint32 voice_index, uint32 sample_count) {
+	m_voices[voice_index].sample_index += sample_count;
+}
+
 const c_voice_allocator::s_voice &c_voice_allocator::get_fx_voice() const {
 	return m_fx_voice;
+}
+
+void c_voice_allocator::fx_samples_processed(uint32 sample_count) {
+	m_fx_voice.sample_index += sample_count;
 }
 
 void c_voice_allocator::disable_fx() {
@@ -182,6 +190,6 @@ void c_voice_allocator::disable_fx() {
 static uint32 compute_sample_offset(real64 timestamp_sec, uint32 sample_rate, uint32 frame_count) {
 	// offset_samples = timestamp_sec * sample_rate
 	int64 offset_samples = static_cast<int64>(timestamp_sec * static_cast<real64>(sample_rate));
-	offset_samples = std::min(std::max(offset_samples, 0ll), static_cast<int64>(frame_count - 1));
+	offset_samples = std::clamp(offset_samples, 0ll, static_cast<int64>(frame_count - 1));
 	return static_cast<uint32>(offset_samples);
 }

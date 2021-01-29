@@ -122,6 +122,9 @@ e_instrument_result c_native_module_graph::save(std::ofstream &out) const {
 
 	c_binary_file_writer writer(out);
 
+	// Write the output latency
+	writer.write(m_output_latency);
+
 	// Write the node count, and also count up all edges
 	uint32 node_count = cast_integer_verify<uint32>(m_nodes.size());
 	uint32 edge_count = 0;
@@ -241,6 +244,11 @@ e_instrument_result c_native_module_graph::load(std::ifstream &in) {
 	wl_assert(m_string_table.get_table_size() == 0);
 
 	c_binary_file_reader reader(in);
+
+	if (!reader.read(m_output_latency)
+		|| m_output_latency < 0) {
+		return invalid_graph_or_read_failure(in);
+	}
 
 	// If we get a EOF error, it means that we successfully read but the file was shorter than expected, indicating that
 	// we should return an invalid format error.
@@ -1464,6 +1472,15 @@ h_graph_node c_native_module_graph::get_node_indexed_output_outgoing_edge_handle
 	size_t edge) const {
 	wl_assert(does_node_use_indexed_outputs(node_handle));
 	return get_node_outgoing_edge_handle(get_node_outgoing_edge_handle(node_handle, output_index), edge);
+}
+
+void c_native_module_graph::set_output_latency(int32 output_latency) {
+	wl_assert(output_latency >= 0);
+	m_output_latency = output_latency;
+}
+
+int32 c_native_module_graph::get_output_latency() const {
+	return m_output_latency;
 }
 
 void c_native_module_graph::remove_unused_nodes_and_reassign_node_indices() {

@@ -217,24 +217,43 @@ struct s_task_function_context {
 	uint32 sample_rate;
 	uint32 buffer_size;
 	void *library_context;
-	void *task_memory;
+	c_wrapped_array<uint8> shared_memory;
+	c_wrapped_array<uint8> voice_memory;
+	c_wrapped_array<uint8> scratch_memory;
 
 	// $TODO add more fields for things like timing info
 
 	c_task_function_runtime_arguments arguments;
 };
 
-// This function takes a partially-filled-in context and returns the amount of memory the task requires
-// Basic data such as sample rate is available, as well as any constant arguments - any buffer arguments are null
-using f_task_memory_query = size_t (*)(const s_task_function_context &context);
+// $TODO come up with more consistent names (e.g. task vs task function)
 
-// Called after task memory has been allocated - should be used to initialize this memory
-// Basic data such as sample rate is available, as well as any constant arguments - any buffer arguments are null
-// In addition, this is the time where samples should be requested, as that interface is provided on the context
+struct s_task_memory_query_result {
+	s_size_alignment shared_size_alignment{ 0, 1 };		// Memory shared by all voices
+	s_size_alignment voice_size_alignment{ 0, 1 };		// Memory allocated for each voice
+	s_size_alignment scratch_size_alignment{ 0, 1 };	// Additional memory available at processing time
+};
+
+// Note: for all these functions, basic data such as sample rate is available, as well as any constant arguments -
+// buffer arguments are only available in f_task_function
+
+// This function takes a partially-filled-in context and returns the amount of memory the task requires
+using f_task_memory_query = s_task_memory_query_result (*)(const s_task_function_context &context);
+
+// Used to initialize shared task memory
 using f_task_initializer = void (*)(const s_task_function_context &context);
 
-// Called when a voice becomes active
+// Used to deinitialize shared task memory
+using f_task_deinitializer = void (*)(const s_task_function_context &context);
+
+// Used to initialize per-voice task memory
 using f_task_voice_initializer = void (*)(const s_task_function_context &context);
+
+// Used to deinitialize per-voice task memory
+using f_task_voice_deinitializer = void (*)(const s_task_function_context &context);
+
+// Called when a voice becomes active
+using f_task_voice_activator = void (*)(const s_task_function_context &context);
 
 // Function executed for the task
 using f_task_function = void (*)(const s_task_function_context &context);
@@ -255,11 +274,20 @@ struct s_task_function {
 	// Memory query function, or null
 	f_task_memory_query memory_query;
 
-	// Function for initializing task memory
+	// Function for initializing shared task memory
 	f_task_initializer initializer;
 
-	// Function for initializing task memory when a voice becomes active
+	// Function for deinitializing shared task memory
+	f_task_deinitializer deinitializer;
+
+	// Function for initializing per-voice task memory when
 	f_task_voice_initializer voice_initializer;
+
+	// Function for deinitializing per-voice task memory when
+	f_task_voice_deinitializer voice_deinitializer;
+
+	// Called when a voice becomes active
+	f_task_voice_activator voice_activator;
 
 	// Number of arguments
 	uint32 argument_count;

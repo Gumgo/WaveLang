@@ -31,19 +31,21 @@ namespace controller_task_functions {
 		result->assign_constant(context.voice_interface->get_note_velocity());
 	}
 
-	size_t get_note_press_duration_memory_query(const s_task_function_context &context) {
-		return sizeof(s_get_note_press_duration_context);
+	s_task_memory_query_result get_note_press_duration_memory_query(const s_task_function_context &context) {
+		s_task_memory_query_result result;
+		result.voice_size_alignment = sizealignof(s_get_note_press_duration_context);
+		return result;
 	}
 
-	void get_note_press_duration_voice_initializer(const s_task_function_context &context) {
-		static_cast<s_get_note_press_duration_context *>(context.task_memory)->current_sample = 0;
+	void get_note_press_duration_voice_activator(const s_task_function_context &context) {
+		reinterpret_cast<s_get_note_press_duration_context *>(context.voice_memory.get_pointer())->current_sample = 0;
 	}
 
 	void get_note_press_duration(
 		const s_task_function_context &context,
 		wl_task_argument(c_real_buffer *, result)) {
 		s_get_note_press_duration_context *get_note_press_duration_context =
-			static_cast<s_get_note_press_duration_context *>(context.task_memory);
+			reinterpret_cast<s_get_note_press_duration_context *>(context.voice_memory.get_pointer());
 		real64 inv_sample_rate = 1.0 / static_cast<real64>(context.sample_rate);
 		real64 current_sample = static_cast<real64>(get_note_press_duration_context->current_sample);
 		for (size_t index = 0; index < context.buffer_size; index++) {
@@ -55,13 +57,15 @@ namespace controller_task_functions {
 		get_note_press_duration_context->current_sample += context.buffer_size;
 	}
 
-	size_t get_note_release_duration_memory_query(const s_task_function_context &context) {
-		return sizeof(s_get_note_release_duration_context);
+	s_task_memory_query_result get_note_release_duration_memory_query(const s_task_function_context &context) {
+		s_task_memory_query_result result;
+		result.voice_size_alignment = sizealignof(s_get_note_release_duration_context);
+		return result;
 	}
 
-	void get_note_release_duration_voice_initializer(const s_task_function_context &context) {
+	void get_note_release_duration_voice_activator(const s_task_function_context &context) {
 		s_get_note_release_duration_context *get_note_release_duration_context =
-			static_cast<s_get_note_release_duration_context *>(context.task_memory);
+			reinterpret_cast<s_get_note_release_duration_context *>(context.voice_memory.get_pointer());
 		get_note_release_duration_context->released = false;
 		get_note_release_duration_context->current_sample = 0;
 	}
@@ -70,7 +74,7 @@ namespace controller_task_functions {
 		const s_task_function_context &context,
 		wl_task_argument(c_real_buffer *, result)) {
 		s_get_note_release_duration_context *get_note_release_duration_context =
-			static_cast<s_get_note_release_duration_context *>(context.task_memory);
+			reinterpret_cast<s_get_note_release_duration_context *>(context.voice_memory.get_pointer());
 		int32 note_release_sample = context.voice_interface->get_note_release_sample();
 
 		if (!get_note_release_duration_context->released && note_release_sample < 0) {
@@ -119,7 +123,7 @@ namespace controller_task_functions {
 		if (parameter_change_events.get_count() == 0) {
 			result->assign_constant(previous_value);
 		} else {
-			// $UPSAMPLE will need to adjust sample indices here
+			// $TODO $UPSAMPLE will need to adjust sample indices here
 			real64 sample_rate = static_cast<real64>(context.sample_rate);
 
 			real32 current_value = previous_value;
@@ -161,12 +165,12 @@ namespace controller_task_functions {
 		wl_task_function(0x05b9e818, "get_note_press_duration")
 			.set_function<get_note_press_duration>()
 			.set_memory_query<get_note_press_duration_memory_query>()
-			.set_voice_initializer<get_note_press_duration_voice_initializer>();
+			.set_voice_activator<get_note_press_duration_voice_activator>();
 
 		wl_task_function(0xa370e402, "get_note_release_duration")
 			.set_function<get_note_release_duration>()
 			.set_memory_query<get_note_release_duration_memory_query>()
-			.set_voice_initializer<get_note_release_duration_voice_initializer>();
+			.set_voice_activator<get_note_release_duration_voice_activator>();
 
 		wl_task_function(0x6badd8e8, "get_parameter_value")
 			.set_function<get_parameter_value>()

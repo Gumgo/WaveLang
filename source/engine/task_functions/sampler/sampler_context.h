@@ -10,7 +10,7 @@
 
 class c_event_interface;
 
-struct s_sampler_context {
+struct s_sampler_shared_context {
 	void initialize_file(
 		c_event_interface *event_interface,
 		c_sample_library *sample_library,
@@ -23,7 +23,15 @@ struct s_sampler_context {
 		c_sample_library *sample_library,
 		c_real_constant_array harmonic_weights,
 		bool phase_shift_enabled);
-	void voice_initialize();
+
+	h_sample sample_handle;
+	uint32 channel;
+	bool sample_failure_reported;
+};
+
+struct s_sampler_voice_context {
+	void initialize(s_sampler_shared_context *sampler_shared_context);
+	void activate();
 
 	// Common utility functions used in all versions of the sampler:
 
@@ -43,10 +51,9 @@ struct s_sampler_context {
 	// Returns the next sample index and increments using the advance value provided. Handles looping.
 	real64 increment_time_looping(real64 loop_start_sample, real64 loop_end_sample, real32 advance);
 
+	s_sampler_shared_context *shared_context;
+
 	// Store the sample index in real64 for improved precision so we can accurately handle both short and long samples
-	h_sample sample_handle;
-	uint32 channel;
 	real64 sample_index;
 	bool reached_end;
-	bool sample_failure_reported;
 };

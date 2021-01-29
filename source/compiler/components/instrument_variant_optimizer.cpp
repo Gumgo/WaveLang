@@ -159,13 +159,16 @@ bool c_native_module_graph_optimizer::try_optimize_node(h_graph_node node_handle
 	// First, see if we can call the native module. This would be unusual because we attempt to fold constants when
 	// initially building the graph, but it's possible for an optimization rule to convert a non-constant into a
 	// constant. An example of this is multiplying by 0.
+	int32 output_latency;
 	if (!try_call_native_module(
 		m_context,
 		m_graph_trimmer,
 		m_instrument_globals,
 		node_handle,
+		0, // No latency at optimization time, we've already resolved latency compensation
 		s_compiler_source_location(), // $TODO $COMPILER we could add "compiler context" pointer to graph nodes
-		did_optimize_out)) {
+		did_optimize_out,
+		output_latency)) {
 		return false;
 	}
 

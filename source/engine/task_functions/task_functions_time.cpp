@@ -11,8 +11,10 @@ struct s_period_context {
 
 namespace time_task_functions {
 
-	size_t period_memory_query(const s_task_function_context &context) {
-		return sizeof(s_period_context);
+	s_task_memory_query_result period_memory_query(const s_task_function_context &context) {
+		s_task_memory_query_result result;
+		result.voice_size_alignment = sizealignof(s_period_context);
+		return result;
 	}
 
 	void period_initializer(
@@ -21,12 +23,10 @@ namespace time_task_functions {
 		if (std::isnan(*duration) || std::isinf(*duration) || *duration <= 0.0f) {
 			context.event_interface->submit(EVENT_WARNING << "Invalid time period duration, defaulting to 0");
 		}
-
-		static_cast<s_period_context *>(context.task_memory)->current_sample = 0.0;
 	}
 
-	void period_voice_initializer(const s_task_function_context &context) {
-		static_cast<s_period_context *>(context.task_memory)->current_sample = 0.0;
+	void period_voice_activator(const s_task_function_context &context) {
+		reinterpret_cast<s_period_context *>(context.voice_memory.get_pointer())->current_sample = 0.0;
 	}
 
 	void period(
@@ -36,7 +36,7 @@ namespace time_task_functions {
 		if (std::isnan(*duration) || std::isinf(*duration) || *duration <= 0.0f) {
 			result->assign_constant(0.0f);
 		} else {
-			s_period_context *period_context = static_cast<s_period_context *>(context.task_memory);
+			s_period_context *period_context = reinterpret_cast<s_period_context *>(context.voice_memory.get_pointer());
 
 			// $TODO could optimize with SSE
 			real64 sample_rate_real = static_cast<real64>(context.sample_rate);
@@ -65,7 +65,7 @@ namespace time_task_functions {
 			.set_function<period>()
 			.set_memory_query<period_memory_query>()
 			.set_initializer<period_initializer>()
-			.set_voice_initializer<period_voice_initializer>();
+			.set_voice_activator<period_voice_activator>();
 
 		wl_end_active_library_task_function_registration();
 	}

@@ -66,6 +66,8 @@ public:
 
 	c_wrapped_array<const s_buffer_usage_info> get_buffer_usage_info() const;
 
+	uint32 get_output_latency() const;
+
 private:
 	static constexpr size_t k_invalid_list_index = static_cast<size_t>(-1);
 
@@ -190,5 +192,8 @@ private:
 	// List of initial tasks
 	size_t m_initial_tasks_start = k_invalid_list_index;
 	size_t m_initial_tasks_count = 0;
+
+	// Samples of output latency
+	uint32 m_output_latency = 0;
 };
 
