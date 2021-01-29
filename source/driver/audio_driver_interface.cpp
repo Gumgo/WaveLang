@@ -154,6 +154,8 @@ s_audio_driver_result c_audio_driver_interface::start_stream(const s_audio_drive
 		return result;
 	}
 
+	m_settings = settings;
+
 	PaStreamParameters input_params;
 	PaStreamParameters output_params;
 	setup_stream_parameters(settings, m_device_count, input_params, output_params);
@@ -191,8 +193,6 @@ s_audio_driver_result c_audio_driver_interface::start_stream(const s_audio_drive
 		m_stream = nullptr;
 		return result;
 	}
-
-	m_settings = settings;
 
 	wl_assert(m_stream);
 	return result;

@@ -94,6 +94,8 @@ void c_task_memory_manager::initialize(
 	wl_assert(total_size_alignment.alignment <= k_lock_free_alignment); // $TODO remove this requirement
 	m_task_memory_allocator.free();
 
+	m_scratch_allocations.resize(thread_context_count);
+
 	if (total_size_alignment.size > 0) {
 		m_task_memory_allocator.allocate(total_size_alignment.size);
 		c_wrapped_array<uint8> buffer = m_task_memory_allocator.get_array();
@@ -149,7 +151,7 @@ std::vector<s_task_memory_query_result> c_task_memory_manager::query_required_ta
 	const c_task_graph *task_graph,
 	f_task_memory_query_callback task_memory_query_callback,
 	void *task_memory_query_callback_context) {
-	std::vector<s_task_memory_query_result> memory_query_results;
+	std::vector<s_task_memory_query_result> memory_query_results(task_graph->get_task_count());
 	for (uint32 task = 0; task < task_graph->get_task_count(); task++) {
 		memory_query_results[task] =
 			task_memory_query_callback(task_memory_query_callback_context, instrument_stage, task_graph, task);

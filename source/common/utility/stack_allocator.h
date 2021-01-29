@@ -56,6 +56,7 @@ public:
 	void allocate(t_type *&result, size_t alignment = alignof(t_type)) {
 		c_wrapped_array<t_type> array_result;
 		allocate_array<t_type>(array_result, 1, alignment);
+		result = array_result.get_pointer();
 	}
 
 	template<typename t_type>
@@ -91,6 +92,8 @@ public:
 				call_destructor<t_type>
 			};
 		}
+
+		result = c_wrapped_array<t_type>(reinterpret_cast<t_type *>(&m_context.buffer[start_offset]), count);
 	}
 
 public:

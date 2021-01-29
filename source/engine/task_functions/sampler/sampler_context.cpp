@@ -51,7 +51,7 @@ void s_sampler_shared_context::initialize_wavetable(
 }
 
 void s_sampler_voice_context::initialize(s_sampler_shared_context *sampler_shared_context) {
-	shared_context = shared_context;
+	shared_context = sampler_shared_context;
 }
 
 void s_sampler_voice_context::activate() {

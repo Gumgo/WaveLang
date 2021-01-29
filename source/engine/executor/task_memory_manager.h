@@ -34,7 +34,7 @@ public:
 	inline c_wrapped_array<uint8> get_task_shared_memory(
 		e_instrument_stage instrument_stage,
 		uint32 task_index) const {
-		return m_voice_allocations[enum_index(instrument_stage)][task_index];
+		return m_shared_allocations[enum_index(instrument_stage)][task_index];
 	}
 
 	inline c_wrapped_array<uint8> get_task_voice_memory(

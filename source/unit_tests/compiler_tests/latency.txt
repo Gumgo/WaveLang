@@ -1,0 +1,47 @@
+### TEST latency success
+import core;
+
+bool voice_main(out real mono) {
+	const real x_0 = 0;
+	core.assert(core.get_latency(x_0) == 0);
+
+	real y_10 = core.add_latency(x_0, 10);
+	core.assert(core.get_latency(y_10) == 10);
+
+	real z_15 = core.add_latency(y_10, 5);
+	core.assert(core.get_latency(z_15) == 15);
+
+	real w_35 = core.add_latency(1, 35);
+	core.assert(core.get_latency(w_35) == 35);
+
+	real a_10 = x_0 + y_10;
+	core.assert(core.get_latency(a_10) == 10);
+
+	real[] b_15 = {[ x_0, y_10, z_15 ]};
+	core.assert(core.get_latency(b_15) == 15);
+	core.assert(core.get_latency(b_15[0]) == 15);
+	core.assert(core.get_latency(b_15[1]) == 15);
+	core.assert(core.get_latency(b_15[2]) == 15);
+
+	b_15[1] = x_0;
+	core.assert(core.get_latency(b_15) == 15);
+	core.assert(core.get_latency(b_15[0]) == 15);
+	core.assert(core.get_latency(b_15[1]) == 15);
+	core.assert(core.get_latency(b_15[2]) == 15);
+
+	b_15[0] = w_35;
+	core.assert(core.get_latency(b_15) == 35);
+	core.assert(core.get_latency(b_15[0]) == 35);
+	core.assert(core.get_latency(b_15[1]) == 35);
+	core.assert(core.get_latency(b_15[2]) == 35);
+
+	bool c_40 = core.add_latency(false, 40);
+
+	mono = w_35;
+	return c_40;
+}
+
+bool fx_main(in real voices, out real mono) {
+	mono = core.add_latency(0, 25);
+	return core.add_latency(false, 15);
+}

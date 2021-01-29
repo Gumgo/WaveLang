@@ -147,7 +147,7 @@ static bool map_task_function_arguments(
 	s_task_function_registration_entry *task_function_entry) {
 	const char *library = get_task_function_library_name(task_function_entry->task_function.uid.get_library_id());
 	std::string identifier = std::string(library) + '.' + task_function_entry->native_module_identifier;
-	auto iter = native_module_identifier_map.find(task_function_entry->native_module_identifier);
+	auto iter = native_module_identifier_map.find(identifier);
 	if (iter == native_module_identifier_map.end()) {
 		report_error(
 			"Failed to map arguments for task function 0x%04x (library '%s'): native module '%s' was not found",
