@@ -1,6 +1,3 @@
-- Codebase improvements
-	- Convert more indices to use c_handle
-
 - Divorce driver chunk size from processing chunk size
 	- Use chunk_size synth global
 	- Processing chunk size is always fixed, and defined as an execution graph global in the synth source file
@@ -21,9 +18,10 @@
 		- Once the accumulator fills up to the chunk size it is processed and discarded
 		- This avoids situations where we need to fill the driver buffer but don't have enough input samples to process a full (fixed-size) chunk
 
+- Optimize single-threaded executor
+	- Pre-calculate a traversal of the DAG and just run each task in order
+
 - Delay types
-	- Delay
-		- Takes input, returns delayed output
 	- Feedback with decay
 		- Signal feeds back on itself but multiplied by a decay factor
 		- Special-case of general purpose feedback, but common
@@ -40,13 +38,6 @@
 	- Variable delay
 		- Max delay is specified as a constant, actual delay can be variable
 		- Delay is sub-sample accurate
-
-- Latency compensation
-	- Each variable should have a latency value associated with it
-	- If an operation is performed on variables with mismatched latencies, delay operations are inserted to make them match
-		- Applies to all outputs as well
-		- Constants also get delayed if they are e.g. being added to a variable with latency (I think)
-	- The instrument reports a total latency equal to the latency of the outputs
 
 - Plugin system ($PLUGIN)
 	- Allow users to register their own native modules and tasks
@@ -106,14 +97,16 @@
 	- Add functions to shape random values for various distributions, e.g. normal distribution
 		- Have an optional cap value (e.g. abs(normal(x, 10)) will be capped at 10)
 
-- Fix include order ($INCLUDE)
-	- Write a script to do this
-	- Each category should be sorted alphabetically (folders names don't come first)
-	- Order:
-		- Local (extra linebreak between categories)
-		- Third party
-		- Standard library
-
 - Code style updates
 	- SFINAE helper macros
 	- Switch "new" to "make_unique" where relevant
+	- Convert more indices to use c_handle
+		- Task function registry should return handles, not indices, similar to the native module registry
+
+- Add query_sample_rate(), an alternative to get_sample_rate() that is available to scripts where #sample_rate wasn't specified
+	- If #sample_rate was specified, query_sample_rate() emits a warning at compile time (using validate_arguments)
+
+- Monophonic voice mode
+	- When a new voice is triggered, if a voice is already active, instead of starting a new voice, it changes the note ID of the existing voice
+	- Targets the most recently activated voice
+	- #max_voices can still be more than 1 to allow for previous voices to fade out properly

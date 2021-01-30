@@ -148,6 +148,9 @@
     <ClInclude Include="utility\stack_allocator.h">
       <Filter>utility</Filter>
     </ClInclude>
+    <ClInclude Include="utility\bit_operations.h">
+      <Filter>utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="SConscript" />
@@ -210,6 +213,9 @@
       <Filter>utility</Filter>
     </ClCompile>
     <ClCompile Include="utility\stack_allocator.cpp">
+      <Filter>utility</Filter>
+    </ClCompile>
+    <ClCompile Include="utility\bit_operations.cpp">
       <Filter>utility</Filter>
     </ClCompile>
   </ItemGroup>

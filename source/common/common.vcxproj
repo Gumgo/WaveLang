@@ -53,6 +53,7 @@
     <ClInclude Include="threading\thread.h" />
     <ClInclude Include="types.h" />
     <ClInclude Include="utility\aligned_allocator.h" />
+    <ClInclude Include="utility\bit_operations.h" />
     <ClInclude Include="utility\endian.h" />
     <ClInclude Include="utility\file_utility.h" />
     <ClInclude Include="utility\function_type_info.h" />
@@ -90,6 +91,7 @@
     <ClCompile Include="threading\semaphore.cpp" />
     <ClCompile Include="threading\thread_fallback.cpp" />
     <ClCompile Include="threading\thread_windows.cpp" />
+    <ClCompile Include="utility\bit_operations.cpp" />
     <ClCompile Include="utility\file_utility.cpp" />
     <ClCompile Include="utility\graphviz_generator.cpp" />
     <ClCompile Include="utility\linked_array.cpp" />

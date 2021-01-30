@@ -94,6 +94,7 @@
     <ClCompile Include="json_tests.cpp" />
     <ClCompile Include="math_tests.cpp" />
     <ClCompile Include="unit_tests_main.cpp" />
+    <ClCompile Include="utility_tests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="compiler_tests\array.txt" />

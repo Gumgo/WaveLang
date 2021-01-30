@@ -1,3 +1,4 @@
+#include "common/utility/bit_operations.h"
 #include "common/utility/stack_allocator.h"
 
 #include "engine/buffer.h"
@@ -53,7 +54,7 @@ public:
 
 		if (input == m_constant_value && m_constant_sample_count == m_delay_samples) {
 			// The entire buffer is constant and the input matches that constant value. We don't need to do anything!
-			t_copy_implementation::copy_constant(output, 0, input, 1);
+			t_copy_implementation::replicate_constant(output, 0, input, 1);
 			return true;
 		}
 
@@ -66,7 +67,7 @@ public:
 		push_constant(input, samples_to_process);
 
 		if (m_delay_samples < sample_count) {
-			t_copy_implementation::copy_constant(output, m_delay_samples, input, sample_count - m_delay_samples);
+			t_copy_implementation::replicate_constant(output, m_delay_samples, input, sample_count - m_delay_samples);
 		}
 
 		return false;
@@ -140,14 +141,14 @@ private:
 			return;
 		}
 
-		t_copy_implementation::copy_constant(m_buffer.get_pointer(), buffer_index, value, count);
+		t_copy_implementation::replicate_constant(m_buffer.get_pointer(), buffer_index, value, count);
 		m_constant_sample_count = std::min(m_constant_sample_count + count, m_delay_samples);
 	}
 
 	void read_from_buffer(t_buffer_data *output, size_t offset, size_t count) {
 		wl_assert(m_head_index + count <= m_delay_samples);
 		size_t uninitialized_samples_to_read = std::min(m_uninitialized_sample_count, count);
-		t_copy_implementation::copy_constant(output, offset, m_initial_value, uninitialized_samples_to_read);
+		t_copy_implementation::replicate_constant(output, offset, m_initial_value, uninitialized_samples_to_read);
 
 		if (m_uninitialized_sample_count < count) {
 			t_copy_implementation::copy_data(
@@ -183,7 +184,7 @@ struct s_real32_copy_implementation {
 		copy_type(destination + destination_offset, source + source_offset, count);
 	}
 
-	static void copy_constant(
+	static void replicate_constant(
 		real32 *destination,
 		size_t destination_offset,
 		real32 value,
@@ -202,146 +203,15 @@ struct s_bool_copy_implementation {
 		const int32 *source,
 		size_t source_offset,
 		size_t count) {
-		class c_reader {
-		public:
-			c_reader(const int32 *source, size_t offset, size_t count) {
-				m_source = source;
-				m_shift = offset % 32;
-				m_count = count;
-				if (m_shift == 0) {
-					m_prev_value = 0;
-					m_shift = 32;
-				} else {
-					m_prev_value = *m_source++;
-					m_index = 32 - m_shift;
-				}
-			}
-
-			int32 read() {
-				// We expect to over-read by up to 31 due to the initial read
-				wl_assert(m_index < m_count + 32);
-
-				int32 result = static_cast<int32>(static_cast<uint32>(m_prev_value) >> m_shift);
-				if (m_index < m_count) {
-					int32 value = *m_source++;
-					result |= (value << (32 - m_shift));
-					m_prev_value = value;
-				}
-
-				m_index += 32;
-				return result;
-			}
-
-		private:
-			const int32 *m_source;
-			size_t m_shift;
-			size_t m_count;
-			size_t m_index;
-			int32 m_prev_value;
-		};
-
-		class c_writer {
-		public:
-			c_writer(int32 *destination, size_t offset, size_t count) {
-				m_destination = destination;
-				m_shift = offset % 32;
-				m_count = count;
-				m_index = 0;
-			}
-
-			void write(int32 value) {
-				wl_assert(m_index < m_count);
-				size_t bits_remaining = m_count - m_index;
-				size_t bits_to_drop = 32 - std::min(bits_remaining, 32ull);
-				int32 mask = static_cast<int32>(0xffffffffu >> bits_to_drop);
-
-				int32 mask_a = mask << m_shift;
-				*m_destination = (*m_destination & ~mask_a) | (value << m_shift);
-				m_destination++;
-
-				if (m_shift != 0) {
-					int32 mask_b = static_cast<int32>(static_cast<uint32>(mask) >> (32 - m_shift));
-
-					// If mask_b is empty, don't perform the write because we might be writing off the end
-					if (mask_b != 0) {
-						*m_destination = (*m_destination & ~mask_b)
-							| static_cast<int32>(static_cast<uint32>(value) >> (32 - m_shift));
-					}
-				}
-			}
-
-		private:
-			int32 *m_destination;
-			size_t m_shift;
-			size_t m_count;
-			size_t m_index;
-		};
-
-		c_reader reader(source, source_offset, count);
-		c_writer writer(destination, destination_offset, count);
-
-		size_t int32_count = (count + 31) / 32;
-		for (size_t index = 0; index < int32_count; index++) {
-			writer.write(reader.read());
-		}
+		copy_bits(destination, destination_offset, source, source_offset, count);
 	}
 
-	static void copy_constant(
+	static void replicate_constant(
 		int32 *destination,
 		size_t destination_offset,
 		bool value,
 		size_t count) {
-		// Determine the indices of the first and last int32s that this range touches
-		size_t start_index = destination_offset / 32;
-		size_t end_index = (destination_offset + count + 31) / 32;
-
-		// Determine the indices of the first and last int32s that this range fully covers
-		size_t full_start_index = (destination_offset + 31) / 32;
-		size_t full_end_index = (destination_offset + count) / 32;
-
-		// Blast over the fully-covered range
-		int32 full_value = value ? 0xffffffff : 0;
-		for (size_t index = full_start_index; index < full_end_index; index++) {
-			destination[index] = full_value;
-		}
-
-		bool partial_start = start_index < full_start_index;
-		bool partial_end = end_index > full_end_index;
-		if (partial_start && partial_end && start_index + 1 == end_index) {
-			// The partial start and end are covering the same int32
-			size_t start_skip_bits = destination_offset % 32;
-			size_t end_skip_bits = 32 - ((destination_offset + count) % 32);
-			int32 start_mask = 0xffffffff << start_skip_bits;
-			int32 end_mask = static_cast<int32>(0xffffffffu >> end_skip_bits);
-			int32 mask = start_mask & end_mask;
-			if (value) {
-				destination[start_index] |= mask;
-			} else {
-				destination[start_index] &= ~mask;
-			}
-		} else {
-			if (partial_start) {
-				// The int32 at the start of the range is only partially covered
-				size_t skip_bits = destination_offset % 32;
-				int32 mask = 0xffffffff << skip_bits;
-				if (value) {
-					destination[start_index] |= mask;
-				} else {
-					destination[start_index] &= ~mask;
-				}
-			}
-
-			if (partial_end) {
-				// The int32 at the end of the range is only partially covered
-				size_t skip_bits = 32 - ((destination_offset + count) % 32);
-				int32 mask = static_cast<int32>(0xffffffffu >> skip_bits);
-				if (value) {
-					destination[end_index - 1] |= mask;
-				} else {
-					destination[end_index - 1] &= ~mask;
-				}
-			}
-		}
+		replicate_bit(destination, destination_offset, value, count);
 	}
 };
 
@@ -414,9 +284,9 @@ void delay_real_voice_activator(const s_task_function_context &context, real32 i
 
 void delay_real(
 	const s_task_function_context &context,
-	wl_task_argument(real32, duration),
-	wl_task_argument(const c_real_buffer *, signal),
-	wl_task_argument(c_real_buffer *, result)) {
+	real32 duration,
+	const c_real_buffer *signal,
+	c_real_buffer *result) {
 	s_delay_real_context *delay_context = reinterpret_cast<s_delay_real_context *>(context.voice_memory.get_pointer());
 	if (signal->is_constant()) {
 		bool is_output_constant = delay_context->delay_buffer.process_constant(
@@ -528,7 +398,7 @@ namespace delay_task_functions {
 		const s_task_function_context &context,
 		wl_task_argument(real32, duration),
 		wl_task_argument(const c_real_buffer *, signal),
-		wl_task_argument(c_real_buffer *, result)) {
+		wl_task_argument_unshared(c_real_buffer *, result)) {
 		delay_real(context, duration, signal, result);
 	}
 
@@ -594,7 +464,7 @@ namespace delay_task_functions {
 		wl_task_argument(real32, duration),
 		wl_task_argument(const c_real_buffer *, signal),
 		wl_task_argument(real32, initial_value),
-		wl_task_argument(c_real_buffer *, result)) {
+		wl_task_argument_unshared(c_real_buffer *, result)) {
 		delay_real(context, duration, signal, result);
 	}
 
@@ -660,7 +530,7 @@ namespace delay_task_functions {
 		const s_task_function_context &context,
 		wl_task_argument(real32, duration),
 		wl_task_argument(const c_real_buffer *, signal),
-		wl_task_argument(c_real_buffer *, result)) {
+		wl_task_argument_unshared(c_real_buffer *, result)) {
 		delay_real(context, duration, signal, result);
 	}
 
@@ -726,7 +596,7 @@ namespace delay_task_functions {
 		wl_task_argument(real32, duration),
 		wl_task_argument(const c_real_buffer *, signal),
 		wl_task_argument(real32, initial_value),
-		wl_task_argument(c_real_buffer *, result)) {
+		wl_task_argument_unshared(c_real_buffer *, result)) {
 		delay_real(context, duration, signal, result);
 	}
 

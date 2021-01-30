@@ -82,6 +82,7 @@ public:
 		m_offset = end_offset;
 
 		if constexpr (k_has_destructor) {
+			wl_assert(is_pointer_aligned(m_context.buffer.end(), alignof(s_destructor_entry)));
 			m_context.destructor_count++;
 			size_t destructor_entry_offset =
 				m_context.buffer.get_count() - sizeof(s_destructor_entry) * m_context.destructor_count;

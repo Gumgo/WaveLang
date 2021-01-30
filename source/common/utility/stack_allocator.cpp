@@ -12,7 +12,6 @@ s_size_alignment c_stack_allocator::c_memory_calculator::get_size_alignment() co
 }
 
 c_stack_allocator::c_stack_allocator(c_wrapped_array<uint8> buffer) {
-	wl_assert(is_pointer_aligned(buffer.end(), alignof(s_destructor_entry)));
 	m_context.buffer = buffer;
 }
 

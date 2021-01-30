@@ -7,6 +7,14 @@
 #include <pa_linux_alsa.h>
 #endif // IS_TRUE(PLATFORM_LINUX)
 
+extern "C" {
+	// For some reason, PortAudio doesn't expose these
+	typedef void (*PaUtilLogCallback)(const char *log);
+	void PaUtil_SetDebugPrintFunction(PaUtilLogCallback cb);
+}
+
+static void ignore_debug_output(const char *log) {}
+
 static PaSampleFormat get_pa_sample_format(e_sample_format sample_format) {
 	switch (sample_format) {
 	case e_sample_format::k_float32:
@@ -64,6 +72,7 @@ s_audio_driver_result c_audio_driver_interface::initialize() {
 	s_audio_driver_result result;
 	result.clear();
 
+	PaUtil_SetDebugPrintFunction(ignore_debug_output);
 	PaError error = Pa_Initialize();
 	if (error != paNoError) {
 		m_initialized = true;

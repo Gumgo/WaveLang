@@ -15,10 +15,6 @@ class SIMDSupport(Enum):
 # As this grows, subdivide it into categories (e.g. Windows, Linux)
 class BuildOptions:
 	def __init__(self):
-		self.llvm_config_dir = "C:\\Program Files (x86)\\LLVM\\bin"
-		self.llvm_lib_dir_debug = ""
-		self.llvm_lib_dir_release = ""
-
 		self.portaudio_include_dir = ""
 		self.portaudio_lib_dir_debug = ""
 		self.portaudio_lib_dir_release = ""
