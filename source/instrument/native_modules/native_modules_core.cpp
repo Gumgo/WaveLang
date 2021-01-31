@@ -290,7 +290,8 @@ namespace core_native_modules {
 		static constexpr uint32 k_core_library_id = 0;
 		wl_native_module_library(k_core_library_id, "core", 0);
 
-		// Note: "and", "or", and "not" are actually reserved C++ keywords, so we append an underscore to those functions
+		// Note: "and", "or", and "not" are actually reserved C++ keywords, so we append an underscore to those
+		// functions
 
 		wl_native_module(0x50e37f45, "noop$real")
 			.set_native_operator(e_native_operator::k_noop)

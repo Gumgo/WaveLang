@@ -65,7 +65,6 @@ void get_native_module_compile_time_properties(
 	always_runs_at_compile_time_if_dependent_constants_are_constant_out &= (native_module.compile_time_call != nullptr);
 }
 
-// nocheckin We should validate that validate_arguments and get_latency can run at compile time (i.e. all arguments are either const or ref)
 bool validate_native_module(const s_native_module &native_module) {
 	if (native_module.argument_count > k_max_native_module_arguments) {
 		return false;

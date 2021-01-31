@@ -61,9 +61,9 @@ private:
 		std::vector<s_node_handle_with_latency> expression_result_stack;
 
 #if IS_TRUE(ASSERTS_ENABLED)
-		// Each time a node handle is pushed on the expression result stack, an empty entry is pushed here. Additionally,
-		// validation tokens can be pushed and popped on this stack. Validation tokens are used to ensure that the state of
-		// the expression result stack is valid.
+		// Each time a node handle is pushed on the expression result stack, an empty entry is pushed here.
+		// Additionally, validation tokens can be pushed and popped on this stack. Validation tokens are used to ensure
+		// that the state of the expression result stack is valid.
 		std::vector<s_validation_token_stack_entry> validation_token_stack;
 #endif // IS_TRUE(ASSERTS_ENABLED)
 

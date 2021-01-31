@@ -520,7 +520,10 @@ void c_interpolation_coefficient_solver::solve(
 }
 
 template<uint32 k_n>
-void solve_system_using_lu_decomposition(c_wrapped_array<const real32> matrix, c_wrapped_array<const real32> vector, c_wrapped_array<real32> solution) {
+void solve_system_using_lu_decomposition(
+	c_wrapped_array<const real32> matrix,
+	c_wrapped_array<const real32> vector,
+	c_wrapped_array<real32> solution) {
 	// https://en.wikipedia.org/wiki/LU_decomposition
 	wl_assert(matrix.get_count() == k_n * k_n);
 	wl_assert(vector.get_count() == k_n);

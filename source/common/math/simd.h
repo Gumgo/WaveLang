@@ -159,6 +159,7 @@ static constexpr size_t k_simd_32_lanes = k_simd_size_bits / 32;
 	#endif // SIMD_IMPLEMENTATION
 #endif // IS_TRUE(SIMD_256_ENABLED)
 
+// $TODO use enum flags
 enum class e_simd_instruction_set {
 	k_sse,
 	k_sse2,

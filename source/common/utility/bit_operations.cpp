@@ -26,12 +26,11 @@ public:
 		// We expect to over-read by up to 31 due to the initial read
 		wl_assert(m_index < m_count + 32);
 
-		// Cast to uint64 so that shifting by 32 works
-		uint32 result = static_cast<uint32>(static_cast<uint64>(m_prev_value) >> m_shift);
+		uint32 result = shift_right_unsigned_safe(m_prev_value, m_shift);
 		if (m_index < m_count) {
 			wl_assert(m_source < m_source_end);
 			uint32 value = *m_source++;
-			result |= static_cast<uint32>(value << (32ull - m_shift));
+			result |= shift_left_unsigned_safe(value, 32ull - m_shift);
 			m_prev_value = value;
 		}
 
@@ -75,7 +74,7 @@ public:
 
 		uint32 mask_a = mask << m_shift;
 		wl_assert(m_destination < m_destination_end);
-		*m_destination = (*m_destination & ~mask_a) | static_cast<uint32>(static_cast<uint64>(value) << m_shift);
+		*m_destination = (*m_destination & ~mask_a) | (value << m_shift);
 		m_destination++;
 
 		if (m_shift != 0) {

@@ -378,17 +378,16 @@ bool c_buffer_manager::process_remain_active_output(
 		iterate_buffers<k_simd_size_bits, true>(m_chunk_size, static_cast<const c_bool_buffer *>(remain_active_buffer),
 			[&](size_t i, const int32xN &value) {
 				int32xN padded_value = value;
-				if (i < align_size_down(remaining_output_latency, int32xN::k_element_count)) {
+				if (i < align_size_down(remaining_output_latency, k_simd_size_bits)) {
 					// These values are fully covered up by latency
 					return true;
-				} else if (i < align_size(remaining_output_latency, int32xN::k_element_count)) {
+				} else if (i < align_size(remaining_output_latency, k_simd_size_bits)) {
 					// Some bits are covered up by latency and some aren't
 					int32 samples_with_latency = cast_integer_verify<int32>(remaining_output_latency - i);
 					int32xN elements_with_latency = int32xN(samples_with_latency) - bit_offsets;
 					int32xN clamped_elements_with_latency =
 						min(max(elements_with_latency, int32xN(0)), int32xN(32));
-					int32xN underflow_mask =
-						int32xN(0xffffffff).shift_right_unsigned(clamped_elements_with_latency);
+					int32xN underflow_mask = int32xN(0xffffffff) << clamped_elements_with_latency;
 
 					// We now have zeros in the positions of all bits covered up by latency. Mask the value being tested
 					// so we don't get false positives.
@@ -405,17 +404,16 @@ bool c_buffer_manager::process_remain_active_output(
 			},
 			[&](size_t i, const int32xN &value) {
 				int32xN padded_value = value;
-				if (i < align_size_down(remaining_output_latency, int32xN::k_element_count)) {
+				if (i < align_size_down(remaining_output_latency, k_simd_size_bits)) {
 					// These values are fully covered up by latency
 					return;
-				} else if (i < align_size(remaining_output_latency, int32xN::k_element_count)) {
+				} else if (i < align_size(remaining_output_latency, k_simd_size_bits)) {
 					// Some bits are covered up by latency and some aren't
 					int32 samples_with_latency = cast_integer_verify<int32>(remaining_output_latency - i);
 					int32xN elements_with_latency = int32xN(samples_with_latency) - bit_offsets;
 					int32xN clamped_elements_with_latency =
 						min(max(elements_with_latency, int32xN(0)), int32xN(32));
-					int32xN underflow_mask =
-						int32xN(0xffffffff).shift_right_unsigned(clamped_elements_with_latency);
+					int32xN underflow_mask = int32xN(0xffffffff) << clamped_elements_with_latency;
 
 					// We now have zeros in the positions of all bits covered up by latency. Mask the value being tested
 					// so we don't get false positives.
@@ -427,10 +425,10 @@ bool c_buffer_manager::process_remain_active_output(
 				int32xN elements_remaining = int32xN(samples_remaining) - bit_offsets;
 				int32xN clamped_elements_remaining = min(max(elements_remaining, int32xN(0)), int32xN(32));
 				int32xN zeros_to_shift = int32xN(32) - clamped_elements_remaining;
-				int32xN overflow_mask = int32xN(0xffffffff) << zeros_to_shift;
+				int32xN overflow_mask = int32xN(0xffffffff).shift_right_unsigned(zeros_to_shift);
 
-				// We now have zeros in the positions of all bits past the end of the buffer. Mask the value being tested
-				// so we don't get false positives.
+				// We now have zeros in the positions of all bits past the end of the buffer. Mask the value being
+				// tested so we don't get false positives.
 				padded_value = padded_value & overflow_mask;
 				if (any_false(padded_value == int32xN(0))) {
 					// At least one bit was true, so stop scanning

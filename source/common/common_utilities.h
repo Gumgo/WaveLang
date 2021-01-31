@@ -162,3 +162,13 @@ t_to reinterpret_bits(t_from from) {
 	memcpy(&to, &from, sizeof(to));
 	return to;
 }
+
+// Shifts of 32 or more clear the result
+constexpr uint32 shift_left_unsigned_safe(uint32 value, size_t shift) {
+	return (value << shift) & static_cast<uint32>(-static_cast<int32>(shift < 32));	
+}
+
+// Shifts of 32 or more clear the result
+constexpr uint32 shift_right_unsigned_safe(uint32 value, size_t shift) {
+	return (value >> shift) & static_cast<uint32>(-static_cast<int32>(shift < 32));
+}

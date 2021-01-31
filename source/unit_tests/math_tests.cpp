@@ -94,12 +94,20 @@ TEST(Math, Int32x4) {
 	EXPECT_TRUE(all_true((int32x4(0x0f0f0f0f) ^ int32x4(0x0000ffff)) == int32x4(0x0f0ff0f0)));
 	EXPECT_TRUE(all_true(int32x4(1) << 4 == int32x4(16)));
 	EXPECT_TRUE(all_true(int32x4(1) << int32x4(4) == int32x4(16)));
+	EXPECT_TRUE(all_true(int32x4(1) << 32 == int32x4(0)));
+	EXPECT_TRUE(all_true(int32x4(1) << int32x4(32) == int32x4(0)));
 	EXPECT_TRUE(all_true(int32x4(16) >> 4 == int32x4(1)));
+	EXPECT_TRUE(all_true(int32x4(16) >> 32 == int32x4(0)));
 	EXPECT_TRUE(all_true(int32x4(16) >> int32x4(4) == int32x4(1)));
+	EXPECT_TRUE(all_true(int32x4(16) >> int32x4(32) == int32x4(0)));
 	EXPECT_TRUE(all_true(int32x4(-16) >> 4 == int32x4(-1)));
+	EXPECT_TRUE(all_true(int32x4(-16) >> 32 == int32x4(-1)));
 	EXPECT_TRUE(all_true(int32x4(-16) >> int32x4(4) == int32x4(-1)));
+	EXPECT_TRUE(all_true(int32x4(-16) >> int32x4(32) == int32x4(-1)));
 	EXPECT_TRUE(all_true(int32x4(-16).shift_right_unsigned(4) == int32x4(0x0fffffff)));
-	EXPECT_TRUE(all_true(int32x4(-16).shift_right_unsigned(4) == int32x4(0x0fffffff)));
+	EXPECT_TRUE(all_true(int32x4(-16).shift_right_unsigned(int32x4(4)) == int32x4(0x0fffffff)));
+	EXPECT_TRUE(all_true(int32x4(-16).shift_right_unsigned(32) == int32x4(0)));
+	EXPECT_TRUE(all_true(int32x4(-16).shift_right_unsigned(int32x4(32)) == int32x4(0)));
 
 	EXPECT_TRUE(all_true(int32x4(-1, -1, -1, -1)));
 	EXPECT_FALSE(all_true(int32x4(0, -1, -1, -1)));
@@ -225,12 +233,20 @@ TEST(Math, Int32x8) {
 	EXPECT_TRUE(all_true((int32x8(0x0f0f0f0f) ^ int32x8(0x0000ffff)) == int32x8(0x0f0ff0f0)));
 	EXPECT_TRUE(all_true(int32x8(1) << 4 == int32x8(16)));
 	EXPECT_TRUE(all_true(int32x8(1) << int32x8(4) == int32x8(16)));
+	EXPECT_TRUE(all_true(int32x8(1) << 64 == int32x8(0)));
+	EXPECT_TRUE(all_true(int32x8(1) << int32x8(64) == int32x8(0)));
 	EXPECT_TRUE(all_true(int32x8(16) >> 4 == int32x8(1)));
 	EXPECT_TRUE(all_true(int32x8(16) >> int32x8(4) == int32x8(1)));
+	EXPECT_TRUE(all_true(int32x8(16) >> 64 == int32x8(0)));
+	EXPECT_TRUE(all_true(int32x8(16) >> int32x8(64) == int32x8(0)));
 	EXPECT_TRUE(all_true(int32x8(-16) >> 4 == int32x8(-1)));
 	EXPECT_TRUE(all_true(int32x8(-16) >> int32x8(4) == int32x8(-1)));
+	EXPECT_TRUE(all_true(int32x8(-16) >> 64 == int32x8(-1)));
+	EXPECT_TRUE(all_true(int32x8(-16) >> int32x8(64) == int32x8(-1)));
 	EXPECT_TRUE(all_true(int32x8(-16).shift_right_unsigned(4) == int32x8(0x0fffffff)));
-	EXPECT_TRUE(all_true(int32x8(-16).shift_right_unsigned(4) == int32x8(0x0fffffff)));
+	EXPECT_TRUE(all_true(int32x8(-16).shift_right_unsigned(int32x8(4)) == int32x8(0x0fffffff)));
+	EXPECT_TRUE(all_true(int32x8(-16).shift_right_unsigned(64) == int32x8(0)));
+	EXPECT_TRUE(all_true(int32x8(-16).shift_right_unsigned(int32x8(64)) == int32x8(0)));
 
 	EXPECT_TRUE(all_true(int32x8(-1, -1, -1, -1, -1, -1, -1, -1)));
 	EXPECT_FALSE(all_true(int32x8(0, -1, -1, -1, -1, -1, -1, -1)));

@@ -506,8 +506,8 @@ bool c_native_module_caller::try_call(
 					target_node_handle =
 						build_constant_array_node(compile_time_argument.get_string_array_out());
 				} else {
-					target_node_handle =
-						native_module_graph.add_constant_node(compile_time_argument.get_string_out().get_string().c_str());
+					target_node_handle = native_module_graph.add_constant_node(
+						compile_time_argument.get_string_out().get_string().c_str());
 				}
 			} else {
 				wl_assert(argument.data_access == e_native_module_data_access::k_reference);
