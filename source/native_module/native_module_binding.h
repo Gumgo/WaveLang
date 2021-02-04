@@ -22,20 +22,22 @@ namespace native_module_binding {
 	};
 
 	struct s_parse_script_type_string_result {
-		bool is_return;
-		e_native_module_argument_direction argument_direction;
-		e_native_module_primitive_type primitive_type;
-		bool is_array;
-		e_native_module_data_mutability data_mutability;
-		e_native_module_data_access data_access;
+		bool is_return = false;
+		e_native_module_argument_direction argument_direction = e_native_module_argument_direction::k_invalid;
+		e_native_module_primitive_type primitive_type = e_native_module_primitive_type::k_invalid;
+		bool is_array = false;
+		uint32 upsample_factor = 0;
+		e_native_module_data_mutability data_mutability = e_native_module_data_mutability::k_invalid;
+		e_native_module_data_access data_access = e_native_module_data_access::k_invalid;
 	};
 
 	// Parses a string that describes a script type. These strings take the form:
-	// [return] argument_direction [ref] [data_mutability] primitive_type[[]]
+	// [return] argument_direction [ref] [data_mutability] primitive_type [upsample_factor] [[]]
 	// Examples include:
 	// in real
 	// out const string[]
 	// in ref const? bool
+	// in real@2x
 	// return out real[]
 	template<size_t k_length>
 	constexpr s_parse_script_type_string_result parse_script_type_string(const char (&script_string)[k_length]) {
@@ -49,6 +51,7 @@ namespace native_module_binding {
 			}
 
 			constexpr bool read_token() {
+				// Simple token parser - combine alphanumerics
 				token_start = token_end;
 
 				while (true) {
@@ -61,12 +64,22 @@ namespace native_module_binding {
 				}
 
 				token_end = token_start;
+				bool is_alphanumeric = false;
 				while (true) {
 					char c = script_string[token_end];
 					if (c == ' ' || c == '\t' || c == '\0') {
 						break;
-					} else {
+					} else if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) {
+						// Keep looping until we find a non-alphanumeric character
+						is_alphanumeric = true;
 						token_end++;
+					} else {
+						// Symbol - return it on its own or break if we were parsing an alphanumeric
+						if (!is_alphanumeric) {
+							token_end++;
+						}
+
+						break;
 					}
 				}
 
@@ -85,7 +98,7 @@ namespace native_module_binding {
 			}
 		};
 
-		s_parse_script_type_string_result result {};
+		s_parse_script_type_string_result result{};
 		s_context context(script_string);
 
 		context.read_token();
@@ -116,42 +129,66 @@ namespace native_module_binding {
 
 		if (context.compare_token("const")) {
 			context.read_token();
-			if (context.compare_token("?")) { // Allow for a space between "const" and "?" to match script grammar
+			if (context.compare_token("?")) {
 				result.data_mutability = e_native_module_data_mutability::k_dependent_constant;
 				context.read_token();
 			} else {
 				result.data_mutability = e_native_module_data_mutability::k_constant;
 			}
-		} else if (context.compare_token("const?")) {
-			result.data_mutability = e_native_module_data_mutability::k_dependent_constant;
-			context.read_token();
 		} else {
 			result.data_mutability = e_native_module_data_mutability::k_variable;
 		}
 
-		// [return] argument_direction [ref] [data_mutability] primitive_type[[]]
 		if (context.compare_token("real")) {
 			result.primitive_type = e_native_module_primitive_type::k_real;
 		} else if (context.compare_token("bool")) {
 			result.primitive_type = e_native_module_primitive_type::k_bool;
 		} else if (context.compare_token("string")) {
 			result.primitive_type = e_native_module_primitive_type::k_string;
-		} else if (context.compare_token("real[]")) {
-			result.primitive_type = e_native_module_primitive_type::k_real;
-			result.is_array = true;
-		} else if (context.compare_token("bool[]")) {
-			result.primitive_type = e_native_module_primitive_type::k_bool;
-			result.is_array = true;
-		} else if (context.compare_token("string[]")) {
-			result.primitive_type = e_native_module_primitive_type::k_string;
-			result.is_array = true;
 		} else {
 			CONSTEXPR_ERROR();
 		}
 
 		context.read_token();
+		if (context.compare_token("@")) {
+			if (result.data_mutability == e_native_module_data_mutability::k_constant) {
+				CONSTEXPR_ERROR();
+			}
 
-		if (!result.is_array && context.compare_token("[]")) {
+			context.read_token();
+			if (context.token_start == context.token_end || context.script_string[context.token_end - 1] != 'x') {
+				CONSTEXPR_ERROR();
+			}
+
+			// Parse integer to read upsample factor
+			uint32 upsample_factor = 0;
+			for (size_t index = context.token_start; index < context.token_end - 1; index++) {
+				char c = context.script_string[index];
+				if (c == '0' && index == context.token_start) {
+					CONSTEXPR_ERROR();
+				} else if (c >= '0' && c <= '9') {
+					uint32 value = c - '0';
+					uint32 new_upsample_factor = upsample_factor * 10 + value;
+					if (new_upsample_factor < upsample_factor) {
+						CONSTEXPR_ERROR();
+					}
+				} else {
+					CONSTEXPR_ERROR();
+				}
+			}
+
+			result.upsample_factor = upsample_factor;
+			context.read_token();
+		} else {
+			result.upsample_factor = 1;
+		}
+
+		if (context.compare_token("[")) {
+			context.read_token();
+			if (!context.compare_token("]")) {
+				CONSTEXPR_ERROR();
+			}
+
 			result.is_array = true;
 			context.read_token();
 		}
@@ -215,6 +252,7 @@ namespace native_module_binding {
 		e_native_module_argument_direction k_argument_direction,
 		e_native_module_primitive_type k_primitive_type,
 		bool k_is_array,
+		uint32 k_upsample_factor,
 		e_native_module_data_mutability k_data_mutability,
 		e_native_module_data_access k_data_access,
 		bool k_is_return,
@@ -223,6 +261,7 @@ namespace native_module_binding {
 		static constexpr e_native_module_argument_direction k_argument_direction = k_argument_direction;
 		static constexpr e_native_module_primitive_type k_primitive_type = k_primitive_type;
 		static constexpr bool k_is_array = k_is_array;
+		static constexpr uint32 k_upsample_factor = k_upsample_factor;
 		static constexpr e_native_module_data_mutability k_data_mutability = k_data_mutability;
 		static constexpr e_native_module_data_access k_data_access = k_data_access;
 		static constexpr bool k_is_return = k_is_return;
@@ -352,7 +391,10 @@ namespace native_module_binding {
 				argument.name.set_verify(t_argument::k_name);
 				argument.argument_direction = t_argument::k_argument_direction;
 				argument.type = c_native_module_qualified_data_type(
-					c_native_module_data_type(t_argument::k_primitive_type, t_argument::k_is_array),
+					c_native_module_data_type(
+						t_argument::k_primitive_type,
+						t_argument::k_is_array,
+						t_argument::k_upsample_factor),
 					t_argument::k_data_mutability);
 				argument.data_access = t_argument::k_data_access;
 
@@ -370,6 +412,7 @@ namespace native_module_binding {
 		native_module_binding::parse_script_type_string(#script_type_string).argument_direction,	\
 		native_module_binding::parse_script_type_string(#script_type_string).primitive_type,		\
 		native_module_binding::parse_script_type_string(#script_type_string).is_array,				\
+		native_module_binding::parse_script_type_string(#script_type_string).upsample_factor,		\
 		native_module_binding::parse_script_type_string(#script_type_string).data_mutability,		\
 		native_module_binding::parse_script_type_string(#script_type_string).data_access,			\
 		native_module_binding::parse_script_type_string(#script_type_string).is_return,				\

@@ -3,6 +3,8 @@
 #include "common/common.h"
 #include "common/utility/string_table.h"
 
+#include "engine/task_function_registry.h"
+
 #include "instrument/graph_node_handle.h"
 #include "instrument/instrument_stage.h"
 
@@ -34,6 +36,7 @@ protected:
 	size_t m_array_index;
 };
 
+// $TODO change task_index to h_task
 class c_task_graph {
 public:
 	// Describes the usage of a type of buffer within the graph
@@ -49,7 +52,8 @@ public:
 	uint32 get_task_count() const;
 	uint32 get_max_task_concurrency() const;
 
-	uint32 get_task_function_index(uint32 task_index) const;
+	h_task_function get_task_function_handle(uint32 task_index) const;
+	uint32 get_task_upsample_factor(uint32 task_index) const;
 	c_task_function_runtime_arguments get_task_arguments(uint32 task_index) const;
 
 	size_t get_task_predecessor_count(uint32 task_index) const;
@@ -73,7 +77,10 @@ private:
 
 	struct s_task {
 		// The function to execute during this task
-		uint32 task_function_index;
+		h_task_function task_function_handle;
+
+		// The upsample factor of this task
+		uint32 upsample_factor;
 
 		// Start index in m_task_function_arguments
 		size_t arguments_start;

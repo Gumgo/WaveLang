@@ -49,10 +49,12 @@ void c_tracked_declaration::set_node_handle_with_latency(const s_node_handle_wit
 c_tracked_scope::c_tracked_scope(
 	c_tracked_scope *parent,
 	e_tracked_scope_type scope_type,
-	c_graph_trimmer *graph_trimmer) {
+	c_graph_trimmer *graph_trimmer,
+	uint32 relative_upsample_factor) {
 	m_parent = parent;
 	m_scope_type = scope_type;
 	m_graph_trimmer = graph_trimmer;
+	m_upsample_factor = (parent ? parent->get_upsample_factor() : 1) * relative_upsample_factor;
 }
 
 c_tracked_scope *c_tracked_scope::get_parent() {
@@ -65,6 +67,10 @@ const c_tracked_scope *c_tracked_scope::get_parent() const {
 
 e_tracked_scope_type c_tracked_scope::get_scope_type() const {
 	return m_scope_type;
+}
+
+uint32 c_tracked_scope::get_upsample_factor() const {
+	return m_upsample_factor;
 }
 
 size_t c_tracked_scope::get_tracked_declaration_count() const {

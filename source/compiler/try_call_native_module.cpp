@@ -1,5 +1,58 @@
 #include "compiler/try_call_native_module.h"
 
+#include "instrument/instrument_globals.h"
+
+template<typename t_native_module_native_type>
+struct s_native_module_native_type_mapping {};
+
+template<>
+struct s_native_module_native_type_mapping<c_native_module_real_reference> {
+	static constexpr e_native_module_primitive_type k_primitive_type = e_native_module_primitive_type::k_real;
+};
+
+template<>
+struct s_native_module_native_type_mapping<c_native_module_bool_reference> {
+	static constexpr e_native_module_primitive_type k_primitive_type = e_native_module_primitive_type::k_bool;
+};
+
+template<>
+struct s_native_module_native_type_mapping<c_native_module_string_reference> {
+	static constexpr e_native_module_primitive_type k_primitive_type = e_native_module_primitive_type::k_string;
+};
+
+template<>
+struct s_native_module_native_type_mapping<c_native_module_real_array> {
+	static constexpr e_native_module_primitive_type k_primitive_type = e_native_module_primitive_type::k_real;
+};
+
+template<>
+struct s_native_module_native_type_mapping<c_native_module_bool_array> {
+	static constexpr e_native_module_primitive_type k_primitive_type = e_native_module_primitive_type::k_bool;
+};
+
+template<>
+struct s_native_module_native_type_mapping<c_native_module_string_array> {
+	static constexpr e_native_module_primitive_type k_primitive_type = e_native_module_primitive_type::k_string;
+};
+
+template<>
+struct s_native_module_native_type_mapping<c_native_module_real_reference_array> {
+	static constexpr e_native_module_primitive_type k_primitive_type = e_native_module_primitive_type::k_real;
+	using t_element = c_native_module_real_reference;
+};
+
+template<>
+struct s_native_module_native_type_mapping<c_native_module_bool_reference_array> {
+	static constexpr e_native_module_primitive_type k_primitive_type = e_native_module_primitive_type::k_bool;
+	using t_element = c_native_module_bool_reference;
+};
+
+template<>
+struct s_native_module_native_type_mapping<c_native_module_string_reference_array> {
+	static constexpr e_native_module_primitive_type k_primitive_type = e_native_module_primitive_type::k_string;
+	using t_element = c_native_module_string_reference;
+};
+
 template<typename t_argument_reference>
 static t_argument_reference argument_reference_from_node_handle(h_graph_node node_handle);
 
@@ -22,6 +75,10 @@ public:
 	void warning(const char *format, ...) override;
 	void error(const char *format, ...) override;
 
+	// Note: these are somewhat broken. If a constant is produced and then assigned to a non-constant output, it will
+	// inherit the output latency of the module call but will not get properly delayed. It is really only safe to use
+	// these in modules which cannot have any input or output latency (e.g. modules with no input arguments, such as
+	// get_sample_rate(), are safe).
 	c_native_module_real_reference create_constant_reference(real32 value) override;
 	c_native_module_bool_reference create_constant_reference(bool value) override;
 	c_native_module_string_reference create_constant_reference(const char *value) override;
@@ -37,7 +94,10 @@ private:
 	// raised and an invalid node handle is returned - this indicates that the implementation of the native module which
 	// provided this node handle is invalid.
 	template<typename t_argument_reference>
-	h_graph_node validate_and_get_node_handle(t_argument_reference argument_reference, bool should_be_constant);
+	h_graph_node validate_and_get_node_handle(
+		t_argument_reference argument_reference,
+		uint32 upsample_factor,
+		bool should_be_constant);
 
 	// Builds an array of constant values and stores the result in array_value_out
 	template<typename t_array>
@@ -62,6 +122,7 @@ private:
 	template<typename t_reference_array>
 	h_graph_node try_build_reference_array_node(
 		const t_reference_array &reference_array_value,
+		uint32 upsample_factor,
 		bool should_be_constant);
 
 	const char *get_native_module_name() const;
@@ -146,7 +207,7 @@ bool c_native_module_caller::try_call(
 
 	c_native_module_graph &native_module_graph = m_graph_trimmer.get_native_module_graph();
 	h_native_module native_module_handle =
-		native_module_graph.get_native_module_call_native_module_handle(m_native_module_call_node_handle);
+		native_module_graph.get_native_module_call_node_native_module_handle(m_native_module_call_node_handle);
 	const s_native_module &native_module =
 		c_native_module_registry::get_native_module(native_module_handle);
 
@@ -178,6 +239,7 @@ bool c_native_module_caller::try_call(
 	}
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
+	bool can_call = native_module.compile_time_call != nullptr;
 	size_t next_input = 0;
 	size_t next_output = 0;
 	bool all_dependent_constant_inputs_are_constant = true;
@@ -197,12 +259,19 @@ bool c_native_module_caller::try_call(
 				next_input,
 				0);
 
-			wl_assert(native_module_graph.get_node_data_type(source_node_handle) == argument.type.get_data_type());
+			wl_assert(
+				native_module_graph.get_node_data_type(source_node_handle).get_data_type() ==
+				argument.type.get_data_type());
 
-			// If the input node isn't a constant, we can't call this native module
-			if (argument.data_access == e_native_module_data_access::k_value
-				&& !native_module_graph.is_node_constant(source_node_handle)) {
-				return true;
+			// If the input node is referenced by value but isn't a constant, we can't call this native module
+			if (argument.data_access == e_native_module_data_access::k_value) {
+				e_native_module_data_mutability data_mutability =
+					native_module_graph.get_node_data_type(source_node_handle).get_data_mutability();
+				if (data_mutability != e_native_module_data_mutability::k_constant) {
+					can_call = false;
+					next_input++;
+					continue;
+				}
 			}
 
 			bool is_constant = true;
@@ -360,6 +429,9 @@ bool c_native_module_caller::try_call(
 	wl_assert(next_output == out_argument_count);
 	wl_assert(next_input + next_output == native_module.argument_count);
 
+	uint32 native_module_upsample_factor =
+		native_module_graph.get_native_module_call_node_upsample_factor(m_native_module_call_node_handle);
+
 	// Make the compile time call to resolve the outputs
 	s_native_module_context native_module_context;
 	zero_type(&native_module_context);
@@ -367,6 +439,9 @@ bool c_native_module_caller::try_call(
 	native_module_context.diagnostic_interface = this;
 	native_module_context.reference_interface = this;
 	native_module_context.instrument_globals = &m_instrument_globals;
+
+	native_module_context.upsample_factor = native_module_upsample_factor;
+	native_module_context.sample_rate = m_instrument_globals.sample_rate * native_module_upsample_factor;
 
 	h_native_module_library library_handle =
 		c_native_module_registry::get_native_module_library_handle(native_module.uid.get_library_id());
@@ -426,7 +501,7 @@ bool c_native_module_caller::try_call(
 			output_latency_out = m_input_latency + latency;
 		}
 
-		if (!native_module.compile_time_call) {
+		if (!can_call) {
 			return true;
 		}
 
@@ -453,6 +528,7 @@ bool c_native_module_caller::try_call(
 			argument.type.get_data_mutability() == e_native_module_data_mutability::k_constant
 			|| (argument.type.get_data_mutability() == e_native_module_data_mutability::k_dependent_constant
 				&& all_dependent_constant_inputs_are_constant);
+		uint32 upsample_factor = should_be_constant ? 1 : argument.type.get_upsample_factor();
 
 		switch (argument.type.get_primitive_type()) {
 		case e_native_module_primitive_type::k_real:
@@ -468,10 +544,12 @@ bool c_native_module_caller::try_call(
 				if (argument.type.is_array()) {
 					target_node_handle = try_build_reference_array_node(
 						compile_time_argument.get_real_reference_array_out(),
+						upsample_factor,
 						should_be_constant);
 				} else {
 					target_node_handle = validate_and_get_node_handle(
 						compile_time_argument.get_real_reference_out(),
+						upsample_factor,
 						should_be_constant);
 				}
 
@@ -491,10 +569,12 @@ bool c_native_module_caller::try_call(
 				if (argument.type.is_array()) {
 					target_node_handle = try_build_reference_array_node(
 						compile_time_argument.get_bool_reference_array_out(),
+						upsample_factor,
 						should_be_constant);
 				} else {
 					target_node_handle = validate_and_get_node_handle(
 						compile_time_argument.get_bool_reference_out(),
+						upsample_factor,
 						should_be_constant);
 				}
 			}
@@ -514,10 +594,12 @@ bool c_native_module_caller::try_call(
 				if (argument.type.is_array()) {
 					target_node_handle = try_build_reference_array_node(
 						compile_time_argument.get_string_reference_array_out(),
+						upsample_factor,
 						should_be_constant);
 				} else {
 					target_node_handle = validate_and_get_node_handle(
 						compile_time_argument.get_string_reference_out(),
+						upsample_factor,
 						should_be_constant);
 				}
 			}
@@ -628,31 +710,28 @@ c_native_module_string_reference c_native_module_caller::create_constant_referen
 }
 
 template<typename t_reference>
-t_reference c_native_module_caller::build_reference_value(h_graph_node node_handle, bool &is_constant_out) {
+t_reference c_native_module_caller::build_reference_value(
+	h_graph_node node_handle,
+	bool &is_constant_out) {
 	const c_native_module_graph &native_module_graph = m_graph_trimmer.get_native_module_graph();
 	is_constant_out = native_module_graph.get_node_type(node_handle) == e_native_module_graph_node_type::k_constant;
 
-	if constexpr (std::is_same_v<t_reference, c_native_module_real_reference>) {
-		wl_assert(native_module_graph.get_node_data_type(node_handle)
-			== c_native_module_data_type(e_native_module_primitive_type::k_real));
-		return argument_reference_from_node_handle<c_native_module_real_reference>(node_handle);
-	} else if constexpr (std::is_same_v<t_reference, c_native_module_bool_reference>) {
-		wl_assert(native_module_graph.get_node_data_type(node_handle)
-			== c_native_module_data_type(e_native_module_primitive_type::k_bool));
-		return argument_reference_from_node_handle<c_native_module_bool_reference>(node_handle);
-	} else if constexpr (std::is_same_v<t_reference, c_native_module_string_reference>) {
-		wl_assert(native_module_graph.get_node_data_type(node_handle)
-			== c_native_module_data_type(e_native_module_primitive_type::k_string));
-		return argument_reference_from_node_handle<c_native_module_string_reference>(node_handle);
-	} else {
-		STATIC_UNREACHABLE();
-	}
+#if IS_TRUE(ASSERTS_ENABLED)
+	static constexpr e_native_module_primitive_type k_primitive_type =
+		s_native_module_native_type_mapping<t_reference>::k_primitive_type;
+	c_native_module_data_type data_type = native_module_graph.get_node_data_type(node_handle).get_data_type();
+	wl_assert(data_type == c_native_module_data_type(k_primitive_type, false, data_type.get_upsample_factor()));
+#endif // IS_TRUE(ASSERTS_ENABLED)
+
+	return argument_reference_from_node_handle<t_reference>(node_handle);
 }
 
 template<typename t_argument_reference>
 h_graph_node c_native_module_caller::validate_and_get_node_handle(
 	t_argument_reference argument_reference,
+	uint32 upsample_factor,
 	bool should_be_constant) {
+	wl_assert(upsample_factor == 1 || !should_be_constant);
 	h_graph_node node_handle = node_handle_from_argument_reference(argument_reference);
 	if (!node_handle.is_valid()) {
 		m_context.error(
@@ -665,39 +744,24 @@ h_graph_node c_native_module_caller::validate_and_get_node_handle(
 		return h_graph_node();
 	}
 
-	c_native_module_data_type data_type;
-	if constexpr (std::is_same_v<t_argument_reference, c_native_module_real_reference>) {
-		data_type = c_native_module_data_type(e_native_module_primitive_type::k_real);
-	} else if constexpr (std::is_same_v<t_argument_reference, c_native_module_bool_reference>) {
-		data_type = c_native_module_data_type(e_native_module_primitive_type::k_bool);
-	} else if constexpr (std::is_same_v<t_argument_reference, c_native_module_string_reference>) {
-		data_type = c_native_module_data_type(e_native_module_primitive_type::k_string);
-	} else {
-		STATIC_UNREACHABLE();
-	}
+	static constexpr e_native_module_primitive_type k_primitive_type =
+		s_native_module_native_type_mapping<t_argument_reference>::k_primitive_type;
+
+	c_native_module_qualified_data_type expected_data_type(
+		c_native_module_data_type(k_primitive_type, false, upsample_factor),
+		should_be_constant ? e_native_module_data_mutability::k_constant : e_native_module_data_mutability::k_variable);
 
 	const c_native_module_graph &native_module_graph = m_graph_trimmer.get_native_module_graph();
-	if (native_module_graph.get_node_data_type(node_handle) != data_type) {
+	c_native_module_qualified_data_type node_data_type = native_module_graph.get_node_data_type(node_handle);
+	if (!is_native_module_data_type_assignable(node_data_type, expected_data_type)) {
 		m_context.error(
 			e_compiler_error::k_invalid_native_module_implementation,
 			m_call_source_location,
 			"Native module '%s' produced a reference of type '%s' but the expected type is '%s'; "
 			"the implementation of '%s' is broken, this is not a script error",
 			get_native_module_name(),
-			native_module_graph.get_node_data_type(node_handle).to_string().c_str(),
-			data_type.to_string().c_str(),
-			get_native_module_name());
-		return h_graph_node();
-	}
-
-	if (should_be_constant && !native_module_graph.is_node_constant(node_handle)) {
-		m_context.error(
-			e_compiler_error::k_invalid_native_module_implementation,
-			m_call_source_location,
-			"Native module '%s' produced a non-constant reference of type '%s' but a constant referene was expected; "
-			"the implementation of '%s' is broken, this is not a script error",
-			get_native_module_name(),
-			data_type.to_string().c_str(),
+			node_data_type.to_string().c_str(),
+			expected_data_type.to_string().c_str(),
 			get_native_module_name());
 		return h_graph_node();
 	}
@@ -748,19 +812,11 @@ void c_native_module_caller::build_reference_array_value(
 			element_index,
 			0);
 
+		using t_reference = typename s_native_module_native_type_mapping<t_reference_array>::t_element;
+
 		bool element_is_constant;
-		if constexpr (std::is_same_v<t_reference_array, c_native_module_real_reference_array>) {
-			reference_array_value_out.get_array()[element_index] =
-				build_reference_value<c_native_module_real_reference>(element_node_handle, element_is_constant);
-		} else if constexpr (std::is_same_v<t_reference_array, c_native_module_bool_reference_array>) {
-			reference_array_value_out.get_array()[element_index] =
-				build_reference_value<c_native_module_bool_reference>(element_node_handle, element_is_constant);
-		} else if constexpr (std::is_same_v<t_reference_array, c_native_module_string_reference_array>) {
-			reference_array_value_out.get_array()[element_index] =
-				build_reference_value<c_native_module_string_reference>(element_node_handle, element_is_constant);
-		} else {
-			STATIC_UNREACHABLE();
-		}
+		reference_array_value_out.get_array()[element_index] =
+			build_reference_value<t_reference>(element_node_handle, element_is_constant);
 
 		all_elements_constant_out &= element_is_constant;
 	}
@@ -769,18 +825,10 @@ void c_native_module_caller::build_reference_array_value(
 template<typename t_array>
 h_graph_node c_native_module_caller::build_constant_array_node(const t_array &array_value) {
 	c_native_module_graph &native_module_graph = m_graph_trimmer.get_native_module_graph();
-	c_native_module_data_type element_data_type;
-	if constexpr (std::is_same_v<t_array, c_native_module_real_array>) {
-		element_data_type = c_native_module_data_type(e_native_module_primitive_type::k_real);
-	} else if constexpr (std::is_same_v<t_array, c_native_module_bool_array>) {
-		element_data_type = c_native_module_data_type(e_native_module_primitive_type::k_bool);
-	} else if constexpr (std::is_same_v<t_array, c_native_module_string_array>) {
-		element_data_type = c_native_module_data_type(e_native_module_primitive_type::k_string);
-	} else {
-		STATIC_UNREACHABLE();
-	}
+	static constexpr e_native_module_primitive_type k_primitive_type =
+		s_native_module_native_type_mapping<t_array>::k_primitive_type;
 
-	h_graph_node array_node_handle = native_module_graph.add_array_node(element_data_type);
+	h_graph_node array_node_handle = native_module_graph.add_array_node(k_primitive_type);
 	for (size_t index = 0; index < array_value.get_array().size(); index++) {
 		if constexpr (std::is_same_v<t_array, c_native_module_string_array>) {
 			native_module_graph.add_array_value(
@@ -799,23 +847,17 @@ h_graph_node c_native_module_caller::build_constant_array_node(const t_array &ar
 template<typename t_reference_array>
 h_graph_node c_native_module_caller::try_build_reference_array_node(
 	const t_reference_array &reference_array_value,
+	uint32 upsample_factor,
 	bool should_be_constant) {
+	wl_assert(upsample_factor == 1 || !should_be_constant);
 	c_native_module_graph &native_module_graph = m_graph_trimmer.get_native_module_graph();
-	c_native_module_data_type element_data_type;
-	if constexpr (std::is_same_v<t_reference_array, c_native_module_real_reference_array>) {
-		element_data_type = c_native_module_data_type(e_native_module_primitive_type::k_real);
-	} else if constexpr (std::is_same_v<t_reference_array, c_native_module_bool_reference_array>) {
-		element_data_type = c_native_module_data_type(e_native_module_primitive_type::k_bool);
-	} else if constexpr (std::is_same_v<t_reference_array, c_native_module_string_reference_array>) {
-		element_data_type = c_native_module_data_type(e_native_module_primitive_type::k_string);
-	} else {
-		STATIC_UNREACHABLE();
-	}
+	static constexpr e_native_module_primitive_type k_primitive_type =
+		s_native_module_native_type_mapping<t_reference_array>::k_primitive_type;
 
-	h_graph_node array_node_handle = native_module_graph.add_array_node(element_data_type);
+	h_graph_node array_node_handle = native_module_graph.add_array_node(k_primitive_type);
 	for (size_t index = 0; index < reference_array_value.get_array().size(); index++) {
 		h_graph_node node_handle =
-			validate_and_get_node_handle(reference_array_value.get_array()[index], should_be_constant);
+			validate_and_get_node_handle(reference_array_value.get_array()[index], upsample_factor, should_be_constant);
 		if (!node_handle.is_valid()) {
 			// No need to report an error, it was already raised in validate_and_get_node_handle()
 			return h_graph_node();
@@ -829,7 +871,7 @@ h_graph_node c_native_module_caller::try_build_reference_array_node(
 
 const char *c_native_module_caller::get_native_module_name() const {
 	h_native_module native_module_handle =
-		m_graph_trimmer.get_native_module_graph().get_native_module_call_native_module_handle(
+		m_graph_trimmer.get_native_module_graph().get_native_module_call_node_native_module_handle(
 			m_native_module_call_node_handle);
 	const s_native_module &native_module =
 		c_native_module_registry::get_native_module(native_module_handle);

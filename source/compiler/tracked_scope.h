@@ -60,12 +60,17 @@ private:
 // Tracks progress through a scope
 class c_tracked_scope {
 public:
-	c_tracked_scope(c_tracked_scope *parent, e_tracked_scope_type scope_type, c_graph_trimmer *graph_trimmer);
+	c_tracked_scope(
+		c_tracked_scope *parent,
+		e_tracked_scope_type scope_type,
+		c_graph_trimmer *graph_trimmer,
+		uint32 relative_upsample_factor = 1);
 	UNCOPYABLE(c_tracked_scope);
 
 	c_tracked_scope *get_parent();
 	const c_tracked_scope *get_parent() const;
 	e_tracked_scope_type get_scope_type() const;
+	uint32 get_upsample_factor() const;
 
 	size_t get_tracked_declaration_count() const;
 	c_tracked_declaration *get_tracked_declaration(size_t index);
@@ -98,6 +103,7 @@ private:
 	c_tracked_scope *m_parent = nullptr;
 	e_tracked_scope_type m_scope_type;
 	c_graph_trimmer *m_graph_trimmer = nullptr;
+	uint32 m_upsample_factor = 1;
 	std::vector<std::unique_ptr<c_tracked_declaration>> m_declarations;
 
 	// Allows lookup of a tracked declaration from an AST declaration

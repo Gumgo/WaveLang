@@ -4,6 +4,8 @@
 #include "common/threading/lock_free.h"
 #include "common/utility/stopwatch.h"
 
+#include "engine/task_function_registry.h"
+
 #include "instrument/instrument_stage.h"
 
 #include <vector>
@@ -27,7 +29,7 @@ struct s_profiler_record {
 
 struct s_profiler_report {
 	struct s_task {
-		uint32 task_function_index;
+		h_task_function task_function_handle;
 		s_profiler_record task_total_time;
 		s_profiler_record task_function_time;
 		s_profiler_record task_overhead_time;
@@ -71,7 +73,7 @@ public:
 		e_instrument_stage instrument_stage,
 		uint32 worker_thread,
 		uint32 task_index,
-		uint32 task_function_index);
+		h_task_function task_function_handle);
 	void begin_task_function(e_instrument_stage instrument_stage, uint32 worker_thread, uint32 task_index);
 	void end_task_function(e_instrument_stage instrument_stage, uint32 worker_thread, uint32 task_index);
 	void end_task(e_instrument_stage instrument_stage, uint32 worker_thread, uint32 task_index);
@@ -111,7 +113,7 @@ private:
 	};
 
 	struct ALIGNAS_LOCK_FREE s_task {
-		uint32 task_function_index;
+		h_task_function task_function_handle;
 		s_profiler_record total_time;
 		s_profiler_record function_time;
 		s_profiler_record overhead_time;

@@ -59,13 +59,12 @@ void c_entry_point_extractor::extract_entry_points(
 
 		entry_points[index] = entry_point;
 
-		// $TODO $UPSAMPLE support upsampled data types
 		if (entry_point) {
 			c_ast_qualified_data_type real_data_type(
-				c_ast_data_type(e_ast_primitive_type::k_real),
+				c_ast_data_type(e_ast_primitive_type::k_real, false, 1),
 				e_ast_data_mutability::k_variable);
 			c_ast_qualified_data_type bool_data_type(
-				c_ast_data_type(e_ast_primitive_type::k_bool),
+				c_ast_data_type(e_ast_primitive_type::k_bool, false, 1),
 				e_ast_data_mutability::k_variable);
 
 			// Validate input/output types

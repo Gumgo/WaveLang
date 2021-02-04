@@ -183,18 +183,22 @@ bool c_task_function_registry::is_task_function_library_registered(uint32 librar
 	return it != g_task_function_registry_data.task_function_library_ids_to_indices.end();
 }
 
-uint32 c_task_function_registry::get_task_function_library_index(uint32 library_id) {
+h_task_function_library c_task_function_registry::get_task_function_library_handle(uint32 library_id) {
 	wl_assert(is_task_function_library_registered(library_id));
 	auto it = g_task_function_registry_data.task_function_library_ids_to_indices.find(library_id);
-	return it->second;
+	return h_task_function_library::construct(it->second);
 }
 
 uint32 c_task_function_registry::get_task_function_library_count() {
 	return cast_integer_verify<uint32>(g_task_function_registry_data.task_function_libraries.size());
 }
 
-const s_task_function_library &c_task_function_registry::get_task_function_library(uint32 index) {
-	return g_task_function_registry_data.task_function_libraries[index];
+c_index_handle_iterator<h_task_function_library> c_task_function_registry::iterate_task_function_libraries() {
+	return c_index_handle_iterator<h_task_function_library>(get_task_function_library_count());
+}
+
+const s_task_function_library &c_task_function_registry::get_task_function_library(h_task_function_library handle) {
+	return g_task_function_registry_data.task_function_libraries[handle.get_data()];
 }
 
 bool c_task_function_registry::register_task_function(const s_task_function &task_function) {
@@ -299,18 +303,22 @@ uint32 c_task_function_registry::get_task_function_count() {
 	return cast_integer_verify<uint32>(g_task_function_registry_data.task_functions.size());
 }
 
-uint32 c_task_function_registry::get_task_function_index(s_task_function_uid task_function_uid) {
+c_index_handle_iterator<h_task_function> c_task_function_registry::iterate_task_functions() {
+	return c_index_handle_iterator<h_task_function>(get_task_function_count());
+}
+
+h_task_function c_task_function_registry::get_task_function_handle(s_task_function_uid task_function_uid) {
 	auto it = g_task_function_registry_data.task_function_uids_to_indices.find(task_function_uid);
 	if (it == g_task_function_registry_data.task_function_uids_to_indices.end()) {
-		return k_invalid_task_function_index;
+		return h_task_function::invalid();
 	} else {
-		return it->second;
+		return h_task_function::construct(it->second);
 	}
 }
 
-const s_task_function &c_task_function_registry::get_task_function(uint32 index) {
-	wl_assert(valid_index(index, get_task_function_count()));
-	return g_task_function_registry_data.task_functions[index];
+const s_task_function &c_task_function_registry::get_task_function(h_task_function handle) {
+	wl_assert(valid_index(handle.get_data(), get_task_function_count()));
+	return g_task_function_registry_data.task_functions[handle.get_data()];
 }
 
 s_task_function_uid c_task_function_registry::get_task_function_mapping(h_native_module native_module_handle) {
@@ -404,12 +412,13 @@ static bool validate_task_function_mapping(const s_native_module &native_module,
 			}
 		}
 
-		// For all qualifier types, the primitive type and whether it's an array must match
+		// For all qualifier types, the primitive type, upsample factor, and whether it's an array must match
 		e_task_primitive_type expected_primitive_type =
 			task_primitive_type_from_native_module_primitive_type(native_module_argument.type.get_primitive_type());
 		bool type_mapping_valid =
 			task_function_argument.type.get_primitive_type() == expected_primitive_type
-			&& task_function_argument.type.is_array() == native_module_argument.type.is_array();
+			&& task_function_argument.type.is_array() == native_module_argument.type.is_array()
+			&& task_function_argument.type.get_upsample_factor() == native_module_argument.type.get_upsample_factor();
 
 		if (type_mapping_valid) {
 			switch (native_module_argument.type.get_data_mutability()) {

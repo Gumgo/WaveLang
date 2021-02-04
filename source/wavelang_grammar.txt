@@ -49,6 +49,9 @@ terminals: {
 	literal_bool;
 	literal_string;
 
+	// Integer upsample factor (e.g. 2x)
+	upsample_factor;
+
 	// Used to mark the beginning of the symbols section
 	symbols_start;
 
@@ -56,7 +59,7 @@ terminals: {
 	left_brace("{");
 	right_brace("}");
 
-	at("@");		// Used to force a native import
+	at("@");		// Used to force a native import and to indicate upsampled data types
 	pound("#");		// Prefix to instrument globals
 	period(".");
 	comma(",");
@@ -256,8 +259,8 @@ nonterminals: {
 		keyword_const(const_keyword) question_mark -> dependent_const_qualifier;
 	}
 
-	data_type("s_value_with_source_location<c_ast_data_type>"): {
-		primitive_type(primitive_type) array_specifier(is_array) -> data_type;
+	data_type("s_value_with_source_location<s_data_type_with_details>"): {
+		primitive_type(primitive_type) type_upsample_factor(upsample_factor) array_specifier(is_array) -> data_type;
 	}
 
 	primitive_type("s_value_with_source_location<e_ast_primitive_type>"): {
@@ -265,6 +268,11 @@ nonterminals: {
 		keyword_real(type) -> primitive_type;
 		keyword_bool(type) -> primitive_type;
 		keyword_string(type) -> primitive_type;
+	}
+
+	type_upsample_factor("s_value_with_source_location<s_upsample_factor>"): {
+		. -> no_upsample_factor;
+		at upsample_factor(upsample_factor) -> upsample_factor;
 	}
 
 	array_specifier("bool"): {
@@ -326,7 +334,7 @@ nonterminals: {
 
 	expr_8("c_temporary_reference<c_ast_node_expression>"): {
 		expr_8(lhs) left_bracket(op) expression(rhs) right_bracket -> binary_operator; // Array access can be treated as a binary operator
-		expr_8(module) left_parenthesis module_call_argument_list(argument_list) right_parenthesis -> module_call;
+		expr_8(module) type_upsample_factor(upsample_factor) left_parenthesis module_call_argument_list(argument_list) right_parenthesis -> module_call;
 		qualified_data_type(data_type) left_parenthesis expression(expression) right_parenthesis -> convert;
 		expr_8(lhs) period identifier(identifier) -> access;
 		identifier(identifier) -> identifier;

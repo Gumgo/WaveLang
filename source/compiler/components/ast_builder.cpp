@@ -141,7 +141,7 @@ protected:
 	void exit_qualified_data_type(
 		s_value_with_source_location<c_ast_qualified_data_type> &rule_head_context,
 		s_value_with_source_location<e_ast_data_mutability> &mutability,
-		s_value_with_source_location<c_ast_data_type> &data_type) override;
+		s_value_with_source_location<s_data_type_with_details> &data_type) override;
 	void exit_no_qualifier(
 		s_value_with_source_location<e_ast_data_mutability> &rule_head_context) override;
 	void exit_const_qualifier(
@@ -151,12 +151,18 @@ protected:
 		s_value_with_source_location<e_ast_data_mutability> &rule_head_context,
 		const s_token &const_keyword) override;
 	void exit_data_type(
-		s_value_with_source_location<c_ast_data_type> &rule_head_context,
+		s_value_with_source_location<s_data_type_with_details> &rule_head_context,
 		s_value_with_source_location<e_ast_primitive_type> &primitive_type,
+		s_value_with_source_location<s_upsample_factor> &upsample_factor,
 		bool &is_array) override;
 	void exit_primitive_type(
 		s_value_with_source_location<e_ast_primitive_type> &rule_head_context,
 		const s_token &type) override;
+	void exit_no_upsample_factor(
+		s_value_with_source_location<s_upsample_factor> &rule_head_context) override;
+	void exit_upsample_factor(
+		s_value_with_source_location<s_upsample_factor> &rule_head_context,
+		const s_token &upsample_factor) override;
 	void exit_is_not_array(
 		bool &rule_head_context) override;
 	void exit_is_array(
@@ -183,10 +189,12 @@ protected:
 	bool enter_module_call(
 		c_temporary_reference<c_ast_node_expression> &rule_head_context,
 		c_temporary_reference<c_ast_node_expression> &module,
+		s_value_with_source_location<s_upsample_factor> &upsample_factor,
 		c_ast_node_module_call *&argument_list) override;
 	void exit_module_call(
 		c_temporary_reference<c_ast_node_expression> &rule_head_context,
 		c_temporary_reference<c_ast_node_expression> &module,
+		s_value_with_source_location<s_upsample_factor> &upsample_factor,
 		c_ast_node_module_call *&argument_list) override;
 	void exit_convert(
 		c_temporary_reference<c_ast_node_expression> &rule_head_context,
@@ -398,16 +406,19 @@ private:
 		c_tracked_scope *tracked_scope,
 		const char *identifier);
 
+	// If upsample_factor is 0, it wasn't explicitly specified and must be deduced from the arguments
 	void resolve_module_call(
 		c_ast_node_module_call *module_call,
-		c_wrapped_array<c_ast_node_module_declaration *> module_candidates);
+		c_wrapped_array<c_ast_node_module_declaration *> module_candidates,
+		uint32 upsample_factor);
 
 	void resolve_module_call_argument(
 		c_ast_node_module_declaration *module_declaration,
 		c_ast_node_module_declaration_argument *argument,
 		c_ast_node_module_call *module_call,
 		c_ast_node_expression *argument_expression,
-		e_ast_data_mutability dependent_constant_data_mutability);
+		e_ast_data_mutability dependent_constant_data_mutability,
+		uint32 upsample_factor);
 
 	void resolve_native_operator_call(
 		c_ast_node_module_call *module_call,
@@ -1078,18 +1089,18 @@ void c_ast_builder_visitor::exit_module_body(
 void c_ast_builder_visitor::exit_qualified_data_type(
 	s_value_with_source_location<c_ast_qualified_data_type> &rule_head_context,
 	s_value_with_source_location<e_ast_data_mutability> &mutability,
-	s_value_with_source_location<c_ast_data_type> &data_type) {
+	s_value_with_source_location<s_data_type_with_details> &data_type) {
 	rule_head_context.source_location = mutability.source_location.is_valid()
 		? mutability.source_location
 		: data_type.source_location;
 
 	// For convenience, upgrade constant-only types to constants
-	if (data_type.value.get_primitive_type_traits().constant_only) {
+	if (data_type.value.data_type.get_primitive_type_traits().constant_only) {
 		mutability.value = e_ast_data_mutability::k_constant;
 	}
 
-	rule_head_context.value = c_ast_qualified_data_type(data_type.value, mutability.value);
-	if (!rule_head_context.value.is_legal_type_declaration()) {
+	rule_head_context.value = c_ast_qualified_data_type(data_type.value.data_type, mutability.value);
+	if (!rule_head_context.value.is_legal_type_declaration(data_type.value.was_upsample_factor_provided)) {
 		m_context.error(
 			e_compiler_error::k_illegal_data_type,
 			rule_head_context.source_location,
@@ -1120,19 +1131,14 @@ void c_ast_builder_visitor::exit_dependent_const_qualifier(
 }
 
 void c_ast_builder_visitor::exit_data_type(
-	s_value_with_source_location<c_ast_data_type> &rule_head_context,
+	s_value_with_source_location<s_data_type_with_details> &rule_head_context,
 	s_value_with_source_location<e_ast_primitive_type> &primitive_type,
+	s_value_with_source_location<s_upsample_factor> &upsample_factor,
 	bool &is_array) {
-	rule_head_context.value = c_ast_data_type(primitive_type.value, is_array);
-	rule_head_context.source_location = primitive_type.source_location;
-	if (!rule_head_context.value.is_legal_type_declaration()) {
-		m_context.error(
-			e_compiler_error::k_illegal_data_type,
-			rule_head_context.source_location,
-			"Illegal data type '%s'",
-			rule_head_context.value.to_string().c_str());
-		rule_head_context.value = c_ast_data_type::error();
-	}
+	rule_head_context.value = {
+		c_ast_data_type(primitive_type.value, is_array, upsample_factor.value.upsample_factor),
+		upsample_factor.value.was_provided
+	};
 }
 
 void c_ast_builder_visitor::exit_primitive_type(
@@ -1160,6 +1166,18 @@ void c_ast_builder_visitor::exit_primitive_type(
 	}
 
 	rule_head_context.source_location = type.source_location;
+}
+
+void c_ast_builder_visitor::exit_no_upsample_factor(
+	s_value_with_source_location<s_upsample_factor> &rule_head_context) {
+	rule_head_context.value = { false, 1 };
+}
+
+void c_ast_builder_visitor::exit_upsample_factor(
+	s_value_with_source_location<s_upsample_factor> &rule_head_context,
+	const s_token &upsample_factor) {
+	rule_head_context.source_location = upsample_factor.source_location;
+	rule_head_context.value = { true, upsample_factor.value.upsample_factor };
 }
 
 void c_ast_builder_visitor::exit_is_not_array(
@@ -1333,6 +1351,7 @@ void c_ast_builder_visitor::exit_unary_operator(
 bool c_ast_builder_visitor::enter_module_call(
 	c_temporary_reference<c_ast_node_expression> &rule_head_context,
 	c_temporary_reference<c_ast_node_expression> &module,
+	s_value_with_source_location<s_upsample_factor> &upsample_factor,
 	c_ast_node_module_call *&argument_list) {
 	c_ast_node_module_call *module_call_node = new c_ast_node_module_call();
 	rule_head_context.initialize(module_call_node);
@@ -1343,6 +1362,7 @@ bool c_ast_builder_visitor::enter_module_call(
 void c_ast_builder_visitor::exit_module_call(
 	c_temporary_reference<c_ast_node_expression> &rule_head_context,
 	c_temporary_reference<c_ast_node_expression> &module,
+	s_value_with_source_location<s_upsample_factor> &upsample_factor,
 	c_ast_node_module_call *&argument_list) {
 	c_ast_node_module_call *module_call_node = rule_head_context->get_as<c_ast_node_module_call>();
 	module_call_node->set_source_location(module->get_source_location());
@@ -1362,7 +1382,10 @@ void c_ast_builder_visitor::exit_module_call(
 			candidates.push_back(reference->get_as<c_ast_node_module_declaration>());
 		}
 
-		resolve_module_call(module_call_node, c_wrapped_array<c_ast_node_module_declaration *>(candidates));
+		resolve_module_call(
+			module_call_node,
+			c_wrapped_array<c_ast_node_module_declaration *>(candidates),
+			upsample_factor.value.was_provided ? upsample_factor.value.upsample_factor : 0);
 	}
 
 	module.release();
@@ -1711,7 +1734,7 @@ void c_ast_builder_visitor::exit_scope_item_assignment(
 			if (!index_data_type.is_error()
 				&& index_data_type.get_data_mutability() != e_ast_data_mutability::k_constant) {
 				c_ast_qualified_data_type const_real_data_type(
-					c_ast_data_type(e_ast_primitive_type::k_real),
+					c_ast_data_type(e_ast_primitive_type::k_real, false, 1),
 					e_ast_data_mutability::k_constant);
 				m_context.error(
 					e_compiler_error::k_illegal_variable_subscript_assignment,
@@ -1779,9 +1802,7 @@ void c_ast_builder_visitor::exit_scope_item_assignment(
 void c_ast_builder_visitor::exit_scope_item_return_void_statement(
 	c_temporary_reference<c_ast_node_scope_item> &rule_head_context,
 	const s_token &return_keyword) {
-	validate_current_module_return_type(
-		c_ast_qualified_data_type(c_ast_data_type(e_ast_primitive_type::k_void), e_ast_data_mutability::k_variable),
-		return_keyword.source_location);
+	validate_current_module_return_type(c_ast_qualified_data_type::void_(), return_keyword.source_location);
 
 	c_ast_node_return_statement *return_statement_node = new c_ast_node_return_statement();
 	rule_head_context.initialize(return_statement_node);
@@ -1938,7 +1959,7 @@ void c_ast_builder_visitor::exit_if_statement_expression(
 	c_temporary_reference<c_ast_node_expression> &expression) {
 	// Expressions must be const-bool
 	c_ast_qualified_data_type const_bool_data_type(
-		c_ast_data_type(e_ast_primitive_type::k_bool),
+		c_ast_data_type(e_ast_primitive_type::k_bool, false, 1),
 		e_ast_data_mutability::k_constant);
 	if (!is_ast_data_type_assignable(expression->get_data_type(), const_bool_data_type)) {
 		m_context.error(
@@ -2226,11 +2247,13 @@ void c_ast_builder_visitor::resolve_identifier(
 
 void c_ast_builder_visitor::resolve_module_call(
 	c_ast_node_module_call *module_call,
-	c_wrapped_array<c_ast_node_module_declaration *> module_candidates) {
+	c_wrapped_array<c_ast_node_module_declaration *> module_candidates,
+	uint32 upsample_factor) {
 	c_wrapped_array<const c_ast_node_module_declaration *const> const_module_candidates(
 		module_candidates.get_pointer(),
 		module_candidates.get_count());
-	s_module_call_resolution_result result = ::resolve_module_call(module_call, const_module_candidates);
+	s_module_call_resolution_result result =
+		::resolve_module_call(module_call, upsample_factor, const_module_candidates);
 	switch (result.result) {
 	case e_module_call_resolution_result::k_success:
 		break;
@@ -2310,25 +2333,6 @@ void c_ast_builder_visitor::resolve_module_call(
 	std::vector<c_ast_node_expression *> argument_expressions;
 	get_argument_expressions(module_declaration, module_call, argument_expressions);
 
-	// First check what we should do with dependent-constant outputs
-	e_ast_data_mutability dependent_constant_data_mutability = e_ast_data_mutability::k_constant;
-	for (size_t argument_index = 0; argument_index < module_declaration->get_argument_count(); argument_index++) {
-		const c_ast_node_module_declaration_argument *argument = module_declaration->get_argument(argument_index);
-		if (argument->get_argument_direction() != e_ast_argument_direction::k_in
-			|| argument->get_data_type().get_data_mutability() != e_ast_data_mutability::k_dependent_constant) {
-			continue;
-		}
-
-		// Downgrade dependent-constant data mutability
-		c_ast_qualified_data_type data_type = argument_expressions[argument_index]->get_data_type();
-		if (data_type.is_error()) {
-			dependent_constant_data_mutability = e_ast_data_mutability::k_variable;
-		} else {
-			dependent_constant_data_mutability =
-				std::min(dependent_constant_data_mutability, data_type.get_data_mutability());
-		}
-	}
-
 	for (size_t argument_index = 0; argument_index < module_declaration->get_argument_count(); argument_index++) {
 		c_ast_node_module_declaration_argument *argument = module_declaration->get_argument(argument_index);
 		c_ast_node_expression *argument_expression = argument_expressions[argument_index];
@@ -2341,11 +2345,15 @@ void c_ast_builder_visitor::resolve_module_call(
 				argument,
 				module_call,
 				argument_expression,
-				dependent_constant_data_mutability);
+				result.dependent_constant_data_mutability,
+				result.upsample_factor);
 		}
 	}
 
-	module_call->set_resolved_module_declaration(module_declaration, dependent_constant_data_mutability);
+	module_call->set_resolved_module_declaration(
+		module_declaration,
+		result.dependent_constant_data_mutability,
+		result.upsample_factor);
 }
 
 void c_ast_builder_visitor::resolve_module_call_argument(
@@ -2353,11 +2361,13 @@ void c_ast_builder_visitor::resolve_module_call_argument(
 	c_ast_node_module_declaration_argument *argument,
 	c_ast_node_module_call *module_call,
 	c_ast_node_expression *argument_expression,
-	e_ast_data_mutability dependent_constant_data_mutability) {
+	e_ast_data_mutability dependent_constant_data_mutability,
+	uint32 upsample_factor) {
 	c_ast_qualified_data_type argument_data_type = argument->get_data_type();
 	if (argument_data_type.get_data_mutability() == e_ast_data_mutability::k_dependent_constant) {
-		argument_data_type =
-			c_ast_qualified_data_type(argument_data_type.get_data_type(), dependent_constant_data_mutability);
+		argument_data_type = argument_data_type
+			.change_data_mutability(dependent_constant_data_mutability)
+			.get_upsampled_type(upsample_factor);
 	}
 
 	c_ast_qualified_data_type expression_data_type = argument_expression->get_data_type();
@@ -2430,7 +2440,7 @@ void c_ast_builder_visitor::resolve_module_call_argument(
 				if (!index_data_type.is_error()
 					&& index_data_type.get_data_mutability() != e_ast_data_mutability::k_constant) {
 					c_ast_qualified_data_type const_real_data_type(
-						c_ast_data_type(e_ast_primitive_type::k_real),
+						c_ast_data_type(e_ast_primitive_type::k_real, false, 1),
 						e_ast_data_mutability::k_constant);
 					m_context.error(
 						e_compiler_error::k_illegal_variable_subscript_assignment,
@@ -2466,7 +2476,7 @@ void c_ast_builder_visitor::resolve_native_operator_call(
 		candidates.push_back(reference->get_as<c_ast_node_module_declaration>());
 	}
 
-	resolve_module_call(module_call, c_wrapped_array<c_ast_node_module_declaration *>(candidates));
+	resolve_module_call(module_call, c_wrapped_array<c_ast_node_module_declaration *>(candidates), 0);
 }
 
 c_wrapped_array<c_ast_node_declaration *const> c_ast_builder_visitor::try_get_typed_references(

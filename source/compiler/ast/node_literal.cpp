@@ -6,7 +6,7 @@ c_ast_node_literal::c_ast_node_literal()
 real32 c_ast_node_literal::get_real_value() const {
 	wl_assert(
 		get_data_type() == c_ast_qualified_data_type(
-			c_ast_data_type(e_ast_primitive_type::k_real),
+			c_ast_data_type(e_ast_primitive_type::k_real, false, 1),
 			e_ast_data_mutability::k_constant));
 	return m_real_value;
 }
@@ -14,7 +14,7 @@ real32 c_ast_node_literal::get_real_value() const {
 void c_ast_node_literal::set_real_value(real32 value) {
 	set_data_type(
 		c_ast_qualified_data_type(
-			c_ast_data_type(e_ast_primitive_type::k_real),
+			c_ast_data_type(e_ast_primitive_type::k_real, false, 1),
 			e_ast_data_mutability::k_constant));
 	m_real_value = value;
 }
@@ -22,7 +22,7 @@ void c_ast_node_literal::set_real_value(real32 value) {
 bool c_ast_node_literal::get_bool_value() const {
 	wl_assert(
 		get_data_type() == c_ast_qualified_data_type(
-			c_ast_data_type(e_ast_primitive_type::k_bool),
+			c_ast_data_type(e_ast_primitive_type::k_bool, false, 1),
 			e_ast_data_mutability::k_constant));
 	return m_bool_value;
 }
@@ -30,7 +30,7 @@ bool c_ast_node_literal::get_bool_value() const {
 void c_ast_node_literal::set_bool_value(bool value) {
 	set_data_type(
 		c_ast_qualified_data_type(
-			c_ast_data_type(e_ast_primitive_type::k_bool),
+			c_ast_data_type(e_ast_primitive_type::k_bool, false, 1),
 			e_ast_data_mutability::k_constant));
 	m_bool_value = value;
 }
@@ -38,7 +38,7 @@ void c_ast_node_literal::set_bool_value(bool value) {
 const char *c_ast_node_literal::get_string_value() const {
 	wl_assert(
 		get_data_type() == c_ast_qualified_data_type(
-			c_ast_data_type(e_ast_primitive_type::k_string),
+			c_ast_data_type(e_ast_primitive_type::k_string, false, 1),
 			e_ast_data_mutability::k_constant));
 	return m_string_value.c_str();
 }
@@ -46,7 +46,7 @@ const char *c_ast_node_literal::get_string_value() const {
 void c_ast_node_literal::set_string_value(const char *value) {
 	set_data_type(
 		c_ast_qualified_data_type(
-			c_ast_data_type(e_ast_primitive_type::k_string),
+			c_ast_data_type(e_ast_primitive_type::k_string, false, 1),
 			e_ast_data_mutability::k_constant));
 	m_string_value = value;
 }

@@ -196,10 +196,10 @@ void assign_task_function_library_contexts(
 	std::vector<void *> &assigned_contexts) {
 	assigned_contexts.resize(task_graph->get_task_count());
 	for (uint32 task_index = 0; task_index < task_graph->get_task_count(); task_index++) {
-		uint32 task_function_index = task_graph->get_task_function_index(task_index);
-		const s_task_function &task_function = c_task_function_registry::get_task_function(task_function_index);
-		uint32 library_index =
-			c_task_function_registry::get_task_function_library_index(task_function.uid.get_library_id());
-		assigned_contexts[task_index] = task_function_library_contexts[library_index];
+		h_task_function task_function_handle = task_graph->get_task_function_handle(task_index);
+		const s_task_function &task_function = c_task_function_registry::get_task_function(task_function_handle);
+		h_task_function_library library_handle =
+			c_task_function_registry::get_task_function_library_handle(task_function.uid.get_library_id());
+		assigned_contexts[task_index] = task_function_library_contexts[library_handle.get_data()];
 	}
 }

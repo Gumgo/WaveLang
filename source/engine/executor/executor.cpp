@@ -155,12 +155,10 @@ void c_executor::initialize_thread_pool() {
 		task_function_context.event_interface = &m_event_interface;
 		task_function_context.voice_interface = &m_voice_interface;
 		task_function_context.controller_interface = &m_controller_interface;
-		task_function_context.sample_rate = m_settings.sample_rate;
 	}
 
 	zero_type(&m_voice_activator_task_function_context);
 	m_voice_activator_task_function_context.event_interface = &m_event_interface;
-	m_voice_activator_task_function_context.sample_rate = m_settings.sample_rate;
 
 	m_thread_pool.start(thread_pool_settings);
 }
@@ -170,12 +168,10 @@ void c_executor::initialize_buffer_manager() {
 }
 
 void c_executor::pre_initialize_task_function_libraries() {
-	for (uint32 library_index = 0;
-		library_index < c_task_function_registry::get_task_function_library_count();
-		library_index++) {
-		const s_task_function_library &library = c_task_function_registry::get_task_function_library(library_index);
+	for (h_task_function_library library_handle : c_task_function_registry::iterate_task_function_libraries()) {
+		const s_task_function_library &library = c_task_function_registry::get_task_function_library(library_handle);
 		if (library.tasks_pre_initializer) {
-			library.tasks_pre_initializer(m_task_function_library_contexts[library_index]);
+			library.tasks_pre_initializer(m_task_function_library_contexts[library_handle.get_data()]);
 		}
 	}
 }
@@ -202,13 +198,14 @@ void c_executor::initialize_tasks() {
 
 		for (uint32 task = 0; task < task_graph->get_task_count(); task++) {
 			const s_task_function &task_function =
-				c_task_function_registry::get_task_function(task_graph->get_task_function_index(task));
+				c_task_function_registry::get_task_function(task_graph->get_task_function_handle(task));
 
 			if (task_function.initializer || task_function.voice_initializer) {
 				s_task_function_context task_function_context;
 				zero_type(&task_function_context);
 				task_function_context.event_interface = &m_event_interface;
-				task_function_context.sample_rate = m_settings.sample_rate;
+				task_function_context.upsample_factor = task_graph->get_task_upsample_factor(task);
+				task_function_context.sample_rate = m_settings.sample_rate * task_function_context.upsample_factor;
 				task_function_context.arguments = task_graph->get_task_arguments(task);
 
 				task_function_context.library_context =
@@ -233,12 +230,10 @@ void c_executor::initialize_tasks() {
 }
 
 void c_executor::post_initialize_task_function_libraries() {
-	for (uint32 library_index = 0;
-		library_index < c_task_function_registry::get_task_function_library_count();
-		library_index++) {
-		const s_task_function_library &library = c_task_function_registry::get_task_function_library(library_index);
+	for (h_task_function_library library_handle : c_task_function_registry::iterate_task_function_libraries()) {
+		const s_task_function_library &library = c_task_function_registry::get_task_function_library(library_handle);
 		if (library.tasks_post_initializer) {
-			library.tasks_post_initializer(m_task_function_library_contexts[library_index]);
+			library.tasks_post_initializer(m_task_function_library_contexts[library_handle.get_data()]);
 		}
 	}
 }
@@ -327,13 +322,14 @@ void c_executor::deinitialize_tasks() {
 
 		for (uint32 task = 0; task < task_graph->get_task_count(); task++) {
 			const s_task_function &task_function =
-				c_task_function_registry::get_task_function(task_graph->get_task_function_index(task));
+				c_task_function_registry::get_task_function(task_graph->get_task_function_handle(task));
 
 			if (task_function.initializer || task_function.voice_initializer) {
 				s_task_function_context task_function_context;
 				zero_type(&task_function_context);
 				task_function_context.event_interface = &m_event_interface;
-				task_function_context.sample_rate = m_settings.sample_rate;
+				task_function_context.upsample_factor = task_graph->get_task_upsample_factor(task);
+				task_function_context.sample_rate = m_settings.sample_rate * task_function_context.upsample_factor;
 				task_function_context.arguments = task_graph->get_task_arguments(task);
 
 				task_function_context.library_context =
@@ -371,7 +367,7 @@ s_task_memory_query_result c_executor::task_memory_query(
 	const c_task_graph *task_graph,
 	uint32 task_index) {
 	const s_task_function &task_function =
-		c_task_function_registry::get_task_function(task_graph->get_task_function_index(task_index));
+		c_task_function_registry::get_task_function(task_graph->get_task_function_handle(task_index));
 
 	s_task_memory_query_result memory_query_result;
 	if (task_function.memory_query) {
@@ -381,7 +377,8 @@ s_task_memory_query_result c_executor::task_memory_query(
 		s_task_function_context task_function_context;
 		zero_type(&task_function_context);
 		task_function_context.event_interface = &m_event_interface;
-		task_function_context.sample_rate = m_settings.sample_rate;
+		task_function_context.upsample_factor = task_graph->get_task_upsample_factor(task_index);
+		task_function_context.sample_rate = m_settings.sample_rate * task_function_context.upsample_factor;
 
 		// This function is being called by c_task_memory_manager, but c_task_memory manager initializes all library
 		// contexts before querying task memory, so it's okay to call get_task_library_context() at this point in time.
@@ -505,7 +502,7 @@ void c_executor::process_instrument_stage(
 	if (voice.activated_this_chunk) {
 		for (uint32 task = 0; task < task_graph->get_task_count(); task++) {
 			const s_task_function &task_function =
-				c_task_function_registry::get_task_function(task_graph->get_task_function_index(task));
+				c_task_function_registry::get_task_function(task_graph->get_task_function_handle(task));
 
 			if (task_function.voice_activator) {
 				m_voice_activator_task_function_context.shared_memory =
@@ -611,18 +608,20 @@ void c_executor::process_task(uint32 thread_index, const s_task_parameters *para
 			params->instrument_stage,
 			thread_index,
 			params->task_index,
-			task_graph->get_task_function_index(params->task_index));
+			task_graph->get_task_function_handle(params->task_index));
 	}
 
 	const s_task_function &task_function =
-		c_task_function_registry::get_task_function(task_graph->get_task_function_index(params->task_index));
+		c_task_function_registry::get_task_function(task_graph->get_task_function_handle(params->task_index));
 
 	m_buffer_manager.allocate_output_buffers(params->instrument_stage, params->task_index);
 
 	{
 		s_task_function_context &task_function_context =
 			m_thread_contexts.get_array()[thread_index].task_function_context;
-		task_function_context.buffer_size = params->frames;
+		task_function_context.upsample_factor = task_graph->get_task_upsample_factor(params->task_index);
+		task_function_context.sample_rate = m_settings.sample_rate * task_function_context.upsample_factor;
+		task_function_context.buffer_size = params->frames * task_function_context.upsample_factor;
 		task_function_context.library_context =
 			m_task_memory_manager.get_task_library_context(params->instrument_stage, params->task_index);
 		task_function_context.shared_memory = m_task_memory_manager.get_task_shared_memory(

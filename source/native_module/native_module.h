@@ -153,168 +153,192 @@ struct s_native_module_compile_time_argument {
 
 	real32 get_real_in() const {
 		wl_assert(argument_direction == e_native_module_argument_direction::k_in);
-		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_real));
+		wl_assert(type.get_primitive_type() == e_native_module_primitive_type::k_real);
+		wl_assert(!type.is_array());
 		wl_assert(data_access == e_native_module_data_access::k_value);
 		return std::get<real32>(value);
 	}
 
 	real32 &get_real_out() {
 		wl_assert(argument_direction == e_native_module_argument_direction::k_out);
-		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_real));
+		wl_assert(type.get_primitive_type() == e_native_module_primitive_type::k_real);
+		wl_assert(!type.is_array());
 		wl_assert(data_access == e_native_module_data_access::k_value);
 		return std::get<real32>(value);
 	}
 
 	bool get_bool_in() const {
 		wl_assert(argument_direction == e_native_module_argument_direction::k_in);
-		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_bool));
+		wl_assert(type.get_primitive_type() == e_native_module_primitive_type::k_bool);
+		wl_assert(!type.is_array());
 		wl_assert(data_access == e_native_module_data_access::k_value);
 		return std::get<bool>(value);
 	}
 
 	bool &get_bool_out() {
 		wl_assert(argument_direction == e_native_module_argument_direction::k_out);
-		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_bool));
+		wl_assert(type.get_primitive_type() == e_native_module_primitive_type::k_bool);
+		wl_assert(!type.is_array());
 		wl_assert(data_access == e_native_module_data_access::k_value);
 		return std::get<bool>(value);
 	}
 
 	const c_native_module_string &get_string_in() const {
 		wl_assert(argument_direction == e_native_module_argument_direction::k_in);
-		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_string));
+		wl_assert(type.get_primitive_type() == e_native_module_primitive_type::k_string);
+		wl_assert(!type.is_array());
 		wl_assert(data_access == e_native_module_data_access::k_value);
 		return std::get<c_native_module_string>(value);
 	}
 
 	c_native_module_string &get_string_out() {
 		wl_assert(argument_direction == e_native_module_argument_direction::k_out);
-		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_string));
+		wl_assert(type.get_primitive_type() == e_native_module_primitive_type::k_string);
+		wl_assert(!type.is_array());
 		wl_assert(data_access == e_native_module_data_access::k_value);
 		return std::get<c_native_module_string>(value);
 	}
 
 	c_native_module_real_reference get_real_reference_in() const {
 		wl_assert(argument_direction == e_native_module_argument_direction::k_in);
-		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_real));
+		wl_assert(type.get_primitive_type() == e_native_module_primitive_type::k_real);
+		wl_assert(!type.is_array());
 		wl_assert(data_access == e_native_module_data_access::k_reference);
 		return std::get<c_native_module_real_reference>(value);
 	}
 
 	c_native_module_real_reference &get_real_reference_out() {
 		wl_assert(argument_direction == e_native_module_argument_direction::k_out);
-		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_real));
+		wl_assert(type.get_primitive_type() == e_native_module_primitive_type::k_real);
+		wl_assert(!type.is_array());
 		wl_assert(data_access == e_native_module_data_access::k_reference);
 		return std::get<c_native_module_real_reference>(value);
 	}
 
 	c_native_module_bool_reference get_bool_reference_in() const {
 		wl_assert(argument_direction == e_native_module_argument_direction::k_in);
-		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_bool));
+		wl_assert(type.get_primitive_type() == e_native_module_primitive_type::k_bool);
+		wl_assert(!type.is_array());
 		wl_assert(data_access == e_native_module_data_access::k_reference);
 		return std::get<c_native_module_bool_reference>(value);
 	}
 
 	c_native_module_bool_reference &get_bool_reference_out() {
 		wl_assert(argument_direction == e_native_module_argument_direction::k_out);
-		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_bool));
+		wl_assert(type.get_primitive_type() == e_native_module_primitive_type::k_bool);
+		wl_assert(!type.is_array());
 		wl_assert(data_access == e_native_module_data_access::k_reference);
 		return std::get<c_native_module_bool_reference>(value);
 	}
 
 	c_native_module_string_reference get_string_reference_in() const {
 		wl_assert(argument_direction == e_native_module_argument_direction::k_in);
-		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_string));
+		wl_assert(type.get_primitive_type() == e_native_module_primitive_type::k_string);
+		wl_assert(!type.is_array());
 		wl_assert(data_access == e_native_module_data_access::k_reference);
 		return std::get<c_native_module_string_reference>(value);
 	}
 
 	c_native_module_string_reference &get_string_reference_out() {
 		wl_assert(argument_direction == e_native_module_argument_direction::k_out);
-		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_string));
+		wl_assert(type.get_primitive_type() == e_native_module_primitive_type::k_string);
+		wl_assert(!type.is_array());
 		wl_assert(data_access == e_native_module_data_access::k_reference);
 		return std::get<c_native_module_string_reference>(value);
 	}
 
 	const c_native_module_real_array &get_real_array_in() const {
 		wl_assert(argument_direction == e_native_module_argument_direction::k_in);
-		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_real, true));
+		wl_assert(type.get_primitive_type() == e_native_module_primitive_type::k_real);
+		wl_assert(type.is_array());
 		wl_assert(data_access == e_native_module_data_access::k_value);
 		return std::get<c_native_module_real_array>(value);
 	}
 
 	c_native_module_real_array &get_real_array_out() {
 		wl_assert(argument_direction == e_native_module_argument_direction::k_out);
-		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_real, true));
+		wl_assert(type.get_primitive_type() == e_native_module_primitive_type::k_real);
+		wl_assert(type.is_array());
 		wl_assert(data_access == e_native_module_data_access::k_value);
 		return std::get<c_native_module_real_array>(value);
 	}
 
 	const c_native_module_bool_array &get_bool_array_in() const {
 		wl_assert(argument_direction == e_native_module_argument_direction::k_in);
-		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_bool, true));
+		wl_assert(type.get_primitive_type() == e_native_module_primitive_type::k_bool);
+		wl_assert(type.is_array());
 		wl_assert(data_access == e_native_module_data_access::k_value);
 		return std::get<c_native_module_bool_array>(value);
 	}
 
 	c_native_module_bool_array &get_bool_array_out() {
 		wl_assert(argument_direction == e_native_module_argument_direction::k_out);
-		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_bool, true));
+		wl_assert(type.get_primitive_type() == e_native_module_primitive_type::k_bool);
+		wl_assert(type.is_array());
 		wl_assert(data_access == e_native_module_data_access::k_value);
 		return std::get<c_native_module_bool_array>(value);
 	}
 
 	const c_native_module_string_array &get_string_array_in() const {
 		wl_assert(argument_direction == e_native_module_argument_direction::k_in);
-		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_string, true));
+		wl_assert(type.get_primitive_type() == e_native_module_primitive_type::k_string);
+		wl_assert(type.is_array());
 		wl_assert(data_access == e_native_module_data_access::k_value);
 		return std::get<c_native_module_string_array>(value);
 	}
 
 	c_native_module_string_array &get_string_array_out() {
 		wl_assert(argument_direction == e_native_module_argument_direction::k_out);
-		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_string, true));
+		wl_assert(type.get_primitive_type() == e_native_module_primitive_type::k_string);
+		wl_assert(type.is_array());
 		wl_assert(data_access == e_native_module_data_access::k_value);
 		return std::get<c_native_module_string_array>(value);
 	}
 
 	const c_native_module_real_reference_array &get_real_reference_array_in() const {
 		wl_assert(argument_direction == e_native_module_argument_direction::k_in);
-		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_real, true));
+		wl_assert(type.get_primitive_type() == e_native_module_primitive_type::k_real);
+		wl_assert(type.is_array());
 		wl_assert(data_access == e_native_module_data_access::k_reference);
 		return std::get<c_native_module_real_reference_array>(value);
 	}
 
 	c_native_module_real_reference_array &get_real_reference_array_out() {
 		wl_assert(argument_direction == e_native_module_argument_direction::k_out);
-		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_real, true));
+		wl_assert(type.get_primitive_type() == e_native_module_primitive_type::k_real);
+		wl_assert(type.is_array());
 		wl_assert(data_access == e_native_module_data_access::k_reference);
 		return std::get<c_native_module_real_reference_array>(value);
 	}
 
 	const c_native_module_bool_reference_array &get_bool_reference_array_in() const {
 		wl_assert(argument_direction == e_native_module_argument_direction::k_in);
-		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_bool, true));
+		wl_assert(type.get_primitive_type() == e_native_module_primitive_type::k_bool);
+		wl_assert(type.is_array());
 		wl_assert(data_access == e_native_module_data_access::k_reference);
 		return std::get<c_native_module_bool_reference_array>(value);
 	}
 
 	c_native_module_bool_reference_array &get_bool_reference_array_out() {
 		wl_assert(argument_direction == e_native_module_argument_direction::k_out);
-		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_bool, true));
+		wl_assert(type.get_primitive_type() == e_native_module_primitive_type::k_bool);
+		wl_assert(type.is_array());
 		wl_assert(data_access == e_native_module_data_access::k_reference);
 		return std::get<c_native_module_bool_reference_array>(value);
 	}
 
 	const c_native_module_string_reference_array &get_string_reference_array_in() const {
 		wl_assert(argument_direction == e_native_module_argument_direction::k_in);
-		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_string, true));
+		wl_assert(type.get_primitive_type() == e_native_module_primitive_type::k_string);
+		wl_assert(type.is_array());
 		wl_assert(data_access == e_native_module_data_access::k_reference);
 		return std::get<c_native_module_string_reference_array>(value);
 	}
 
 	c_native_module_string_reference_array &get_string_reference_array_out() {
 		wl_assert(argument_direction == e_native_module_argument_direction::k_out);
-		wl_assert(type.get_data_type() == c_native_module_data_type(e_native_module_primitive_type::k_string, true));
+		wl_assert(type.get_primitive_type() == e_native_module_primitive_type::k_string);
+		wl_assert(type.is_array());
 		wl_assert(data_access == e_native_module_data_access::k_reference);
 		return std::get<c_native_module_string_reference_array>(value);
 	}
@@ -342,6 +366,8 @@ struct s_native_module_context {
 	c_native_module_reference_interface *reference_interface;
 	const s_instrument_globals *instrument_globals;
 
+	uint32 upsample_factor;	// Upsample factor this module is being run at
+	uint32 sample_rate;		// Sample rate (after upsampling), or 0 if sample rate isn't available at compile-time
 	void *library_context;
 
 	c_native_module_compile_time_argument_list arguments;

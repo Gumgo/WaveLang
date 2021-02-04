@@ -17,7 +17,10 @@ struct s_argument_info {
 
 static e_module_argument_match_type match_module_arguments(
 	const c_ast_node_module_declaration *module_declaration,
-	c_wrapped_array<const s_argument_info> provided_arguments);
+	uint32 upsample_factor,
+	c_wrapped_array<const s_argument_info> provided_arguments,
+	e_ast_data_mutability &dependent_constant_data_mutability_out,
+	uint32 &resolved_upsample_factor_out);
 
 static void construct_canonical_argument_list(
 	const c_ast_node_module_declaration *module_declaration,
@@ -93,14 +96,15 @@ bool do_module_overloads_conflict(
 
 	// Two modules conflict if it would be impossible to distinguish between them at the callsite (not taking argument
 	// names into consideration). To determine if this is the case, we consider a set of arguments passed to each module
-	// if no default arguments are used and the exact types are specified (e.g. real rather than const real). We call
-	// this the canonical argument list. The canonical argument list will always be an exact match to that module's
-	// signature, whereas a non-canonical argument list is an inexact match. For two modules A and B, if module A's
-	// canonical argument list is an exact match to module B or if module B's canonical argument list is an exact match
-	// to module A, we consider these modules to be in conflict because it is impossible to add any more detail to
-	// resolve the ambiguity. Note that a module A_d with dependent-const arguments actually defines two additional
-	// "hidden" modules, A_v which takes variable arguments and A_c which takes constant arguments, so we must check all
-	// three (A, A_v, A_c) canonical argument lists against module B to ensure that modules A and B don't conflict.
+	// if no default arguments are used, the exact types are specified (e.g. real rather than const real), and the
+	// upsample factor is explicitly provided as 1x. We call this the canonical argument list. The canonical argument
+	// list will always be an exact match to that module's signature, whereas a non-canonical argument list is an
+	// inexact match. For two modules A and B, if module A's canonical argument list is an exact match to module B or if
+	// module B's canonical argument list is an exact match to module A, we consider these modules to be in conflict
+	// because it is impossible to add any more detail to resolve the ambiguity. Note that a module A_d with dependent-
+	// constant arguments actually defines two additional "hidden" modules, A_v which takes variable arguments and A_c
+	// which takes constant arguments, so we must check all three (A, A_v, A_c) canonical argument lists against module
+	// B to ensure that modules A and B don't conflict.
 
 	// When two modules don't conflict, at the call site we may need to specify more explicit arguments to avoid
 	// ambiguity. Examples include:
@@ -125,10 +129,17 @@ bool do_module_overloads_conflict(
 	};
 
 	for (e_ast_data_mutability dependent_constant_replacement : k_dependent_constant_replacements) {
+		// These are unused
+		e_ast_data_mutability dependent_constant_data_mutability;
+		uint32 upsample_factor;
+
 		construct_canonical_argument_list(module_a, dependent_constant_replacement, canonical_argument_list);
 		e_module_argument_match_type match_type_a_b = match_module_arguments(
 			module_b,
-			c_wrapped_array<const s_argument_info>(canonical_argument_list));
+			1,
+			c_wrapped_array<const s_argument_info>(canonical_argument_list),
+			dependent_constant_data_mutability,
+			upsample_factor);
 		if (match_type_a_b == e_module_argument_match_type::k_exact_match) {
 			return true;
 		}
@@ -136,7 +147,10 @@ bool do_module_overloads_conflict(
 		construct_canonical_argument_list(module_b, dependent_constant_replacement, canonical_argument_list);
 		e_module_argument_match_type match_type_b_a = match_module_arguments(
 			module_a,
-			c_wrapped_array<const s_argument_info>(canonical_argument_list));
+			1,
+			c_wrapped_array<const s_argument_info>(canonical_argument_list),
+			dependent_constant_data_mutability,
+			upsample_factor);
 		if (match_type_b_a == e_module_argument_match_type::k_exact_match) {
 			return true;
 		}
@@ -147,24 +161,30 @@ bool do_module_overloads_conflict(
 
 s_module_call_resolution_result resolve_module_call(
 	const c_ast_node_module_call *module_call,
+	uint32 upsample_factor,
 	c_wrapped_array<const c_ast_node_module_declaration *const> module_declaration_candidates) {
 	wl_assert(module_declaration_candidates.get_count() > 0);
 
 	std::vector<s_argument_info> argument_list;
 	if (module_declaration_candidates.get_count() == 1) {
-		return construct_argument_list(
-			module_declaration_candidates[0],
-			module_call,
-			argument_list);
+		s_module_call_resolution_result result =
+			construct_argument_list(module_declaration_candidates[0], module_call, argument_list);
+
+		if (result.result == e_module_call_resolution_result::k_success) {
+			// Match the arguments to determine the dependent-constant data mutability and the upsample factor. If this
+			// fails, that's fine - we perform type checking for the arguments right after this so we'll catch any
+			// mismatches.
+			match_module_arguments(
+				module_declaration_candidates[0],
+				upsample_factor,
+				argument_list,
+				result.dependent_constant_data_mutability,
+				result.upsample_factor);
+		}
+
+		return result;
 	} else {
 		s_module_call_resolution_result result;
-
-		static constexpr size_t k_invalid_module_index = static_cast<size_t>(-1);
-		result.selected_module_index = k_invalid_module_index;
-
-		static constexpr size_t k_invalid_argument_index = static_cast<size_t>(-1);
-		result.declaration_argument_index = k_invalid_argument_index;
-		result.call_argument_index = k_invalid_argument_index;
 
 		size_t inexact_match_count = 0;
 		size_t exact_match_count = 0;
@@ -177,9 +197,14 @@ s_module_call_resolution_result resolve_module_call(
 				continue;
 			}
 
+			e_ast_data_mutability dependent_constant_data_mutability;
+			uint32 resolved_upsample_factor;
 			e_module_argument_match_type match_type = match_module_arguments(
 				module_declaration_candidates[index],
-				argument_list);
+				upsample_factor,
+				argument_list,
+				dependent_constant_data_mutability,
+				resolved_upsample_factor);
 			switch (match_type) {
 			case e_module_argument_match_type::k_mismatch:
 				continue;
@@ -188,12 +213,16 @@ s_module_call_resolution_result resolve_module_call(
 				inexact_match_count++;
 				if (exact_match_count == 0) {
 					result.selected_module_index = index;
+					result.dependent_constant_data_mutability = dependent_constant_data_mutability;
+					result.upsample_factor = resolved_upsample_factor;
 				}
 				break;
 
 			case e_module_argument_match_type::k_exact_match:
 				exact_match_count++;
 				result.selected_module_index = index;
+				result.dependent_constant_data_mutability = dependent_constant_data_mutability;
+				result.upsample_factor = resolved_upsample_factor;
 				break;
 
 			default:
@@ -206,7 +235,9 @@ s_module_call_resolution_result resolve_module_call(
 		if (exact_match_count == 1) {
 			result.result = e_module_call_resolution_result::k_success;
 		} else if (exact_match_count > 1) {
-			// If this occurs, it means the modules themselves conflict so we'll have previously thrown that error
+			// If this occurs, it either means that the modules themselves conflict (we'll have previously thrown that
+			// error) or that the upsample factor wasn't explicitly provided and multiple modules match at different
+			// upsample factors.
 			result.result = e_module_call_resolution_result::k_multiple_matching_modules;
 		} else if (inexact_match_count == 1) {
 			result.result = e_module_call_resolution_result::k_success;
@@ -217,9 +248,9 @@ s_module_call_resolution_result resolve_module_call(
 		}
 
 		if (result.result != e_module_call_resolution_result::k_success) {
-			result.selected_module_index = k_invalid_module_index;
+			result.selected_module_index = static_cast<size_t>(-1);
 		} else {
-			wl_assert(result.selected_module_index != k_invalid_module_index);
+			wl_assert(result.selected_module_index != static_cast<size_t>(-1));
 		}
 
 		return result;
@@ -228,8 +259,13 @@ s_module_call_resolution_result resolve_module_call(
 
 static e_module_argument_match_type match_module_arguments(
 	const c_ast_node_module_declaration *module_declaration,
-	c_wrapped_array<const s_argument_info> provided_arguments) {
+	uint32 upsample_factor,
+	c_wrapped_array<const s_argument_info> provided_arguments,
+	e_ast_data_mutability &dependent_constant_data_mutability_out,
+	uint32 &resolved_upsample_factor_out) {
 	wl_assert(provided_arguments.get_count() == module_declaration->get_argument_count());
+	dependent_constant_data_mutability_out = e_ast_data_mutability::k_variable;
+	resolved_upsample_factor_out = 1;
 
 	// If a module is dependent-constant, there are really three modules, one with variable inputs/outputs, one with
 	// constant inputs/outputs, and one with dependent-constant inputs/outputs. If we provided variables of different
@@ -239,6 +275,9 @@ static e_module_argument_match_type match_module_arguments(
 	// inexact matches.
 	e_ast_data_mutability dependent_constant_data_mutability = e_ast_data_mutability::k_constant;
 
+	// If we were provided with an explicit upsample factor, we need to deduce it from the argument types
+	uint32 resolved_upsample_factor = upsample_factor;
+
 	e_module_argument_match_type match_type = e_module_argument_match_type::k_exact_match;
 	for (size_t argument_index = 0; argument_index < module_declaration->get_argument_count(); argument_index++) {
 		const c_ast_node_module_declaration_argument *module_argument =
@@ -246,21 +285,20 @@ static e_module_argument_match_type match_module_arguments(
 		const s_argument_info &provided_argument = provided_arguments[argument_index];
 
 		e_ast_data_mutability provided_data_mutability;
-		if (provided_argument.data_type.is_valid()) {
-			provided_data_mutability = provided_argument.data_type.get_data_mutability();
-		} else if (provided_argument.data_type.is_error()) {
-			provided_data_mutability = e_ast_data_mutability::k_variable;
-		} else {
+		if (!provided_argument.data_type.is_valid()) {
 			// An invalid type means this argument has a default initializer
 			wl_assert(module_argument->get_initialization_expression());
 			provided_data_mutability =
 				module_argument->get_initialization_expression()->get_data_type().get_data_mutability();
 			match_type = e_module_argument_match_type::k_inexact_match;
-			continue;
-		}
+		} else {
+			if (provided_argument.direction != module_argument->get_argument_direction()) {
+				return e_module_argument_match_type::k_mismatch;
+			}
 
-		if (provided_argument.direction != module_argument->get_argument_direction()) {
-			return e_module_argument_match_type::k_mismatch;
+			provided_data_mutability = provided_argument.data_type.is_error()
+				? e_ast_data_mutability::k_variable
+				: provided_argument.data_type.get_data_mutability();
 		}
 
 		// First determine the data mutability of dependent-constant arguments based on inputs
@@ -277,32 +315,54 @@ static e_module_argument_match_type match_module_arguments(
 		const s_argument_info &provided_argument = provided_arguments[argument_index];
 
 		// The default expression type may not be resolved by the time it's used (since expressions get resolved in the
-		// definitions pass but order isn't guaranteed) so pass the argument's declared type instead of the default
-		// expression's type. Unfortunately this breaks dependent-constant arguments with constant defaults, but right
-		// now there's no great solution.
-		c_ast_qualified_data_type provided_data_type = provided_argument.data_type.is_valid()
-			? provided_argument.data_type
-			: module_argument->get_data_type();
-
-		wl_assert(
-			provided_argument.direction == e_ast_argument_direction::k_invalid // Default argument used, see above
-			|| provided_argument.direction == module_argument->get_argument_direction());
-
-		c_ast_qualified_data_type argument_data_type = module_argument->get_data_type();
-		if (argument_data_type.get_data_mutability() == e_ast_data_mutability::k_dependent_constant) {
-			argument_data_type =
-				c_ast_qualified_data_type(argument_data_type.get_data_type(), dependent_constant_data_mutability);
+		// definitions pass but order isn't guaranteed) so use the argument's declared type, which is guaranteed to be
+		// compatible, instead of the default expression's type (which is also guaranteed to be compatible but is type-
+		// checked at a different time). Unfortunately this breaks dependent-constant arguments with constant defaults,
+		// but right now there's no great solution.
+		if (!provided_argument.data_type.is_valid()) {
+			// Continue here because default expressions should not affect upsample factor deduction
+			wl_assert(provided_argument.direction == e_ast_argument_direction::k_invalid);
+			continue;
 		}
 
-		if (argument_data_type == provided_data_type) {
+		wl_assert(provided_argument.direction == module_argument->get_argument_direction());
+
+		c_ast_qualified_data_type argument_data_type = module_argument->get_data_type();
+
+		// Resolve upsampling before we write over the data mutability. Constants are never upsampled and are compatible
+		// with any upsample factor.
+		if (provided_argument.data_type.get_data_mutability() != e_ast_data_mutability::k_constant
+			&& resolved_upsample_factor == 0) {
+			uint32 argument_upsample_factor = argument_data_type.get_upsample_factor();
+			uint32 provided_upsample_factor = provided_argument.data_type.get_upsample_factor();
+
+			// The provided upsample factor must be a multiple of the argument upsample factor
+			if (provided_upsample_factor % argument_upsample_factor != 0) {
+				return e_module_argument_match_type::k_mismatch;
+			}
+
+			// We've resolved the upsample factor using one argument, so all the other arguments had better match. This
+			// is validated in is_ast_data_type_assignable().
+			resolved_upsample_factor = provided_upsample_factor / argument_upsample_factor;
+		}
+
+		if (resolved_upsample_factor != 0) {
+			argument_data_type = argument_data_type.get_upsampled_type(resolved_upsample_factor);
+		}
+
+		if (argument_data_type.get_data_mutability() == e_ast_data_mutability::k_dependent_constant) {
+			argument_data_type = argument_data_type.change_data_mutability(dependent_constant_data_mutability);
+		}
+
+		if (argument_data_type == provided_argument.data_type) {
 			// Exact match
 		} else {
 			if (module_argument->get_argument_direction() == e_ast_argument_direction::k_in
-				&& is_ast_data_type_assignable(provided_data_type, argument_data_type)) {
+				&& is_ast_data_type_assignable(provided_argument.data_type, argument_data_type)) {
 				// For inputs, the provided value gets assigned to the argument value
 				match_type = e_module_argument_match_type::k_inexact_match;
 			} else if (module_argument->get_argument_direction() == e_ast_argument_direction::k_out
-				&& is_ast_data_type_assignable(argument_data_type, provided_data_type)) {
+				&& is_ast_data_type_assignable(argument_data_type, provided_argument.data_type)) {
 				// For outputs, the argument value gets assigned to the provided value
 				match_type = e_module_argument_match_type::k_inexact_match;
 			} else {
@@ -311,6 +371,13 @@ static e_module_argument_match_type match_module_arguments(
 		}
 	}
 
+	if (resolved_upsample_factor == 0) {
+		// Default to 1 for modules with no non-constant inputs
+		resolved_upsample_factor = 1;
+	}
+
+	dependent_constant_data_mutability_out = dependent_constant_data_mutability;
+	resolved_upsample_factor_out = resolved_upsample_factor;
 	return match_type;
 }
 
@@ -327,9 +394,8 @@ static void construct_canonical_argument_list(
 
 		e_ast_data_mutability data_mutability = argument_direction_and_type.data_type.get_data_mutability();
 		if (data_mutability == e_ast_data_mutability::k_dependent_constant) {
-			argument_direction_and_type.data_type = c_ast_qualified_data_type(
-				argument_direction_and_type.data_type.get_data_type(),
-				replace_dependent_constant_with);
+			argument_direction_and_type.data_type =
+				argument_direction_and_type.data_type.change_data_mutability(replace_dependent_constant_with);
 		}
 
 		canonical_argument_list_out.push_back(argument_direction_and_type);
@@ -341,17 +407,12 @@ static s_module_call_resolution_result construct_argument_list(
 	const c_ast_node_module_call *module_call,
 	std::vector<s_argument_info> &argument_list_out) {
 	s_module_call_resolution_result result;
-	result.selected_module_index = static_cast<size_t>(-1); // Unused, there's only one
-
 	static constexpr size_t k_invalid_argument_index = static_cast<size_t>(-1);
-	result.declaration_argument_index = k_invalid_argument_index;
-	result.call_argument_index = k_invalid_argument_index;
 
 	argument_list_out.clear();
 	argument_list_out.resize(
 		module_declaration->get_argument_count(),
 		{ e_ast_argument_direction::k_invalid, c_ast_qualified_data_type(), nullptr });
-
 
 	IF_ASSERTS_ENABLED(bool any_named_arguments = false;)
 	for (size_t call_argument_index = 0;
@@ -435,8 +496,8 @@ static s_module_call_resolution_result construct_argument_list(
 		}
 	}
 
-	// We're not responsible for checking types in this function - as long as all arguments were provided and their
-	// directions match, we're successful.
+	// We're not responsible for checking types or determining upsample_factor in this function - as long as all
+	// arguments were provided and their directions match, we're successful.
 	result.result = e_module_call_resolution_result::k_success;
 	result.selected_module_index = 0;
 	return result;

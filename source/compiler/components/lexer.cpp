@@ -8,8 +8,8 @@
 #include <stdexcept>
 #include <unordered_map>
 
-static constexpr const char *k_token_type_constant_bool_false_string = "false";
-static constexpr const char *k_token_type_constant_bool_true_string = "true";
+static constexpr const char *k_token_type_literal_bool_false_string = "false";
+static constexpr const char *k_token_type_literal_bool_true_string = "true";
 
 // This is a mini DFA used to detect symbols (exact matches only, not general regex)
 class c_symbol_detector {
@@ -212,8 +212,9 @@ static s_lexer_globals g_lexer_globals;
 
 static s_token read_next_token(c_lexer_location &location);
 static bool try_read_identifier(c_lexer_location &location, s_token &result_out);
-static bool try_read_real_constant(c_lexer_location &location, s_token &result_out);
-static bool try_read_string_constant(c_lexer_location &location, s_token &result_out);
+static bool try_read_upsample_factor(c_lexer_location &location, s_token &result_out);
+static bool try_read_real_literal(c_lexer_location &location, s_token &result_out);
+static bool try_read_string_literal(c_lexer_location &location, s_token &result_out);
 static s_token read_symbol(c_lexer_location &location);
 
 void c_lexer::initialize() {
@@ -228,9 +229,9 @@ void c_lexer::initialize() {
 
 	// Add bool values to the keyword table
 	g_lexer_globals.keyword_table.insert(
-		std::make_pair(k_token_type_constant_bool_false_string, e_token_type::k_literal_bool));
+		std::make_pair(k_token_type_literal_bool_false_string, e_token_type::k_literal_bool));
 	g_lexer_globals.keyword_table.insert(
-		std::make_pair(k_token_type_constant_bool_true_string, e_token_type::k_literal_bool));
+		std::make_pair(k_token_type_literal_bool_true_string, e_token_type::k_literal_bool));
 
 	for (e_token_type token_type = enum_next(e_token_type::k_symbols_start);
 		token_type < e_token_type::k_symbols_end;
@@ -324,9 +325,9 @@ static s_token read_next_token(c_lexer_location &location) {
 		return result;
 	} else if (try_read_identifier(location, result)) {
 		return result;
-	} else if (try_read_real_constant(location, result)) {
+	} else if (try_read_real_literal(location, result)) {
 		return result;
-	} else if (try_read_string_constant(location, result)) {
+	} else if (try_read_string_literal(location, result)) {
 		return result;
 	} else {
 		// This will detect any invalid characters
@@ -356,9 +357,9 @@ static bool try_read_identifier(c_lexer_location &location, s_token &result_out)
 		result_out.token_type = keyword_result->second;
 		if (result_out.token_type == e_token_type::k_literal_bool) {
 			wl_assert(
-				result_out.token_string == k_token_type_constant_bool_false_string
-				|| result_out.token_string == k_token_type_constant_bool_true_string);
-			result_out.value.bool_value = (result_out.token_string == k_token_type_constant_bool_true_string);
+				result_out.token_string == k_token_type_literal_bool_false_string
+				|| result_out.token_string == k_token_type_literal_bool_true_string);
+			result_out.value.bool_value = (result_out.token_string == k_token_type_literal_bool_true_string);
 		}
 	} else {
 		// It's not a keyword, it's just an ordinary identifier
@@ -368,7 +369,58 @@ static bool try_read_identifier(c_lexer_location &location, s_token &result_out)
 	return true;
 }
 
-static bool try_read_real_constant(c_lexer_location &location, s_token &result_out) {
+static bool try_read_upsample_factor(c_lexer_location &location, s_token &result_out) {
+	// Integer followed by 'x'
+
+	// Don't allow leading 0 (e.g. 02x is not allowed)
+	if (!location.is_next_character_digit() || location.next_character() == '0') {
+		return false;
+	}
+
+	result_out.token_string = location.remaining_source();
+	size_t length = 0;
+
+	uint32 upsample_factor = 0;
+	while (true) {
+		if (location.is_next_character_digit(length)) {
+			length++;
+		} else if (location.next_character(length) == 'x') {
+			wl_assert(length > 0);
+			length++;
+
+			location.increment(length);
+
+			// Don't allow an identifier to immediately follow without whitespace first
+			if (location.is_next_character_identifier_character()) {
+				while (location.is_next_character_identifier_character()) {
+					location.increment();
+					length++;
+				}
+
+				result_out.token_type = e_token_type::k_invalid;
+				result_out.token_string = result_out.token_string.substr(0, length);
+				return true;
+			}
+
+			result_out.token_type = e_token_type::k_upsample_factor;
+			result_out.token_string = result_out.token_string.substr(0, length);
+			try {
+				// Drop the 'x' when extracting the integer upsample factor
+				result_out.value.upsample_factor =
+					std::stoul(std::string(result_out.token_string.begin(), result_out.token_string.end() - 1));
+			} catch (const std::exception &) {
+				result_out.token_type = e_token_type::k_invalid;
+			}
+
+			return true;
+		} else {
+			// Don't return an error token, this may be a real literal
+			return false;
+		}
+	}
+}
+
+static bool try_read_real_literal(c_lexer_location &location, s_token &result_out) {
 	// Parse tree for number, taken from JSON
 	// number   : integer fraction exponent
 	// integer  : -?([0-9]|([1-9][0-9]+))
@@ -456,6 +508,18 @@ static bool try_read_real_constant(c_lexer_location &location, s_token &result_o
 		} while (location.is_next_character_digit());
 	}
 
+	// Don't allow an identifier to immediately follow without whitespace first
+	if (location.is_next_character_identifier_character()) {
+		while (location.is_next_character_identifier_character()) {
+			location.increment();
+			length++;
+		}
+
+		result_out.token_type = e_token_type::k_invalid;
+		result_out.token_string = result_out.token_string.substr(0, length);
+		return true;
+	}
+
 	result_out.token_type = e_token_type::k_literal_real;
 	result_out.token_string = result_out.token_string.substr(0, length);
 	try {
@@ -468,7 +532,7 @@ static bool try_read_real_constant(c_lexer_location &location, s_token &result_o
 }
 
 // Note: keep this code in sync with get_unescaped_token_string() in token.cpp
-static bool try_read_string_constant(c_lexer_location &location, s_token &result_out) {
+static bool try_read_string_literal(c_lexer_location &location, s_token &result_out) {
 	if (location.next_character() != '"') {
 		return false;
 	}

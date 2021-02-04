@@ -24,29 +24,29 @@ TEST(Buffer, Cico) {
 	ALIGNAS_SIMD int32 bool_buffer_memory_out[align_size(bool_buffer_int32_count(k_buffer_size), k_simd_alignment)];
 	zero_type(bool_buffer_memory_out, array_count(bool_buffer_memory_out));
 
-	c_buffer real_dynamic_in_untyped = c_buffer::construct(c_task_data_type(e_task_primitive_type::k_real));
+	c_buffer real_dynamic_in_untyped = c_buffer::construct(c_task_data_type(e_task_primitive_type::k_real, false, 1));
 	real_dynamic_in_untyped.set_memory(real_buffer_memory_in);
 	const c_real_buffer *real_dynamic_in = &real_dynamic_in_untyped.get_as<c_real_buffer>();
 
 	c_buffer real_constant_in_untyped = c_real_buffer::construct_compile_time_constant(
-		c_task_data_type(e_task_primitive_type::k_real),
+		c_task_data_type(e_task_primitive_type::k_real, false, 1),
 		k_real_constant);
 	const c_real_buffer *real_constant_in = &real_constant_in_untyped.get_as<c_real_buffer>();
 
-	c_buffer real_dynamic_out_untyped = c_buffer::construct(c_task_data_type(e_task_primitive_type::k_real));
+	c_buffer real_dynamic_out_untyped = c_buffer::construct(c_task_data_type(e_task_primitive_type::k_real, false, 1));
 	real_dynamic_out_untyped.set_memory(real_buffer_memory_out);
 	c_real_buffer *real_dynamic_out = &real_dynamic_out_untyped.get_as<c_real_buffer>();
 
-	c_buffer bool_dynamic_in_untyped = c_buffer::construct(c_task_data_type(e_task_primitive_type::k_bool));
+	c_buffer bool_dynamic_in_untyped = c_buffer::construct(c_task_data_type(e_task_primitive_type::k_bool, false, 1));
 	bool_dynamic_in_untyped.set_memory(bool_buffer_memory_in);
 	const c_bool_buffer *bool_dynamic_in = &bool_dynamic_in_untyped.get_as<c_bool_buffer>();
 
 	c_buffer bool_constant_in_untyped = c_bool_buffer::construct_compile_time_constant(
-		c_task_data_type(e_task_primitive_type::k_bool),
+		c_task_data_type(e_task_primitive_type::k_bool, false, 1),
 		k_bool_constant);
 	const c_bool_buffer *bool_constant_in = &bool_constant_in_untyped.get_as<c_bool_buffer>();
 
-	c_buffer bool_dynamic_out_untyped = c_buffer::construct(c_task_data_type(e_task_primitive_type::k_bool));
+	c_buffer bool_dynamic_out_untyped = c_buffer::construct(c_task_data_type(e_task_primitive_type::k_bool, false, 1));
 	bool_dynamic_out_untyped.set_memory(bool_buffer_memory_out);
 	c_bool_buffer *bool_dynamic_out = &bool_dynamic_out_untyped.get_as<c_bool_buffer>();
 
@@ -269,23 +269,25 @@ TEST(Buffer, Constant) {
 	zero_type(bool_buffer_memory, array_count(bool_buffer_memory));
 
 	c_buffer real_compile_time_constant_buffer_untyped = c_real_buffer::construct_compile_time_constant(
-		c_task_data_type(e_task_primitive_type::k_real),
+		c_task_data_type(e_task_primitive_type::k_real, false, 1),
 		k_real_constant);
 	const c_real_buffer *real_compile_time_constant_buffer =
 		&real_compile_time_constant_buffer_untyped.get_as<c_real_buffer>();
 
-	c_buffer real_constant_buffer_untyped = c_real_buffer::construct(c_task_data_type(e_task_primitive_type::k_real));
+	c_buffer real_constant_buffer_untyped =
+		c_real_buffer::construct(c_task_data_type(e_task_primitive_type::k_real, false, 1));
 	real_constant_buffer_untyped.set_memory(real_buffer_memory);
 	real_constant_buffer_untyped.get_as<c_real_buffer>().assign_constant(k_real_constant);
 	const c_real_buffer *real_constant_buffer = &real_constant_buffer_untyped.get_as<c_real_buffer>();
 
 	c_buffer bool_compile_time_constant_buffer_untyped = c_bool_buffer::construct_compile_time_constant(
-		c_task_data_type(e_task_primitive_type::k_bool),
+		c_task_data_type(e_task_primitive_type::k_bool, false, 1),
 		k_bool_constant);
 	const c_bool_buffer *bool_compile_time_constant_buffer =
 		&bool_compile_time_constant_buffer_untyped.get_as<c_bool_buffer>();
 
-	c_buffer bool_constant_buffer_untyped = c_bool_buffer::construct(c_task_data_type(e_task_primitive_type::k_bool));
+	c_buffer bool_constant_buffer_untyped =
+		c_bool_buffer::construct(c_task_data_type(e_task_primitive_type::k_bool, false, 1));
 	bool_constant_buffer_untyped.set_memory(bool_buffer_memory);
 	bool_constant_buffer_untyped.get_as<c_bool_buffer>().assign_constant(k_bool_constant);
 	const c_bool_buffer *bool_constant_buffer = &bool_constant_buffer_untyped.get_as<c_bool_buffer>();
@@ -367,7 +369,7 @@ TEST(Buffer, TerminateEarly) {
 	static constexpr size_t k_buffer_size = 259;
 
 	c_buffer buffer = c_real_buffer::construct_compile_time_constant(
-		c_task_data_type(e_task_primitive_type::k_real),
+		c_task_data_type(e_task_primitive_type::k_real, false, 1),
 		1.0f);
 	const c_real_buffer *real_buffer = &buffer.get_as<c_real_buffer>();
 
@@ -418,7 +420,7 @@ TEST(Buffer, TerminateEarly) {
 
 TEST(Buffer, LastIterationFunction) {
 	c_buffer buffer = c_real_buffer::construct_compile_time_constant(
-		c_task_data_type(e_task_primitive_type::k_real),
+		c_task_data_type(e_task_primitive_type::k_real, false, 1),
 		1.0f);
 	const c_real_buffer *real_buffer = &buffer.get_as<c_real_buffer>();
 
@@ -500,19 +502,19 @@ TEST(Buffer, IterationOrder) {
 	ALIGNAS_SIMD int32 bool_buffer_memory_out[align_size(bool_buffer_int32_count(k_buffer_size), k_simd_alignment)];
 	zero_type(bool_buffer_memory_out, array_count(bool_buffer_memory_out));
 
-	c_buffer real_in_untyped = c_buffer::construct(c_task_data_type(e_task_primitive_type::k_real));
+	c_buffer real_in_untyped = c_buffer::construct(c_task_data_type(e_task_primitive_type::k_real, false, 1));
 	real_in_untyped.set_memory(real_buffer_memory_in);
 	const c_real_buffer *real_in = &real_in_untyped.get_as<c_real_buffer>();
 
-	c_buffer real_out_untyped = c_buffer::construct(c_task_data_type(e_task_primitive_type::k_real));
+	c_buffer real_out_untyped = c_buffer::construct(c_task_data_type(e_task_primitive_type::k_real, false, 1));
 	real_out_untyped.set_memory(real_buffer_memory_out);
 	c_real_buffer *real_out = &real_out_untyped.get_as<c_real_buffer>();
 
-	c_buffer bool_in_untyped = c_buffer::construct(c_task_data_type(e_task_primitive_type::k_bool));
+	c_buffer bool_in_untyped = c_buffer::construct(c_task_data_type(e_task_primitive_type::k_bool, false, 1));
 	bool_in_untyped.set_memory(bool_buffer_memory_in);
 	const c_bool_buffer *bool_in = &bool_in_untyped.get_as<c_bool_buffer>();
 
-	c_buffer bool_out_untyped = c_buffer::construct(c_task_data_type(e_task_primitive_type::k_bool));
+	c_buffer bool_out_untyped = c_buffer::construct(c_task_data_type(e_task_primitive_type::k_bool, false, 1));
 	bool_out_untyped.set_memory(bool_buffer_memory_out);
 	c_bool_buffer *bool_out = &bool_out_untyped.get_as<c_bool_buffer>();
 

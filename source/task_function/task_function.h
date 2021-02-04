@@ -118,77 +118,88 @@ struct s_task_function_runtime_argument {
 
 	real32 get_real_constant_in() const {
 		wl_assert(argument_direction == e_task_argument_direction::k_in);
-		wl_assert(type.get_data_type() == c_task_data_type(e_task_primitive_type::k_real));
+		wl_assert(type.get_primitive_type() == e_task_primitive_type::k_real);
+		wl_assert(!type.is_array());
 		wl_assert(type.get_data_mutability() == e_task_data_mutability::k_constant);
 		return std::get<real32>(value);
 	}
 
 	bool get_bool_constant_in() const {
 		wl_assert(argument_direction == e_task_argument_direction::k_in);
-		wl_assert(type.get_data_type() == c_task_data_type(e_task_primitive_type::k_bool));
+		wl_assert(type.get_primitive_type() == e_task_primitive_type::k_bool);
+		wl_assert(!type.is_array());
 		wl_assert(type.get_data_mutability() == e_task_data_mutability::k_constant);
 		return std::get<bool>(value);
 	}
 
 	const char *get_string_constant_in() const {
 		wl_assert(argument_direction == e_task_argument_direction::k_in);
-		wl_assert(type.get_data_type() == c_task_data_type(e_task_primitive_type::k_string));
+		wl_assert(type.get_primitive_type() == e_task_primitive_type::k_string);
+		wl_assert(!type.is_array());
 		wl_assert(type.get_data_mutability() == e_task_data_mutability::k_constant);
 		return std::get<const char *>(value);
 	}
 
 	const c_real_buffer *get_real_buffer_in() const {
 		wl_assert(argument_direction == e_task_argument_direction::k_in);
-		wl_assert(type.get_data_type() == c_task_data_type(e_task_primitive_type::k_real));
+		wl_assert(type.get_primitive_type() == e_task_primitive_type::k_real);
+		wl_assert(!type.is_array());
 		wl_assert(type.get_data_mutability() == e_task_data_mutability::k_variable);
 		return static_cast<const c_real_buffer *>(std::get<c_buffer *>(value));
 	}
 
 	c_real_buffer *get_real_buffer_out() const {
 		wl_assert(argument_direction == e_task_argument_direction::k_out);
-		wl_assert(type.get_data_type() == c_task_data_type(e_task_primitive_type::k_real));
+		wl_assert(type.get_primitive_type() == e_task_primitive_type::k_real);
+		wl_assert(!type.is_array());
 		wl_assert(type.get_data_mutability() == e_task_data_mutability::k_variable);
 		return static_cast<c_real_buffer *>(std::get<c_buffer *>(value));
 	}
 
 	const c_bool_buffer *get_bool_buffer_in() const {
 		wl_assert(argument_direction == e_task_argument_direction::k_in);
-		wl_assert(type.get_data_type() == c_task_data_type(e_task_primitive_type::k_bool));
+		wl_assert(type.get_primitive_type() == e_task_primitive_type::k_bool);
+		wl_assert(!type.is_array());
 		wl_assert(type.get_data_mutability() == e_task_data_mutability::k_variable);
 		return static_cast<const c_bool_buffer *>(std::get<c_buffer *>(value));
 	}
 
 	c_bool_buffer *get_bool_buffer_out() const {
 		wl_assert(argument_direction == e_task_argument_direction::k_out);
-		wl_assert(type.get_data_type() == c_task_data_type(e_task_primitive_type::k_bool));
+		wl_assert(type.get_primitive_type() == e_task_primitive_type::k_bool);
+		wl_assert(!type.is_array());
 		wl_assert(type.get_data_mutability() == e_task_data_mutability::k_variable);
 		return static_cast<c_bool_buffer *>(std::get<c_buffer *>(value));
 	}
 
 	c_real_constant_array get_real_constant_array_in() const {
 		wl_assert(argument_direction == e_task_argument_direction::k_in);
-		wl_assert(type.get_data_type() == c_task_data_type(e_task_primitive_type::k_real, true));
+		wl_assert(type.get_primitive_type() == e_task_primitive_type::k_real);
+		wl_assert(type.is_array());
 		wl_assert(type.get_data_mutability() == e_task_data_mutability::k_constant);
 		return std::get<c_real_constant_array>(value);
 	}
 
 	c_bool_constant_array get_bool_constant_array_in() const {
 		wl_assert(argument_direction == e_task_argument_direction::k_in);
-		wl_assert(type.get_data_type() == c_task_data_type(e_task_primitive_type::k_bool, true));
+		wl_assert(type.get_primitive_type() == e_task_primitive_type::k_bool);
+		wl_assert(type.is_array());
 		wl_assert(type.get_data_mutability() == e_task_data_mutability::k_constant);
 		return std::get<c_bool_constant_array>(value);
 	}
 
 	c_string_constant_array get_string_constant_array_in() const {
 		wl_assert(argument_direction == e_task_argument_direction::k_in);
-		wl_assert(type.get_data_type() == c_task_data_type(e_task_primitive_type::k_string, true));
+		wl_assert(type.get_primitive_type() == e_task_primitive_type::k_string);
+		wl_assert(type.is_array());
 		wl_assert(type.get_data_mutability() == e_task_data_mutability::k_constant);
 		return std::get<c_string_constant_array>(value);
 	}
 
 	c_real_buffer_array_in get_real_buffer_array_in() const {
 		wl_assert(argument_direction == e_task_argument_direction::k_in);
-		wl_assert(type.get_data_type() == c_task_data_type(e_task_primitive_type::k_real, true));
+		wl_assert(type.get_primitive_type() == e_task_primitive_type::k_real);
+		wl_assert(type.is_array());
 		wl_assert(type.get_data_mutability() == e_task_data_mutability::k_variable);
 		const c_buffer_array &buffer_array = std::get<c_buffer_array>(value);
 		return c_real_buffer_array_in(
@@ -198,7 +209,8 @@ struct s_task_function_runtime_argument {
 
 	c_bool_buffer_array_in get_bool_buffer_array_in() const {
 		wl_assert(argument_direction == e_task_argument_direction::k_in);
-		wl_assert(type.get_data_type() == c_task_data_type(e_task_primitive_type::k_bool, true));
+		wl_assert(type.get_primitive_type() == e_task_primitive_type::k_bool);
+		wl_assert(type.is_array());
 		wl_assert(type.get_data_mutability() == e_task_data_mutability::k_variable);
 		const c_buffer_array &buffer_array = std::get<c_buffer_array>(value);
 		return c_bool_buffer_array_in(
@@ -214,8 +226,9 @@ struct s_task_function_context {
 	c_voice_interface *voice_interface;
 	c_controller_interface *controller_interface;
 
-	uint32 sample_rate;
-	uint32 buffer_size;
+	uint32 upsample_factor;	// Upsample factor this task is being run at
+	uint32 sample_rate;		// Sample rate after upsampling - divide by upsample_factor to get base sample rate
+	uint32 buffer_size;		// Number of samples after upsampling - divide by upsample_factor to get base buffer size
 	void *library_context;
 	c_wrapped_array<uint8> shared_memory;
 	c_wrapped_array<uint8> voice_memory;

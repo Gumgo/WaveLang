@@ -20,8 +20,7 @@ static c_ast_node_module_declaration *create_module_declaration_for_native_modul
 	bool is_operator);
 
 static c_ast_qualified_data_type ast_data_type_from_native_module_data_type(
-	c_native_module_qualified_data_type native_module_data_type,
-	bool is_runtime_only);
+	c_native_module_qualified_data_type native_module_data_type);
 
 class c_import_resolver_visitor : public c_wavelang_lr_parse_tree_visitor {
 public:
@@ -382,7 +381,6 @@ static c_ast_node_module_declaration *create_module_declaration_for_native_modul
 
 	module_declaration->set_native_module_uid(native_module.uid);
 
-	bool is_runtime_only = !native_module.compile_time_call;
 	for (size_t argument_index = 0; argument_index < native_module.argument_count; argument_index++) {
 		if (argument_index == native_module.return_argument_index) {
 			continue;
@@ -410,29 +408,25 @@ static c_ast_node_module_declaration *create_module_declaration_for_native_modul
 
 		c_ast_node_value_declaration *value_declaration = new c_ast_node_value_declaration();
 		value_declaration->set_name(argument.name.get_string());
-		value_declaration->set_data_type(ast_data_type_from_native_module_data_type(argument.type, is_runtime_only));
+		value_declaration->set_data_type(ast_data_type_from_native_module_data_type(argument.type));
 		module_declaration_argument->set_value_declaration(value_declaration);
 
 		module_declaration->add_argument(module_declaration_argument);
 	}
 
 	if (native_module.return_argument_index == k_invalid_native_module_argument_index) {
-		module_declaration->set_return_type(
-			c_ast_qualified_data_type(
-				c_ast_data_type(e_ast_primitive_type::k_void),
-				e_ast_data_mutability::k_variable));
+		module_declaration->set_return_type(c_ast_qualified_data_type::void_());
 	} else {
 		c_native_module_qualified_data_type return_type =
 			native_module.arguments[native_module.return_argument_index].type;
-		module_declaration->set_return_type(ast_data_type_from_native_module_data_type(return_type, is_runtime_only));
+		module_declaration->set_return_type(ast_data_type_from_native_module_data_type(return_type));
 	}
 
 	return module_declaration;
 }
 
 static c_ast_qualified_data_type ast_data_type_from_native_module_data_type(
-	c_native_module_qualified_data_type native_module_data_type,
-	bool is_runtime_only) {
+	c_native_module_qualified_data_type native_module_data_type) {
 	e_ast_primitive_type ast_primitive_type = e_ast_primitive_type::k_invalid;
 	switch (native_module_data_type.get_primitive_type()) {
 	case e_native_module_primitive_type::k_real:
@@ -470,6 +464,9 @@ static c_ast_qualified_data_type ast_data_type_from_native_module_data_type(
 	}
 
 	return c_ast_qualified_data_type(
-		c_ast_data_type(ast_primitive_type, native_module_data_type.is_array()),
+		c_ast_data_type(
+			ast_primitive_type,
+			native_module_data_type.is_array(),
+			native_module_data_type.get_upsample_factor()),
 		ast_data_mutability);
 }

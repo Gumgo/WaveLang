@@ -74,7 +74,7 @@ bool output_profiler_report(const char *filename, const s_profiler_report &repor
 			}
 
 			const s_task_function &task_function =
-				c_task_function_registry::get_task_function(task.task_function_index);
+				c_task_function_registry::get_task_function(task.task_function_handle);
 			h_native_module native_module_handle =
 				c_native_module_registry::get_native_module_handle(task_function.native_module_uid);
 			const s_native_module &native_module = c_native_module_registry::get_native_module(native_module_handle);
@@ -172,7 +172,7 @@ void c_profiler::get_report(s_profiler_report &report_out) const {
 
 		for (size_t index = 0; index < tasks.get_count(); index++) {
 			const s_task &task = tasks[index];
-			report_tasks[index].task_function_index = task.task_function_index;
+			report_tasks[index].task_function_handle = task.task_function_handle;
 			report_tasks[index].task_total_time = task.total_time;
 			report_tasks[index].task_function_time = task.function_time;
 			report_tasks[index].task_overhead_time = task.overhead_time;
@@ -234,10 +234,10 @@ void c_profiler::begin_task(
 	e_instrument_stage instrument_stage,
 	uint32 worker_thread,
 	uint32 task_index,
-	uint32 task_function_index) {
+	h_task_function task_function_handle) {
 	s_thread_context &thread_context = m_thread_contexts.get_array()[worker_thread];
 	s_task &task = m_tasks[enum_index(instrument_stage)].get_array()[task_index];
-	task.task_function_index = task_function_index;
+	task.task_function_handle = task_function_handle;
 	thread_context.stopwatch.reset();
 }
 

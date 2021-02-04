@@ -25,9 +25,12 @@ c_ast_node_module_declaration *c_ast_node_module_call::get_resolved_module_decla
 
 void c_ast_node_module_call::set_resolved_module_declaration(
 	c_ast_node_module_declaration *resolved_module_declaration,
-	e_ast_data_mutability dependent_constant_data_mutability) {
+	e_ast_data_mutability dependent_constant_data_mutability,
+	uint32 upsample_factor) {
+	wl_assert(upsample_factor > 0);
 	m_resolved_module_declaration = resolved_module_declaration;
 	m_dependent_constant_data_mutability = dependent_constant_data_mutability;
+	m_upsample_factor = upsample_factor;
 
 	c_ast_qualified_data_type return_type = resolved_module_declaration->get_return_type();
 	if (return_type.get_data_mutability() == e_ast_data_mutability::k_dependent_constant) {
@@ -36,7 +39,15 @@ void c_ast_node_module_call::set_resolved_module_declaration(
 			dependent_constant_data_mutability);
 	}
 
-	set_data_type(return_type);
+	set_data_type(return_type.get_upsampled_type(upsample_factor));
+}
+
+e_ast_data_mutability c_ast_node_module_call::get_dependent_constant_data_mutability() const {
+	return m_dependent_constant_data_mutability;
+}
+
+uint32 c_ast_node_module_call::get_upsample_factor() const {
+	return m_upsample_factor;
 }
 
 c_ast_node_expression *c_ast_node_module_call::get_resolved_module_argument_expression(size_t argument_index) const {
@@ -67,10 +78,10 @@ c_ast_qualified_data_type c_ast_node_module_call::get_resolved_module_argument_d
 	c_ast_node_module_declaration_argument *argument = m_resolved_module_declaration->get_argument(argument_index);
 	c_ast_qualified_data_type data_type = argument->get_data_type();
 	if (data_type.get_data_mutability() == e_ast_data_mutability::k_dependent_constant) {
-		data_type = c_ast_qualified_data_type(data_type.get_data_type(), m_dependent_constant_data_mutability);
+		data_type = data_type.change_data_mutability(m_dependent_constant_data_mutability);
 	}
 
-	return data_type;
+	return data_type.get_upsampled_type(m_upsample_factor);
 }
 
 c_ast_node *c_ast_node_module_call::copy_internal() const {

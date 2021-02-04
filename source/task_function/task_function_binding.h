@@ -56,13 +56,14 @@ namespace task_function_binding {
 
 #undef TYPE_MAPPING
 
-	template<typename t_native_type_param, typename t_name, bool k_is_unshared>
+	template<typename t_native_type_param, uint32 k_upsample_factor, typename t_name, bool k_is_unshared>
 		struct s_task_function_bound_argument {
 		using t_native_type = t_native_type_param;
 		using t_type_mapping = s_task_function_native_type_mapping<t_native_type>;
 		static constexpr e_task_argument_direction k_argument_direction = t_type_mapping::k_argument_direction;
 		static constexpr e_task_primitive_type k_primitive_type = t_type_mapping::k_primitive_type;
 		static constexpr bool k_is_array = t_type_mapping::k_is_array;
+		static constexpr uint32 k_upsample_factor = k_upsample_factor;
 		static constexpr e_task_data_mutability k_data_mutability = t_type_mapping::k_data_mutability;
 		static constexpr const char *k_name = t_name::k_value;
 		static constexpr bool k_is_unshared = k_is_unshared;
@@ -182,7 +183,10 @@ namespace task_function_binding {
 				s_task_function_argument &argument = task_function.arguments[k_argument_index];
 				argument.argument_direction = t_argument::k_argument_direction;
 				argument.type = c_task_qualified_data_type(
-					c_task_data_type(t_argument::k_primitive_type, t_argument::k_is_array),
+					c_task_data_type(
+						t_argument::k_primitive_type,
+						t_argument::k_is_array,
+						t_argument::k_upsample_factor),
 					t_argument::k_data_mutability);
 				argument.is_unshared = t_argument::k_is_unshared;
 				argument_names[k_argument_index] = t_argument::k_name;
@@ -191,8 +195,21 @@ namespace task_function_binding {
 
 }
 
-#define TASK_FUNCTION_BOUND_ARGUMENT(native_type, name, is_unshared)										\
-	task_function_binding::s_task_function_bound_argument<native_type, TEMPLATE_STRING(#name), is_unshared>
+#define TASK_FUNCTION_BOUND_ARGUMENT(native_type, upsample_factor, name, is_unshared)	\
+	task_function_binding::s_task_function_bound_argument<								\
+		native_type,																	\
+		upsample_factor,																\
+		TEMPLATE_STRING(#name),															\
+		is_unshared>
 
-#define wl_task_argument(native_type, name) TASK_FUNCTION_BOUND_ARGUMENT(native_type, name, false) name
-#define wl_task_argument_unshared(native_type, name) TASK_FUNCTION_BOUND_ARGUMENT(native_type, name, true) name
+#define wl_task_argument(native_type, name)							\
+	TASK_FUNCTION_BOUND_ARGUMENT(native_type, 1, name, false) name
+
+#define wl_task_argument_unshared(native_type, name)				\
+	TASK_FUNCTION_BOUND_ARGUMENT(native_type, 1, name, true) name
+
+#define wl_task_argument_upsampled(native_type, upsample_factor, name)				\
+	TASK_FUNCTION_BOUND_ARGUMENT(native_type, upsample_factor, name, false) name
+
+#define wl_task_argument_upsampled_unshared(native_type, upsample_factor, name)	\
+	TASK_FUNCTION_BOUND_ARGUMENT(native_type, upsample_factor, name, true) name

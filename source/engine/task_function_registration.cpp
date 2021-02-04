@@ -139,7 +139,7 @@ static void reverse_linked_list(t_type *&list_head) {
 
 static const char *get_task_function_library_name(uint32 library_id) {
 	return c_task_function_registry::get_task_function_library(
-		c_task_function_registry::get_task_function_library_index(library_id)).name.get_string();
+		c_task_function_registry::get_task_function_library_handle(library_id)).name.get_string();
 }
 
 static bool map_task_function_arguments(

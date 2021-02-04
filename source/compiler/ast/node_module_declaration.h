@@ -56,14 +56,20 @@ enum class e_module_call_resolution_result {
 };
 
 struct s_module_call_resolution_result {
-	e_module_call_resolution_result result;
+	e_module_call_resolution_result result = e_module_call_resolution_result::k_count; // Default to an invalid value
 
 	// On success, this contains the index of the module chosen from the candidate list
-	size_t selected_module_index;
+	size_t selected_module_index = static_cast<size_t>(-1);
+
+	// On success, this contains the resolved data mutability of dependent-constant arguments
+	e_ast_data_mutability dependent_constant_data_mutability = e_ast_data_mutability::k_invalid;
+
+	// On success, this contains the resolved upsample factor
+	uint32 upsample_factor = 0;
 
 	// Some error results contain additional info about which arguments caused the issue
-	size_t declaration_argument_index;
-	size_t call_argument_index;
+	size_t declaration_argument_index = static_cast<size_t>(-1);
+	size_t call_argument_index = static_cast<size_t>(-1);
 };
 
 bool do_module_overloads_conflict(
@@ -74,6 +80,7 @@ bool do_module_overloads_conflict(
 // does not validate that compatible types are provided for all arguments, this should be done after a successful call.
 s_module_call_resolution_result resolve_module_call(
 	const c_ast_node_module_call *module_call,
+	uint32 upsample_factor,
 	c_wrapped_array<const c_ast_node_module_declaration *const> module_declaration_candidates);
 
 // Matches each argument with the expression being passed to that argument. Note that resolve_module_call must have been

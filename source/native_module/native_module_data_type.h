@@ -48,10 +48,13 @@ enum class e_native_module_data_access {
 	k_count
 };
 
+const s_native_module_primitive_type_traits &get_native_module_primitive_type_traits(
+	e_native_module_primitive_type primitive_type);
+
 class c_native_module_data_type {
 public:
 	c_native_module_data_type() = default;
-	c_native_module_data_type(e_native_module_primitive_type primitive_type, bool is_array = false);
+	c_native_module_data_type(e_native_module_primitive_type primitive_type, bool is_array, uint32 upsample_factor);
 
 	static c_native_module_data_type invalid();
 
@@ -61,8 +64,10 @@ public:
 	e_native_module_primitive_type get_primitive_type() const;
 	const s_native_module_primitive_type_traits &get_primitive_type_traits() const;
 	bool is_array() const;
+	uint32 get_upsample_factor() const;
 	c_native_module_data_type get_element_type() const;
 	c_native_module_data_type get_array_type() const;
+	c_native_module_data_type get_upsampled_type(uint32 upsample_factor) const;
 
 	bool operator==(const c_native_module_data_type &other) const;
 	bool operator!=(const c_native_module_data_type &other) const;
@@ -72,6 +77,7 @@ public:
 private:
 	e_native_module_primitive_type m_primitive_type = e_native_module_primitive_type::k_invalid;
 	bool m_is_array = false;
+	uint32 m_upsample_factor = 1;
 };
 
 class c_native_module_qualified_data_type {
@@ -89,10 +95,13 @@ public:
 	e_native_module_primitive_type get_primitive_type() const;
 	const s_native_module_primitive_type_traits &get_primitive_type_traits() const;
 	bool is_array() const;
+	uint32 get_upsample_factor() const;
 	const c_native_module_data_type &get_data_type() const;
 	e_native_module_data_mutability get_data_mutability() const;
 	c_native_module_qualified_data_type get_element_type() const;
 	c_native_module_qualified_data_type get_array_type() const;
+	c_native_module_qualified_data_type get_upsampled_type(uint32 upsample_factor) const;
+	c_native_module_qualified_data_type change_data_mutability(e_native_module_data_mutability data_mutability) const;
 
 	bool operator==(const c_native_module_qualified_data_type &other) const;
 	bool operator!=(const c_native_module_qualified_data_type &other) const;
@@ -104,5 +113,6 @@ private:
 	e_native_module_data_mutability m_data_mutability = e_native_module_data_mutability::k_invalid;
 };
 
-const s_native_module_primitive_type_traits &get_native_module_primitive_type_traits(
-	e_native_module_primitive_type primitive_type);
+bool is_native_module_data_type_assignable(
+	const c_native_module_qualified_data_type &from_data_type,
+	const c_native_module_qualified_data_type &to_data_type);

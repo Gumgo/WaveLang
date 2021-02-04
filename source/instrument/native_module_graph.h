@@ -89,11 +89,11 @@ public:
 	h_graph_node add_constant_node(real32 constant_value);
 	h_graph_node add_constant_node(bool constant_value);
 	h_graph_node add_constant_node(const char *constant_value);
-	h_graph_node add_array_node(c_native_module_data_type element_data_type);
+	h_graph_node add_array_node(e_native_module_primitive_type primitive_type);
 	void add_array_value(h_graph_node array_node_handle, h_graph_node value_node_handle);
 	// Returns the old value
 	h_graph_node set_array_value_at_index(h_graph_node array_node_handle, uint32 index, h_graph_node value_node_handle);
-	h_graph_node add_native_module_call_node(h_native_module native_module_handle);
+	h_graph_node add_native_module_call_node(h_native_module native_module_handle, uint32 upsample_factor);
 	h_graph_node add_input_node(uint32 input_index);
 	h_graph_node add_output_node(uint32 output_index);
 	h_graph_node add_temporary_reference_node();
@@ -109,12 +109,12 @@ public:
 	h_graph_node get_next_node(h_graph_node node_handle) const;
 
 	e_native_module_graph_node_type get_node_type(h_graph_node node_handle) const;
-	c_native_module_data_type get_node_data_type(h_graph_node node_handle) const;
-	bool is_node_constant(h_graph_node node_handle) const; // Returns true for arrays with only constant inputs
+	c_native_module_qualified_data_type get_node_data_type(h_graph_node node_handle) const;
 	real32 get_constant_node_real_value(h_graph_node node_handle) const;
 	bool get_constant_node_bool_value(h_graph_node node_handle) const;
 	const char *get_constant_node_string_value(h_graph_node node_handle) const;
-	h_native_module get_native_module_call_native_module_handle(h_graph_node node_handle) const;
+	h_native_module get_native_module_call_node_native_module_handle(h_graph_node node_handle) const;
+	uint32 get_native_module_call_node_upsample_factor(h_graph_node node_handle) const;
 	uint32 get_input_node_input_index(h_graph_node node_handle) const;
 	uint32 get_output_node_output_index(h_graph_node node_handle) const;
 	size_t get_node_incoming_edge_count(h_graph_node node_handle) const;
@@ -151,7 +151,7 @@ private:
 		struct s_no_node_data {};
 
 		struct s_constant_node_data {
-			c_native_module_data_type type;
+			e_native_module_primitive_type primitive_type;
 
 			union {
 				real32 real_value;
@@ -161,11 +161,12 @@ private:
 		};
 
 		struct s_array_node_data {
-			c_native_module_data_type type;
+			e_native_module_primitive_type primitive_type;
 		};
 
 		struct s_native_module_call_node_data {
 			h_native_module native_module_handle;
+			uint32 upsample_factor;
 		};
 
 		struct s_input_node_data {
@@ -239,7 +240,7 @@ private:
 	s_node &get_node(h_graph_node node_handle);
 	const s_node &get_node(h_graph_node node_handle) const;
 
-	void add_edge_internal(h_graph_node from_handle, h_graph_node to_handle);
+	void add_edge_internal(h_graph_node from_handle, h_graph_node to_handle, bool validate = true);
 	bool add_edge_for_load(
 		h_graph_node from_handle,
 		h_graph_node to_handle,

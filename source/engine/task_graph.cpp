@@ -135,13 +135,17 @@ uint32 c_task_graph::get_max_task_concurrency() const {
 	return m_max_task_concurrency;
 }
 
-uint32 c_task_graph::get_task_function_index(uint32 task_index) const {
-	return m_tasks[task_index].task_function_index;
+h_task_function c_task_graph::get_task_function_handle(uint32 task_index) const {
+	return m_tasks[task_index].task_function_handle;
+}
+
+uint32 c_task_graph::get_task_upsample_factor(uint32 task_index) const {
+	return m_tasks[task_index].upsample_factor;
 }
 
 c_task_function_runtime_arguments c_task_graph::get_task_arguments(uint32 task_index) const {
 	const s_task &task = m_tasks[task_index];
-	const s_task_function &task_function = c_task_function_registry::get_task_function(task.task_function_index);
+	const s_task_function &task_function = c_task_function_registry::get_task_function(task.task_function_handle);
 	return c_task_function_runtime_arguments(
 		task_function.argument_count == 0 ? nullptr : &m_task_function_arguments[task.arguments_start],
 		task_function.argument_count);
@@ -370,7 +374,7 @@ void c_task_graph::create_buffer_for_input(const c_native_module_graph &native_m
 	c_buffer *input_buffer = add_or_get_buffer(
 		native_module_graph,
 		node_handle,
-		c_task_data_type(e_task_primitive_type::k_real));
+		c_task_data_type(e_task_primitive_type::k_real, false, 1));
 
 	wl_assert(!m_input_buffers[input_index]);
 	m_input_buffers[input_index] = input_buffer;
@@ -387,10 +391,13 @@ void c_task_graph::assign_buffer_to_output(const c_native_module_graph &native_m
 		output_buffer = iter->second;
 	} else {
 		wl_assert(native_module_graph.get_node_type(input_node_handle) == e_native_module_graph_node_type::k_constant);
+		e_task_primitive_type primitive_type = is_remain_active_output
+			? e_task_primitive_type::k_bool
+			: e_task_primitive_type::k_real;
 		output_buffer = add_or_get_buffer(
 			native_module_graph,
 			input_node_handle,
-			c_task_data_type(is_remain_active_output ? e_task_primitive_type::k_bool : e_task_primitive_type::k_real));
+			c_task_data_type(primitive_type, false, 1));
 	}
 
 	if (is_remain_active_output) {
@@ -414,7 +421,8 @@ bool c_task_graph::add_task_for_node(
 	wl_assert(nodes_to_tasks.find(node_handle) == nodes_to_tasks.end());
 	nodes_to_tasks.insert(std::make_pair(node_handle, task_index));
 
-	h_native_module native_module_handle = native_module_graph.get_native_module_call_native_module_handle(node_handle);
+	h_native_module native_module_handle =
+		native_module_graph.get_native_module_call_node_native_module_handle(node_handle);
 	return setup_task(native_module_graph, node_handle, task_index);
 }
 
@@ -423,7 +431,8 @@ bool c_task_graph::setup_task(
 	h_graph_node node_handle,
 	uint32 task_index) {
 	wl_assert(native_module_graph.get_node_type(node_handle) == e_native_module_graph_node_type::k_native_module_call);
-	h_native_module native_module_handle = native_module_graph.get_native_module_call_native_module_handle(node_handle);
+	h_native_module native_module_handle =
+		native_module_graph.get_native_module_call_node_native_module_handle(node_handle);
 	s_task_function_uid task_function_uid = c_task_function_registry::get_task_function_mapping(native_module_handle);
 	if (!task_function_uid.is_valid()) {
 		// No valid task function mapping for the native module
@@ -431,10 +440,12 @@ bool c_task_graph::setup_task(
 	}
 
 	s_task &task = m_tasks[task_index];
-	task.task_function_index = c_task_function_registry::get_task_function_index(task_function_uid);
-	wl_assert(task.task_function_index != k_invalid_task_function_index);
+	task.task_function_handle = c_task_function_registry::get_task_function_handle(task_function_uid);
+	wl_assert(task.task_function_handle.is_valid());
 
-	const s_task_function &task_function = c_task_function_registry::get_task_function(task.task_function_index);
+	task.upsample_factor = native_module_graph.get_native_module_call_node_upsample_factor(node_handle);
+
+	const s_task_function &task_function = c_task_function_registry::get_task_function(task.task_function_handle);
 
 	// Set up the task arguments
 	task.arguments_start = m_task_function_arguments.size();
@@ -475,7 +486,9 @@ bool c_task_graph::setup_task(
 				native_module_graph.get_node_indexed_input_incoming_edge_handle(node_handle, input_index, 0);
 
 			if (argument.type.get_data_mutability() == e_task_data_mutability::k_constant) {
-				wl_assert(native_module_graph.is_node_constant(source_node_handle));
+				wl_assert(
+					native_module_graph.get_node_data_type(source_node_handle).get_data_mutability() ==
+					e_native_module_data_mutability::k_constant);
 			}
 
 			bool is_buffer = false;
@@ -678,8 +691,7 @@ c_buffer *c_task_graph::add_or_get_buffer(
 		m_nodes_to_buffers.insert(std::make_pair(node_handle, buffer));
 		return buffer;
 	} else if (node_type == e_native_module_graph_node_type::k_input) {
-		// $TODO $UPSAMPLE the FX graph could have upsampled inputs
-		wl_assert(data_type.get_primitive_type() == e_task_primitive_type::k_real);
+		wl_assert(data_type == c_task_data_type(e_task_primitive_type::k_real, false, 1));
 	} else if (node_type == e_native_module_graph_node_type::k_indexed_output) {
 		// Don't allocate a buffer for this output if it's being shared with an input
 		auto iter = m_output_nodes_to_shared_input_nodes.find(node_handle);
@@ -715,8 +727,8 @@ c_buffer_array c_task_graph::add_or_get_buffer_array(
 	for (start_index = 0; start_index + array_count < m_buffer_arrays.size(); start_index++) {
 		bool match_inner = true;
 		for (size_t index = 0; index < array_count; index++) {
-			h_graph_node input_node_handle = native_module_graph.get_node_incoming_edge_handle(node_handle, index);
-			h_graph_node element_node_handle = native_module_graph.get_node_incoming_edge_handle(input_node_handle, 0);
+			h_graph_node element_node_handle =
+				native_module_graph.get_node_indexed_input_incoming_edge_handle(node_handle, index, 0);
 			c_buffer *existing_buffer = m_buffer_arrays[start_index + index];
 
 			auto iter = m_nodes_to_buffers.find(element_node_handle);
@@ -736,8 +748,8 @@ c_buffer_array c_task_graph::add_or_get_buffer_array(
 		start_index = m_buffer_arrays.size();
 		m_buffer_arrays.resize(start_index + array_count);
 		for (size_t index = 0; index < array_count; index++) {
-			h_graph_node input_node_handle = native_module_graph.get_node_incoming_edge_handle(node_handle, index);
-			h_graph_node element_node_handle = native_module_graph.get_node_incoming_edge_handle(input_node_handle, 0);
+			h_graph_node element_node_handle =
+				native_module_graph.get_node_indexed_input_incoming_edge_handle(node_handle, index, 0);
 			c_buffer *buffer = add_or_get_buffer(native_module_graph, element_node_handle, data_type);
 			m_buffer_arrays[start_index + index] = buffer;
 		}
@@ -758,8 +770,8 @@ c_real_constant_array c_task_graph::build_real_constant_array(
 		bool match_inner = true;
 		for (size_t index = 0; index < array_count; index++) {
 			real32 existing_value = m_real_constant_arrays[start_index + index];
-			h_graph_node input_node_handle = native_module_graph.get_node_incoming_edge_handle(node_handle, index);
-			h_graph_node constant_node_handle = native_module_graph.get_node_incoming_edge_handle(input_node_handle, 0);
+			h_graph_node constant_node_handle =
+				native_module_graph.get_node_indexed_input_incoming_edge_handle(node_handle, index, 0);
 			real32 node_value = native_module_graph.get_constant_node_real_value(constant_node_handle);
 
 			if (existing_value != node_value) {
@@ -778,8 +790,8 @@ c_real_constant_array c_task_graph::build_real_constant_array(
 		start_index = m_real_constant_arrays.size();
 		m_real_constant_arrays.resize(start_index + array_count);
 		for (size_t index = 0; index < array_count; index++) {
-			h_graph_node input_node_handle = native_module_graph.get_node_incoming_edge_handle(node_handle, index);
-			h_graph_node constant_node_handle = native_module_graph.get_node_incoming_edge_handle(input_node_handle, 0);
+			h_graph_node constant_node_handle =
+				native_module_graph.get_node_indexed_input_incoming_edge_handle(node_handle, index, 0);
 			real32 node_value = native_module_graph.get_constant_node_real_value(constant_node_handle);
 			m_real_constant_arrays[start_index + index] = node_value;
 		}
@@ -800,8 +812,8 @@ c_bool_constant_array c_task_graph::build_bool_constant_array(
 		bool match_inner = true;
 		for (size_t index = 0; index < array_count; index++) {
 			bool existing_value = static_cast<bool>(m_bool_constant_arrays[start_index + index]);
-			h_graph_node input_node_handle = native_module_graph.get_node_incoming_edge_handle(node_handle, index);
-			h_graph_node constant_node_handle = native_module_graph.get_node_incoming_edge_handle(input_node_handle, 0);
+			h_graph_node constant_node_handle =
+				native_module_graph.get_node_indexed_input_incoming_edge_handle(node_handle, index, 0);
 			bool node_value = native_module_graph.get_constant_node_bool_value(constant_node_handle);
 
 			if (existing_value != node_value) {
@@ -820,8 +832,8 @@ c_bool_constant_array c_task_graph::build_bool_constant_array(
 		start_index = m_bool_constant_arrays.size();
 		m_bool_constant_arrays.resize(start_index + array_count);
 		for (size_t index = 0; index < array_count; index++) {
-			h_graph_node input_node_handle = native_module_graph.get_node_incoming_edge_handle(node_handle, index);
-			h_graph_node constant_node_handle = native_module_graph.get_node_incoming_edge_handle(input_node_handle, 0);
+			h_graph_node constant_node_handle =
+				native_module_graph.get_node_indexed_input_incoming_edge_handle(node_handle, index, 0);
 			bool node_value = native_module_graph.get_constant_node_bool_value(constant_node_handle);
 			m_bool_constant_arrays[start_index + index] = node_value;
 		}
@@ -842,8 +854,8 @@ c_string_constant_array c_task_graph::build_string_constant_array(
 		bool match_inner = true;
 		for (size_t index = 0; index < array_count; index++) {
 			const char *existing_value = get_pre_rebased_string(m_string_constant_arrays[start_index + index]);
-			h_graph_node input_node_handle = native_module_graph.get_node_incoming_edge_handle(node_handle, index);
-			h_graph_node constant_node_handle = native_module_graph.get_node_incoming_edge_handle(input_node_handle, 0);
+			h_graph_node constant_node_handle =
+				native_module_graph.get_node_indexed_input_incoming_edge_handle(node_handle, index, 0);
 			const char *node_value = native_module_graph.get_constant_node_string_value(constant_node_handle);
 
 			if (strcmp(existing_value, node_value) == 0) {
@@ -862,8 +874,8 @@ c_string_constant_array c_task_graph::build_string_constant_array(
 		start_index = m_string_constant_arrays.size();
 		m_string_constant_arrays.resize(start_index + array_count);
 		for (size_t index = 0; index < array_count; index++) {
-			h_graph_node input_node_handle = native_module_graph.get_node_incoming_edge_handle(node_handle, index);
-			h_graph_node constant_node_handle = native_module_graph.get_node_incoming_edge_handle(input_node_handle, 0);
+			h_graph_node constant_node_handle =
+				native_module_graph.get_node_indexed_input_incoming_edge_handle(node_handle, index, 0);
 			const char *node_value = native_module_graph.get_constant_node_string_value(constant_node_handle);
 			m_string_constant_arrays[start_index + index] = add_string(node_value);
 		}
@@ -1418,8 +1430,8 @@ static bool output_task_graph_build_result(const c_task_graph &task_graph, const
 	out << "\n";
 
 	for (uint32 index = 0; index < task_graph.get_task_count(); index++) {
-		uint32 task_function_index = task_graph.get_task_function_index(index);
-		const s_task_function &task_function = c_task_function_registry::get_task_function(task_function_index);
+		h_task_function task_function_handle = task_graph.get_task_function_handle(index);
+		const s_task_function &task_function = c_task_function_registry::get_task_function(task_function_handle);
 		h_native_module native_module_handle =
 			c_native_module_registry::get_native_module_handle(task_function.native_module_uid);
 		const s_native_module &native_module = c_native_module_registry::get_native_module(native_module_handle);

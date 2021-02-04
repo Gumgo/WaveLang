@@ -9,10 +9,12 @@ static constexpr s_task_primitive_type_traits k_task_primitive_type_traits[] = {
 
 STATIC_ASSERT(is_enum_fully_mapped<e_task_primitive_type>(k_task_primitive_type_traits));
 
-c_task_data_type::c_task_data_type(e_task_primitive_type primitive_type, bool is_array) {
+c_task_data_type::c_task_data_type(e_task_primitive_type primitive_type, bool is_array, uint32 upsample_factor) {
 	wl_assert(valid_enum_index(primitive_type));
+	wl_assert(upsample_factor > 0);
 	m_primitive_type = primitive_type;
 	m_is_array = is_array;
+	m_upsample_factor = upsample_factor;
 }
 
 c_task_data_type c_task_data_type::invalid() {
@@ -42,16 +44,20 @@ bool c_task_data_type::is_array() const {
 	return m_is_array;
 }
 
+uint32 c_task_data_type::get_upsample_factor() const {
+	return m_upsample_factor;
+}
+
 c_task_data_type c_task_data_type::get_element_type() const {
 	wl_assert(is_valid());
 	wl_assert(is_array());
-	return c_task_data_type(m_primitive_type);
+	return c_task_data_type(m_primitive_type, false, m_upsample_factor);
 }
 
 c_task_data_type c_task_data_type::get_array_type() const {
 	wl_assert(is_valid());
 	wl_assert(!is_array());
-	return c_task_data_type(m_primitive_type, true);
+	return c_task_data_type(m_primitive_type, true, m_upsample_factor);
 }
 
 bool c_task_data_type::operator==(const c_task_data_type &other) const {
@@ -64,6 +70,13 @@ bool c_task_data_type::operator!=(const c_task_data_type &other) const {
 
 std::string c_task_data_type::to_string() const {
 	std::string result = get_primitive_type_traits().name;
+
+	if (m_upsample_factor > 1) {
+		result.push_back('@');
+		result += std::to_string(m_upsample_factor);
+		result.push_back('x');
+	}
+
 	if (m_is_array) {
 		result += "[]";
 	}
@@ -109,6 +122,10 @@ const s_task_primitive_type_traits &c_task_qualified_data_type::get_primitive_ty
 
 bool c_task_qualified_data_type::is_array() const {
 	return m_data_type.is_array();
+}
+
+uint32 c_task_qualified_data_type::get_upsample_factor() const {
+	return m_data_type.get_upsample_factor();
 }
 
 const c_task_data_type &c_task_qualified_data_type::get_data_type() const {

@@ -4,9 +4,14 @@
 # Ignore the app directory
 /app
 
+# Ignore build options
+/build_options.json
+
 # Per-user VS files
 **/.vs
 **/*.vcxproj.user
+**/*.idb
+**/*.pdb
 
 # Ignore anything in the generated source folder
 /source/generated

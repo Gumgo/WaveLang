@@ -117,12 +117,10 @@ int c_command_line_interface::main_function() {
 	}
 
 	m_task_function_library_contexts.resize(c_task_function_registry::get_task_function_library_count(), nullptr);
-	for (uint32 library_index = 0;
-		library_index < c_task_function_registry::get_task_function_library_count();
-		library_index++) {
-		const s_task_function_library &library = c_task_function_registry::get_task_function_library(library_index);
+	for (h_task_function_library library_handle : c_task_function_registry::iterate_task_function_libraries()) {
+		const s_task_function_library &library = c_task_function_registry::get_task_function_library(library_handle);
 		if (library.engine_initializer) {
-			m_task_function_library_contexts[library_index] = library.engine_initializer();
+			m_task_function_library_contexts[library_handle.get_data()] = library.engine_initializer();
 		}
 	}
 
@@ -204,12 +202,10 @@ int c_command_line_interface::main_function() {
 	m_runtime_context.audio_driver_interface.stop_stream();
 	m_runtime_context.audio_driver_interface.shutdown();
 
-	for (uint32 library_index = 0;
-		library_index < c_task_function_registry::get_task_function_library_count();
-		library_index++) {
-		const s_task_function_library &library = c_task_function_registry::get_task_function_library(library_index);
+	for (h_task_function_library library_handle : c_task_function_registry::iterate_task_function_libraries()) {
+		const s_task_function_library &library = c_task_function_registry::get_task_function_library(library_handle);
 		if (library.engine_deinitializer) {
-			library.engine_deinitializer(m_task_function_library_contexts[library_index]);
+			library.engine_deinitializer(m_task_function_library_contexts[library_handle.get_data()]);
 		}
 	}
 

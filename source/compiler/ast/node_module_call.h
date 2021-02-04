@@ -19,10 +19,14 @@ public:
 	c_ast_node_module_call_argument *get_argument(size_t index) const;
 
 	c_ast_node_module_declaration *get_resolved_module_declaration() const;
-	e_ast_data_mutability get_dependent_constant_data_mutability() const;
 	void set_resolved_module_declaration(
 		c_ast_node_module_declaration *resolved_module_declaration,
-		e_ast_data_mutability dependent_constant_data_mutability);
+		e_ast_data_mutability dependent_constant_data_mutability,
+		uint32 upsample_factor);
+
+	// These return invalid values until the module call has been resolved
+	e_ast_data_mutability get_dependent_constant_data_mutability() const;
+	uint32 get_upsample_factor() const;
 
 	// These arguments correspond to the module declaration, not the module call site
 	c_ast_node_expression *get_resolved_module_argument_expression(size_t argument_index) const;
@@ -37,4 +41,5 @@ private:
 	std::vector<std::unique_ptr<c_ast_node_module_call_argument>> m_arguments;
 	c_ast_node_module_declaration *m_resolved_module_declaration = nullptr;
 	e_ast_data_mutability m_dependent_constant_data_mutability = e_ast_data_mutability::k_invalid;
+	uint32 m_upsample_factor = 0;
 };

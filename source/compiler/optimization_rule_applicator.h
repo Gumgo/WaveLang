@@ -43,6 +43,7 @@ private:
 	const s_native_module_optimization_rule *m_rule = nullptr;
 
 	std::stack<s_match_state> m_match_state_stack;
+	uint32 m_upsample_factor = 0;
 
 	// Node indices for the values and constants we've matched in the source pattern
 	s_static_array<h_graph_node, s_native_module_optimization_symbol::k_max_matched_symbols>

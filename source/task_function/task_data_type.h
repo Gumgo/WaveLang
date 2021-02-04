@@ -39,7 +39,7 @@ enum class e_task_argument_direction {
 class c_task_data_type {
 public:
 	c_task_data_type() = default;
-	c_task_data_type(e_task_primitive_type primitive_type, bool is_array = false);
+	c_task_data_type(e_task_primitive_type primitive_type, bool is_array, uint32 upsample_factor);
 
 	static c_task_data_type invalid();
 
@@ -49,6 +49,7 @@ public:
 	e_task_primitive_type get_primitive_type() const;
 	const s_task_primitive_type_traits &get_primitive_type_traits() const;
 	bool is_array() const;
+	uint32 get_upsample_factor() const;
 	c_task_data_type get_element_type() const;
 	c_task_data_type get_array_type() const;
 
@@ -60,6 +61,7 @@ public:
 private:
 	e_task_primitive_type m_primitive_type = e_task_primitive_type::k_invalid;
 	bool m_is_array = false;
+	uint32 m_upsample_factor = 1;
 };
 
 class c_task_qualified_data_type {
@@ -77,6 +79,7 @@ public:
 	e_task_primitive_type get_primitive_type() const;
 	const s_task_primitive_type_traits &get_primitive_type_traits() const;
 	bool is_array() const;
+	uint32 get_upsample_factor() const;
 	const c_task_data_type &get_data_type() const;
 	e_task_data_mutability get_data_mutability() const;
 	c_task_qualified_data_type get_element_type() const;

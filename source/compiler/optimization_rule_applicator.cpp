@@ -65,6 +65,8 @@ bool c_optimization_rule_applicator::try_to_match_source_pattern() {
 		symbol_count < m_rule->source.symbols.get_count() && m_rule->source.symbols[symbol_count].is_valid();
 		symbol_count++);
 
+	m_upsample_factor = 0;
+
 	IF_ASSERTS_ENABLED(bool should_be_done = false);
 	for (size_t symbol_index = 0; symbol_index < symbol_count; symbol_index++) {
 		wl_assert(!should_be_done);
@@ -100,6 +102,16 @@ bool c_optimization_rule_applicator::try_to_match_source_pattern() {
 			// The module described by the rule should match the top of the state stack
 			if (!handle_source_native_module_symbol_match(native_module_handle)) {
 				return false;
+			}
+
+			uint32 upsample_factor = m_native_module_graph.get_native_module_call_node_upsample_factor(
+				m_match_state_stack.top().current_node_handle);
+			if (m_upsample_factor == 0) {
+				m_upsample_factor = upsample_factor;
+			} else {
+				// We don't support optimization rules with mixed upsample factors (you can't even specify upsample
+				// factor in the rule syntax)
+				wl_assert(upsample_factor == m_upsample_factor);
 			}
 
 			break;
@@ -153,7 +165,8 @@ bool c_optimization_rule_applicator::handle_source_native_module_symbol_match(
 
 	// It's a match if the current node is a native module of the same index
 	return (m_native_module_graph.get_node_type(node_handle) == e_native_module_graph_node_type::k_native_module_call)
-		&& (m_native_module_graph.get_native_module_call_native_module_handle(node_handle) == native_module_handle);
+		&& (m_native_module_graph.get_native_module_call_node_native_module_handle(node_handle) ==
+			native_module_handle);
 }
 
 bool c_optimization_rule_applicator::handle_source_value_symbol_match(
@@ -162,7 +175,14 @@ bool c_optimization_rule_applicator::handle_source_value_symbol_match(
 	h_graph_node output_node_handle) {
 	if (symbol.type == e_native_module_optimization_symbol_type::k_variable) {
 		// Match anything except for constants
-		if (m_native_module_graph.is_node_constant(node_handle)) {
+		e_native_module_graph_node_type node_type = m_native_module_graph.get_node_type(node_handle);
+		if (node_type == e_native_module_graph_node_type::k_array) {
+			e_native_module_data_mutability data_mutability =
+				m_native_module_graph.get_node_data_type(node_handle).get_data_mutability();
+			if (data_mutability == e_native_module_data_mutability::k_constant) {
+				return false;
+			}
+		} else if (node_type == e_native_module_graph_node_type::k_constant) {
 			return false;
 		}
 
@@ -172,7 +192,14 @@ bool c_optimization_rule_applicator::handle_source_value_symbol_match(
 		return true;
 	} else if (symbol.type == e_native_module_optimization_symbol_type::k_constant) {
 		// Match only constants
-		if (!m_native_module_graph.is_node_constant(node_handle)) {
+		e_native_module_graph_node_type node_type = m_native_module_graph.get_node_type(node_handle);
+		if (node_type == e_native_module_graph_node_type::k_array) {
+			e_native_module_data_mutability data_mutability =
+				m_native_module_graph.get_node_data_type(node_handle).get_data_mutability();
+			if (data_mutability != e_native_module_data_mutability::k_constant) {
+				return false;
+			}
+		} else if (node_type != e_native_module_graph_node_type::k_constant) {
 			return false;
 		}
 
@@ -243,7 +270,8 @@ h_graph_node c_optimization_rule_applicator::build_target_pattern() {
 		{
 			h_native_module native_module_handle =
 				c_native_module_registry::get_native_module_handle(symbol.data.native_module_uid);
-			h_graph_node node_handle = m_native_module_graph.add_native_module_call_node(native_module_handle);
+			h_graph_node node_handle =
+				m_native_module_graph.add_native_module_call_node(native_module_handle, m_upsample_factor);
 
 			// We currently only allow a single outgoing edge, due to the way we express rules (out arguments aren't
 			// currently supported)

@@ -4,9 +4,6 @@
 
 #include <algorithm>
 
-// $TODO $UPSAMPLE this has (mostly) been build to support the eventual addition of upsampled data being passed from the
-// voice graph to the FX graph. should probably double check everything though.
-
 static constexpr uint32 k_invalid_buffer_pool_index = -1;
 
 void c_buffer_manager::initialize(
@@ -31,7 +28,7 @@ void c_buffer_manager::initialize(
 	std::vector<c_task_graph::s_buffer_usage_info> channel_mix_buffer_usage_info;
 
 	// All final output channels are real values
-	c_task_data_type channel_mix_data_type(e_task_primitive_type::k_real);
+	c_task_data_type channel_mix_data_type(e_task_primitive_type::k_real, false, 1);
 
 	if (runtime_instrument->get_voice_task_graph()) {
 		// During the voice processing phase, start with the buffers from the voice task graph
@@ -576,7 +573,7 @@ void c_buffer_manager::initialize_buffer_allocator(
 			wl_unreachable();
 		}
 
-		desc.size = max_buffer_size;
+		desc.size = max_buffer_size * info.type.get_upsample_factor();
 		desc.count = info.max_concurrency;
 		buffer_pool_descriptions.push_back(desc);
 	}

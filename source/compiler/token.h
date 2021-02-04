@@ -22,6 +22,7 @@ struct s_token {
 	union {
 		real32 real_value;
 		bool bool_value;
+		uint32 upsample_factor;
 	} value;
 };
 

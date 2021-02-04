@@ -202,7 +202,7 @@ void c_native_module_graph_optimizer::deduplicate_constants() {
 			continue;
 		}
 
-		c_native_module_data_type type = m_native_module_graph.get_node_data_type(node_handle);
+		c_native_module_qualified_data_type type = m_native_module_graph.get_node_data_type(node_handle);
 		h_graph_node deduplicated_node_handle = h_graph_node::invalid();
 		switch (type.get_primitive_type()) {
 		case e_native_module_primitive_type::k_real:
@@ -291,8 +291,8 @@ void c_native_module_graph_optimizer::deduplicate_arrays_and_native_modules() {
 				e_native_module_graph_node_type node_type = m_native_module_graph.get_node_type(node_a_handle);
 				if (node_type == e_native_module_graph_node_type::k_native_module_call) {
 					// If native module indices don't match, skip
-					if (m_native_module_graph.get_native_module_call_native_module_handle(node_a_handle) !=
-						m_native_module_graph.get_native_module_call_native_module_handle(node_b_handle)) {
+					if (m_native_module_graph.get_native_module_call_node_native_module_handle(node_a_handle) !=
+						m_native_module_graph.get_native_module_call_node_native_module_handle(node_b_handle)) {
 						continue;
 					}
 				} else if (node_type == e_native_module_graph_node_type::k_array) {
