@@ -101,7 +101,9 @@ bool c_sample::load_file(
 
 	const s_resampler_parameters &resampler_parameters =
 		get_resampler_parameters(e_resampler_filter::k_upsample_high_quality);
-	c_resampler resampler(resampler_parameters);
+	c_wrapped_array<const real32> resampler_phases =
+		get_resampler_phases(e_resampler_filter::k_upsample_high_quality);
+	c_resampler resampler(resampler_parameters, resampler_phases);
 	uint32 required_history_samples = c_resampler::get_required_history_samples(resampler_parameters);
 
 	// Resampler details:

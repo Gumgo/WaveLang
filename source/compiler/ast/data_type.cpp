@@ -317,8 +317,13 @@ bool is_ast_data_type_assignable(
 	}
 
 	if (from_data_type.get_primitive_type() != to_data_type.get_primitive_type()
-		|| from_data_type.is_array() != to_data_type.is_array()
-		|| from_data_type.get_upsample_factor() != to_data_type.get_upsample_factor()) {
+		|| from_data_type.is_array() != to_data_type.is_array()) {
+		return false;
+	}
+
+	if (from_data_type.get_upsample_factor() != to_data_type.get_upsample_factor()
+		&& from_data_type.get_data_mutability() != e_ast_data_mutability::k_constant) {
+		// The upsample factor must match unless we're assigning a constant
 		return false;
 	}
 

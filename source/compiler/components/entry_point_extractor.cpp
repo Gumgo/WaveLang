@@ -162,7 +162,7 @@ void c_entry_point_extractor::extract_entry_points(
 
 	if (entry_points[k_voice_entry_point_index] && entry_points[k_fx_entry_point_index]) {
 		// Validate that the two entry point arguments line up
-		// $TODO $INPUT $UPSAMPLE more logic here is needed
+		// $TODO $INPUT more logic here is needed
 		if (entry_points[k_voice_entry_point_index]->get_argument_count()
 			> entry_points[k_fx_entry_point_index]->get_argument_count()) {
 			context.error(

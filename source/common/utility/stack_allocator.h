@@ -30,6 +30,7 @@ public:
 		}
 
 		s_size_alignment get_size_alignment() const;
+		size_t get_destructor_count() const;
 
 	private:
 		s_size_alignment m_size_alignment{ 0, 1 };
@@ -48,6 +49,9 @@ public:
 
 	// Call this to release the context of the allocator so memory doesn't get freed on destruction
 	s_context release();
+
+	// Same as above but asserts that there are no destructors
+	s_context release_no_destructors();
 
 	void free();
 	static void free_context(const s_context &context);

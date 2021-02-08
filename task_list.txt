@@ -18,8 +18,10 @@
 		- Once the accumulator fills up to the chunk size it is processed and discarded
 		- This avoids situations where we need to fill the driver buffer but don't have enough input samples to process a full (fixed-size) chunk
 
-- Optimize single-threaded executor
-	- Pre-calculate a traversal of the DAG and just run each task in order
+- Optimize executor
+	- For single-threaded mode, pre-calculate a traversal of the DAG and just run each task in order
+	- Run voice_activator right before the task function gets is run so that it's threaded
+	- Pre-bake the task function contexts so they don't need to be constructed at runtime
 
 - Delay types
 	- Feedback with decay
@@ -48,23 +50,6 @@
 
 - MIDI input support ($MIDI)
 	- Add support for more channels
-
-- Upsampled buffer operations ($UPSAMPLE)
-	- Upsampled types:
-		- real@2x, real@8x, etc.
-		- type@Nx means "upsampled by a factor of N"
-		- Constants are compatible with any sampling rate factor
-	- Upsampled operations:
-		- module_name@2x(...)
-		- module_name@Nx(...) executes the module at N times the stream sample rate
-			- Expects all inputs and outputs to be upsampled by N as well
-	- Upsampling and downsampling functions:
-		- module real __native_resample(in real signal, const bool filter_nyquist)
-		- Special-case logic: "signal" can have any sampling rate factor and is not affected by @Nx
-		- In practice:
-			- module real@Nx __native_resample@Nx(in real@Mx signal)
-			- N and M are independent
-		- When downsampling, if filter_nyquist is true, a filter is applied at the nyquist frequency
 
 - Add debug library ($DEBUG)
 	- Add modules to print values on a trigger

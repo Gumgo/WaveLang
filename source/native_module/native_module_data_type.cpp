@@ -204,8 +204,13 @@ bool is_native_module_data_type_assignable(
 	const c_native_module_qualified_data_type &from_data_type,
 	const c_native_module_qualified_data_type &to_data_type) {
 	if (from_data_type.get_primitive_type() != to_data_type.get_primitive_type()
-		|| from_data_type.is_array() != to_data_type.is_array()
-		|| from_data_type.get_upsample_factor() != to_data_type.get_upsample_factor()) {
+		|| from_data_type.is_array() != to_data_type.is_array()) {
+		return false;
+	}
+
+	if (from_data_type.get_upsample_factor() != to_data_type.get_upsample_factor()
+		&& from_data_type.get_data_mutability() != e_native_module_data_mutability::k_constant) {
+		// The upsample factor must match unless we're assigning a constant
 		return false;
 	}
 

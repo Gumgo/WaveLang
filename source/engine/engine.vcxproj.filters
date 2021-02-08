@@ -187,6 +187,9 @@
     <ClCompile Include="task_functions\task_functions_json.cpp">
       <Filter>task_functions</Filter>
     </ClCompile>
+    <ClCompile Include="task_functions\task_functions_resampler.cpp">
+      <Filter>task_functions</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="SConscript" />

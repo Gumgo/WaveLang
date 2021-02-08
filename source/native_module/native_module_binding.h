@@ -172,6 +172,8 @@ namespace native_module_binding {
 					if (new_upsample_factor < upsample_factor) {
 						CONSTEXPR_ERROR();
 					}
+
+					upsample_factor = new_upsample_factor;
 				} else {
 					CONSTEXPR_ERROR();
 				}

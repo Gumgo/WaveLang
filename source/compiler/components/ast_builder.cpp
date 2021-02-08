@@ -2365,10 +2365,10 @@ void c_ast_builder_visitor::resolve_module_call_argument(
 	uint32 upsample_factor) {
 	c_ast_qualified_data_type argument_data_type = argument->get_data_type();
 	if (argument_data_type.get_data_mutability() == e_ast_data_mutability::k_dependent_constant) {
-		argument_data_type = argument_data_type
-			.change_data_mutability(dependent_constant_data_mutability)
-			.get_upsampled_type(upsample_factor);
+		argument_data_type = argument_data_type.change_data_mutability(dependent_constant_data_mutability);
 	}
+
+	argument_data_type = argument_data_type.get_upsampled_type(upsample_factor);
 
 	c_ast_qualified_data_type expression_data_type = argument_expression->get_data_type();
 
@@ -2381,7 +2381,7 @@ void c_ast_builder_visitor::resolve_module_call_argument(
 				"Cannot initialize module '%s' argument '%s' of type '%s' with a value of type '%s'",
 				module_declaration->get_name(),
 				argument->get_name(),
-				argument->get_data_type().to_string().c_str(),
+				argument_data_type.to_string().c_str(),
 				expression_data_type.to_string().c_str());
 		}
 	} else {
@@ -2428,7 +2428,7 @@ void c_ast_builder_visitor::resolve_module_call_argument(
 						"Cannot initialize module '%s' out argument '%s' of type '%s' with a value '%s' of type '%s'",
 						module_declaration->get_name(),
 						argument->get_name(),
-						argument->get_data_type().to_string().c_str(),
+						argument_data_type.to_string().c_str(),
 						value_declaration->get_name(),
 						expression_data_type.to_string().c_str());
 				}

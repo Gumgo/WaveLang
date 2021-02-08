@@ -11,6 +11,10 @@ s_size_alignment c_stack_allocator::c_memory_calculator::get_size_alignment() co
 	return result;
 }
 
+size_t c_stack_allocator::c_memory_calculator::get_destructor_count() const {
+	return m_destructor_count;
+}
+
 c_stack_allocator::c_stack_allocator(c_wrapped_array<uint8> buffer) {
 	m_context.buffer = buffer;
 }
@@ -24,6 +28,11 @@ c_stack_allocator::s_context c_stack_allocator::release() {
 	m_context = {};
 	m_offset = 0;
 	return context;
+}
+
+c_stack_allocator::s_context c_stack_allocator::release_no_destructors() {
+	wl_assert(m_context.destructor_count == 0);
+	return release();
 }
 
 void c_stack_allocator::free() {

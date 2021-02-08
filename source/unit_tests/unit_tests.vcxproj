@@ -110,6 +110,7 @@
     <Text Include="compiler_tests\optimization.txt" />
     <Text Include="compiler_tests\parser.txt" />
     <Text Include="compiler_tests\types.txt" />
+    <Text Include="compiler_tests\upsample.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

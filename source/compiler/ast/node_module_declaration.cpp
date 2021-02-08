@@ -265,7 +265,13 @@ static e_module_argument_match_type match_module_arguments(
 	uint32 &resolved_upsample_factor_out) {
 	wl_assert(provided_arguments.get_count() == module_declaration->get_argument_count());
 	dependent_constant_data_mutability_out = e_ast_data_mutability::k_variable;
-	resolved_upsample_factor_out = 1;
+
+	if (upsample_factor == 0) {
+		resolved_upsample_factor_out = 1;
+	} else {
+		// If we were provided with an explicit upsample factor, make sure to return it even on failure
+		resolved_upsample_factor_out = upsample_factor;
+	}
 
 	// If a module is dependent-constant, there are really three modules, one with variable inputs/outputs, one with
 	// constant inputs/outputs, and one with dependent-constant inputs/outputs. If we provided variables of different

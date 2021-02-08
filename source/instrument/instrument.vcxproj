@@ -93,13 +93,16 @@
     <ClCompile Include="native_modules\native_modules_filter.cpp" />
     <ClCompile Include="native_modules\native_modules_json.cpp" />
     <ClCompile Include="native_modules\native_modules_math.cpp" />
+    <ClCompile Include="native_modules\native_modules_resampler.cpp" />
     <ClCompile Include="native_modules\native_modules_sampler.cpp" />
     <ClCompile Include="native_modules\native_modules_stream.cpp" />
     <ClCompile Include="native_modules\native_modules_time.cpp" />
+    <ClCompile Include="native_modules\resampler\resampler.cpp" />
     <ClCompile Include="native_modules\scrape_native_modules.cpp" />
     <ClCompile Include="native_module_graph.cpp" />
     <ClCompile Include="native_module_registration.cpp" />
     <ClCompile Include="native_module_registry.cpp" />
+    <ClCompile Include="resampler\resampler.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="instrument.h" />
@@ -108,13 +111,16 @@
     <ClInclude Include="instrument_stage.h" />
     <ClInclude Include="native_modules\json\json_file.h" />
     <ClInclude Include="native_modules\json\json_file_manager.h" />
+    <ClInclude Include="native_modules\resampler\resampler.h" />
     <ClInclude Include="native_modules\scrape_native_modules.h" />
     <ClInclude Include="native_module_graph.h" />
     <ClInclude Include="native_module_registration.h" />
     <ClInclude Include="native_module_registry.h" />
     <ClInclude Include="graph_node_handle.h" />
+    <ClInclude Include="resampler\resampler.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="resampler\resampler_parameters.inl" />
     <None Include="SConscript" />
   </ItemGroup>
   <ItemGroup>

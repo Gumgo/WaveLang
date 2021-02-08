@@ -325,6 +325,8 @@ static s_token read_next_token(c_lexer_location &location) {
 		return result;
 	} else if (try_read_identifier(location, result)) {
 		return result;
+	} else if (try_read_upsample_factor(location, result)) {
+		return result;
 	} else if (try_read_real_literal(location, result)) {
 		return result;
 	} else if (try_read_string_literal(location, result)) {

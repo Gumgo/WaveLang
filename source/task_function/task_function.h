@@ -226,6 +226,7 @@ struct s_task_function_context {
 	c_voice_interface *voice_interface;
 	c_controller_interface *controller_interface;
 
+	// $TODO rename buffer_size to element_count (do this in multiple spots)
 	uint32 upsample_factor;	// Upsample factor this task is being run at
 	uint32 sample_rate;		// Sample rate after upsampling - divide by upsample_factor to get base sample rate
 	uint32 buffer_size;		// Number of samples after upsampling - divide by upsample_factor to get base buffer size

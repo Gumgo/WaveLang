@@ -52,6 +52,7 @@ public:
 	uint32 get_upsample_factor() const;
 	c_task_data_type get_element_type() const;
 	c_task_data_type get_array_type() const;
+	c_task_data_type get_upsampled_type(uint32 upsample_factor) const;
 
 	bool operator==(const c_task_data_type & other) const;
 	bool operator!=(const c_task_data_type & other) const;
@@ -84,6 +85,7 @@ public:
 	e_task_data_mutability get_data_mutability() const;
 	c_task_qualified_data_type get_element_type() const;
 	c_task_qualified_data_type get_array_type() const;
+	c_task_qualified_data_type get_upsampled_type(uint32 upsample_factor) const;
 
 	bool operator==(const c_task_qualified_data_type & other) const;
 	bool operator!=(const c_task_qualified_data_type & other) const;

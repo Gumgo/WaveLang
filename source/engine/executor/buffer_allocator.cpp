@@ -23,8 +23,10 @@ void c_buffer_allocator::initialize(const s_buffer_allocator_settings &settings)
 		total_buffer_count += pool.description.count;
 
 		// Calculate the total amount of buffer backing memory we need
-		size_t aligned_padded_buffer_size =
-			calculate_aligned_padded_buffer_size(pool.description.type, pool.description.size);
+		size_t aligned_padded_buffer_size = calculate_aligned_padded_buffer_size(
+			pool.description.type,
+			pool.description.size,
+			pool.description.upsample_factor);
 		total_buffer_bytes += aligned_padded_buffer_size * pool.description.count;
 	}
 
@@ -47,8 +49,10 @@ void c_buffer_allocator::initialize(const s_buffer_allocator_settings &settings)
 			&m_buffer_pool_free_list_memory.get_array()[pool.first_buffer_handle],
 			pool.description.count));
 
-		size_t aligned_padded_buffer_size =
-			calculate_aligned_padded_buffer_size(pool.description.type, pool.description.size);
+		size_t aligned_padded_buffer_size = calculate_aligned_padded_buffer_size(
+			pool.description.type,
+			pool.description.size,
+			pool.description.upsample_factor);
 
 		for (uint32 pool_buffer_index = 0; pool_buffer_index < pool.description.count; pool_buffer_index++) {
 			// Setup the header
@@ -109,7 +113,10 @@ void c_buffer_allocator::assert_no_allocations() const {
 }
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
-size_t c_buffer_allocator::calculate_aligned_padded_buffer_size(e_buffer_type type, size_t element_count) {
+size_t c_buffer_allocator::calculate_aligned_padded_buffer_size(
+	e_buffer_type type,
+	size_t element_count,
+	uint32 upsample_factor) {
 	size_t header_size_bytes = sizeof(s_buffer_memory_header);
 	wl_assert(is_size_aligned(header_size_bytes, k_simd_alignment));
 
@@ -117,5 +124,11 @@ size_t c_buffer_allocator::calculate_aligned_padded_buffer_size(e_buffer_type ty
 	size_t buffer_size_bytes = align_size((buffer_size_bits + 7) / 8, k_simd_alignment);
 
 	// Accounts for both SSE alignment and cache alignment
-	return align_size(header_size_bytes + buffer_size_bytes, CACHE_LINE_SIZE);
+	size_t aligned_buffer_size_bytes = align_size(header_size_bytes + buffer_size_bytes, CACHE_LINE_SIZE);
+
+	// Scale by the upsample factor very last - this ensures that if we're iterating a 1x buffer alongside an Nx buffer,
+	// we can always multiply the 1x index (even if it's past the end but still within alignment padding) and it will
+	// point to valid memory in the Nx buffer. This is important for bool buffers because elements are usually processed
+	// 32-bits at a time.
+	return aligned_buffer_size_bytes * upsample_factor;
 }

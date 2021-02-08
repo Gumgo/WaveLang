@@ -1481,7 +1481,7 @@ bool c_native_module_graph_builder::issue_native_module_call(
 			wl_assert(did_call || data_type.get_data_mutability() != e_ast_data_mutability::k_constant);
 			int32 latency = (data_type.get_data_mutability() == e_ast_data_mutability::k_constant)
 				? 0
-				: output_latency * data_type.get_upsample_factor();
+				: output_latency * (data_type.get_upsample_factor() / native_module_call->get_upsample_factor());
 
 			m_evaluation_state.return_value_node_handle = { output_node_handle, latency };
 			m_graph_trimmer.add_temporary_reference(m_evaluation_state.return_value_node_handle.node_handle);
@@ -1507,7 +1507,7 @@ bool c_native_module_graph_builder::issue_native_module_call(
 				wl_assert(did_call || data_type.get_data_mutability() != e_ast_data_mutability::k_constant);
 				int32 latency = (data_type.get_data_mutability() == e_ast_data_mutability::k_constant)
 					? 0
-					: output_latency * data_type.get_upsample_factor();
+					: output_latency * (data_type.get_upsample_factor() / native_module_call->get_upsample_factor());
 
 				tracked_declaration->set_node_handle_with_latency({ output_node_handle, latency });
 				output_index++;

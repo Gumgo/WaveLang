@@ -218,6 +218,9 @@ bool c_native_module_caller::try_call(
 		return true;
 	}
 
+	uint32 native_module_upsample_factor =
+		native_module_graph.get_native_module_call_node_upsample_factor(m_native_module_call_node_handle);
+
 	// Set up the arguments
 	std::vector<s_native_module_compile_time_argument> compile_time_arguments;
 	compile_time_arguments.reserve(
@@ -259,19 +262,24 @@ bool c_native_module_caller::try_call(
 				next_input,
 				0);
 
-			wl_assert(
-				native_module_graph.get_node_data_type(source_node_handle).get_data_type() ==
-				argument.type.get_data_type());
+			c_native_module_qualified_data_type node_data_type =
+				native_module_graph.get_node_data_type(source_node_handle);
+
+			// Ideally we could call is_native_module_data_type_assignable() here, but we haven't determined the
+			// dependent-constant data mutability yet, so we have to do the comparison manually to deal with upsample
+			// factor correctly.
+			wl_assert(node_data_type.get_primitive_type() == argument.type.get_primitive_type());
+			wl_assert(node_data_type.is_array() == argument.type.is_array());
+			wl_assert(node_data_type.get_data_mutability() == e_native_module_data_mutability::k_constant
+				|| node_data_type.get_upsample_factor() ==
+				argument.type.get_upsampled_type(native_module_upsample_factor).get_upsample_factor());
 
 			// If the input node is referenced by value but isn't a constant, we can't call this native module
-			if (argument.data_access == e_native_module_data_access::k_value) {
-				e_native_module_data_mutability data_mutability =
-					native_module_graph.get_node_data_type(source_node_handle).get_data_mutability();
-				if (data_mutability != e_native_module_data_mutability::k_constant) {
-					can_call = false;
-					next_input++;
-					continue;
-				}
+			if (argument.data_access == e_native_module_data_access::k_value
+				&& node_data_type.get_data_mutability() != e_native_module_data_mutability::k_constant) {
+				can_call = false;
+				next_input++;
+				continue;
 			}
 
 			bool is_constant = true;
@@ -428,9 +436,6 @@ bool c_native_module_caller::try_call(
 	wl_assert(next_input == in_argument_count);
 	wl_assert(next_output == out_argument_count);
 	wl_assert(next_input + next_output == native_module.argument_count);
-
-	uint32 native_module_upsample_factor =
-		native_module_graph.get_native_module_call_node_upsample_factor(m_native_module_call_node_handle);
 
 	// Make the compile time call to resolve the outputs
 	s_native_module_context native_module_context;

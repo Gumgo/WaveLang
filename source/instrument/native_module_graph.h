@@ -240,7 +240,7 @@ private:
 	s_node &get_node(h_graph_node node_handle);
 	const s_node &get_node(h_graph_node node_handle) const;
 
-	void add_edge_internal(h_graph_node from_handle, h_graph_node to_handle, bool validate = true);
+	void add_edge_internal(h_graph_node from_handle, h_graph_node to_handle);
 	bool add_edge_for_load(
 		h_graph_node from_handle,
 		h_graph_node to_handle,

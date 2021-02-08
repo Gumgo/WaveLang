@@ -147,6 +147,7 @@
     <ClCompile Include="task_functions\task_functions_filter.cpp" />
     <ClCompile Include="task_functions\task_functions_json.cpp" />
     <ClCompile Include="task_functions\task_functions_math.cpp" />
+    <ClCompile Include="task_functions\task_functions_resampler.cpp" />
     <ClCompile Include="task_functions\task_functions_sampler.cpp" />
     <ClCompile Include="task_functions\task_functions_stream.cpp" />
     <ClCompile Include="task_functions\task_functions_time.cpp" />

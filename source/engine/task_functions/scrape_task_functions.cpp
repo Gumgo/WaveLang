@@ -40,6 +40,10 @@ namespace json_task_functions {
 	void scrape_task_functions();
 }
 
+namespace resampler_task_functions {
+	void scrape_task_functions();
+}
+
 void scrape_task_functions() {
 	core_task_functions::scrape_task_functions();
 	array_task_functions::scrape_task_functions();
@@ -51,4 +55,5 @@ void scrape_task_functions() {
 	controller_task_functions::scrape_task_functions();
 	stream_task_functions::scrape_task_functions();
 	json_task_functions::scrape_task_functions();
+	resampler_task_functions::scrape_task_functions();
 }

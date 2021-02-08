@@ -44,6 +44,15 @@
       <Filter>native_modules</Filter>
     </ClCompile>
     <ClCompile Include="native_module_graph.cpp" />
+    <ClCompile Include="native_modules\native_modules_resampler.cpp">
+      <Filter>native_modules</Filter>
+    </ClCompile>
+    <ClCompile Include="resampler\resampler.cpp">
+      <Filter>resampler</Filter>
+    </ClCompile>
+    <ClCompile Include="native_modules\resampler\resampler.cpp">
+      <Filter>native_modules\resampler</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="instrument.h" />
@@ -63,9 +72,18 @@
     </ClInclude>
     <ClInclude Include="graph_node_handle.h" />
     <ClInclude Include="native_module_graph.h" />
+    <ClInclude Include="resampler\resampler.h">
+      <Filter>resampler</Filter>
+    </ClInclude>
+    <ClInclude Include="native_modules\resampler\resampler.h">
+      <Filter>native_modules\resampler</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="SConscript" />
+    <None Include="resampler\resampler_parameters.inl">
+      <Filter>resampler</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="native_modules">
@@ -73,6 +91,12 @@
     </Filter>
     <Filter Include="native_modules\json">
       <UniqueIdentifier>{0228d4a3-ebdf-4c6b-8f1f-b928aa49a025}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="resampler">
+      <UniqueIdentifier>{65b544a8-0773-4343-aba8-29841add1204}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="native_modules\resampler">
+      <UniqueIdentifier>{f9a92b3c-8ecd-41fe-b3a7-fd74f12890f4}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

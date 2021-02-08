@@ -671,9 +671,8 @@ void c_native_module_graph::add_array_value(
 	s_node &input_node = get_node(input_node_handle);
 	input_node.type = e_native_module_graph_node_type::k_indexed_input;
 
-	// Don't validate the first edge, it will fail because the input isn't hooked up to anything yet
-	add_edge_internal(value_node_handle, input_node_handle, false);
 	add_edge_internal(input_node_handle, array_node_handle);
+	add_edge_internal(value_node_handle, input_node_handle);
 }
 
 h_graph_node c_native_module_graph::set_array_value_at_index(
@@ -696,9 +695,7 @@ h_graph_node c_native_module_graph::set_array_value_at_index(
 	h_graph_node input_node_handle = array_node.incoming_edge_handles[index];
 	h_graph_node old_value_node_handle = get_node_incoming_edge_handle(input_node_handle, 0);
 	remove_edge_internal(old_value_node_handle, input_node_handle);
-
-	// Don't validate, the indexed input currently has no source no so querying the array data type will fail
-	add_edge_internal(value_node_handle, input_node_handle, false);
+	add_edge_internal(value_node_handle, input_node_handle);
 
 	return old_value_node_handle;
 }
@@ -812,7 +809,7 @@ void c_native_module_graph::add_edge(h_graph_node from_handle, h_graph_node to_h
 	add_edge_internal(from_handle, to_handle);
 }
 
-void c_native_module_graph::add_edge_internal(h_graph_node from_handle, h_graph_node to_handle, bool validate) {
+void c_native_module_graph::add_edge_internal(h_graph_node from_handle, h_graph_node to_handle) {
 	s_node &from_node = get_node(from_handle);
 	s_node &to_node = get_node(to_handle);
 
@@ -838,12 +835,11 @@ void c_native_module_graph::add_edge_internal(h_graph_node from_handle, h_graph_
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
 	if (!exists) {
-		if (validate) {
-			wl_assert(validate_edge(from_handle, to_handle));
-		}
-
 		from_node.outgoing_edge_handles.push_back(to_handle);
 		to_node.incoming_edge_handles.push_back(from_handle);
+
+		// Validate after adding the edge because some nodes derive their type from the connected edges
+		wl_assert(validate_edge(from_handle, to_handle));
 	}
 }
 

@@ -40,6 +40,10 @@ namespace json_native_modules {
 	void scrape_native_modules();
 }
 
+namespace resampler_native_modules {
+	void scrape_native_modules();
+}
+
 void scrape_native_modules() {
 	core_native_modules::scrape_native_modules();
 	array_native_modules::scrape_native_modules();
@@ -51,4 +55,5 @@ void scrape_native_modules() {
 	controller_native_modules::scrape_native_modules();
 	stream_native_modules::scrape_native_modules();
 	json_native_modules::scrape_native_modules();
+	resampler_native_modules::scrape_native_modules();
 }

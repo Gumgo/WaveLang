@@ -17,9 +17,10 @@ enum class e_buffer_type {
 };
 
 struct s_buffer_pool_description {
-	e_buffer_type type;	// Type of buffer
-	size_t size;		// Number of elements
-	size_t count;		// Number of buffers to allocate in this pool
+	e_buffer_type type;		// Type of buffer
+	size_t size;			// Number of elements before upsampling
+	uint32 upsample_factor;	// Upsample factor for element count
+	size_t count;			// Number of buffers to allocate in this pool
 };
 
 struct s_buffer_allocator_settings {
@@ -63,7 +64,10 @@ private:
 		uint32 pool_buffer_index;
 	};
 
-	static size_t calculate_aligned_padded_buffer_size(e_buffer_type type, size_t element_count);
+	static size_t calculate_aligned_padded_buffer_size(
+		e_buffer_type type,
+		size_t element_count,
+		uint32 upsample_factor);
 
 	// List of buffer pools
 	std::vector<s_buffer_pool> m_buffer_pools;

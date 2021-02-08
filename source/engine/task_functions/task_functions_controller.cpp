@@ -123,7 +123,8 @@ namespace controller_task_functions {
 		if (parameter_change_events.get_count() == 0) {
 			result->assign_constant(previous_value);
 		} else {
-			// $TODO $UPSAMPLE will need to adjust sample indices here
+			// Since sample_rate and buffer_size are already adjusted for upsampling, we don't need to do any additional
+			// work here
 			real64 sample_rate = static_cast<real64>(context.sample_rate);
 
 			real32 current_value = previous_value;

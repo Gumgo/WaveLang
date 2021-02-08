@@ -573,7 +573,8 @@ void c_buffer_manager::initialize_buffer_allocator(
 			wl_unreachable();
 		}
 
-		desc.size = max_buffer_size * info.type.get_upsample_factor();
+		desc.size = max_buffer_size;
+		desc.upsample_factor = info.type.get_upsample_factor();
 		desc.count = info.max_concurrency;
 		buffer_pool_descriptions.push_back(desc);
 	}

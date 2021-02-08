@@ -480,6 +480,7 @@ bool c_task_graph::setup_task(
 		runtime_argument.argument_direction = argument.argument_direction;
 		runtime_argument.type = argument.type;
 
+		c_task_qualified_data_type argument_data_type = argument.type.get_upsampled_type(task.upsample_factor);
 		if (argument.argument_direction == e_task_argument_direction::k_in) {
 			// Obtain the source input node
 			h_graph_node source_node_handle =
@@ -534,10 +535,10 @@ bool c_task_graph::setup_task(
 						add_or_get_buffer_array(
 							native_module_graph,
 							source_node_handle,
-							argument.type.get_element_type().get_data_type()));
+							argument_data_type.get_element_type().get_data_type()));
 				} else {
 					runtime_argument.value.emplace<c_buffer *>(
-						add_or_get_buffer(native_module_graph, source_node_handle, argument.type.get_data_type()));
+						add_or_get_buffer(native_module_graph, source_node_handle, argument_data_type.get_data_type()));
 					is_buffer = true;
 				}
 			}
@@ -554,7 +555,7 @@ bool c_task_graph::setup_task(
 				if (!buffer.is_constant()) {
 					// This is a buffer that will be filled with dynamic data, and it's only used by the current task
 					// function. This means we might be able to share it with an output buffer.
-					share_candidates.push_back({ source_node_handle, argument.type.get_data_type() });
+					share_candidates.push_back({ source_node_handle, argument_data_type.get_data_type() });
 				}
 			}
 
@@ -575,11 +576,12 @@ bool c_task_graph::setup_task(
 			// Obtain the output node
 			h_graph_node output_node_handle =
 				native_module_graph.get_node_outgoing_edge_handle(node_handle, output_index);
+			c_task_qualified_data_type argument_data_type = argument.type.get_upsampled_type(task.upsample_factor);
 
 			if (!argument.is_unshared) {
 				for (size_t share_index = 0; share_index < share_candidates.size(); share_index++) {
 					const s_share_candidate &share_candidate = share_candidates[share_index];
-					if (share_candidate.data_type == argument.type.get_data_type()) {
+					if (share_candidate.data_type == argument_data_type.get_data_type()) {
 						// Share this argument with the share candidate
 						m_output_nodes_to_shared_input_nodes.insert(
 							std::make_pair(output_node_handle, share_candidate.node_handle));
@@ -592,11 +594,11 @@ bool c_task_graph::setup_task(
 			}
 
 			// Outputs can't be arrays or constants
-			wl_assert(!argument.type.is_array());
-			wl_assert(argument.type.get_data_mutability() != e_task_data_mutability::k_constant);
+			wl_assert(!argument_data_type.is_array());
+			wl_assert(argument_data_type.get_data_mutability() != e_task_data_mutability::k_constant);
 
 			runtime_argument.value.emplace<c_buffer *>(
-				add_or_get_buffer(native_module_graph, output_node_handle, argument.type.get_data_type()));
+				add_or_get_buffer(native_module_graph, output_node_handle, argument_data_type.get_data_type()));
 			output_index++;
 		}
 	}

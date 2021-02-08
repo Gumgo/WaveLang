@@ -59,5 +59,8 @@
     <Text Include="compiler_tests\latency.txt">
       <Filter>compiler_tests</Filter>
     </Text>
+    <Text Include="compiler_tests\upsample.txt">
+      <Filter>compiler_tests</Filter>
+    </Text>
   </ItemGroup>
 </Project>

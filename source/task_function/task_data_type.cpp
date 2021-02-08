@@ -60,12 +60,19 @@ c_task_data_type c_task_data_type::get_array_type() const {
 	return c_task_data_type(m_primitive_type, true, m_upsample_factor);
 }
 
+c_task_data_type c_task_data_type::get_upsampled_type(uint32 upsample_factor) const {
+	wl_assert(is_valid());
+	return c_task_data_type(m_primitive_type, m_is_array, m_upsample_factor * upsample_factor);
+}
+
 bool c_task_data_type::operator==(const c_task_data_type &other) const {
-	return (m_primitive_type == other.m_primitive_type) && (m_is_array == other.m_is_array);
+	return (m_primitive_type == other.m_primitive_type)
+		&& (m_is_array == other.m_is_array)
+		&& (m_upsample_factor == other.m_upsample_factor);
 }
 
 bool c_task_data_type::operator!=(const c_task_data_type &other) const {
-	return (m_primitive_type != other.m_primitive_type) || (m_is_array != other.m_is_array);
+	return !(*this == other);
 }
 
 std::string c_task_data_type::to_string() const {
@@ -143,6 +150,16 @@ c_task_qualified_data_type c_task_qualified_data_type::get_element_type() const 
 c_task_qualified_data_type c_task_qualified_data_type::get_array_type() const {
 	return c_task_qualified_data_type(m_data_type.get_array_type(), m_data_mutability);
 }
+
+c_task_qualified_data_type c_task_qualified_data_type::get_upsampled_type(uint32 upsample_factor) const {
+	if (m_data_mutability == e_task_data_mutability::k_constant) {
+		wl_assert(get_upsample_factor() == 1);
+		return *this;
+	} else {
+		return c_task_qualified_data_type(m_data_type.get_upsampled_type(upsample_factor), m_data_mutability);
+	}
+}
+
 
 bool c_task_qualified_data_type::operator==(const c_task_qualified_data_type &other) const {
 	return (m_data_type == other.m_data_type) && (m_data_mutability == other.m_data_mutability);

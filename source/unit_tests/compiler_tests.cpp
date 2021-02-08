@@ -399,3 +399,7 @@ TEST_F(CompilerTest, Parser) {
 TEST_F(CompilerTest, Types) {
 	run_compiler_test("compiler_tests/types.txt");
 }
+
+TEST_F(CompilerTest, Upsample) {
+	run_compiler_test("compiler_tests/upsample.txt");
+}
