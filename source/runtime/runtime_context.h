@@ -2,11 +2,11 @@
 
 #include "common/common.h"
 
-#include "driver/audio_driver_interface.h"
-#include "driver/controller_driver_interface.h"
-
 #include "engine/executor/executor.h"
 #include "engine/runtime_instrument.h"
+
+#include "runtime/driver/audio_driver_interface.h"
+#include "runtime/driver/controller_driver_interface.h"
 
 struct s_runtime_context {
 	static void stream_callback(const s_audio_driver_stream_callback_context &context);

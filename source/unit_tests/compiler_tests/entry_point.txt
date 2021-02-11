@@ -74,18 +74,67 @@ bool voice_main(in real mono) {
 	return false;
 }
 
-### TEST mismatched_entry_point_arguments k_invalid_entry_point
-bool voice_main(out real mono) {
-	mono = 0;
-	return false;
-}
-
-bool fx_main(in real voices_left, in real voices_right, out real mono) {
-	mono = voices_left + voices_right;
-	return false;
-}
-
 ### TEST no_out_arguments k_invalid_entry_point
 bool voice_main() {
+	return false;
+}
+
+### TEST compatible_entry_points_a success
+bool voice_main(in real a, in real b, out real x) {
+	x = 0;
+	return false;
+}
+
+bool fx_main(in real a, in real b, in real x, out real q, out real w) {
+	q = 0;
+	w = 0;
+	return false;
+}
+
+### TEST compatible_entry_points_b success
+bool voice_main(in real a, in real b, out real x) {
+	x = 0;
+	return false;
+}
+
+bool fx_main(in real x, out real q, out real w) {
+	q = 0;
+	w = 0;
+	return false;
+}
+
+### TEST compatible_entry_points_c success
+bool voice_main(out real x) {
+	x = 0;
+	return false;
+}
+
+bool fx_main(in real a, in real b, in real x, out real q, out real w) {
+	q = 0;
+	w = 0;
+	return false;
+}
+
+### TEST incompatible_entry_points_a k_incompatible_entry_points
+bool voice_main(in real a, in real b, out real x) {
+	x = 0;
+	return false;
+}
+
+bool fx_main(in real a, in real x, out real q, out real w) {
+	q = 0;
+	w = 0;
+	return false;
+}
+
+### TEST incompatible_entry_points_b k_incompatible_entry_points
+bool voice_main(in real a, out real x) {
+	x = 0;
+	return false;
+}
+
+bool fx_main(in real a, in real b, in real x, out real q, out real w) {
+	q = 0;
+	w = 0;
 	return false;
 }

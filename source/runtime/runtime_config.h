@@ -2,8 +2,10 @@
 
 #include "common/common.h"
 
-#include "driver/controller_driver.h"
-#include "driver/sample_format.h"
+#include "engine/sample_format.h"
+
+#include "runtime/driver/audio_driver_interface.h"
+#include "runtime/driver/controller_driver.h"
 
 class c_audio_driver_interface;
 class c_controller_driver_interface;
@@ -22,10 +24,13 @@ enum class e_runtime_config_result {
 class c_runtime_config {
 public:
 	struct s_settings {
-		uint32 audio_device_index;
+		uint32 audio_input_device_index;
+		uint32 audio_input_channel_count;
+		s_static_array<uint32, k_max_audio_channels> audio_input_channel_indices;
+		uint32 audio_output_device_index;
+		uint32 audio_output_channel_count;
+		s_static_array<uint32, k_max_audio_channels> audio_output_channel_indices;
 		uint32 audio_sample_rate;
-		uint32 audio_input_channels;
-		uint32 audio_output_channels;
 		e_sample_format audio_sample_format;
 		uint32 audio_frames_per_buffer;
 
@@ -56,7 +61,9 @@ public:
 
 private:
 	void set_default_audio_device(const c_audio_driver_interface *audio_driver_interface);
-	void set_default_audio(const s_audio_device_info *audio_device_info);
+	void set_default_audio(
+		const s_audio_device_info *audio_input_device_info,
+		const s_audio_device_info *audio_output_device_info);
 	void set_default_controller_device(const c_controller_driver_interface *controller_driver_interface);
 	void set_default_controller(const s_controller_device_info *controller_device_info);
 	void set_default_executor();

@@ -5,8 +5,8 @@
 #include "common/threading/mutex.h"
 #include "common/utility/stopwatch.h"
 
-#include "driver/controller_driver.h"
-#include "driver/controller_driver_midi.h"
+#include "runtime/driver/controller_driver.h"
+#include "runtime/driver/controller_driver_midi.h"
 
 class c_controller_driver_interface {
 public:

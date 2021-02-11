@@ -70,7 +70,11 @@ static void run_sampler(
 		zero_type(result->get_data(), samples_remaining);
 
 		// If samples_written is 0, the buffer is filled with 0
-		result->set_is_constant(samples_written == 0);
+		if (samples_written == 0) {
+			result->assign_constant(0.0f); // Make sure we set a full SIMD block of samples to 0
+		} else {
+			result->set_is_constant(false);
+		}
 	}
 }
 

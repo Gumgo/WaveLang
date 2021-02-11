@@ -82,10 +82,17 @@
   </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="command_line_interface.cpp" />
+    <ClCompile Include="driver\audio_driver_interface.cpp" />
+    <ClCompile Include="driver\controller_driver_interface.cpp" />
+    <ClCompile Include="driver\controller_driver_midi.cpp" />
     <ClCompile Include="runtime_config.cpp" />
     <ClCompile Include="runtime_context.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="driver\audio_driver_interface.h" />
+    <ClInclude Include="driver\controller_driver.h" />
+    <ClInclude Include="driver\controller_driver_interface.h" />
+    <ClInclude Include="driver\controller_driver_midi.h" />
     <ClInclude Include="rapidxml_ext.h" />
     <ClInclude Include="runtime_config.h" />
     <ClInclude Include="runtime_context.h" />

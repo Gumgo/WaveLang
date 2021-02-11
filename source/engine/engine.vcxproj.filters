@@ -80,6 +80,8 @@
     <ClInclude Include="task_functions\scrape_task_functions.h">
       <Filter>task_functions</Filter>
     </ClInclude>
+    <ClInclude Include="controller.h" />
+    <ClInclude Include="sample_format.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="predecessor_resolver.cpp" />
@@ -190,6 +192,7 @@
     <ClCompile Include="task_functions\task_functions_resampler.cpp">
       <Filter>task_functions</Filter>
     </ClCompile>
+    <ClCompile Include="sample_format.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="SConscript" />

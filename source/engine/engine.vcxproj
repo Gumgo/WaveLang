@@ -87,6 +87,7 @@
     <ClInclude Include="buffer_operations\buffer_iterator.h" />
     <ClInclude Include="buffer_operations\buffer_iterator_internal.h" />
     <ClInclude Include="buffer_operations\buffer_iterator_types.h" />
+    <ClInclude Include="controller.h" />
     <ClInclude Include="controller_interface\controller_interface.h" />
     <ClInclude Include="events\async_event_handler.h" />
     <ClInclude Include="events\event_console.h" />
@@ -103,6 +104,7 @@
     <ClInclude Include="profiler\profiler.h" />
     <ClInclude Include="resampler\resampler.h" />
     <ClInclude Include="runtime_instrument.h" />
+    <ClInclude Include="sample_format.h" />
     <ClInclude Include="task_functions\sampler\fetch_sample.h" />
     <ClInclude Include="task_functions\sampler\sample.h" />
     <ClInclude Include="task_functions\sampler\sampler_context.h" />
@@ -134,6 +136,7 @@
     <ClCompile Include="profiler\profiler.cpp" />
     <ClCompile Include="resampler\resampler.cpp" />
     <ClCompile Include="runtime_instrument.cpp" />
+    <ClCompile Include="sample_format.cpp" />
     <ClCompile Include="task_functions\sampler\fetch_sample.cpp" />
     <ClCompile Include="task_functions\sampler\sample.cpp" />
     <ClCompile Include="task_functions\sampler\sampler_context.cpp" />

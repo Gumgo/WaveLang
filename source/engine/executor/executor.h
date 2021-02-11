@@ -4,8 +4,6 @@
 #include "common/threading/lock_free.h"
 #include "common/threading/semaphore.h"
 
-#include "driver/sample_format.h"
-
 #include "engine/controller_interface/controller_interface.h"
 #include "engine/events/async_event_handler.h"
 #include "engine/events/event_console.h"
@@ -15,6 +13,7 @@
 #include "engine/executor/task_memory_manager.h"
 #include "engine/executor/voice_allocator.h"
 #include "engine/profiler/profiler.h"
+#include "engine/sample_format.h"
 #include "engine/thread_pool.h"
 #include "engine/voice_interface/voice_interface.h"
 
@@ -36,7 +35,8 @@ struct s_executor_settings {
 	uint32 thread_count;
 	uint32 sample_rate;
 	uint32 max_buffer_size;
-	uint32 output_channels;
+	uint32 input_channel_count;
+	uint32 output_channel_count;
 
 	size_t controller_event_queue_size;
 	size_t max_controller_parameters;
@@ -52,11 +52,15 @@ struct s_executor_settings {
 // relevant settings, then assert against the ones provided in the chunk context to make sure they don't change.
 struct s_executor_chunk_context {
 	uint32 sample_rate;
-	uint32 output_channels;
-	e_sample_format sample_format;
 	uint32 frames;
 	real64 buffer_time_sec;
 
+	uint32 input_channel_count;
+	e_sample_format input_sample_format;
+	c_wrapped_array<const uint8> input_buffer;
+
+	uint32 output_channel_count;
+	e_sample_format output_sample_format;
 	c_wrapped_array<uint8> output_buffer;
 };
 

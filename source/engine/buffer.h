@@ -87,7 +87,8 @@ public:
 	}
 
 	// Be careful with calling set_is_constant(true). A constant buffer must contain an entire SIMD block worth of
-	// constant data, so it is invalid to call set_is_constant(true) after only assigning a single value. Prefer calling
+	// constant data, so it is invalid to call set_is_constant(true) after only assigning a single value, or even after
+	// assigning frame_count values (frame_count may be smaller than a full SIMD block). Prefer calling
 	// extend_constant(), which ensures that the first element is copied across the entire SIMD block.
 	void set_is_constant(bool constant) {
 		wl_assert(m_data_state != e_buffer_data_state::k_compile_time_constant);

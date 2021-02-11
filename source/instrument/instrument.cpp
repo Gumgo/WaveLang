@@ -99,9 +99,13 @@ bool c_instrument_variant::validate() const {
 	}
 
 	if (m_voice_native_module_graph && m_fx_native_module_graph) {
+		uint32 voice_graph_input_count = 0;
 		uint32 voice_graph_output_count = 0;
 		for (h_graph_node node_handle : m_voice_native_module_graph->iterate_nodes()) {
-			if (m_voice_native_module_graph->get_node_type(node_handle) == e_native_module_graph_node_type::k_output) {
+			e_native_module_graph_node_type node_type = m_voice_native_module_graph->get_node_type(node_handle);
+			if (node_type == e_native_module_graph_node_type::k_input) {
+				voice_graph_input_count++;
+			} else if (node_type == e_native_module_graph_node_type::k_output) {
 				uint32 output_index = m_voice_native_module_graph->get_output_node_output_index(node_handle);
 				if (output_index != c_native_module_graph::k_remain_active_output_index) {
 					voice_graph_output_count++;
@@ -116,14 +120,21 @@ bool c_instrument_variant::validate() const {
 			}
 		}
 
-		if (voice_graph_output_count != fx_graph_input_count) {
+		// Both graphs can optionally take channel inputs. The FX graph is required to take the voice outputs (in
+		// addition to optionally taking the channel inputs).
+		if (voice_graph_input_count == 0) {
+			if (fx_graph_input_count < voice_graph_output_count) {
+				return false;
+			}
+		} else if (fx_graph_input_count != voice_graph_output_count
+			&& fx_graph_input_count != voice_graph_input_count + voice_graph_output_count) {
 			return false;
 		}
 	}
 
 	// Validate globals
 	if (m_instrument_globals.max_voices < 1) {
-		return false; // $TODO $INPUT input-only graphs can have 0 voices
+		return false;
 	}
 
 	return true;

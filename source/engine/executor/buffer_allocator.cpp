@@ -45,9 +45,12 @@ void c_buffer_allocator::initialize(const s_buffer_allocator_settings &settings)
 	c_wrapped_array<uint8> buffer_memory_array = m_buffer_memory.get_array();
 	for (uint32 pool_index = 0; pool_index < settings.buffer_pool_descriptions.get_count(); pool_index++) {
 		s_buffer_pool &pool = m_buffer_pools[pool_index];
-		pool.buffer_pool.initialize(c_lock_free_handle_array(
-			&m_buffer_pool_free_list_memory.get_array()[pool.first_buffer_handle],
-			pool.description.count));
+		wl_assert(pool.description.count > 0);
+
+		pool.buffer_pool.initialize(
+			c_lock_free_handle_array(
+				&m_buffer_pool_free_list_memory.get_array()[pool.first_buffer_handle],
+				pool.description.count));
 
 		size_t aligned_padded_buffer_size = calculate_aligned_padded_buffer_size(
 			pool.description.type,

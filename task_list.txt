@@ -45,9 +45,6 @@
 	- Allow users to register their own native modules and tasks
 	- Restrict library ID to anything but the 0-255 range
 
-- Audio input stream ($INPUT)
-	- Support input parameters to the main module taken from an audio input source
-
 - MIDI input support ($MIDI)
 	- Add support for more channels
 

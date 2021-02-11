@@ -70,8 +70,8 @@ void c_executor::execute(const s_executor_chunk_context &chunk_context) {
 		// Zero buffer if disabled
 		zero_output_buffers(
 			chunk_context.frames,
-			chunk_context.output_channels,
-			chunk_context.sample_format,
+			chunk_context.output_channel_count,
+			chunk_context.output_sample_format,
 			chunk_context.output_buffer);
 
 		if (old_state == enum_index(e_state::k_terminating)) {
@@ -164,7 +164,11 @@ void c_executor::initialize_thread_pool() {
 }
 
 void c_executor::initialize_buffer_manager() {
-	m_buffer_manager.initialize(m_settings.runtime_instrument, m_settings.max_buffer_size, m_settings.output_channels);
+	m_buffer_manager.initialize(
+		m_settings.runtime_instrument,
+		m_settings.max_buffer_size,
+		m_settings.input_channel_count,
+		m_settings.output_channel_count);
 }
 
 void c_executor::pre_initialize_task_function_libraries() {
@@ -403,6 +407,11 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 	// Clear accumulation buffers
 	m_buffer_manager.begin_chunk(chunk_context.frames);
 
+	// Deinterleave and mix the input buffers (if they're used)
+	m_buffer_manager.mix_input_channel_buffer_to_input_buffers(
+		chunk_context.input_sample_format,
+		chunk_context.input_buffer);
+
 	size_t controller_event_count = m_settings.process_controller_events(
 		m_settings.process_controller_events_context,
 		m_controller_event_manager.get_writable_controller_events(),
@@ -430,6 +439,7 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 				continue;
 			}
 
+			m_buffer_manager.allocate_and_initialize_voice_input_buffers(voice.chunk_offset_samples);
 			m_buffer_manager.allocate_voice_shift_buffers();
 
 			if (m_settings.profiling_enabled) {
@@ -453,7 +463,7 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 	if (m_settings.runtime_instrument->get_fx_task_graph()) {
 		m_buffer_manager.allocate_fx_output_buffers();
 		if (m_voice_allocator.get_fx_voice().active) {
-			m_buffer_manager.transfer_voice_accumulation_buffers_to_fx_inputs();
+			m_buffer_manager.transfer_input_buffers_and_voice_accumulation_buffers_to_fx_inputs();
 
 			if (m_settings.profiling_enabled) {
 				m_profiler.begin_fx();
@@ -475,7 +485,9 @@ void c_executor::execute_internal(const s_executor_chunk_context &chunk_context)
 		m_buffer_manager.mix_voice_accumulation_buffers_to_channel_buffers();
 	}
 
-	m_buffer_manager.mix_channel_buffers_to_output_buffer(chunk_context.sample_format, chunk_context.output_buffer);
+	m_buffer_manager.mix_output_channel_buffers_to_output_buffer(
+		chunk_context.output_sample_format,
+		chunk_context.output_buffer);
 
 	if (m_settings.profiling_enabled) {
 		int64 min_total_time_threshold = static_cast<int64>(

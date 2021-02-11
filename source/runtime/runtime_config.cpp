@@ -1,6 +1,7 @@
-#include "driver/audio_driver_interface.h"
-#include "driver/controller_driver_interface.h"
+#include "common/utility/reporting.h"
 
+#include "runtime/driver/audio_driver_interface.h"
+#include "runtime/driver/controller_driver_interface.h"
 #include "runtime/rapidxml_ext.h"
 #include "runtime/runtime_config.h"
 
@@ -23,8 +24,8 @@ static constexpr const char *k_bool_xml_strings[] = {
 static constexpr const char *k_default_xml_string = "default";
 static constexpr const char *k_none_xml_string = "none";
 
-static constexpr uint32 k_default_audio_input_channels = 0;
-static constexpr uint32 k_default_audio_output_channels = 2;
+static constexpr uint32 k_default_audio_input_channel_count = 0;
+static constexpr uint32 k_default_audio_output_channel_count = 2;
 static constexpr e_sample_format k_default_audio_sample_format = e_sample_format::k_float32;
 static constexpr uint32 k_default_audio_frames_per_buffer = 512;
 
@@ -37,6 +38,27 @@ static constexpr uint32 k_default_executor_max_controller_parameters = 1024;
 static constexpr bool k_default_executor_console_enabled = true;
 static constexpr bool k_default_executor_profiling_enabled = false;
 static constexpr real32 k_default_executor_profiling_threshold = 0.0f;
+
+static bool try_to_get_value_from_child_node(
+	const rapidxml::xml_node<> *parent_node,
+	const char *child_node_name,
+	const char *default_value,
+	std::string &value_out) {
+	const rapidxml::xml_node<> *node = parent_node->first_node(child_node_name);
+	if (node) {
+		const char *value = node->value();
+
+		if (strcmp(value, k_default_xml_string) == 0) {
+			value_out = default_value;
+			return true;
+		}
+
+		value_out = value;
+		return true;
+	}
+
+	return false;
+}
 
 static bool try_to_get_value_from_child_node(
 	const rapidxml::xml_node<> *parent_node,
@@ -56,7 +78,7 @@ static bool try_to_get_value_from_child_node(
 			value_out = std::stoul(value);
 			return true;
 		} catch (const std::out_of_range &) {
-			std::cout << "Failed to parse '" << child_node_name << "'\n";
+			report_error("Failed to parse '%s'", child_node_name);
 		}
 	}
 
@@ -72,7 +94,7 @@ static bool try_to_get_value_from_child_node(
 	uint32 &value_out) {
 	if (try_to_get_value_from_child_node(parent_node, child_node_name, default_value, value_out)) {
 		if (value_out < range_min || value_out > range_max) {
-			std::cout << "'" << child_node_name << "'out of range\n";
+			report_error("'%s' out of range", child_node_name);
 			return false;
 		}
 	}
@@ -99,7 +121,7 @@ static bool try_to_get_value_from_child_node(
 			return true;
 		}
 
-		std::cout << "Failed to parse '" << child_node_name << "'\n";
+		report_error("Failed to parse '%s'", child_node_name);
 	}
 
 	return false;
@@ -123,7 +145,7 @@ static bool try_to_get_value_from_child_node(
 			value_out = std::stof(value);
 			return true;
 		} catch (const std::out_of_range &) {
-			std::cout << "Failed to parse '" << child_node_name << "'\n";
+			report_error("Failed to parse '%s'", child_node_name);
 		}
 	}
 
@@ -139,7 +161,7 @@ static real32 try_to_get_value_from_child_node(
 	real32 &value_out) {
 	if (try_to_get_value_from_child_node(parent_node, child_node_name, default_value, value_out)) {
 		if (value_out < range_min || value_out > range_max) {
-			std::cout << "'" << child_node_name << "'out of range\n";
+			report_error("'%s' out of range", child_node_name);
 			return false;
 		}
 	}
@@ -170,153 +192,224 @@ static bool try_to_get_value_from_child_node(
 			}
 		}
 
-		std::cout << "Failed to parse '" << child_node_name << "'\n";
+		report_error("Failed to parse '%s'", child_node_name);
 	}
 
 	return false;
 }
 
+static void append_comment(rapidxml::xml_document<> *document, const char *comment) {
+	document->append_node(
+		document->allocate_node(rapidxml::node_comment, nullptr, document->allocate_string(comment)));
+}
+
+static void append_comment(rapidxml::xml_node<> *node, const char *comment) {
+	node->append_node(
+		node->document()->allocate_node(rapidxml::node_comment, nullptr, node->document()->allocate_string(comment)));
+}
+
+static void append_setting(
+	rapidxml::xml_node<> *node,
+	const char *name,
+	const char *description,
+	const char *default_value) {
+	append_comment(node, description);
+	node->append_node(node->document()->allocate_node(rapidxml::node_element, name, k_default_xml_string));
+}
+
+static void append_setting(
+	rapidxml::xml_node<> *node,
+	const char *name,
+	const std::string &description,
+	const char *default_value) {
+	append_setting(node, name, description.c_str(), default_value);
+}
+
+static void try_to_parse_channel_indices(
+	const char *name,
+	const char *indices_string,
+	c_wrapped_array<uint32> indices_out) {
+	std::vector<uint32> parsed_channel_indices;
+	size_t start_index = 0;
+	size_t end_index = 0;
+	while (true) {
+		char c = indices_string[end_index];
+		if (c == ',' || c == '\0') {
+			// Try to parse
+			try {
+				uint32 parsed_channel_index = std::stoul(std::string(indices_string, start_index, end_index));
+				parsed_channel_indices.push_back(parsed_channel_index);
+			} catch (const std::out_of_range &) {
+				report_error("Failed to parse '%s'", name);
+				return;
+			}
+
+			if (c == '\0') {
+				break;
+			} else {
+				end_index++;
+				start_index = end_index;
+			}
+		} else {
+			end_index++;
+		}
+	}
+
+	if (parsed_channel_indices.size() != indices_out.get_count()) {
+		report_error("Incorrect number of channel indices specified for '%s'", name);
+		return;
+	}
+
+	for (size_t index = 0; index < indices_out.get_count(); index++) {
+		indices_out[index] = parsed_channel_indices[index];
+	}
+}
+
 bool c_runtime_config::write_default_settings(const char *fname) {
 	rapidxml::xml_document<> document;
 
-	document.append_node(document.allocate_node(
-		rapidxml::node_comment,
-		nullptr,
-		"Settings for wavelang runtime - specify \"default\" for any setting to use the default value"));
+	append_comment(
+		&document,
+		"Settings for wavelang runtime - specify \"default\" for any setting to use the default value");
 
 	rapidxml::xml_node<> *audio_node = document.allocate_node(rapidxml::node_element, "audio");
 	document.append_node(audio_node);
-	audio_node->append_node(document.allocate_node(rapidxml::node_comment, nullptr, "Contains audio settings"));
+	append_comment(audio_node, "Contains audio settings");
 
-	audio_node->append_node(document.allocate_node(
-		rapidxml::node_comment,
-		nullptr,
-		"Index of the audio device to use - run with --list to see a list of options"));
-	audio_node->append_node(document.allocate_node(rapidxml::node_element, "device_index", k_default_xml_string));
+	append_setting(
+		audio_node,
+		"input_device_index",
+		"Index of the input audio device to use - run with --list to see a list of options",
+		k_default_xml_string);
 
-	audio_node->append_node(document.allocate_node(
-		rapidxml::node_comment,
-		nullptr,
-		"Sample rate of the audio stream - default is the audio device's preferred sample rate"));
-	audio_node->append_node(document.allocate_node(rapidxml::node_element, "sample_rate", k_default_xml_string));
+	append_setting(
+		audio_node,
+		"input_channel_count",
+		str_format("Number of input channels - default is %u", k_default_audio_input_channel_count),
+		k_default_xml_string);
 
-	audio_node->append_node(document.allocate_node(rapidxml::node_comment, nullptr, document.allocate_string(
-		("Number of input channels - default is " + std::to_string(k_default_audio_input_channels)).c_str())));
-	audio_node->append_node(document.allocate_node(rapidxml::node_element, "input_channels", k_default_xml_string));
+	append_setting(
+		audio_node,
+		"input_channel_indices",
+		"Comma-separated list of input channel indices - default is 0, ..., input_channel_count-1",
+		k_default_xml_string);
 
-	audio_node->append_node(document.allocate_node(rapidxml::node_comment, nullptr, document.allocate_string(
-		("Number of output channels - default is " + std::to_string(k_default_audio_output_channels)).c_str())));
-	audio_node->append_node(document.allocate_node(rapidxml::node_element, "output_channels", k_default_xml_string));
+	append_setting(
+		audio_node,
+		"output_device_index",
+		"Index of the output audio device to use - run with --list to see a list of options",
+		k_default_xml_string);
 
-	audio_node->append_node(document.allocate_node(rapidxml::node_comment, nullptr, document.allocate_string(
-		("Sample format - default is " +
-			std::string(k_sample_format_xml_strings[enum_index(k_default_audio_sample_format)])).c_str())));
-	audio_node->append_node(document.allocate_node(rapidxml::node_element, "sample_format", k_default_xml_string));
+	append_setting(
+		audio_node,
+		"output_channel_count",
+		str_format("Number of output channels - default is %u", k_default_audio_output_channel_count),
+		k_default_xml_string);
 
-	audio_node->append_node(document.allocate_node(rapidxml::node_comment, nullptr, document.allocate_string(
-		("Audio chunk processing size in frames - default is " +
-			std::to_string(k_default_audio_frames_per_buffer)).c_str())));
-	audio_node->append_node(document.allocate_node(rapidxml::node_element, "frames_per_buffer", k_default_xml_string));
+	append_setting(
+		audio_node,
+		"output_channel_indices",
+		"Comma-separated list of output channel indices - default is 0, ..., output_channel_count-1",
+		k_default_xml_string);
+
+	append_setting(
+		audio_node,
+		"sample_rate",
+		"Sample rate of the audio stream - default is the audio device's preferred sample rate",
+		k_default_xml_string);
+
+	append_setting(
+		audio_node,
+		"sample_format",
+		str_format(
+			"Sample format - default is %s",
+			k_sample_format_xml_strings[enum_index(k_default_audio_sample_format)]),
+		k_default_xml_string);
+
+	append_setting(
+		audio_node,
+		"frames_per_buffer",
+		str_format("Audio chunk processing size in frames - default is %u", k_default_audio_frames_per_buffer),
+		k_default_xml_string);
 
 	rapidxml::xml_node<> *controller_node = document.allocate_node(rapidxml::node_element, "controller");
 	document.append_node(controller_node);
-	controller_node->append_node(document.allocate_node(
-		rapidxml::node_comment,
-		nullptr,
-		"Contains controller settings"));
+	append_comment(controller_node, "Contains controller settings");
 
-	controller_node->append_node(document.allocate_node(
-		rapidxml::node_comment,
-		nullptr,
+	append_comment(
+		controller_node,
 		"Index of the controller device to use - run with --list to see a list of options, "
-		"or use \"none\" to disable controller"));
-	controller_node->append_node(document.allocate_node(
-		rapidxml::node_comment,
-		nullptr,
-		document.allocate_string(
-			("To enable multiple controllers, specify <device_index_0> through <device_index_" +
-				std::to_string(k_max_controller_devices) + ">").c_str())));
-	controller_node->append_node(document.allocate_node(
-		rapidxml::node_element,
+		"or use \"none\" to disable controller");
+
+	append_setting(
+		controller_node,
 		"device_index",
-		k_default_xml_string));
+		str_format(
+			"To enable multiple controllers, specify <device_index_0> through <device_index_%u>",
+			k_max_controller_devices),
+		k_default_xml_string);
 
-	controller_node->append_node(document.allocate_node(
-		rapidxml::node_comment,
-		nullptr,
-		document.allocate_string(
-			("Capacity of the controller event queue - default is " +
-				std::to_string(k_default_controller_event_queue_size) +
-				", this should only need to be increased when sending a huge amount of controller events").c_str())));
-	controller_node->append_node(document.allocate_node(
-		rapidxml::node_element,
+	append_setting(
+		controller_node,
 		"event_queue_size",
-		k_default_xml_string));
+		str_format(
+			"Capacity of the controller event queue - default is %u, "
+			"this should only need to be increased when sending a huge amount of controller events",
+			k_default_controller_event_queue_size),
+		k_default_xml_string);
 
-	controller_node->append_node(document.allocate_node(
-		rapidxml::node_comment,
-		nullptr,
-		document.allocate_string(
-			("Amount of unknown latency in milliseconds to compensate for things like schedule jitter - default is " +
-				std::to_string(k_default_controller_unknown_latency)).c_str())));
-	controller_node->append_node(document.allocate_node(
-		rapidxml::node_element,
+	append_setting(
+		controller_node,
 		"unknown_latency",
-		k_default_xml_string));
+		str_format(
+			"Amount of unknown latency in milliseconds to compensate for things like schedule jitter - default is %u",
+			k_default_controller_unknown_latency),
+		k_default_xml_string);
 
 	rapidxml::xml_node<> *executor_node = document.allocate_node(rapidxml::node_element, "executor");
 	document.append_node(executor_node);
-	executor_node->append_node(document.allocate_node(rapidxml::node_comment, nullptr, "Contains executor settings"));
+	append_comment(executor_node, "Contains executor settings");
 
-	executor_node->append_node(document.allocate_node(
-		rapidxml::node_comment,
-		nullptr,
-		document.allocate_string(
-			("Number of worker threads to use for processing - default is " +
-				std::to_string(k_default_executor_thread_count) +
-				", which causes audio processing to run on the audio callback thread").c_str())));
-	executor_node->append_node(document.allocate_node(rapidxml::node_element, "thread_count", k_default_xml_string));
+	append_setting(
+		executor_node,
+		"thread_count",
+		str_format(
+			"Number of worker threads to use for processing - default is %u, "
+			", which causes audio processing to run on the audio callback thread",
+			k_default_executor_thread_count),
+		k_default_xml_string);
 
-	executor_node->append_node(document.allocate_node(
-		rapidxml::node_comment,
-		nullptr,
-		document.allocate_string(
-			("Maximum number of unique controller parameters which will be tracked - default is " +
-				std::to_string(k_default_executor_max_controller_parameters)).c_str())));
-	executor_node->append_node(document.allocate_node(
-		rapidxml::node_element,
+	append_setting(
+		executor_node,
 		"max_controller_parameters",
-		k_default_xml_string));
+		str_format(
+			"Maximum number of unique controller parameters which will be tracked - default is %u",
+			k_default_executor_max_controller_parameters),
+		k_default_xml_string);
 
-	executor_node->append_node(document.allocate_node(
-		rapidxml::node_comment,
-		nullptr,
-		document.allocate_string(
-			("Whether console output for the instrument is enabled - default is " +
-				std::string(k_bool_xml_strings[k_default_executor_console_enabled])).c_str())));
-	executor_node->append_node(document.allocate_node(rapidxml::node_element, "console_enabled", k_default_xml_string));
+	append_setting(
+		executor_node,
+		"console_enabled",
+		str_format(
+			"Whether console output for the instrument is enabled - default is %s",
+			k_bool_xml_strings[k_default_executor_console_enabled]),
+		k_default_xml_string);
 
-	executor_node->append_node(document.allocate_node(
-		rapidxml::node_comment,
-		nullptr,
-		document.allocate_string(
-			("Whether profiling should occur when running the instrument - default is " +
-				std::string(k_bool_xml_strings[k_default_executor_profiling_enabled])).c_str())));
-	executor_node->append_node(document.allocate_node(
-		rapidxml::node_element,
+	append_setting(
+		executor_node,
 		"profiling_enabled",
-		k_default_xml_string));
+		str_format(
+			"Whether profiling should occur when running the instrument - default is %s",
+			k_bool_xml_strings[k_default_executor_profiling_enabled]),
+		k_default_xml_string);
 
-	executor_node->append_node(document.allocate_node(
-		rapidxml::node_comment,
-		nullptr,
-		document.allocate_string(
-			("Threshold for when profiling occurs as a ratio of chunk time - default is " +
-				std::to_string(k_default_executor_profiling_threshold)).c_str())));
-	executor_node->append_node(document.allocate_node(
-		rapidxml::node_element,
+	append_setting(
+		executor_node,
 		"profiling_threshold",
-		k_default_xml_string));
+		str_format(
+			"Threshold for when profiling occurs as a ratio of chunk time - default is %f",
+			k_default_executor_profiling_threshold),
+		k_default_xml_string);
 
 	std::ofstream file(fname);
 	file << document;
@@ -329,9 +422,11 @@ void c_runtime_config::initialize(
 	set_default_audio_device(audio_driver_interface);
 	set_default_controller_device(controller_driver_interface);
 
-	s_audio_device_info audio_device_info =
-		audio_driver_interface->get_device_info(m_settings.audio_device_index);
-	set_default_audio(&audio_device_info);
+	s_audio_device_info audio_input_device_info =
+		audio_driver_interface->get_device_info(m_settings.audio_input_device_index);
+	s_audio_device_info audio_output_device_info =
+		audio_driver_interface->get_device_info(m_settings.audio_output_device_index);
+	set_default_audio(&audio_input_device_info, &audio_output_device_info);
 
 	if (m_settings.controller_device_count > 0) {
 		s_controller_device_info controller_device_info =
@@ -352,7 +447,7 @@ e_runtime_config_result c_runtime_config::read_settings(
 		{
 			std::ifstream file(fname, std::ios::binary | std::ios::ate);
 			if (!file.is_open()) {
-				std::cout << "Failed to open '" << fname << "'\n";
+				report_error("Failed to open '%s'", fname);
 				initialize(audio_driver_interface, controller_driver_interface);
 				return e_runtime_config_result::k_does_not_exist;
 			}
@@ -365,7 +460,7 @@ e_runtime_config_result c_runtime_config::read_settings(
 			file_contents.back() = '\0';
 
 			if (file.fail()) {
-				std::cout << "Failed to read '" << fname << "'\n";
+				report_error("Failed to read '%s'", fname);
 				initialize(audio_driver_interface, controller_driver_interface);
 				return e_runtime_config_result::k_error;
 			}
@@ -385,12 +480,27 @@ e_runtime_config_result c_runtime_config::read_settings(
 		// Read device index for audio and controller
 
 		if (audio_node) {
-			const rapidxml::xml_node<> *audio_device_index_node = audio_node->first_node("device_index");
-			if (audio_device_index_node) {
+			const rapidxml::xml_node<> *audio_input_device_index_node = audio_node->first_node("input_device_index");
+			if (audio_input_device_index_node) {
 				uint32 index;
-				if (try_to_get_value_from_child_node(audio_node, "device_index", m_settings.audio_device_index, index)
+				if (try_to_get_value_from_child_node(
+					audio_node,
+					"input_device_index",
+					m_settings.audio_input_device_index, index)
 					&& index < audio_driver_interface->get_device_count()) {
-					m_settings.audio_device_index = index;
+					m_settings.audio_input_device_index = index;
+				}
+			}
+
+			const rapidxml::xml_node<> *audio_output_device_index_node = audio_node->first_node("output_device_index");
+			if (audio_output_device_index_node) {
+				uint32 index;
+				if (try_to_get_value_from_child_node(
+					audio_node,
+					"output_device_index",
+					m_settings.audio_output_device_index, index)
+					&& index < audio_driver_interface->get_device_count()) {
+					m_settings.audio_output_device_index = index;
 				}
 			}
 		}
@@ -440,9 +550,11 @@ e_runtime_config_result c_runtime_config::read_settings(
 		}
 
 		// Based on device index, apply default settings
-		s_audio_device_info audio_device_info =
-			audio_driver_interface->get_device_info(m_settings.audio_device_index);
-		set_default_audio(&audio_device_info);
+		s_audio_device_info audio_input_device_info =
+			audio_driver_interface->get_device_info(m_settings.audio_input_device_index);
+		s_audio_device_info audio_output_device_info =
+			audio_driver_interface->get_device_info(m_settings.audio_output_device_index);
+		set_default_audio(&audio_input_device_info, &audio_output_device_info);
 
 		if (m_settings.controller_device_count > 0) {
 			s_controller_device_info controller_device_info =
@@ -457,25 +569,57 @@ e_runtime_config_result c_runtime_config::read_settings(
 		if (audio_node) {
 			try_to_get_value_from_child_node(
 				audio_node,
+				"input_channel_count",
+				0u,
+				k_max_audio_channels,
+				m_settings.audio_input_channel_count,
+				m_settings.audio_input_channel_count);
+
+			std::string input_channel_indices;
+			if (try_to_get_value_from_child_node(
+				audio_node,
+				"input_channel_indices",
+				"",
+				input_channel_indices)
+				&& !input_channel_indices.empty()) {
+				try_to_parse_channel_indices(
+					"input_channel_indices",
+					input_channel_indices.c_str(),
+					c_wrapped_array<uint32>(
+						m_settings.audio_input_channel_indices.get_elements(),
+						m_settings.audio_input_channel_count));
+			}
+
+			try_to_get_value_from_child_node(
+				audio_node,
+				"output_channel_count",
+				1u,
+				k_max_audio_channels,
+				m_settings.audio_output_channel_count,
+				m_settings.audio_output_channel_count);
+
+			std::string output_channel_indices;
+			if (try_to_get_value_from_child_node(
+				audio_node,
+				"output_channel_indices",
+				"",
+				output_channel_indices)
+				&& !output_channel_indices.empty()) {
+				try_to_parse_channel_indices(
+					"output_channel_indices",
+					output_channel_indices.c_str(),
+					c_wrapped_array<uint32>(
+						m_settings.audio_output_channel_indices.get_elements(),
+						m_settings.audio_output_channel_count));
+			}
+
+			try_to_get_value_from_child_node(
+				audio_node,
 				"sample_rate",
 				1u,
 				1000000u,
 				m_settings.audio_sample_rate,
 				m_settings.audio_sample_rate);
-			try_to_get_value_from_child_node(
-				audio_node,
-				"input_channels",
-				0u,
-				64u,
-				m_settings.audio_input_channels,
-				m_settings.audio_input_channels);
-			try_to_get_value_from_child_node(
-				audio_node,
-				"output_channels",
-				1u,
-				64u,
-				m_settings.audio_output_channels,
-				m_settings.audio_output_channels);
 			try_to_get_value_from_child_node(
 				audio_node,
 				"sample_format",
@@ -541,7 +685,7 @@ e_runtime_config_result c_runtime_config::read_settings(
 				m_settings.executor_profiling_threshold);
 		}
 	} catch (const rapidxml::parse_error &) {
-		std::cout << "'" << fname << "' is not valid XML\n";
+		report_error("'%s' is not valid XML", fname);
 		initialize(audio_driver_interface, controller_driver_interface);
 		return e_runtime_config_result::k_error;
 	}
@@ -554,16 +698,27 @@ const c_runtime_config::s_settings &c_runtime_config::get_settings() const {
 }
 
 void c_runtime_config::set_default_audio_device(const c_audio_driver_interface *audio_driver_interface) {
-	m_settings.audio_device_index = audio_driver_interface->get_default_device_index();
+	m_settings.audio_input_device_index = audio_driver_interface->get_default_input_device_index();
+	m_settings.audio_output_device_index = audio_driver_interface->get_default_output_device_index();
 }
 
-void c_runtime_config::set_default_audio(const s_audio_device_info *audio_device_info) {
-	m_settings.audio_sample_rate = static_cast<uint32>(audio_device_info->default_sample_rate);
-	m_settings.audio_input_channels =
-		k_default_audio_input_channels;
-		//std::min(k_default_audio_input_channels, audio_device_info->max_input_channels); // $TODO $INPUT
-	m_settings.audio_output_channels =
-		std::min(k_default_audio_output_channels, audio_device_info->max_output_channels);
+void c_runtime_config::set_default_audio(
+	const s_audio_device_info *audio_input_device_info,
+	const s_audio_device_info *audio_output_device_info) {
+	m_settings.audio_input_channel_count =
+		std::min(k_default_audio_input_channel_count, audio_input_device_info->max_input_channels);
+	for (uint32 index = 0; index < m_settings.audio_input_channel_indices.get_count(); index++) {
+		m_settings.audio_input_channel_indices[index] = index;
+	}
+
+	m_settings.audio_output_channel_count =
+		std::min(k_default_audio_output_channel_count, audio_output_device_info->max_output_channels);
+	for (uint32 index = 0; index < m_settings.audio_output_channel_indices.get_count(); index++) {
+		m_settings.audio_output_channel_indices[index] = index;
+	}
+
+	// Grab sample rate default from the output device
+	m_settings.audio_sample_rate = static_cast<uint32>(audio_output_device_info->default_sample_rate);
 	m_settings.audio_sample_format = k_default_audio_sample_format;
 	m_settings.audio_frames_per_buffer = k_default_audio_frames_per_buffer;
 }

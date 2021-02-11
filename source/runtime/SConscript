@@ -11,6 +11,7 @@ Import("*")
 env = env.Clone()
 
 if str(platform) == "win32":
+	portaudio_include_dir = build_options.portaudio_include_dir
 	portaudio_lib_dir = {
 		build_config.Configuration.DEBUG: build_options.portaudio_lib_dir_debug,
 		build_config.Configuration.DEVELOPMENT: build_options.portaudio_lib_dir_debug,
@@ -20,6 +21,7 @@ if str(platform) == "win32":
 	portaudio_lib_name = "portaudio_x64"
 	portaudio_shared_lib_name = "portaudio_x64.dll"
 
+	rtmidi_include_dir = build_options.rtmidi_include_dir
 	rtmidi_lib_dir = {
 		build_config.Configuration.DEBUG: build_options.rtmidi_lib_dir_debug,
 		build_config.Configuration.DEVELOPMENT: build_options.rtmidi_lib_dir_debug,
@@ -36,7 +38,7 @@ else:
 if str(platform) == "win32":
 	env.Append(LIBS = ["shlwapi.lib"])
 
-env.Append(CPPPATH = ["#source", rapidxml_include_dir])
+env.Append(CPPPATH = ["#source", portaudio_include_dir, rtmidi_include_dir, rapidxml_include_dir])
 
 sources = utils.enumerate_files(env, ".", utils.SOURCE_EXTENSIONS)
 static_libraries = ["common", "driver", "engine", "instrument", "native_module", "task_function"]

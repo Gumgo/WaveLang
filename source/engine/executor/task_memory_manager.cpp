@@ -96,43 +96,44 @@ void c_task_memory_manager::initialize(
 
 	m_scratch_allocations.resize(thread_context_count);
 
+	c_wrapped_array<uint8> buffer;
 	if (total_size_alignment.size > 0) {
 		m_task_memory_allocator.allocate(total_size_alignment.size);
-		c_wrapped_array<uint8> buffer = m_task_memory_allocator.get_array();
+		buffer = m_task_memory_allocator.get_array();
 		zero_type(buffer.get_pointer(), buffer.get_count());
+	}
 
-		for (e_instrument_stage instrument_stage : iterate_enum<e_instrument_stage>()) {
-			size_t stage_index = enum_index(instrument_stage);
+	for (e_instrument_stage instrument_stage : iterate_enum<e_instrument_stage>()) {
+		size_t stage_index = enum_index(instrument_stage);
 
-			if (task_graphs[stage_index]) {
-				uint32 task_count = task_graphs[stage_index]->get_task_count();
-				uint32 total_voice_count = task_graphs[stage_index]->get_task_count() * max_voices[stage_index];
-				m_shared_allocations[stage_index].resize(task_count);
-				m_voice_allocations[stage_index].resize(total_voice_count);
+		if (task_graphs[stage_index]) {
+			uint32 task_count = task_graphs[stage_index]->get_task_count();
+			uint32 total_voice_count = task_graphs[stage_index]->get_task_count() * max_voices[stage_index];
+			m_shared_allocations[stage_index].resize(task_count);
+			m_voice_allocations[stage_index].resize(total_voice_count);
 
-				// Create sub-allocations
-				const std::vector<s_task_memory_query_result> &results =
-					task_memory_query_results[enum_index(instrument_stage)];
-				for (size_t task_index = 0; task_index < results.size(); task_index++) {
-					const s_task_memory_query_result &task_memory_query_result = results[task_index];
+			// Create sub-allocations
+			const std::vector<s_task_memory_query_result> &results =
+				task_memory_query_results[enum_index(instrument_stage)];
+			for (size_t task_index = 0; task_index < results.size(); task_index++) {
+				const s_task_memory_query_result &task_memory_query_result = results[task_index];
 
-					// Allocate shared memory
-					m_shared_allocations[stage_index][task_index] =
-						add_allocation(buffer, task_memory_query_result.shared_size_alignment);
+				// Allocate shared memory
+				m_shared_allocations[stage_index][task_index] =
+					add_allocation(buffer, task_memory_query_result.shared_size_alignment);
 
-					// Allocate per-voice memory
-					for (uint32 voice = 0; voice < max_voices[stage_index]; voice++) {
-						m_voice_allocations[stage_index][task_count * voice + task_index] =
-							add_allocation(buffer, task_memory_query_result.voice_size_alignment);
-					}
+				// Allocate per-voice memory
+				for (uint32 voice = 0; voice < max_voices[stage_index]; voice++) {
+					m_voice_allocations[stage_index][task_count * voice + task_index] =
+						add_allocation(buffer, task_memory_query_result.voice_size_alignment);
 				}
 			}
 		}
+	}
 
-		// Allocate scratch memory
-		for (size_t thread = 0; thread < thread_context_count; thread++) {
-			add_allocation(buffer, scratch_size_alignment);
-		}
+	// Allocate scratch memory
+	for (size_t thread = 0; thread < thread_context_count; thread++) {
+		add_allocation(buffer, scratch_size_alignment);
 	}
 }
 

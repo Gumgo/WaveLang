@@ -1165,6 +1165,16 @@ void c_task_graph::calculate_max_concurrency() {
 	for (const c_buffer &buffer : m_buffers) {
 		add_usage_info_for_buffer_type(predecessor_resolver, buffer.get_data_type());
 	}
+
+	// Remove any buffer usage info entries with 0 max concurrency - this can happen if all buffers of that type are
+	// compile-time constants
+	for (size_t index = 0; index < m_buffer_usage_info.size();) {
+		if (m_buffer_usage_info[index].max_concurrency == 0) {
+			m_buffer_usage_info.erase(m_buffer_usage_info.begin() + index);
+		}
+
+		index++;
+	}
 }
 
 void c_task_graph::add_usage_info_for_buffer_type(

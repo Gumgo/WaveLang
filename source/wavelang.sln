@@ -9,8 +9,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "compiler", "compiler\compil
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "console", "console\console.vcxproj", "{6FA57933-2FBC-4F1C-B1FF-DFFB4A902E78}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "driver", "driver\driver.vcxproj", "{2C9EB94A-3946-43A9-90E2-C0F61F4BDEBE}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "engine", "engine\engine.vcxproj", "{1DF80208-7675-4E3D-85BB-21F3107107F6}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "instrument", "instrument\instrument.vcxproj", "{F1681AAC-4017-40DC-870A-219F62B8D265}"
@@ -52,12 +50,6 @@ Global
 		{6FA57933-2FBC-4F1C-B1FF-DFFB4A902E78}.development|x64.Build.0 = development|x64
 		{6FA57933-2FBC-4F1C-B1FF-DFFB4A902E78}.release|x64.ActiveCfg = release|x64
 		{6FA57933-2FBC-4F1C-B1FF-DFFB4A902E78}.release|x64.Build.0 = release|x64
-		{2C9EB94A-3946-43A9-90E2-C0F61F4BDEBE}.debug|x64.ActiveCfg = debug|x64
-		{2C9EB94A-3946-43A9-90E2-C0F61F4BDEBE}.debug|x64.Build.0 = debug|x64
-		{2C9EB94A-3946-43A9-90E2-C0F61F4BDEBE}.development|x64.ActiveCfg = development|x64
-		{2C9EB94A-3946-43A9-90E2-C0F61F4BDEBE}.development|x64.Build.0 = development|x64
-		{2C9EB94A-3946-43A9-90E2-C0F61F4BDEBE}.release|x64.ActiveCfg = release|x64
-		{2C9EB94A-3946-43A9-90E2-C0F61F4BDEBE}.release|x64.Build.0 = release|x64
 		{1DF80208-7675-4E3D-85BB-21F3107107F6}.debug|x64.ActiveCfg = debug|x64
 		{1DF80208-7675-4E3D-85BB-21F3107107F6}.debug|x64.Build.0 = debug|x64
 		{1DF80208-7675-4E3D-85BB-21F3107107F6}.development|x64.ActiveCfg = development|x64

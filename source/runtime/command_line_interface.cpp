@@ -325,6 +325,9 @@ void c_command_line_interface::list_devices() {
 	for (uint32 index = 0; index < m_runtime_context.audio_driver_interface.get_device_count(); index++) {
 		s_audio_device_info device_info = m_runtime_context.audio_driver_interface.get_device_info(index);
 		std::cout << index << ": " << device_info.name << "\n";
+		std::cout << "\t" << device_info.host_api_name << ", "
+			<< device_info.max_input_channels << " inputs, "
+			<< device_info.max_output_channels << " outputs\n";
 	}
 
 	std::cout << "Controller devices:\n";
@@ -340,11 +343,21 @@ void c_command_line_interface::initialize_from_runtime_config() {
 	// Initialize audio stream
 	{
 		s_audio_driver_settings settings;
-		settings.set_default();
-		settings.device_index = config_settings.audio_device_index;
+		settings.input_device_index = config_settings.audio_input_device_index;
+		settings.input_channel_count = config_settings.audio_input_channel_count;
+		copy_type(
+			settings.input_channel_indices.get_elements(),
+			config_settings.audio_input_channel_indices.get_elements(),
+			k_max_audio_channels);
+
+		settings.output_device_index = config_settings.audio_output_device_index;
+		settings.output_channel_count = config_settings.audio_output_channel_count;
+		copy_type(
+			settings.output_channel_indices.get_elements(),
+			config_settings.audio_output_channel_indices.get_elements(),
+			k_max_audio_channels);
+
 		settings.sample_rate = config_settings.audio_sample_rate;
-		//settings.input_channels = config_settings.audio_input_channels; // $TODO $INPUT
-		settings.output_channels = config_settings.audio_output_channels;
 		settings.sample_format = config_settings.audio_sample_format;
 		settings.frames_per_buffer = config_settings.audio_frames_per_buffer;
 
@@ -360,7 +373,6 @@ void c_command_line_interface::initialize_from_runtime_config() {
 	// Initialize the controller
 	if (config_settings.controller_device_count > 0) {
 		s_controller_driver_settings settings;
-		settings.set_default();
 		settings.device_count = config_settings.controller_device_count;
 		for (size_t device = 0; device < config_settings.controller_device_count; device++) {
 			settings.device_indices[device] = config_settings.controller_device_indices[device];
@@ -448,7 +460,8 @@ void c_command_line_interface::process_command_load_synth(const s_command &comma
 			settings.thread_count = runtime_config_settings.executor_thread_count;
 			settings.sample_rate = runtime_config_settings.audio_sample_rate;
 			settings.max_buffer_size = runtime_config_settings.audio_frames_per_buffer;
-			settings.output_channels = runtime_config_settings.audio_output_channels;
+			settings.input_channel_count = runtime_config_settings.audio_input_channel_count;
+			settings.output_channel_count = runtime_config_settings.audio_output_channel_count;
 			settings.controller_event_queue_size = runtime_config_settings.controller_event_queue_size;
 			settings.max_controller_parameters = runtime_config_settings.executor_max_controller_parameters;
 			settings.process_controller_events = s_runtime_context::process_controller_events_callback;

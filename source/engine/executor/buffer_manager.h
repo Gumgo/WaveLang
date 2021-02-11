@@ -3,10 +3,9 @@
 #include "common/common.h"
 #include "common/threading/lock_free.h"
 
-#include "driver/sample_format.h"
-
 #include "engine/executor/buffer_allocator.h"
 #include "engine/runtime_instrument.h"
+#include "engine/sample_format.h"
 #include "engine/task_graph.h"
 
 #include <atomic>
@@ -14,15 +13,23 @@
 
 class c_buffer_manager {
 public:
-	void initialize(const c_runtime_instrument *runtime_instrument, uint32 max_buffer_size, uint32 output_channels);
+	void initialize(
+		const c_runtime_instrument *runtime_instrument,
+		uint32 max_buffer_size,
+		uint32 input_channel_count,
+		uint32 output_channel_count);
 	void shutdown();
 
 	void begin_chunk(uint32 chunk_size);
+	void mix_input_channel_buffer_to_input_buffers(
+		e_sample_format sample_format,
+		c_wrapped_array<const uint8> input_buffer);
 	void allocate_voice_accumulation_buffers();
+	void allocate_and_initialize_voice_input_buffers(uint32 voice_sample_offset);
 	void allocate_voice_shift_buffers();
 	void accumulate_voice_output(uint32 voice_sample_offset);
 	void allocate_fx_output_buffers();
-	void transfer_voice_accumulation_buffers_to_fx_inputs();
+	void transfer_input_buffers_and_voice_accumulation_buffers_to_fx_inputs();
 	void free_voice_accumulation_buffers();
 	void store_fx_output();
 	void initialize_buffers_for_graph_processing(e_instrument_stage instrument_stage);
@@ -32,7 +39,7 @@ public:
 		uint32 voice_sample_offset);
 	void mix_voice_accumulation_buffers_to_channel_buffers();
 	void mix_fx_output_to_channel_buffers();
-	void mix_channel_buffers_to_output_buffer(
+	void mix_output_channel_buffers_to_output_buffer(
 		e_sample_format sample_format,
 		c_wrapped_array<uint8> output_buffer);
 
@@ -125,6 +132,12 @@ private:
 	// Pool indices for each FX output
 	std::vector<uint32> m_fx_output_pool_indices;
 
+	// Buffers used to deinterleave input channels
+	std::vector<c_buffer> m_input_channel_mix_buffers;
+
+	// Buffers used to hold mixed input
+	std::vector<c_buffer> m_input_buffers;
+
 	// Buffers used to shift voice samples
 	std::vector<c_buffer> m_voice_shift_buffers;
 
@@ -135,7 +148,7 @@ private:
 	std::vector<c_buffer> m_fx_output_buffers;
 
 	// Buffers to mix to output channels
-	std::vector<c_buffer> m_channel_mix_buffers;
+	std::vector<c_buffer> m_output_channel_mix_buffers;
 
 	// Size of the current chunk
 	uint32 m_chunk_size;
