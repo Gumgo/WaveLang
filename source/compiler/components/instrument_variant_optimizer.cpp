@@ -23,9 +23,9 @@ private:
 
 	bool try_optimize_node(h_graph_node node_handle, bool &did_optimize_out);
 
-	void deduplicate_nodes();
-	void deduplicate_constants();
-	void deduplicate_arrays_and_native_modules();
+	bool deduplicate_nodes();
+	bool deduplicate_constants();
+	bool deduplicate_arrays_and_native_modules();
 
 	// Any edges (original -> X) get swapped out for (remapped -> X)
 	void remap_outputs(h_graph_node original_node_handle, h_graph_node remapped_node_handle);
@@ -80,28 +80,34 @@ bool c_native_module_graph_optimizer::optimize() {
 	remove_unused_nodes();
 
 	// Keep trying to optimize nodes until no optimizations can be applied
-	while (true) {
-		bool optimization_performed = false;
-		for (h_graph_node node_handle : m_native_module_graph.iterate_nodes()) {
-			// $PERF: we can only apply one optimization per loop because iteration gets invalidated when the graph is
-			// modified
-			if (!try_optimize_node(node_handle, optimization_performed)) {
-				return false;
-			} else if (optimization_performed) {
+	bool optimization_performed;
+	do {
+		optimization_performed = false;
+
+		while (true) {
+			bool node_optimized = false;
+			for (h_graph_node node_handle : m_native_module_graph.iterate_nodes()) {
+				// $PERF: we can only apply one optimization per loop because iteration gets invalidated when the graph
+				// is modified
+				if (!try_optimize_node(node_handle, node_optimized)) {
+					return false;
+				} else if (optimization_performed) {
+					optimization_performed = true;
+					break;
+				}
+			}
+
+			if (node_optimized) {
+				remove_unused_nodes();
+			} else {
 				break;
 			}
 		}
 
-		if (optimization_performed) {
-			remove_unused_nodes();
-		} else {
-			break;
-		}
-	}
+		optimization_performed |= deduplicate_nodes();
+	} while (optimization_performed);
 
-	deduplicate_nodes();
 	m_native_module_graph.remove_unused_nodes_and_reassign_node_indices();
-
 	return true;
 }
 
@@ -176,23 +182,23 @@ bool c_native_module_graph_optimizer::try_optimize_node(h_graph_node node_handle
 		return true;
 	}
 
-	// Try to apply all the optimization rules
-	for (uint32 rule_index = 0; rule_index < c_native_module_registry::get_optimization_rule_count(); rule_index++) {
-		if (m_optimization_rule_applicator.try_apply_optimization_rule(node_handle, rule_index)) {
-			did_optimize_out = true;
-			return true;
-		}
+	// Try to apply an optimization rule
+	if (m_optimization_rule_applicator.try_apply_optimization_rule(node_handle).is_valid()) {
+		did_optimize_out = true;
+		return true;
 	}
 
 	return true;
 }
 
-void c_native_module_graph_optimizer::deduplicate_nodes() {
-	deduplicate_constants();
-	deduplicate_arrays_and_native_modules();
+bool c_native_module_graph_optimizer::deduplicate_nodes() {
+	bool any_changes = deduplicate_constants();
+	any_changes |= deduplicate_arrays_and_native_modules();
+	return any_changes;
 }
 
-void c_native_module_graph_optimizer::deduplicate_constants() {
+bool c_native_module_graph_optimizer::deduplicate_constants() {
+	bool any_changes = false;
 	std::unordered_map<real32, h_graph_node> deduplicated_reals;
 	std::unordered_map<bool, h_graph_node> deduplicated_bools;
 	std::unordered_map<std::string, h_graph_node> deduplicated_strings;
@@ -248,19 +254,22 @@ void c_native_module_graph_optimizer::deduplicate_constants() {
 		if (deduplicated_node_handle.is_valid()) {
 			// Redirect node_handle's outputs as outputs of deduplicated_node_handle
 			remap_outputs(node_handle, deduplicated_node_handle);
+			any_changes = true;
 		}
 	}
 
 	remove_unused_nodes();
+	return any_changes;
 }
 
-void c_native_module_graph_optimizer::deduplicate_arrays_and_native_modules() {
+bool c_native_module_graph_optimizer::deduplicate_arrays_and_native_modules() {
 	// Find any module calls or arrays with identical type and inputs and merge them. (The common factor here is
 	// nodes which use indexed inputs.)
 	// Currently n^2 but we could do better easily.
 
 	// Repeat until the graph doesn't change. If we topologically sorted and deduplicated in that order, we wouldn't
 	// need to run multiple passes.
+	bool any_changes = false;
 	bool graph_changed;
 	do {
 		graph_changed = false;
@@ -343,7 +352,10 @@ void c_native_module_graph_optimizer::deduplicate_arrays_and_native_modules() {
 		}
 
 		remove_unused_nodes();
+		any_changes |= graph_changed;
 	} while (graph_changed);
+
+	return any_changes;
 }
 
 void c_native_module_graph_optimizer::remap_outputs(

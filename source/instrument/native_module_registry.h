@@ -11,6 +11,9 @@ using h_native_module_library = c_handle<s_native_module_library_handle_identifi
 struct s_native_module_handle_identifier {};
 using h_native_module = c_handle<s_native_module_handle_identifier, uint32>;
 
+struct s_native_module_optimization_rule_identifier {};
+using h_native_module_optimization_rule = c_handle<s_native_module_optimization_rule_identifier, uint32>;
+
 // The registry of all native modules, which are the built-in modules of the language
 class c_native_module_registry {
 public:
@@ -43,8 +46,10 @@ public:
 	// If a native module is registered using a native operator name, it is automatically associated with that operator
 	static e_native_operator get_native_module_operator(s_native_module_uid native_module_uid);
 
-	// Registers an optimization rule
-	static bool register_optimization_rule(const s_native_module_optimization_rule &optimization_rule);
+	// Registers an optimization rule - name is only used for error reporting
+	static bool register_optimization_rule(
+		const s_native_module_optimization_rule &optimization_rule,
+		const char *name);
 
 	static uint32 get_native_module_count();
 	static c_index_handle_iterator<h_native_module> iterate_native_modules();
@@ -52,7 +57,8 @@ public:
 	static const s_native_module &get_native_module(h_native_module handle);
 
 	static uint32 get_optimization_rule_count();
-	static const s_native_module_optimization_rule &get_optimization_rule(uint32 index);
+	static c_index_handle_iterator<h_native_module_optimization_rule> iterate_optimization_rules();
+	static const s_native_module_optimization_rule &get_optimization_rule(h_native_module_optimization_rule handle);
 
 	static bool output_registered_native_modules(const char *filename);
 };

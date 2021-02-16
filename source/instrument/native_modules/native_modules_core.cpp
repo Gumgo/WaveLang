@@ -440,9 +440,6 @@ namespace core_native_modules {
 			.set_compile_time_call<add_latency_bool_array>()
 			.set_get_latency<add_latency_get_latency>();
 
-		wl_optimization_rule(noop$real(x) -> x);
-		wl_optimization_rule(noop$bool(x) -> x);
-		wl_optimization_rule(noop$string(x) -> x);
 		wl_optimization_rule(negation(negation(x)) -> x);
 
 		wl_optimization_rule(addition(const x, y) -> addition(y, x));
@@ -456,7 +453,7 @@ namespace core_native_modules {
 		wl_optimization_rule(subtraction(0, x) -> negation(x));
 
 		wl_optimization_rule(multiplication(const x, y) -> multiplication(y, x));
-		wl_optimization_rule(multiplication(x, 0)  ->  0);
+		wl_optimization_rule(multiplication(x, 0) -> 0);
 		wl_optimization_rule(multiplication(x, 1) -> x);
 		wl_optimization_rule(multiplication(x, -1) -> negation(x));
 		wl_optimization_rule(division(x, 1) -> x);

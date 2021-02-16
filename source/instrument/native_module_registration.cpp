@@ -26,6 +26,7 @@ private:
 		k_left_parenthesis,
 		k_right_parenthesis,
 		k_comma,
+		k_question_mark,
 		k_source_to_target
 	};
 
@@ -65,11 +66,6 @@ private:
 	s_token get_next_token();
 	bool add_symbol(s_native_module_optimization_symbol symbol, bool is_source_symbol);
 
-	s_native_module_optimization_symbol get_identifier_symbol(
-		const std::string_view &identifier,
-		bool is_constant,
-		bool is_building_source);
-
 	s_native_module_optimization_rule m_rule{};
 	size_t m_source_symbol_count = 0;
 	size_t m_target_symbol_count = 0;
@@ -78,10 +74,6 @@ private:
 	const char *m_library = nullptr;
 	size_t m_rule_string_offset = 0;
 	const std::unordered_map<std::string, s_native_module_uid> &m_native_module_identifier_map;
-
-	std::unordered_map<std::string_view, s_identifier> m_identifier_map;
-	uint32 m_constant_count = 0;
-	uint32 m_variable_count = 0;
 };
 
 void c_native_module_registration_utilities::validate_argument_names(const s_native_module &native_module) {
@@ -266,8 +258,12 @@ bool register_native_modules() {
 				return false;
 			}
 
-			if (!c_native_module_registry::register_optimization_rule(generator.get_rule())) {
-				return false; // Error already reported
+			bool registration_result = c_native_module_registry::register_optimization_rule(
+				generator.get_rule(),
+				optimization_rule_entry->optimization_rule_string);
+			if (!registration_result) {
+				// Error already reported
+				return false;
 			}
 
 			optimization_rule_entry = optimization_rule_entry->next;
@@ -322,6 +318,7 @@ bool c_optimization_rule_generator::build() {
 	// validate the rules when they're registered at runtime, which is what matters most.
 	zero_type(&m_rule);
 
+	std::vector<std::string_view> identifiers;
 	bool building_source = true;
 	int32 depth = 0;
 	bool expect_comma_or_rparen = false;
@@ -365,23 +362,32 @@ bool c_optimization_rule_generator::build() {
 			break;
 		}
 
-		bool is_const = false;
+		bool is_constant = false;
+		bool is_variable_or_constant = false;
 		if (token.type == e_token_type::k_const) {
-			if (next_token.type != e_token_type::k_identifier) {
+			is_constant = true;
+			token = next_token;
+			next_token = get_next_token();
+
+			if (token.type == e_token_type::k_question_mark) {
+				is_constant = false;
+				is_variable_or_constant = true;
+				token = next_token;
+				next_token = get_next_token();
+			}
+
+			if (token.type != e_token_type::k_identifier) {
 				// Only identifiers can have the const qualifier
 				return false;
 			}
 
-			is_const = true;
-			token = next_token;
-			next_token = get_next_token();
 		}
 
 		if (token.type == e_token_type::k_identifier) {
 			if (next_token.type == e_token_type::k_left_parenthesis) {
 				// Native module call
-				if (is_const) {
-					// Native modules can't be const
+				if (is_constant || is_variable_or_constant) {
+					// Native modules can't be const or const?
 					return false;
 				}
 
@@ -407,12 +413,42 @@ bool c_optimization_rule_generator::build() {
 				token = next_token;
 				next_token = get_next_token();
 			} else {
-				s_native_module_optimization_symbol identifier_symbol =
-					get_identifier_symbol(token.source, is_const, building_source);
-				if (!identifier_symbol.is_valid()) {
-					return false;
+				// First, determine if this is a back-reference
+				static constexpr uint32 k_invalid_back_reference_index = static_cast<uint32>(-1);
+				uint32 back_reference_index = k_invalid_back_reference_index;
+				for (uint32 index = 0; index < identifiers.size(); index++) {
+					if (token.source == identifiers[index]) {
+						back_reference_index = index;
+						break;
+					}
 				}
 
+				s_native_module_optimization_symbol identifier_symbol = s_native_module_optimization_symbol::invalid();
+				if (back_reference_index == k_invalid_back_reference_index) {
+					if (!building_source) {
+						// The target can only contain back-references
+						return false;
+					}
+
+					if (is_constant) {
+						identifier_symbol = s_native_module_optimization_symbol::build_constant();
+					} else if (is_variable_or_constant) {
+						identifier_symbol = s_native_module_optimization_symbol::build_variable_or_constant();
+					} else {
+						identifier_symbol = s_native_module_optimization_symbol::build_variable();
+					}
+
+					identifiers.push_back(token.source);
+				} else {
+					if (is_constant || is_variable_or_constant) {
+						// Back-references can't have const or const? qualifiers
+						return false;
+					}
+
+					identifier_symbol = s_native_module_optimization_symbol::build_back_reference(back_reference_index);
+				}
+
+				wl_assert(identifier_symbol.is_valid());
 				if (!add_symbol(identifier_symbol, building_source)) {
 					return false;
 				}
@@ -464,7 +500,7 @@ bool c_optimization_rule_generator::build() {
 }
 
 c_optimization_rule_generator::s_token c_optimization_rule_generator::get_next_token() {
-	// Simple parser - recognizes ( ) , -> and numbers and identifiers
+	// Simple parser - recognizes ( ) , ? -> and numbers and identifiers
 	// First skip whitespace
 	while (true) {
 		char c = m_rule_string[m_rule_string_offset];
@@ -490,6 +526,9 @@ c_optimization_rule_generator::s_token c_optimization_rule_generator::get_next_t
 
 	case ',':
 		return { e_token_type::k_comma, std::string_view(&m_rule_string[m_rule_string_offset++], 1) };
+
+	case '?':
+		return { e_token_type::k_question_mark, std::string_view(&m_rule_string[m_rule_string_offset++], 1) };
 
 	case '-':
 		if (m_rule_string[m_rule_string_offset + 1] == '>') {
@@ -582,55 +621,4 @@ bool c_optimization_rule_generator::add_symbol(s_native_module_optimization_symb
 
 	pattern.symbols[symbol_count++] = symbol;
 	return true;
-}
-
-s_native_module_optimization_symbol c_optimization_rule_generator::get_identifier_symbol(
-	const std::string_view &identifier,
-	bool is_constant,
-	bool is_building_source) {
-	auto it = m_identifier_map.find(identifier);
-
-	if (it == m_identifier_map.end()) {
-		if (!is_building_source) {
-			// If we're building the target pattern and this identifier doesn't exist, then the source pattern never
-			// declared it which is an error
-			return s_native_module_optimization_symbol::invalid();
-		}
-
-		s_identifier new_identifier;
-		new_identifier.index = is_constant ? m_constant_count : m_variable_count;
-		new_identifier.is_constant = is_constant;
-
-		if (new_identifier.index >= s_native_module_optimization_symbol::k_max_matched_symbols) {
-			// We only support up to a fixed number of matched symbols
-			return s_native_module_optimization_symbol::invalid();
-		}
-
-		if (is_constant) {
-			m_constant_count++;
-		} else {
-			m_variable_count++;
-		}
-
-		m_identifier_map.insert(std::make_pair(identifier, new_identifier));
-	} else {
-		if (is_building_source) {
-			// We can't declare the same variable twice in the source pattern because we don't support checking whether
-			// two variables in the source pattern hold the same value
-			return s_native_module_optimization_symbol::invalid();
-		} else if (is_constant) {
-			// We aren't allowed to declare variables as constant in the target pattern because the target isn't what
-			// we're matching against
-			return s_native_module_optimization_symbol::invalid();
-		}
-	}
-
-	// Re-lookup the identifier - it should definitely exist now
-	it = m_identifier_map.find(identifier);
-	wl_assert(it != m_identifier_map.end());
-
-	const s_identifier &result = it->second;
-	return result.is_constant
-		? s_native_module_optimization_symbol::build_constant(result.index)
-		: s_native_module_optimization_symbol::build_variable(result.index);
 }

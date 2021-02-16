@@ -118,34 +118,56 @@ namespace delay_native_modules {
 			.set_call_signature<decltype(memory_bool)>();
 
 		// Remove 0-duration delays
-		wl_optimization_rule(delay_samples$real(0, x) -> x);
-		wl_optimization_rule(delay_samples$initial_value_real(0, x) -> x);
-		wl_optimization_rule(delay_samples$bool(0, x) -> x);
-		wl_optimization_rule(delay_samples$initial_value_bool(0, x) -> x);
-		wl_optimization_rule(delay_seconds$real(0, x) -> x);
-		wl_optimization_rule(delay_seconds$initial_value_real(0, x) -> x);
-		wl_optimization_rule(delay_seconds$bool(0, x) -> x);
-		wl_optimization_rule(delay_seconds$initial_value_bool(0, x) -> x);
+		wl_optimization_rule(delay_samples$real(0, const? x) -> x);
+		wl_optimization_rule(delay_samples$initial_value_real(0, const? x, const y) -> x);
+		wl_optimization_rule(delay_samples$bool(0, const? x) -> x);
+		wl_optimization_rule(delay_samples$initial_value_bool(0, const? x, const y) -> x);
+		wl_optimization_rule(delay_seconds$real(0, const? x) -> x);
+		wl_optimization_rule(delay_seconds$initial_value_real(0, const? x, const y) -> x);
+		wl_optimization_rule(delay_seconds$bool(0, const? x) -> x);
+		wl_optimization_rule(delay_seconds$initial_value_bool(0, const? x, const y) -> x);
 
 		// Delays with a constant signal matching the initial value can be removed
 		wl_optimization_rule(delay_samples$real(const a, 0) -> 0);
+		wl_optimization_rule(delay_samples$initial_value_real(const a, const b, b) -> b);
 		wl_optimization_rule(delay_samples$bool(const a, false) -> false);
+		wl_optimization_rule(delay_samples$initial_value_bool(const a, const b, b) -> b);
 		wl_optimization_rule(delay_seconds$real(const a, 0) -> 0);
+		wl_optimization_rule(delay_seconds$initial_value_real(const a, const b, b) -> b);
 		wl_optimization_rule(delay_seconds$bool(const a, false) -> false);
+		wl_optimization_rule(delay_seconds$initial_value_bool(const a, const b, b) -> b);
+
+		// Simplify default initial value delays
+		wl_optimization_rule(delay_samples$initial_value_real(const a, const? b, 0) -> delay_samples$real(a, b));
+		wl_optimization_rule(delay_samples$initial_value_bool(const a, const? b, false) -> delay_samples$bool(a, b));
+		wl_optimization_rule(delay_seconds$initial_value_real(const a, const? b, 0) -> delay_seconds$real(a, b));
+		wl_optimization_rule(delay_seconds$initial_value_bool(const a, const? b, false) -> delay_seconds$bool(a, b));
 
 		// Summed delays combine into one
 		wl_optimization_rule(
-			delay_samples$real(const a, delay_samples$real(const b, x))
+			delay_samples$real(const a, delay_samples$real(const b, const? x))
 			-> delay_samples$real(core.addition(a, b), x));
 		wl_optimization_rule(
-			delay_samples$bool(const a, delay_samples$bool(const b, x))
+			delay_samples$initial_value_real(const a, delay_samples$initial_value_real(const b, const? x, const c), c)
+			-> delay_samples$initial_value_real(core.addition(a, b), x, c));
+		wl_optimization_rule(
+			delay_samples$bool(const a, delay_samples$bool(const b, const? x))
 			-> delay_samples$bool(core.addition(a, b), x));
 		wl_optimization_rule(
-			delay_seconds$real(const a, delay_seconds$real(const b, x))
+			delay_samples$initial_value_bool(const a, delay_samples$initial_value_bool(const b, const? x, const c), c)
+			-> delay_samples$initial_value_bool(core.addition(a, b), x, c));
+		wl_optimization_rule(
+			delay_seconds$real(const a, delay_seconds$real(const b, const? x))
 			-> delay_seconds$real(core.addition(a, b), x));
 		wl_optimization_rule(
-			delay_seconds$bool(const a, delay_seconds$bool(const b, x))
+			delay_seconds$initial_value_real(const a, delay_seconds$initial_value_real(const b, const? x, const c), c)
+			-> delay_seconds$initial_value_real(core.addition(a, b), x, c));
+		wl_optimization_rule(
+			delay_seconds$bool(const a, delay_seconds$bool(const b, const ? x))
 			-> delay_seconds$bool(core.addition(a, b), x));
+		wl_optimization_rule(
+			delay_seconds$initial_value_bool(const a, delay_seconds$initial_value_bool(const b, const? x, const c), c)
+			-> delay_seconds$initial_value_bool(core.addition(a, b), x, c));
 
 		wl_end_active_library_native_module_registration();
 	}

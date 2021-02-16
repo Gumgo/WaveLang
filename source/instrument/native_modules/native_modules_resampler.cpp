@@ -215,12 +215,12 @@ namespace resampler_native_modules {
 		wl_optimization_rule(downsample2x$real(0, const q) -> 0);
 		wl_optimization_rule(downsample3x$real(0, const q) -> 0);
 		wl_optimization_rule(downsample4x$real(0, const q) -> 0);
-		wl_optimization_rule(upsample2x$bool(const x, const q) -> x);
-		wl_optimization_rule(upsample3x$bool(const x, const q) -> x);
-		wl_optimization_rule(upsample4x$bool(const x, const q) -> x);
-		wl_optimization_rule(downsample2x$bool(const x, const q) -> x);
-		wl_optimization_rule(downsample3x$bool(const x, const q) -> x);
-		wl_optimization_rule(downsample4x$bool(const x, const q) -> x);
+		wl_optimization_rule(upsample2x$bool(const x) -> x);
+		wl_optimization_rule(upsample3x$bool(const x) -> x);
+		wl_optimization_rule(upsample4x$bool(const x) -> x);
+		wl_optimization_rule(downsample2x$bool(const x) -> x);
+		wl_optimization_rule(downsample3x$bool(const x) -> x);
+		wl_optimization_rule(downsample4x$bool(const x) -> x);
 
 		wl_end_active_library_native_module_registration();
 	}

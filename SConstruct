@@ -131,7 +131,6 @@ projects = [
 	"compiler",
 	"compiler_app",
 	"console",
-	"driver",
 	"engine",
 	"instrument",
 	"native_module",

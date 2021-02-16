@@ -259,6 +259,8 @@ struct s_native_module_optimization_rule_registration_entry {
 //   arguments. Example: addition$real(x, y)
 // - identifier - Used to represent a variable to be matched between the pre- and post-optimization expression.
 // - const identifier - Same as above, but the variable is only matched if it is compile-time constant.
+// - const? identifier - Matches either a variable or a constant
+// - module_name(x, x) - Matches if the second instance of 'x' is the same as the first
 // - <real value> - matches with a real value.
 // - true, false - matches with a boolean value.
 #define wl_optimization_rule(optimization_rule)																		\

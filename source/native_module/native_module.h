@@ -435,13 +435,15 @@ bool validate_native_module(const s_native_module &native_module);
 enum class e_native_module_optimization_symbol_type {
 	k_invalid,
 
-	k_native_module,
-	k_native_module_end,
-	k_variable,
-	k_constant,
-	k_real_value,
-	k_bool_value,
-	//k_string_value, // Probably never needed, since strings are always constant
+	k_native_module,		// Matches a native module
+	k_native_module_end,	// Matches the end of a native module
+	k_variable,				// Matches a variable value (excludes constants)
+	k_constant,				// Matches a constant value
+	k_variable_or_constant,	// Matches a variable or constant
+	k_back_reference,		// Matches a previously-matched value
+	k_real_value,			// Matches a specific real value
+	k_bool_value,			// Matches a specific bool value
+	//k_string_value,		// Matches a specific string value (probably not needed since strings are always constant)
 
 	k_count
 };
@@ -449,15 +451,13 @@ enum class e_native_module_optimization_symbol_type {
 static constexpr size_t k_max_native_module_optimization_pattern_length = 16;
 
 struct s_native_module_optimization_symbol {
-	static constexpr uint32 k_max_matched_symbols = 4;
-
 	union u_data {
 		u_data() {}
 
-		s_native_module_uid native_module_uid;
-		uint32 index; // Symbol index if an variable or constant
-		real32 real_value;
-		bool bool_value;
+		s_native_module_uid native_module_uid;	// Data for k_native_module
+		uint32 index;							// Data for k_back_reference
+		real32 real_value;						// Data for k_real_value
+		bool bool_value;						// Data for k_bool_value
 		// Currently no string value (likely will never be needed because all strings are compile-time resolved)
 	};
 
@@ -489,20 +489,31 @@ struct s_native_module_optimization_symbol {
 		return result;
 	}
 
-	static s_native_module_optimization_symbol build_variable(uint32 index) {
-		wl_assert(valid_index(index, k_max_matched_symbols));
+	static s_native_module_optimization_symbol build_variable() {
 		s_native_module_optimization_symbol result;
 		zero_type(&result);
 		result.type = e_native_module_optimization_symbol_type::k_variable;
-		result.data.index = index;
 		return result;
 	}
 
-	static s_native_module_optimization_symbol build_constant(uint32 index) {
-		wl_assert(valid_index(index, k_max_matched_symbols));
+	static s_native_module_optimization_symbol build_constant() {
 		s_native_module_optimization_symbol result;
 		zero_type(&result);
 		result.type = e_native_module_optimization_symbol_type::k_constant;
+		return result;
+	}
+
+	static s_native_module_optimization_symbol build_variable_or_constant() {
+		s_native_module_optimization_symbol result;
+		zero_type(&result);
+		result.type = e_native_module_optimization_symbol_type::k_variable_or_constant;
+		return result;
+	}
+
+	static s_native_module_optimization_symbol build_back_reference(uint32 index) {
+		s_native_module_optimization_symbol result;
+		zero_type(&result);
+		result.type = e_native_module_optimization_symbol_type::k_back_reference;
 		result.data.index = index;
 		return result;
 	}
@@ -521,6 +532,40 @@ struct s_native_module_optimization_symbol {
 		result.type = e_native_module_optimization_symbol_type::k_bool_value;
 		result.data.bool_value = bool_value;
 		return result;
+	}
+
+	bool operator==(const s_native_module_optimization_symbol &other) const {
+		if (type != other.type) {
+			return false;
+		}
+
+		switch (type) {
+		case e_native_module_optimization_symbol_type::k_native_module:
+			return data.native_module_uid == other.data.native_module_uid;
+
+		case e_native_module_optimization_symbol_type::k_native_module_end:
+		case e_native_module_optimization_symbol_type::k_variable:
+		case e_native_module_optimization_symbol_type::k_constant:
+		case e_native_module_optimization_symbol_type::k_variable_or_constant:
+			return true;
+
+		case e_native_module_optimization_symbol_type::k_back_reference:
+			return data.index == other.data.index;
+
+		case e_native_module_optimization_symbol_type::k_real_value:
+			return data.real_value == other.data.real_value;
+
+		case e_native_module_optimization_symbol_type::k_bool_value:
+			return data.bool_value == other.data.bool_value;
+
+		default:
+			wl_halt();
+			return false;
+		}
+	}
+
+	bool operator!=(const s_native_module_optimization_symbol &other) const {
+		return !(*this == other);
 	}
 };
 

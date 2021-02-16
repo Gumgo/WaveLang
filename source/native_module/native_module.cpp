@@ -66,6 +66,7 @@ void get_native_module_compile_time_properties(
 }
 
 bool validate_native_module(const s_native_module &native_module) {
+	// $TODO report each type of error
 	if (native_module.argument_count > k_max_native_module_arguments) {
 		return false;
 	}

@@ -52,7 +52,7 @@ struct s_native_module_registry_data {
 static e_native_module_registry_state g_native_module_registry_state = e_native_module_registry_state::k_uninitialized;
 static s_native_module_registry_data g_native_module_registry_data;
 
-static bool validate_optimization_rule(const s_native_module_optimization_rule &optimization_rule);
+static bool validate_optimization_rule(const s_native_module_optimization_rule &optimization_rule, const char *name);
 
 void c_native_module_registry::initialize() {
 	wl_assert(g_native_module_registry_state == e_native_module_registry_state::k_uninitialized);
@@ -249,10 +249,12 @@ e_native_operator c_native_module_registry::get_native_module_operator(s_native_
 	return g_native_module_registry_data.native_modules[native_module_handle.get_data()].native_operator;
 }
 
-bool c_native_module_registry::register_optimization_rule(const s_native_module_optimization_rule &optimization_rule) {
+bool c_native_module_registry::register_optimization_rule(
+	const s_native_module_optimization_rule &optimization_rule,
+	const char *name) {
 	wl_assert(g_native_module_registry_state == e_native_module_registry_state::k_registering);
-	if (!validate_optimization_rule(optimization_rule)) {
-		report_error("Failed to register optimization rule because it contains errors");
+	if (!validate_optimization_rule(optimization_rule, name)) {
+		report_error("Failed to register optimization rule '%s' because it contains errors", name);
 		return false;
 	}
 
@@ -286,9 +288,14 @@ uint32 c_native_module_registry::get_optimization_rule_count() {
 	return cast_integer_verify<uint32>(g_native_module_registry_data.optimization_rules.size());
 }
 
-const s_native_module_optimization_rule &c_native_module_registry::get_optimization_rule(uint32 index) {
-	wl_assert(valid_index(index, get_optimization_rule_count()));
-	return g_native_module_registry_data.optimization_rules[index];
+c_index_handle_iterator<h_native_module_optimization_rule> c_native_module_registry::iterate_optimization_rules() {
+	return c_index_handle_iterator<h_native_module_optimization_rule>(get_optimization_rule_count());
+}
+
+const s_native_module_optimization_rule &c_native_module_registry::get_optimization_rule(
+	h_native_module_optimization_rule handle) {
+	wl_assert(valid_index(handle.get_data(), get_optimization_rule_count()));
+	return g_native_module_registry_data.optimization_rules[handle.get_data()];
 }
 
 bool c_native_module_registry::output_registered_native_modules(const char *filename) {
@@ -420,7 +427,405 @@ bool c_native_module_registry::output_registered_native_modules(const char *file
 	return true;
 }
 
-static bool validate_optimization_rule(const s_native_module_optimization_rule &optimization_rule) {
-	// $TODO $PLUGIN validation
+static bool validate_optimization_rule(const s_native_module_optimization_rule &optimization_rule, const char *name) {
+	// $TODO Can we come up with some better way of identifying optimization rules in errors? The string is gone by this
+	// point. We could make a to_string() function.
+
+	class c_validator {
+	public:
+		c_validator(const s_native_module_optimization_rule &rule, const char *name)
+			: m_rule(rule)
+			, m_name(name) {}
+
+		bool validate() {
+			if (!m_rule.source.symbols[0].is_valid()) {
+				report_error("Optimization rule '%s' source is empty", m_name);
+				return false;
+			}
+
+			if (!m_rule.target.symbols[0].is_valid()) {
+				report_error("Optimization rule '%s' target is empty", m_name);
+				return false;
+			}
+
+			if (m_rule.source.symbols[0].type != e_native_module_optimization_symbol_type::k_native_module) {
+				report_error("Optimization rule '%s' source does not begin with a native module", m_name);
+				return false;
+			}
+
+			m_validating_source = true;
+			if (!validate_pattern(m_rule.source)) {
+				return false;
+			}
+
+			m_validating_source = false;
+			if (!validate_pattern(m_rule.target)) {
+				return false;
+			}
+
+			return true;
+		}
+
+	private:
+		struct s_native_module_call {
+			const s_native_module &native_module;
+			uint32 next_argument_index;
+			e_native_module_data_mutability dependent_constant_data_mutability;
+		};
+
+		static void skip_return_argument(s_native_module_call &call) {
+			if (call.next_argument_index == call.native_module.return_argument_index) {
+				call.next_argument_index++;
+			}
+		}
+
+		c_native_module_qualified_data_type get_next_argument_data_type() const {
+			const s_native_module_call &call = m_native_module_call_stack.back();
+			if (call.next_argument_index >= call.native_module.argument_count) {
+				report_error(
+					"Optimization rule '%s' references native module 0x%04x ('%s') using too many arguments",
+					m_name,
+					call.native_module.uid.get_module_id(),
+					call.native_module.name.get_string());
+				return c_native_module_qualified_data_type::invalid();
+			}
+
+			if (call.native_module.arguments[call.next_argument_index].argument_direction !=
+				e_native_module_argument_direction::k_in) {
+				report_error(
+					"Optimization rule '%s' references native module 0x%04x ('%s') "
+					"which contains non-return out arguments",
+					m_name,
+					call.native_module.uid.get_module_id(),
+					call.native_module.name.get_string());
+				return c_native_module_qualified_data_type::invalid();
+			}
+
+			return call.native_module.arguments[call.next_argument_index].type;
+		}
+
+		bool assign_return_value(c_native_module_qualified_data_type data_type) {
+			wl_assert(data_type.is_valid());
+			wl_assert(data_type.get_data_mutability() != e_native_module_data_mutability::k_dependent_constant);
+
+			if (m_native_module_call_stack.empty()) {
+				if (m_validating_source) {
+					m_source_data_type = data_type;
+				} else {
+					m_target_data_type = data_type;
+
+					// If we're replacing the source with the target, we need to be able to assign the target value to
+					// a value holding a source value
+					if (!is_native_module_data_type_assignable(m_target_data_type, m_source_data_type)) {
+						report_error(
+							"Optimization rule '%s' cannot replace source data type '%s' with target data type '%s",
+							m_name,
+							m_source_data_type.to_string().c_str(),
+							m_target_data_type.to_string().c_str());
+						return false;
+					}
+				}
+			} else {
+				c_native_module_qualified_data_type argument_data_type = get_next_argument_data_type();
+				if (!argument_data_type.is_valid()) {
+					return false;
+				}
+
+				s_native_module_call &call = m_native_module_call_stack.back();
+				if (argument_data_type.get_data_mutability() == e_native_module_data_mutability::k_dependent_constant) {
+					// Downgrade the dependent-constant data mutability if we're provided with a variable data type
+					call.dependent_constant_data_mutability =
+						std::min(call.dependent_constant_data_mutability, data_type.get_data_mutability());
+
+					// Change to variable so that is_native_module_data_type_assignable() doesn't fail
+					argument_data_type =
+						argument_data_type.change_data_mutability(e_native_module_data_mutability::k_variable);
+				}
+
+				if (!is_native_module_data_type_assignable(data_type, argument_data_type)) {
+					const s_native_module_call &call = m_native_module_call_stack.back();
+					report_error(
+						"Optimization rule '%s' attempts to assign value of type '%s' "
+						"to native module 0x%04x ('%s') argument '%s' of type '%s'",
+						m_name,
+						data_type.to_string().c_str(),
+						call.native_module.uid.get_module_id(),
+						call.native_module.name.get_string(),
+						call.native_module.arguments[call.next_argument_index].name.get_string(),
+						argument_data_type.to_string().c_str());
+					return false;
+				}
+
+				call.next_argument_index++;
+				skip_return_argument(call);
+			}
+
+			return true;
+		}
+
+		bool validate_symbol(const s_native_module_optimization_symbol &symbol) {
+			switch (symbol.type) {
+			case e_native_module_optimization_symbol_type::k_native_module:
+			{
+				h_native_module native_module_handle =
+					c_native_module_registry::get_native_module_handle(symbol.data.native_module_uid);
+				if (!native_module_handle.is_valid()) {
+					report_error(
+						"Optimization rule '%s' references invalid native module 0x%04x (library 0x%04x)",
+						m_name,
+						symbol.data.native_module_uid.get_module_id(),
+						symbol.data.native_module_uid.get_library_id());
+					return false;
+				}
+
+				const s_native_module &native_module =
+					c_native_module_registry::get_native_module(native_module_handle);
+				if (native_module.return_argument_index == k_invalid_native_module_argument_index) {
+					report_error(
+						"Optimization rule '%s' uses native module 0x%04x ('%s') which has no return value",
+						m_name,
+						native_module.uid.get_module_id(),
+						native_module.name.get_string());
+					return false;
+				}
+
+				m_native_module_call_stack.push_back({ native_module, 0, e_native_module_data_mutability::k_constant });
+				skip_return_argument(m_native_module_call_stack.back());
+				break;
+			}
+
+			case e_native_module_optimization_symbol_type::k_native_module_end:
+			{
+				if (m_native_module_call_stack.empty()) {
+					report_error("Optimization rule '%s' contains mismatched native module end symbol", m_name);
+					return false;
+				}
+
+				const s_native_module_call &call = m_native_module_call_stack.back();
+				if (call.next_argument_index != call.native_module.argument_count) {
+					report_error(
+						"Optimization rule '%s', ended native module 0x%04x ('%s') before all arguments were used",
+						m_name,
+						call.native_module.uid.get_module_id(),
+						call.native_module.name.get_string());
+					return false;
+				}
+
+				c_native_module_qualified_data_type data_type =
+					call.native_module.arguments[call.native_module.return_argument_index].type;
+				if (data_type.get_data_mutability() == e_native_module_data_mutability::k_dependent_constant) {
+					data_type = data_type.change_data_mutability(call.dependent_constant_data_mutability);
+				}
+
+				m_native_module_call_stack.pop_back();
+
+				if (!assign_return_value(data_type)) {
+					return false;
+				}
+
+				break;
+			}
+
+			case e_native_module_optimization_symbol_type::k_variable:
+			{
+				if (!m_validating_source) {
+					report_error("Optimization rule '%s' contains 'variable' matches in the target", m_name);
+					return false;
+				}
+
+				c_native_module_qualified_data_type data_type = get_next_argument_data_type();
+				if (!data_type.is_valid()) {
+					return false;
+				}
+
+				if (data_type.get_data_mutability() == e_native_module_data_mutability::k_constant) {
+					report_error("Optimization rule '%s' attempts to match a variable to a constant argument", m_name);
+					return false;
+				}
+
+				data_type = data_type.change_data_mutability(e_native_module_data_mutability::k_variable);
+				m_matched_value_data_types.push_back(data_type);
+
+				IF_ASSERTS_ENABLED(bool result = ) assign_return_value(data_type);
+				wl_assert(result);
+				break;
+			}
+
+			case e_native_module_optimization_symbol_type::k_constant:
+			{
+				if (!m_validating_source) {
+					report_error("Optimization rule '%s' contains 'constant' matches in the target", m_name);
+					return false;
+				}
+
+				c_native_module_qualified_data_type data_type = get_next_argument_data_type();
+				if (!data_type.is_valid()) {
+					return false;
+				}
+
+				data_type = data_type.change_data_mutability(e_native_module_data_mutability::k_constant);
+				m_matched_value_data_types.push_back(data_type);
+
+				IF_ASSERTS_ENABLED(bool result = ) assign_return_value(data_type);
+				wl_assert(result);
+				break;
+			}
+
+			case e_native_module_optimization_symbol_type::k_variable_or_constant:
+			{
+				if (!m_validating_source) {
+					report_error(
+						"Optimization rule '%s' contains 'variable or constant' matches in the target",
+						m_name);
+					return false;
+				}
+
+				c_native_module_qualified_data_type data_type = get_next_argument_data_type();
+				if (!data_type.is_valid()) {
+					return false;
+				}
+
+				if (data_type.get_data_mutability() == e_native_module_data_mutability::k_dependent_constant) {
+					data_type = data_type.change_data_mutability(e_native_module_data_mutability::k_variable);
+				}
+
+				m_matched_value_data_types.push_back(data_type);
+
+				IF_ASSERTS_ENABLED(bool result = ) assign_return_value(data_type);
+				wl_assert(result);
+				break;
+			}
+
+			case e_native_module_optimization_symbol_type::k_back_reference:
+			{
+				if (symbol.data.index >= m_matched_value_data_types.size()) {
+					report_error(
+						"Optimization rule '%s' with %u references attempted to use a back-reference of index %u",
+						m_name,
+						cast_integer_verify<uint32>(m_matched_value_data_types.size()),
+						symbol.data.index);
+					return false;
+				}
+
+				c_native_module_qualified_data_type data_type = m_matched_value_data_types[symbol.data.index];
+				if (!assign_return_value(data_type)) {
+					return false;
+				}
+
+				break;
+			}
+
+			case e_native_module_optimization_symbol_type::k_real_value:
+			{
+				c_native_module_qualified_data_type data_type(
+					c_native_module_data_type(e_native_module_primitive_type::k_real, false, 1),
+					e_native_module_data_mutability::k_constant);
+				if (!assign_return_value(data_type)) {
+					return false;
+				}
+
+				break;
+			}
+
+			case e_native_module_optimization_symbol_type::k_bool_value:
+			{
+				c_native_module_qualified_data_type data_type(
+					c_native_module_data_type(e_native_module_primitive_type::k_bool, false, 1),
+					e_native_module_data_mutability::k_constant);
+				if (!assign_return_value(data_type)) {
+					return false;
+				}
+
+				break;
+			}
+
+			default:
+				report_error("Optimization rule '%s' contains invalid symbol type %d", m_name, symbol.type);
+				return false;
+			}
+
+			return true;
+		}
+
+		bool validate_pattern(const s_native_module_optimization_pattern &pattern) {
+			wl_assert(m_native_module_call_stack.empty());
+			for (const s_native_module_optimization_symbol &symbol : pattern.symbols) {
+				if (!symbol.is_valid()) {
+					break;
+				}
+
+				if (m_validating_source && m_source_data_type.is_valid()
+					|| (!m_validating_source && m_target_data_type.is_valid())) {
+					report_error(
+						"Optimization rule '%s' %s contains extra symbols",
+						m_name,
+						m_validating_source ? "source" : "target");
+					return false;
+				}
+
+				if (!validate_symbol(symbol)) {
+					return false;
+				}
+			}
+
+			if (!m_native_module_call_stack.empty()) {
+				report_error(
+					"Optimization rule '%s' %s terminated without ending all native module calls",
+					m_name,
+					m_validating_source ? "source" : "target");
+				return false;
+			}
+
+			return true;
+		}
+
+		const s_native_module_optimization_rule &m_rule;
+		const char *m_name;
+
+		bool m_validating_source = false;
+		c_native_module_qualified_data_type m_source_data_type = c_native_module_qualified_data_type::invalid();
+		c_native_module_qualified_data_type m_target_data_type = c_native_module_qualified_data_type::invalid();
+		std::vector<s_native_module_call> m_native_module_call_stack;
+		std::vector<c_native_module_qualified_data_type> m_matched_value_data_types;
+	};
+
+	c_validator validator(optimization_rule, name);
+	if (!validator.validate()) {
+		return false;
+	}
+
+	for (h_native_module_optimization_rule rule_handle : c_native_module_registry::iterate_optimization_rules()) {
+		const s_native_module_optimization_rule &existing_rule =
+			c_native_module_registry::get_optimization_rule(rule_handle);
+
+		bool identical = true;
+		for (uint32 index = 0; identical && index < k_max_native_module_optimization_pattern_length; index++) {
+			if (!optimization_rule.source.symbols[index].is_valid()
+				&& !existing_rule.source.symbols[index].is_valid()) {
+				break;
+			}
+
+			if (optimization_rule.source.symbols[index] != existing_rule.source.symbols[index]) {
+				identical = false;
+			}
+		}
+
+		for (uint32 index = 0; identical && index < k_max_native_module_optimization_pattern_length; index++) {
+			if (!optimization_rule.target.symbols[index].is_valid()
+				&& !existing_rule.target.symbols[index].is_valid()) {
+				break;
+			}
+
+			if (optimization_rule.target.symbols[index] != existing_rule.target.symbols[index]) {
+				identical = false;
+			}
+		}
+
+		if (identical) {
+			report_error("Optimization rule '%s' is identical to a previously registered optimization rule", name);
+			return false;
+		}
+	}
+
 	return true;
 }
