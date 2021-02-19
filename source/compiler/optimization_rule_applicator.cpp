@@ -406,8 +406,6 @@ h_graph_node c_optimization_rule_applicator::build_target_pattern(h_native_modul
 				root_node_handle = node_handle;
 			} else {
 				s_graph_location &current_graph_location = m_target_graph_location_stack.top();
-				wl_assert(get_next_input(current_graph_location, value_node_handle_unused).is_valid());
-
 				h_graph_node input_node_handle = m_native_module_graph.get_node_incoming_edge_handle(
 					current_graph_location.current_node_handle,
 					current_graph_location.next_input_index);
@@ -425,7 +423,7 @@ h_graph_node c_optimization_rule_applicator::build_target_pattern(h_native_modul
 		case e_native_module_optimization_symbol_type::k_native_module_end:
 		{
 			wl_assert(!m_target_graph_location_stack.empty());
-			// We expect that if we were able to match and enter a module, we should also match when leaving If not, it
+			// We expect that if we were able to match and enter a module, we should also match when leaving. If not, it
 			// means the rule does not match the definition of the module (e.g. too few arguments).
 			wl_assert(!get_next_input(m_target_graph_location_stack.top(), value_node_handle_unused).is_valid());
 			IF_ASSERTS_ENABLED(should_be_done = m_target_graph_location_stack.size() == 1;)
@@ -472,8 +470,6 @@ h_graph_node c_optimization_rule_applicator::build_target_pattern(h_native_modul
 			} else {
 				wl_assert(!m_target_graph_location_stack.empty());
 				s_graph_location &current_graph_location = m_target_graph_location_stack.top();
-				wl_assert(get_next_input(current_graph_location, value_node_handle_unused).is_valid());
-
 				h_graph_node input_node_handle = m_native_module_graph.get_node_incoming_edge_handle(
 					current_graph_location.current_node_handle,
 					current_graph_location.next_input_index);

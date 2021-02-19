@@ -1,5 +1,6 @@
 #include "common/common.h"
 #include "common/math/floating_point.h"
+#include "common/utility/memory_leak_detection.h"
 
 #include "engine/task_functions/scrape_task_functions.h"
 

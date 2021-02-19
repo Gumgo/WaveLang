@@ -28,6 +28,8 @@
 	#define PLATFORM_WINDOWS 1
 	#define CACHE_LINE_SIZE 64
 	#define NOMINMAX
+	#define _CRTDBG_MAP_ALLOC
+	#include <crtdbg.h>
 	#include <Windows.h>
 	#include <WinNT.h>
 	#include <WinBase.h>
