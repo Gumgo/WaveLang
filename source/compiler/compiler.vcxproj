@@ -84,7 +84,6 @@
     <ClInclude Include="ast\data_type.h" />
     <ClInclude Include="ast\node.h" />
     <ClInclude Include="ast\nodes.h" />
-    <ClInclude Include="ast\node_access.h" />
     <ClInclude Include="ast\node_array.h" />
     <ClInclude Include="ast\node_assignment_statement.h" />
     <ClInclude Include="ast\node_break_statement.h" />
@@ -131,7 +130,6 @@
   <ItemGroup>
     <ClCompile Include="ast\data_type.cpp" />
     <ClCompile Include="ast\node.cpp" />
-    <ClCompile Include="ast\node_access.cpp" />
     <ClCompile Include="ast\node_array.cpp" />
     <ClCompile Include="ast\node_assignment_statement.cpp" />
     <ClCompile Include="ast\node_break_statement.cpp" />
@@ -157,7 +155,6 @@
     <ClCompile Include="ast\node_scope_item.cpp" />
     <ClCompile Include="compiler.cpp" />
     <ClCompile Include="compiler_context.cpp" />
-    <ClCompile Include="compiler_main.cpp" />
     <ClCompile Include="components\ast_builder.cpp" />
     <ClCompile Include="components\entry_point_extractor.cpp" />
     <ClCompile Include="components\instrument_variant_optimizer.cpp" />

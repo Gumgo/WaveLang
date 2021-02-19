@@ -447,7 +447,11 @@ c_json_node_object *c_json_file::parse_object(s_buffer_with_offset &buffer_with_
 		return nullptr;
 	}
 
-	result->add_element(first_element_name->get_value(), first_element.release());
+	if (result->add_element(first_element_name->get_value(), first_element.get())) {
+		first_element.release();
+	} else {
+		return nullptr;
+	}
 
 	while (buffer_with_offset.current_character() != '}') {
 		if (buffer_with_offset.current_character() != ',') {
@@ -480,7 +484,11 @@ c_json_node_object *c_json_file::parse_object(s_buffer_with_offset &buffer_with_
 			return nullptr;
 		}
 
-		result->add_element(element_name->get_value(), element.release());
+		if (result->add_element(element_name->get_value(), element.get())) {
+			element.release();
+		} else {
+			return nullptr;
+		}
 	}
 
 	buffer_with_offset.increment();

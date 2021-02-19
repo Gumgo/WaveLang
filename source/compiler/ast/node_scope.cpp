@@ -4,7 +4,7 @@ c_ast_node_scope::c_ast_node_scope()
 	: c_ast_node_scope_item(k_ast_node_type) {}
 
 void c_ast_node_scope::add_scope_item(c_ast_node_scope_item *scope_item) {
-	add_scope_item_internal(scope_item, false, false);
+	add_scope_item_internal(scope_item, false, true);
 }
 
 void c_ast_node_scope::add_imported_scope_item(c_ast_node_scope_item *scope_item, bool take_ownership) {

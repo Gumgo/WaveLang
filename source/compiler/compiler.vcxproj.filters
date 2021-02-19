@@ -36,9 +36,6 @@
     <ClInclude Include="ast\node_expression_placeholder.h">
       <Filter>ast</Filter>
     </ClInclude>
-    <ClInclude Include="ast\node_access.h">
-      <Filter>ast</Filter>
-    </ClInclude>
     <ClInclude Include="ast\node_literal.h">
       <Filter>ast</Filter>
     </ClInclude>
@@ -122,7 +119,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="compiler.cpp" />
-    <ClCompile Include="compiler_main.cpp" />
     <ClCompile Include="lr_parser.cpp" />
     <ClCompile Include="compiler_context.cpp" />
     <ClCompile Include="wavelang_grammar.cpp" />
@@ -152,9 +148,6 @@
       <Filter>ast</Filter>
     </ClCompile>
     <ClCompile Include="ast\node_expression_placeholder.cpp">
-      <Filter>ast</Filter>
-    </ClCompile>
-    <ClCompile Include="ast\node_access.cpp">
       <Filter>ast</Filter>
     </ClCompile>
     <ClCompile Include="ast\node_literal.cpp">

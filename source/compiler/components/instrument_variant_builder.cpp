@@ -501,7 +501,6 @@ bool c_native_module_graph_builder::evaluate_ast_node_stack() {
 bool c_native_module_graph_builder::evaluate_ast_node(c_ast_node *node, uint64 &state, bool &pop_node_out) {
 	// We should never encounter these types of nodes:
 	wl_assert(!node->try_get_as<c_ast_node_expression_placeholder>());
-	wl_assert(!node->try_get_as<c_ast_node_access>());
 
 	switch (node->get_type()) {
 	case e_ast_node_type::k_scope:

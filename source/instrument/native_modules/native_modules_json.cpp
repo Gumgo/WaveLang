@@ -65,6 +65,7 @@ namespace json_native_modules {
 
 	void json_library_compiler_deinitializer(void *library_context) {
 		c_json_file_manager *json_file_manager = static_cast<c_json_file_manager *>(library_context);
+		delete json_file_manager;
 	}
 
 	void read_real(

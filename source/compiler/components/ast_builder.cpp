@@ -1388,7 +1388,7 @@ void c_ast_builder_visitor::exit_module_call(
 			upsample_factor.value.was_provided ? upsample_factor.value.upsample_factor : 0);
 	}
 
-	module.release();
+	delete module.release();
 }
 
 void c_ast_builder_visitor::exit_convert(
@@ -1453,7 +1453,7 @@ void c_ast_builder_visitor::exit_access(
 			std::string(identifier.token_string).c_str());
 	}
 
-	lhs.release();
+	delete lhs.release();
 }
 
 void c_ast_builder_visitor::exit_identifier(
@@ -1776,7 +1776,7 @@ void c_ast_builder_visitor::exit_scope_item_assignment(
 		assignment_statement_node->set_rhs_expression(rhs.release());
 
 		// We grabbed everything we needed from the LHS already
-		lhs.release();
+		delete lhs.release();
 	} else {
 		// We convert a statement like "x += y" to the form "x = x + y" by creating an intermediate expression
 		c_ast_node_module_call *module_call_node = new c_ast_node_module_call();

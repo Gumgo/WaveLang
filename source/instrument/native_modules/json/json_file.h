@@ -23,6 +23,8 @@ enum class e_json_node_type {
 
 class c_json_node {
 public:
+	virtual ~c_json_node() = default;
+
 	e_json_node_type get_type() const {
 		return m_type;
 	}

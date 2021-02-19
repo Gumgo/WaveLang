@@ -22,7 +22,6 @@ enum class e_ast_node_type {
 	k_module_call,
 	k_module_call_argument,
 	k_convert,
-	k_access,
 	k_subscript,
 
 	k_expression_statement,

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "compiler/ast/node.h"
-#include "compiler/ast/node_access.h"
 #include "compiler/ast/node_array.h"
 #include "compiler/ast/node_assignment_statement.h"
 #include "compiler/ast/node_break_statement.h"

@@ -23,21 +23,12 @@ int main(int argc, char **argv) {
 
 	initialize_memory_leak_detection();
 	initialize_floating_point_behavior();
-	int *c=new int[50]; // nocheckin
 
 	scrape_native_modules();
 
 	c_native_module_registry::initialize();
 	if (!register_native_modules()) {
 		return 1;
-	}
-
-	std::vector<void *> library_contexts(c_native_module_registry::get_native_module_library_count(), nullptr);
-	for (h_native_module_library library_handle : c_native_module_registry::iterate_native_module_libraries()) {
-		const s_native_module_library &library = c_native_module_registry::get_native_module_library(library_handle);
-		if (library.compiler_initializer) {
-			library_contexts[library_handle.get_data()] = library.compiler_initializer();
-		}
 	}
 
 	// Command line options
@@ -91,6 +82,14 @@ int main(int argc, char **argv) {
 
 	if (output_documentation) {
 		c_native_module_registry::output_registered_native_modules(k_documentation_filename);
+	}
+
+	std::vector<void *> library_contexts(c_native_module_registry::get_native_module_library_count(), nullptr);
+	for (h_native_module_library library_handle : c_native_module_registry::iterate_native_module_libraries()) {
+		const s_native_module_library &library = c_native_module_registry::get_native_module_library(library_handle);
+		if (library.compiler_initializer) {
+			library_contexts[library_handle.get_data()] = library.compiler_initializer();
+		}
 	}
 
 	// Compile each input file
