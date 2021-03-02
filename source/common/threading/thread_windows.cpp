@@ -1,6 +1,6 @@
 #include "common/math/floating_point.h"
 #include "common/threading/thread.h"
-#include "common/utility/memory_leak_detection.h"
+#include "common/utility/memory_debugger.h"
 
 #if IS_TRUE(USE_THREAD_IMPLEMENTATION_WINDOWS)
 
@@ -90,7 +90,7 @@ c_thread::t_thread_id c_thread::get_current_thread_id() {
 }
 
 DWORD WINAPI c_thread::thread_entry_point(LPVOID param) {
-	initialize_memory_leak_detection();
+	initialize_memory_debugger();
 	initialize_floating_point_behavior();
 
 	c_thread *this_thread = static_cast<c_thread *>(param);

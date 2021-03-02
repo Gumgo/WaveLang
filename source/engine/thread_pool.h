@@ -11,9 +11,12 @@
 
 struct s_thread_pool_settings {
 	// If thread_count is 0, tasks will be processed on the calling thread when resume() is called
-	uint32 thread_count;
-	uint32 max_tasks;
-	bool start_paused;
+	uint32 thread_count = 0;
+	uint32 max_tasks = 0;
+	bool start_paused = false;
+
+	// Whether memory allocations are allowed on worker threads (used in assert-enabled builds only)
+	bool memory_allocations_allowed = true;
 };
 
 // Entry point worker thread function
@@ -28,7 +31,7 @@ struct s_thread_pool_task {
 // Simple thread pool class. Spawns N threads which consume work tasks. Task dependencies should be externally managed.
 class c_thread_pool {
 public:
-	c_thread_pool();
+	c_thread_pool() = default;
 	~c_thread_pool();
 
 	// Non thread-safe functions: these must be called from a single thread, or using some form of synchronization
@@ -68,13 +71,16 @@ private:
 	std::vector<c_thread> m_threads;
 
 #if IS_TRUE(ASSERTS_ENABLED)
+	// Whether memory allocations are allowed on worker threads
+	bool m_memory_allocations_allowed = false;
+
 	// Whether the thread pool is running - used for asserts only, not safe to access from worker threads
-	bool m_running;
+	bool m_running = false;
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
 	// Used to allow threads to pause in a blocking way when we don't want to hog CPU
-	std::atomic<bool> m_check_paused;					// Lock-free guard against unnecessarily acquiring the mutex
-	bool m_paused;										// Whether threads should be paused
+	std::atomic<bool> m_check_paused = false;			// Lock-free guard against unnecessarily acquiring the mutex
+	bool m_paused = false;								// Whether threads should be paused
 	c_mutex m_pause_mutex;								// Mutex to protect the paused bool
 	c_condition_variable m_pause_condition_variable;	// Used with the pause mutex
 

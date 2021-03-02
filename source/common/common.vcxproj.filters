@@ -151,7 +151,7 @@
     <ClInclude Include="utility\bit_operations.h">
       <Filter>utility</Filter>
     </ClInclude>
-    <ClInclude Include="utility\memory_leak_detection.h">
+    <ClInclude Include="utility\memory_debugger.h">
       <Filter>utility</Filter>
     </ClInclude>
   </ItemGroup>
@@ -221,7 +221,7 @@
     <ClCompile Include="utility\bit_operations.cpp">
       <Filter>utility</Filter>
     </ClCompile>
-    <ClCompile Include="utility\memory_leak_detection.cpp">
+    <ClCompile Include="utility\memory_debugger.cpp">
       <Filter>utility</Filter>
     </ClCompile>
   </ItemGroup>

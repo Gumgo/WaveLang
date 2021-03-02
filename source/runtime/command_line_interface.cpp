@@ -3,7 +3,7 @@
 #include "common/threading/mutex.h"
 #include "common/threading/semaphore.h"
 #include "common/threading/thread.h"
-#include "common/utility/memory_leak_detection.h"
+#include "common/utility/memory_debugger.h"
 
 #include "engine/events/event_data_types.h"
 #include "engine/task_function_registration.h"
@@ -75,7 +75,7 @@ private:
 };
 
 int main(int argc, char **argv) {
-	initialize_memory_leak_detection();
+	initialize_memory_debugger();
 	initialize_floating_point_behavior();
 
 	int result;

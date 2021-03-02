@@ -1,7 +1,7 @@
 #include "common/common.h"
 #include "common/math/floating_point.h"
 #include "common/utility/file_utility.h"
-#include "common/utility/memory_leak_detection.h"
+#include "common/utility/memory_debugger.h"
 
 #include "parser_generator/grammar_lexer.h"
 #include "parser_generator/grammar_parser.h"
@@ -10,7 +10,7 @@
 #include <iostream>
 
 int main(int argc, char **argv) {
-	initialize_memory_leak_detection();
+	initialize_memory_debugger();
 	initialize_floating_point_behavior();
 
 	if (argc != 4) {

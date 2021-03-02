@@ -1,7 +1,7 @@
 #include "common/common.h"
 #include "common/math/floating_point.h"
 #include "common/utility/graphviz_generator.h"
-#include "common/utility/memory_leak_detection.h"
+#include "common/utility/memory_debugger.h"
 
 #include "compiler/compiler.h"
 
@@ -21,7 +21,7 @@ static constexpr const char *k_documentation_filename = "registered_native_modul
 int main(int argc, char **argv) {
 	int32 result = 0;
 
-	initialize_memory_leak_detection();
+	initialize_memory_debugger();
 	initialize_floating_point_behavior();
 
 	scrape_native_modules();

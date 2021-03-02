@@ -1,12 +1,8 @@
+#include "common/utility/memory_debugger.h"
+
 #include "engine/thread_pool.h"
 
 #include <string>
-
-c_thread_pool::c_thread_pool() {
-#if IS_TRUE(ASSERTS_ENABLED)
-	m_running = false;
-#endif // IS_TRUE(ASSERTS_ENABLED)
-}
 
 c_thread_pool::~c_thread_pool() {
 	wl_assert(!m_running);
@@ -29,6 +25,10 @@ void c_thread_pool::start(const s_thread_pool_settings &settings) {
 
 	m_check_paused = settings.start_paused;
 	m_paused = settings.start_paused;
+
+#if IS_TRUE(ASSERTS_ENABLED)
+	m_memory_allocations_allowed = settings.memory_allocations_allowed;
+#endif // IS_TRUE(ASSERTS_ENABLED)
 
 	// Setup the threads
 	m_threads.resize(settings.thread_count);
@@ -142,6 +142,8 @@ bool c_thread_pool::add_task(const s_thread_pool_task &task) {
 void c_thread_pool::worker_thread_entry_point(const s_thread_parameter_block *param_block) {
 	const s_worker_thread_context &context = *param_block->get_memory_typed<s_worker_thread_context>();
 
+	SET_MEMORY_ALLOCATIONS_ALLOWED_FOR_SCOPE(context.this_ptr->m_memory_allocations_allowed);
+
 	// Keep looping until we find a termination task
 	while (true) {
 		// Check if we should pause
@@ -168,6 +170,8 @@ void c_thread_pool::worker_thread_entry_point(const s_thread_parameter_block *pa
 }
 
 void c_thread_pool::execute_all_tasks_synchronous() {
+	SET_MEMORY_ALLOCATIONS_ALLOWED_FOR_SCOPE(m_memory_allocations_allowed);
+
 	// Attempt to pop a task from the queue
 	s_task task;
 	while (m_pending_tasks.pop(task)) {

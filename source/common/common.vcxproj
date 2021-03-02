@@ -61,7 +61,7 @@
     <ClInclude Include="utility\handle.h" />
     <ClInclude Include="utility\hash_table.h" />
     <ClInclude Include="utility\linked_array.h" />
-    <ClInclude Include="utility\memory_leak_detection.h" />
+    <ClInclude Include="utility\memory_debugger.h" />
     <ClInclude Include="utility\merge_sort.h" />
     <ClInclude Include="utility\pod.h" />
     <ClInclude Include="utility\radix_sort.h" />
@@ -96,7 +96,7 @@
     <ClCompile Include="utility\file_utility.cpp" />
     <ClCompile Include="utility\graphviz_generator.cpp" />
     <ClCompile Include="utility\linked_array.cpp" />
-    <ClCompile Include="utility\memory_leak_detection.cpp" />
+    <ClCompile Include="utility\memory_debugger.cpp" />
     <ClCompile Include="utility\reporting.cpp" />
     <ClCompile Include="utility\sha1\SHA1.cpp" />
     <ClCompile Include="utility\stack_allocator.cpp" />

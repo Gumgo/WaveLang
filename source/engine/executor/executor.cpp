@@ -1,3 +1,5 @@
+#include "common/utility/memory_debugger.h"
+
 #include "engine/controller_interface/controller_interface.h"
 #include "engine/executor/channel_mixer.h"
 #include "engine/executor/executor.h"
@@ -53,6 +55,8 @@ void c_executor::shutdown() {
 }
 
 void c_executor::execute(const s_executor_chunk_context &chunk_context) {
+	SET_MEMORY_ALLOCATIONS_ALLOWED_FOR_SCOPE(false);
+
 	// Try flipping from initialized to running. Nothing will happen if we're not in the initialized state.
 	int32 expected = enum_index(e_state::k_initialized);
 	m_state.compare_exchange_strong(expected, enum_index(e_state::k_running));
@@ -144,6 +148,9 @@ void c_executor::initialize_thread_pool() {
 		}
 	}
 	thread_pool_settings.start_paused = true;
+
+	// We should not be allocating anything inside of tasks
+	thread_pool_settings.memory_allocations_allowed = false;
 
 	// Set up thread contexts
 	size_t thread_context_count = std::max(m_settings.thread_count, 1u); // We always need at least 1 context
