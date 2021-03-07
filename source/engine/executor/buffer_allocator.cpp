@@ -31,13 +31,13 @@ void c_buffer_allocator::initialize(const s_buffer_allocator_settings &settings)
 	}
 
 	// Initialize the pool
-	m_buffer_pool_free_list_memory.free();
+	m_buffer_pool_free_list_memory.free_memory();
 	m_buffer_pool_free_list_memory.allocate(total_buffer_count);
 
-	m_buffer_memory.free();
+	m_buffer_memory.free_memory();
 	m_buffer_memory.allocate(total_buffer_bytes);
 
-	m_buffer_memory_pointers.free();
+	m_buffer_memory_pointers.free_memory();
 	m_buffer_memory_pointers.allocate(total_buffer_count);
 
 	// Initialize each buffer
@@ -75,9 +75,9 @@ void c_buffer_allocator::initialize(const s_buffer_allocator_settings &settings)
 
 void c_buffer_allocator::shutdown() {
 	m_buffer_pools.clear();
-	m_buffer_pool_free_list_memory.free();
-	m_buffer_memory.free();
-	m_buffer_memory_pointers.free();
+	m_buffer_pool_free_list_memory.free_memory();
+	m_buffer_memory.free_memory();
+	m_buffer_memory_pointers.free_memory();
 }
 
 uint32 c_buffer_allocator::get_buffer_pool_count() const {
@@ -90,7 +90,7 @@ const s_buffer_pool_description &c_buffer_allocator::get_buffer_pool_description
 
 void *c_buffer_allocator::allocate_buffer_memory(uint32 pool_index) {
 	s_buffer_pool &pool = m_buffer_pools[pool_index];
-	uint32 buffer_handle = pool.buffer_pool.allocate();
+	uint32 buffer_handle = pool.buffer_pool.allocate_node();
 	wl_assertf(buffer_handle != k_lock_free_invalid_handle, "Out of buffers");
 	s_buffer_memory_header *header = m_buffer_memory_pointers.get_array()[pool.first_buffer_handle + buffer_handle];
 	return header + 1; // Buffer memory is directly after the header
@@ -104,7 +104,7 @@ void c_buffer_allocator::free_buffer_memory(void *buffer_memory) {
 
 	// Make sure the buffer handle is in the pool's handle range
 	wl_assert(header->pool_buffer_index < pool.description.count);
-	pool.buffer_pool.free(header->pool_buffer_index);
+	pool.buffer_pool.free_node(header->pool_buffer_index);
 }
 
 #if IS_TRUE(ASSERTS_ENABLED)

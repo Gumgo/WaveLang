@@ -137,7 +137,6 @@ e_instrument_result c_native_module_graph::save(std::ofstream &out) const {
 			break;
 
 		case e_native_module_graph_node_type::k_array:
-			writer.write(static_cast<uint8>(node.array_node_data().primitive_type));
 			break;
 
 		case e_native_module_graph_node_type::k_native_module_call:
@@ -284,19 +283,7 @@ e_instrument_result c_native_module_graph::load(std::ifstream &in) {
 		}
 
 		case e_native_module_graph_node_type::k_array:
-		{
-			node.node_data.emplace<s_node::s_array_node_data>();
-
-			uint8 primitive_type;
-			if (!reader.read(primitive_type)
-				|| !valid_enum_index(static_cast<e_native_module_primitive_type>(primitive_type))) {
-				return invalid_graph_or_read_failure(in);
-			}
-
-			node.array_node_data().primitive_type = static_cast<e_native_module_primitive_type>(primitive_type);
-
 			break;
-		}
 
 		case e_native_module_graph_node_type::k_native_module_call:
 		{
@@ -638,12 +625,10 @@ h_graph_node c_native_module_graph::add_constant_node(const char *constant_value
 	return node_handle;
 }
 
-h_graph_node c_native_module_graph::add_array_node(e_native_module_primitive_type primitive_type) {
+h_graph_node c_native_module_graph::add_array_node() {
 	h_graph_node node_handle = allocate_node();
 	s_node &node = get_node(node_handle);
 	node.type = e_native_module_graph_node_type::k_array;
-	node.node_data.emplace<s_node::s_array_node_data>();
-	node.array_node_data().primitive_type = primitive_type;
 	return node_handle;
 }
 
@@ -658,12 +643,17 @@ void c_native_module_graph::add_array_value(
 	// to an array, the array type gets "downgraded" - e.g. if the array was previously constant and the new element
 	// is not constant, the array becomes non-constant. Therefore, when checking for type compatibility, we need to
 	// check whether the new value type is assignable to the most downgraded possible array type.
-	c_native_module_qualified_data_type element_type = get_node_data_type(array_node_handle).get_element_type();
-	c_native_module_qualified_data_type downgraded_element_type =
-		element_type.change_data_mutability(e_native_module_data_mutability::k_variable);
-	c_native_module_qualified_data_type value_node_type = get_node_data_type(value_node_handle);
-	wl_assert(value_node_type.is_valid());
-	wl_assert(is_native_module_data_type_assignable(value_node_type, downgraded_element_type));
+	c_native_module_qualified_data_type array_type = get_node_data_type(array_node_handle);
+	if (array_type.is_empty_array()) {
+		// Nothing further to check - we can assign any element type to an empty array
+	} else {
+		c_native_module_qualified_data_type element_type = array_type.get_element_type();
+		c_native_module_qualified_data_type downgraded_element_type =
+			element_type.change_data_mutability(e_native_module_data_mutability::k_variable);
+		c_native_module_qualified_data_type value_node_type = get_node_data_type(value_node_handle);
+		wl_assert(value_node_type.is_valid());
+		wl_assert(is_native_module_data_type_assignable(value_node_type, downgraded_element_type));
+	}
 #endif // IS_TRUE(ASSERTS_ENABLED)
 
 	// Create an indexed input node to represent this array index
@@ -1264,6 +1254,11 @@ c_native_module_qualified_data_type c_native_module_graph::get_node_data_type(h_
 		// $TODO restructure validation. It should be something like: validate nodes, validate edge indices, validate
 		// edge node type correctness, validate edge data type correctness. Right now, because arrays derive their type
 		// from a recursive call to get_node_data_type(), an invalid graph could potentially cause a loop.
+		if (node.incoming_edge_handles.empty()) {
+			return c_native_module_qualified_data_type::empty_array();
+		}
+
+		e_native_module_primitive_type primitive_type = e_native_module_primitive_type::k_invalid;
 		uint32 upsample_factor = 1;
 		e_native_module_data_mutability data_mutability = e_native_module_data_mutability::k_constant;
 		for (size_t edge = 0; edge < node.incoming_edge_handles.size(); edge++) {
@@ -1278,7 +1273,9 @@ c_native_module_qualified_data_type c_native_module_graph::get_node_data_type(h_
 			h_graph_node source_node_handle = input_node.incoming_edge_handles[0];
 			c_native_module_qualified_data_type element_data_type = get_node_data_type(source_node_handle);
 
-			if (element_data_type.get_primitive_type() != node.array_node_data().primitive_type) {
+			if (primitive_type == e_native_module_primitive_type::k_invalid) {
+				primitive_type = element_data_type.get_primitive_type();
+			} else if (element_data_type.get_primitive_type() != primitive_type) {
 				return c_native_module_qualified_data_type::invalid();
 			}
 
@@ -1295,7 +1292,7 @@ c_native_module_qualified_data_type c_native_module_graph::get_node_data_type(h_
 		}
 
 		return c_native_module_qualified_data_type(
-			c_native_module_data_type(node.array_node_data().primitive_type, true, upsample_factor),
+			c_native_module_data_type(primitive_type, true, upsample_factor),
 			data_mutability);
 	}
 

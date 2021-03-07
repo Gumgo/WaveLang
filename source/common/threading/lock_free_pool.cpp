@@ -65,7 +65,7 @@ void c_lock_free_pool::initialize(c_lock_free_handle_array free_list_memory) {
 	m_free_list_head.handle = head.data;
 }
 
-uint32 c_lock_free_pool::allocate() {
+uint32 c_lock_free_pool::allocate_node() {
 	uint32 handle = lock_free_list_pop(m_free_list, m_free_list_head);
 
 #if IS_TRUE(ALLOCATION_VERIFICATION_ENABLED)
@@ -83,7 +83,7 @@ uint32 c_lock_free_pool::allocate() {
 	return handle;
 }
 
-void c_lock_free_pool::free(uint32 handle) {
+void c_lock_free_pool::free_node(uint32 handle) {
 	wl_assert(handle != k_lock_free_invalid_handle);
 
 #if IS_TRUE(ALLOCATION_VERIFICATION_ENABLED)

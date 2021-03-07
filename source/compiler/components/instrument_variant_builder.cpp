@@ -12,9 +12,6 @@
 
 static constexpr size_t k_max_module_call_depth = 100;
 
-static e_native_module_primitive_type native_module_primitive_type_from_ast_primitive_type(
-	e_ast_primitive_type ast_primitive_type);
-
 class c_native_module_graph_builder {
 public:
 	c_native_module_graph_builder(
@@ -935,8 +932,7 @@ bool c_native_module_graph_builder::evaluate_ast_node(
 		uint32 resolved_upsample_factor =
 			array->get_data_type().get_upsampled_type(resolved_scope_upsample_factor).get_upsample_factor();
 
-		h_graph_node array_node_handle = m_native_module_graph.add_array_node(
-			native_module_primitive_type_from_ast_primitive_type(array->get_data_type().get_primitive_type()));
+		h_graph_node array_node_handle = m_native_module_graph.add_array_node();
 		for (const s_node_handle_with_latency &element : get_expression_results(array->get_element_count())) {
 			if (element.latency == max_element_latency) {
 				m_native_module_graph.add_array_value(array_node_handle, element.node_handle);
@@ -1307,8 +1303,7 @@ bool c_native_module_graph_builder::assign_expression_value(
 			int32 latency = delayed_expression_node_handle.latency - array_node_handle.latency;
 			wl_assert(latency >= 0); // We already handled the case where the array has more latency
 
-			h_graph_node new_array_node_handle = m_native_module_graph.add_array_node(
-				m_native_module_graph.get_node_data_type(array_node_handle.node_handle).get_primitive_type());
+			h_graph_node new_array_node_handle = m_native_module_graph.add_array_node();
 			for (size_t index = 0; index < array_count; index++) {
 				h_graph_node element_node_handle;
 				if (index == array_index) {
@@ -1528,8 +1523,7 @@ s_node_handle_with_latency c_native_module_graph_builder::add_latency_and_delay(
 	c_native_module_qualified_data_type data_type = m_native_module_graph.get_node_data_type(node_handle.node_handle);
 	if (data_type.is_array()) {
 		// Add latency to each element
-		c_native_module_qualified_data_type element_data_type = data_type.get_element_type();
-		result.node_handle = m_native_module_graph.add_array_node(element_data_type.get_primitive_type());
+		result.node_handle = m_native_module_graph.add_array_node();
 
 		size_t element_count = m_native_module_graph.get_node_incoming_edge_count(node_handle.node_handle);
 		for (size_t element_index = 0; element_index < element_count; element_index++) {
@@ -1591,22 +1585,4 @@ s_node_handle_with_latency c_native_module_graph_builder::add_latency_and_delay(
 	}
 
 	return result;
-}
-
-static e_native_module_primitive_type native_module_primitive_type_from_ast_primitive_type(
-	e_ast_primitive_type ast_primitive_type) {
-	switch (ast_primitive_type) {
-	case e_ast_primitive_type::k_real:
-		return e_native_module_primitive_type::k_real;
-
-	case e_ast_primitive_type::k_bool:
-		return e_native_module_primitive_type::k_bool;
-
-	case e_ast_primitive_type::k_string:
-		return e_native_module_primitive_type::k_string;
-
-	default:
-		wl_unreachable();
-		return e_native_module_primitive_type::k_invalid;
-	}
 }

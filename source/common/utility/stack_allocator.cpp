@@ -20,7 +20,7 @@ c_stack_allocator::c_stack_allocator(c_wrapped_array<uint8> buffer) {
 }
 
 c_stack_allocator::~c_stack_allocator() {
-	free();
+	free_allocations();
 }
 
 c_stack_allocator::s_context c_stack_allocator::release() {
@@ -35,7 +35,7 @@ c_stack_allocator::s_context c_stack_allocator::release_no_destructors() {
 	return release();
 }
 
-void c_stack_allocator::free() {
+void c_stack_allocator::free_allocations() {
 	free_context(m_context);
 	m_context = {};
 	m_offset = 0;

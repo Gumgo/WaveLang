@@ -57,8 +57,10 @@ public:
 	c_native_module_data_type(e_native_module_primitive_type primitive_type, bool is_array, uint32 upsample_factor);
 
 	static c_native_module_data_type invalid();
+	static c_native_module_data_type empty_array();
 
 	bool is_valid() const;
+	bool is_empty_array() const;
 	bool is_legal() const;
 
 	e_native_module_primitive_type get_primitive_type() const;
@@ -88,8 +90,10 @@ public:
 		e_native_module_data_mutability data_mutability);
 
 	static c_native_module_qualified_data_type invalid();
+	static c_native_module_qualified_data_type empty_array();
 
 	bool is_valid() const;
+	bool is_empty_array() const;
 	bool is_legal() const;
 
 	e_native_module_primitive_type get_primitive_type() const;

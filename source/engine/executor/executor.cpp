@@ -262,7 +262,7 @@ void c_executor::initialize_controller_event_manager() {
 }
 
 void c_executor::initialize_task_contexts() {
-	m_task_contexts.free();
+	m_task_contexts.free_memory();
 	uint32 max_task_count = 0;
 
 	for (e_instrument_stage instrument_stage : iterate_enum<e_instrument_stage>()) {
@@ -297,8 +297,8 @@ void c_executor::shutdown_internal() {
 	IF_ASSERTS_ENABLED(uint32 unexecuted_tasks = ) m_thread_pool.stop();
 	wl_assert(unexecuted_tasks == 0);
 
-	m_thread_contexts.free();
-	m_task_contexts.free();
+	m_thread_contexts.free_memory();
+	m_task_contexts.free_memory();
 	m_controller_event_manager.shutdown();
 	m_voice_allocator.shutdown();
 	deinitialize_tasks();

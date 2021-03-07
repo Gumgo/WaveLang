@@ -16,6 +16,7 @@ static constexpr size_t k_lock_free_alignment = LOCK_FREE_ALIGNMENT;
 template<typename t_element>
 class c_lock_free_aligned_allocator : public c_aligned_allocator<t_element, k_lock_free_alignment> {};
 
+// $TODO replace this with c_handle
 static constexpr uint32 k_lock_free_invalid_handle = static_cast<uint32>(-1);
 
 // Uses 32-bit handles for indexing nodes and 32-bit ABA counter

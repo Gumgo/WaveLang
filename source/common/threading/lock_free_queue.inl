@@ -21,7 +21,7 @@ void c_lock_free_queue<t_element>::initialize(
 	// See http://www.cs.rochester.edu/u/scott/papers/1996_PODC_queues.pdf, and boost's lock-free queue
 	s_lock_free_handle_data front_and_back;
 	front_and_back.tag = 0;
-	front_and_back.handle = m_free_list.allocate();
+	front_and_back.handle = m_free_list.allocate_node();
 	m_front.handle = front_and_back.data;
 	m_back.handle = front_and_back.data;
 
@@ -34,7 +34,7 @@ void c_lock_free_queue<t_element>::initialize(
 template<typename t_element>
 bool c_lock_free_queue<t_element>::push(const t_element &element) {
 	// Attempt to allocate an element from the pool
-	uint32 handle = m_free_list.allocate();
+	uint32 handle = m_free_list.allocate_node();
 	if (handle == k_lock_free_invalid_handle) {
 		// Pool is empty
 		return false;
@@ -138,7 +138,7 @@ bool c_lock_free_queue<t_element>::pop(t_element &element_out) {
 				new_front.handle = front_next.handle;
 				int64 expected = front.data;
 				if (m_front.handle.compare_exchange_strong(expected, new_front.data)) {
-					m_free_list.free(front.handle);
+					m_free_list.free_node(front.handle);
 					return true;
 				}
 			}
@@ -183,7 +183,7 @@ bool c_lock_free_queue<t_element>::pop() {
 				new_front.handle = front_next.handle;
 				int64 expected = front.data;
 				if (m_front.handle.compare_exchange_strong(expected, new_front.data)) {
-					m_free_list.free(front.handle);
+					m_free_list.free_node(front.handle);
 					return true;
 				}
 			}

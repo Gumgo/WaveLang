@@ -268,11 +268,13 @@ bool c_native_module_caller::try_call(
 			// Ideally we could call is_native_module_data_type_assignable() here, but we haven't determined the
 			// dependent-constant data mutability yet, so we have to do the comparison manually to deal with upsample
 			// factor correctly.
-			wl_assert(node_data_type.get_primitive_type() == argument.type.get_primitive_type());
 			wl_assert(node_data_type.is_array() == argument.type.is_array());
-			wl_assert(node_data_type.get_data_mutability() == e_native_module_data_mutability::k_constant
-				|| node_data_type.get_upsample_factor() ==
-				argument.type.get_upsampled_type(native_module_upsample_factor).get_upsample_factor());
+			if (!node_data_type.is_empty_array()) {
+				wl_assert(node_data_type.get_primitive_type() == argument.type.get_primitive_type());
+				wl_assert(node_data_type.get_data_mutability() == e_native_module_data_mutability::k_constant
+					|| node_data_type.get_upsample_factor() ==
+					argument.type.get_upsampled_type(native_module_upsample_factor).get_upsample_factor());
+			}
 
 			// If the input node is referenced by value but isn't a constant, we can't call this native module
 			if (argument.data_access == e_native_module_data_access::k_value
@@ -779,7 +781,7 @@ void c_native_module_caller::build_constant_array_value(
 	h_graph_node array_node_handle,
 	t_array &array_value_out) {
 	const c_native_module_graph &native_module_graph = m_graph_trimmer.get_native_module_graph();
-	size_t element_count = native_module_graph.get_node_outgoing_edge_count(array_node_handle);
+	size_t element_count = native_module_graph.get_node_incoming_edge_count(array_node_handle);
 	array_value_out.get_array().resize(element_count);
 	for (size_t element_index = 0; element_index < element_count; element_index++) {
 		h_graph_node element_node_handle = native_module_graph.get_node_indexed_input_incoming_edge_handle(
@@ -830,10 +832,7 @@ void c_native_module_caller::build_reference_array_value(
 template<typename t_array>
 h_graph_node c_native_module_caller::build_constant_array_node(const t_array &array_value) {
 	c_native_module_graph &native_module_graph = m_graph_trimmer.get_native_module_graph();
-	static constexpr e_native_module_primitive_type k_primitive_type =
-		s_native_module_native_type_mapping<t_array>::k_primitive_type;
-
-	h_graph_node array_node_handle = native_module_graph.add_array_node(k_primitive_type);
+	h_graph_node array_node_handle = native_module_graph.add_array_node();
 	for (size_t index = 0; index < array_value.get_array().size(); index++) {
 		if constexpr (std::is_same_v<t_array, c_native_module_string_array>) {
 			native_module_graph.add_array_value(
@@ -856,10 +855,7 @@ h_graph_node c_native_module_caller::try_build_reference_array_node(
 	bool should_be_constant) {
 	wl_assert(upsample_factor == 1 || !should_be_constant);
 	c_native_module_graph &native_module_graph = m_graph_trimmer.get_native_module_graph();
-	static constexpr e_native_module_primitive_type k_primitive_type =
-		s_native_module_native_type_mapping<t_reference_array>::k_primitive_type;
-
-	h_graph_node array_node_handle = native_module_graph.add_array_node(k_primitive_type);
+	h_graph_node array_node_handle = native_module_graph.add_array_node();
 	for (size_t index = 0; index < reference_array_value.get_array().size(); index++) {
 		h_graph_node node_handle =
 			validate_and_get_node_handle(reference_array_value.get_array()[index], upsample_factor, should_be_constant);

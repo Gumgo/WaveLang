@@ -23,6 +23,11 @@ const s_ast_primitive_type_traits &get_ast_primitive_type_traits(e_ast_primitive
 c_ast_data_type::c_ast_data_type(e_ast_primitive_type primitive_type, bool is_array, uint32 upsample_factor) {
 	wl_assert(upsample_factor > 0);
 
+	if (primitive_type == e_ast_primitive_type::k_invalid) {
+		// There is only a single "invalid" type and "empty array" type to avoid ambiguity
+		wl_assert(upsample_factor == 1);
+	}
+
 	if (primitive_type == e_ast_primitive_type::k_error) {
 		// There is only a single "error" type to avoid ambiguity
 		wl_assert(!is_array);
@@ -148,7 +153,11 @@ std::string c_ast_data_type::to_string() const {
 	return result;
 }
 
-c_ast_qualified_data_type::c_ast_qualified_data_type(c_ast_data_type data_type, e_ast_data_mutability data_mutability) {
+c_ast_qualified_data_type::c_ast_qualified_data_type(c_ast_data_type data_type, e_ast_data_mutability data_mutability)
+	: m_data_type(data_type)
+	, m_data_mutability(data_mutability) {
+	wl_assert(data_type.is_valid() == valid_enum_index(data_mutability));
+
 	if (data_type.is_error()) {
 		// There is only a single "error" type to avoid ambiguity
 		wl_assert(data_mutability == e_ast_data_mutability::k_invalid);
@@ -158,9 +167,6 @@ c_ast_qualified_data_type::c_ast_qualified_data_type(c_ast_data_type data_type, 
 		// There is only a single "empty array" type to avoid ambiguity
 		wl_assert(data_mutability == e_ast_data_mutability::k_constant);
 	}
-
-	m_data_type = data_type;
-	m_data_mutability = data_mutability;
 }
 
 c_ast_qualified_data_type c_ast_qualified_data_type::error() {

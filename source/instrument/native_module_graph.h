@@ -89,7 +89,7 @@ public:
 	h_graph_node add_constant_node(real32 constant_value);
 	h_graph_node add_constant_node(bool constant_value);
 	h_graph_node add_constant_node(const char *constant_value);
-	h_graph_node add_array_node(e_native_module_primitive_type primitive_type);
+	h_graph_node add_array_node();
 	void add_array_value(h_graph_node array_node_handle, h_graph_node value_node_handle);
 	// Returns the old value
 	h_graph_node set_array_value_at_index(h_graph_node array_node_handle, uint32 index, h_graph_node value_node_handle);
@@ -160,10 +160,6 @@ private:
 			};
 		};
 
-		struct s_array_node_data {
-			e_native_module_primitive_type primitive_type;
-		};
-
 		struct s_native_module_call_node_data {
 			h_native_module native_module_handle;
 			uint32 upsample_factor;
@@ -184,7 +180,6 @@ private:
 		std::variant<
 			s_no_node_data,
 			s_constant_node_data,
-			s_array_node_data,
 			s_native_module_call_node_data,
 			s_input_node_data,
 			s_output_node_data> node_data;
@@ -197,14 +192,6 @@ private:
 
 		const s_constant_node_data &constant_node_data() const {
 			return std::get<s_constant_node_data>(node_data);
-		}
-
-		s_array_node_data &array_node_data() {
-			return std::get<s_array_node_data>(node_data);
-		}
-
-		const s_array_node_data &array_node_data() const {
-			return std::get<s_array_node_data>(node_data);
 		}
 
 		s_native_module_call_node_data &native_module_call_node_data() {

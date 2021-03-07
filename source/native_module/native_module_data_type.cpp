@@ -19,8 +19,13 @@ c_native_module_data_type::c_native_module_data_type(
 	e_native_module_primitive_type primitive_type,
 	bool is_array,
 	uint32 upsample_factor) {
-	wl_assert(valid_enum_index(primitive_type));
 	wl_assert(upsample_factor > 0);
+
+	if (primitive_type == e_native_module_primitive_type::k_invalid) {
+		// There is only a single "invalid" type and "empty array" type to avoid ambiguity
+		wl_assert(upsample_factor == 1);
+	}
+
 	m_primitive_type = primitive_type;
 	m_is_array = is_array;
 	m_upsample_factor = upsample_factor;
@@ -30,8 +35,16 @@ c_native_module_data_type c_native_module_data_type::invalid() {
 	return c_native_module_data_type();
 }
 
+c_native_module_data_type c_native_module_data_type::empty_array() {
+	return c_native_module_data_type(e_native_module_primitive_type::k_invalid, true, 1);
+}
+
 bool c_native_module_data_type::is_valid() const {
-	return m_primitive_type != e_native_module_primitive_type::k_invalid;
+	return m_primitive_type != e_native_module_primitive_type::k_invalid || m_is_array;
+}
+
+bool c_native_module_data_type::is_empty_array() const {
+	return m_primitive_type == e_native_module_primitive_type::k_invalid && m_is_array;
 }
 
 bool c_native_module_data_type::is_legal() const {
@@ -106,14 +119,29 @@ c_native_module_qualified_data_type::c_native_module_qualified_data_type(
 	: m_data_type(data_type)
 	, m_data_mutability(data_mutability) {
 	wl_assert(data_type.is_valid() == valid_enum_index(data_mutability));
+
+	if (data_type.is_empty_array()) {
+		// There is only a single "empty array" type to avoid ambiguity
+		wl_assert(data_mutability == e_native_module_data_mutability::k_constant);
+	}
 }
 
 c_native_module_qualified_data_type c_native_module_qualified_data_type::invalid() {
 	return c_native_module_qualified_data_type();
 }
 
+c_native_module_qualified_data_type c_native_module_qualified_data_type::empty_array() {
+	return c_native_module_qualified_data_type(
+		c_native_module_data_type::empty_array(),
+		e_native_module_data_mutability::k_constant);
+}
+
 bool c_native_module_qualified_data_type::is_valid() const {
 	return m_data_type.is_valid();
+}
+
+bool c_native_module_qualified_data_type::is_empty_array() const {
+	return m_data_type.is_empty_array();
 }
 
 bool c_native_module_qualified_data_type::is_legal() const {
@@ -203,6 +231,11 @@ std::string c_native_module_qualified_data_type::to_string() const {
 bool is_native_module_data_type_assignable(
 	const c_native_module_qualified_data_type &from_data_type,
 	const c_native_module_qualified_data_type &to_data_type) {
+	if (from_data_type.is_empty_array() && to_data_type.is_array()) {
+		// Empty arrays can be assigned to any array type
+		return true;
+	}
+
 	if (from_data_type.get_primitive_type() != to_data_type.get_primitive_type()
 		|| from_data_type.is_array() != to_data_type.is_array()) {
 		return false;

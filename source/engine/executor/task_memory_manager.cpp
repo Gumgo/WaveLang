@@ -92,7 +92,7 @@ void c_task_memory_manager::initialize(
 
 	// Allocate memory
 	wl_assert(total_size_alignment.alignment <= k_lock_free_alignment); // $TODO remove this requirement
-	m_task_memory_allocator.free();
+	m_task_memory_allocator.free_memory();
 
 	m_scratch_allocations.resize(thread_context_count);
 
@@ -138,7 +138,7 @@ void c_task_memory_manager::initialize(
 }
 
 void c_task_memory_manager::deinitialize() {
-	m_task_memory_allocator.free();
+	m_task_memory_allocator.free_memory();
 
 	for (e_instrument_stage instrument_stage : iterate_enum<e_instrument_stage>()) {
 		m_shared_allocations[enum_index(instrument_stage)].clear();

@@ -18,10 +18,10 @@ public:
 	// Thread-safe functions:
 
 	// Allocates a node and returns its handle, or returns k_lock_free_invalid_handle if the pool is empty
-	uint32 allocate();
+	uint32 allocate_node();
 
 	// Frees the given node, allowing it to be reused
-	void free(uint32 handle);
+	void free_node(uint32 handle);
 
 #if IS_TRUE(ASSERTS_ENABLED)
 	// Calculates the amount of elements used. Not thread safe! Currently this is only used for asserts.

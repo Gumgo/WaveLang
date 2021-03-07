@@ -82,6 +82,12 @@
     </ClInclude>
     <ClInclude Include="controller.h" />
     <ClInclude Include="sample_format.h" />
+    <ClInclude Include="task_functions\filter\fir.h">
+      <Filter>task_functions\filter</Filter>
+    </ClInclude>
+    <ClInclude Include="task_functions\filter\iir_sos.h">
+      <Filter>task_functions\filter</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="predecessor_resolver.cpp" />
@@ -193,6 +199,12 @@
       <Filter>task_functions</Filter>
     </ClCompile>
     <ClCompile Include="sample_format.cpp" />
+    <ClCompile Include="task_functions\filter\fir.cpp">
+      <Filter>task_functions\filter</Filter>
+    </ClCompile>
+    <ClCompile Include="task_functions\filter\iir_sos.cpp">
+      <Filter>task_functions\filter</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="SConscript" />
@@ -227,6 +239,9 @@
     </Filter>
     <Filter Include="resampler">
       <UniqueIdentifier>{326bbfc2-b597-4265-a4d3-4709fd4c958d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="task_functions\filter">
+      <UniqueIdentifier>{08262783-5e0e-42a2-b1f0-84fd74253f3c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

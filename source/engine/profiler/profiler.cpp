@@ -110,10 +110,10 @@ c_profiler::c_profiler() {}
 c_profiler::~c_profiler() {}
 
 void c_profiler::initialize(const s_profiler_settings &settings) {
-	m_thread_contexts.free();
+	m_thread_contexts.free_memory();
 	m_thread_contexts.allocate(settings.worker_thread_count);
-	m_tasks[enum_index(e_instrument_stage::k_voice)].free();
-	m_tasks[enum_index(e_instrument_stage::k_fx)].free();
+	m_tasks[enum_index(e_instrument_stage::k_voice)].free_memory();
+	m_tasks[enum_index(e_instrument_stage::k_fx)].free_memory();
 	m_tasks[enum_index(e_instrument_stage::k_voice)].allocate(settings.voice_task_count);
 	m_tasks[enum_index(e_instrument_stage::k_fx)].allocate(settings.fx_task_count);
 

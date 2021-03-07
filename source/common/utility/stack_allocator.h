@@ -53,7 +53,8 @@ public:
 	// Same as above but asserts that there are no destructors
 	s_context release_no_destructors();
 
-	void free();
+	// free() gets defined in debug builds so use free_allocations() instead
+	void free_allocations();
 	static void free_context(const s_context &context);
 
 	template<typename t_type>

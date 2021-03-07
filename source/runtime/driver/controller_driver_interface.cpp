@@ -57,9 +57,9 @@ s_controller_driver_result c_controller_driver_interface::start_stream(const s_c
 
 	s_controller_driver_result result = m_controller_driver_midi.start_stream(settings);
 	if (result.result != e_controller_driver_result::k_success) {
-		m_controller_event_queue_element_memory.free();
-		m_controller_event_queue_queue_memory.free();
-		m_controller_event_queue_free_list_memory.free();
+		m_controller_event_queue_element_memory.free_memory();
+		m_controller_event_queue_queue_memory.free_memory();
+		m_controller_event_queue_free_list_memory.free_memory();
 		return result;
 	}
 
@@ -75,9 +75,9 @@ void c_controller_driver_interface::stop_stream() {
 
 	m_controller_driver_midi.stop_stream();
 
-	m_controller_event_queue_element_memory.free();
-	m_controller_event_queue_queue_memory.free();
-	m_controller_event_queue_free_list_memory.free();
+	m_controller_event_queue_element_memory.free_memory();
+	m_controller_event_queue_queue_memory.free_memory();
+	m_controller_event_queue_free_list_memory.free_memory();
 }
 
 bool c_controller_driver_interface::is_stream_running() const {

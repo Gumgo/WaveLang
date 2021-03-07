@@ -2,13 +2,30 @@
 
 namespace filter_native_modules {
 
-	// Biquad filter assumes normalized a0 coefficient
-	void biquad(
-		wl_argument(in real, a1),
-		wl_argument(in real, a2),
-		wl_argument(in real, b0),
-		wl_argument(in real, b1),
-		wl_argument(in real, b2),
+	void fir_validate_arguments(
+		const s_native_module_context &context,
+		wl_argument(in const real[], coefficients)) {
+		if (coefficients->get_array().empty()) {
+			context.diagnostic_interface->error("Empty coefficients array");
+		}
+	}
+
+	void fir(
+		wl_argument(in const real[], coefficients),
+		wl_argument(in real, signal),
+		wl_argument(return out real, result));
+
+	void iir_sos_validate_arguments(
+		const s_native_module_context &context,
+		wl_argument(in ref real[], coefficients)) {
+		if (coefficients->get_array().size() % 5 != 0) {
+			context.diagnostic_interface->error("Coefficients array length must be a multiple of 5");
+		}
+	}
+
+	// "coefficients" is an array of sets of 5 elements: b0, b1, b2, a1, a2. a0 is assumed to be 1.
+	void iir_sos(
+		wl_argument(in ref real[], coefficients),
 		wl_argument(in real, signal),
 		wl_argument(return out real, result));
 
@@ -16,8 +33,13 @@ namespace filter_native_modules {
 		static constexpr uint32 k_filter_library_id = 5;
 		wl_native_module_library(k_filter_library_id, "filter", 0);
 
-		wl_native_module(0x683cea52, "biquad")
-			.set_call_signature<decltype(biquad)>();
+		wl_native_module(0x5cfed7b9, "fir")
+			.set_call_signature<decltype(fir)>()
+			.set_validate_arguments<fir_validate_arguments>();
+
+		wl_native_module(0x1f69ab2c, "iir_sos")
+			.set_call_signature<decltype(iir_sos)>()
+			.set_validate_arguments<iir_sos_validate_arguments>();
 
 		wl_end_active_library_native_module_registration();
 	}

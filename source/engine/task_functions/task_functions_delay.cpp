@@ -295,6 +295,8 @@ void delay_real(
 			context.buffer_size);
 		if (is_output_constant) {
 			result->extend_constant();
+		} else {
+			result->set_is_constant(false);
 		}
 	} else {
 		delay_context->delay_buffer.process(signal->get_data(), result->get_data(), context.buffer_size);
@@ -361,6 +363,8 @@ void delay_bool(
 			context.buffer_size);
 		if (is_output_constant) {
 			result->extend_constant();
+		} else {
+			result->set_is_constant(false);
 		}
 	} else {
 		delay_context->delay_buffer.process(signal->get_data(), result->get_data(), context.buffer_size);

@@ -83,9 +83,9 @@ uint32 c_thread_pool::stop() {
 		unexecuted_tasks++;
 	}
 
-	m_pending_tasks_element_memory.free();
-	m_pending_tasks_queue_memory.free();
-	m_pending_tasks_free_list_memory.free();
+	m_pending_tasks_element_memory.free_memory();
+	m_pending_tasks_queue_memory.free_memory();
+	m_pending_tasks_free_list_memory.free_memory();
 
 #if IS_TRUE(ASSERTS_ENABLED)
 	m_running = false;

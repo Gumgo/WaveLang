@@ -108,4 +108,3 @@
 #ifndef CACHE_LINE_SIZE
 #error Cache line size not defined
 #endif // CACHE_LINE_SIZE
-

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "common/macros.h"
+#include "common/platform.h"
+#include "common/platform_macros.h"
 #include "common/types.h"
 
 #ifdef _DEBUG
@@ -17,12 +19,16 @@
 	if (!(expression)) {								\
 		handle_assert(#expression, __FILE__, __LINE__);	\
 	}													\
+														\
+	ANALYSIS_ASSUME(expression);						\
 )
 
 #define wl_assertf(expression, message) MACRO_BLOCK(	\
 	if (!(expression)) {								\
 		handle_assert(message, __FILE__, __LINE__);		\
 	}													\
+														\
+	ANALYSIS_ASSUME(expression);						\
 )
 
 #define wl_halt() wl_assert("halt")

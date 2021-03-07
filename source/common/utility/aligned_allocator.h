@@ -4,6 +4,8 @@
 
 #include <memory>
 
+// $TODO consider adding c_aligned<t_type> or using std::aligned_storage so that the usual new/delete and
+// std::unique_ptr will work
 template<typename t_element, size_t k_alignment>
 class c_aligned_allocator {
 public:
@@ -36,7 +38,7 @@ public:
 	}
 
 	~c_aligned_allocator() {
-		free();
+		free_memory();
 	}
 
 	void swap(c_aligned_allocator<t_element, k_alignment> &other) {
@@ -56,7 +58,8 @@ public:
 		return true;
 	}
 
-	void free() {
+	// free() gets defined in debug builds so use free_memory() instead
+	void free_memory() {
 		if (m_base_pointer) {
 			wl_assert(m_array.get_pointer());
 			free_aligned_memory(m_base_pointer);
