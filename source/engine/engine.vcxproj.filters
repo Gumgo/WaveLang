@@ -88,6 +88,9 @@
     <ClInclude Include="task_functions\filter\iir_sos.h">
       <Filter>task_functions\filter</Filter>
     </ClInclude>
+    <ClInclude Include="task_functions\filter\allpass.h">
+      <Filter>task_functions\filter</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="predecessor_resolver.cpp" />
@@ -203,6 +206,9 @@
       <Filter>task_functions\filter</Filter>
     </ClCompile>
     <ClCompile Include="task_functions\filter\iir_sos.cpp">
+      <Filter>task_functions\filter</Filter>
+    </ClCompile>
+    <ClCompile Include="task_functions\filter\allpass.cpp">
       <Filter>task_functions\filter</Filter>
     </ClCompile>
   </ItemGroup>

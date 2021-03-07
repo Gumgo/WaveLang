@@ -3,6 +3,7 @@
 #include "engine/buffer.h"
 #include "engine/buffer_operations/buffer_iterator.h"
 #include "engine/task_function_registration.h"
+#include "engine/task_functions/filter/allpass.h"
 #include "engine/task_functions/filter/fir.h"
 #include "engine/task_functions/filter/iir_sos.h"
 
@@ -13,6 +14,10 @@ struct s_iir_sos_context
 
 	// Whether each SOS is first order. Note that this could go in the shared memory but it's more convenient this way
 	c_wrapped_array<bool> is_first_order;
+};
+
+struct s_allpass_context {
+	c_wrapped_array<c_allpass> allpass_filters;
 };
 
 namespace filter_task_functions {
@@ -182,6 +187,80 @@ namespace filter_task_functions {
 		}
 	}
 
+	s_task_memory_query_result allpass_memory_query(
+		wl_task_argument(c_real_constant_array, delays)) {
+		s_task_memory_query_result result;
+
+		c_stack_allocator::c_memory_calculator calculator;
+		calculator.add<s_allpass_context>();
+		calculator.add_array<c_allpass>(delays->get_count());
+		for (size_t allpass_index = 0; allpass_index < delays->get_count(); allpass_index++) {
+			c_allpass::calculate_memory(static_cast<uint32>((*delays)[allpass_index]), calculator);
+		}
+
+		wl_assert(calculator.get_destructor_count() == 0);
+		result.voice_size_alignment = calculator.get_size_alignment();
+
+		return result;
+	}
+
+	void allpass_voice_initializer(
+		const s_task_function_context &context,
+		wl_task_argument(c_real_constant_array, delays),
+		wl_task_argument(c_real_constant_array, gains)) {
+		c_stack_allocator allocator(context.voice_memory);
+		s_allpass_context *allpass_context;
+		allocator.allocate(allpass_context);
+		allocator.allocate_array(allpass_context->allpass_filters, delays->get_count());
+		for (size_t allpass_index = 0; allpass_index < delays->get_count(); allpass_index++) {
+			allpass_context->allpass_filters[allpass_index].initialize(
+				static_cast<uint32>((*delays)[allpass_index]),
+				(*gains)[allpass_index],
+				allocator);
+		}
+
+		allocator.release_no_destructors();
+	}
+
+	void allpass_voice_activator(
+		const s_task_function_context &context) {
+		s_allpass_context *allpass_context = reinterpret_cast<s_allpass_context *>(context.voice_memory.get_pointer());
+		for (c_allpass &allpass : allpass_context->allpass_filters) {
+			allpass.reset();
+		}
+	}
+
+	void allpass(
+		const s_task_function_context &context,
+		wl_task_argument(c_real_constant_array, delays),
+		wl_task_argument(c_real_constant_array, gains),
+		wl_task_argument(const c_real_buffer *, signal),
+		wl_task_argument(c_real_buffer *, result)) {
+		s_allpass_context *allpass_context = reinterpret_cast<s_allpass_context *>(context.voice_memory.get_pointer());
+
+		// For the first filter, read from the input buffer. For the remaining filters, process the output buffer
+		// in-place.
+		const c_real_buffer *input = *signal;
+		for (c_allpass &allpass : allpass_context->allpass_filters) {
+			if (input->is_constant()) {
+				bool is_output_constant = allpass.process_constant(
+					input->get_constant(),
+					result->get_data(),
+					context.buffer_size);
+				if (is_output_constant) {
+					result->extend_constant();
+				} else {
+					result->set_is_constant(false);
+				}
+			} else {
+				allpass.process(input->get_data(), result->get_data(), context.buffer_size);
+				result->set_is_constant(false);
+			}
+
+			input = *result;
+		}
+	}
+
 	void scrape_task_functions() {
 		static constexpr uint32 k_filter_library_id = 5;
 		wl_task_function_library(k_filter_library_id, "filter", 0);
@@ -198,6 +277,12 @@ namespace filter_task_functions {
 			.set_memory_query<iir_sos_memory_query>()
 			.set_voice_initializer<iir_sos_voice_initializer>()
 			.set_voice_activator<iir_sos_voice_activator>();
+
+		wl_task_function(0x24a5a6e8, "allpass")
+			.set_function<allpass>()
+			.set_memory_query<allpass_memory_query>()
+			.set_voice_initializer<allpass_voice_activator>()
+			.set_voice_activator<allpass_voice_activator>();
 
 		wl_end_active_library_task_function_registration();
 	}

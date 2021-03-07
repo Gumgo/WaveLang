@@ -105,6 +105,7 @@
     <ClInclude Include="resampler\resampler.h" />
     <ClInclude Include="runtime_instrument.h" />
     <ClInclude Include="sample_format.h" />
+    <ClInclude Include="task_functions\filter\allpass.h" />
     <ClInclude Include="task_functions\filter\fir.h" />
     <ClInclude Include="task_functions\filter\iir_sos.h" />
     <ClInclude Include="task_functions\sampler\fetch_sample.h" />
@@ -139,6 +140,7 @@
     <ClCompile Include="resampler\resampler.cpp" />
     <ClCompile Include="runtime_instrument.cpp" />
     <ClCompile Include="sample_format.cpp" />
+    <ClCompile Include="task_functions\filter\allpass.cpp" />
     <ClCompile Include="task_functions\filter\fir.cpp" />
     <ClCompile Include="task_functions\filter\iir_sos.cpp" />
     <ClCompile Include="task_functions\sampler\fetch_sample.cpp" />
