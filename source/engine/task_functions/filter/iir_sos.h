@@ -3,7 +3,6 @@
 #include "common/common.h"
 
 #include "engine/buffer.h"
-#include "engine/buffer_operations/buffer_iterator.h"
 
 // This implementation uses transposed direct-form 2:
 // y = b0*x + s1

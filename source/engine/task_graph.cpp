@@ -64,7 +64,8 @@ void c_task_buffer_iterator::next() {
 			} else if (argument.type.is_array()) {
 				size_t current_array_count = std::get<c_buffer_array>(argument.value).get_count();
 				m_array_index++;
-				if (m_array_index == current_array_count) {
+				wl_assert(m_array_index <= current_array_count || current_array_count == 0);
+				if (m_array_index >= current_array_count) {
 					m_argument_index++;
 					m_array_index = 0;
 				}

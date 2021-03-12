@@ -106,7 +106,9 @@
     <ClInclude Include="runtime_instrument.h" />
     <ClInclude Include="sample_format.h" />
     <ClInclude Include="task_functions\filter\allpass.h" />
+    <ClInclude Include="task_functions\filter\comb_feedback.h" />
     <ClInclude Include="task_functions\filter\fir.h" />
+    <ClInclude Include="task_functions\filter\gain.h" />
     <ClInclude Include="task_functions\filter\iir_sos.h" />
     <ClInclude Include="task_functions\sampler\fetch_sample.h" />
     <ClInclude Include="task_functions\sampler\sample.h" />
@@ -141,7 +143,9 @@
     <ClCompile Include="runtime_instrument.cpp" />
     <ClCompile Include="sample_format.cpp" />
     <ClCompile Include="task_functions\filter\allpass.cpp" />
+    <ClCompile Include="task_functions\filter\comb_feedback.cpp" />
     <ClCompile Include="task_functions\filter\fir.cpp" />
+    <ClCompile Include="task_functions\filter\gain.cpp" />
     <ClCompile Include="task_functions\filter\iir_sos.cpp" />
     <ClCompile Include="task_functions\sampler\fetch_sample.cpp" />
     <ClCompile Include="task_functions\sampler\sample.cpp" />

@@ -31,7 +31,7 @@ void c_allpass::process(const real32 *input, real32 *output, size_t sample_count
 	m_zero_count = 0;
 
 	// If our delay is smaller than the SIMD vector size, fall back to processing 1 sample at a time
-	size_t simd_sample_count = (m_delay < k_simd_32_lanes) ? 0 : (sample_count & (k_simd_32_lanes - 1));
+	size_t simd_sample_count = (m_delay < k_simd_32_lanes) ? 0 : align_size_down(sample_count, k_simd_32_lanes);
 
 	uint32 delay = m_delay;
 	size_t history_index = m_history_index;
@@ -108,7 +108,7 @@ bool c_allpass::process_constant(real32 input, real32 *output, size_t sample_cou
 	}
 
 	// If our delay is smaller than the SIMD vector size, fall back to processing 1 sample at a time
-	size_t simd_sample_count = (m_delay < k_simd_32_lanes) ? 0 : (sample_count & (k_simd_32_lanes - 1));
+	size_t simd_sample_count = (m_delay < k_simd_32_lanes) ? 0 : align_size_down(sample_count, k_simd_32_lanes);
 
 	uint32 delay = m_delay;
 	size_t history_index = m_history_index;

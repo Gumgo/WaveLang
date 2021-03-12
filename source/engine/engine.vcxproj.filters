@@ -91,6 +91,12 @@
     <ClInclude Include="task_functions\filter\allpass.h">
       <Filter>task_functions\filter</Filter>
     </ClInclude>
+    <ClInclude Include="task_functions\filter\comb_feedback.h">
+      <Filter>task_functions\filter</Filter>
+    </ClInclude>
+    <ClInclude Include="task_functions\filter\gain.h">
+      <Filter>task_functions\filter</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="predecessor_resolver.cpp" />
@@ -209,6 +215,12 @@
       <Filter>task_functions\filter</Filter>
     </ClCompile>
     <ClCompile Include="task_functions\filter\allpass.cpp">
+      <Filter>task_functions\filter</Filter>
+    </ClCompile>
+    <ClCompile Include="task_functions\filter\comb_feedback.cpp">
+      <Filter>task_functions\filter</Filter>
+    </ClCompile>
+    <ClCompile Include="task_functions\filter\gain.cpp">
       <Filter>task_functions\filter</Filter>
     </ClCompile>
   </ItemGroup>

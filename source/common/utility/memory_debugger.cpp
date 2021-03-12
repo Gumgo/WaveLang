@@ -1,3 +1,4 @@
+#include "common/asserts.h"
 #include "common/utility/memory_debugger.h"
 
 #if IS_TRUE(ASSERTS_ENABLED)
@@ -14,7 +15,10 @@ static int alloc_hook(
 	long request_number,
 	const unsigned char *filename,
 	int line_number) {
-	wl_assert(tl_allocations_allowed);
+	// Assertions allocate memory for string output which we don't care about catching here
+	if (!did_current_thread_assert()) {
+		wl_assert(tl_allocations_allowed);
+	}
 	return TRUE;
 }
 #endif // IS_TRUE(ASSERTS_ENABLED)

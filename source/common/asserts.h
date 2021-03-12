@@ -38,6 +38,7 @@
 #define wl_unreachable() wl_haltf("unreachable")
 
 void handle_assert(const char *message, const char *file, int32 line);
+bool did_current_thread_assert();
 
 #else // IS_TRUE(ASSERTS_ENABLED)
 

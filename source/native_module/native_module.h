@@ -14,7 +14,7 @@ struct s_instrument_globals;
 static constexpr size_t k_max_native_module_library_name_length = 64;
 static constexpr size_t k_max_native_module_name_length = 64;
 static constexpr size_t k_max_native_module_arguments = 10;
-static constexpr size_t k_max_native_module_argument_name_length = 20;
+static constexpr size_t k_max_native_module_argument_name_length = 32;
 static constexpr size_t k_invalid_native_module_argument_index = static_cast<size_t>(-1);
 
 using f_library_compiler_initializer = void *(*)();

@@ -221,7 +221,7 @@ void c_buffer_manager::begin_chunk(uint32 chunk_size) {
 void c_buffer_manager::mix_input_channel_buffer_to_input_buffers(
 	e_sample_format sample_format,
 	c_wrapped_array<const uint8> input_buffer) {
-	if (m_input_channel_mix_buffers.empty()) {
+	if (m_input_buffers.empty()) {
 		// Input data isn't being used, nothing to do
 		return;
 	}

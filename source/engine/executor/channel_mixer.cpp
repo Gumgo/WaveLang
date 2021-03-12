@@ -7,8 +7,6 @@ void mix_channel_buffers(
 	c_wrapped_array<c_buffer> output_buffers) {
 	size_t input_buffer_count = input_buffers.get_count();
 	size_t output_buffer_count = output_buffers.get_count();
-	wl_assert(input_buffer_count > 0);
-	wl_assert(output_buffer_count > 0);
 
 	// Support specific cases:
 	if (input_buffer_count == output_buffer_count) {
