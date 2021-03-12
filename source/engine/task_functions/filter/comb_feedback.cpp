@@ -103,8 +103,8 @@ void c_comb_feedback::read_history_variable(const real32 *delay, real32 *output,
 
 	for (size_t sample_index = 0; sample_index < sample_count; sample_index++) {
 		real32 sanitized_delay = std::clamp(sanitize_inf_nan(delay[sample_index]), min_delay, max_delay);
-		uint32 delay_integer = static_cast<uint32>(sanitized_delay);
-		real32 delay_fraction = sanitized_delay - static_cast<real32>(delay_integer);
+		uint32 delay_integer = static_cast<uint32>(std::ceil(sanitized_delay));
+		real32 delay_fraction = static_cast<real32>(delay_integer) - sanitized_delay;
 
 		// Account for resampling latency
 		wl_assert(delay_integer >= latency);
@@ -131,8 +131,8 @@ void c_comb_feedback::read_history_variable_constant(real32 delay, real32 *outpu
 
 	// Cache some values on the stack
 	real32 sanitized_delay = std::clamp(sanitize_inf_nan(delay), m_min_delay, m_max_delay);
-	uint32 delay_integer = static_cast<uint32>(sanitized_delay);
-	real32 delay_fraction = sanitized_delay - static_cast<real32>(delay_integer);
+	uint32 delay_integer = static_cast<uint32>(std::ceil(sanitized_delay));
+	real32 delay_fraction = static_cast<real32>(delay_integer) - sanitized_delay;
 
 	// Account for resampling latency
 	wl_assert(delay_integer >= resampler_parameters.latency);
